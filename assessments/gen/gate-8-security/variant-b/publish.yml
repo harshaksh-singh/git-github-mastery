@@ -1,0 +1,36 @@
+# Case 1 of Gate 8, variant B. Constructed for the gate: this workflow is teaching material.
+# It is insecure on purpose, in ways that Chapter 21A documents. Do not copy it and do not run it.
+# The action "some-org/notify-channel" is invented; no such repository is meant.
+name: publish
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Announce
+        run: |
+          echo "Publishing the build of branch ${{ github.event.workflow_run.head_branch }}"
+      - name: Install the package under test
+        run: sh ./install.sh
+      - name: Push the package
+        env:
+          CLOUD_ACCESS_KEY: ${{ secrets.CLOUD_ACCESS_KEY }}
+        run: make push
+      - uses: some-org/notify-channel@main
+        with:
+          message: "published"

@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>V008 recording booth</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --accent: #F05033; --bg1: #14161C; --bg2: #232733; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg1); color: #e6edf3; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+body { display: flex; flex-direction: column; background: linear-gradient(180deg, var(--bg1), var(--bg2)); }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 18px; border-bottom: 1px solid #30363d; }
+header .num { font: 700 18px Menlo, monospace; color: var(--accent); border: 2px solid var(--accent); border-radius: 8px; padding: 2px 9px; }
+header .title { flex: 1; font-size: 17px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header .state { font: 700 14px Menlo, monospace; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; background: #30363d; color: #c9d1d9; text-transform: uppercase; }
+header .state.rec { background: #da3633; color: #fff; }
+header .state.paused { background: #e3b341; color: #111; }
+header .state.saved { background: #238636; color: #fff; }
+header .clock { font: 700 22px Menlo, monospace; min-width: 84px; text-align: right; }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(380px, 46%) 1fr; gap: 16px; padding: 14px 18px; }
+aside { overflow-y: auto; border-right: 1px solid #30363d; padding-right: 10px; }
+aside h3 { font-size: 12px; letter-spacing: 2px; color: #8b949e; margin: 4px 0 8px; }
+aside button { display: flex; width: 100%; align-items: center; gap: 8px; text-align: left; background: none; border: 1px solid transparent; color: #c9d1d9; font-size: 13px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+aside button:hover:not(:disabled) { border-color: #30363d; background: rgba(255,255,255,.04); }
+aside button.sel { border-color: var(--accent); color: #fff; }
+aside button.live { background: rgba(255,255,255,.08); color: #fff; }
+aside button:disabled { cursor: default; opacity: .8; }
+aside .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #6e7681; }
+aside .dot.done { background: #3fb950; border-color: #3fb950; }
+aside .dot.part { background: #e3b341; border-color: #e3b341; }
+aside .note { font-size: 12px; color: #8b949e; line-height: 1.4; margin-top: 12px; }
+.stage { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.slidebox { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0b0d12; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; }
+.slidebox img { width: 100%; height: 100%; display: block; }
+.count { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font: 900 160px "Helvetica Neue", Arial; color: #fff; background: rgba(0,0,0,.6); }
+.count.on { display: flex; }
+.meterrow { display: flex; align-items: center; gap: 12px; }
+.meter { position: relative; flex: 1; height: 18px; background: #0b0d12; border: 1px solid #30363d; border-radius: 9px; overflow: hidden; }
+#level { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #3fb950 0%, #3fb950 70%, #e3b341 85%, #f85149 100%); background-size: 1000px 100%; }
+#peak { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; left: 0; opacity: .7; }
+.hint { font-size: 13px; color: #8b949e; min-width: 150px; }
+.hint.bad { color: #f85149; font-weight: 700; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: 600 15px "Helvetica Neue", Arial; }
+.controls button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 9px; padding: 10px 14px; cursor: pointer; }
+.controls button:disabled { opacity: .4; cursor: default; }
+.controls button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 800; }
+.controls button.danger { margin-left: auto; background: #238636; border-color: #2ea043; color: #fff; }
+.msg { font-size: 14px; color: #c9d1d9; line-height: 1.45; min-height: 20px; }
+.msg.err { color: #ff7b72; font-weight: 600; }
+.msg a { color: #79c0ff; }
+.prompter { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.where { display: flex; gap: 14px; align-items: baseline; font: 700 13px Menlo, monospace; letter-spacing: 1px; color: var(--accent); margin-bottom: 10px; }
+.where #beatno, .where #beattime { color: #8b949e; }
+.now { font-size: clamp(24px, 2.35vw, 40px); line-height: 1.5; color: #fff; overflow-y: auto; padding-right: 8px; flex: 0 1 auto; max-height: 68%; }
+.now.hold { color: #e3b341; font-style: italic; }
+.now code, .after code { font-family: Menlo, monospace; font-size: .86em; background: rgba(255,255,255,.1); border-radius: 5px; padding: 1px 6px; }
+.nextlabel { font: 700 12px Menlo, monospace; letter-spacing: 2px; color: #6e7681; margin: 18px 0 6px; border-top: 1px solid #30363d; padding-top: 12px; }
+.after { font-size: clamp(17px, 1.5vw, 24px); line-height: 1.45; color: #8b949e; overflow: hidden; flex: 1; min-height: 0; }
+footer { padding: 8px 18px; font-size: 13px; color: #8b949e; border-top: 1px solid #30363d; }
+footer b { color: #c9d1d9; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; overflow-y: auto; } aside { border: none; display: flex; flex-wrap: wrap; gap: 4px; } aside button { width: auto; } }
+
+</style>
+</head>
+<body>
+<header>
+  <span class="num" id="vid"></span>
+  <span class="title" id="title"></span>
+  <span class="state" id="state">not recording</span>
+  <span class="clock" id="clock">0:00</span>
+</header>
+<main>
+  <aside id="sections" aria-label="Sections"></aside>
+  <section class="stage">
+    <div class="slidebox"><img id="slide" alt="current slide"><div id="count" class="count"></div></div>
+    <div class="meterrow">
+      <div class="meter" title="Microphone level"><div id="level"></div><div id="peak"></div></div>
+      <span id="meterhint" class="hint">microphone off</span>
+    </div>
+    <div class="controls">
+      <button id="start" class="primary">Start recording</button>
+      <button id="pause" disabled>Pause (P)</button>
+      <button id="retake" disabled>Retake beat (&larr;)</button>
+      <button id="next" disabled>Next beat (Space)</button>
+      <button id="finish" class="danger" disabled>Finish</button>
+    </div>
+    <div id="msg" class="msg"></div>
+  </section>
+  <section class="prompter">
+    <div class="where"><span id="secname"></span><span id="beatno"></span><span id="beattime"></span></div>
+    <div id="now" class="now"></div>
+    <div class="nextlabel">NEXT</div>
+    <div id="after" class="after"></div>
+  </section>
+</main>
+<footer>
+  <b>Space</b> or <b>&rarr;</b> next beat &nbsp;·&nbsp; <b>&larr;</b> or <b>Backspace</b> say this beat again &nbsp;·&nbsp; <b>P</b> pause / continue &nbsp;·&nbsp; <b>Finish</b> saves the take
+</footer>
+<script>
+const BOOTH = {"id": "V008", "title": "The four object types, and a commit built by hand", "palette": {"accent": "#F05033", "accent2": "#FF9A80", "bg1": "#161215", "bg2": "#2A1D21"}, "sha": "58e2544dee5ddc1127fdacdd19d500b9cb2fcca9", "countdown_ms": 150, "sections": [{"name": "HOOK", "beat": 1}, {"name": "INTRODUCTION", "beat": 6}, {"name": "LEARNING OBJECTIVES", "beat": 9}, {"name": "CONCEPT", "beat": 16}, {"name": "MENTAL MODEL", "beat": 37}, {"name": "DIAGRAM", "beat": 41}, {"name": "LIVE TERMINAL DEMO", "beat": 44}, {"name": "COMMON MISTAKES", "beat": 75}, {"name": "PRODUCTION EXAMPLE", "beat": 82}, {"name": "PRACTICE EXERCISE", "beat": 86}, {"name": "INTERVIEW QUESTION", "beat": 89}, {"name": "RECAP", "beat": 93}, {"name": "HOMEWORK", "beat": 96}], "beats": [{"i": 0, "section": "TITLE", "type": "hold", "why": "title", "hold": 2.0, "tele": "", "est": 2.0, "slide": 1, "h": ""}, {"i": 1, "section": "HOOK", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 2, "h": ""}, {"i": 2, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "A release script at your company builds a commit without a working tree, the folder of files you normally edit. It writes the objects, it prints a commit ID, and it exits with status zero, the usual sign of success. Then the next step runs `git log`, and Git says the branch doesn't have any commits yet.", "est": 22.8, "slide": 3, "h": "72fe3a3e"}, {"i": 3, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "The commit exists. You can print it by its ID. And no history shows it. How can both be true?", "est": 8.0, "slide": 4, "h": "a409f792"}, {"i": 4, "section": "HOOK", "type": "hold", "why": "pause", "hold": 2.0, "tele": "", "est": 2.0, "slide": 4, "h": ""}, {"i": 5, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "To explain that, you have to stop thinking of `git commit` as one act. It's five moves. When a Git command surprises you, the useful question is always the same: which objects did it write, and which refs did it move? A ref is a name that points at an object. Today you make a commit with your own hands, one move at a time, and you see exactly which move was missing in that script.", "est": 30.4, "slide": 5, "h": "9966fffd"}, {"i": 6, "section": "INTRODUCTION", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 6, "h": ""}, {"i": 7, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In the last video you saw three kinds of object: blob, tree and commit. A blob is the content of one file, a tree is one directory, and a commit is one saved snapshot. There's a fourth, the tag object, and this video opens one of each.", "est": 23.6, "slide": 7, "h": "731a50b3"}, {"i": 8, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "Then we put the porcelain away. Porcelain is Git's word for the everyday commands, such as `git add` and `git commit`. Plumbing is the low-level layer underneath, and five plumbing commands do the same work in separate, visible steps. We'll build a commit from nothing: no file in the working tree, no `git add`, no `git commit`. After each step I'll ask you which object or file is about to appear. And keep that release script in mind. It comes back.", "est": 32.4, "slide": 8, "h": "181f7008"}, {"i": 9, "section": "LEARNING OBJECTIVES", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 9, "h": ""}, {"i": 10, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Here's what you'll walk away with.", "est": 2.4, "slide": 10, "h": "1e7bc081"}, {"i": 11, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "After this video you can:", "est": 2.0, "slide": 11, "h": "152923b5"}, {"i": 12, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Name the four object types, and say what each contains and what it points at.", "est": 6.0, "slide": 12, "h": "a2779e1a"}, {"i": 13, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Read a tree entry: mode, type, object ID, name.", "est": 3.6, "slide": 13, "h": "3f061a5e"}, {"i": 14, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Build a commit with plumbing only, without `git add` or `git commit`.", "est": 4.8, "slide": 14, "h": "0eb87fd0"}, {"i": 15, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Explain which step of the hand-built commit corresponds to which porcelain command.", "est": 4.8, "slide": 15, "h": "b88afcb2"}, {"i": 16, "section": "CONCEPT", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 16, "h": ""}, {"i": 17, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "The four object types.", "est": 1.6, "slide": 17, "h": "7f86d2d0"}, {"i": 18, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "A blob holds the bytes of one file. It refers to nothing. It is written by `git add`.", "est": 7.2, "slide": 18, "h": "9e31ea02"}, {"i": 19, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "A tree holds one directory: for each entry, a mode, a name and an object ID. It refers to blobs and to other trees. It is written by `git commit`, from the index.", "est": 13.2, "slide": 19, "h": "54e63a46"}, {"i": 20, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "A commit holds one tree ID, the parent commit IDs, an author, a committer and a message. It refers to its tree and its parents. It is written by `git commit`, `git merge`, `git cherry-pick` and others.", "est": 14.8, "slide": 20, "h": "223bca5f"}, {"i": 21, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "A tag object holds the ID and type of another object, a tag name, the tagger, and a message. It refers, usually, to a commit. It is written by `git tag -a`.", "est": 12.8, "slide": 21, "h": "96c59d4e"}, {"i": 22, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Names live in trees. A blob is content without a name. The name of a file is stored in the tree that lists it. On screen is the scorer from the last video: the tree holds the three names, and each name points at a blob. This is why, in the last video, two files with different names and the same bytes were one blob.", "est": 26.0, "slide": 22, "h": "2e4eee22"}, {"i": 23, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Reading a tree entry. Four fields: mode, type, object ID, name. The mode tells you the kind of entry.", "est": 7.6, "slide": 23, "h": "073f9ed7"}, {"i": 24, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "`100644` is a regular file. `100755` is an executable file. `120000` is a symbolic link. `040000` is a directory: the entry points at a tree. `160000` is a gitlink: a commit of another repository, which you met in video 6 as the embedded repository. Executable or not is the only permission that Git records. It stores no owner and no other permission bits.", "est": 25.2, "slide": 24, "h": "9be36cbc"}, {"i": 25, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "The tag object, and the tag without one. An annotated tag is a ref that points at a tag object, and the tag object names a commit. A lightweight tag has no object: it is a ref that points at the commit directly. A later chapter develops tags.", "est": 19.2, "slide": 25, "h": "1af22850"}, {"i": 26, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "A commit in five moves.", "est": 2.0, "slide": 26, "h": "9b4d122c"}, {"i": 27, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Step 1: `git hash-object -w` stores content as a blob. 🟢 SAFE. The porcelain that does it for you is `git add`.", "est": 8.4, "slide": 27, "h": "cdc28480"}, {"i": 28, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Step 2: `git update-index --add --cacheinfo`, with a mode, an ID and a path, records in the index that this path has this content. 🟡 CAUTION: it changes one index entry. The porcelain is again `git add`. So `git add` is two moves.", "est": 16.8, "slide": 28, "h": "017d7909"}, {"i": 29, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Step 3: `git write-tree` writes the index as tree objects. 🟢 SAFE. The porcelain is `git commit`.", "est": 6.4, "slide": 29, "h": "eb271e84"}, {"i": 30, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Step 4: `git commit-tree`, with a tree, optionally `-p` and a parent, and `-m` with a message, writes a commit object. 🟢 SAFE. The porcelain is `git commit`.", "est": 10.8, "slide": 30, "h": "b04b65cd"}, {"i": 31, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Step 5: `git update-ref refs/heads/<branch> <commit>` points the branch at the commit. 🟡 CAUTION: it moves one ref, and nothing else. The porcelain is `git commit`. So `git commit` is three moves.", "est": 12.4, "slide": 31, "h": "430c55bb"}, {"i": 32, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Steps 1, 3 and 4 only add objects. No ref and no index entry changes, and garbage collection removes objects that nothing refers to. That's why they're green.", "est": 11.2, "slide": 32, "h": "370655f8"}, {"i": 33, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "What porcelain adds. `git commit` does more than steps 3 to 5. It refuses to record nothing, as you saw in video 4. It runs hooks, the scripts a repository can run at moments such as a commit. And it writes a reason into the reflogs. `git update-ref` writes reflog lines for the branch and for HEAD without a message, unless you pass `-m`.", "est": 25.6, "slide": 33, "h": "43f4653c"}, {"i": 34, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "When to use plumbing, and when not. For daily work, don't. `git add`, `git commit`, `git switch` and `git branch` make the same objects and refs, and add checks. The read-only plumbing, `git cat-file`, `git ls-tree`, `git rev-parse`, `git for-each-ref` and `git merge-base`, is always appropriate, and settles arguments about state fastest.", "est": 20.8, "slide": 34, "h": "e10fd7dd"}, {"i": 35, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "And know the limits of the writing plumbing: `git update-ref` verifies little. It refuses a blob as the value of a branch and a stale expected value, but it accepts any existing commit, and it never looks at the index or the working tree.", "est": 17.6, "slide": 35, "h": "0b972a18"}, {"i": 36, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Recovery. The plumbing is worth knowing because recovery uses the same tools. A commit found by `git fsck` or in a reflog is reattached with one ref.", "est": 10.8, "slide": 36, "h": "daae99e0"}, {"i": 37, "section": "MENTAL MODEL", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 37, "h": ""}, {"i": 38, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "Think of the objects as documents in a filing system. A blob is a page with no title. A tree is a table of contents: titles, and where each page or sub-table is filed. A commit is a cover sheet: \"the project is this table of contents; it follows that earlier cover sheet; signed by this author and this committer, with this note\". A tag object is a labelled note that points at a cover sheet.", "est": 30.4, "slide": 38, "h": "f11bbccb"}, {"i": 39, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "The model breaks at one point that matters: in a filing system you could pull a page and correct it. Here you can't. Every one of these documents is filed under a number computed from its content. So a corrected page is a second, different page with a different number, and every table of contents and cover sheet that should include it must be written anew.", "est": 26.4, "slide": 39, "h": "6c688068"}, {"i": 40, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "For the five moves: `git add` is \"file the page and enter it in the draft table of contents\". `git commit` is \"write out the tables, write the cover sheet, and move the bookmark\".", "est": 13.6, "slide": 40, "h": "88beaaee"}, {"i": 41, "section": "DIAGRAM", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 41, "h": ""}, {"i": 42, "section": "DIAGRAM", "type": "narration", "why": "", "hold": 0, "tele": "All eight objects, and the two names that lead to them. The branch `main` points at the commit. The commit points at one tree. The tree has three entries: a blob and two more trees, each with a blob. And from the top left, the ref `v0.1.0` points at the tag object, which points at the same commit.", "est": 23.2, "slide": 42, "h": "822e43a0"}, {"i": 43, "section": "DIAGRAM", "type": "hold", "why": "visual", "hold": 5.0, "tele": "", "est": 5.0, "slide": 43, "h": ""}, {"i": 44, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 44, "h": ""}, {"i": 45, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "A repository called `ranker`, with one commit and one annotated tag. First the inventory.", "est": 5.6, "slide": 45, "h": "f42bb227"}, {"i": 46, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Eight objects: three blobs, three trees, one commit, one tag object. We open one of each.", "est": 6.4, "slide": 46, "h": "02797787"}, {"i": 47, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "A commit. This one has no `parent` line, so it's a root commit. The number after the email address, followed by `+0530`, is a time in Git's raw format: seconds since the first of January 1970 UTC, then the offset from UTC.", "est": 16.8, "slide": 47, "h": "f2c64829"}, {"i": 48, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Trees. `git cat-file -p` prints one level of a tree. `git ls-tree -r` walks down and prints every file with its full path. Read one entry in four fields: `100755`, `blob`, the ID beginning `aa1a031`, `scripts/test.sh`. Mode `100755`: an executable file.", "est": 16.4, "slide": 48, "h": "82cfbe5b"}, {"i": 49, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Try it now. Thirty seconds: find the `README.md` line and read it out loud in four fields. Then check your answer.", "est": 8.4, "slide": 48, "h": "5e0ea96f"}, {"i": 50, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "pause", "hold": 4.5, "tele": "", "est": 4.5, "slide": 48, "h": ""}, {"i": 51, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Mode `100644`, a regular file. Type `blob`. The ID beginning `895d61e`. And the name, `README.md`.", "est": 6.0, "slide": 48, "h": "94d4400b"}, {"i": 52, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "A blob: two lines of Python and nothing else. The name `rerank.py` isn't in it. It's stored in the tree `95722c3`.", "est": 8.4, "slide": 49, "h": "a9f2ad25"}, {"i": 53, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "And the tag object, `0f7f193`. It names the commit `e375b7b` and its type, repeats the tag name, and adds a tagger and a message.", "est": 9.6, "slide": 50, "h": "1e2a493c"}, {"i": 54, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "A repository with no working-tree file at all. The content arrives through a pipe.", "est": 5.6, "slide": 51, "h": "b3e1531d"}, {"i": 55, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Step 1. `git hash-object -w` 🟢 SAFE. Predict: after this command, what exists under `.git/objects`, and does an index exist? Say it out loud. I'll wait.", "est": 10.0, "slide": 52, "h": "db6ac917"}, {"i": 56, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "pause", "hold": 4.5, "tele": "", "est": 4.5, "slide": 52, "h": ""}, {"i": 57, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "One object exists, the blob `a7f6bbc`. There is no index yet.", "est": 4.4, "slide": 53, "h": "bdf76116"}, {"i": 58, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Step 2. `git update-index --add --cacheinfo` 🟡 CAUTION. `--cacheinfo` takes a mode, a full object ID and a path. `--add` permits a path that the index does not have yet. Predict what `git status` will say about a path that is in the index, in no commit, and not on disk.", "est": 20.0, "slide": 54, "h": "c763d8d4"}, {"i": 59, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "pause", "hold": 4.5, "tele": "", "est": 4.5, "slide": 54, "h": ""}, {"i": 60, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`git status` reports the path twice, and both lines are correct. \"new file\" compares the index with HEAD, which has no commit. \"deleted\" compares the working tree with the index, which lists a file that isn't on disk. Two comparisons, two answers. If that looked like a bug, you're in good company. Remember this picture for video 10.", "est": 23.2, "slide": 55, "h": "3e1fde7d"}, {"i": 61, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Step 3. `git write-tree` 🟢 SAFE. The index holds one path, `prompts/system.txt`. Quick quiz: how many tree objects will it write? Option one: one. Option two: two. Say it out loud.", "est": 12.0, "slide": 56, "h": "a21be9e4"}, {"i": 62, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "pause", "hold": 4.5, "tele": "", "est": 4.5, "slide": 56, "h": ""}, {"i": 63, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Two. The index is a flat list of full paths, and trees are nested, one object per directory. So `git write-tree` wrote `5445e77` for the top directory and `4015b7b` for `prompts/`.", "est": 12.4, "slide": 57, "h": "80ac50dd"}, {"i": 64, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Step 4. `git commit-tree` 🟢 SAFE. Predict: after this, will `git log` show the commit?", "est": 5.6, "slide": 58, "h": "0c797a1c"}, {"i": 65, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "pause", "hold": 4.5, "tele": "", "est": 4.5, "slide": 58, "h": ""}, {"i": 66, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`git commit-tree` wrote the commit `cc0ef15`, with the author and the committer taken from the environment, as `git commit` does. And `git log` fails. HEAD names the branch `main`, and no ref `refs/heads/main` exists. `git fsck`, which checks the object database, calls the commit dangling: it exists, and nothing refers to it.", "est": 20.8, "slide": 59, "h": "59ec8a69"}, {"i": 67, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "That's the release script from the hook. It stopped after step 4. The commit existed, and no name led to it.", "est": 8.4, "slide": 59, "h": "51b4cf4a"}, {"i": 68, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Step 5. `git update-ref` 🟡 CAUTION, with the full name `refs/heads/main`.", "est": 4.0, "slide": 60, "h": "881300fa"}, {"i": 69, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "One ref makes the difference: `git log` works and `git fsck` is silent. And `git status --short` prints `D prompts/system.txt`: the commit and the index contain the file, the working tree doesn't. The commit exists, and the working tree is still empty.", "est": 16.8, "slide": 61, "h": "7ec87f84"}, {"i": 70, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The last step fills the working tree, and it uses a command with a red label, so the five questions come first. `git restore <path>` is 🔴 DANGEROUS. What it changes: it overwrites the file in the working tree from the index. What it can destroy: uncommitted edits in that file.", "est": 20.0, "slide": 62, "h": "34100c33"}, {"i": 71, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "How to preview: `git diff -- <path>` shows what would be overwritten. How to recover: there is no recovery for content that was never staged. When it's appropriate: when you've looked at that diff and want to discard it. Twig looks worried, and with a red label on screen, fairly so. Here, though, nothing can be lost, because no file exists.", "est": 24.0, "slide": 63, "h": "fbf197d7"}, {"i": 72, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The file is on disk, and the working tree is clean.", "est": 4.4, "slide": 64, "h": "415b7343"}, {"i": 73, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "visual", "hold": 3.75, "tele": "", "est": 3.75, "slide": 65, "h": ""}, {"i": 74, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "visual", "hold": 3.75, "tele": "", "est": 3.75, "slide": 66, "h": ""}, {"i": 75, "section": "COMMON MISTAKES", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 67, "h": ""}, {"i": 76, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Five mistakes to watch for.", "est": 2.0, "slide": 68, "h": "76698d9b"}, {"i": 77, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "A commit made with `git commit-tree` is not in `git log`. Root cause: the commit object exists and no ref points at it; `git fsck` reports a dangling commit, and one `git update-ref` or `git branch` fixes it.", "est": 15.2, "slide": 69, "h": "b4ee82e4"}, {"i": 78, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Looking for the file name inside the blob. Root cause: a blob is content without a name; names and modes are stored in the tree.", "est": 10.0, "slide": 70, "h": "6bd98e4d"}, {"i": 79, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "After `git update-ref` moved the current branch, `git status` shows changes that nobody made. Root cause: the ref moved and the index and working tree did not; move the current branch with porcelain, which updates all three.", "est": 14.8, "slide": 71, "h": "2ecf4957"}, {"i": 80, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Giving `git update-ref` a short name. Root cause: plumbing takes the name literally; write the full name beginning with `refs/`. The next video shows what happens otherwise.", "est": 10.8, "slide": 72, "h": "181d1fcd"}, {"i": 81, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Assuming Git records file permissions and owners. Root cause: executable or not is the only permission that Git records.", "est": 7.6, "slide": 73, "h": "201cb9e5"}, {"i": 82, "section": "PRODUCTION EXAMPLE", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 74, "h": ""}, {"i": 83, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "Now, out of the lab. A data-platform team has a job that publishes generated configuration as commits, on a server with no checkout. It uses exactly the moves you saw: store the blobs, register them in an index, write the tree, write the commit with the previous commit as its parent, and move the branch.", "est": 22.0, "slide": 75, "h": "354fd195"}, {"i": 84, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "The textbook's advice for such scripts is in its table of what can go wrong: create the commit and move the ref together. A script that creates the commit and then fails before moving the ref leaves a dangling commit that no history shows.", "est": 17.6, "slide": 76, "h": "ad05a871"}, {"i": 85, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "One more production point from the textbook: author and committer are text supplied by whoever creates the commit. Git doesn't check them. A signature makes authorship verifiable, and later chapters cover it.", "est": 12.8, "slide": 77, "h": "e4822d10"}, {"i": 86, "section": "PRACTICE EXERCISE", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 78, "h": ""}, {"i": 87, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "Your turn. Do Lab 1.1, \"Build a commit by hand\", in `lab-manual/m01-what-git-is.md`.", "est": 4.8, "slide": 79, "h": "05e10af2"}, {"i": 88, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "Before each of the five steps, write down which object or file will appear and what `git status` and `git log` will say afterwards. The step where your prediction fails is the step to repeat.", "est": 14.0, "slide": 80, "h": "1a0b431d"}, {"i": 89, "section": "INTERVIEW QUESTION", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 81, "h": ""}, {"i": 90, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "Q66: \"What are a blob, a tree and a commit object?\"", "est": 4.4, "slide": 82, "h": "7e6f1277"}, {"i": 91, "section": "INTERVIEW QUESTION", "type": "hold", "why": "pause", "hold": 2.0, "tele": "", "est": 2.0, "slide": 82, "h": ""}, {"i": 92, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "Answer out loud. The question sounds elementary, and it's used to find out whether you know the model or only the words. A strong answer says for each type what it contains, what it refers to and, as important, what it doesn't contain. Then it connects them: how you get from a commit to the bytes of one file. Offer the fourth type without being asked.", "est": 26.4, "slide": 82, "h": "fa49611f"}, {"i": 93, "section": "RECAP", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 83, "h": ""}, {"i": 94, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "Let's land this. You should now be able to say: Git has four object types. A blob is file content with no name. A tree is one directory: modes, names and IDs. A commit is one tree, its parents, an author, a committer and a message. A tag object names another object.", "est": 20.8, "slide": 84, "h": "8598b1cf"}, {"i": 95, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "`git add` is two moves: store the blob and record it in the index. `git commit` is three: write the trees, write the commit, move the ref. A commit that no ref points at exists and is dangling, and one ref makes it reachable.", "est": 17.6, "slide": 85, "h": "c8814e35"}, {"i": 96, "section": "HOMEWORK", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 86, "h": ""}, {"i": 97, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Read sections 2.5 and 2.6 of Chapter 2.", "est": 3.2, "slide": 87, "h": "d12d7d93"}, {"i": 98, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Repeat Lab 1.1, \"Build a commit by hand\", a second time from memory, with a different file name and message.", "est": 8.0, "slide": 88, "h": "65e067d6"}, {"i": 99, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Challenge: Exercise 1.8, Level 3, \"the object that no history shows\", in `exercises/m01-m05-foundations.md`.", "est": 5.2, "slide": 89, "h": "1c2abca6"}, {"i": 100, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "You built a commit by hand today, one move at a time, so `git commit` has no hidden part left. Repeat the lab from memory before the next video. Next time: the commit graph, reachability, refs and HEAD. Until then, look at the state first and type second. See you in the next one.", "est": 21.6, "slide": 90, "h": "da86250e"}]};
+// Recording booth. Plain JavaScript, no libraries.
+// The microphone is recorded as ONE continuous file. Every key press is logged with its time on that file's clock;
+// the builder turns the log into "keep this stretch for beat N" and cuts everything else (retakes, pauses, countdown).
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const beats = BOOTH.beats, sections = BOOTH.sections;
+  const last = beats.length - 1;
+  let state = "idle";            // idle | countdown | rec | paused | saving | saved
+  let cur = 0, startBeat = 0, events = [], rec = null, chunks = [], stream = null, t0 = 0, beatT0 = 0;
+  let holdTimer = null, tick = null, audioCtx = null, analyser = null, mime = "", recorded = new Set(), peak = 0, peakAt = 0;
+  const dbg = (window.__booth = { errors: [], saved: null, get state() { return state; }, get cur() { return cur; }, get events() { return events; } });
+  window.addEventListener("error", (e) => dbg.errors.push(String(e.message)));
+  window.addEventListener("unhandledrejection", (e) => dbg.errors.push("promise: " + String(e.reason)));
+
+  document.documentElement.style.setProperty("--accent", BOOTH.palette.accent);
+  document.documentElement.style.setProperty("--bg1", BOOTH.palette.bg1);
+  document.documentElement.style.setProperty("--bg2", BOOTH.palette.bg2);
+  $("vid").textContent = BOOTH.id;
+  $("title").textContent = BOOTH.title;
+
+  const now = () => (performance.now() - t0) / 1000;
+  const pad = (n) => String(n).padStart(3, "0");
+  const fmt = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const rich = (t) => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>");
+  const log = (type, extra) => events.push(Object.assign({ t: +now().toFixed(3), type: type }, extra || {}));
+  const HOLD_TEXT = { title: "Title card", section: "Section card", pause: "Pause", page: "Next page of the output", visual: "Look at the slide" };
+
+  function sectionOf(i) {
+    let k = 0;
+    for (let s = 0; s < sections.length; s++) if (sections[s].beat <= i) k = s;
+    return k;
+  }
+  function sectionRange(s) {
+    const a = s === 0 ? 0 : sections[s].beat;
+    const b = s + 1 < sections.length ? sections[s + 1].beat - 1 : last;
+    return [a, b];
+  }
+
+  function setState(s) {
+    state = s;
+    const el = $("state");
+    el.className = "state" + (s === "rec" || s === "countdown" ? " rec" : s === "paused" ? " paused" : s === "saved" ? " saved" : "");
+    el.textContent = { idle: "not recording", countdown: "get ready", rec: "● recording", paused: "paused", saving: "saving…", saved: "saved" }[s];
+    $("start").disabled = !(s === "idle" || s === "saved");
+    $("start").textContent = s === "saved" ? "Record again from the selected section" : "Start recording";
+    $("pause").disabled = !(s === "rec" || s === "paused");
+    $("pause").textContent = s === "paused" ? "Continue (P)" : "Pause (P)";
+    $("retake").disabled = s !== "rec";
+    $("next").disabled = s !== "rec";
+    $("finish").disabled = !(s === "rec" || s === "paused");
+    drawSections();
+  }
+
+  function drawSections() {
+    const box = $("sections");
+    box.innerHTML = "<h3>SECTIONS</h3>";
+    const live = sectionOf(cur), sel = sectionOf(startBeat);
+    sections.forEach((s, k) => {
+      const [a, b] = sectionRange(k);
+      let need = 0, have = 0;
+      for (let i = a; i <= b; i++) if (beats[i].type === "narration") { need++; if (recorded.has(i)) have++; }
+      const btn = document.createElement("button");
+      btn.innerHTML = '<span class="dot ' + (need && have === need ? "done" : have ? "part" : "") + '"></span><span>' + (k + 1) + ". " + esc(s.name.charAt(0) + s.name.slice(1).toLowerCase()) + "</span>";
+      btn.title = have + " of " + need + " beats recorded";
+      if (state === "idle" || state === "saved") {
+        if (k === sel) btn.className = "sel";
+        btn.onclick = () => { startBeat = a; cur = a; render(); drawSections(); };
+      } else {
+        btn.disabled = true;
+        if (k === live) btn.className = "live";
+      }
+      box.appendChild(btn);
+    });
+    const note = document.createElement("div");
+    note.className = "note";
+    note.innerHTML = "Green: recorded. Yellow: partly recorded.<br>Before you start, click a section to begin there. A new take replaces the old one for the beats you read again.";
+    box.appendChild(note);
+  }
+
+  function render() {
+    const b = beats[cur];
+    $("slide").src = "slides/" + pad(b.slide) + ".png";
+    if (cur < last) { const im = new Image(); im.src = "slides/" + pad(beats[cur + 1].slide) + ".png"; }
+    $("secname").textContent = b.section;
+    $("beatno").textContent = "beat " + (cur + 1) + " / " + beats.length;
+    const el = $("now");
+    if (b.type === "narration") { el.className = "now"; el.innerHTML = rich(b.tele); }
+    else { el.className = "now hold"; el.textContent = (HOLD_TEXT[b.why] || "Silence") + ": stay silent for " + b.hold + " seconds. It moves on by itself."; }
+    el.scrollTop = 0;
+    let nx = "";
+    for (let i = cur + 1, n = 0; i <= last && n < 2; i++) if (beats[i].type === "narration") { nx += "<p>" + rich(beats[i].tele) + "</p>"; n++; }
+    $("after").innerHTML = nx || "<p>(end of the video)</p>";
+  }
+
+  function enterBeat() {
+    clearTimeout(holdTimer);
+    beatT0 = now();
+    render();
+    const b = beats[cur];
+    if (b.type !== "narration") holdTimer = setTimeout(advance, b.hold * 1000);
+  }
+
+  function advance() {
+    if (state !== "rec") return;
+    clearTimeout(holdTimer);
+    if (cur >= last) { finish(); return; }
+    log("advance", { beat: cur, next: cur + 1 });
+    cur += 1;
+    enterBeat();
+  }
+
+  function retake() {
+    if (state !== "rec") return;
+    clearTimeout(holdTimer);
+    // on a silent card, "say it again" means the paragraph just read
+    let target = cur;
+    if (beats[cur].type !== "narration") { while (target > startBeat && beats[target].type !== "narration") target--; }
+    if (target === cur) log("retake", { beat: cur }); else log("goto", { beat: target });
+    cur = target;
+    flash("Retake: read this beat again.");
+    enterBeat();
+  }
+
+  function back() {
+    if (state !== "rec" || cur <= startBeat) return;
+    clearTimeout(holdTimer);
+    let target = cur - 1;
+    while (target > startBeat && beats[target].type !== "narration") target--;
+    log("goto", { beat: target });
+    cur = target;
+    flash("Back one beat: read it again.");
+    enterBeat();
+  }
+
+  function togglePause() {
+    if (state === "rec") {
+      clearTimeout(holdTimer);
+      log("pause", { beat: cur });
+      setState("paused");
+      flash("Paused. Press P to continue; this beat starts again from its first word.");
+    } else if (state === "paused") {
+      setState("rec");
+      log("resume", { beat: cur });
+      flash("");
+      enterBeat();
+    }
+  }
+
+  function flash(text, err) {
+    const m = $("msg");
+    m.className = "msg" + (err ? " err" : "");
+    m.innerHTML = text;
+  }
+
+  function pickMime() {
+    const c = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/ogg;codecs=opus"];
+    for (const m of c) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+    return "";
+  }
+
+  async function start() {
+    if (!(state === "idle" || state === "saved")) return;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { flash("This browser cannot record. Use Google Chrome.", true); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    } catch (e) {
+      flash("The microphone is not available (" + esc(e.name) + "). Click the lock or microphone icon in the address bar, allow the microphone, and press Start again.", true);
+      return;
+    }
+    mime = pickMime();
+    events = []; chunks = []; dbg.saved = null;
+    cur = startBeat;
+    rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 192000 } : {});
+    mime = rec.mimeType || mime;
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstart = () => { t0 = performance.now(); countdown(3); };
+    rec.onerror = (e) => flash("Recorder error: " + esc(String(e.error || e)), true);
+    startMeter();
+    setState("countdown");
+    flash("");
+    render();
+    rec.start(1000);
+    clearInterval(tick);
+    tick = setInterval(clock, 200);
+  }
+
+  function countdown(n) {
+    const c = $("count");
+    if (state !== "countdown") { c.className = "count"; return; }
+    if (n === 0) {
+      c.className = "count";
+      setState("rec");
+      log("begin", { beat: cur });
+      enterBeat();
+      return;
+    }
+    c.className = "count on"; c.textContent = n;
+    setTimeout(() => countdown(n - 1), BOOTH.countdown_ms || 1000);
+  }
+
+  function clock() {
+    if (state === "rec" || state === "paused" || state === "countdown") {
+      $("clock").textContent = fmt(now());
+      const b = beats[cur];
+      $("beattime").textContent = state === "rec" ? (now() - beatT0).toFixed(0) + " s (about " + Math.round(b.est) + " s)" : "";
+    }
+  }
+
+  function startMeter() {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+      const draw = () => {
+        if (!analyser) return;
+        analyser.getFloatTimeDomainData(buf);
+        let sum = 0, mx = 0;
+        for (let i = 0; i < buf.length; i++) { sum += buf[i] * buf[i]; const a = Math.abs(buf[i]); if (a > mx) mx = a; }
+        const db = 20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-7);
+        const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+        const t = performance.now();
+        if (pct > peak || t - peakAt > 1500) { peak = pct; peakAt = t; }
+        $("level").style.width = pct + "%";
+        $("peak").style.left = peak + "%";
+        const h = $("meterhint");
+        if (mx > 0.98) { h.textContent = "too loud: move back a little"; h.className = "hint bad"; }
+        else if (db < -50) { h.textContent = "very quiet / silence"; h.className = "hint"; }
+        else { h.textContent = "level: " + db.toFixed(0) + " dB"; h.className = "hint"; }
+        requestAnimationFrame(draw);
+      };
+      draw();
+    } catch (e) { $("meterhint").textContent = "level meter unavailable"; }
+  }
+
+  function stopMedia() {
+    clearInterval(tick); clearTimeout(holdTimer);
+    analyser = null;
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    $("level").style.width = "0"; $("meterhint").textContent = "microphone off";
+  }
+
+  function finish() {
+    if (!(state === "rec" || state === "paused")) return;
+    clearTimeout(holdTimer);
+    log("finish", { beat: cur, complete: state === "rec" });
+    const duration = now();
+    setState("saving");
+    flash("Saving the take. Do not close this page.");
+    rec.onstop = () => save(new Blob(chunks, { type: mime || "audio/webm" }), duration);
+    rec.stop();
+  }
+
+  async function save(blob, duration) {
+    stopMedia();
+    const ext = /mp4/.test(mime) ? "m4a" : /ogg/.test(mime) ? "ogg" : "webm";
+    const timing = { video: BOOTH.id, storyboard_sha1: BOOTH.sha, mime: mime, duration: +duration.toFixed(3), start_beat: startBeat,
+      beat_hashes: beats.map((b) => b.h), events: events, user_agent: navigator.userAgent };
+    try {
+      const r1 = await fetch("api/audio?ext=" + ext, { method: "POST", headers: { "X-Booth": "1", "Content-Type": "application/octet-stream" }, body: blob });
+      if (!r1.ok) throw new Error("audio upload failed: HTTP " + r1.status);
+      timing.token = (await r1.json()).token;
+      const r2 = await fetch("api/timing", { method: "POST", headers: { "X-Booth": "1", "Content-Type": "application/json" }, body: JSON.stringify(timing) });
+      if (!r2.ok) throw new Error("timing upload failed: HTTP " + r2.status);
+      const res = await r2.json();
+      dbg.saved = res;
+      await loadState();
+      selectFirstIncomplete();
+      setState("saved");
+      flash("Saved <b>" + esc(res.file) + "</b> (" + fmt(duration) + ", " + res.kept + " beats kept, " + res.discarded + " retakes cut). " +
+        (res.missing ? res.missing + " texts of this video are not recorded yet. The first incomplete section is selected on the left: press the Start button to go on, now or later. "
+                     : "Every beat is recorded. Now run: <code>video/production/make.sh build " + BOOTH.id + "</code>"));
+    } catch (e) {
+      dbg.errors.push("save: " + e.message);
+      setState("saved");
+      const a = URL.createObjectURL(blob), j = URL.createObjectURL(new Blob([JSON.stringify(timing, null, 1)], { type: "application/json" }));
+      flash("Saving failed (" + esc(e.message) + "). Is the booth program still running in the Terminal? Your take is not lost: download " +
+        '<a download="' + BOOTH.id + ".rescue." + ext + '" href="' + a + '">the audio</a> and <a download="' + BOOTH.id + '.rescue.timing.json" href="' + j +
+        '">the timing</a>, then see "Troubleshooting" in the README.', true);
+    }
+  }
+
+  async function loadState() {
+    try {
+      const r = await fetch("api/state");
+      const s = await r.json();
+      recorded = new Set(s.recorded || []);
+      if (s.stale) flash("The script changed after " + s.stale + " beat(s) were recorded. They are shown as not recorded; read them again.", true);
+    } catch (e) { /* the page still works without it */ }
+    drawSections();
+  }
+
+  $("start").onclick = start;
+  $("pause").onclick = togglePause;
+  $("retake").onclick = retake;
+  $("next").onclick = advance;
+  $("finish").onclick = finish;
+  document.addEventListener("keydown", (e) => {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const k = e.code;
+    if (["Space", "ArrowRight", "ArrowLeft", "Backspace", "ArrowUp", "KeyP"].includes(k)) e.preventDefault(); else return;
+    if (e.repeat) return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+    if (k === "Space" || k === "ArrowRight") advance();
+    else if (k === "ArrowLeft" || k === "Backspace") retake();
+    else if (k === "ArrowUp") back();
+    else if (k === "KeyP") togglePause();
+  });
+  window.addEventListener("beforeunload", (e) => { if (state === "rec" || state === "paused" || state === "saving") { e.preventDefault(); e.returnValue = ""; } });
+
+  // start where the recording is incomplete
+  function selectFirstIncomplete() {
+    let first = 0;
+    for (let k = 0; k < sections.length; k++) {
+      const [a, b] = sectionRange(k);
+      let miss = false;
+      for (let i = a; i <= b; i++) if (beats[i].type === "narration" && !recorded.has(i)) miss = true;
+      if (miss) { first = a; break; }
+    }
+    startBeat = first; cur = first;
+    render();
+  }
+  loadState().then(() => {
+    selectFirstIncomplete();
+    setState("idle");
+    dbg.ready = true;
+  });
+})();
+
+</script>
+</body>
+</html>

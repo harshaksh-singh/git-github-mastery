@@ -1,0 +1,1229 @@
+1
+00:00:04,500 --> 00:00:09,637
+Your CTO has two questions. "The same
+commit runs on every laptop and fails in CI
+
+2
+00:00:09,677 --> 00:00:12,321
+with a missing module. What is different?"
+
+3
+00:00:12,661 --> 00:00:17,676
+And the second. "One cleanup command deleted
+two days of labelled evaluation data.
+
+4
+00:00:17,716 --> 00:00:19,094
+Can Git bring it back?"
+
+5
+00:00:21,434 --> 00:00:26,641
+The answer to the first: the laptops have
+a case-insensitive filesystem, one where
+
+6
+00:00:26,681 --> 00:00:31,760
+upper and lower case count as the same
+name, and the CI runner, the machine that
+
+7
+00:00:31,800 --> 00:00:37,135
+tests every change, does not. The answer to
+the second: git clean -fdx deletes files
+
+8
+00:00:37,175 --> 00:00:39,438
+that Git never had a copy of. So no.
+
+9
+00:00:39,778 --> 00:00:43,753
+Both failures happen at the border
+between Git and the filesystem.
+
+10
+00:00:43,793 --> 00:00:48,801
+Git has a small, exact idea of what a file
+is. Your filesystem has a different one.
+
+11
+00:00:48,841 --> 00:00:53,607
+Today we walk that border: permissions,
+directories, upper and lower case, line
+
+12
+00:00:53,647 --> 00:00:58,169
+endings, and the one everyday command
+that removes data Git has no copy of.
+
+13
+00:00:58,209 --> 00:01:01,210
+Keep that "no" in mind.
+One command will prove it.
+
+14
+00:01:03,050 --> 00:01:06,722
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+15
+00:01:06,762 --> 00:01:11,589
+This is the last video on the working
+tree, the folder of files you edit, and it
+
+16
+00:01:11,629 --> 00:01:16,578
+collects five topics that have the same
+shape. In each, the question is: what does
+
+17
+00:01:16,618 --> 00:01:21,446
+Git record, what does the filesystem do,
+and what happens when the two disagree?
+
+18
+00:01:21,786 --> 00:01:26,497
+The first four are quick. The fifth, git
+clean, carries a red label, and before I
+
+19
+00:01:26,537 --> 00:01:30,661
+run it I'll answer the five questions
+for a dangerous command out loud.
+
+20
+00:01:32,501 --> 00:01:34,080
+Here's what you'll walk away with.
+
+21
+00:01:34,420 --> 00:01:35,832
+After this video you can:
+
+22
+00:01:36,172 --> 00:01:40,893
+State what Git records about file permissions,
+and set the executable bit in the
+
+23
+00:01:40,933 --> 00:01:41,250
+index.
+
+24
+00:01:41,590 --> 00:01:44,336
+Explain why Git cannot
+track an empty directory.
+
+25
+00:01:44,676 --> 00:01:48,836
+Reproduce and repair a case-only rename
+on a case-insensitive filesystem.
+
+26
+00:01:49,176 --> 00:01:52,912
+Preview and run git clean with the
+narrowest scope that does the job.
+
+27
+00:01:54,752 --> 00:01:59,641
+File modes and symbolic links. In one
+sentence: besides its content, Git records one
+
+28
+00:01:59,681 --> 00:02:03,396
+more thing about a file: its type,
+and whether it is executable.
+
+29
+00:02:03,736 --> 00:02:07,740
+Precisely. An index entry and
+a tree entry carry a mode.
+
+30
+00:02:07,780 --> 00:02:13,734
+The index is Git's list of what goes into
+the next commit, and a tree is its record
+
+31
+00:02:13,774 --> 00:02:19,078
+of one directory. For files there are
+three modes. 100644, a regular file.
+
+32
+00:02:19,118 --> 00:02:25,144
+100755, an executable file. And 120000, a
+symbolic link, a small file that points at
+
+33
+00:02:25,184 --> 00:02:31,065
+another path. The User's Manual puts it
+bluntly: "Git actually only pays attention
+
+34
+00:02:31,105 --> 00:02:36,987
+to the executable bit." Owner, group, the
+other permission bits and timestamps are
+
+35
+00:02:37,027 --> 00:02:37,926
+not recorded.
+
+36
+00:02:38,266 --> 00:02:44,159
+A mode change is a change: status reports
+it, and the diff shows old mode and new
+
+37
+00:02:44,199 --> 00:02:50,165
+mode with no content lines. The mode isn't
+part of the blob, the object that holds
+
+38
+00:02:50,205 --> 00:02:56,026
+the file's content. When the filesystem
+can't express the bit, you set it in the
+
+39
+00:02:56,066 --> 00:03:01,226
+index directly, with git add --chmod=+x
+or git update-index --chmod=+x.
+
+40
+00:03:01,566 --> 00:03:05,123
+Both are 🟢 SAFE: they change
+the mode in the index entry.
+
+41
+00:03:05,163 --> 00:03:08,530
+With core.fileMode=false,
+Git stops comparing the bit.
+
+42
+00:03:08,570 --> 00:03:13,514
+That's what git init and git clone configure
+when they detect a filesystem that
+
+43
+00:03:13,554 --> 00:03:14,523
+doesn't keep it.
+
+44
+00:03:14,863 --> 00:03:18,886
+A symbolic link is stored as a blob
+whose content is the link text.
+
+45
+00:03:18,926 --> 00:03:23,859
+Git never follows the link, and never stores
+the target's content under the link's
+
+46
+00:03:23,899 --> 00:03:24,162
+path.
+
+47
+00:03:24,502 --> 00:03:27,811
+Empty directories. In one
+sentence: Git tracks files.
+
+48
+00:03:27,851 --> 00:03:32,486
+A directory exists in a commit only
+because a file path passes through it.
+
+49
+00:03:32,826 --> 00:03:37,758
+The index is a list of files, so there's
+nothing to add for an empty directory.
+
+50
+00:03:37,798 --> 00:03:42,793
+The convention is to give the directory
+a file. A .gitignore inside it, with the
+
+51
+00:03:42,833 --> 00:03:47,576
+pattern * and the exception !.gitignore,
+does two jobs at once: it keeps the
+
+52
+00:03:47,616 --> 00:03:50,849
+directory in the repository
+and ignores its content.
+
+53
+00:03:50,889 --> 00:03:55,758
+You'll also meet empty files named
+.gitkeep. The name means nothing to Git and
+
+54
+00:03:55,798 --> 00:04:01,045
+appears nowhere in its documentation. The
+rule works in the other direction too: git
+
+55
+00:04:01,085 --> 00:04:04,192
+rm on the last tracked file
+removes the directory.
+
+56
+00:04:04,532 --> 00:04:10,376
+The case-insensitive filesystem. In one
+sentence: Git treats Config.py and config.py
+
+57
+00:04:10,416 --> 00:04:16,051
+as two different paths, the default macOS
+filesystem treats them as one file, and
+
+58
+00:04:16,091 --> 00:04:21,515
+the setting that reconciles the two,
+core.ignoreCase, hides case-only renames.
+
+59
+00:04:21,855 --> 00:04:27,573
+Precisely. Git stores file names as byte
+sequences and performs no case folding, so
+
+60
+00:04:27,613 --> 00:04:33,330
+it never treats upper and lower case as
+equal. When git init or git clone creates a
+
+61
+00:04:33,370 --> 00:04:38,810
+repository, it probes the filesystem and
+sets core.ignoreCase=true if names are
+
+62
+00:04:38,850 --> 00:04:42,626
+case-insensitive, as they are
+on a default APFS volume.
+
+63
+00:04:42,966 --> 00:04:47,608
+The manual describes the effect: if a
+directory listing finds makefile when Git
+
+64
+00:04:47,648 --> 00:04:52,172
+expects Makefile, Git will assume it is
+really the same file, and continue to
+
+65
+00:04:52,212 --> 00:04:57,152
+remember it as Makefile. The manual also
+calls the variable internal, and warns that
+
+66
+00:04:57,192 --> 00:05:00,352
+changing it by hand may result
+in unexpected behavior.
+
+67
+00:05:00,692 --> 00:05:04,158
+The transcripts in this segment
+assume a case-insensitive volume.
+
+68
+00:05:04,198 --> 00:05:08,311
+On a case-sensitive one they come out
+differently, and that difference is the
+
+69
+00:05:08,351 --> 00:05:08,689
+lesson.
+
+70
+00:05:09,029 --> 00:05:14,204
+The trap has two forms. In the first, you
+rename a file with mv, changing only the
+
+71
+00:05:14,244 --> 00:05:19,292
+case. On a case-insensitive filesystem
+such a rename never reaches the index, so
+
+72
+00:05:19,332 --> 00:05:24,570
+it's never committed. In the second, someone
+on Linux commits two files whose names
+
+73
+00:05:24,610 --> 00:05:29,340
+differ only by case, which is legal
+there. On a Mac both names can't exist.
+
+74
+00:05:29,680 --> 00:05:33,190
+Line endings, in brief. Git
+stores the bytes it is given.
+
+75
+00:05:33,230 --> 00:05:38,421
+A file saved with Windows line endings,
+CRLF, which is a carriage return plus a line
+
+76
+00:05:38,461 --> 00:05:43,590
+feed, is stored with them unless an attribute
+or a configuration value tells Git to
+
+77
+00:05:43,630 --> 00:05:48,635
+convert. When an editor on another platform
+rewrites every line ending, the whole
+
+78
+00:05:48,675 --> 00:05:50,129
+file becomes one change.
+
+79
+00:05:50,469 --> 00:05:55,433
+The durable fix is a committed .gitattributes
+with * text=auto and one git add
+
+80
+00:05:55,473 --> 00:06:00,757
+--renormalize ., so that the repository
+holds LF, the line feed alone, for everyone
+
+81
+00:06:00,797 --> 00:06:05,569
+regardless of personal settings. A later
+chapter covers attributes in full.
+
+82
+00:06:05,609 --> 00:06:08,391
+Here you only need to
+recognize the symptom.
+
+83
+00:06:08,731 --> 00:06:13,873
+git clean. In one sentence: git clean deletes
+untracked files from the working tree,
+
+84
+00:06:13,913 --> 00:06:18,623
+which makes it the one everyday command
+that removes data Git has no copy of.
+
+85
+00:06:18,663 --> 00:06:21,831
+An untracked file is one
+with no entry in the index.
+
+86
+00:06:21,871 --> 00:06:22,941
+It is 🔴 DANGEROUS.
+
+87
+00:06:23,281 --> 00:06:27,945
+By default it removes untracked files that
+are not ignored, in the current directory
+
+88
+00:06:27,985 --> 00:06:30,801
+and below, and doesn't enter
+untracked directories.
+
+89
+00:06:30,841 --> 00:06:32,088
+The options widen that.
+
+90
+00:06:32,428 --> 00:06:36,781
+-n, or --dry-run: show what would
+be removed, and remove nothing.
+
+91
+00:06:36,821 --> 00:06:41,985
+-f: required to delete anything, because
+clean.requireForce defaults to true.
+
+92
+00:06:42,025 --> 00:06:47,256
+A second -f allows deleting untracked
+directories that contain their own .git.
+
+93
+00:06:47,296 --> 00:06:52,865
+-d: also remove untracked directories.
+Capital -X: remove only ignored files, which
+
+94
+00:06:52,905 --> 00:06:57,393
+means build products and caches,
+keeping files you created by hand.
+
+95
+00:06:57,433 --> 00:07:02,800
+Small -x: do not use ignore rules at all,
+and remove untracked and ignored files
+
+96
+00:07:02,840 --> 00:07:06,990
+alike. -e with a pattern: add an
+exclude pattern for this run.
+
+97
+00:07:07,030 --> 00:07:08,409
+-i: interactive mode.
+
+98
+00:07:08,749 --> 00:07:13,171
+-x and -X differ by one keystroke,
+and by which of your files survive.
+
+99
+00:07:13,511 --> 00:07:19,108
+Quick quiz, three options. An ignored
+.env file holds your only copy of some
+
+100
+00:07:19,148 --> 00:07:23,929
+settings. Which option removes it:
+capital -X, small -x, or both?
+
+101
+00:07:23,969 --> 00:07:25,116
+Say your answer.
+
+102
+00:07:29,956 --> 00:07:34,297
+Both. Capital X removes only
+ignored files, and .env is ignored.
+
+103
+00:07:34,337 --> 00:07:39,773
+Small x removes ignored and untracked
+alike. If you said small x only, you're in
+
+104
+00:07:39,813 --> 00:07:40,663
+good company.
+
+105
+00:07:41,003 --> 00:07:46,017
+Inside .git, nothing changes. Clean
+reads the index to learn which paths are
+
+106
+00:07:46,057 --> 00:07:49,409
+tracked, and the ignore
+rules to classify the rest.
+
+107
+00:07:49,449 --> 00:07:54,397
+It writes no object, moves no ref, and
+leaves no record of what it deleted.
+
+108
+00:07:56,237 --> 00:07:59,416
+Keep the workbench and the
+parts cabinet from video 11.
+
+109
+00:07:59,456 --> 00:08:03,922
+For git clean, the textbook's analogy
+is sweeping the workbench into the bin.
+
+110
+00:08:03,962 --> 00:08:08,721
+Everything that came out of the cabinet is
+safe, because the cabinet still has it.
+
+111
+00:08:08,761 --> 00:08:13,462
+In the picture, that's a tracked file: the
+index and HEAD, the last commit, still
+
+112
+00:08:13,502 --> 00:08:13,930
+hold it.
+
+113
+00:08:14,270 --> 00:08:18,902
+Everything else is gone, and Git can't
+tell a wood shaving from the prototype you
+
+114
+00:08:18,942 --> 00:08:22,304
+spent a week on. The textbook
+says this analogy holds well.
+
+115
+00:08:22,344 --> 00:08:25,996
+Its only weakness is that a real
+bin can be searched afterwards.
+
+116
+00:08:26,336 --> 00:08:30,921
+For the other four topics, one sentence
+covers them: Git's idea of a file is
+
+117
+00:08:30,961 --> 00:08:35,851
+content, a path as bytes, and one of three
+modes. Everything else your filesystem
+
+118
+00:08:35,891 --> 00:08:40,781
+knows is outside that idea: owners, other
+permission bits, empty directories, and
+
+119
+00:08:40,821 --> 00:08:45,650
+whether upper and lower case are the same.
+Trouble starts where the filesystem's
+
+120
+00:08:45,690 --> 00:08:46,502
+idea leaks in.
+
+121
+00:08:48,342 --> 00:08:52,010
+That's the first form of the trap.
+Read the line marked root cause.
+
+122
+00:08:52,350 --> 00:08:56,399
+And the second form. Two entries
+in the tree, two different blobs.
+
+123
+00:08:56,439 --> 00:09:01,479
+The filesystem has one slot for both names.
+Whichever is written second overwrites
+
+124
+00:09:01,519 --> 00:09:05,382
+the first, and the other path is
+reported as modified for ever.
+
+125
+00:09:09,722 --> 00:09:15,692
+A mode change is a change: status shows it,
+and the diff has no content lines, only
+
+126
+00:09:15,732 --> 00:09:21,774
+old mode and new mode. After git add, the
+entry has mode 100755 and the same blob ID
+
+127
+00:09:21,814 --> 00:09:22,498
+as before.
+
+128
+00:09:22,838 --> 00:09:27,728
+Other permission bits are not recorded at
+all: chmod 600 on a file leaves status
+
+129
+00:09:27,768 --> 00:09:28,344
+unchanged.
+
+130
+00:09:28,684 --> 00:09:34,012
+git add --chmod=+x 🟢 SAFE sets the bit in
+the index without touching the file on
+
+131
+00:09:34,052 --> 00:09:39,513
+disk. Afterwards the index says executable
+and the disk doesn't, so status reports
+
+132
+00:09:39,553 --> 00:09:42,801
+the file as modified in
+the working tree as well.
+
+133
+00:09:43,141 --> 00:09:48,631
+A symbolic link: mode 120000, and a blob
+that holds the link text, not the content
+
+134
+00:09:48,671 --> 00:09:49,576
+of the target.
+
+135
+00:09:49,916 --> 00:09:54,993
+Two empty directories are created. Predict
+what git status and git add data say.
+
+136
+00:09:55,033 --> 00:09:56,017
+Say it out loud.
+
+137
+00:10:00,857 --> 00:10:06,086
+Nothing, both times. A clean working
+tree. git add data adds nothing and says
+
+138
+00:10:06,126 --> 00:10:09,371
+nothing, and the index
+has no entry under data/.
+
+139
+00:10:09,711 --> 00:10:14,435
+The placeholder: a .gitignore that ignores
+everything in the directory except
+
+140
+00:10:14,475 --> 00:10:14,868
+itself.
+
+141
+00:10:15,208 --> 00:10:20,059
+And the other direction: git rm 🟡 CAUTION
+on the only tracked file in docs/ removes
+
+142
+00:10:20,099 --> 00:10:24,949
+the directory with it. An untracked file
+keeps the directory alive on disk, and Git
+
+143
+00:10:24,989 --> 00:10:26,952
+still doesn't track the directory.
+
+144
+00:10:29,792 --> 00:10:34,109
+git init probed the filesystem
+and set core.ignoreCase to true.
+
+145
+00:10:34,449 --> 00:10:40,731
+Now rename Config.py to config.py with
+plain mv. Predict what git status reports.
+
+146
+00:10:40,771 --> 00:10:42,839
+Say it out loud. I'll wait.
+
+147
+00:10:47,679 --> 00:10:53,272
+Nothing at all. The file on disk is now
+config.py. Status is clean, git add -A
+
+148
+00:10:53,312 --> 00:10:57,317
+records nothing, and the index
+still says src/Config.py.
+
+149
+00:10:57,357 --> 00:11:03,383
+Every commit you make will keep the old
+name, and every Linux machine will check out
+
+150
+00:11:03,423 --> 00:11:07,211
+the old name. Almost everyone
+is caught by this once.
+
+151
+00:11:07,551 --> 00:11:11,929
+The rename has to be made in the
+index, and git mv 🟢 SAFE does that.
+
+152
+00:11:12,269 --> 00:11:17,495
+The mirror image. A teammate on Linux
+commits two files whose names differ only by
+
+153
+00:11:17,535 --> 00:11:22,826
+case. A Mac can't hold both on disk, so the
+script imitates the teammate by writing
+
+154
+00:11:22,866 --> 00:11:24,046
+the index directly.
+
+155
+00:11:24,386 --> 00:11:30,570
+Two entries, two blobs: 1e0b1ad and 5fac60c.
+Predict what a clone on a Mac does.
+
+156
+00:11:30,610 --> 00:11:34,460
+One file, two files, or an
+error? Say it out loud.
+
+157
+00:11:42,300 --> 00:11:46,849
+One file, and a warning. Git warns during
+the clone that paths have collided.
+
+158
+00:11:46,889 --> 00:11:51,676
+One file lands on disk, and the other path
+is reported as modified for ever: when
+
+159
+00:11:51,716 --> 00:11:54,835
+Git reads one name, it gets
+the content of the other.
+
+160
+00:11:54,875 --> 00:11:59,364
+No git restore can fix it, because
+writing either file overwrites the other.
+
+161
+00:11:59,704 --> 00:12:04,553
+The detector folds every tracked path
+to lower case and looks for duplicates.
+
+162
+00:12:04,593 --> 00:12:09,506
+The documented fix is to stop tracking
+one of the names with git rm --cached 🟡
+
+163
+00:12:09,546 --> 00:12:12,744
+CAUTION, commit, and check
+the other one out again.
+
+164
+00:12:12,784 --> 00:12:17,951
+The detector is cheap enough to run in CI
+on every pull request, which is a change
+
+165
+00:12:17,991 --> 00:12:19,221
+proposed for review.
+
+166
+00:12:22,061 --> 00:12:26,896
+git ls-files --eol shows line endings.
+i/ is the content in the index, w/ the
+
+167
+00:12:26,936 --> 00:12:30,821
+content in the working tree, and
+attr/ the attribute in force.
+
+168
+00:12:31,161 --> 00:12:36,462
+An editor saved the file with CRLF. Three
+lines "changed", although no character you
+
+169
+00:12:36,502 --> 00:12:41,294
+can see did, and --ignore-cr-at-eol
+confirms that the only difference is the
+
+170
+00:12:41,334 --> 00:12:43,837
+carriage return at the end of each line.
+
+171
+00:12:46,677 --> 00:12:50,314
+The starting point: three untracked
+paths and four ignored ones.
+
+172
+00:12:50,354 --> 00:12:54,565
+Two question marks mean untracked, and
+two exclamation marks mean ignored.
+
+173
+00:12:54,905 --> 00:13:00,397
+Without -f, -n or -i, Git refuses to
+run. Always start with the dry runs.
+
+174
+00:13:00,437 --> 00:13:03,504
+git clean -n is 🟢 SAFE: it's the preview.
+
+175
+00:13:03,844 --> 00:13:09,016
+Try it now, on paper, thirty seconds. Go
+back to the seven paths of the starting
+
+176
+00:13:09,056 --> 00:13:12,991
+point. Write down which of them
+git clean -n -d would remove.
+
+177
+00:13:13,031 --> 00:13:15,076
+Pause me, and write your answer.
+
+178
+00:13:22,916 --> 00:13:26,317
+With -d, two paths go:
+experiments/ and scratch.py.
+
+179
+00:13:26,357 --> 00:13:29,826
+If you also wrote vendor,
+that's the natural answer.
+
+180
+00:13:29,866 --> 00:13:35,359
+The directory vendor/tokenizer is a repository
+of its own, and is skipped by every
+
+181
+00:13:35,399 --> 00:13:40,689
+run with fewer than two -f. Each added
+option widens the list, and the last one
+
+182
+00:13:40,729 --> 00:13:42,309
+includes .env and data/.
+
+183
+00:13:42,649 --> 00:13:45,486
+-e protects one pattern from a -x run.
+
+184
+00:13:45,826 --> 00:13:51,231
+What it changes: the working tree only.
+What it can destroy: untracked files.
+
+185
+00:13:51,271 --> 00:13:57,172
+With -d, untracked directories. With -x,
+also ignored files such as .env, downloaded
+
+186
+00:13:57,212 --> 00:14:02,122
+datasets, model checkpoints, virtual
+environments and local databases.
+
+187
+00:14:02,462 --> 00:14:06,182
+How to preview: the same
+command with -n in place of -f.
+
+188
+00:14:06,222 --> 00:14:10,412
+Read every line of the output.
+How to recover: not through Git.
+
+189
+00:14:10,452 --> 00:14:13,366
+Backups, or editor
+history for single files.
+
+190
+00:14:13,706 --> 00:14:18,933
+When it is appropriate: to prove a build
+from a pristine tree, to reset a CI
+
+191
+00:14:18,973 --> 00:14:24,617
+workspace, to clear generated files that
+the build tool's own clean target misses.
+
+192
+00:14:24,657 --> 00:14:30,300
+Prefer -X to -x, pass a pathspec to narrow
+the blast radius, and protect what must
+
+193
+00:14:30,340 --> 00:14:31,409
+survive with -e.
+
+194
+00:14:31,749 --> 00:14:37,139
+git clean -f -d: the untracked file and
+directory are removed, the nested repository
+
+195
+00:14:37,179 --> 00:14:40,371
+is skipped, and the ignored
+paths are still there.
+
+196
+00:14:40,711 --> 00:14:45,110
+git clean -f -d -x: .env, data/,
+the log and the cache are removed.
+
+197
+00:14:45,150 --> 00:14:50,674
+And git fsck prints nothing. There's no
+dangling blob to rescue, no leftover object,
+
+198
+00:14:50,714 --> 00:14:56,239
+because none of these files was ever added.
+That's the whole difference between this
+
+199
+00:14:56,279 --> 00:15:01,538
+command and the losses of the last video.
+That's the proof I promised: Git can't
+
+200
+00:15:01,578 --> 00:15:02,466
+bring it back.
+
+201
+00:15:02,806 --> 00:15:06,616
+One -f never deletes a directory
+that has its own .git.
+
+202
+00:15:06,656 --> 00:15:09,836
+Two do. The script shows
+it as a dry run only.
+
+203
+00:15:11,676 --> 00:15:13,324
+Five mistakes to watch for.
+
+204
+00:15:13,664 --> 00:15:19,442
+A script fails in CI with "Permission
+denied". Root cause: it was committed with
+
+205
+00:15:19,482 --> 00:15:25,478
+mode 100644; git ls-files --stage <path>
+shows it, and the fix is to set the bit in
+
+206
+00:15:25,518 --> 00:15:27,005
+the index and commit.
+
+207
+00:15:27,345 --> 00:15:32,288
+An expected directory is missing after a
+clone. Root cause: Git does not track empty
+
+208
+00:15:32,328 --> 00:15:37,212
+directories; commit a placeholder or, better,
+have the code create the directory it
+
+209
+00:15:37,252 --> 00:15:37,805
+writes to.
+
+210
+00:15:38,145 --> 00:15:43,905
+A renamed file still has its old name on
+Linux. Root cause: a case-only rename made
+
+211
+00:15:43,945 --> 00:15:48,168
+with mv on macOS never reached
+the index; rename with git mv.
+
+212
+00:15:48,508 --> 00:15:54,948
+Every line of a file shows as changed.
+Root cause: an editor rewrote the line
+
+213
+00:15:54,988 --> 00:15:58,819
+endings; git ls-files
+--eol shows i/lf w/crlf.
+
+214
+00:15:59,159 --> 00:16:04,876
+git clean -fdx copied from an answer
+deletes the only copies of ignored data.
+
+215
+00:16:04,916 --> 00:16:11,156
+Root cause: -x disregards ignore rules, and
+the files were never added, so no object
+
+216
+00:16:11,196 --> 00:16:13,025
+holds them; run -n first.
+
+217
+00:16:14,865 --> 00:16:20,042
+Now, out of the lab. The typical loss, as
+the textbook describes it, is in an ML
+
+218
+00:16:20,082 --> 00:16:24,541
+repository where data/, checkpoints/
+and .env are ignored on purpose.
+
+219
+00:16:24,581 --> 00:16:30,018
+Someone copies git clean -fdx from a "fix
+your broken build" answer, and the ignored
+
+220
+00:16:30,058 --> 00:16:34,256
+files, which were the only copies,
+are deleted in under a second.
+
+221
+00:16:34,296 --> 00:16:39,668
+The command did what its options say. The
+defence is the habit of running -n first,
+
+222
+00:16:39,708 --> 00:16:44,754
+and of keeping irreplaceable data outside
+the working tree or in real storage.
+
+223
+00:16:45,094 --> 00:16:50,686
+And the case trap is specific to teams that
+develop on macOS or Windows and deploy
+
+224
+00:16:50,726 --> 00:16:54,257
+on Linux, which describes
+most backend and ML teams.
+
+225
+00:16:54,297 --> 00:16:59,751
+Python imports, Java class files and Docker
+COPY paths are all case-sensitive on
+
+226
+00:16:59,791 --> 00:17:00,164
+Linux.
+
+227
+00:17:02,004 --> 00:17:08,628
+Your turn. Do Exercise 2.1, Level 1, "every
+short status code, made on purpose", in
+
+228
+00:17:08,668 --> 00:17:15,374
+exercises/m01-m05-foundations.md, repeated
+with an executable script and a case-only
+
+229
+00:17:15,414 --> 00:17:18,264
+rename added to the states you make.
+
+230
+00:17:18,604 --> 00:17:22,251
+Predict the status code for the
+mode change before you look.
+
+231
+00:17:22,291 --> 00:17:27,413
+For the case-only rename made with mv,
+predict what git status and git ls-files will
+
+232
+00:17:27,453 --> 00:17:29,195
+show, and only then run them.
+
+233
+00:17:31,035 --> 00:17:36,717
+Q48: "A Python module imports fine on macOS
+and fails on the Linux CI runner after
+
+234
+00:17:36,757 --> 00:17:42,508
+someone renamed it. What happened inside
+Git, and how do you prevent a recurrence?"
+
+235
+00:17:44,848 --> 00:17:49,568
+Answer out loud. A strong answer says
+what the index held before and after the
+
+236
+00:17:49,608 --> 00:17:54,693
+rename, names the setting involved and who
+set it, and explains why Git behaves this
+
+237
+00:17:54,733 --> 00:17:59,819
+way by design. For prevention, give more
+than one layer: a habit for the person, and
+
+238
+00:17:59,859 --> 00:18:01,344
+a check for the pipeline.
+
+239
+00:18:03,184 --> 00:18:08,448
+Let's land this. You should now be able to
+say, in your own words: Git records one
+
+240
+00:18:08,488 --> 00:18:13,816
+permission bit, executable or not, and
+stores a symbolic link as a blob holding the
+
+241
+00:18:13,856 --> 00:18:18,408
+link text. It tracks files, so an
+empty directory doesn't exist for it.
+
+242
+00:18:18,448 --> 00:18:23,776
+On a case-insensitive filesystem, a case-only
+rename made with mv never reaches the
+
+243
+00:18:23,816 --> 00:18:28,044
+index, and two paths that differ
+only by case collide on checkout.
+
+244
+00:18:28,084 --> 00:18:33,412
+I rename with git mv and detect collisions
+in CI. Git stores the bytes it is given,
+
+245
+00:18:33,452 --> 00:18:34,835
+line endings included.
+
+246
+00:18:35,175 --> 00:18:41,137
+And git clean deletes files that no object
+holds, so I run it with -n first, prefer
+
+247
+00:18:41,177 --> 00:18:45,476
+-X to -x, and give it the
+narrowest scope that does the job.
+
+248
+00:18:47,316 --> 00:18:54,405
+Read sections 4.10 to 4.17 of Chapter
+4, and do the Practice section 4.19.
+
+249
+00:18:54,745 --> 00:19:00,971
+Challenge: Exercise 2.9, Level 4,
+"Git does not see my edits", in
+
+250
+00:19:01,011 --> 00:19:04,152
+exercises/m01-m05-foundations.md.
+
+251
+00:19:04,492 --> 00:19:08,185
+Today you walked the border
+between Git and your filesystem.
+
+252
+00:19:08,225 --> 00:19:12,043
+Try one dry run of git clean in
+the lab before the next video.
+
+253
+00:19:12,083 --> 00:19:16,523
+Next time: the index, the proposed
+next commit, and what git add writes.
+
+254
+00:19:16,563 --> 00:19:19,758
+Until then, look at the
+state first and type second.
+
+255
+00:19:19,798 --> 00:19:21,251
+See you in the next one.

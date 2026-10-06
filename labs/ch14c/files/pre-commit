@@ -1,0 +1,20 @@
+#!/bin/sh
+# pre-commit: look at what is STAGED (the index), not at the files on disk.
+# Refuse a commit that adds a private key or a file larger than 500 kB.
+fail=0
+
+if git diff --cached -U0 | grep -q '^+.*-----BEGIN [A-Z ]*PRIVATE KEY-----'; then
+  echo "pre-commit: a private key is staged. Unstage it and rotate the key." >&2
+  fail=1
+fi
+
+limit=512000
+for path in $(git diff --cached --name-only --diff-filter=AM); do
+  size=$(git cat-file -s ":$path")
+  if [ "$size" -gt "$limit" ]; then
+    echo "pre-commit: $path is $size bytes (limit $limit). Use Git LFS or a data store." >&2
+    fail=1
+  fi
+done
+
+exit $fail

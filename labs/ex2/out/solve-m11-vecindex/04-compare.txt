@@ -1,0 +1,35 @@
+$ git show --format='%h %an: %s' --stat 1e3540d
+1e3540d Ravi Menon: Clamp top_k to the index size
+
+ vecindex/search.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+$ git show --format='%h %an: %s' --stat 50fdcc6
+50fdcc6 Asha Rao: Clamp top_k to the index size
+
+ vecindex/search.py | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+$ git range-diff 50fdcc6^! 1e3540d^!
+1:  50fdcc6 ! 1:  1e3540d Clamp top_k to the index size
+    @@
+      ## Metadata ##
+    -Author: Asha Rao <asha@example.com>
+    +Author: Ravi Menon <ravi@example.com>
+     
+      ## Commit message ##
+         Clamp top_k to the index size
+     
+    -    argpartition raises ValueError when top_k is not smaller than the number of rows. Small tenant indexes (fewer than ten documents) crashed every search and every batch search.
+    -
+      ## vecindex/search.py ##
+     @@ vecindex/search.py: import numpy as np
+      
+    @@ vecindex/search.py: import numpy as np
+          return order[np.argsort(-scores[order])]
+      
+      
+    - def search_batch(index, queries, top_k=10):
+    -+    top_k = min(top_k, len(index))
+    -     scores = queries @ index.T
+    --    order = np.argpartition(-scores, top_k, axis=1)[:, :top_k]
+    -+    order = np.argpartition(-scores, top_k - 1, axis=1)[:, :top_k]
+    -     return [row[np.argsort(-s[row])] for row, s in zip(order, scores)]

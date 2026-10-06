@@ -1,0 +1,15 @@
+# The last block imitates GitHub: it records the head of pull request 7 and builds the test merge.
+$ git init -q gateway
+$ cd gateway
+$ printf 'MAX_TOKENS = 512\n' > limits.py && git add . && git commit -q -m 'Add limits'
+$ git switch -q -c feature/streaming
+$ printf 'def stream(chunks):\n    yield from chunks\n' > stream.py && git add . && git commit -q -m 'Add streaming'
+$ git switch -q main
+$ printf 'MAX_TOKENS = 256\n' > limits.py && git commit -q -am 'Halve the token limit'
+$ git update-ref refs/pull/7/head feature/streaming
+$ git switch -q --detach main
+$ git merge -q --no-ff -m "Merge feature/streaming into main" feature/streaming
+$ git update-ref refs/pull/7/merge HEAD
+$ git switch -q feature/streaming
+# The runner, on a pull_request event:
+$ git switch -q --detach refs/pull/7/merge

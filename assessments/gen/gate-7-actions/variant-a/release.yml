@@ -1,0 +1,40 @@
+# Case 3 of Gate 7, variant A. Constructed for the gate: this workflow is teaching material and
+# contains faults on purpose. Do not copy it.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make image TAG="$GITHUB_SHA"
+      - run: make test-image TAG="$GITHUB_SHA"
+
+  staging:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make image TAG="$GITHUB_SHA"
+      - run: make push deploy ENV=staging TAG="$GITHUB_SHA"
+
+  production:
+    needs: staging
+    runs-on: ubuntu-24.04
+    environment: prod
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make image TAG="$GITHUB_SHA"
+      - run: make push migrate deploy ENV=production TAG="$GITHUB_SHA"

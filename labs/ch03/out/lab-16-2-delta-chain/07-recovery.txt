@@ -1,0 +1,28 @@
+# Never repair your only copy. Keep the damaged repository as it is, next to the one you work on:
+$ cp -R .git ../eval-harness-damaged.git
+# The damaged object is the newest version of the file, and the working tree still holds those bytes:
+$ git hash-object eval/cases.jsonl
+a4e58256c921e15fecaaaf744fbdb04b37907a40
+# Git does not write an object that it believes it has. Nothing loose appears:
+$ git hash-object -w eval/cases.jsonl
+a4e58256c921e15fecaaaf744fbdb04b37907a40
+$ git count-objects
+0 objects, 0 kilobytes
+# So take the pack out of the object database, write the object, and put the pack back:
+$ mkdir ../quarantine
+$ mv .git/objects/pack/pack-* ../quarantine/
+$ git hash-object -w eval/cases.jsonl
+a4e58256c921e15fecaaaf744fbdb04b37907a40
+$ git count-objects
+1 objects, 4 kilobytes
+$ mv ../quarantine/pack-* .git/objects/pack/
+# Reads now fall back to the loose copy of the base, with a complaint about the packed one:
+$ git cat-file -p 0928d48c | wc -l
+error: inflate: data stream error (invalid code -- missing end-of-block)
+error: failed to read delta base object a4e58256c921e15fecaaaf744fbdb04b37907a40 at offset 961 from .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack
+     200
+# Now let maintenance rewrite the pack from what is readable:
+$ git gc
+error: bad packed object CRC for a4e58256c921e15fecaaaf744fbdb04b37907a40
+error: bad packed object CRC for a4e58256c921e15fecaaaf744fbdb04b37907a40
+[exit status: 0]

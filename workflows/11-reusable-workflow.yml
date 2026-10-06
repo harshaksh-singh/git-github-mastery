@@ -1,0 +1,72 @@
+# Workflow 11, part 1: a reusable workflow. It is called by workflows/11-caller.yml.
+#
+# What it teaches (Chapter 20B, section 20B.6):
+#   * on: workflow_call, with typed inputs, a named secret and an output
+#   * a reusable workflow contains whole jobs, so it can choose a runner and an environment
+#   * environment secrets cannot be passed in by the caller: the called job names the
+#     environment itself and reads them there
+#   * the check that a pull request sees is named "<calling job name> / <job name in this file>"
+#
+# Runs on: nothing by itself. It runs when another workflow calls it, on the caller's event,
+# ref and commit, and with a token that the caller can restrict but this file cannot widen.
+#
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Reusable deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Name of the environment to deploy to (staging or production)
+        required: true
+        type: string
+      python-version:
+        description: Python version used to test and build
+        required: false
+        type: string
+        default: "3.13"
+    secrets:
+      deploy-token:
+        description: Token for the deployment target (simulated in this course)
+        required: false
+    outputs:
+      revision:
+        description: Abbreviated ID of the commit that was deployed
+        value: ${{ jobs.deploy.outputs.revision }}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Test, build and deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+    outputs:
+      revision: ${{ steps.rev.outputs.revision }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - run: uv sync --locked
+      - run: uv run pytest
+      - run: uv build
+
+      - name: Work out the revision
+        id: rev
+        shell: bash
+        run: echo "revision=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ secrets.deploy-token }}
+          TARGET: ${{ inputs.environment }}
+        run: bash scripts/deploy.sh "$TARGET"

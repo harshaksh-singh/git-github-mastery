@@ -1,0 +1,80 @@
+# Workflow 3: build the application (an sdist and a wheel) and describe the commit it came from.
+#
+# Teaches: a tag filter and a manual trigger; why `git describe` needs `fetch-depth: 0`;
+# step outputs through GITHUB_OUTPUT, job outputs, and `needs`; `shell: bash` as the default
+# shell, which adds `-o pipefail`.
+# Chapter 20A, section 20A.13. Lab 26.3.
+#
+# Copy to .github/workflows/03-build.yml in the inventory-api practice repository.
+# Parse-checked and assembled from documented syntax; not executed on GitHub by the author.
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build sdist and wheel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      describe: ${{ steps.describe.outputs.describe }}
+      files: ${{ steps.list.outputs.files }}
+    steps:
+      # All history and all tags: `git describe` needs the tags and the commits between them.
+      - name: Check out the repository with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Describe the commit
+        id: describe
+        run: |
+          describe="$(git describe --tags --always)"
+          echo "describe=$describe" >> "$GITHUB_OUTPUT"
+          echo "Building $describe"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Build
+        run: uv build
+
+      - name: List the build outputs
+        id: list
+        run: |
+          ls dist
+          echo "files=$(ls dist | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+
+  report:
+    name: Report
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # A new machine: nothing from the build job is here except what `needs` hands over.
+      - name: Write the job summary
+        env:
+          DESCRIBE: ${{ needs.build.outputs.describe }}
+          FILES: ${{ needs.build.outputs.files }}
+        run: |
+          {
+            echo "### Build"
+            echo ""
+            echo "- Commit: \`$DESCRIBE\`"
+            echo "- Files: \`$FILES\`"
+          } >> "$GITHUB_STEP_SUMMARY"

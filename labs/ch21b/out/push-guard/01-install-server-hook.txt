@@ -1,0 +1,14 @@
+$ cat kit/pre-receive
+#!/bin/sh
+# Server-side guard: refuse a push if any commit it introduces contains a secret pattern.
+pattern='DUMMY-(KEY|TOKEN)-[a-z-]+-[0-9]+'
+while read old new ref; do
+  case "$new" in *[!0]*) ;; *) continue ;; esac          # a deletion: nothing to scan
+  for c in $(git rev-list "$new" --not --all); do
+    if git grep -q -E "$pattern" "$c"; then
+      echo "push declined: $ref: commit $(git rev-parse --short "$c") contains a secret pattern"
+      exit 1
+    fi
+  done
+done
+$ cp kit/pre-receive server.git/hooks/pre-receive

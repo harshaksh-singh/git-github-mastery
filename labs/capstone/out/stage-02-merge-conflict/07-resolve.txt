@@ -1,0 +1,38 @@
+# (edit router/scoring.py: both constants; the signature and the weight from main;
+#  my penalty applied to the score that is computed with that weight)
+# (edit tests/test_scoring.py: keep both new tests, and add one for the combination)
+$ git diff router/scoring.py
+diff --cc router/scoring.py
+index bc421cb,203f98b..0000000
+--- a/router/scoring.py
++++ b/router/scoring.py
+@@@ -1,10 -1,12 +1,14 @@@
+  """Blend the keyword score and the embedding score of one candidate intent."""
+  
+  EMBED_WEIGHT = 0.8
+ +TENANT_EMBED_WEIGHT = {"acme-retail": 0.6}
++ DISAGREEMENT = 0.6
+  
+  
+ -def blend(keyword_score, embed_score):
+ +def blend(keyword_score, embed_score, tenant=None):
+      """Both inputs are in [0, 1]; so is the result."""
+ -    score = (1 - EMBED_WEIGHT) * keyword_score + EMBED_WEIGHT * embed_score
+ +    weight = TENANT_EMBED_WEIGHT.get(tenant, EMBED_WEIGHT)
+-     return (1 - weight) * keyword_score + weight * embed_score
+++    score = (1 - weight) * keyword_score + weight * embed_score
++     if abs(keyword_score - embed_score) > DISAGREEMENT:
++         score *= 0.5  # the two signals disagree: trust neither
++     return score
+$ grep -n 'def test_' tests/test_scoring.py
+8:    def test_count_hits(self):
+11:    def test_keyword_score_grows_with_hits(self):
+16:    def test_blend_of_equal_scores(self):
+19:    def test_blend_weights_the_embedding(self):
+22:    def test_keyword_score_never_exceeds_one(self):
+25:    def test_disagreement_halves_the_score(self):
+29:    def test_penalty_uses_the_tenant_weight(self):
+$ grep -c '^[<=>|]\{7\}' router/scoring.py tests/test_scoring.py
+router/scoring.py:0
+tests/test_scoring.py:0
+[exit status: 1]

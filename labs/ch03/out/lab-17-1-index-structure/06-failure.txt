@@ -1,0 +1,17 @@
+# Failure scenario. Stage one new file, leave one edit unstaged, then damage the index.
+$ printf 'log_level = "info"\n' > logging.toml
+$ git add logging.toml
+$ printf 'retry_limit = 5\ntimeout_s = 60\n' > config.toml
+$ git status --short
+ M config.toml
+A  logging.toml
+$ printf 'JUNK' | dd of=.git/index conv=notrunc 2>/dev/null
+$ head -c 12 .git/index | xxd
+00000000: 4a55 4e4b 0000 0002 0000 0005            JUNK........
+$ git status
+error: bad signature 0x4b4e554a
+fatal: index file corrupt
+[exit status: 128]
+# History does not live in the index. It is unharmed:
+$ git log --oneline -1
+1116b17 Merge feature/timeouts

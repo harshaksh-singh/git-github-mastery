@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>V093 recording booth</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --accent: #F05033; --bg1: #14161C; --bg2: #232733; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg1); color: #e6edf3; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+body { display: flex; flex-direction: column; background: linear-gradient(180deg, var(--bg1), var(--bg2)); }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 18px; border-bottom: 1px solid #30363d; }
+header .num { font: 700 18px Menlo, monospace; color: var(--accent); border: 2px solid var(--accent); border-radius: 8px; padding: 2px 9px; }
+header .title { flex: 1; font-size: 17px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header .state { font: 700 14px Menlo, monospace; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; background: #30363d; color: #c9d1d9; text-transform: uppercase; }
+header .state.rec { background: #da3633; color: #fff; }
+header .state.paused { background: #e3b341; color: #111; }
+header .state.saved { background: #238636; color: #fff; }
+header .clock { font: 700 22px Menlo, monospace; min-width: 84px; text-align: right; }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(380px, 46%) 1fr; gap: 16px; padding: 14px 18px; }
+aside { overflow-y: auto; border-right: 1px solid #30363d; padding-right: 10px; }
+aside h3 { font-size: 12px; letter-spacing: 2px; color: #8b949e; margin: 4px 0 8px; }
+aside button { display: flex; width: 100%; align-items: center; gap: 8px; text-align: left; background: none; border: 1px solid transparent; color: #c9d1d9; font-size: 13px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+aside button:hover:not(:disabled) { border-color: #30363d; background: rgba(255,255,255,.04); }
+aside button.sel { border-color: var(--accent); color: #fff; }
+aside button.live { background: rgba(255,255,255,.08); color: #fff; }
+aside button:disabled { cursor: default; opacity: .8; }
+aside .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #6e7681; }
+aside .dot.done { background: #3fb950; border-color: #3fb950; }
+aside .dot.part { background: #e3b341; border-color: #e3b341; }
+aside .note { font-size: 12px; color: #8b949e; line-height: 1.4; margin-top: 12px; }
+.stage { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.slidebox { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0b0d12; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; }
+.slidebox img { width: 100%; height: 100%; display: block; }
+.count { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font: 900 160px "Helvetica Neue", Arial; color: #fff; background: rgba(0,0,0,.6); }
+.count.on { display: flex; }
+.meterrow { display: flex; align-items: center; gap: 12px; }
+.meter { position: relative; flex: 1; height: 18px; background: #0b0d12; border: 1px solid #30363d; border-radius: 9px; overflow: hidden; }
+#level { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #3fb950 0%, #3fb950 70%, #e3b341 85%, #f85149 100%); background-size: 1000px 100%; }
+#peak { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; left: 0; opacity: .7; }
+.hint { font-size: 13px; color: #8b949e; min-width: 150px; }
+.hint.bad { color: #f85149; font-weight: 700; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: 600 15px "Helvetica Neue", Arial; }
+.controls button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 9px; padding: 10px 14px; cursor: pointer; }
+.controls button:disabled { opacity: .4; cursor: default; }
+.controls button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 800; }
+.controls button.danger { margin-left: auto; background: #238636; border-color: #2ea043; color: #fff; }
+.msg { font-size: 14px; color: #c9d1d9; line-height: 1.45; min-height: 20px; }
+.msg.err { color: #ff7b72; font-weight: 600; }
+.msg a { color: #79c0ff; }
+.prompter { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.where { display: flex; gap: 14px; align-items: baseline; font: 700 13px Menlo, monospace; letter-spacing: 1px; color: var(--accent); margin-bottom: 10px; }
+.where #beatno, .where #beattime { color: #8b949e; }
+.now { font-size: clamp(24px, 2.35vw, 40px); line-height: 1.5; color: #fff; overflow-y: auto; padding-right: 8px; flex: 0 1 auto; max-height: 68%; }
+.now.hold { color: #e3b341; font-style: italic; }
+.now code, .after code { font-family: Menlo, monospace; font-size: .86em; background: rgba(255,255,255,.1); border-radius: 5px; padding: 1px 6px; }
+.nextlabel { font: 700 12px Menlo, monospace; letter-spacing: 2px; color: #6e7681; margin: 18px 0 6px; border-top: 1px solid #30363d; padding-top: 12px; }
+.after { font-size: clamp(17px, 1.5vw, 24px); line-height: 1.45; color: #8b949e; overflow: hidden; flex: 1; min-height: 0; }
+footer { padding: 8px 18px; font-size: 13px; color: #8b949e; border-top: 1px solid #30363d; }
+footer b { color: #c9d1d9; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; overflow-y: auto; } aside { border: none; display: flex; flex-wrap: wrap; gap: 4px; } aside button { width: auto; } }
+
+</style>
+</head>
+<body>
+<header>
+  <span class="num" id="vid"></span>
+  <span class="title" id="title"></span>
+  <span class="state" id="state">not recording</span>
+  <span class="clock" id="clock">0:00</span>
+</header>
+<main>
+  <aside id="sections" aria-label="Sections"></aside>
+  <section class="stage">
+    <div class="slidebox"><img id="slide" alt="current slide"><div id="count" class="count"></div></div>
+    <div class="meterrow">
+      <div class="meter" title="Microphone level"><div id="level"></div><div id="peak"></div></div>
+      <span id="meterhint" class="hint">microphone off</span>
+    </div>
+    <div class="controls">
+      <button id="start" class="primary">Start recording</button>
+      <button id="pause" disabled>Pause (P)</button>
+      <button id="retake" disabled>Retake beat (&larr;)</button>
+      <button id="next" disabled>Next beat (Space)</button>
+      <button id="finish" class="danger" disabled>Finish</button>
+    </div>
+    <div id="msg" class="msg"></div>
+  </section>
+  <section class="prompter">
+    <div class="where"><span id="secname"></span><span id="beatno"></span><span id="beattime"></span></div>
+    <div id="now" class="now"></div>
+    <div class="nextlabel">NEXT</div>
+    <div id="after" class="after"></div>
+  </section>
+</main>
+<footer>
+  <b>Space</b> or <b>&rarr;</b> next beat &nbsp;·&nbsp; <b>&larr;</b> or <b>Backspace</b> say this beat again &nbsp;·&nbsp; <b>P</b> pause / continue &nbsp;·&nbsp; <b>Finish</b> saves the take
+</footer>
+<script>
+const BOOTH = {"id": "V093", "title": "Submodule failures: push order, dirty submodules, pointer conflicts, removal, URL changes, and CI", "palette": {"accent": "#58A6FF", "accent2": "#B6DBFF", "bg1": "#0D1420", "bg2": "#182739"}, "sha": "915ea3b38291b5bf1b11f066c42f070a18c34c54", "countdown_ms": 150, "sections": [{"name": "HOOK", "beat": 1}, {"name": "INTRODUCTION", "beat": 5}, {"name": "LEARNING OBJECTIVES", "beat": 8}, {"name": "CONCEPT", "beat": 14}, {"name": "MENTAL MODEL", "beat": 26}, {"name": "DIAGRAM", "beat": 31}, {"name": "LIVE TERMINAL DEMO", "beat": 34}, {"name": "COMMON MISTAKES", "beat": 73}, {"name": "PRODUCTION EXAMPLE", "beat": 79}, {"name": "PRACTICE EXERCISE", "beat": 83}, {"name": "INTERVIEW QUESTION", "beat": 87}, {"name": "RECAP", "beat": 91}, {"name": "HOMEWORK", "beat": 98}], "beats": [{"i": 0, "section": "TITLE", "type": "hold", "why": "title", "hold": 2.0, "tele": "", "est": 2.0, "slide": 1, "h": ""}, {"i": 1, "section": "HOOK", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 2, "h": ""}, {"i": 2, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "\"`git pull` worked for everyone yesterday. Today it dies with `not our ref`.\"", "est": 5.2, "slide": 3, "h": "5be48a6e"}, {"i": 3, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "It dies for everyone except one person. That person improved the shared library from inside the service, committed in both repositories, and pushed the service. The push was accepted. Nothing warned them. And the service on the server now records a library commit that exists in exactly one place in the world: under `.git/modules` on that person's laptop.", "est": 23.2, "slide": 3, "h": "cdba2c44"}, {"i": 4, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "If the laptop goes on holiday before anyone works out what happened, the whole team is blocked, and so is CI.", "est": 8.4, "slide": 3, "h": "7404a672"}, {"i": 5, "section": "INTRODUCTION", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 4, "h": ""}, {"i": 6, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "Two videos ago you learned what a superproject records about a submodule. In the last one you watched the recorded commit and the checked-out commit drift apart on a teammate's machine. Today you add the third value: the commits that exist in the submodule's shared repository. And you go through the remaining standard failures, one after another, each with its diagnosis, fix and prevention.", "est": 25.6, "slide": 5, "h": "f3c17231"}, {"i": 7, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "There are six: the push order, a dirty submodule, switching to a commit without the submodule, a conflict between two pointers, removal, and a changed URL. The video ends with what all of this means for a CI job, where nobody is there to read `git status`.", "est": 18.8, "slide": 6, "h": "637872da"}, {"i": 8, "section": "LEARNING OBJECTIVES", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 7, "h": ""}, {"i": 9, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "diagnose `not our ref` and prevent it with a push guard;", "est": 4.4, "slide": 8, "h": "e3300efe"}, {"i": 10, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "handle a dirty submodule when switching branches;", "est": 2.8, "slide": 9, "h": "bb8abc21"}, {"i": 11, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "resolve a conflict between two recorded pointers, and say when Git resolves it alone;", "est": 5.6, "slide": 10, "h": "d10a87c7"}, {"i": 12, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "remove a submodule completely, re-add one, and propagate a changed URL to existing clones;", "est": 5.6, "slide": 11, "h": "17733705"}, {"i": 13, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "state what a CI checkout needs for submodules, as the section gives it.", "est": 5.2, "slide": 12, "h": "15982786"}, {"i": 14, "section": "CONCEPT", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 13, "h": ""}, {"i": 15, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Push order. A gitlink is only an ID, and the server does not check it. So pushing the superproject alone is accepted even when the library commit it names has not been pushed. Git has a guard for this, and it is off by default.", "est": 18.0, "slide": 14, "h": "a3fbdce8"}, {"i": 16, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "🟢 SAFE: `git push --recurse-submodules=check` verifies, before anything is sent, that every submodule commit named by the commits being pushed is reachable from a remote-tracking branch of that submodule. `--recurse-submodules=on-demand` goes one step further and pushes the submodules first. `push.recurseSubmodules=check` is the setting to put in every developer's configuration for a repository with submodules.", "est": 21.2, "slide": 15, "h": "d03ae823"}, {"i": 17, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Its limits: `check` trusts your remote-tracking branches, so it is satisfied by a commit that sits on a library branch you pushed and that someone later deletes. And `on-demand` needs push permission on the library, which consumers often do not have. In that case the library change goes through the library's own review first, and the superproject bumps the pointer afterwards.", "est": 24.4, "slide": 16, "h": "c800f1fc"}, {"i": 18, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Dirty submodules. A submodule's working tree can have uncommitted changes of its own. The superproject reports them and cannot record them: a gitlink can only name a commit. The work has to be committed inside the submodule first, on a branch, and then the new commit ID can be staged in the superproject.", "est": 21.2, "slide": 17, "h": "45f5b0b6"}, {"i": 19, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Switching to a commit without the submodule leaves its directory behind, because Git will not delete a directory that contains a repository's working tree. With recursion, the checkout removes and restores the submodule's working tree together with the superproject's files. The repository itself stays in `.git/modules/` either way.", "est": 19.2, "slide": 18, "h": "971c8a37"}, {"i": 20, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Pointer conflicts. Two branches of the superproject move the gitlink. What a merge does depends on how the two library commits relate, and Git can look that up only in the submodule's repository. If one is an ancestor of the other, Git resolves the pointer by itself and takes the descendant. If they have diverged, the superproject cannot produce the answer: the correct pointer is a library commit that contains both lines of development, and only the library can create it.", "est": 32.4, "slide": 19, "h": "424bbd89"}, {"i": 21, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Removal. There are two different \"removals\". 🟡 CAUTION: `git submodule deinit <path>` is local: it empties the working directory and removes the section from your `.git/config`; `git submodule update --init` undoes it. 🟡 CAUTION: `git rm <path>` removes the submodule from the project: it deletes the gitlink and the section in `.gitmodules`, and you commit that.", "est": 21.6, "slide": 20, "h": "a64a9351"}, {"i": 22, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Three leftovers remain: a possibly empty `.gitmodules`, the section in `.git/config`, and the repository under `.git/modules/`. Git keeps the repository on purpose, so that old commits which still contain the gitlink can be checked out without a new clone.", "est": 15.6, "slide": 21, "h": "3d97c157"}, {"i": 23, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "A changed URL. `git submodule set-url` edits `.gitmodules` and synchronizes your own configuration. A teammate's configuration still has the URL that `init` copied months ago. 🟢 SAFE: `git submodule sync` copies the URLs from `.gitmodules` into `.git/config` and into the `origin` remote of each initialized submodule.", "est": 18.0, "slide": 22, "h": "36ea04f8"}, {"i": 24, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "CI. A CI job is a fresh clone made by a script, so every default of this chapter applies to it.", "est": 8.4, "slide": 23, "h": "7e2c956b"}, {"i": 25, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "When not to use submodules at all is the question of the next video. For today: every failure here is a disagreement between two of three values, and every fix makes them agree again.", "est": 13.6, "slide": 24, "h": "2d283c30"}, {"i": 26, "section": "MENTAL MODEL", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 25, "h": ""}, {"i": 27, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "The three values, once more: what your book cites; what page the reader's copy is open at; what the bookshop's edition contains.", "est": 8.8, "slide": 26, "h": "ec980391"}, {"i": 28, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "Last time, the first two disagreed. Today's headline failure is the first and third: your book cites a page that was never printed. It exists only in the author's manuscript. Every reader who follows the citation is told by the bookshop: we do not have that.", "est": 18.4, "slide": 27, "h": "9877b3d4"}, {"i": 29, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "A pointer conflict is two editions of your book citing two different pages. If one page is a later revision of the other, the choice is obvious. If the two pages were revised independently, somebody has to write a page that combines them, and that somebody works at the other publisher.", "est": 20.4, "slide": 28, "h": "1ed5e31d"}, {"i": 30, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "Where the analogy stops being useful: a dirty submodule. Scribbles in the reader's copy cannot be cited at all. Only printed pages have numbers.", "est": 9.6, "slide": 29, "h": "6821e1ba"}, {"i": 31, "section": "DIAGRAM", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 30, "h": ""}, {"i": 32, "section": "DIAGRAM", "type": "hold", "why": "page", "hold": 3.0, "tele": "", "est": 3.0, "slide": 31, "h": ""}, {"i": 33, "section": "DIAGRAM", "type": "narration", "why": "", "hold": 0, "tele": "Every row names two things that should agree. That is the diagnosis method for submodules: find the two values, print both, compare.", "est": 8.8, "slide": 32, "h": "7f933b25"}, {"i": 34, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 33, "h": ""}, {"i": 35, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "You improve the library from inside the service, on the submodule's `main`, as the last video advised.", "est": 6.8, "slide": 34, "h": "3682aae8"}, {"i": 36, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "There are now two unpushed commits in two repositories: `17d7857` in the library, and a commit in the superproject whose tree names it. With the guard, the push is refused before anything is sent.", "est": 13.6, "slide": 35, "h": "77a37856"}, {"i": 37, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "\"The following submodule paths contain changes that can not be found on any remote.\" Without the guard:", "est": 6.8, "slide": 36, "h": "563b5deb"}, {"i": 38, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Accepted. Ravi pulls.", "est": 1.2, "slide": 37, "h": "90f2df51"}, {"i": 39, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "\"not our ref\" and the full ID. Note what state the failure left: the fetch of the superproject succeeded, and the merge did not run. Now the diagnosis, in three questions.", "est": 12.4, "slide": 38, "h": "d6a0f460"}, {"i": 40, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Which library commit does the superproject want? `git ls-tree origin/main vendor/` says `17d7857`. Does the library's shared repository have it? `git ls-remote` shows `main` still at `e216665`, and no ref leads to the wanted commit.", "est": 14.0, "slide": 39, "h": "e5103b03"}, {"i": 41, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Who has it? Not Ravi's clone. The author of the superproject commit, on a local branch. The fix is on the author's side.", "est": 9.2, "slide": 40, "h": "69d511c8"}, {"i": 42, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The library commit is pushed, and the teammate's pull works. With `on-demand`, Git pushes the submodule first:", "est": 6.8, "slide": 41, "h": "2959561e"}, {"i": 43, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "And the setting for every developer's configuration:", "est": 2.8, "slide": 42, "h": "ead9764b"}, {"i": 44, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "visual", "hold": 3.8, "tele": "", "est": 3.8, "slide": 43, "h": ""}, {"i": 45, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "\"(modified content, untracked content)\" means: the submodule's HEAD is the recorded commit and its working tree is not clean. `git submodule status` therefore shows no plus sign.", "est": 10.8, "slide": 44, "h": "27877768"}, {"i": 46, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The diff appends `-dirty` to the ID. Predict what `git commit -am` does with it.", "est": 6.0, "slide": 45, "h": "753c193e"}, {"i": 47, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Nothing to commit. There is nothing for the superproject to stage. To look into all submodules at once:", "est": 7.2, "slide": 46, "h": "7f4664b1"}, {"i": 48, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The lower-case `m` in short status is the superproject's marker for modified content inside a submodule.", "est": 6.4, "slide": 47, "h": "cf7d2c6e"}, {"i": 49, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Plain `update` does nothing: the checked-out commit already is the recorded one. `--force` discards the edit to the tracked file.", "est": 8.0, "slide": 48, "h": "6ce335b8"}, {"i": 50, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "\"unable to rmdir 'vendor/textsplit': Directory not empty\". The stray `vendor/` is untracked on that commit. A careless `git add -A` there would stage it as a new gitlink. With recursion:", "est": 12.0, "slide": 49, "h": "037ff1db"}, {"i": 51, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The directory is removed and restored together with the superproject's files.", "est": 4.4, "slide": 50, "h": "c897f571"}, {"i": 52, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`use-release` records the 0.2.0 release. `use-tokens` records a feature branch of the library. The two library commits have diverged.", "est": 7.6, "slide": 51, "h": "6714be96"}, {"i": 53, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Git's hint says it: recursive merging with submodules supports only trivial cases.", "est": 4.8, "slide": 52, "h": "025d1cb2"}, {"i": 54, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`UU` on the path, and three stages in the index, each a gitlink: stage 1 the merge base's pointer, stage 2 ours, stage 3 theirs. There are no conflict markers, because there is no file to put them in. `git submodule status` prints a `U` and zeros.", "est": 18.8, "slide": 53, "h": "239b7a3b"}, {"i": 55, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The hint lists two ways. Merge inside the submodule yourself, which creates a merge commit that exists only in your clone and must be pushed to the library before anyone else can use it. Or wait for the library to merge, and then point at the result. The demonstration does the second.", "est": 20.8, "slide": 53, "h": "e3f1b2fa"}, {"i": 56, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The library's `main` now has a merge, `5a1935a`, that contains both.", "est": 4.4, "slide": 54, "h": "141db01c"}, {"i": 57, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`git add` on the path stages whatever commit the submodule has checked out, which resolves the path. `git commit` concludes the merge. And the case Git resolves alone:", "est": 11.2, "slide": 55, "h": "ee044deb"}, {"i": 58, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "When one of the two library commits is an ancestor of the other, Git takes the descendant and says so in one line. That needs both commits to be present in the submodule's local repository. The textbook reports, from runs without a printed transcript, that in a clone where the submodule is not checked out the merge reports a conflict instead, and that `-X theirs` does not help.", "est": 27.2, "slide": 56, "h": "6c2d29b3"}, {"i": 59, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Local only: the directory is cleared, the status prefix is a minus, and the history is untouched. Now the removal from the project.", "est": 9.2, "slide": 57, "h": "4df87efb"}, {"i": 60, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "visual", "hold": 4.0, "tele": "", "est": 4.0, "slide": 58, "h": ""}, {"i": 61, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "visual", "hold": 4.0, "tele": "", "est": 4.0, "slide": 59, "h": ""}, {"i": 62, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "\"delete mode 160000\". Look at the listing: `.gitmodules` is still there. And two more leftovers on your disk:", "est": 7.2, "slide": 60, "h": "52735bee"}, {"i": 63, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Predict what happens when someone adds a submodule under the same name again.", "est": 5.2, "slide": 61, "h": "88010207"}, {"i": 64, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "\"A git directory for 'vendor/textsplit' is found locally\". To remove a submodule completely from your clone, delete the leftovers.", "est": 7.6, "slide": 62, "h": "002debfa"}, {"i": 65, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "History is not rewritten by any of this. A checkout of a commit from before the removal has the gitlink again, and the directory is empty until the next `git submodule update --init`.", "est": 13.2, "slide": 63, "h": "87bb25b1"}, {"i": 66, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "One line of `.gitmodules` changes, and your own configuration is synchronized. Ravi pulls.", "est": 5.2, "slide": 64, "h": "ee9218fc"}, {"i": 67, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "page", "hold": 3.0, "tele": "", "est": 3.0, "slide": 65, "h": ""}, {"i": 68, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "He has the new `.gitmodules`. His configuration still has the old URL.", "est": 4.8, "slide": 66, "h": "d5e61f39"}, {"i": 69, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "page", "hold": 3.0, "tele": "", "est": 3.0, "slide": 67, "h": ""}, {"i": 70, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`sync` copies the URL into `.git/config` and into the submodule's `origin` remote. Then `update` fetches from the new location.", "est": 7.6, "slide": 68, "h": "805847b3"}, {"i": 71, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "What follows from the mechanics, in the textbook's five points. An empty directory is not an error to Git, so a job without submodule checkout fails later and elsewhere; add an explicit step such as `git submodule status` and fail if any line starts with a minus or a plus. The job tests the recorded commit, not the library's latest.", "est": 24.0, "slide": 69, "h": "4e383a3f"}, {"i": 72, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The push-order failure appears in CI first. A workflow that recursively checks out submodules of a pull request from a fork lets the fork's `.gitmodules` choose what is cloned onto the runner. And `git archive` does not include submodule contents, so a build that starts from an archive needs the submodules fetched separately.", "est": 21.2, "slide": 70, "h": "0b0f12b9"}, {"i": 73, "section": "COMMON MISTAKES", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 71, "h": ""}, {"i": 74, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Pushing the superproject before the library. Root cause: a gitlink is only an ID and the server does not check that the commit exists in the library's shared repository.", "est": 11.6, "slide": 72, "h": "9073f111"}, {"i": 75, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Trying to save work in a dirty submodule with a commit in the superproject. Root cause: a gitlink can name only a commit; uncommitted content inside the submodule has no ID.", "est": 12.4, "slide": 73, "h": "dd2a9692"}, {"i": 76, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Resolving a pointer conflict by picking one side. Root cause: when the library commits have diverged, the correct pointer is a library commit that contains both, which only the library can create.", "est": 12.8, "slide": 74, "h": "a31de25e"}, {"i": 77, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "`git rm` and then a failed re-add. Root cause: the repository under `.git/modules/` and the section in `.git/config` are kept after removal.", "est": 8.8, "slide": 75, "h": "b4363111"}, {"i": 78, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Changing the URL in `.gitmodules` and expecting clones to follow. Root cause: each clone uses the copy that `init` wrote into `.git/config` until `git submodule sync` runs.", "est": 10.8, "slide": 76, "h": "3608d2b9"}, {"i": 79, "section": "PRODUCTION EXAMPLE", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 77, "h": ""}, {"i": 80, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "A platform team shares protocol definitions between eight services through a submodule. On a Thursday, CI on `main` of one service fails at checkout with \"not our ref\". The engineer on call does not start with the service's code.", "est": 15.6, "slide": 78, "h": "99ec91a9"}, {"i": 81, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "He prints three values. The gitlink that `origin/main` records for the submodule path. The refs of the definitions repository, with `git ls-remote`. And, after a message in the team channel, the branches in the author's clone that contain the wanted commit. The first value appears in neither of the other repository's refs, and the author finds it on a local branch. One push of the definitions repository fixes every clone and CI.", "est": 28.8, "slide": 79, "h": "5601edc1"}, {"i": 82, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "The follow-up is two lines in the team's setup script: `push.recurseSubmodules` set to `check`, and a CI step that runs `git submodule status` and fails on a leading minus or plus.", "est": 12.4, "slide": 80, "h": "e103908d"}, {"i": 83, "section": "PRACTICE EXERCISE", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 81, "h": ""}, {"i": 84, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "Do Exercise 15.4, Level 2, command prediction, \"The first character of `git submodule status`\", in `exercises/m11-m15-investigation-recovery.md`.", "est": 6.4, "slide": 82, "h": "9e79ae81"}, {"i": 85, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "For each situation the exercise describes, write the character you expect, space, minus, plus or U, and the two values that agree or disagree, before you run the command.", "est": 11.6, "slide": 83, "h": "26a94b5e"}, {"i": 86, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "The challenge is Exercise 15.9, Level 4, \"It works on your machine\", in the same file.", "est": 6.4, "slide": 84, "h": "0ad18e22"}, {"i": 87, "section": "INTERVIEW QUESTION", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 85, "h": ""}, {"i": 88, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "Pause and answer aloud.", "est": 1.6, "slide": 86, "h": "55a79733"}, {"i": 89, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "A strong answer states the root cause as a disagreement between two named things, and says where the missing commit physically is. Each of the three commands answers one question, and the answer names the question with the command: what is wanted, whether the shared repository has it, and who does.", "est": 20.4, "slide": 86, "h": "be2d95f7"}, {"i": 90, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "It says on whose machine the fix runs, which is not the teammate's. For prevention it names the setting, describes what it checks before a push, and gives its limits. It may add where this failure is usually seen first.", "est": 16.0, "slide": 86, "h": "2c717631"}, {"i": 91, "section": "RECAP", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 87, "h": ""}, {"i": 92, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "You should now be able to say:", "est": 2.8, "slide": 88, "h": "c89ffc15"}, {"i": 93, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "\"not our ref\" means the superproject records a library commit that the library's shared repository does not have; `push.recurseSubmodules=check` prevents it.", "est": 8.4, "slide": 89, "h": "ccf03af7"}, {"i": 94, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "Uncommitted work in a submodule cannot be recorded by the superproject; it is committed inside the submodule first.", "est": 7.2, "slide": 90, "h": "b2bc3784"}, {"i": 95, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "A pointer conflict is three gitlinks in the index; Git resolves it alone only when one commit contains the other.", "est": 8.0, "slide": 91, "h": "b59fba13"}, {"i": 96, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "Removing a submodule leaves `.gitmodules`, a config section and a repository under `.git/modules`; a changed URL reaches clones through `git submodule sync`.", "est": 8.8, "slide": 92, "h": "f834b0ac"}, {"i": 97, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "A CI job is a fresh clone with every default of this chapter, so it has to ask for submodules and check their status.", "est": 9.6, "slide": 93, "h": "bc013257"}, {"i": 98, "section": "HOMEWORK", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 94, "h": ""}, {"i": 99, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Read sections 23.8 to 23.12 of Chapter 23.", "est": 3.2, "slide": 95, "h": "b7b3d52a"}]};
+// Recording booth. Plain JavaScript, no libraries.
+// The microphone is recorded as ONE continuous file. Every key press is logged with its time on that file's clock;
+// the builder turns the log into "keep this stretch for beat N" and cuts everything else (retakes, pauses, countdown).
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const beats = BOOTH.beats, sections = BOOTH.sections;
+  const last = beats.length - 1;
+  let state = "idle";            // idle | countdown | rec | paused | saving | saved
+  let cur = 0, startBeat = 0, events = [], rec = null, chunks = [], stream = null, t0 = 0, beatT0 = 0;
+  let holdTimer = null, tick = null, audioCtx = null, analyser = null, mime = "", recorded = new Set(), peak = 0, peakAt = 0;
+  const dbg = (window.__booth = { errors: [], saved: null, get state() { return state; }, get cur() { return cur; }, get events() { return events; } });
+  window.addEventListener("error", (e) => dbg.errors.push(String(e.message)));
+  window.addEventListener("unhandledrejection", (e) => dbg.errors.push("promise: " + String(e.reason)));
+
+  document.documentElement.style.setProperty("--accent", BOOTH.palette.accent);
+  document.documentElement.style.setProperty("--bg1", BOOTH.palette.bg1);
+  document.documentElement.style.setProperty("--bg2", BOOTH.palette.bg2);
+  $("vid").textContent = BOOTH.id;
+  $("title").textContent = BOOTH.title;
+
+  const now = () => (performance.now() - t0) / 1000;
+  const pad = (n) => String(n).padStart(3, "0");
+  const fmt = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const rich = (t) => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>");
+  const log = (type, extra) => events.push(Object.assign({ t: +now().toFixed(3), type: type }, extra || {}));
+  const HOLD_TEXT = { title: "Title card", section: "Section card", pause: "Pause", page: "Next page of the output", visual: "Look at the slide" };
+
+  function sectionOf(i) {
+    let k = 0;
+    for (let s = 0; s < sections.length; s++) if (sections[s].beat <= i) k = s;
+    return k;
+  }
+  function sectionRange(s) {
+    const a = s === 0 ? 0 : sections[s].beat;
+    const b = s + 1 < sections.length ? sections[s + 1].beat - 1 : last;
+    return [a, b];
+  }
+
+  function setState(s) {
+    state = s;
+    const el = $("state");
+    el.className = "state" + (s === "rec" || s === "countdown" ? " rec" : s === "paused" ? " paused" : s === "saved" ? " saved" : "");
+    el.textContent = { idle: "not recording", countdown: "get ready", rec: "● recording", paused: "paused", saving: "saving…", saved: "saved" }[s];
+    $("start").disabled = !(s === "idle" || s === "saved");
+    $("start").textContent = s === "saved" ? "Record again from the selected section" : "Start recording";
+    $("pause").disabled = !(s === "rec" || s === "paused");
+    $("pause").textContent = s === "paused" ? "Continue (P)" : "Pause (P)";
+    $("retake").disabled = s !== "rec";
+    $("next").disabled = s !== "rec";
+    $("finish").disabled = !(s === "rec" || s === "paused");
+    drawSections();
+  }
+
+  function drawSections() {
+    const box = $("sections");
+    box.innerHTML = "<h3>SECTIONS</h3>";
+    const live = sectionOf(cur), sel = sectionOf(startBeat);
+    sections.forEach((s, k) => {
+      const [a, b] = sectionRange(k);
+      let need = 0, have = 0;
+      for (let i = a; i <= b; i++) if (beats[i].type === "narration") { need++; if (recorded.has(i)) have++; }
+      const btn = document.createElement("button");
+      btn.innerHTML = '<span class="dot ' + (need && have === need ? "done" : have ? "part" : "") + '"></span><span>' + (k + 1) + ". " + esc(s.name.charAt(0) + s.name.slice(1).toLowerCase()) + "</span>";
+      btn.title = have + " of " + need + " beats recorded";
+      if (state === "idle" || state === "saved") {
+        if (k === sel) btn.className = "sel";
+        btn.onclick = () => { startBeat = a; cur = a; render(); drawSections(); };
+      } else {
+        btn.disabled = true;
+        if (k === live) btn.className = "live";
+      }
+      box.appendChild(btn);
+    });
+    const note = document.createElement("div");
+    note.className = "note";
+    note.innerHTML = "Green: recorded. Yellow: partly recorded.<br>Before you start, click a section to begin there. A new take replaces the old one for the beats you read again.";
+    box.appendChild(note);
+  }
+
+  function render() {
+    const b = beats[cur];
+    $("slide").src = "slides/" + pad(b.slide) + ".png";
+    if (cur < last) { const im = new Image(); im.src = "slides/" + pad(beats[cur + 1].slide) + ".png"; }
+    $("secname").textContent = b.section;
+    $("beatno").textContent = "beat " + (cur + 1) + " / " + beats.length;
+    const el = $("now");
+    if (b.type === "narration") { el.className = "now"; el.innerHTML = rich(b.tele); }
+    else { el.className = "now hold"; el.textContent = (HOLD_TEXT[b.why] || "Silence") + ": stay silent for " + b.hold + " seconds. It moves on by itself."; }
+    el.scrollTop = 0;
+    let nx = "";
+    for (let i = cur + 1, n = 0; i <= last && n < 2; i++) if (beats[i].type === "narration") { nx += "<p>" + rich(beats[i].tele) + "</p>"; n++; }
+    $("after").innerHTML = nx || "<p>(end of the video)</p>";
+  }
+
+  function enterBeat() {
+    clearTimeout(holdTimer);
+    beatT0 = now();
+    render();
+    const b = beats[cur];
+    if (b.type !== "narration") holdTimer = setTimeout(advance, b.hold * 1000);
+  }
+
+  function advance() {
+    if (state !== "rec") return;
+    clearTimeout(holdTimer);
+    if (cur >= last) { finish(); return; }
+    log("advance", { beat: cur, next: cur + 1 });
+    cur += 1;
+    enterBeat();
+  }
+
+  function retake() {
+    if (state !== "rec") return;
+    clearTimeout(holdTimer);
+    // on a silent card, "say it again" means the paragraph just read
+    let target = cur;
+    if (beats[cur].type !== "narration") { while (target > startBeat && beats[target].type !== "narration") target--; }
+    if (target === cur) log("retake", { beat: cur }); else log("goto", { beat: target });
+    cur = target;
+    flash("Retake: read this beat again.");
+    enterBeat();
+  }
+
+  function back() {
+    if (state !== "rec" || cur <= startBeat) return;
+    clearTimeout(holdTimer);
+    let target = cur - 1;
+    while (target > startBeat && beats[target].type !== "narration") target--;
+    log("goto", { beat: target });
+    cur = target;
+    flash("Back one beat: read it again.");
+    enterBeat();
+  }
+
+  function togglePause() {
+    if (state === "rec") {
+      clearTimeout(holdTimer);
+      log("pause", { beat: cur });
+      setState("paused");
+      flash("Paused. Press P to continue; this beat starts again from its first word.");
+    } else if (state === "paused") {
+      setState("rec");
+      log("resume", { beat: cur });
+      flash("");
+      enterBeat();
+    }
+  }
+
+  function flash(text, err) {
+    const m = $("msg");
+    m.className = "msg" + (err ? " err" : "");
+    m.innerHTML = text;
+  }
+
+  function pickMime() {
+    const c = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/ogg;codecs=opus"];
+    for (const m of c) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+    return "";
+  }
+
+  async function start() {
+    if (!(state === "idle" || state === "saved")) return;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { flash("This browser cannot record. Use Google Chrome.", true); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    } catch (e) {
+      flash("The microphone is not available (" + esc(e.name) + "). Click the lock or microphone icon in the address bar, allow the microphone, and press Start again.", true);
+      return;
+    }
+    mime = pickMime();
+    events = []; chunks = []; dbg.saved = null;
+    cur = startBeat;
+    rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 192000 } : {});
+    mime = rec.mimeType || mime;
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstart = () => { t0 = performance.now(); countdown(3); };
+    rec.onerror = (e) => flash("Recorder error: " + esc(String(e.error || e)), true);
+    startMeter();
+    setState("countdown");
+    flash("");
+    render();
+    rec.start(1000);
+    clearInterval(tick);
+    tick = setInterval(clock, 200);
+  }
+
+  function countdown(n) {
+    const c = $("count");
+    if (state !== "countdown") { c.className = "count"; return; }
+    if (n === 0) {
+      c.className = "count";
+      setState("rec");
+      log("begin", { beat: cur });
+      enterBeat();
+      return;
+    }
+    c.className = "count on"; c.textContent = n;
+    setTimeout(() => countdown(n - 1), BOOTH.countdown_ms || 1000);
+  }
+
+  function clock() {
+    if (state === "rec" || state === "paused" || state === "countdown") {
+      $("clock").textContent = fmt(now());
+      const b = beats[cur];
+      $("beattime").textContent = state === "rec" ? (now() - beatT0).toFixed(0) + " s (about " + Math.round(b.est) + " s)" : "";
+    }
+  }
+
+  function startMeter() {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+      const draw = () => {
+        if (!analyser) return;
+        analyser.getFloatTimeDomainData(buf);
+        let sum = 0, mx = 0;
+        for (let i = 0; i < buf.length; i++) { sum += buf[i] * buf[i]; const a = Math.abs(buf[i]); if (a > mx) mx = a; }
+        const db = 20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-7);
+        const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+        const t = performance.now();
+        if (pct > peak || t - peakAt > 1500) { peak = pct; peakAt = t; }
+        $("level").style.width = pct + "%";
+        $("peak").style.left = peak + "%";
+        const h = $("meterhint");
+        if (mx > 0.98) { h.textContent = "too loud: move back a little"; h.className = "hint bad"; }
+        else if (db < -50) { h.textContent = "very quiet / silence"; h.className = "hint"; }
+        else { h.textContent = "level: " + db.toFixed(0) + " dB"; h.className = "hint"; }
+        requestAnimationFrame(draw);
+      };
+      draw();
+    } catch (e) { $("meterhint").textContent = "level meter unavailable"; }
+  }
+
+  function stopMedia() {
+    clearInterval(tick); clearTimeout(holdTimer);
+    analyser = null;
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    $("level").style.width = "0"; $("meterhint").textContent = "microphone off";
+  }
+
+  function finish() {
+    if (!(state === "rec" || state === "paused")) return;
+    clearTimeout(holdTimer);
+    log("finish", { beat: cur, complete: state === "rec" });
+    const duration = now();
+    setState("saving");
+    flash("Saving the take. Do not close this page.");
+    rec.onstop = () => save(new Blob(chunks, { type: mime || "audio/webm" }), duration);
+    rec.stop();
+  }
+
+  async function save(blob, duration) {
+    stopMedia();
+    const ext = /mp4/.test(mime) ? "m4a" : /ogg/.test(mime) ? "ogg" : "webm";
+    const timing = { video: BOOTH.id, storyboard_sha1: BOOTH.sha, mime: mime, duration: +duration.toFixed(3), start_beat: startBeat,
+      beat_hashes: beats.map((b) => b.h), events: events, user_agent: navigator.userAgent };
+    try {
+      const r1 = await fetch("api/audio?ext=" + ext, { method: "POST", headers: { "X-Booth": "1", "Content-Type": "application/octet-stream" }, body: blob });
+      if (!r1.ok) throw new Error("audio upload failed: HTTP " + r1.status);
+      timing.token = (await r1.json()).token;
+      const r2 = await fetch("api/timing", { method: "POST", headers: { "X-Booth": "1", "Content-Type": "application/json" }, body: JSON.stringify(timing) });
+      if (!r2.ok) throw new Error("timing upload failed: HTTP " + r2.status);
+      const res = await r2.json();
+      dbg.saved = res;
+      await loadState();
+      selectFirstIncomplete();
+      setState("saved");
+      flash("Saved <b>" + esc(res.file) + "</b> (" + fmt(duration) + ", " + res.kept + " beats kept, " + res.discarded + " retakes cut). " +
+        (res.missing ? res.missing + " texts of this video are not recorded yet. The first incomplete section is selected on the left: press the Start button to go on, now or later. "
+                     : "Every beat is recorded. Now run: <code>video/production/make.sh build " + BOOTH.id + "</code>"));
+    } catch (e) {
+      dbg.errors.push("save: " + e.message);
+      setState("saved");
+      const a = URL.createObjectURL(blob), j = URL.createObjectURL(new Blob([JSON.stringify(timing, null, 1)], { type: "application/json" }));
+      flash("Saving failed (" + esc(e.message) + "). Is the booth program still running in the Terminal? Your take is not lost: download " +
+        '<a download="' + BOOTH.id + ".rescue." + ext + '" href="' + a + '">the audio</a> and <a download="' + BOOTH.id + '.rescue.timing.json" href="' + j +
+        '">the timing</a>, then see "Troubleshooting" in the README.', true);
+    }
+  }
+
+  async function loadState() {
+    try {
+      const r = await fetch("api/state");
+      const s = await r.json();
+      recorded = new Set(s.recorded || []);
+      if (s.stale) flash("The script changed after " + s.stale + " beat(s) were recorded. They are shown as not recorded; read them again.", true);
+    } catch (e) { /* the page still works without it */ }
+    drawSections();
+  }
+
+  $("start").onclick = start;
+  $("pause").onclick = togglePause;
+  $("retake").onclick = retake;
+  $("next").onclick = advance;
+  $("finish").onclick = finish;
+  document.addEventListener("keydown", (e) => {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const k = e.code;
+    if (["Space", "ArrowRight", "ArrowLeft", "Backspace", "ArrowUp", "KeyP"].includes(k)) e.preventDefault(); else return;
+    if (e.repeat) return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+    if (k === "Space" || k === "ArrowRight") advance();
+    else if (k === "ArrowLeft" || k === "Backspace") retake();
+    else if (k === "ArrowUp") back();
+    else if (k === "KeyP") togglePause();
+  });
+  window.addEventListener("beforeunload", (e) => { if (state === "rec" || state === "paused" || state === "saving") { e.preventDefault(); e.returnValue = ""; } });
+
+  // start where the recording is incomplete
+  function selectFirstIncomplete() {
+    let first = 0;
+    for (let k = 0; k < sections.length; k++) {
+      const [a, b] = sectionRange(k);
+      let miss = false;
+      for (let i = a; i <= b; i++) if (beats[i].type === "narration" && !recorded.has(i)) miss = true;
+      if (miss) { first = a; break; }
+    }
+    startBeat = first; cur = first;
+    render();
+  }
+  loadState().then(() => {
+    selectFirstIncomplete();
+    setState("idle");
+    dbg.ready = true;
+  });
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,5077 @@
+{
+ "id": "V095",
+ "version": 22,
+ "title": "Git LFS: why it exists, the pointer file, the two filters, and tracking",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 22,
+ "chapters": [
+  "ch22-git-lfs.md"
+ ],
+ "script": "video/scripts/V095-git-lfs-why-it-exists-the-pointer-file-the-two-filters-and-tracking.md",
+ "script_sha1": "68f279a9d3edf397a92756b84bac38fd59f010ff",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 24
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 9,
+   "line": 32
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 15,
+   "line": 42
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 28,
+   "line": 91
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 34,
+   "line": 111
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 36,
+   "line": 131
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 63,
+   "line": 450
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 70,
+   "line": 460
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 73,
+   "line": 468
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 77,
+   "line": 476
+  },
+  {
+   "name": "RECAP",
+   "beat": 81,
+   "line": 484
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 89,
+   "line": 498
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Git LFS: why it exists, the pointer file, the two filters, and tracking",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0021
+  },
+  {
+   "kind": "callout",
+   "direction": "\"The push to GitHub was rejected because of a model file. I deleted the file and committed. It is still rejected. Why?\"",
+   "quotes": [
+    "The push to GitHub was rejected because of a model file. I deleted the file and committed. It is still rejected. Why?"
+   ],
+   "quoted": true,
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0036
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=q4 cards=The_push_was_rejected_because_of_a_model_file:I_deleted_the_file._It_is_still_rejected.|The_clone_takes_twenty_minutes:the_repository_holds_400_lines_of_Python|The_model_file_is_132_bytes:and_starts_with_the_word_version|The_storage_bill_keeps_growing:nobody_has_added_a_model_in_months numbered=on title=Four_questions_for_the_CTO",
+   "scene": "cards",
+   "params": {
+    "id": "q4",
+    "cards": [
+     [
+      "The push was rejected because of a model file",
+      "I deleted the file. It is still rejected."
+     ],
+     [
+      "The clone takes twenty minutes",
+      "the repository holds 400 lines of Python"
+     ],
+     [
+      "The model file is 132 bytes",
+      "and starts with the word version"
+     ],
+     [
+      "The storage bill keeps growing",
+      "nobody has added a model in months"
+     ]
+    ],
+    "numbered": "on",
+    "title": "Four questions for the CTO"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0107
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 5,
+   "progress": 0.0603
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0619
+  },
+  {
+   "kind": "keypoint",
+   "body": "The project is <code>transcriber</code>, a speech-to-text service: a little code and one acoustic model file.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0937
+  },
+  {
+   "kind": "keypoint",
+   "body": "One statement about evidence, as the textbook makes it.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.1119
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.1425
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "explain what large binary files do to every clone, and why deleting them later does not help;",
+    "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+    "read a pointer file;",
+    "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+    "state what <code>git lfs track</code> does not do for files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1441
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "explain what large binary files do to every clone, and why deleting them later does not help;",
+    "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+    "read a pointer file;",
+    "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+    "state what <code>git lfs track</code> does not do for files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1511
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "explain what large binary files do to every clone, and why deleting them later does not help;",
+    "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+    "read a pointer file;",
+    "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+    "state what <code>git lfs track</code> does not do for files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1577
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "explain what large binary files do to every clone, and why deleting them later does not help;",
+    "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+    "read a pointer file;",
+    "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+    "state what <code>git lfs track</code> does not do for files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1594
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "explain what large binary files do to every clone, and why deleting them later does not help;",
+    "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+    "read a pointer file;",
+    "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+    "state what <code>git lfs track</code> does not do for files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1652
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 15,
+   "progress": 0.1701
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=del c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3 => c66100a-f9e56b8-65c2188-1ddbfc0-8b13104-09c8ef8 main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3; sub:09c8ef8:model_deleted; say:The_earlier_commits_still_reach_all_three_versions title=Deleting_a_file_adds_a_commit",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "c66100a",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "f9e56b8",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "c66100a"
+      ],
+      "sub": "model v1"
+     },
+     {
+      "id": "65c2188",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "f9e56b8"
+      ],
+      "sub": "model v2"
+     },
+     {
+      "id": "1ddbfc0",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "65c2188"
+      ]
+     },
+     {
+      "id": "8b13104",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "1ddbfc0"
+      ],
+      "sub": "model v3"
+     },
+     {
+      "id": "09c8ef8",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "8b13104"
+      ],
+      "sub": "model deleted"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "c66100a",
+       "f9e56b8",
+       "65c2188",
+       "1ddbfc0",
+       "8b13104"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8b13104"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "09c8ef8"
+      ],
+      "refs": {
+       "main": "09c8ef8"
+      },
+      "head": "main",
+      "notes": [],
+      "caption": "The earlier commits still reach all three versions"
+     }
+    ],
+    "settle": "on",
+    "title": "Deleting a file adds a commit",
+    "id": "del"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 16,
+   "progress": 0.1717
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=del c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3 => c66100a-f9e56b8-65c2188-1ddbfc0-8b13104-09c8ef8 main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3; sub:09c8ef8:model_deleted; say:The_earlier_commits_still_reach_all_three_versions title=Deleting_a_file_adds_a_commit",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "c66100a",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "f9e56b8",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "c66100a"
+      ],
+      "sub": "model v1"
+     },
+     {
+      "id": "65c2188",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "f9e56b8"
+      ],
+      "sub": "model v2"
+     },
+     {
+      "id": "1ddbfc0",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "65c2188"
+      ]
+     },
+     {
+      "id": "8b13104",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "1ddbfc0"
+      ],
+      "sub": "model v3"
+     },
+     {
+      "id": "09c8ef8",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "8b13104"
+      ],
+      "sub": "model deleted"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "c66100a",
+       "f9e56b8",
+       "65c2188",
+       "1ddbfc0",
+       "8b13104"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8b13104"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "09c8ef8"
+      ],
+      "refs": {
+       "main": "09c8ef8"
+      },
+      "head": "main",
+      "notes": [],
+      "caption": "The earlier commits still reach all three versions"
+     }
+    ],
+    "settle": "on",
+    "title": "Deleting a file adds a commit",
+    "id": "del"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.216
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Why LFS exists",
+   "body": "LFS changes one thing: Git stores a small text file in place of the binary, and the binary goes to a separate store that's downloaded per version, on demand.",
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.2379
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=flt boxes=working_tree:what_you_edit|*Git_objects:index_and_commits|LFS_store:.git/lfs/objects rows=1:A:the_real_content|2:B:a_three-line_pointer@hl|2:C:the_content,_named_by_its_SHA-256|3:A:the_real_content,_again@ok arrows=2:A1>B1:clean|2:A1>C1:content|3:C1>A2:smudge title=Two_filters,_two_stores",
+   "scene": "stores",
+   "params": {
+    "id": "flt",
+    "boxes": [
+     [
+      "working tree",
+      "what you edit"
+     ],
+     [
+      "*Git objects",
+      "index and commits"
+     ],
+     [
+      "LFS store",
+      ".git/lfs/objects"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "the real content"
+     ],
+     [
+      2,
+      "B",
+      "a three-line pointer",
+      "hl"
+     ],
+     [
+      2,
+      "C",
+      "the content, named by its SHA-256"
+     ],
+     [
+      3,
+      "A",
+      "the real content, again",
+      "ok"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "clean"
+     ],
+     [
+      2,
+      "A1",
+      "C1",
+      "content"
+     ],
+     [
+      3,
+      "C1",
+      "A2",
+      "smudge"
+     ]
+    ],
+    "title": "Two filters, two stores"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.2499
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=flt boxes=working_tree:what_you_edit|*Git_objects:index_and_commits|LFS_store:.git/lfs/objects rows=1:A:the_real_content|2:B:a_three-line_pointer@hl|2:C:the_content,_named_by_its_SHA-256|3:A:the_real_content,_again@ok arrows=2:A1>B1:clean|2:A1>C1:content|3:C1>A2:smudge title=Two_filters,_two_stores",
+   "scene": "stores",
+   "params": {
+    "id": "flt",
+    "boxes": [
+     [
+      "working tree",
+      "what you edit"
+     ],
+     [
+      "*Git objects",
+      "index and commits"
+     ],
+     [
+      "LFS store",
+      ".git/lfs/objects"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "the real content"
+     ],
+     [
+      2,
+      "B",
+      "a three-line pointer",
+      "hl"
+     ],
+     [
+      2,
+      "C",
+      "the content, named by its SHA-256"
+     ],
+     [
+      3,
+      "A",
+      "the real content, again",
+      "ok"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "clean"
+     ],
+     [
+      2,
+      "A1",
+      "C1",
+      "content"
+     ],
+     [
+      3,
+      "C1",
+      "A2",
+      "smudge"
+     ]
+    ],
+    "title": "Two filters, two stores"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.3
+  },
+  {
+   "kind": "keypoint",
+   "headline": "The <code>.gitattributes</code> line",
+   "body": "<code>git lfs track</code> writes it.",
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.3331
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Attribute",
+    "Effect"
+   ],
+   "fs": 40,
+   "cols": [
+    15.6,
+    84.4
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>filter=lfs</code>",
+     "Run the <code>lfs</code> clean and smudge filter for matching paths. This is the attribute that matters."
+    ],
+    [
+     "<code>diff=lfs</code>",
+     "Use a diff driver named <code>lfs</code>. <code>git lfs install</code> defines none, so <code>git diff</code> shows the difference between pointers."
+    ],
+    [
+     "<code>merge=lfs</code>",
+     "Use a merge driver named <code>lfs</code>. None is defined either, so Git merges the pointers as text."
+    ],
+    [
+     "<code>-text</code>",
+     "Never apply line-ending conversion."
+    ]
+   ],
+   "caption": "Three rules follow from this being an ordinary attributes file.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.3364
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Attribute",
+    "Effect"
+   ],
+   "fs": 40,
+   "cols": [
+    15.6,
+    84.4
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>filter=lfs</code>",
+     "Run the <code>lfs</code> clean and smudge filter for matching paths. This is the attribute that matters."
+    ],
+    [
+     "<code>diff=lfs</code>",
+     "Use a diff driver named <code>lfs</code>. <code>git lfs install</code> defines none, so <code>git diff</code> shows the difference between pointers."
+    ],
+    [
+     "<code>merge=lfs</code>",
+     "Use a merge driver named <code>lfs</code>. None is defined either, so Git merges the pointers as text."
+    ],
+    [
+     "<code>-text</code>",
+     "Never apply line-ending conversion."
+    ]
+   ],
+   "caption": "Quote them in the shell, or the shell expands the pattern to the files that exist today and <code>git lfs track</code> records those names.",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.355
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Attribute",
+    "Effect"
+   ],
+   "fs": 40,
+   "cols": [
+    15.6,
+    84.4
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>filter=lfs</code>",
+     "Run the <code>lfs</code> clean and smudge filter for matching paths. This is the attribute that matters."
+    ],
+    [
+     "<code>diff=lfs</code>",
+     "Use a diff driver named <code>lfs</code>. <code>git lfs install</code> defines none, so <code>git diff</code> shows the difference between pointers."
+    ],
+    [
+     "<code>merge=lfs</code>",
+     "Use a merge driver named <code>lfs</code>. None is defined either, so Git merges the pointers as text."
+    ],
+    [
+     "<code>-text</code>",
+     "Never apply line-ending conversion."
+    ]
+   ],
+   "caption": "When not to reach for LFS is a topic of its own two videos from now.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.3765
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 25,
+   "progress": 0.3951
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=flt boxes=working_tree:what_you_edit|*Git_objects:index_and_commits|LFS_store:.git/lfs/objects rows=1:A:the_real_content|2:B:a_three-line_pointer@hl|2:C:the_content,_named_by_its_SHA-256|3:A:the_real_content,_again@ok arrows=2:A1>B1:clean|2:A1>C1:content|3:C1>A2:smudge title=Two_filters,_two_stores",
+   "scene": "stores",
+   "params": {
+    "id": "flt",
+    "boxes": [
+     [
+      "working tree",
+      "what you edit"
+     ],
+     [
+      "*Git objects",
+      "index and commits"
+     ],
+     [
+      "LFS store",
+      ".git/lfs/objects"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "the real content"
+     ],
+     [
+      2,
+      "B",
+      "a three-line pointer",
+      "hl"
+     ],
+     [
+      2,
+      "C",
+      "the content, named by its SHA-256"
+     ],
+     [
+      3,
+      "A",
+      "the real content, again",
+      "ok"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "clean"
+     ],
+     [
+      2,
+      "A1",
+      "C1",
+      "content"
+     ],
+     [
+      3,
+      "C1",
+      "A2",
+      "smudge"
+     ]
+    ],
+    "title": "Two filters, two stores"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 4,
+   "upto": 4,
+   "says": [
+    "The pointer is the ticket. The content is the coat"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 26,
+   "progress": 0.3967
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_model_file right=the_model_file,_again lines=1200000_bytes alt=1250000_bytes ids=0269885262,f8719e1ac8 fn=sha256 same=The_same_bytes_always_get_the_same_oid diff=A_new_version:_other_bytes,_another_oid title=The_ticket_is_computed_from_the_coat",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the model file",
+    "right": "the model file, again",
+    "lines": [
+     "1200000 bytes"
+    ],
+    "alt": "1250000 bytes",
+    "ids": [
+     "0269885262",
+     "f8719e1ac8"
+    ],
+    "fn": "sha256",
+    "same": "The same bytes always get the same oid",
+    "diff": "A new version: other bytes, another oid",
+    "title": "The ticket is computed from the coat"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 2,
+   "section": "MENTAL MODEL",
+   "n": 27,
+   "progress": 0.4124
+  },
+  {
+   "kind": "keypoint",
+   "body": "Keep that second break in mind.",
+   "section": "MENTAL MODEL",
+   "n": 28,
+   "progress": 0.4323
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, on paper, thirty seconds.",
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.4471
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 30,
+   "progress": 0.4655
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=lfs boxes=working_tree:models/acoustic.onnx|*Git_objects:index_and_commits|LFS_store:.git/lfs/objects/02/69/ rows=1:A:1,200,000_bytes|2:B:blob_1097a4b_(132_bytes)@hl|2:B:version_https://git-lfs...|2:B:oid_sha256:0269885262...|2:B:size_1200000|2:C:0269885262...e8de|2:C:1,200,000_bytes|3:B:travels_with_git_push_/_fetch@dim|3:C:travels_with_git_lfs@dim arrows=2:A1>B1:clean|2:B3>C1:oid|2:B1>A1:smudge title=What_is_stored_where",
+   "scene": "stores",
+   "params": {
+    "id": "lfs",
+    "boxes": [
+     [
+      "working tree",
+      "models/acoustic.onnx"
+     ],
+     [
+      "*Git objects",
+      "index and commits"
+     ],
+     [
+      "LFS store",
+      ".git/lfs/objects/02/69/"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "1,200,000 bytes"
+     ],
+     [
+      2,
+      "B",
+      "blob 1097a4b (132 bytes)",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "version https://git-lfs..."
+     ],
+     [
+      2,
+      "B",
+      "oid sha256:0269885262..."
+     ],
+     [
+      2,
+      "B",
+      "size 1200000"
+     ],
+     [
+      2,
+      "C",
+      "0269885262...e8de"
+     ],
+     [
+      2,
+      "C",
+      "1,200,000 bytes"
+     ],
+     [
+      3,
+      "B",
+      "travels with git push / fetch",
+      "dim"
+     ],
+     [
+      3,
+      "C",
+      "travels with git lfs",
+      "dim"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "clean"
+     ],
+     [
+      2,
+      "B3",
+      "C1",
+      "oid"
+     ],
+     [
+      2,
+      "B1",
+      "A1",
+      "smudge"
+     ]
+    ],
+    "title": "What is stored where"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "DIAGRAM",
+   "n": 31,
+   "progress": 0.467
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 32,
+   "progress": 0.4898
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay `labs/run ch22/why-lfs`. Three versions of the model were committed as ordinary files.",
+   "mode": "cmd",
+   "title": "labs/run ch22/why-lfs",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "cmd",
+     "s": "wc -c models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-list --objects --all | git cat-file --batch-check=\"%(objecttype) %(objectsize) %(rest)\" | grep"
+    },
+    {
+     "t": "wrap",
+     "s": "blob",
+     "of": "cmd"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 33,
+   "progress": 0.4913
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/why-lfs/01-three-versions",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "8b13104 Retrain acoustic model with accents (v3)"
+    },
+    {
+     "t": "out",
+     "s": "1ddbfc0 Resample input to 16 kHz"
+    },
+    {
+     "t": "out",
+     "s": "65c2188 Retrain acoustic model on noisy audio (v2)"
+    },
+    {
+     "t": "out",
+     "s": "f9e56b8 Add acoustic model v1"
+    },
+    {
+     "t": "out",
+     "s": "c66100a Add transcription entry point"
+    },
+    {
+     "t": "cmd",
+     "s": "wc -c models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": " 1300000 models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "# Every blob that any commit reaches, with its size in bytes:"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-list --objects --all | git cat-file --batch-check=\"%(objecttype) %(objectsize) %(rest)\" | grep"
+    },
+    {
+     "t": "wrap",
+     "s": "blob",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "blob 68 README.md"
+    },
+    {
+     "t": "out",
+     "s": "blob 1300000 models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "blob 14 models/vocab.txt"
+    },
+    {
+     "t": "out",
+     "s": "blob 231 transcribe.py"
+    },
+    {
+     "t": "out",
+     "s": "blob 1250000 models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "blob 198 transcribe.py"
+    },
+    {
+     "t": "out",
+     "s": "blob 1200000 models/acoustic.onnx"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 34,
+   "progress": 0.5047
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/why-lfs/02-clone-gets-all",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git push origin main"
+    },
+    {
+     "t": "out",
+     "s": "To $LAB/ch22/why-lfs/remotes/transcriber.git"
+    },
+    {
+     "t": "out",
+     "s": "   c66100a..8b13104  main -> main"
+    },
+    {
+     "t": "cmd",
+     "s": "cd .."
+    },
+    {
+     "t": "cmd",
+     "s": "git clone remotes/transcriber.git ravi-transcriber"
+    },
+    {
+     "t": "out",
+     "s": "Cloning into 'ravi-transcriber'..."
+    },
+    {
+     "t": "out",
+     "s": "done."
+    },
+    {
+     "t": "cmd",
+     "s": "cd ravi-transcriber"
+    },
+    {
+     "t": "out",
+     "s": "# One model file in the working tree, three in the repository:"
+    },
+    {
+     "t": "cmd",
+     "s": "ls models"
+    },
+    {
+     "t": "out",
+     "s": "acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "vocab.txt"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file --batch-all-objects --batch-check=\"%(objecttype) %(objectsize)\" | grep -c -E \"blob"
+    },
+    {
+     "t": "wrap",
+     "s": "[0-9]{7}\"",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "3"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 35,
+   "progress": 0.5076
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/why-lfs/03-delete-does-not-help",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rm --quiet models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -m \"Remove the model from the repository\""
+    },
+    {
+     "t": "out",
+     "s": "[main 09c8ef8] Remove the model from the repository"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 0 insertions(+), 0 deletions(-)"
+    },
+    {
+     "t": "out",
+     "s": " delete mode 100644 models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-list --objects --all | git cat-file --batch-check=\"%(objecttype) %(objectsize) %(rest)\" | grep"
+    },
+    {
+     "t": "wrap",
+     "s": "onnx",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "blob 1300000 models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "blob 1250000 models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "blob 1200000 models/acoustic.onnx"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.5296
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=del c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3 => c66100a-f9e56b8-65c2188-1ddbfc0-8b13104-09c8ef8 main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3; sub:09c8ef8:model_deleted; say:The_earlier_commits_still_reach_all_three_versions title=Deleting_a_file_adds_a_commit",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "c66100a",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "f9e56b8",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "c66100a"
+      ],
+      "sub": "model v1"
+     },
+     {
+      "id": "65c2188",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "f9e56b8"
+      ],
+      "sub": "model v2"
+     },
+     {
+      "id": "1ddbfc0",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "65c2188"
+      ]
+     },
+     {
+      "id": "8b13104",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "1ddbfc0"
+      ],
+      "sub": "model v3"
+     },
+     {
+      "id": "09c8ef8",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "8b13104"
+      ],
+      "sub": "model deleted"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "c66100a",
+       "f9e56b8",
+       "65c2188",
+       "1ddbfc0",
+       "8b13104"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8b13104"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "09c8ef8"
+      ],
+      "refs": {
+       "main": "09c8ef8"
+      },
+      "head": "main",
+      "notes": [],
+      "caption": "The earlier commits still reach all three versions"
+     }
+    ],
+    "settle": "on",
+    "title": "Deleting a file adds a commit",
+    "id": "del"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.535
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay `labs/run ch22/lfs-pointer`. The same project, done with LFS.",
+   "mode": "cmd",
+   "title": "labs/run ch22/lfs-pointer",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch22/lfs-pointer"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.5474
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/01-install",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git lfs version"
+    },
+    {
+     "t": "out",
+     "s": "git-lfs/3.7.1 (GitHub; darwin arm64; go 1.25.3)"
+    },
+    {
+     "t": "cmd",
+     "s": "git lfs install --local"
+    },
+    {
+     "t": "out",
+     "s": "Updated Git hooks."
+    },
+    {
+     "t": "out",
+     "s": "Git LFS initialized."
+    },
+    {
+     "t": "cmd",
+     "s": "git config list --local | grep -e ^filter -e ^lfs | sort"
+    },
+    {
+     "t": "out",
+     "s": "filter.lfs.clean=git-lfs clean -- %f"
+    },
+    {
+     "t": "out",
+     "s": "filter.lfs.process=git-lfs filter-process"
+    },
+    {
+     "t": "out",
+     "s": "filter.lfs.required=true"
+    },
+    {
+     "t": "out",
+     "s": "filter.lfs.smudge=git-lfs smudge -- %f"
+    },
+    {
+     "t": "out",
+     "s": "lfs.repositoryformatversion=0"
+    },
+    {
+     "t": "cmd",
+     "s": "ls .git/hooks | grep -v sample"
+    },
+    {
+     "t": "out",
+     "s": "post-checkout"
+    },
+    {
+     "t": "out",
+     "s": "post-commit"
+    },
+    {
+     "t": "out",
+     "s": "post-merge"
+    },
+    {
+     "t": "out",
+     "s": "pre-push"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.55
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=travel boxes=this_repository:after_git_lfs_install_--local|a_fresh_clone:what_git_clone_brings rows=1:A:.gitattributes_(committed)|1:A:filter.lfs.*_in_.git/config|1:A:four_hooks_in_.git/hooks|2:B:.gitattributes@ok|2:B:no_filter_definition@bad|2:B:no_hooks@bad arrows=2:A1>B1:clone title=What_travels_with_a_clone",
+   "scene": "stores",
+   "params": {
+    "id": "travel",
+    "boxes": [
+     [
+      "this repository",
+      "after git lfs install --local"
+     ],
+     [
+      "a fresh clone",
+      "what git clone brings"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      ".gitattributes (committed)"
+     ],
+     [
+      1,
+      "A",
+      "filter.lfs.* in .git/config"
+     ],
+     [
+      1,
+      "A",
+      "four hooks in .git/hooks"
+     ],
+     [
+      2,
+      "B",
+      ".gitattributes",
+      "ok"
+     ],
+     [
+      2,
+      "B",
+      "no filter definition",
+      "bad"
+     ],
+     [
+      2,
+      "B",
+      "no hooks",
+      "bad"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "clone"
+     ]
+    ],
+    "title": "What travels with a clone"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.5591
+  },
+  {
+   "kind": "keypoint",
+   "body": "The filter definition says how to convert.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5723
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/02-track",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git lfs track \"*.onnx\""
+    },
+    {
+     "t": "out",
+     "s": "Tracking \"*.onnx\""
+    },
+    {
+     "t": "cmd",
+     "s": "cat .gitattributes"
+    },
+    {
+     "t": "out",
+     "s": "*.onnx filter=lfs diff=lfs merge=lfs -text"
+    },
+    {
+     "t": "cmd",
+     "s": "git lfs track"
+    },
+    {
+     "t": "out",
+     "s": "Listing tracked patterns"
+    },
+    {
+     "t": "out",
+     "s": "    *.onnx (.gitattributes)"
+    },
+    {
+     "t": "out",
+     "s": "Listing excluded patterns"
+    },
+    {
+     "t": "cmd",
+     "s": "git check-attr filter diff merge text -- models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "models/acoustic.onnx: filter: lfs"
+    },
+    {
+     "t": "out",
+     "s": "models/acoustic.onnx: diff: lfs"
+    },
+    {
+     "t": "out",
+     "s": "models/acoustic.onnx: merge: lfs"
+    },
+    {
+     "t": "out",
+     "s": "models/acoustic.onnx: text: unset"
+    },
+    {
+     "t": "cmd",
+     "s": "git check-attr filter -- models/vocab.txt"
+    },
+    {
+     "t": "out",
+     "s": "models/vocab.txt: filter: unspecified"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5806
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/03-commit",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "wc -c models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": " 1200000 models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "shasum -a 256 models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de  models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git add .gitattributes models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -m \"Add acoustic model v1, tracked with Git LFS\""
+    },
+    {
+     "t": "out",
+     "s": "[main 26caf87] Add acoustic model v1, tracked with Git LFS"
+    },
+    {
+     "t": "out",
+     "s": " 2 files changed, 4 insertions(+)"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 .gitattributes"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 models/acoustic.onnx"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5975
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/04-pointer",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# What Git stored for the path:"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -p HEAD:models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "version https://git-lfs.github.com/spec/v1"
+    },
+    {
+     "t": "out",
+     "s": "oid sha256:02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de"
+    },
+    {
+     "t": "out",
+     "s": "size 1200000"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -s HEAD:models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "132"
+    },
+    {
+     "t": "out",
+     "s": "# What is in the working tree:"
+    },
+    {
+     "t": "cmd",
+     "s": "wc -c models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": " 1200000 models/acoustic.onnx"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.6158
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: file=models/acoustic.onnx chips=1200000_bytes,pointer:_132_bytes,pointer:_132_bytes commits=26caf87,26caf87 steps=setup title=One_path,_two_very_different_sizes say_setup=The_clean_filter_changes_what_goes_into_the_repository",
+   "scene": "trees",
+   "params": {
+    "file": "models/acoustic.onnx",
+    "chips": [
+     "1200000 bytes",
+     "pointer: 132 bytes",
+     "pointer: 132 bytes"
+    ],
+    "commits": [
+     "26caf87",
+     "26caf87"
+    ],
+    "title": "One path, two very different sizes",
+    "say": {
+     "setup": "The clean filter changes what goes into the repository"
+    }
+   },
+   "steps": [
+    "setup"
+   ],
+   "upto": 1,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.627
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/05-local-store",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "find .git/lfs/objects -type f"
+    },
+    {
+     "t": "out",
+     "s": ".git/lfs/objects/02/69/02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de"
+    },
+    {
+     "t": "cmd",
+     "s": "git lfs ls-files"
+    },
+    {
+     "t": "out",
+     "s": "0269885262 * models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git lfs ls-files --long --size"
+    },
+    {
+     "t": "out",
+     "s": "02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de * models/acoustic.onnx (1.2 MB)"
+    },
+    {
+     "t": "cmd",
+     "s": "git lfs pointer --file=models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "Git LFS pointer for models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "version https://git-lfs.github.com/spec/v1"
+    },
+    {
+     "t": "out",
+     "s": "oid sha256:02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de"
+    },
+    {
+     "t": "out",
+     "s": "size 1200000"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.6415
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/06-new-version",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "out",
+     "s": " M models/acoustic.onnx"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff"
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/models/acoustic.onnx b/models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "index 1097a4b..366f6ac 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/models/acoustic.onnx"
+    },
+    {
+     "t": "out",
+     "s": "@@ -1,3 +1,3 @@"
+    },
+    {
+     "t": "out",
+     "s": " version https://git-lfs.github.com/spec/v1"
+    },
+    {
+     "t": "out",
+     "s": "-oid sha256:02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de"
+    },
+    {
+     "t": "out",
+     "s": "-size 1200000"
+    },
+    {
+     "t": "out",
+     "s": "+oid sha256:f8719e1ac8fb4d5c1d84bffc340e58ce46e7aba4ee423b2d752d6eb7d0d68a65"
+    },
+    {
+     "t": "out",
+     "s": "+size 1250000"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.6713
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/06-new-version",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git lfs status"
+    },
+    {
+     "t": "out",
+     "s": "On branch main"
+    },
+    {
+     "t": "out",
+     "s": "Objects to be pushed to origin/main:"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "        models/acoustic.onnx (02698852622172279f75a9ccc7b8505d411bf4e26c48dba8010e6c447439e8de)"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Objects to be committed:"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Objects not staged for commit:"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "        models/acoustic.onnx (LFS: 0269885 -> File: f8719e1)"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.6744
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_model_file right=the_model_file,_again lines=1200000_bytes alt=1250000_bytes ids=0269885262,f8719e1ac8 fn=sha256 same=The_same_bytes_always_get_the_same_oid diff=A_new_version:_other_bytes,_another_oid title=The_ticket_is_computed_from_the_coat",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the model file",
+    "right": "the model file, again",
+    "lines": [
+     "1200000 bytes"
+    ],
+    "alt": "1250000 bytes",
+    "ids": [
+     "0269885262",
+     "f8719e1ac8"
+    ],
+    "fn": "sha256",
+    "same": "The same bytes always get the same oid",
+    "diff": "A new version: other bytes, another oid",
+    "title": "The ticket is computed from the coat"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6922
+  },
+  {
+   "kind": "keypoint",
+   "body": "And the second mechanism: hooks.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6963
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch22/lfs-pointer/07-hook",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git/hooks/pre-push"
+    },
+    {
+     "t": "out",
+     "s": "#!/bin/sh"
+    },
+    {
+     "t": "out",
+     "s": "command -v git-lfs >/dev/null 2>&1 || { printf >&2 \"\\n%s\\n\\n\" \"This repository is configured for Git LFS"
+    },
+    {
+     "t": "wrap",
+     "s": "but 'git-lfs' was not found on your path. If you no longer wish to use Git LFS, remove this hook by",
+     "of": "out"
+    },
+    {
+     "t": "wrap",
+     "s": "deleting the 'pre-push' file in the hooks directory (set by 'core.hookspath'; usually",
+     "of": "out"
+    },
+    {
+     "t": "wrap",
+     "s": "'.git/hooks').\"; exit 2; }",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "git lfs pre-push \"$@\""
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/hooks/post-checkout"
+    },
+    {
+     "t": "out",
+     "s": "#!/bin/sh"
+    },
+    {
+     "t": "out",
+     "s": "command -v git-lfs >/dev/null 2>&1 || { printf >&2 \"\\n%s\\n\\n\" \"This repository is configured for Git LFS"
+    },
+    {
+     "t": "wrap",
+     "s": "but 'git-lfs' was not found on your path. If you no longer wish to use Git LFS, remove this hook by",
+     "of": "out"
+    },
+    {
+     "t": "wrap",
+     "s": "deleting the 'post-checkout' file in the hooks directory (set by 'core.hookspath'; usually",
+     "of": "out"
+    },
+    {
+     "t": "wrap",
+     "s": "'.git/hooks').\"; exit 2; }",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "git lfs post-checkout \"$@\""
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6984
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Working tree",
+    "Index",
+    "HEAD",
+    "Current branch ref",
+    "Other refs and files in <code>.git</code>",
+    "Remote",
+    "GitHub"
+   ],
+   "fs": 32,
+   "cols": [
+    12.89,
+    11.11,
+    14.67,
+    14.67,
+    20.89,
+    12.89,
+    12.89
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "unchanged (real content)",
+     "entry for the path names a pointer blob",
+     "new commit on <code>git commit</code>",
+     "advanced on <code>git commit</code>",
+     "pointer blob in <code>.git/objects</code>; real content in <code>.git/lfs/objects</code>",
+     "unchanged until pushed",
+     "unchanged until pushed"
+    ]
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.7199
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 53,
+   "progress": 0.7251
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 54,
+   "progress": 0.7266
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Deleting a large file to get a rejected push through.</b> Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+    "<b>Running <code>git lfs track</code> and assuming existing files are converted.</b> Root cause: it edits <code>.gitattributes</code>; conversion happens at the next <code>git add</code>, and nothing changes for files already in the index or in history.",
+    "<b>An unquoted pattern in <code>git lfs track</code>.</b> Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+    "<b>Not committing <code>.gitattributes</code>.</b> Root cause: it is the only part of the LFS setup that travels with the repository.",
+    "<b>Expecting <code>git fsck</code>, <code>git gc</code> or <code>git push</code> to look after the model content.</b> Root cause: LFS objects are files under <code>.git/lfs/objects</code>, not Git objects; only the pointer is."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 55,
+   "progress": 0.7287
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Deleting a large file to get a rejected push through.</b> Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+    "<b>Running <code>git lfs track</code> and assuming existing files are converted.</b> Root cause: it edits <code>.gitattributes</code>; conversion happens at the next <code>git add</code>, and nothing changes for files already in the index or in history.",
+    "<b>An unquoted pattern in <code>git lfs track</code>.</b> Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+    "<b>Not committing <code>.gitattributes</code>.</b> Root cause: it is the only part of the LFS setup that travels with the repository.",
+    "<b>Expecting <code>git fsck</code>, <code>git gc</code> or <code>git push</code> to look after the model content.</b> Root cause: LFS objects are files under <code>.git/lfs/objects</code>, not Git objects; only the pointer is."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 56,
+   "progress": 0.7407
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Deleting a large file to get a rejected push through.</b> Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+    "<b>Running <code>git lfs track</code> and assuming existing files are converted.</b> Root cause: it edits <code>.gitattributes</code>; conversion happens at the next <code>git add</code>, and nothing changes for files already in the index or in history.",
+    "<b>An unquoted pattern in <code>git lfs track</code>.</b> Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+    "<b>Not committing <code>.gitattributes</code>.</b> Root cause: it is the only part of the LFS setup that travels with the repository.",
+    "<b>Expecting <code>git fsck</code>, <code>git gc</code> or <code>git push</code> to look after the model content.</b> Root cause: LFS objects are files under <code>.git/lfs/objects</code>, not Git objects; only the pointer is."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 57,
+   "progress": 0.7548
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Deleting a large file to get a rejected push through.</b> Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+    "<b>Running <code>git lfs track</code> and assuming existing files are converted.</b> Root cause: it edits <code>.gitattributes</code>; conversion happens at the next <code>git add</code>, and nothing changes for files already in the index or in history.",
+    "<b>An unquoted pattern in <code>git lfs track</code>.</b> Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+    "<b>Not committing <code>.gitattributes</code>.</b> Root cause: it is the only part of the LFS setup that travels with the repository.",
+    "<b>Expecting <code>git fsck</code>, <code>git gc</code> or <code>git push</code> to look after the model content.</b> Root cause: LFS objects are files under <code>.git/lfs/objects</code>, not Git objects; only the pointer is."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 58,
+   "progress": 0.7663
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Deleting a large file to get a rejected push through.</b> Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+    "<b>Running <code>git lfs track</code> and assuming existing files are converted.</b> Root cause: it edits <code>.gitattributes</code>; conversion happens at the next <code>git add</code>, and nothing changes for files already in the index or in history.",
+    "<b>An unquoted pattern in <code>git lfs track</code>.</b> Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+    "<b>Not committing <code>.gitattributes</code>.</b> Root cause: it is the only part of the LFS setup that travels with the repository.",
+    "<b>Expecting <code>git fsck</code>, <code>git gc</code> or <code>git push</code> to look after the model content.</b> Root cause: LFS objects are files under <code>.git/lfs/objects</code>, not Git objects; only the pointer is."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 59,
+   "progress": 0.7742
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 60,
+   "progress": 0.7862
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. A repository holds an evaluation harness and three reference checkpoints of a few hundred megabytes that change twice a year.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 61,
+   "progress": 0.7878
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=flt boxes=working_tree:what_you_edit|*Git_objects:index_and_commits|LFS_store:.git/lfs/objects rows=1:A:the_real_content|2:B:a_three-line_pointer@hl|2:C:the_content,_named_by_its_SHA-256|3:A:the_real_content,_again@ok arrows=2:A1>B1:clean|2:A1>C1:content|3:C1>A2:smudge title=Two_filters,_two_stores",
+   "scene": "stores",
+   "params": {
+    "id": "flt",
+    "boxes": [
+     [
+      "working tree",
+      "what you edit"
+     ],
+     [
+      "*Git objects",
+      "index and commits"
+     ],
+     [
+      "LFS store",
+      ".git/lfs/objects"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "the real content"
+     ],
+     [
+      2,
+      "B",
+      "a three-line pointer",
+      "hl"
+     ],
+     [
+      2,
+      "C",
+      "the content, named by its SHA-256"
+     ],
+     [
+      3,
+      "A",
+      "the real content, again",
+      "ok"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "clean"
+     ],
+     [
+      2,
+      "A1",
+      "C1",
+      "content"
+     ],
+     [
+      3,
+      "C1",
+      "A2",
+      "smudge"
+     ]
+    ],
+    "title": "Two filters, two stores"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 62,
+   "progress": 0.8093
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 63,
+   "progress": 0.8386
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 15.3, \"Inspect an LFS pointer\", in <code>lab-manual/m15-submodules-subtrees-lfs.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 64,
+   "progress": 0.8402
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before you commit the tracked file, predict the three lines of the pointer: compute the checksum yourself and write down the size.",
+   "section": "PRACTICE EXERCISE",
+   "n": 65,
+   "progress": 0.8447
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 15.6, Level 2, command prediction, \"Tracked too late\", in <code>exercises/m11-m15-investigation-recovery.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 66,
+   "progress": 0.8621
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 67,
+   "progress": 0.8679
+  },
+  {
+   "kind": "callout",
+   "direction": "Q355: \"What does Git store for an LFS-tracked path, what does LFS store, and where is each on your machine and on the remote?\"",
+   "label": "Q355",
+   "quotes": [
+    "What does Git store for an LFS-tracked path, what does LFS store, and where is each on your machine and on the remote?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 68,
+   "progress": 0.8695
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 69,
+   "progress": 0.915
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: file=models/acoustic.onnx chips=1200000_bytes,pointer:_132_bytes,pointer:_132_bytes commits=26caf87,26caf87 steps=setup title=One_path,_two_very_different_sizes say_setup=Git_carries_the_ticket,_LFS_keeps_the_coat",
+   "scene": "trees",
+   "params": {
+    "file": "models/acoustic.onnx",
+    "chips": [
+     "1200000 bytes",
+     "pointer: 132 bytes",
+     "pointer: 132 bytes"
+    ],
+    "commits": [
+     "26caf87",
+     "26caf87"
+    ],
+    "title": "One path, two very different sizes",
+    "say": {
+     "setup": "Git carries the ticket, LFS keeps the coat"
+    }
+   },
+   "steps": [
+    "setup"
+   ],
+   "upto": 1,
+   "section": "RECAP",
+   "n": 70,
+   "progress": 0.9165
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+    "Deleting a large file later does not remove its blobs from history.",
+    "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under <code>.git/lfs/objects</code>, named by that hash.",
+    "LFS is a clean and smudge filter selected by <code>.gitattributes</code>, plus hooks; only <code>.gitattributes</code> travels with a clone.",
+    "<code>git lfs track</code> affects files added afterwards, not files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 42,
+   "section": "RECAP",
+   "n": 71,
+   "progress": 0.9248
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+    "Deleting a large file later does not remove its blobs from history.",
+    "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under <code>.git/lfs/objects</code>, named by that hash.",
+    "LFS is a clean and smudge filter selected by <code>.gitattributes</code>, plus hooks; only <code>.gitattributes</code> travels with a clone.",
+    "<code>git lfs track</code> affects files added afterwards, not files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "RECAP",
+   "n": 72,
+   "progress": 0.9277
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+    "Deleting a large file later does not remove its blobs from history.",
+    "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under <code>.git/lfs/objects</code>, named by that hash.",
+    "LFS is a clean and smudge filter selected by <code>.gitattributes</code>, plus hooks; only <code>.gitattributes</code> travels with a clone.",
+    "<code>git lfs track</code> affects files added afterwards, not files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "RECAP",
+   "n": 73,
+   "progress": 0.9389
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+    "Deleting a large file later does not remove its blobs from history.",
+    "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under <code>.git/lfs/objects</code>, named by that hash.",
+    "LFS is a clean and smudge filter selected by <code>.gitattributes</code>, plus hooks; only <code>.gitattributes</code> travels with a clone.",
+    "<code>git lfs track</code> affects files added afterwards, not files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "RECAP",
+   "n": 74,
+   "progress": 0.9438
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+    "Deleting a large file later does not remove its blobs from history.",
+    "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under <code>.git/lfs/objects</code>, named by that hash.",
+    "LFS is a clean and smudge filter selected by <code>.gitattributes</code>, plus hooks; only <code>.gitattributes</code> travels with a clone.",
+    "<code>git lfs track</code> affects files added afterwards, not files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "RECAP",
+   "n": 75,
+   "progress": 0.955
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+    "Deleting a large file later does not remove its blobs from history.",
+    "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under <code>.git/lfs/objects</code>, named by that hash.",
+    "LFS is a clean and smudge filter selected by <code>.gitattributes</code>, plus hooks; only <code>.gitattributes</code> travels with a clone.",
+    "<code>git lfs track</code> affects files added afterwards, not files already committed."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "RECAP",
+   "n": 76,
+   "progress": 0.9625
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 77,
+   "progress": 0.967
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 22.1 to 22.4 of Chapter 22. Do Exercise 15.2, Level 1, \"A first LFS pointer\", in <code>exercises/m11-m15-investigation-recovery.md</code>.",
+   "section": "HOMEWORK",
+   "n": 78,
+   "progress": 0.9686
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you read a pointer file and matched its checksum by hand, and you can now say what LFS stores where.",
+   "section": "HOMEWORK",
+   "n": 79,
+   "progress": 0.9764
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "That question reaches a CTO's desk in an AI and ML team, usually followed by three more.",
+   "tele": "That question reaches a CTO's desk in an AI and ML team, usually followed by three more.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "5e55b4b1",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"The clone takes twenty minutes and the repository holds four hundred lines of Python.\" \"The training job in CI crashed while loading the weights: the file is 132 bytes and starts with the word version.\" \"Our storage bill for this repository keeps growing, and nobody has added a model in months.\"",
+   "tele": "\"The clone takes twenty minutes and the repository holds four hundred lines of Python.\" \"The training job in CI crashed while loading the weights: the file is 132 bytes and starts with the word `version`.\" \"Our storage bill for this repository keeps growing, and nobody has added a model in months.\"",
+   "words": 51,
+   "est": 20.4,
+   "slide": 4,
+   "line": 20,
+   "t0": 10.3,
+   "h": "d05f5c03",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.273,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.547,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The first two are Git doing what it was designed to do, with content it wasn't designed for. The third is Git LFS working as designed on a machine that doesn't have it. The fourth is how GitHub accounts for LFS. To answer any of them you need to know one thing: what LFS stores where. Hold on to the first question. You'll answer it in the first demo.",
+   "tele": "The first two are Git doing what it was designed to do, with content it wasn't designed for. The third is Git LFS working as designed on a machine that doesn't have it. The fourth is how GitHub accounts for LFS. To answer any of them you need to know one thing: what LFS stores where. Hold on to the first question. You'll answer it in the first demo.",
+   "words": 69,
+   "est": 27.6,
+   "slide": 4,
+   "line": 22,
+   "t0": 30.7,
+   "h": "fc6aacb6",
+   "anim": {
+    "group": 3,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 5,
+   "line": 24,
+   "t0": 58.3,
+   "h": "",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Git LFS, Large File Storage, isn't part of Git. It's a separate program, git-lfs, that plugs into Git through two mechanisms you already know: a clean and smudge filter selected by .gitattributes, the file that attaches settings to paths, and hooks, the programs Git runs at fixed points. So this video doesn't teach you a new mechanism. It shows you what this particular filter does.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Git LFS, Large File Storage, isn't part of Git. It's a separate program, `git-lfs`, that plugs into Git through two mechanisms you already know: a clean and smudge filter selected by `.gitattributes`, the file that attaches settings to paths, and hooks, the programs Git runs at fixed points. So this video doesn't teach you a new mechanism. It shows you what this particular filter does.",
+   "words": 77,
+   "est": 30.8,
+   "slide": 6,
+   "line": 26,
+   "t0": 59.8,
+   "h": "04753c7e",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The project is transcriber, a speech-to-text service: a little code and one acoustic model file. The lab uses stand-in files of 1.2 to 1.3 megabytes so that the demos run in a second. Real models are a thousand times larger and behave the same.",
+   "tele": "The project is `transcriber`, a speech-to-text service: a little code and one acoustic model file. The lab uses stand-in files of 1.2 to 1.3 megabytes so that the demos run in a second. Real models are a thousand times larger and behave the same.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 7,
+   "line": 28,
+   "t0": 90.6,
+   "h": "ec42867d",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "One statement about evidence, as the textbook makes it. The remote in this chapter is a bare repository reached through a file path, which git-lfs 3.7.1 supports with a built-in transfer adapter. So tracking, pushing, cloning, fetching, pruning and migrating are real transcripts. Anything that needs an LFS server could not be run: the HTTP API, authentication, file locking, and all GitHub limits and billing. Those parts are described from the documentation and labelled.",
+   "tele": "One statement about evidence, as the textbook makes it. The remote in this chapter is a bare repository reached through a file path, which git-lfs 3.7.1 supports with a built-in transfer adapter. So tracking, pushing, cloning, fetching, pruning and migrating are real transcripts. Anything that needs an LFS server could not be run: the HTTP API, authentication, file locking, and all GitHub limits and billing. Those parts are described from the documentation and labelled.",
+   "words": 74,
+   "est": 29.6,
+   "slide": 8,
+   "line": 30,
+   "t0": 108.2,
+   "h": "411b076a",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 32,
+   "t0": 137.8,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain what large binary files do to every clone, and why deleting them later does not help;",
+   "tele": "explain what large binary files do to every clone, and why deleting them later does not help;",
+   "words": 17,
+   "est": 6.8,
+   "slide": 10,
+   "line": 36,
+   "t0": 139.3,
+   "h": "ffe83b47",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+   "tele": "say what Git stores for an LFS-tracked path and what LFS stores, and where each is;",
+   "words": 16,
+   "est": 6.4,
+   "slide": 11,
+   "line": 36,
+   "t0": 146.1,
+   "h": "a3e95e9d",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "read a pointer file;",
+   "tele": "read a pointer file;",
+   "words": 4,
+   "est": 1.6,
+   "slide": 12,
+   "line": 36,
+   "t0": 152.5,
+   "h": "689e89d2",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+   "tele": "explain which two Git mechanisms LFS uses and which parts travel with a clone;",
+   "words": 14,
+   "est": 5.6,
+   "slide": 13,
+   "line": 36,
+   "t0": 154.1,
+   "h": "2b7389a3",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "state what git lfs track does not do for files already committed.",
+   "tele": "state what `git lfs track` does not do for files already committed.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 14,
+   "line": 36,
+   "t0": 159.7,
+   "h": "d9e1dbc2",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 15,
+   "line": 42,
+   "t0": 164.5,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why LFS exists. In one sentence: Git keeps every version of every file forever and gives every clone all of them, which is right for source code and ruinous for large binaries that change.",
+   "tele": "Why LFS exists. In one sentence: Git keeps every version of every file forever and gives every clone all of them, which is right for source code and ruinous for large binaries that change.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 16,
+   "line": 48,
+   "t0": 166.0,
+   "h": "57e09514",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Packfiles, the files Git packs its objects into, store similar objects as deltas, and that helps when versions share long runs of bytes. Retrained weights, compressed archives, images and audio share almost nothing from one version to the next. So each version costs its full size, and zlib can't shrink data that's already dense. The cost grows with the number of versions, and it's paid again by every clone and every CI job.",
+   "tele": "Packfiles, the files Git packs its objects into, store similar objects as deltas, and that helps when versions share long runs of bytes. Retrained weights, compressed archives, images and audio share almost nothing from one version to the next. So each version costs its full size, and zlib can't shrink data that's already dense. The cost grows with the number of versions, and it's paid again by every clone and every CI job.",
+   "words": 73,
+   "est": 29.2,
+   "slide": 16,
+   "line": 50,
+   "t0": 179.6,
+   "h": "e0cea62f",
+   "anim": {
+    "group": 11,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Deleting the file adds a commit. The old blobs, the objects that hold the file's content, are still reachable from the earlier commits. A hosting platform that rejects a large blob rejects it because it's in a commit being pushed, not because it's in the latest tree. Only a history rewrite removes it.",
+   "tele": "Deleting the file adds a commit. The old blobs, the objects that hold the file's content, are still reachable from the earlier commits. A hosting platform that rejects a large blob rejects it because it's in a commit being pushed, not because it's in the latest tree. Only a history rewrite removes it.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 17,
+   "line": 54,
+   "t0": 208.8,
+   "h": "8a43f79c",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "LFS changes one thing: Git stores a small text file in place of the binary, and the binary goes to a separate store that's downloaded per version, on demand.",
+   "tele": "LFS changes one thing: Git stores a small text file in place of the binary, and the binary goes to a separate store that's downloaded per version, on demand.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 18,
+   "line": 58,
+   "t0": 230.0,
+   "h": "a6765219",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The pointer and the two filters. In one sentence: for a path that's tracked by LFS, the blob in Git is a three-line pointer containing the SHA-256 and the size of the real content. SHA-256 is a checksum, a fingerprint computed from the bytes. The real content lives in an LFS object store, locally under .git/lfs/objects and remotely beside the Git repository.",
+   "tele": "The pointer and the two filters. In one sentence: for a path that's tracked by LFS, the blob in Git is a three-line pointer containing the SHA-256 and the size of the real content. SHA-256 is a checksum, a fingerprint computed from the bytes. The real content lives in an LFS object store, locally under `.git/lfs/objects` and remotely beside the Git repository.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 19,
+   "line": 64,
+   "t0": 241.6,
+   "h": "4baf5106",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now precisely: two filter commands do the exchange. Clean, run by git add, reads the file content, computes its SHA-256, and stores the content in .git/lfs/objects, in a path made of the first two hex digits, the next two, and the full hash. Then it hands Git the pointer text. Git hashes and stores the pointer as a blob.",
+   "tele": "Now precisely: two filter commands do the exchange. Clean, run by `git add`, reads the file content, computes its SHA-256, and stores the content in `.git/lfs/objects`, in a path made of the first two hex digits, the next two, and the full hash. Then it hands Git the pointer text. Git hashes and stores the pointer as a blob.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 19,
+   "line": 66,
+   "t0": 266.4,
+   "h": "210a1b0e",
+   "anim": {
+    "group": 13,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Smudge, run by checkout, reads the pointer from the blob, finds the object in the local store, downloads it from the remote if it isn't there, and writes the real content into the working tree.",
+   "tele": "Smudge, run by checkout, reads the pointer from the blob, finds the object in the local store, downloads it from the remote if it isn't there, and writes the real content into the working tree.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 20,
+   "line": 70,
+   "t0": 290.0,
+   "h": "f103d5f6",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The pointer format is fixed by the specification: UTF-8 text, one key and value per line, version first and the other keys in alphabetical order, less than 1024 bytes in total. The required keys are version, oid with the hash method as prefix, and size.",
+   "tele": "The pointer format is fixed by the specification: UTF-8 text, one key and value per line, `version` first and the other keys in alphabetical order, less than 1024 bytes in total. The required keys are `version`, `oid` with the hash method as prefix, and `size`.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 20,
+   "line": 72,
+   "t0": 304.0,
+   "h": "c5637680",
+   "anim": {
+    "group": 13,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The .gitattributes line. git lfs track writes it.",
+   "tele": "The `.gitattributes` line. `git lfs track` writes it.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 21,
+   "line": 76,
+   "t0": 322.0,
+   "h": "7254793f",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three rules follow from this being an ordinary attributes file. Commit .gitattributes: it's the only part of the setup that travels with the repository. The filter definition is local configuration and the hooks are local files, and a clone gets neither. Patterns follow gitignore syntax.",
+   "tele": "Three rules follow from this being an ordinary attributes file. Commit `.gitattributes`: it's the only part of the setup that travels with the repository. The filter definition is local configuration and the hooks are local files, and a clone gets neither. Patterns follow gitignore syntax.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 22,
+   "line": 87,
+   "t0": 325.2,
+   "h": "fcf59da5",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Quote them in the shell, or the shell expands the pattern to the files that exist today and git lfs track records those names. And tracking applies from the next git add. git lfs track edits a text file. It doesn't convert a file that's already in the index or in history.",
+   "tele": "Quote them in the shell, or the shell expands the pattern to the files that exist today and `git lfs track` records those names. And tracking applies from the next `git add`. `git lfs track` edits a text file. It doesn't convert a file that's already in the index or in history.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 23,
+   "line": 87,
+   "t0": 343.2,
+   "h": "92da9420",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When not to reach for LFS is a topic of its own two videos from now. For today, note the limit that the design implies: the LFS content isn't a Git object. git cat-file, git fsck, git gc and git push know nothing about it.",
+   "tele": "When not to reach for LFS is a topic of its own two videos from now. For today, note the limit that the design implies: the LFS content isn't a Git object. `git cat-file`, `git fsck`, `git gc` and `git push` know nothing about it.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 24,
+   "line": 89,
+   "t0": 364.0,
+   "h": "f4861497",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 25,
+   "line": 91,
+   "t0": 382.0,
+   "h": "",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook's analogy: a coat check. You hand over the coat and carry a numbered ticket. The ticket goes wherever you go, and the coat stays in the cloakroom until someone presents the ticket. Git history carries tickets.",
+   "tele": "The textbook's analogy: a coat check. You hand over the coat and carry a numbered ticket. The ticket goes wherever you go, and the coat stays in the cloakroom until someone presents the ticket. Git history carries tickets.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 26,
+   "line": 95,
+   "t0": 383.5,
+   "h": "9aae3b3a",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 4,
+      "to": 4,
+      "says": [
+       "The pointer is the ticket. The content is the coat"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks in two places. The number on the ticket is computed from the coat itself, so the same content always gets the same ticket. And a ticket can be copied to a place that has no cloakroom attendant, where it is only a piece of paper.",
+   "tele": "The analogy breaks in two places. The number on the ticket is computed from the coat itself, so the same content always gets the same ticket. And a ticket can be copied to a place that has no cloakroom attendant, where it is only a piece of paper.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 27,
+   "line": 101,
+   "t0": 398.7,
+   "h": "64c0cf51",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.405,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Keep that second break in mind. A machine without the LFS client receives the tickets, because tickets are ordinary Git blobs, and nobody there exchanges them. That's the 132-byte model file, and it's the next video.",
+   "tele": "Keep that second break in mind. A machine without the LFS client receives the tickets, because tickets are ordinary Git blobs, and nobody there exchanges them. That's the 132-byte model file, and it's the next video.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 28,
+   "line": 105,
+   "t0": 417.9,
+   "h": "42de1711",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Try it now, on paper, thirty seconds. Draw three boxes: working tree, Git objects, LFS store. For a model of 1,200,000 bytes, write in each box what you predict it holds.",
+   "tele": "Try it now, on paper, thirty seconds. Draw three boxes: working tree, Git objects, LFS store. For a model of 1,200,000 bytes, write in each box what you predict it holds.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 29,
+   "line": 107,
+   "t0": 432.3,
+   "h": "ae818ffe",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 29,
+   "line": 109,
+   "t0": 445.5,
+   "h": "",
+   "anim": {
+    "group": 20,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 34,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 30,
+   "line": 111,
+   "t0": 450.0,
+   "h": "",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Check your drawing. Left: the real file, 1,200,000 bytes. Middle: what Git stores, a blob of 132 bytes. Right: where the real bytes are kept, in a file named by their own SHA-256. The two captions say who moves each store. Git moves the middle one. The LFS client moves the right one.",
+   "tele": "Check your drawing. Left: the real file, 1,200,000 bytes. Middle: what Git stores, a blob of 132 bytes. Right: where the real bytes are kept, in a file named by their own SHA-256. The two captions say who moves each store. Git moves the middle one. The LFS client moves the right one.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 31,
+   "line": 129,
+   "t0": 451.5,
+   "h": "eea1b1c8",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.273,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.547,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 32,
+   "line": 131,
+   "t0": 473.5,
+   "h": "",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Predict: the working tree has one model. How many model blobs does the repository have? Say it out loud. I'll wait.",
+   "tele": "Predict: the working tree has one model. How many model blobs does the repository have? Say it out loud. I'll wait.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 33,
+   "line": 141,
+   "t0": 475.0,
+   "h": "40982cf6",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 33,
+   "line": 143,
+   "t0": 483.4,
+   "h": "",
+   "anim": {
+    "group": 24,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three, one per version, each stored whole.",
+   "tele": "Three, one per version, each stored whole.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 34,
+   "line": 167,
+   "t0": 487.9,
+   "h": "07e58171",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 1.96,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A teammate's clone downloads all three, to check out one. Now the reflex from the opening: delete the model and commit. A quick quiz. How many of the three big blobs are left afterwards: none, or all three? Say it out loud.",
+   "tele": "A teammate's clone downloads all three, to check out one. Now the reflex from the opening: delete the model and commit. A quick quiz. How many of the three big blobs are left afterwards: none, or all three? Say it out loud.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 35,
+   "line": 193,
+   "t0": 490.7,
+   "h": "24a3680d",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 35,
+   "line": 195,
+   "t0": 507.5,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "All three. The deleting commit says \"0 insertions, 0 deletions\" and \"delete mode\".",
+   "tele": "All three. The deleting commit says \"0 insertions, 0 deletions\" and \"delete mode\".",
+   "words": 13,
+   "est": 5.2,
+   "slide": 36,
+   "line": 217,
+   "t0": 512.0,
+   "h": "664c1f97",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "And the three blobs, 1.3, 1.25 and 1.2 megabytes, are still there, reachable from the earlier commits. That's the answer to question 1, the one you were holding on to.",
+   "tele": "And the three blobs, 1.3, 1.25 and 1.2 megabytes, are still there, reachable from the earlier commits. That's the answer to question 1, the one you were holding on to.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 37,
+   "line": 221,
+   "t0": 517.2,
+   "h": "c67b0d0f",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 38,
+   "line": null,
+   "t0": 529.2,
+   "h": "",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A clean command, a smudge command, a process variant that handles all files of one command in a single process, and filter.lfs.required=true.",
+   "tele": "A clean command, a smudge command, a `process` variant that handles all files of one command in a single process, and `filter.lfs.required=true`.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 39,
+   "line": 254,
+   "t0": 531.7,
+   "h": "6b123418",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "You know that last key from the filters video: if the filter fails, the Git command fails. You also know its limit: it's part of a definition that a clone doesn't receive.",
+   "tele": "You know that last key from the filters video: if the filter fails, the Git command fails. You also know its limit: it's part of a definition that a clone doesn't receive.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 40,
+   "line": 258,
+   "t0": 540.5,
+   "h": "98782e0b",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The filter definition says how to convert. .gitattributes says which paths get converted. 🟢 SAFE: git lfs track writes that line.",
+   "tele": "The filter definition says how to convert. `.gitattributes` says which paths get converted. 🟢 SAFE: `git lfs track` writes that line.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 41,
+   "line": 262,
+   "t0": 553.3,
+   "h": "20673408",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One line in .gitattributes, with the four attributes from the table, and git check-attr confirms them for the model path. Notice the quotes around the pattern.",
+   "tele": "One line in `.gitattributes`, with the four attributes from the table, and `git check-attr` confirms them for the model path. Notice the quotes around the pattern.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 42,
+   "line": 291,
+   "t0": 561.3,
+   "h": "e603af01",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.074,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.81,
+      "dissolve": false
+     },
+     {
+      "at": 0.46,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.93,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now add a model of 1,200,000 bytes and commit it together with .gitattributes.",
+   "tele": "Now add a model of 1,200,000 bytes and commit it together with `.gitattributes`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 42,
+   "line": 293,
+   "t0": 571.7,
+   "h": "793875cf",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Remember the first characters of the checksum: 0269885262.",
+   "tele": "Remember the first characters of the checksum: `0269885262`.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 43,
+   "line": 317,
+   "t0": 577.7,
+   "h": "a60a4aee",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.24,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Predict two numbers. The size of the blob that Git stored for models/acoustic.onnx. And the size of the file in the working tree. I'll wait.",
+   "tele": "Predict two numbers. The size of the blob that Git stored for `models/acoustic.onnx`. And the size of the file in the working tree. I'll wait.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 43,
+   "line": 319,
+   "t0": 580.9,
+   "h": "839e6ff2",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0.437,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.94,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 321,
+   "t0": 590.9,
+   "h": "",
+   "anim": {
+    "group": 34,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The blob is 132 bytes of text. Read the three lines: version and a URL, then oid sha256: and the checksum that shasum printed, then size 1200000.",
+   "tele": "The blob is 132 bytes of text. Read the three lines: `version` and a URL, then `oid sha256:` and the checksum that `shasum` printed, then `size 1200000`.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 44,
+   "line": 344,
+   "t0": 595.4,
+   "h": "9a4c4468",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The working tree still has the real file. The clean filter changes what goes into the repository, not what is on your disk. If you predicted 132 bytes in both places, that's a natural guess.",
+   "tele": "The working tree still has the real file. The clean filter changes what goes into the repository, not what is on your disk. If you predicted 132 bytes in both places, that's a natural guess.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 45,
+   "line": 348,
+   "t0": 606.2,
+   "h": "2afd9dd1",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The content is under .git/lfs/objects/02/69/, in a file named by its own SHA-256. It isn't a Git object. git lfs ls-files lists the LFS-tracked paths of the current commit. The asterisk means the working tree file holds the real content, and a minus sign would mean it holds a pointer. git lfs pointer --file computes the pointer for a file without storing anything.",
+   "tele": "The content is under `.git/lfs/objects/02/69/`, in a file named by its own SHA-256. It isn't a Git object. `git lfs ls-files` lists the LFS-tracked paths of the current commit. The asterisk means the working tree file holds the real content, and a minus sign would mean it holds a pointer. `git lfs pointer --file` computes the pointer for a file without storing anything.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 46,
+   "line": 374,
+   "t0": 620.2,
+   "h": "cd41962c",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.288,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     },
+     {
+      "at": 0.78,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.89,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A new version of the model, not yet staged.",
+   "tele": "A new version of the model, not yet staged.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 46,
+   "line": 376,
+   "t0": 645.4,
+   "h": "9afe7c27",
+   "anim": {
+    "group": 37,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 47,
+   "line": null,
+   "t0": 649.0,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git diff shows the difference between two pointers: an oid line and a size line. No diff driver named lfs is defined, so this is all a diff of an LFS file can say. git lfs status adds what a push would upload.",
+   "tele": "`git diff` shows the difference between two pointers: an `oid` line and a `size` line. No diff driver named `lfs` is defined, so this is all a diff of an LFS file can say. `git lfs status` adds what a push would upload.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 48,
+   "line": 414,
+   "t0": 652.0,
+   "h": "6443eba5",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "New bytes, so a new ticket: 0269885 has become f8719e1.",
+   "tele": "New bytes, so a new ticket: `0269885` has become `f8719e1`.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 49,
+   "line": 418,
+   "t0": 669.2,
+   "h": "708a9ebf",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "And the second mechanism: hooks.",
+   "tele": "And the second mechanism: hooks.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 50,
+   "line": 422,
+   "t0": 673.2,
+   "h": "870a5d9b",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Each hook has two lines. The first checks that git-lfs is on the path and prints an explanation if it isn't. That's the rule from the hooks video about hooks that depend on tools. The second hands over to git lfs. The pre-push hook is what uploads the content when you push.",
+   "tele": "Each hook has two lines. The first checks that `git-lfs` is on the path and prints an explanation if it isn't. That's the rule from the hooks video about hooks that depend on tools. The second hands over to `git lfs`. The `pre-push` hook is what uploads the content when you push.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 51,
+   "line": 442,
+   "t0": 675.2,
+   "h": "455c709c",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 52,
+   "line": null,
+   "t0": 696.0,
+   "h": "",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 53,
+   "line": 450,
+   "t0": 701.0,
+   "h": "",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 54,
+   "line": 452,
+   "t0": 702.5,
+   "h": "76698d9b",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Deleting a large file to get a rejected push through. Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+   "tele": "Deleting a large file to get a rejected push through. Root cause: the blob is still reachable from the earlier commits being pushed; only a history rewrite removes it.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 55,
+   "line": 454,
+   "t0": 704.5,
+   "h": "c395f18d",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Running git lfs track and assuming existing files are converted. Root cause: it edits .gitattributes; conversion happens at the next git add, and nothing changes for files already in the index or in history.",
+   "tele": "Running `git lfs track` and assuming existing files are converted. Root cause: it edits `.gitattributes`; conversion happens at the next `git add`, and nothing changes for files already in the index or in history.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 56,
+   "line": 454,
+   "t0": 716.1,
+   "h": "8eb88291",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "An unquoted pattern in git lfs track. Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+   "tele": "An unquoted pattern in `git lfs track`. Root cause: the shell expands it to the files that exist today, and those names are recorded instead of the pattern.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 57,
+   "line": 454,
+   "t0": 729.7,
+   "h": "c1a049ed",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Not committing .gitattributes. Root cause: it is the only part of the LFS setup that travels with the repository.",
+   "tele": "Not committing `.gitattributes`. Root cause: it is the only part of the LFS setup that travels with the repository.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 58,
+   "line": 454,
+   "t0": 740.9,
+   "h": "49dfec77",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting git fsck, git gc or git push to look after the model content. Root cause: LFS objects are files under .git/lfs/objects, not Git objects; only the pointer is.",
+   "tele": "Expecting `git fsck`, `git gc` or `git push` to look after the model content. Root cause: LFS objects are files under `.git/lfs/objects`, not Git objects; only the pointer is.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 59,
+   "line": 454,
+   "t0": 748.5,
+   "h": "2a0782e3",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 60,
+   "line": 460,
+   "t0": 760.1,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A repository holds an evaluation harness and three reference checkpoints of a few hundred megabytes that change twice a year. Before LFS, every retraining added a full copy of each checkpoint to every clone, and the CI jobs that only lint the code downloaded all of them.",
+   "tele": "Now, out of the lab. A repository holds an evaluation harness and three reference checkpoints of a few hundred megabytes that change twice a year. Before LFS, every retraining added a full copy of each checkpoint to every clone, and the CI jobs that only lint the code downloaded all of them.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 61,
+   "line": 462,
+   "t0": 761.6,
+   "h": "08fcb8ea",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "With LFS, a clone downloads the code and the pointers at once, and each checkpoint only when a checkout needs it. A CI job that doesn't need the checkpoints can skip them. The team's review checklist gained one line: a pull request that adds a new binary type must also add its pattern to .gitattributes, in the same commit, and the checksum in the pointer is what the model card cites.",
+   "tele": "With LFS, a clone downloads the code and the pointers at once, and each checkpoint only when a checkout needs it. A CI job that doesn't need the checkpoints can skip them. The team's review checklist gained one line: a pull request that adds a new binary type must also add its pattern to `.gitattributes`, in the same commit, and the checksum in the pointer is what the model card cites.",
+   "words": 71,
+   "est": 28.4,
+   "slide": 62,
+   "line": 466,
+   "t0": 782.4,
+   "h": "c196a83a",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.273,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.547,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 63,
+   "line": 468,
+   "t0": 810.8,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 15.3, \"Inspect an LFS pointer\", in lab-manual/m15-submodules-subtrees-lfs.md.",
+   "tele": "Your turn. Do Lab 15.3, \"Inspect an LFS pointer\", in `lab-manual/m15-submodules-subtrees-lfs.md`.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 64,
+   "line": 470,
+   "t0": 812.3,
+   "h": "3cf8374e",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before you commit the tracked file, predict the three lines of the pointer: compute the checksum yourself and write down the size. Predict the size that git cat-file -s will print for the path, and the path of the file under .git/lfs/objects.",
+   "tele": "Before you commit the tracked file, predict the three lines of the pointer: compute the checksum yourself and write down the size. Predict the size that `git cat-file -s` will print for the path, and the path of the file under `.git/lfs/objects`.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 65,
+   "line": 472,
+   "t0": 816.7,
+   "h": "98bd3378",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 15.6, Level 2, command prediction, \"Tracked too late\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "The challenge is Exercise 15.6, Level 2, command prediction, \"Tracked too late\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 66,
+   "line": 474,
+   "t0": 833.5,
+   "h": "dde05076",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 67,
+   "line": 476,
+   "t0": 839.1,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 68,
+   "line": 480,
+   "t0": 840.6,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 79,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud. A strong answer names two stores and never blurs them. For Git's side it says what kind of object the path is, what its content looks like and roughly how large it is. For the LFS side it says how the content is addressed and gives the local location.",
+   "tele": "Answer out loud. A strong answer names two stores and never blurs them. For Git's side it says what kind of object the path is, what its content looks like and roughly how large it is. For the LFS side it says how the content is addressed and gives the local location.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 68,
+   "line": 482,
+   "t0": 842.6,
+   "h": "c6e7566b",
+   "anim": {
+    "group": 55,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 80,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "It says which program moves each store and at which moment, and it's careful about the remote: what is known from a run against a local remote and what a hosted service does according to its documentation. It may add which part of the setup a fresh clone receives and which it doesn't.",
+   "tele": "It says which program moves each store and at which moment, and it's careful about the remote: what is known from a run against a local remote and what a hosted service does according to its documentation. It may add which part of the setup a fresh clone receives and which it doesn't.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 68,
+   "line": 482,
+   "t0": 863.4,
+   "h": "6ace4cb6",
+   "anim": {
+    "group": 55,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 81,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 69,
+   "line": 484,
+   "t0": 884.6,
+   "h": "",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 82,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. One path, two sizes: the real bytes in your working tree, and a 132-byte pointer in Git.",
+   "tele": "Let's land this. One path, two sizes: the real bytes in your working tree, and a 132-byte pointer in Git.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 70,
+   "line": 488,
+   "t0": 886.1,
+   "h": "a45cfa7c",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 83,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 71,
+   "line": 490,
+   "t0": 894.1,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 84,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+   "tele": "Git gives every clone every version of every file, and binaries that change do not delta or compress, so each version costs its full size for everyone.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 72,
+   "line": 492,
+   "t0": 896.9,
+   "h": "a4a9d415",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Deleting a large file later does not remove its blobs from history.",
+   "tele": "Deleting a large file later does not remove its blobs from history.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 73,
+   "line": 492,
+   "t0": 907.7,
+   "h": "2f567562",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under .git/lfs/objects, named by that hash.",
+   "tele": "For an LFS-tracked path Git stores a pointer of about 130 bytes with the SHA-256 and the size; the content is under `.git/lfs/objects`, named by that hash.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 74,
+   "line": 492,
+   "t0": 912.5,
+   "h": "a8b105fa",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "LFS is a clean and smudge filter selected by .gitattributes, plus hooks; only .gitattributes travels with a clone.",
+   "tele": "LFS is a clean and smudge filter selected by `.gitattributes`, plus hooks; only `.gitattributes` travels with a clone.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 75,
+   "line": 492,
+   "t0": 923.3,
+   "h": "da71b0df",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git lfs track affects files added afterwards, not files already committed.",
+   "tele": "`git lfs track` affects files added afterwards, not files already committed.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 76,
+   "line": 492,
+   "t0": 930.5,
+   "h": "d480a228",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 77,
+   "line": 498,
+   "t0": 934.9,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 22.1 to 22.4 of Chapter 22. Do Exercise 15.2, Level 1, \"A first LFS pointer\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "Read sections 22.1 to 22.4 of Chapter 22. Do Exercise 15.2, Level 1, \"A first LFS pointer\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 78,
+   "line": 500,
+   "t0": 936.4,
+   "h": "2d11332b",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you read a pointer file and matched its checksum by hand, and you can now say what LFS stores where. Practise with the lab before you move on. Next time: Git LFS day to day, and that 132-byte model file. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you read a pointer file and matched its checksum by hand, and you can now say what LFS stores where. Practise with the lab before you move on. Next time: Git LFS day to day, and that 132-byte model file. Until then, look at the state first and type second. See you in the next one.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 79,
+   "line": 502,
+   "t0": 944.0,
+   "h": "3eaa5d61",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 966.8,
+ "narration_words": 2287,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

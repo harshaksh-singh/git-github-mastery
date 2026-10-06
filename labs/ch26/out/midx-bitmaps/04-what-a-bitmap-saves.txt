@@ -1,0 +1,16 @@
+# Serve one full clone and ask the serving side how it filled the pack:
+$ GIT_TRACE2_PERF=1 git clone -q --bare "file://$PWD/server/orbit.git" with-bitmap.git 2>&1 | awk -F'|' '$4 ~ /data/ {gsub(/[ .]/, "", $NF); gsub(/ /, "", $(NF-1)); print $(NF-1), $NF}' | grep -e ' written:' -e ' reused:' -e 'pack-reused:'
+pack-objects written:519
+pack-objects reused:0
+pack-objects pack-reused:519
+# Remove the bitmap and serve the same clone again:
+$ rm server/orbit.git/objects/pack/*.bitmap
+$ GIT_TRACE2_PERF=1 git clone -q --bare "file://$PWD/server/orbit.git" without-bitmap.git 2>&1 | awk -F'|' '$4 ~ /data/ {gsub(/[ .]/, "", $NF); gsub(/ /, "", $(NF-1)); print $(NF-1), $NF}' | grep -e ' written:' -e ' reused:' -e 'pack-reused:'
+pack-objects written:519
+pack-objects reused:519
+pack-objects pack-reused:0
+# Both clones are complete:
+$ git -C with-bitmap.git rev-list --count --objects --all
+519
+$ git -C without-bitmap.git rev-list --count --objects --all
+519

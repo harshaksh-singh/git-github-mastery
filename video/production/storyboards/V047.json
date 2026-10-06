@@ -1,0 +1,6769 @@
+{
+ "id": "V047",
+ "version": 22,
+ "title": "git reset: the three modes, why --hard is dangerous, and the resets that check first",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 28,
+ "chapters": [
+  "ch11-reset-revert-restore.md"
+ ],
+ "script": "video/scripts/V047-git-reset-the-three-modes-why-hard-is-dangerous-and-the-resets-that-check-first.md",
+ "script_sha1": "7e488f1fa899e5ce71caa0193b72f5983897db38",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 24
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 10,
+   "line": 34
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 17,
+   "line": 46
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 32,
+   "line": 98
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 36,
+   "line": 114
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 40,
+   "line": 151
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 90,
+   "line": 705
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 97,
+   "line": 717
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 102,
+   "line": 733
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 107,
+   "line": 743
+  },
+  {
+   "name": "RECAP",
+   "beat": 111,
+   "line": 755
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 116,
+   "line": 771
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "git reset: the three modes, why --hard is dangerous, and the resets that check first",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0017
+  },
+  {
+   "kind": "callout",
+   "direction": "\"An engineer ran `git reset --hard` and says two days of work are gone.\"",
+   "quotes": [
+    "An engineer ran <code>git reset --hard</code> and says two days of work are gone."
+   ],
+   "quoted": true,
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.003
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=Two_days_of_work,_three_kinds_of_thing cards=committed:comes_back_through_the_reflog|staged:survives_as_a_blob_without_a_name|never_staged:gone,_Git_never_stored_it numbered=on marks=1:ok,2:ok,3:bad id=three at_1=44 at_2=62 at_3=80",
+   "scene": "cards",
+   "params": {
+    "question": "Two days of work, three kinds of thing",
+    "cards": [
+     [
+      "committed",
+      "comes back through the reflog"
+     ],
+     [
+      "staged",
+      "survives as a blob without a name"
+     ],
+     [
+      "never staged",
+      "gone, Git never stored it"
+     ]
+    ],
+    "numbered": "on",
+    "marks": [
+     [
+      "1",
+      "ok"
+     ],
+     [
+      "2",
+      "ok"
+     ],
+     [
+      "3",
+      "bad"
+     ]
+    ],
+    "id": "three",
+    "at": {
+     "1": 0.44,
+     "2": 0.62,
+     "3": 0.8
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "marks"
+   ],
+   "upto": 3,
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0084
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 5,
+   "progress": 0.044
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0453
+  },
+  {
+   "kind": "keypoint",
+   "body": "The plan. First the three modes, <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>, on one file that has a different version in each of the three trees, so that you can see how far each mode spreads.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0585
+  },
+  {
+   "kind": "keypoint",
+   "body": "Then section 11.5: four kinds of work, one hard reset, and what is left of each.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0825
+  },
+  {
+   "kind": "keypoint",
+   "body": "All of it applies to private history only.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0978
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1036
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict the working tree, the index and the branch after <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>.",
+    "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+    "Preview a hard reset and set a way back before running it.",
+    "Choose <code>--keep</code> over <code>--hard</code>, and explain what <code>--merge</code> protects.",
+    "Describe <code>git commit --amend</code> as a soft reset followed by a commit."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1048
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict the working tree, the index and the branch after <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>.",
+    "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+    "Preview a hard reset and set a way back before running it.",
+    "Choose <code>--keep</code> over <code>--hard</code>, and explain what <code>--merge</code> protects.",
+    "Describe <code>git commit --amend</code> as a soft reset followed by a commit."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1065
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict the working tree, the index and the branch after <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>.",
+    "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+    "Preview a hard reset and set a way back before running it.",
+    "Choose <code>--keep</code> over <code>--hard</code>, and explain what <code>--merge</code> protects.",
+    "Describe <code>git commit --amend</code> as a soft reset followed by a commit."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1113
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict the working tree, the index and the branch after <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>.",
+    "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+    "Preview a hard reset and set a way back before running it.",
+    "Choose <code>--keep</code> over <code>--hard</code>, and explain what <code>--merge</code> protects.",
+    "Describe <code>git commit --amend</code> as a soft reset followed by a commit."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1174
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict the working tree, the index and the branch after <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>.",
+    "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+    "Preview a hard reset and set a way back before running it.",
+    "Choose <code>--keep</code> over <code>--hard</code>, and explain what <code>--merge</code> protects.",
+    "Describe <code>git commit --amend</code> as a soft reset followed by a commit."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1214
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict the working tree, the index and the branch after <code>--soft</code>, <code>--mixed</code> and <code>--hard</code>.",
+    "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+    "Preview a hard reset and set a way back before running it.",
+    "Choose <code>--keep</code> over <code>--hard</code>, and explain what <code>--merge</code> protects.",
+    "Describe <code>git commit --amend</code> as a soft reset followed by a commit."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1245
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1286
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 4d17008-d44696e-9d940ca main; HEAD=main => 4d17008-d44696e main; 9d940ca ORIG_HEAD; HEAD=main; reflog:9d940ca title=A_reset_moves_the_branch id=move",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "4d17008",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d44696e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "4d17008"
+      ]
+     },
+     {
+      "id": "9d940ca",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d44696e"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "4d17008",
+       "d44696e",
+       "9d940ca"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d44696e",
+       "ORIG_HEAD": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "A reset moves the branch",
+    "id": "move"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1298
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: state=2,2,2 history=off steps=setup,reset-soft,reset-mixed,reset-hard id=steps title=What_a_reset_writes at_reset_soft=35",
+   "scene": "trees",
+   "params": {
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "history": "off",
+    "id": "steps",
+    "title": "What a reset writes",
+    "at": {
+     "reset-soft": 0.35
+    }
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1464
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: state=2,2,2 history=off steps=setup,reset-soft,reset-mixed,reset-hard id=steps title=What_a_reset_writes at_reset_soft=35",
+   "scene": "trees",
+   "params": {
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "history": "off",
+    "id": "steps",
+    "title": "What a reset writes",
+    "at": {
+     "reset-soft": 0.35
+    }
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1542
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: state=2,2,2 history=off steps=setup,reset-soft,reset-mixed,reset-hard id=steps title=What_a_reset_writes at_reset_soft=35",
+   "scene": "trees",
+   "params": {
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "history": "off",
+    "id": "steps",
+    "title": "What a reset writes",
+    "at": {
+     "reset-soft": 0.35
+    }
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 4,
+   "danger": true,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1586
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: state=2,2,2 history=off steps=setup,reset-soft,reset-mixed,reset-hard id=steps title=What_a_reset_writes at_reset_soft=35",
+   "scene": "trees",
+   "params": {
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "history": "off",
+    "id": "steps",
+    "title": "What a reset writes",
+    "at": {
+     "reset-soft": 0.35
+    }
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.1644
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 4d17008-d44696e-9d940ca main; HEAD=main => 4d17008-d44696e main; 9d940ca ORIG_HEAD; HEAD=main; reflog:9d940ca title=A_reset_moves_the_branch id=move",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "4d17008",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d44696e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "4d17008"
+      ]
+     },
+     {
+      "id": "9d940ca",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d44696e"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "4d17008",
+       "d44696e",
+       "9d940ca"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d44696e",
+       "ORIG_HEAD": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "A reset moves the branch",
+    "id": "move"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.1803
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now why <code>--hard</code> is 🔴. <code>--soft</code> and <code>--mixed</code> never write a file.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.1922
+  },
+  {
+   "kind": "keypoint",
+   "body": "Quick quiz. You stage a file, and a hard reset takes it away.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2115
+  },
+  {
+   "kind": "keypoint",
+   "body": "B. Staging wrote the blob, and a reset deletes no object.",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.2265
+  },
+  {
+   "kind": "scene",
+   "direction": "ladder: rungs=only_in_the_reflog:kept_30_days_(gc.reflogExpireUnreachable)|unreachable_object:removed_by_gc_once_older_than_two_weeks_(gc.pruneExpire) title=How_long_the_recoverable_kinds_last at_1=30 at_2=58",
+   "scene": "ladder",
+   "params": {
+    "rungs": [
+     [
+      "only in the reflog",
+      "kept 30 days (gc.reflogExpireUnreachable)"
+     ],
+     [
+      "unreachable object",
+      "removed by gc once older than two weeks (gc.pruneExpire)"
+     ]
+    ],
+    "title": "How long the recoverable kinds last",
+    "at": {
+     "1": 0.3,
+     "2": 0.58
+    }
+   },
+   "steps": [
+    "1",
+    "2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.2316
+  },
+  {
+   "kind": "keypoint",
+   "body": "The alternatives. <code>git reset --keep &lt;commit&gt;</code> 🟡 moves the branch like <code>--hard</code>, carries your uncommitted changes across, and refuses to run when it would have to overwrite one of them.",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.253
+  },
+  {
+   "kind": "keypoint",
+   "body": "And <code>git commit --amend</code> 🟡 replaces the last commit with a new commit that has the same parent and is built from the current index.",
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.274
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.2886
+  },
+  {
+   "kind": "callout",
+   "direction": "\"Move the bookmark. Then: clear the draft page? Clear the desk?\"",
+   "quotes": [
+    "Move the bookmark. Then: clear the draft page? Clear the desk?"
+   ],
+   "quoted": true,
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.2898
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: names=The_desk,The_draft_page,The_bookmark subs=working_tree,index,the_branch versions=the_entry_before,the_latest_entry state=2,2,2 file=entry history=off cmd=off steps=setup,reset-soft,reset-mixed,reset-hard title=A_bookmark_in_a_lab_notebook say_setup=No_page_is_torn_out:_the_entries_after_the_bookmark_stay_in_the_notebook say_reset_soft=--soft_moves_the_bookmark_back say_reset_mixed=--mixed_also_clears_the_draft_page say_reset_hard=--hard_also_clears_the_desk at_reset_soft=14 at_reset_mixed=26 at_reset_hard=36 id=desk",
+   "scene": "trees",
+   "params": {
+    "names": [
+     "The desk",
+     "The draft page",
+     "The bookmark"
+    ],
+    "subs": [
+     "working tree",
+     "index",
+     "the branch"
+    ],
+    "versions": [
+     "the entry before",
+     "the latest entry"
+    ],
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "file": "entry",
+    "history": "off",
+    "cmd": "off",
+    "title": "A bookmark in a lab notebook",
+    "say": {
+     "setup": "No page is torn out: the entries after the bookmark stay in the notebook",
+     "reset-soft": "--soft moves the bookmark back",
+     "reset-mixed": "--mixed also clears the draft page",
+     "reset-hard": "--hard also clears the desk"
+    },
+    "at": {
+     "reset-soft": 0.14,
+     "reset-mixed": 0.26,
+     "reset-hard": 0.36
+    },
+    "id": "desk"
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 1,
+   "section": "MENTAL MODEL",
+   "n": 32,
+   "progress": 0.3014
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: names=The_desk,The_draft_page,The_bookmark subs=working_tree,index,the_branch versions=the_entry_before,the_latest_entry state=2,2,2 file=entry history=off cmd=off steps=setup,reset-soft,reset-mixed,reset-hard title=A_bookmark_in_a_lab_notebook say_setup=No_page_is_torn_out:_the_entries_after_the_bookmark_stay_in_the_notebook say_reset_soft=--soft_moves_the_bookmark_back say_reset_mixed=--mixed_also_clears_the_draft_page say_reset_hard=--hard_also_clears_the_desk at_reset_soft=14 at_reset_mixed=26 at_reset_hard=36 id=desk",
+   "scene": "trees",
+   "params": {
+    "names": [
+     "The desk",
+     "The draft page",
+     "The bookmark"
+    ],
+    "subs": [
+     "working tree",
+     "index",
+     "the branch"
+    ],
+    "versions": [
+     "the entry before",
+     "the latest entry"
+    ],
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "file": "entry",
+    "history": "off",
+    "cmd": "off",
+    "title": "A bookmark in a lab notebook",
+    "say": {
+     "setup": "No page is torn out: the entries after the bookmark stay in the notebook",
+     "reset-soft": "--soft moves the bookmark back",
+     "reset-mixed": "--mixed also clears the draft page",
+     "reset-hard": "--hard also clears the desk"
+    },
+    "at": {
+     "reset-soft": 0.14,
+     "reset-mixed": 0.26,
+     "reset-hard": 0.36
+    },
+    "id": "desk"
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 4,
+   "danger": true,
+   "section": "MENTAL MODEL",
+   "n": 33,
+   "progress": 0.3112
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.3298
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 4d17008-d44696e-9d940ca main; HEAD=main => 4d17008-d44696e main; 9d940ca ORIG_HEAD HEAD@{1} main@{1}; HEAD=main; reflog:9d940ca title=Before_and_after_git_reset_HEAD~1",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "4d17008",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d44696e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "4d17008"
+      ]
+     },
+     {
+      "id": "9d940ca",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d44696e"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "4d17008",
+       "d44696e",
+       "9d940ca"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d44696e",
+       "ORIG_HEAD": "9d940ca",
+       "HEAD@{1}": "9d940ca",
+       "main@{1}": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Before and after git reset HEAD~1"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 2,
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.3311
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 4d17008-d44696e-9d940ca main; HEAD=main => 4d17008-d44696e main; 9d940ca ORIG_HEAD HEAD@{1} main@{1}; HEAD=main; reflog:9d940ca title=Before_and_after_git_reset_HEAD~1",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "4d17008",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d44696e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "4d17008"
+      ]
+     },
+     {
+      "id": "9d940ca",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d44696e"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "4d17008",
+       "d44696e",
+       "9d940ca"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d44696e",
+       "ORIG_HEAD": "9d940ca",
+       "HEAD@{1}": "9d940ca",
+       "main@{1}": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Before and after git reset HEAD~1"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "DIAGRAM",
+   "n": 36,
+   "progress": 0.3362
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=eval.yaml_in,HEAD,Index,Working_tree,git_status_-s rows=before:0.70:0.80:0.90:MM|after_git_reset_--soft_HEAD~1:?:?:?:?|after_git_reset_--mixed_HEAD~1:?:?:?:?|after_git_reset_--hard_HEAD~1:?:?:?:? title=The_prediction_table",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "eval.yaml in",
+     "HEAD",
+     "Index",
+     "Working tree",
+     "git status -s"
+    ],
+    "rows": [
+     [
+      "before",
+      "0.70",
+      "0.80",
+      "0.90",
+      "MM"
+     ],
+     [
+      "after git reset --soft HEAD~1",
+      "?",
+      "?",
+      "?",
+      "?"
+     ],
+     [
+      "after git reset --mixed HEAD~1",
+      "?",
+      "?",
+      "?",
+      "?"
+     ],
+     [
+      "after git reset --hard HEAD~1",
+      "?",
+      "?",
+      "?",
+      "?"
+     ]
+    ],
+    "title": "The prediction table"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "DIAGRAM",
+   "n": 37,
+   "progress": 0.3457
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.3542
+  },
+  {
+   "kind": "terminal",
+   "direction": "`labs/run ch11/reset-modes`. The starting state is the one from the last video: 0.70 in HEAD, 0.80 in the index, 0.90 on disk. Each mode runs in its own copy.",
+   "mode": "out",
+   "title": "ch11/reset-modes/01-before",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "9d940ca Raise threshold to 0.70"
+    },
+    {
+     "t": "out",
+     "s": "d44696e Raise threshold to 0.60"
+    },
+    {
+     "t": "out",
+     "s": "4d17008 Add eval config"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.70"
+    },
+    {
+     "t": "cmd",
+     "s": "git show :eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.80"
+    },
+    {
+     "t": "cmd",
+     "s": "cat eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.90"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "MM eval.yaml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.3554
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: file=eval.yaml chips=0.90,0.80,0.70 ref=main commits=9d940ca steps=setup title=Before_the_reset:_one_file,_three_versions",
+   "scene": "trees",
+   "params": {
+    "file": "eval.yaml",
+    "chips": [
+     "0.90",
+     "0.80",
+     "0.70"
+    ],
+    "ref": "main",
+    "commits": [
+     "9d940ca"
+    ],
+    "title": "Before the reset: one file, three versions"
+   },
+   "steps": [
+    "setup"
+   ],
+   "upto": 1,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.3602
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch11/reset-modes",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --soft HEAD~1"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.3683
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-modes/02-soft",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --soft HEAD~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "d44696e Raise threshold to 0.60"
+    },
+    {
+     "t": "out",
+     "s": "4d17008 Add eval config"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "git show :eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.80"
+    },
+    {
+     "t": "cmd",
+     "s": "cat eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.90"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "MM eval.yaml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.3721
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-modes/03-mixed",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --mixed HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "Unstaged changes after reset:"
+    },
+    {
+     "t": "out",
+     "s": "M       eval.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "d44696e Raise threshold to 0.60"
+    },
+    {
+     "t": "out",
+     "s": "4d17008 Add eval config"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "git show :eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "cat eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.90"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M eval.yaml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.3922
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-modes/04-hard",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at d44696e Raise threshold to 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "d44696e Raise threshold to 0.60"
+    },
+    {
+     "t": "out",
+     "s": "4d17008 Add eval config"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "git show :eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "cat eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "threshold: 0.60"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.4042
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Inside <code>.git</code>",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.4109
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-modes/05-inside-git",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "9d940caa6545e66b9555bf56a26ea9242b19e402"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --soft HEAD~1"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "d44696eb333776b2089f9627a30f31733c0df8be"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "9d940caa6545e66b9555bf56a26ea9242b19e402"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog -2"
+    },
+    {
+     "t": "out",
+     "s": "d44696e HEAD@{0}: reset: moving to HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "9d940ca HEAD@{1}: commit: Raise threshold to 0.70"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog show -2 main"
+    },
+    {
+     "t": "out",
+     "s": "d44696e main@{0}: reset: moving to HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "9d940ca main@{1}: commit: Raise threshold to 0.70"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.4119
+  },
+  {
+   "kind": "keypoint",
+   "headline": "<code>ORIG_HEAD</code>",
+   "body": "Resetting to it undoes the reset.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.4272
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-modes/06-orig-head",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --soft ORIG_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1"
+    },
+    {
+     "t": "out",
+     "s": "9d940ca Raise threshold to 0.70"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "MM eval.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --short ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "d44696e"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.4296
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 4d17008-d44696e-9d940ca; d44696e main; 9d940ca ORIG_HEAD; HEAD=main; reflog:9d940ca; cmd:git_reset_--soft_HEAD~1 => 4d17008-d44696e-9d940ca main; d44696e ORIG_HEAD; HEAD=main; cmd:git_reset_--soft_ORIG__HEAD; say:ORIG__HEAD_is_one_slot,_not_a_history id=slot",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "4d17008",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d44696e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "4d17008"
+      ]
+     },
+     {
+      "id": "9d940ca",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d44696e"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "4d17008",
+       "d44696e",
+       "9d940ca"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d44696e",
+       "ORIG_HEAD": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ],
+      "cmd": "git reset --soft HEAD~1"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "9d940ca",
+       "ORIG_HEAD": "d44696e"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [],
+      "caption": "ORIG_HEAD is one slot, not a history",
+      "cmd": "git reset --soft ORIG_HEAD"
+     }
+    ],
+    "settle": "on",
+    "id": "slot"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.4364
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/orig-head-slot/01-merge-then-stash",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git merge feature/reranker"
+    },
+    {
+     "t": "out",
+     "s": "Merge made by the 'ort' strategy."
+    },
+    {
+     "t": "out",
+     "s": " rerank.py | 2 ++"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 2 insertions(+)"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 rerank.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1 ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "5522f41 Add serving config"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash push -m \"wip: new recall numbers\""
+    },
+    {
+     "t": "out",
+     "s": "Saved working directory and index state On main: wip: new recall numbers"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1 ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "26ec8ae Merge branch 'feature/reranker'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.4527
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/orig-head-slot/02-reflog-has-it",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reflog -3"
+    },
+    {
+     "t": "out",
+     "s": "26ec8ae HEAD@{0}: reset: moving to HEAD"
+    },
+    {
+     "t": "out",
+     "s": "26ec8ae HEAD@{1}: merge feature/reranker: Merge made by the 'ort' strategy."
+    },
+    {
+     "t": "out",
+     "s": "5522f41 HEAD@{2}: commit: Add serving config"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD@{2}"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at 5522f41 Add serving config"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "5522f41 Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "9c3779d Add BM25 ranker and baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash pop -q"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M metrics.txt"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.4758
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-preview/01-preview",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Commits that will leave the branch (they stay in the reflog):"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline HEAD~2..HEAD"
+    },
+    {
+     "t": "out",
+     "s": "e574174 Blend dense scores into ranker"
+    },
+    {
+     "t": "out",
+     "s": "67b1722 Record baseline metrics"
+    },
+    {
+     "t": "out",
+     "s": "# Uncommitted work (a hard reset destroys the first two lines and keeps the third):"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "A  sweep.yaml"
+    },
+    {
+     "t": "out",
+     "s": "?? notes.txt"
+    },
+    {
+     "t": "out",
+     "s": "# Tracked content that differs from the last commit:"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff HEAD --stat"
+    },
+    {
+     "t": "out",
+     "s": " metrics.txt | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " sweep.yaml  | 1 +"
+    },
+    {
+     "t": "out",
+     "s": " 2 files changed, 2 insertions(+), 1 deletion(-)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.4998
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-preview/02-safety-net",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git stash push -u -m \"before reset to HEAD~2\""
+    },
+    {
+     "t": "out",
+     "s": "Saved working directory and index state On main: before reset to HEAD~2"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch backup/before-reset"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD~2"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at 9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.528
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-preview/03-nothing-was-lost",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline backup/before-reset"
+    },
+    {
+     "t": "out",
+     "s": "e574174 Blend dense scores into ranker"
+    },
+    {
+     "t": "out",
+     "s": "67b1722 Record baseline metrics"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: On main: before reset to HEAD~2"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash show --include-untracked"
+    },
+    {
+     "t": "out",
+     "s": " metrics.txt | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " notes.txt   | 1 +"
+    },
+    {
+     "t": "out",
+     "s": " sweep.yaml  | 1 +"
+    },
+    {
+     "t": "out",
+     "s": " 3 files changed, 3 insertions(+), 1 deletion(-)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.5322
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-proofs/01-three-kinds-of-work",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "e574174 Blend dense scores into ranker"
+    },
+    {
+     "t": "out",
+     "s": "67b1722 Record baseline metrics"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'alpha: [0.5, 0.7, 0.9]\\n' > sweep.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git add sweep.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'recall@10: 0.78\\n' > metrics.txt"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'try alpha=0.9 next\\n' > notes.txt"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "A  sweep.yaml"
+    },
+    {
+     "t": "out",
+     "s": "?? notes.txt"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.5414
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-proofs/02-reset-hard",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at 67b1722 Record baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "67b1722 Record baseline metrics"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "?? notes.txt"
+    },
+    {
+     "t": "cmd",
+     "s": "ls"
+    },
+    {
+     "t": "out",
+     "s": "metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "notes.txt"
+    },
+    {
+     "t": "out",
+     "s": "rank.py"
+    },
+    {
+     "t": "cmd",
+     "s": "cat metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "recall@10: 0.71"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.5608
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-proofs/03-committed-work",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reflog -2"
+    },
+    {
+     "t": "out",
+     "s": "67b1722 HEAD@{0}: reset: moving to HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "e574174 HEAD@{1}: commit: Blend dense scores into ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD@{1}"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at e574174 Blend dense scores into ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "e574174 Blend dense scores into ranker"
+    },
+    {
+     "t": "out",
+     "s": "67b1722 Record baseline metrics"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "?? notes.txt"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.5726
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-proofs/04-staged-work",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git fsck --lost-found"
+    },
+    {
+     "t": "out",
+     "s": "dangling blob acc57c7b481e66cf03ec96980cc21fadcadc8a5b"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -p acc57c7"
+    },
+    {
+     "t": "out",
+     "s": "alpha: [0.5, 0.7, 0.9]"
+    },
+    {
+     "t": "cmd",
+     "s": "ls .git/lost-found/other"
+    },
+    {
+     "t": "out",
+     "s": "acc57c7b481e66cf03ec96980cc21fadcadc8a5b"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -p acc57c7 > sweep.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "?? notes.txt"
+    },
+    {
+     "t": "out",
+     "s": "?? sweep.yaml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.5831
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-proofs/05-never-staged-work",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The staged file: its content was hashed by \"git add\", so the object exists."
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'alpha: [0.5, 0.7, 0.9]\\n' | git hash-object --stdin"
+    },
+    {
+     "t": "out",
+     "s": "acc57c7b481e66cf03ec96980cc21fadcadc8a5b"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -t acc57c7b481e66cf03ec96980cc21fadcadc8a5b"
+    },
+    {
+     "t": "out",
+     "s": "blob"
+    },
+    {
+     "t": "out",
+     "s": "# The never-staged edit: this is the ID it would have had. No such object was ever written."
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'recall@10: 0.78\\n' | git hash-object --stdin"
+    },
+    {
+     "t": "out",
+     "s": "b812359d6f71b2a9857c24b3c631b8ea58213fcd"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -t b812359d6f71b2a9857c24b3c631b8ea58213fcd"
+    },
+    {
+     "t": "out",
+     "s": "fatal: git cat-file: could not get object info"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.6119
+  },
+  {
+   "kind": "diagram",
+   "direction": "The root-cause box of section 11.5.",
+   "text": "Observed behavior : After \"git reset --hard\", an edit is gone. Neither the reflog nor fsck shows it.\nGit state         : HEAD, index and working tree agree. No blob with the lost content exists.\nMechanism         : Git writes a blob when content is staged or committed. An edit that was only\n                    saved in the editor was never stored.\nRoot cause        : The lost version existed only in the working tree, and --hard overwrote the file.\nWhy Git does this : The working tree is the one place without history, and --hard is defined as\n                    \"make it match the commit\".\nCorrect fix       : None inside Git. Editor history, a backup, or retyping.\nPrevention        : Commit or stash before a hard reset, or use \"git reset --keep\" (section 11.6).",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.6242
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Why <code>--hard</code> is 🔴",
+   "body": "Kind four, untracked files: untouched, with one exception.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.6384
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-hard-proofs/06-untracked-overwritten",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "9a6d9e0 Stop tracking sweep config"
+    },
+    {
+     "t": "out",
+     "s": "533927f Add sweep config"
+    },
+    {
+     "t": "out",
+     "s": "5e23be0 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "?? sweep.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "cat sweep.yaml"
+    },
+    {
+     "t": "out",
+     "s": "alpha: 0.9   # two days of tuning"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --keep HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "error: Untracked working tree file 'sweep.yaml' would be overwritten by merge."
+    },
+    {
+     "t": "out",
+     "s": "fatal: Could not reset index file to revision 'HEAD~1'."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at 533927f Add sweep config"
+    },
+    {
+     "t": "cmd",
+     "s": "cat sweep.yaml"
+    },
+    {
+     "t": "out",
+     "s": "alpha: 0.7"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.6442
+  },
+  {
+   "kind": "keypoint",
+   "headline": "<code>--keep</code> and <code>--merge</code>",
+   "body": "<code>labs/run ch11/reset-keep-merge</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.6577
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-keep-merge/01-state",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "92831a4 Blend dense scores into ranker"
+    },
+    {
+     "t": "out",
+     "s": "c6fd923 Add ranker, serving config and baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "M  serve.yaml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.6642
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-keep-merge/02-keep",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --keep HEAD~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "c6fd923 Add ranker, serving config and baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": " M serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "cat serve.yaml metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "batch_size: 64"
+    },
+    {
+     "t": "out",
+     "s": "recall@10: 0.74"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.668
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-keep-merge/03-merge",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --merge HEAD~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "c6fd923 Add ranker, serving config and baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M metrics.txt"
+    },
+    {
+     "t": "cmd",
+     "s": "cat serve.yaml metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "batch_size: 32"
+    },
+    {
+     "t": "out",
+     "s": "recall@10: 0.74"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.671
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-keep-merge/04-hard",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reset --hard HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at c6fd923 Add ranker, serving config and baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "cmd",
+     "s": "cat serve.yaml metrics.txt"
+    },
+    {
+     "t": "out",
+     "s": "batch_size: 32"
+    },
+    {
+     "t": "out",
+     "s": "recall@10: 0.71"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.6832
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/reset-keep-merge/05-keep-refuses",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "92831a4 Blend dense scores into ranker"
+    },
+    {
+     "t": "out",
+     "s": "c6fd923 Add ranker, serving config and baseline metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M rank.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --keep HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "error: Entry 'rank.py' not uptodate. Cannot merge."
+    },
+    {
+     "t": "out",
+     "s": "fatal: Could not reset index file to revision 'HEAD~1'."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1"
+    },
+    {
+     "t": "out",
+     "s": "92831a4 Blend dense scores into ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M rank.py"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 68,
+   "progress": 0.6907
+  },
+  {
+   "kind": "table",
+   "direction": "The comparison table of section 11.6.",
+   "header": [
+    "Situation",
+    "--keep",
+    "--merge",
+    "--hard"
+   ],
+   "fs": 30,
+   "cols": [
+    50.84,
+    23.54,
+    11.84,
+    13.79
+   ],
+   "mono": true,
+   "rows": [
+    [
+     "Staged change in a file the reset does not rewrite",
+     "kept, becomes unstaged",
+     "discarded",
+     "discarded"
+    ],
+    [
+     "Unstaged change in such a file",
+     "kept",
+     "kept",
+     "discarded"
+    ],
+    [
+     "Unstaged change in a file the reset must rewrite",
+     "refuses",
+     "refuses",
+     "discarded"
+    ],
+    [
+     "Staged change in a file the reset must rewrite",
+     "refuses",
+     "discarded",
+     "discarded"
+    ],
+    [
+     "Untracked file at a path the target commit tracks",
+     "refuses",
+     "refuses",
+     "overwritten"
+    ]
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 69,
+   "progress": 0.6931
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Amend",
+   "body": "<code>labs/run ch11/amend-is-soft-reset</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.7049
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/amend-is-soft-reset/01-amend",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git add serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --amend --no-edit"
+    },
+    {
+     "t": "out",
+     "s": "[main ab64793] Add serving config"
+    },
+    {
+     "t": "out",
+     "s": " Date: Mon Sep 7 10:04:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 2 insertions(+)"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "ab64793 Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog -2"
+    },
+    {
+     "t": "out",
+     "s": "ab64793 HEAD@{0}: commit (amend): Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c HEAD@{1}: commit: Add serving config"
+    },
+    {
+     "t": "cmd",
+     "s": "git show -s --format=\"%h  parent %p  tree %t\" HEAD HEAD@{1}"
+    },
+    {
+     "t": "out",
+     "s": "ab64793  parent 9a98a06  tree b35836e"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c  parent 9a98a06  tree 7e9e572"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 71,
+   "progress": 0.7086
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 9a98a06-d59fe4c main; HEAD=main; tree:d59fe4c:7e9e572 => 9a98a06-ab64793 main; 9a98a06-d59fe4c HEAD@{1}; HEAD=main; reflog:d59fe4c; tree:d59fe4c:7e9e572; tree:ab64793:b35836e title=An_amend_replaces_one_commit",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "9a98a06",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d59fe4c",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "9a98a06"
+      ],
+      "sub": "tree 7e9e572"
+     },
+     {
+      "id": "ab64793",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "9a98a06"
+      ],
+      "sub": "tree b35836e"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "9a98a06",
+       "d59fe4c"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d59fe4c"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "ab64793"
+      ],
+      "refs": {
+       "main": "ab64793",
+       "HEAD@{1}": "d59fe4c"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "d59fe4c"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "An amend replaces one commit"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 72,
+   "progress": 0.7141
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/amend-is-soft-reset/02-by-hand",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git add serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --soft HEAD~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "A  serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -q -C ORIG_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "732ac95 Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git show -s --format=\"%h  parent %p  tree %t\" HEAD ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "732ac95  parent 9a98a06  tree b35836e"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c  parent 9a98a06  tree 7e9e572"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 73,
+   "progress": 0.7229
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch11/amend-is-soft-reset/03-undo-the-amend",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rev-parse --verify --short ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "fatal: Needed a single revision"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --soft HEAD@{1}"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "9a98a06 Add BM25 ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": "M  serve.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog -3"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c HEAD@{0}: reset: moving to HEAD@{1}"
+    },
+    {
+     "t": "out",
+     "s": "ab64793 HEAD@{1}: commit (amend): Add serving config"
+    },
+    {
+     "t": "out",
+     "s": "d59fe4c HEAD@{2}: commit: Add serving config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 74,
+   "progress": 0.7395
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 75,
+   "progress": 0.7449
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 76,
+   "progress": 0.7462
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Typing <code>--hard</code> to drop a commit while the tree is dirty.</b> Root cause: <code>--hard</code> is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+    "<b>Running <code>git reset --hard ORIG_HEAD</code> some commands after the operation you want to undo.</b> Root cause: <code>ORIG_HEAD</code> is one slot that every reset writes, including the internal reset at the end of <code>git stash push</code>.",
+    "<b>Assuming untracked files are always safe from a hard reset.</b> Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+    "<b>Expecting <code>git fsck --lost-found</code> to return files with their names.</b> Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+    "<b>Amending a commit that has been pushed.</b> Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 77,
+   "progress": 0.7479
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Typing <code>--hard</code> to drop a commit while the tree is dirty.</b> Root cause: <code>--hard</code> is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+    "<b>Running <code>git reset --hard ORIG_HEAD</code> some commands after the operation you want to undo.</b> Root cause: <code>ORIG_HEAD</code> is one slot that every reset writes, including the internal reset at the end of <code>git stash push</code>.",
+    "<b>Assuming untracked files are always safe from a hard reset.</b> Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+    "<b>Expecting <code>git fsck --lost-found</code> to return files with their names.</b> Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+    "<b>Amending a commit that has been pushed.</b> Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 78,
+   "progress": 0.7594
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Typing <code>--hard</code> to drop a commit while the tree is dirty.</b> Root cause: <code>--hard</code> is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+    "<b>Running <code>git reset --hard ORIG_HEAD</code> some commands after the operation you want to undo.</b> Root cause: <code>ORIG_HEAD</code> is one slot that every reset writes, including the internal reset at the end of <code>git stash push</code>.",
+    "<b>Assuming untracked files are always safe from a hard reset.</b> Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+    "<b>Expecting <code>git fsck --lost-found</code> to return files with their names.</b> Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+    "<b>Amending a commit that has been pushed.</b> Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 79,
+   "progress": 0.7713
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Typing <code>--hard</code> to drop a commit while the tree is dirty.</b> Root cause: <code>--hard</code> is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+    "<b>Running <code>git reset --hard ORIG_HEAD</code> some commands after the operation you want to undo.</b> Root cause: <code>ORIG_HEAD</code> is one slot that every reset writes, including the internal reset at the end of <code>git stash push</code>.",
+    "<b>Assuming untracked files are always safe from a hard reset.</b> Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+    "<b>Expecting <code>git fsck --lost-found</code> to return files with their names.</b> Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+    "<b>Amending a commit that has been pushed.</b> Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 80,
+   "progress": 0.7814
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Typing <code>--hard</code> to drop a commit while the tree is dirty.</b> Root cause: <code>--hard</code> is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+    "<b>Running <code>git reset --hard ORIG_HEAD</code> some commands after the operation you want to undo.</b> Root cause: <code>ORIG_HEAD</code> is one slot that every reset writes, including the internal reset at the end of <code>git stash push</code>.",
+    "<b>Assuming untracked files are always safe from a hard reset.</b> Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+    "<b>Expecting <code>git fsck --lost-found</code> to return files with their names.</b> Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+    "<b>Amending a commit that has been pushed.</b> Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 81,
+   "progress": 0.7909
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 82,
+   "progress": 0.8018
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. Two example uses, for a team that ships a retrieval service, both on private history.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 83,
+   "progress": 0.8031
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: *0-*1-*2-*3 main; *0 origin/main; HEAD=main; note:*1:wip; note:*2:wip_2; note:*3:fix_typo => + *0 main; reflog:*1,*2,*3; cmd:git_reset_--soft_@{u}; say:The_combined_change_stays_staged,_ready_for_one_clean_commit",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "*0",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*1",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "*0"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*2",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "*1"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*3",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "*2"
+      ],
+      "kind": "anon",
+      "text": ""
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "*0",
+       "*1",
+       "*2",
+       "*3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "*3",
+       "origin/main": "*0"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "wip",
+        "at": "*1"
+       },
+       {
+        "text": "wip 2",
+        "at": "*2"
+       },
+       {
+        "text": "fix typo",
+        "at": "*3"
+       }
+      ],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "*0",
+       "origin/main": "*0"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "wip",
+        "at": "*1"
+       },
+       {
+        "text": "wip 2",
+        "at": "*2"
+       },
+       {
+        "text": "fix typo",
+        "at": "*3"
+       }
+      ],
+      "reflog": [
+       "*1",
+       "*2",
+       "*3"
+      ],
+      "caption": "The combined change stays staged, ready for one clean commit",
+      "cmd": "git reset --soft @{u}"
+     }
+    ],
+    "settle": "on"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 84,
+   "progress": 0.8098
+  },
+  {
+   "kind": "keypoint",
+   "body": "A commit that mixes a refactoring with a behavior change.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 85,
+   "progress": 0.8214
+  },
+  {
+   "kind": "keypoint",
+   "body": "And the team rule that comes out of section 11.6: in runbooks and in muscle memory, the command for dropping commits is <code>git reset --keep</code>.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 86,
+   "progress": 0.8322
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 87,
+   "progress": 0.8492
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 8.1, \"The reset prediction table\", in <code>lab-manual/m08-undo.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 88,
+   "progress": 0.8504
+  },
+  {
+   "kind": "keypoint",
+   "body": "The lab gives you a state and asks you to fill in a table before you run anything: for each of <code>--soft</code>, <code>--mixed</code>, <code>--hard</code>, <code>--keep</code> and <code>--merge</code>, the content of HEAD, the index and the working tree …",
+   "section": "PRACTICE EXERCISE",
+   "n": 89,
+   "progress": 0.8542
+  },
+  {
+   "kind": "keypoint",
+   "body": "For the failure scenario, predict which of your pieces of work will be recoverable, and by which command.",
+   "section": "PRACTICE EXERCISE",
+   "n": 90,
+   "progress": 0.8748
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 8.8, Level 3, \"what a hard reset took and what it left\", in <code>exercises/m06-m10-integration.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 91,
+   "progress": 0.8809
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 92,
+   "progress": 0.887
+  },
+  {
+   "kind": "callout",
+   "label": "Q171",
+   "quotes": [
+    "HEAD, the index and the working tree hold three different versions of one file. What does each hold after <code>git reset --soft HEAD~1</code>, after <code>--mixed</code> and after <code>--hard</code>, and what does <code>git status -s</code> print?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 93,
+   "progress": 0.8883
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: state=2,2,2 history=off steps=setup,reset-soft,reset-mixed,reset-hard id=steps title=What_a_reset_writes at_reset_soft=35",
+   "scene": "trees",
+   "params": {
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "history": "off",
+    "id": "steps",
+    "title": "What a reset writes",
+    "at": {
+     "reset-soft": 0.35
+    }
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "upto": 4,
+   "danger": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 94,
+   "progress": 0.9025
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 95,
+   "progress": 0.9303
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 4d17008-d44696e-9d940ca main; HEAD=main => 4d17008-d44696e main; 9d940ca ORIG_HEAD; HEAD=main; reflog:9d940ca title=A_reset_moves_the_branch id=move",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "4d17008",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d44696e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "4d17008"
+      ]
+     },
+     {
+      "id": "9d940ca",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d44696e"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "4d17008",
+       "d44696e",
+       "9d940ca"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "d44696e",
+       "ORIG_HEAD": "9d940ca"
+      },
+      "head": "main",
+      "notes": [],
+      "reflog": [
+       "9d940ca"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "A reset moves the branch",
+    "id": "move"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "upto": 3,
+   "section": "RECAP",
+   "n": 96,
+   "progress": 0.9316
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=Two_days_of_work,_three_kinds_of_thing cards=committed:comes_back_through_the_reflog|staged:survives_as_a_blob_without_a_name|never_staged:gone,_Git_never_stored_it numbered=on marks=1:ok,2:ok,3:bad id=three at_1=44 at_2=62 at_3=80",
+   "scene": "cards",
+   "params": {
+    "question": "Two days of work, three kinds of thing",
+    "cards": [
+     [
+      "committed",
+      "comes back through the reflog"
+     ],
+     [
+      "staged",
+      "survives as a blob without a name"
+     ],
+     [
+      "never staged",
+      "gone, Git never stored it"
+     ]
+    ],
+    "numbered": "on",
+    "marks": [
+     [
+      "1",
+      "ok"
+     ],
+     [
+      "2",
+      "ok"
+     ],
+     [
+      "3",
+      "bad"
+     ]
+    ],
+    "id": "three",
+    "at": {
+     "1": 0.44,
+     "2": 0.62,
+     "3": 0.8
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "marks"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "RECAP",
+   "n": 97,
+   "progress": 0.9418
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: state=2,2,2 history=off steps=setup,reset-soft,reset-mixed,reset-hard id=steps title=What_a_reset_writes at_reset_soft=35",
+   "scene": "trees",
+   "params": {
+    "state": [
+     "2",
+     "2",
+     "2"
+    ],
+    "history": "off",
+    "id": "steps",
+    "title": "What a reset writes",
+    "at": {
+     "reset-soft": 0.35
+    }
+   },
+   "steps": [
+    "setup",
+    "reset-soft",
+    "reset-mixed",
+    "reset-hard"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "RECAP",
+   "n": 98,
+   "progress": 0.9519
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 99,
+   "progress": 0.9703
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 11.4 to 11.7 of Chapter 11.",
+   "section": "HOMEWORK",
+   "n": 100,
+   "progress": 0.9715
+  },
+  {
+   "kind": "keypoint",
+   "body": "Do Exercise 8.4, Level 2, \"<code>reset --keep</code>, twice\", and Exercise 8.6, Level 2, \"after a hard reset\", both in <code>exercises/m06-m10-integration.md</code>.",
+   "section": "HOMEWORK",
+   "n": 101,
+   "progress": 0.9742
+  },
+  {
+   "kind": "keypoint",
+   "body": "You can now answer the CTO in three exact sentences, and you have a safer word to type: keep.",
+   "section": "HOMEWORK",
+   "n": 102,
+   "progress": 0.981
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The CTO asks: \"Which part can you bring back, which part can you not, and why?\"",
+   "tele": "The CTO asks: \"Which part can you bring back, which part can you not, and why?\"",
+   "words": 16,
+   "est": 6.4,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "d750bb29",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "That question has an exact answer, and it has three parts, because \"two days of work\" is three different kinds of thing to Git. The committed part comes back through the reflog, Git's local list of where each ref has been. The staged part survives as a blob, an object that holds the bytes of one file, without a name. And the part that was never staged is gone, because Git never stored it.",
+   "tele": "That question has an exact answer, and it has three parts, because \"two days of work\" is three different kinds of thing to Git. The committed part comes back through the reflog, Git's local list of where each ref has been. The staged part survives as a blob, an object that holds the bytes of one file, without a name. And the part that was never staged is gone, because Git never stored it.",
+   "words": 74,
+   "est": 29.6,
+   "slide": 4,
+   "line": 20,
+   "t0": 9.9,
+   "h": "21219535",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.44,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.62,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.8,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Today you prove each of those three sentences in a terminal. Count them off as we go. And then you learn the reset that would have refused to do the damage.",
+   "tele": "Today you prove each of those three sentences in a terminal. Count them off as we go. And then you learn the reset that would have refused to do the damage.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 4,
+   "line": 22,
+   "t0": 39.5,
+   "h": "24470b60",
+   "anim": {
+    "group": 3,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 5,
+   "line": 24,
+   "t0": 51.9,
+   "h": "",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. git reset is the command most people mean when they say \"undo\", and the one most people fear. Both reactions come from not knowing what it writes.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. `git reset` is the command most people mean when they say \"undo\", and the one most people fear. Both reactions come from not knowing what it writes.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 6,
+   "line": 26,
+   "t0": 53.4,
+   "h": "85a2cc04",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The plan. First the three modes, --soft, --mixed and --hard, on one file that has a different version in each of the three trees, so that you can see how far each mode spreads. The three trees are your files on disk, the index, which is the proposed next commit, and HEAD, the commit you're on. Then what happens inside .git, including ORIG_HEAD, a safety net with a hole in it.",
+   "tele": "The plan. First the three modes, `--soft`, `--mixed` and `--hard`, on one file that has a different version in each of the three trees, so that you can see how far each mode spreads. The three trees are your files on disk, the index, which is the proposed next commit, and HEAD, the commit you're on. Then what happens inside `.git`, including `ORIG_HEAD`, a safety net with a hole in it.",
+   "words": 71,
+   "est": 28.4,
+   "slide": 7,
+   "line": 28,
+   "t0": 69.0,
+   "h": "80594f1e",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Then section 11.5: four kinds of work, one hard reset, and what is left of each. Then the two modes that check before they overwrite, --keep and --merge. And last, git commit --amend, which turns out to be a soft reset followed by a commit.",
+   "tele": "Then section 11.5: four kinds of work, one hard reset, and what is left of each. Then the two modes that check before they overwrite, `--keep` and `--merge`. And last, `git commit --amend`, which turns out to be a soft reset followed by a commit.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 8,
+   "line": 30,
+   "t0": 97.4,
+   "h": "10c7e504",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "All of it applies to private history only. That was the deciding question of the last video.",
+   "tele": "All of it applies to private history only. That was the deciding question of the last video.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 9,
+   "line": 32,
+   "t0": 115.4,
+   "h": "2fa7e8bc",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 10,
+   "line": 34,
+   "t0": 122.2,
+   "h": "",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 11,
+   "line": 38,
+   "t0": 123.7,
+   "h": "152923b5",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Predict the working tree, the index and the branch after --soft, --mixed and --hard.",
+   "tele": "Predict the working tree, the index and the branch after `--soft`, `--mixed` and `--hard`.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 12,
+   "line": 40,
+   "t0": 125.7,
+   "h": "8488e1d6",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+   "tele": "Sort work into committed, staged and never staged, and say what a hard reset leaves recoverable for each.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 13,
+   "line": 40,
+   "t0": 131.3,
+   "h": "8a0896d7",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Preview a hard reset and set a way back before running it.",
+   "tele": "Preview a hard reset and set a way back before running it.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 14,
+   "line": 40,
+   "t0": 138.5,
+   "h": "199145e3",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Choose --keep over --hard, and explain what --merge protects.",
+   "tele": "Choose `--keep` over `--hard`, and explain what `--merge` protects.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 15,
+   "line": 40,
+   "t0": 143.3,
+   "h": "0022ab1e",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Describe git commit --amend as a soft reset followed by a commit.",
+   "tele": "Describe `git commit --amend` as a soft reset followed by a commit.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 16,
+   "line": 40,
+   "t0": 146.9,
+   "h": "f1d006e7",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 17,
+   "line": 46,
+   "t0": 151.7,
+   "h": "",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: git reset <commit> 🟡 CAUTION makes the current branch point at <commit>, and its mode decides whether the index, with --mixed, the default, and the working tree, with --hard, are rewritten to match.",
+   "tele": "In one sentence: `git reset <commit>` 🟡 CAUTION makes the current branch point at `<commit>`, and its mode decides whether the index, with `--mixed`, the default, and the working tree, with `--hard`, are rewritten to match.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 18,
+   "line": 52,
+   "t0": 153.2,
+   "h": "2a7ae921",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.287,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. With a commit argument and no path, reset does up to three things.",
+   "tele": "Precisely. With a commit argument and no path, reset does up to three things.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 18,
+   "line": 54,
+   "t0": 167.2,
+   "h": "c1db4fe3",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "One: it writes the current commit ID to ORIG_HEAD and makes the branch that HEAD points at name <commit>. --soft does only this.",
+   "tele": "One: it writes the current commit ID to `ORIG_HEAD` and makes the branch that HEAD points at name `<commit>`. `--soft` does only this.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 19,
+   "line": 62,
+   "t0": 172.8,
+   "h": "3bd6ed84",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.35,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two: it rewrites the index to match <commit>. --mixed does this as well.",
+   "tele": "Two: it rewrites the index to match `<commit>`. `--mixed` does this as well.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 20,
+   "line": 66,
+   "t0": 182.0,
+   "h": "3128186d",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three: it rewrites the tracked files in the working tree to match <commit>. Only --hard does this.",
+   "tele": "Three: it rewrites the tracked files in the working tree to match `<commit>`. Only `--hard` does this.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 21,
+   "line": 70,
+   "t0": 187.2,
+   "h": "be402c3c",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "pose": "worried",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "<commit> defaults to HEAD. So git reset alone unstages everything, and git reset --hard alone discards every uncommitted change to tracked files. On a detached HEAD, where HEAD holds a commit ID instead of a branch name, there's no branch to move, and HEAD itself is rewritten.",
+   "tele": "`<commit>` defaults to HEAD. So `git reset` alone unstages everything, and `git reset --hard` alone discards every uncommitted change to tracked files. On a detached HEAD, where HEAD holds a commit ID instead of a branch name, there's no branch to move, and HEAD itself is rewritten.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 22,
+   "line": 72,
+   "t0": 194.0,
+   "h": "16d17566",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Inside .git: the file HEAD doesn't change. It still says ref: refs/heads/main. What changes is the content of that ref. ORIG_HEAD holds the previous ID. Both reflogs gain a line. And no object is deleted.",
+   "tele": "Inside `.git`: the file `HEAD` doesn't change. It still says `ref: refs/heads/main`. What changes is the content of that ref. `ORIG_HEAD` holds the previous ID. Both reflogs gain a line. And no object is deleted.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 23,
+   "line": 76,
+   "t0": 212.8,
+   "h": "ce311d73",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now why --hard is 🔴. --soft and --mixed never write a file. --hard overwrites files, and what that costs depends on one question for each piece of work: did Git ever store it as an object? Git writes a blob when content is staged or committed. An edit that was only saved in the editor was never stored.",
+   "tele": "Now why `--hard` is 🔴. `--soft` and `--mixed` never write a file. `--hard` overwrites files, and what that costs depends on one question for each piece of work: did Git ever store it as an object? Git writes a blob when content is staged or committed. An edit that was only saved in the editor was never stored.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 24,
+   "line": 80,
+   "t0": 226.8,
+   "h": "e801c7b8",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Quick quiz. You stage a file, and a hard reset takes it away. Where is its content? A, in the reflog. B, in the object database, without a name. C, nowhere. Your answer?",
+   "tele": "Quick quiz. You stage a file, and a hard reset takes it away. Where is its content? A, in the reflog. B, in the object database, without a name. C, nowhere. Your answer?",
+   "words": 33,
+   "est": 13.2,
+   "slide": 25,
+   "line": 82,
+   "t0": 249.6,
+   "h": "f58d6aa9",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 25,
+   "line": 84,
+   "t0": 262.8,
+   "h": "",
+   "anim": {
+    "group": 16,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "B. Staging wrote the blob, and a reset deletes no object. The demo finds it.",
+   "tele": "B. Staging wrote the blob, and a reset deletes no object. The demo finds it.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 26,
+   "line": 86,
+   "t0": 267.3,
+   "h": "7a0c40ea",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "How long do the recoverable kinds last? The textbook states the defaults from the manual. A reflog entry for a commit that its branch no longer reaches is kept for 30 days, gc.reflogExpireUnreachable. And garbage collection removes unreachable objects, the ones nothing reaches any more, once they're older than two weeks, gc.pruneExpire. The lab configuration overrides the reflog expiry, as video 1 explained.",
+   "tele": "How long do the recoverable kinds last? The textbook states the defaults from the manual. A reflog entry for a commit that its branch no longer reaches is kept for 30 days, `gc.reflogExpireUnreachable`. And garbage collection removes unreachable objects, the ones nothing reaches any more, once they're older than two weeks, `gc.pruneExpire`. The lab configuration overrides the reflog expiry, as video 1 explained.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 27,
+   "line": 90,
+   "t0": 273.3,
+   "h": "f9d3145a",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.58,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The alternatives. git reset --keep <commit> 🟡 moves the branch like --hard, carries your uncommitted changes across, and refuses to run when it would have to overwrite one of them. git reset --merge <commit> 🔴 does the same for unstaged changes and throws staged changes away. It exists for backing out of a merge, where whatever is staged is merge output and should go.",
+   "tele": "The alternatives. `git reset --keep <commit>` 🟡 moves the branch like `--hard`, carries your uncommitted changes across, and refuses to run when it would have to overwrite one of them. `git reset --merge <commit>` 🔴 does the same for unstaged changes and throws staged changes away. It exists for backing out of a merge, where whatever is staged is merge output and should go.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 28,
+   "line": 94,
+   "t0": 298.5,
+   "h": "aa1069f2",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And git commit --amend 🟡 replaces the last commit with a new commit that has the same parent and is built from the current index. Git's manual calls it \"a rough equivalent\" of git reset --soft HEAD^, some changes, and git commit -c ORIG_HEAD.",
+   "tele": "And `git commit --amend` 🟡 replaces the last commit with a new commit that has the same parent and is built from the current index. Git's manual calls it \"a rough equivalent\" of `git reset --soft HEAD^`, some changes, and `git commit -c ORIG_HEAD`.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 29,
+   "line": 96,
+   "t0": 323.3,
+   "h": "436e6faf",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 30,
+   "line": 98,
+   "t0": 340.5,
+   "h": "",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A picture helps. The textbook's analogy: a bookmark in a lab notebook. --soft moves the bookmark back. --mixed also clears the page you had drafted for the next entry. --hard also clears the desk.",
+   "tele": "A picture helps. The textbook's analogy: a bookmark in a lab notebook. `--soft` moves the bookmark back. `--mixed` also clears the page you had drafted for the next entry. `--hard` also clears the desk.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 31,
+   "line": 102,
+   "t0": 342.0,
+   "h": "3293a69c",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks in a useful way: no page is torn out. The entries after the bookmark stay in the notebook, and Git discards unmarked pages only after weeks.",
+   "tele": "The analogy breaks in a useful way: no page is torn out. The entries after the bookmark stay in the notebook, and Git discards unmarked pages only after weeks.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 32,
+   "line": 108,
+   "t0": 355.6,
+   "h": "1e68d41d",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "So two things to hold. First, reset always starts by moving the bookmark, and the mode only decides how far the change spreads. Second, the notebook is safe and the desk isn't. What was written into the notebook, committed or even only staged, can be found again. What was only lying on the desk can't.",
+   "tele": "So two things to hold. First, reset always starts by moving the bookmark, and the mode only decides how far the change spreads. Second, the notebook is safe and the desk isn't. What was written into the notebook, committed or even only staged, can be found again. What was only lying on the desk can't.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 33,
+   "line": 112,
+   "t0": 367.2,
+   "h": "cc1452d5",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.14,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.26,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.36,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "pose": "worried",
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 34,
+   "line": 114,
+   "t0": 389.2,
+   "h": "",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Now with real commits. Before: three in a row, with main on the last, 9d940ca.",
+   "tele": "Now with real commits. Before: three in a row, with `main` on the last, `9d940ca`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 35,
+   "line": 130,
+   "t0": 390.7,
+   "h": "10f4465f",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "After git reset HEAD~1, in any mode, main is one commit back. 9d940ca has no branch, but three names remain: ORIG_HEAD, and entry one in both reflogs.",
+   "tele": "After `git reset HEAD~1`, in any mode, `main` is one commit back. `9d940ca` has no branch, but three names remain: `ORIG_HEAD`, and entry one in both reflogs.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 36,
+   "line": 134,
+   "t0": 396.7,
+   "h": "26df1a41",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "And here's the table you'll fill in during the demo. The first row is the starting state. The other three rows are yours to predict.",
+   "tele": "And here's the table you'll fill in during the demo. The first row is the starting state. The other three rows are yours to predict.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 37,
+   "line": 149,
+   "t0": 407.9,
+   "h": "9867ba88",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.205,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.615,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 38,
+   "line": 151,
+   "t0": 417.9,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "That's the starting state: 0.70 in HEAD, 0.80 in the index, 0.90 on disk.",
+   "tele": "That's the starting state: 0.70 in HEAD, 0.80 in the index, 0.90 on disk.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 39,
+   "line": 172,
+   "t0": 419.4,
+   "h": "7263bad3",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.92,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The three modes. For each, predict the three values and the status letters before the output. First --soft. Say them out loud. I'll wait.",
+   "tele": "The three modes. For each, predict the three values and the status letters before the output. First `--soft`. Say them out loud. I'll wait.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 40,
+   "line": 176,
+   "t0": 425.0,
+   "h": "a5c7b952",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 41,
+   "line": 182,
+   "t0": 434.6,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.15,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The log lost a commit, and HEAD now holds 0.60. The index and the file are untouched. The status is still MM, but it's now measured against the older commit: git commit at this point would record 0.80 directly on top of d44696e. Next, --mixed. Predict the row.",
+   "tele": "The log lost a commit, and HEAD now holds 0.60. The index and the file are untouched. The status is still `MM`, but it's now measured against the older commit: `git commit` at this point would record 0.80 directly on top of `d44696e`. Next, `--mixed`. Predict the row.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 42,
+   "line": 201,
+   "t0": 439.1,
+   "h": "7bcdf5d7",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 42,
+   "line": 203,
+   "t0": 458.3,
+   "h": "",
+   "anim": {
+    "group": 31,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The index now equals the new HEAD, and Git reports what is left as unstaged. The file still says 0.90. And now --hard. Predict.",
+   "tele": "The index now equals the new HEAD, and Git reports what is left as unstaged. The file still says 0.90. And now `--hard`. Predict.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 43,
+   "line": 224,
+   "t0": 462.8,
+   "h": "8de9f3e5",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 226,
+   "t0": 472.4,
+   "h": "",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "All three places hold 0.60. The staged 0.80 and the unstaged 0.90 are gone from every place you can name.",
+   "tele": "All three places hold 0.60. The staged 0.80 and the unstaged 0.90 are gone from every place you can name.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 44,
+   "line": 245,
+   "t0": 476.9,
+   "h": "a328b517",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Inside .git.",
+   "tele": "Inside `.git`.",
+   "words": 2,
+   "est": 1.2,
+   "slide": 45,
+   "line": 247,
+   "t0": 484.9,
+   "h": "31c3b49b",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "HEAD says ref: refs/heads/main before and after. The ref file changed from the ID starting 9d940ca to the one starting d44696e. ORIG_HEAD holds the previous ID, and both reflogs gained the line reset: moving to HEAD~1. Commit 9d940ca is still in the object database.",
+   "tele": "`HEAD` says `ref: refs/heads/main` before and after. The ref file changed from the ID starting `9d940ca` to the one starting `d44696e`. `ORIG_HEAD` holds the previous ID, and both reflogs gained the line `reset: moving to HEAD~1`. Commit `9d940ca` is still in the object database.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 46,
+   "line": 271,
+   "t0": 486.1,
+   "h": "991c9ff2",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.486,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 8
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "ORIG_HEAD. Resetting to it undoes the reset.",
+   "tele": "`ORIG_HEAD`. Resetting to it undoes the reset.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 47,
+   "line": 273,
+   "t0": 504.1,
+   "h": "dffb22e2",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "But look at the last line. The undo was itself a reset, so it overwrote ORIG_HEAD, which now names d44696e.",
+   "tele": "But look at the last line. The undo was itself a reset, so it overwrote `ORIG_HEAD`, which now names `d44696e`.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 48,
+   "line": 287,
+   "t0": 506.9,
+   "h": "b5dad0fb",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.63,
+      "dissolve": true
+     },
+     {
+      "at": 0.649,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.97,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "ORIG_HEAD is one slot, not a history. And more commands write it than the manual lists. labs/run ch11/orig-head-slot: a merge followed by a stash, the command that parks uncommitted work. Predict what ORIG_HEAD names after the stash.",
+   "tele": "`ORIG_HEAD` is one slot, not a history. And more commands write it than the manual lists. `labs/run ch11/orig-head-slot`: a merge followed by a stash, the command that parks uncommitted work. Predict what `ORIG_HEAD` names after the stash.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 49,
+   "line": 293,
+   "t0": 514.9,
+   "h": "4ed8335b",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 49,
+   "line": 295,
+   "t0": 529.7,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After the merge, ORIG_HEAD named 5522f41, the commit to go back to. But git stash push ends with an internal reset to HEAD, and every reset writes ORIG_HEAD. So it now names the merge commit itself, 26ec8ae. git reset --hard ORIG_HEAD would leave the merge in place. The rule: use ORIG_HEAD only as the very next command. After anything else, read the reflog, which has the whole sequence.",
+   "tele": "After the merge, `ORIG_HEAD` named `5522f41`, the commit to go back to. But `git stash push` ends with an internal reset to HEAD, and every reset writes `ORIG_HEAD`. So it now names the merge commit itself, `26ec8ae`. `git reset --hard ORIG_HEAD` would leave the merge in place. The rule: use `ORIG_HEAD` only as the very next command. After anything else, read the reflog, which has the whole sequence.",
+   "words": 68,
+   "est": 27.2,
+   "slide": 50,
+   "line": 313,
+   "t0": 534.2,
+   "h": "724fb5d3",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.042,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.79,
+      "dissolve": false
+     },
+     {
+      "at": 0.189,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.64,
+      "dissolve": false
+     },
+     {
+      "at": 0.38,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Why --hard is 🔴. git reset --hard 🔴 DANGEROUS. The five answers before it runs.",
+   "tele": "Why `--hard` is 🔴. `git reset --hard` 🔴 DANGEROUS. The five answers before it runs.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 51,
+   "line": 332,
+   "t0": 561.4,
+   "h": "e7ce4949",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.048,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.46,
+      "dissolve": false
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "What it changes: the branch ref, the index, and every tracked file that differs from the target commit.",
+   "tele": "What it changes: the branch ref, the index, and every tracked file that differs from the target commit.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 51,
+   "line": 334,
+   "t0": 566.6,
+   "h": "b3815af0",
+   "anim": {
+    "group": 40,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "What it can destroy: every uncommitted change to tracked files, and untracked files that are in the target's way. Untracked means the file has no entry in the index and isn't ignored.",
+   "tele": "What it can destroy: every uncommitted change to tracked files, and untracked files that are in the target's way. Untracked means the file has no entry in the index and isn't ignored.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 51,
+   "line": 336,
+   "t0": 573.8,
+   "h": "01ac0f28",
+   "anim": {
+    "group": 40,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "How to preview: three read-only commands. labs/run ch11/reset-hard-preview.",
+   "tele": "How to preview: three read-only commands. `labs/run ch11/reset-hard-preview`.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 51,
+   "line": 338,
+   "t0": 586.6,
+   "h": "edbcbe7d",
+   "anim": {
+    "group": 40,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "First, the commits that will leave the branch. Second, the uncommitted work, by kind. Third, the tracked content that differs from the last commit.",
+   "tele": "First, the commits that will leave the branch. Second, the uncommitted work, by kind. Third, the tracked content that differs from the last commit.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 52,
+   "line": 359,
+   "t0": 589.8,
+   "h": "ce0c15a3",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "How to recover: commits through the reflog or ORIG_HEAD, staged content through git fsck --lost-found, nothing else at all. git fsck is the checker that lists what nothing reaches.",
+   "tele": "How to recover: commits through the reflog or `ORIG_HEAD`, staged content through `git fsck --lost-found`, nothing else at all. `git fsck` is the checker that lists what nothing reaches.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 52,
+   "line": 361,
+   "t0": 599.4,
+   "h": "bbcedc62",
+   "anim": {
+    "group": 41,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "When it's appropriate: when git status is clean, or after you've read git diff HEAD and want none of it. Otherwise turn the work into objects first, with two commands.",
+   "tele": "When it's appropriate: when `git status` is clean, or after you've read `git diff HEAD` and want none of it. Otherwise turn the work into objects first, with two commands.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 52,
+   "line": 363,
+   "t0": 611.0,
+   "h": "7068d5e7",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0.164,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.16,
+      "dissolve": false
+     },
+     {
+      "at": 0.421,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 4.86,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 53,
+   "line": null,
+   "t0": 623.0,
+   "h": "",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The stash entry holds the uncommitted work, and the branch holds the commits.",
+   "tele": "The stash entry holds the uncommitted work, and the branch holds the commits.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 54,
+   "line": 394,
+   "t0": 628.0,
+   "h": "91b879a9",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now without the safety net. labs/run ch11/reset-hard-proofs. Four kinds of work in one repository.",
+   "tele": "Now without the safety net. `labs/run ch11/reset-hard-proofs`. Four kinds of work in one repository.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 54,
+   "line": 396,
+   "t0": 633.2,
+   "h": "af176d28",
+   "anim": {
+    "group": 43,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The committed change e574174. sweep.yaml, staged and never committed. The edit to metrics.txt, never staged. And notes.txt, untracked. Try it now, thirty seconds, on paper: write those four in a column. Next to each, predict what is left after git reset --hard HEAD~1, and where.",
+   "tele": "The committed change `e574174`. `sweep.yaml`, staged and never committed. The edit to `metrics.txt`, never staged. And `notes.txt`, untracked. Try it now, thirty seconds, on paper: write those four in a column. Next to each, predict what is left after `git reset --hard HEAD~1`, and where.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 55,
+   "line": 415,
+   "t0": 638.8,
+   "h": "d33a3d4a",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.43,
+      "dissolve": true
+     },
+     {
+      "at": 0.111,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.41,
+      "dissolve": false
+     },
+     {
+      "at": 0.298,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.47,
+      "dissolve": false
+     },
+     {
+      "at": 0.412,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 55,
+   "line": 417,
+   "t0": 657.2,
+   "h": "",
+   "anim": {
+    "group": 44,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The branch is back at 67b1722, metrics.txt says 0.71 again, and sweep.yaml is no longer on disk. Only notes.txt was left alone.",
+   "tele": "The branch is back at `67b1722`, `metrics.txt` says 0.71 again, and `sweep.yaml` is no longer on disk. Only `notes.txt` was left alone.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 56,
+   "line": 437,
+   "t0": 661.7,
+   "h": "6d1d9888",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.51,
+      "dissolve": true
+     },
+     {
+      "at": 0.244,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.65,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Kind one, committed work: the reflog has it. That's the CTO's first sentence.",
+   "tele": "Kind one, committed work: the reflog has it. That's the CTO's first sentence.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 56,
+   "line": 439,
+   "t0": 670.5,
+   "h": "8f7a03ef",
+   "anim": {
+    "group": 45,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Kind two, staged work: an object without a name. git add wrote the content as a blob. The hard reset removed the index entry, the only thing that referred to it.",
+   "tele": "Kind two, staged work: an object without a name. `git add` wrote the content as a blob. The hard reset removed the index entry, the only thing that referred to it.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 57,
+   "line": 457,
+   "t0": 675.7,
+   "h": "c300c867",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A dangling blob, acc57c7, and git cat-file -p prints the sweep configuration. Dangling means nothing refers to it. The content is back. The file name isn't. A blob stores content only, and the name lived in the index entry. After a reset with ten staged files, you get ten anonymous blobs, and you identify them by reading them. That's the second sentence, and the quiz.",
+   "tele": "A dangling blob, `acc57c7`, and `git cat-file -p` prints the sweep configuration. Dangling means nothing refers to it. The content is back. The file name isn't. A blob stores content only, and the name lived in the index entry. After a reset with ten staged files, you get ten anonymous blobs, and you identify them by reading them. That's the second sentence, and the quiz.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 58,
+   "line": 474,
+   "t0": 688.1,
+   "h": "211e5282",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.045,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 1.2,
+      "dissolve": false
+     },
+     {
+      "at": 0.086,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Kind three, never-staged work: nothing to find. git hash-object --stdin computes the ID that a piece of content would have.",
+   "tele": "Kind three, never-staged work: nothing to find. `git hash-object --stdin` computes the ID that a piece of content would have.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 58,
+   "line": 476,
+   "t0": 714.1,
+   "h": "6c810aac",
+   "anim": {
+    "group": 47,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "For the staged content the object exists: type blob. For the never-staged edit, Git computes the ID it would have had, and git cat-file fails: no such object was ever written. That's the third sentence, proved.",
+   "tele": "For the staged content the object exists: type `blob`. For the never-staged edit, Git computes the ID it would have had, and `git cat-file` fails: no such object was ever written. That's the third sentence, proved.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 59,
+   "line": 494,
+   "t0": 722.1,
+   "h": "e857302a",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.584,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.19,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Here's that loss as a root-cause box. The lost version existed only in the working tree, and the hard reset overwrote the file. There's no fix inside Git, so the prevention is the last line: commit or stash first, or use keep.",
+   "tele": "Here's that loss as a root-cause box. The lost version existed only in the working tree, and the hard reset overwrote the file. There's no fix inside Git, so the prevention is the last line: commit or stash first, or use keep.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 60,
+   "line": 510,
+   "t0": 736.5,
+   "h": "5ab3cbef",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Kind four, untracked files: untouched, with one exception. An untracked file whose path the target commit tracks.",
+   "tele": "Kind four, untracked files: untouched, with one exception. An untracked file whose path the target commit tracks.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 61,
+   "line": 514,
+   "t0": 753.3,
+   "h": "de4edd49",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--keep refused. --hard overwrote the file without a word: two days of tuning replaced by alpha: 0.7. The manual admits it in one clause: --hard \"may overwrite untracked files\". And there it is: --keep, the reset that would have refused.",
+   "tele": "`--keep` refused. `--hard` overwrote the file without a word: two days of tuning replaced by `alpha: 0.7`. The manual admits it in one clause: `--hard` \"may overwrite untracked files\". And there it is: `--keep`, the reset that would have refused.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 62,
+   "line": 537,
+   "t0": 760.1,
+   "h": "c4c31667",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.821,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 2.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--keep and --merge. labs/run ch11/reset-keep-merge. One commit to drop, a staged change in serve.yaml, an unstaged change in metrics.txt.",
+   "tele": "`--keep` and `--merge`. `labs/run ch11/reset-keep-merge`. One commit to drop, a staged change in `serve.yaml`, an unstaged change in `metrics.txt`.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 63,
+   "line": 539,
+   "t0": 776.1,
+   "h": "c327db00",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 64,
+   "line": null,
+   "t0": 783.7,
+   "h": "",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 3.15,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both edits survived --keep, and both are now unstaged.",
+   "tele": "Both edits survived `--keep`, and both are now unstaged.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 65,
+   "line": 566,
+   "t0": 788.2,
+   "h": "49167f64",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 2.52,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After --merge, the unstaged edit to metrics.txt is still there, and the staged batch size of 64 is gone: the file says 32 again. --merge earns its 🔴 through staged work only. Preview with git diff --cached.",
+   "tele": "After `--merge`, the unstaged edit to `metrics.txt` is still there, and the staged batch size of 64 is gone: the file says 32 again. `--merge` earns its 🔴 through staged work only. Preview with `git diff --cached`.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 66,
+   "line": 581,
+   "t0": 791.8,
+   "h": "ae0f7073",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 1.79,
+      "dissolve": true
+     },
+     {
+      "at": 0.178,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 81,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--hard from the same state loses both. And when the local change is in a file that the dropped commit also changed:",
+   "tele": "`--hard` from the same state loses both. And when the local change is in a file that the dropped commit also changed:",
+   "words": 22,
+   "est": 8.8,
+   "slide": 67,
+   "line": 594,
+   "t0": 806.2,
+   "h": "9bcaf11c",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--keep stops, and the branch didn't move.",
+   "tele": "`--keep` stops, and the branch didn't move.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 68,
+   "line": 614,
+   "t0": 815.0,
+   "h": "d305558f",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.96,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The rule that follows: to drop commits, type --keep, not --hard. On a clean tree the two do the same thing. On a dirty tree, --keep carries your work across, or stops and says why.",
+   "tele": "The rule that follows: to drop commits, type `--keep`, not `--hard`. On a clean tree the two do the same thing. On a dirty tree, `--keep` carries your work across, or stops and says why.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 69,
+   "line": 628,
+   "t0": 817.8,
+   "h": "217ee415",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 5
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Amend. labs/run ch11/amend-is-soft-reset. A line was forgotten in the last commit.",
+   "tele": "Amend. `labs/run ch11/amend-is-soft-reset`. A line was forgotten in the last commit.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 70,
+   "line": 630,
+   "t0": 831.8,
+   "h": "f74256ce",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The reflog says commit (amend). Old commit d59fe4c, new commit ab64793, same parent 9a98a06, different tree.",
+   "tele": "The reflog says `commit (amend)`. Old commit `d59fe4c`, new commit `ab64793`, same parent `9a98a06`, different tree.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 71,
+   "line": 657,
+   "t0": 836.2,
+   "h": "82eee49d",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 7
+      },
+      "budget": 4.48,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "As a graph: two commits on one parent. main names the new one, and no branch names the old one. Now the same thing by hand.",
+   "tele": "As a graph: two commits on one parent. `main` names the new one, and no branch names the old one. Now the same thing by hand.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 72,
+   "line": 663,
+   "t0": 842.6,
+   "h": "209ad6bd",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.352,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.768,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both routes end with a commit whose parent is 9a98a06 and whose tree is b35836e. The two commit IDs differ only because the committer timestamps differ. An amend is therefore a rewrite of exactly one commit: private history only.",
+   "tele": "Both routes end with a commit whose parent is `9a98a06` and whose tree is `b35836e`. The two commit IDs differ only because the committer timestamps differ. An amend is therefore a rewrite of exactly one commit: private history only.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 73,
+   "line": 681,
+   "t0": 853.0,
+   "h": "537ca187",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One difference matters when you want the old commit back.",
+   "tele": "One difference matters when you want the old commit back.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 73,
+   "line": 683,
+   "t0": 868.6,
+   "h": "c25ec831",
+   "anim": {
+    "group": 62,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--amend doesn't write ORIG_HEAD. The previous commit is one step back in the reflog, HEAD@{1}.",
+   "tele": "`--amend` doesn't write `ORIG_HEAD`. The previous commit is one step back in the reflog, `HEAD@{1}`.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 74,
+   "line": 703,
+   "t0": 872.6,
+   "h": "f2fd83fe",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.99,
+      "dissolve": true
+     },
+     {
+      "at": 0.89,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 75,
+   "line": 705,
+   "t0": 879.0,
+   "h": "",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 76,
+   "line": 707,
+   "t0": 880.5,
+   "h": "76698d9b",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Typing --hard to drop a commit while the tree is dirty. Root cause: --hard is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+   "tele": "Typing `--hard` to drop a commit while the tree is dirty. Root cause: `--hard` is defined as \"make the working tree match the commit\", and the working tree is the one place without history.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 77,
+   "line": 711,
+   "t0": 882.5,
+   "h": "c76e9fa8",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Running git reset --hard ORIG_HEAD some commands after the operation you want to undo. Root cause: ORIG_HEAD is one slot that every reset writes, including the internal reset at the end of git stash push.",
+   "tele": "Running `git reset --hard ORIG_HEAD` some commands after the operation you want to undo. Root cause: `ORIG_HEAD` is one slot that every reset writes, including the internal reset at the end of `git stash push`.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 78,
+   "line": 711,
+   "t0": 896.1,
+   "h": "de872f11",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Assuming untracked files are always safe from a hard reset. Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+   "tele": "Assuming untracked files are always safe from a hard reset. Root cause: an untracked file at a path the target commit tracks is in the target's way and is overwritten.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 79,
+   "line": 711,
+   "t0": 910.1,
+   "h": "0d971dc3",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting git fsck --lost-found to return files with their names. Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+   "tele": "Expecting `git fsck --lost-found` to return files with their names. Root cause: a blob stores content only; the name lived in the index entry that the reset removed.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 80,
+   "line": 711,
+   "t0": 922.1,
+   "h": "545dcb94",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Amending a commit that has been pushed. Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have.",
+   "tele": "Amending a commit that has been pushed. Root cause: an amend creates a new commit with the same parent, which is a rewrite of one commit and diverges from what others have.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 81,
+   "line": 711,
+   "t0": 933.3,
+   "h": "30ec5ac2",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 97,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 82,
+   "line": 717,
+   "t0": 946.1,
+   "h": "",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 98,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. Two example uses, for a team that ships a retrieval service, both on private history.",
+   "tele": "Now, out of the lab. Two example uses, for a team that ships a retrieval service, both on private history.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 83,
+   "line": 719,
+   "t0": 947.6,
+   "h": "17c8955c",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 99,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Three commits named \"wip\", \"wip 2\" and \"fix typo\" before a review. git reset --soft @{u} moves the branch back to what is pushed, and leaves the combined change staged for one clean commit.",
+   "tele": "Three commits named \"wip\", \"wip 2\" and \"fix typo\" before a review. `git reset --soft @{u}` moves the branch back to what is pushed, and leaves the combined change staged for one clean commit.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 84,
+   "line": 725,
+   "t0": 955.6,
+   "h": "ae55bef1",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.518,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 100,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "A commit that mixes a refactoring with a behavior change. git reset HEAD~1, the mixed default, leaves both in the working tree, unstaged, ready to be split with git add -p.",
+   "tele": "A commit that mixes a refactoring with a behavior change. `git reset HEAD~1`, the mixed default, leaves both in the working tree, unstaged, ready to be split with `git add -p`.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 85,
+   "line": 729,
+   "t0": 969.2,
+   "h": "354f0ea3",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 101,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "And the team rule that comes out of section 11.6: in runbooks and in muscle memory, the command for dropping commits is git reset --keep. The day somebody has two days of tuning in an untracked file, that one word is the difference between an error message and an incident.",
+   "tele": "And the team rule that comes out of section 11.6: in runbooks and in muscle memory, the command for dropping commits is `git reset --keep`. The day somebody has two days of tuning in an untracked file, that one word is the difference between an error message and an incident.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 86,
+   "line": 731,
+   "t0": 982.0,
+   "h": "78340031",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 102,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 87,
+   "line": 733,
+   "t0": 1002.0,
+   "h": "",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 103,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 8.1, \"The reset prediction table\", in lab-manual/m08-undo.md.",
+   "tele": "Your turn. Do Lab 8.1, \"The reset prediction table\", in `lab-manual/m08-undo.md`.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 88,
+   "line": 735,
+   "t0": 1003.5,
+   "h": "ef90db70",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 104,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The lab gives you a state and asks you to fill in a table before you run anything: for each of --soft, --mixed, --hard, --keep and --merge, the content of HEAD, the index and the working tree, and the output of git status -s. Fill in the whole table first. Then run the commands and mark every cell you got wrong.",
+   "tele": "The lab gives you a state and asks you to fill in a table before you run anything: for each of `--soft`, `--mixed`, `--hard`, `--keep` and `--merge`, the content of HEAD, the index and the working tree, and the output of `git status -s`. Fill in the whole table first. Then run the commands and mark every cell you got wrong.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 89,
+   "line": 737,
+   "t0": 1007.9,
+   "h": "6ebf1100",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 105,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "For the failure scenario, predict which of your pieces of work will be recoverable, and by which command.",
+   "tele": "For the failure scenario, predict which of your pieces of work will be recoverable, and by which command.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 90,
+   "line": 739,
+   "t0": 1032.3,
+   "h": "0386bbd4",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 106,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 8.8, Level 3, \"what a hard reset took and what it left\", in exercises/m06-m10-integration.md.",
+   "tele": "The challenge is Exercise 8.8, Level 3, \"what a hard reset took and what it left\", in `exercises/m06-m10-integration.md`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 91,
+   "line": 741,
+   "t0": 1039.5,
+   "h": "d68a67ff",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 107,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 92,
+   "line": 743,
+   "t0": 1046.7,
+   "h": "",
+   "anim": {
+    "group": 77,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 108,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Q171: \"HEAD, the index and the working tree hold three different versions of one file. What does each hold after git reset --soft HEAD~1, after --mixed and after --hard, and what does git status -s print?\"",
+   "tele": "Q171: \"HEAD, the index and the working tree hold three different versions of one file. What does each hold after `git reset --soft HEAD~1`, after `--mixed` and after `--hard`, and what does `git status -s` print?\"",
+   "words": 37,
+   "est": 14.8,
+   "slide": 93,
+   "line": 747,
+   "t0": 1048.2,
+   "h": "7f935e56",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 109,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 93,
+   "line": 749,
+   "t0": 1063.0,
+   "h": "",
+   "anim": {
+    "group": 78,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 110,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud, and draw the table as you speak. A strong answer derives each row from the three steps of a reset, so that the table is the consequence of a rule and not a list. It gets the status letters right, including the row where the letters stay the same but mean something else. A follow-up will ask what became of the versions that no place holds any more. Be ready to say, for each one, whether an object exists.",
+   "tele": "Answer out loud, and draw the table as you speak. A strong answer derives each row from the three steps of a reset, so that the table is the consequence of a rule and not a list. It gets the status letters right, including the row where the letters stay the same but mean something else. A follow-up will ask what became of the versions that no place holds any more. Be ready to say, for each one, whether an object exists.",
+   "words": 82,
+   "est": 32.8,
+   "slide": 94,
+   "line": 753,
+   "t0": 1065.0,
+   "h": "a780e279",
+   "anim": {
+    "group": 79,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.35,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.585,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "pose": "worried",
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 111,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 95,
+   "line": 755,
+   "t0": 1097.8,
+   "h": "",
+   "anim": {
+    "group": 80,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 112,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 96,
+   "line": 759,
+   "t0": 1099.3,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 81,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 113,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A reset moves the current branch and writes ORIG_HEAD. --mixed also rewrites the index, and --hard also rewrites tracked files.",
+   "tele": "A reset moves the current branch and writes `ORIG_HEAD`. `--mixed` also rewrites the index, and `--hard` also rewrites tracked files.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 96,
+   "line": 761,
+   "t0": 1103.3,
+   "h": "3be48ea5",
+   "anim": {
+    "group": 81,
+    "cues": [],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 114,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Commits left behind are in the reflog, staged content survives as unnamed blobs that git fsck --lost-found lists, and edits that were never staged have no object and are gone.",
+   "tele": "Commits left behind are in the reflog, staged content survives as unnamed blobs that `git fsck --lost-found` lists, and edits that were never staged have no object and are gone.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 97,
+   "line": 765,
+   "t0": 1111.3,
+   "h": "24ea303f",
+   "anim": {
+    "group": 82,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 115,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Before a hard reset I preview with git log, git status -s and git diff HEAD, and I stash and branch if anything should survive. To drop commits I type --keep, which carries my changes across or refuses. git commit --amend is a soft reset plus a new commit, and it doesn't write ORIG_HEAD.",
+   "tele": "Before a hard reset I preview with `git log`, `git status -s` and `git diff HEAD`, and I stash and branch if anything should survive. To drop commits I type `--keep`, which carries my changes across or refuses. `git commit --amend` is a soft reset plus a new commit, and it doesn't write `ORIG_HEAD`.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 98,
+   "line": 769,
+   "t0": 1123.3,
+   "h": "3e4e12b4",
+   "anim": {
+    "group": 83,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 116,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 99,
+   "line": 771,
+   "t0": 1144.9,
+   "h": "",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 117,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 11.4 to 11.7 of Chapter 11.",
+   "tele": "Read sections 11.4 to 11.7 of Chapter 11.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 100,
+   "line": 773,
+   "t0": 1146.4,
+   "h": "d1fc997b",
+   "anim": {
+    "group": 85,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 118,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Do Exercise 8.4, Level 2, \"reset --keep, twice\", and Exercise 8.6, Level 2, \"after a hard reset\", both in exercises/m06-m10-integration.md.",
+   "tele": "Do Exercise 8.4, Level 2, \"`reset --keep`, twice\", and Exercise 8.6, Level 2, \"after a hard reset\", both in `exercises/m06-m10-integration.md`.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 101,
+   "line": 775,
+   "t0": 1149.6,
+   "h": "adf839e3",
+   "anim": {
+    "group": 86,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 119,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "You can now answer the CTO in three exact sentences, and you have a safer word to type: keep. Fill in the lab's table before you run anything. Next time: git revert, a new commit that applies the inverse change. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "You can now answer the CTO in three exact sentences, and you have a safer word to type: keep. Fill in the lab's table before you run anything. Next time: `git revert`, a new commit that applies the inverse change. Until then, look at the state first and type second. See you in the next one.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 102,
+   "line": 777,
+   "t0": 1157.6,
+   "h": "ba3123bc",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1180.0,
+ "narration_words": 2799,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

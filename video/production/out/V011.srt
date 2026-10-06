@@ -1,0 +1,1045 @@
+1
+00:00:04,500 --> 00:00:08,720
+A laptop build and a CI build of
+the same commit behave differently.
+
+2
+00:00:08,760 --> 00:00:12,605
+CI is the automated system that
+builds and tests every change.
+
+3
+00:00:12,645 --> 00:00:17,367
+The commit ID is identical. And somebody
+says "but git status is clean on my
+
+4
+00:00:17,407 --> 00:00:17,930
+machine".
+
+5
+00:00:18,270 --> 00:00:22,163
+A clean git status doesn't mean
+the directory equals the commit.
+
+6
+00:00:22,203 --> 00:00:27,263
+Ignored files, the ones Git has been told
+not to list, are present and invisible: a
+
+7
+00:00:27,303 --> 00:00:31,442
+local .env file of settings, compiled
+caches, a stale build/ folder.
+
+8
+00:00:31,482 --> 00:00:36,603
+Any tool that reads the directory sees the
+working tree, not the commit: a container
+
+9
+00:00:36,643 --> 00:00:41,274
+build that copies the project directory,
+a packaging step, a test runner, an
+
+10
+00:00:41,314 --> 00:00:42,380
+evaluation script.
+
+11
+00:00:44,720 --> 00:00:49,336
+To reason about that, you need a precise
+idea of what the working tree is, which
+
+12
+00:00:49,376 --> 00:00:53,178
+category each path in it belongs
+to, and what git status compares.
+
+13
+00:00:53,218 --> 00:00:57,834
+That's this video. And one command in the
+demo shows exactly what the laptop has
+
+14
+00:00:57,874 --> 00:00:59,231
+that the commit doesn't.
+
+15
+00:01:01,071 --> 00:01:04,853
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+16
+00:01:04,893 --> 00:01:09,803
+Part 1 continues with the place where you
+spend your day: the working tree, the
+
+17
+00:01:09,843 --> 00:01:14,439
+folder of files you edit. Most tutorials
+treat it as too plain to explain.
+
+18
+00:01:14,479 --> 00:01:19,263
+The textbook opens Chapter 4 with three
+CTO questions that all turn out to be
+
+19
+00:01:19,303 --> 00:01:20,704
+working-tree questions.
+
+20
+00:01:21,044 --> 00:01:25,248
+Why did a secret scanner find a key
+although .env was in .gitignore?
+
+21
+00:01:25,288 --> 00:01:28,867
+Why does the same commit fail
+in CI with a missing module?
+
+22
+00:01:28,907 --> 00:01:33,984
+And can Git bring back two days of labelled
+evaluation data that a cleanup command
+
+23
+00:01:34,024 --> 00:01:36,605
+deleted? The next four videos answer them.
+
+24
+00:01:36,945 --> 00:01:41,809
+Hold on to one idea through all four. A
+version of a file can live in three places:
+
+25
+00:01:41,849 --> 00:01:46,653
+in the working tree, in the index, or in
+a commit. The index is Git's list of what
+
+26
+00:01:46,693 --> 00:01:51,556
+the next commit will contain. The working
+tree is the only one of the three with no
+
+27
+00:01:51,596 --> 00:01:56,341
+history and no second copy. Git can rebuild
+tracked files in it from the index or
+
+28
+00:01:56,381 --> 00:02:01,008
+from a commit. It can't rebuild content
+that never left it, such as an edit you
+
+29
+00:02:01,048 --> 00:02:01,894
+haven't staged.
+
+30
+00:02:03,734 --> 00:02:05,312
+Here's what you'll walk away with.
+
+31
+00:02:05,652 --> 00:02:07,065
+After this video you can:
+
+32
+00:02:07,405 --> 00:02:10,723
+Define the working tree, and say
+what a bare repository lacks.
+
+33
+00:02:11,063 --> 00:02:15,790
+Classify a path as tracked, untracked or
+ignored from the index and the ignore
+
+34
+00:02:15,830 --> 00:02:16,157
+rules.
+
+35
+00:02:16,497 --> 00:02:21,365
+Explain git status as two comparisons, and
+read the two columns of the short format.
+
+36
+00:02:21,705 --> 00:02:24,395
+Choose the status format
+that a script should parse.
+
+37
+00:02:26,235 --> 00:02:30,760
+What the working tree is. In one sentence:
+the working tree is the directory of
+
+38
+00:02:30,800 --> 00:02:35,613
+ordinary files that you edit, build and run:
+one checked-out version of the project,
+
+39
+00:02:35,653 --> 00:02:38,270
+plus whatever else is
+lying in that directory.
+
+40
+00:02:38,610 --> 00:02:43,385
+Now precisely. The glossary defines the
+working tree as "the tree of actual checked
+
+41
+00:02:43,425 --> 00:02:48,084
+out files", which "normally contains the
+contents of the HEAD commit's tree, plus
+
+42
+00:02:48,124 --> 00:02:51,564
+any local changes that you have
+made but not yet committed".
+
+43
+00:02:51,604 --> 00:02:56,321
+It starts at the directory that contains
+the dot git folder, called the top level,
+
+44
+00:02:56,361 --> 00:03:00,788
+and every path Git prints is relative
+to that directory unless a command says
+
+45
+00:03:00,828 --> 00:03:01,368
+otherwise.
+
+46
+00:03:01,708 --> 00:03:06,832
+A repository can have no working tree, which
+is a bare repository, the form used on
+
+47
+00:03:06,872 --> 00:03:11,996
+servers. Or one, the normal case. Or several,
+which are linked worktrees and belong
+
+48
+00:03:12,036 --> 00:03:13,178
+to a later chapter.
+
+49
+00:03:13,518 --> 00:03:18,784
+And inside the dot git folder? Nothing. The
+working tree isn't stored there at all.
+
+50
+00:03:18,824 --> 00:03:23,578
+The only trace of it is in the index
+file. For each tracked path, the index
+
+51
+00:03:23,618 --> 00:03:28,820
+remembers which blob the file last matched,
+and the file's size and timestamps, so
+
+52
+00:03:28,860 --> 00:03:32,591
+that Git can find changed files
+without reading every file.
+
+53
+00:03:32,931 --> 00:03:37,990
+Three categories. In one sentence: every
+path in the working tree is in exactly one
+
+54
+00:03:38,030 --> 00:03:43,150
+of three categories, and the index decides
+which. Tracked, if it has an index entry.
+
+55
+00:03:43,190 --> 00:03:46,467
+Ignored, if it has none and
+matches an ignore pattern.
+
+56
+00:03:46,507 --> 00:03:47,696
+Untracked otherwise.
+
+57
+00:03:48,036 --> 00:03:52,990
+A tracked path is shown by git status when
+it differs from the index or from HEAD.
+
+58
+00:03:53,030 --> 00:03:57,375
+git ls-files lists it. git add .
+updates it. git clean never touches it.
+
+59
+00:03:57,715 --> 00:04:00,511
+An untracked path is shown
+under "Untracked files".
+
+60
+00:04:00,551 --> 00:04:02,735
+git add . adds it. git clean removes it.
+
+61
+00:04:03,075 --> 00:04:06,869
+An ignored path is hidden
+unless you pass --ignored.
+
+62
+00:04:06,909 --> 00:04:10,924
+git add . does not add it,
+unless you force it with -f.
+
+63
+00:04:10,964 --> 00:04:13,874
+git clean removes it only with -x or -X.
+
+64
+00:04:14,214 --> 00:04:19,099
+Two consequences follow from the definitions.
+"Ignored" is a kind of untracked, so a
+
+65
+00:04:19,139 --> 00:04:23,965
+tracked path can never be ignored. And
+"tracked" says nothing about commits: a path
+
+66
+00:04:24,005 --> 00:04:27,366
+becomes tracked the moment git
+add writes its index entry.
+
+67
+00:04:27,406 --> 00:04:30,649
+Almost everyone hears "tracked"
+as "committed" at first.
+
+68
+00:04:30,689 --> 00:04:32,350
+It means: has an index entry.
+
+69
+00:04:32,690 --> 00:04:37,975
+The anatomy of git status. In one sentence:
+git status is two comparisons and one
+
+70
+00:04:38,015 --> 00:04:42,248
+scan. HEAD against the index. The
+index against the working tree.
+
+71
+00:04:42,288 --> 00:04:46,587
+And a scan of the working tree for
+paths that have no index entry.
+
+72
+00:04:46,927 --> 00:04:51,141
+The manual describes the same three
+parts. The first is what git commit would
+
+73
+00:04:51,181 --> 00:04:54,345
+record. The second and third
+are what you could still add.
+
+74
+00:04:54,685 --> 00:04:58,150
+The short format puts the two
+comparisons in two columns.
+
+75
+00:04:58,190 --> 00:05:02,024
+The first column, X, is comparison
+one: HEAD against the index.
+
+76
+00:05:02,064 --> 00:05:06,698
+The second column, Y, is comparison two:
+the index against the working tree.
+
+77
+00:05:07,038 --> 00:05:12,349
+M and a space: a modification is staged,
+and the working tree matches the index.
+
+78
+00:05:12,389 --> 00:05:16,096
+A space and M: modified in
+the working tree, not staged.
+
+79
+00:05:16,136 --> 00:05:20,712
+MM: staged, then modified again. A
+and a space: a new file is staged.
+
+80
+00:05:20,752 --> 00:05:25,997
+D and a space: a deletion is staged. A
+space and D: the file was deleted in the
+
+81
+00:05:26,037 --> 00:05:31,348
+working tree, and the deletion is not
+staged. R and a space: a rename is staged.
+
+82
+00:05:31,388 --> 00:05:36,566
+Two question marks: untracked. Two
+exclamation marks: ignored, shown only with
+
+83
+00:05:36,606 --> 00:05:37,235
+--ignored.
+
+84
+00:05:37,575 --> 00:05:43,141
+Formats for scripts. There are two stable
+formats. --porcelain, version 1, looks
+
+85
+00:05:43,181 --> 00:05:48,747
+like the short format, but it's guaranteed
+not to change between Git versions or
+
+86
+00:05:48,787 --> 00:05:54,213
+with user configuration, and it always
+prints paths relative to the top level.
+
+87
+00:05:54,253 --> 00:05:59,189
+--porcelain=v2 adds the file modes
+and object IDs that status compared.
+
+88
+00:05:59,229 --> 00:06:05,075
+Add -z when file names may contain spaces
+or newlines: entries are then separated by
+
+89
+00:06:05,115 --> 00:06:06,967
+NUL bytes and never quoted.
+
+90
+00:06:07,307 --> 00:06:12,808
+Three details that matter in practice.
+Untracked directories are collapsed: status
+
+91
+00:06:12,848 --> 00:06:18,348
+prints the directory, not the files in it.
+--untracked-files=all lists every file,
+
+92
+00:06:18,388 --> 00:06:23,686
+and --untracked-files=no skips the scan,
+which is the expensive part in a large
+
+93
+00:06:23,726 --> 00:06:28,821
+working tree. Second, status writes. By
+default it refreshes the cached file
+
+94
+00:06:28,861 --> 00:06:34,227
+information in the index and writes the
+index back, taking a lock while it does.
+
+95
+00:06:34,567 --> 00:06:39,279
+The manual's advice for background tools
+is git --no-optional-locks status.
+
+96
+00:06:39,319 --> 00:06:43,714
+Third, status is local: a line such
+as "Your branch is up to date with
+
+97
+00:06:43,754 --> 00:06:48,339
+'origin/main'" compares with the last
+fetched state, not with the server.
+
+98
+00:06:48,679 --> 00:06:52,983
+All commands in this video are 🟢 SAFE
+except two that appear once: git restore .,
+
+99
+00:06:53,023 --> 00:06:56,361
+which I'll label when it appears,
+and git add, which only adds.
+
+100
+00:06:58,201 --> 00:07:03,264
+Two pictures now. The textbook's analogy
+for the working tree: a workbench in front
+
+101
+00:07:03,304 --> 00:07:08,120
+of a parts cabinet. The cabinet, the
+object database, holds labelled parts that
+
+102
+00:07:08,160 --> 00:07:11,625
+never change. The bench is
+where you assemble and modify.
+
+103
+00:07:11,665 --> 00:07:16,666
+Git can lay any stored version out on the
+bench again, but shavings and half-built
+
+104
+00:07:16,706 --> 00:07:20,539
+parts that never went into the
+cabinet exist only on the bench.
+
+105
+00:07:20,879 --> 00:07:23,981
+It breaks in two places. Git
+doesn't watch the bench.
+
+106
+00:07:24,021 --> 00:07:28,724
+It looks only when a command asks. And
+the bench may hold things the cabinet has
+
+107
+00:07:28,764 --> 00:07:32,814
+never seen, untracked files, which
+Git will list but doesn't protect.
+
+108
+00:07:33,154 --> 00:07:36,205
+For status: a warehouse
+audit with three clipboards.
+
+109
+00:07:36,245 --> 00:07:40,961
+What the last signed inventory says: HEAD.
+What the next inventory will say: the
+
+110
+00:07:41,001 --> 00:07:44,052
+index. And what is on the
+shelves: the working tree.
+
+111
+00:07:44,092 --> 00:07:47,916
+Status reads out the differences
+between neighbouring clipboards.
+
+112
+00:07:47,956 --> 00:07:51,899
+It breaks because the middle clipboard
+isn't a list of differences.
+
+113
+00:07:51,939 --> 00:07:56,713
+It's a complete inventory, and status
+computes the differences each time you ask.
+
+114
+00:07:58,553 --> 00:08:03,627
+Three boxes. Content moves right with add
+and commit, and back left with restore.
+
+115
+00:08:03,667 --> 00:08:08,931
+Read the captions under the boxes: the right
+box holds every committed snapshot, the
+
+116
+00:08:08,971 --> 00:08:13,918
+middle box one proposed snapshot, and the
+left box has no history and no second
+
+117
+00:08:13,958 --> 00:08:14,234
+copy.
+
+118
+00:08:14,574 --> 00:08:19,571
+The first question is always about the
+index. Only on the "no" branch is an ignore
+
+119
+00:08:19,611 --> 00:08:24,117
+pattern consulted. Keep that order in
+mind. The next video is built on it.
+
+120
+00:08:33,457 --> 00:08:38,595
+git rev-parse answers "where am I" questions.
+From a subdirectory, --show-prefix
+
+121
+00:08:38,635 --> 00:08:42,479
+prints the path from the top
+level to the current directory.
+
+122
+00:08:42,819 --> 00:08:48,015
+Next, a repository without a working
+tree. Predict what git status says in it.
+
+123
+00:08:48,055 --> 00:08:49,828
+Say it out loud. I'll wait.
+
+124
+00:08:54,668 --> 00:08:59,841
+A bare repository has the .git content and
+nothing to check out into, so any command
+
+125
+00:08:59,881 --> 00:09:01,951
+that needs a working tree refuses.
+
+126
+00:09:02,291 --> 00:09:05,746
+Now the asymmetry that the
+rest of this block depends on.
+
+127
+00:09:05,786 --> 00:09:10,712
+The script deletes two tracked directories
+and one untracked file, .env, and then
+
+128
+00:09:10,752 --> 00:09:12,981
+asks Git to rebuild the working tree.
+
+129
+00:09:13,321 --> 00:09:18,295
+git restore on working-tree paths is 🔴
+DANGEROUS in general: it overwrites files
+
+130
+00:09:18,335 --> 00:09:22,432
+from the index, and content that
+was never staged has no recovery.
+
+131
+00:09:22,472 --> 00:09:25,628
+Video 13 answers the five
+questions for it in full.
+
+132
+00:09:25,968 --> 00:09:29,958
+Here the files are already deleted,
+so nothing further can be lost.
+
+133
+00:09:29,998 --> 00:09:31,822
+Predict: which files come back?
+
+134
+00:09:36,662 --> 00:09:40,517
+The three tracked files came back
+from the index. .env didn't.
+
+135
+00:09:40,557 --> 00:09:45,165
+Git has never heard of it, and says
+so. Tracked content had a second copy.
+
+136
+00:09:45,205 --> 00:09:46,924
+The untracked file had none.
+
+137
+00:09:47,264 --> 00:09:51,062
+The repository has four committed
+files and a three-line .gitignore.
+
+138
+00:09:51,102 --> 00:09:54,111
+Four more paths were then
+created in the working tree.
+
+139
+00:09:54,451 --> 00:09:59,307
+Status shows one untracked directory, and
+says nothing about .env, data/ or the
+
+140
+00:09:59,347 --> 00:10:00,237
+bytecode cache.
+
+141
+00:10:00,577 --> 00:10:05,181
+With --ignored they appear. This is the
+command for the hook: it lists what the
+
+142
+00:10:05,221 --> 00:10:07,239
+laptop has that the commit doesn't.
+
+143
+00:10:07,579 --> 00:10:12,379
+git ls-files lists each category exactly:
+tracked, then untracked and not ignored,
+
+144
+00:10:12,419 --> 00:10:13,146
+then ignored.
+
+145
+00:10:13,486 --> 00:10:18,367
+Quick quiz before the next snippet. We
+run git add on the ignored file .env.
+
+146
+00:10:18,407 --> 00:10:22,900
+Option one: it's added quietly. Option
+two: it's refused, with a hint.
+
+147
+00:10:22,940 --> 00:10:23,936
+Say it out loud.
+
+148
+00:10:28,776 --> 00:10:33,242
+Option two. Moving between categories
+is always an index operation.
+
+149
+00:10:33,282 --> 00:10:38,689
+git add 🟢 SAFE makes an untracked path
+tracked. An ignored path is refused unless
+
+150
+00:10:38,729 --> 00:10:43,867
+you force it. In the short format, A and
+a space is a staged new file, and !!
+
+151
+00:10:43,907 --> 00:10:49,381
+marks ignored paths. The refusal to add
+.env is a courtesy of git add, not a lock:
+
+152
+00:10:49,421 --> 00:10:51,331
+git add -f .env would add it.
+
+153
+00:10:51,671 --> 00:10:54,773
+One repository, one path
+in each interesting state.
+
+154
+00:10:55,113 --> 00:11:00,784
+src/retriever.py appears twice. That's not
+a contradiction: it was staged and then
+
+155
+00:11:00,824 --> 00:11:04,405
+edited again, so both
+comparisons find a difference.
+
+156
+00:11:04,745 --> 00:11:06,568
+The same state in two columns.
+
+157
+00:11:06,908 --> 00:11:11,809
+Try it now. For each of these files, say
+the letter in column X and the letter in
+
+158
+00:11:11,849 --> 00:11:16,689
+column Y, from what the long format told
+you. Take thirty seconds and write your
+
+159
+00:11:16,729 --> 00:11:21,325
+answers down. Then I uncover the two
+diff commands that perform the same two
+
+160
+00:11:21,365 --> 00:11:22,057
+comparisons.
+
+161
+00:11:26,897 --> 00:11:31,866
+git diff --cached --name-status
+is comparison one, the X column.
+
+162
+00:11:31,906 --> 00:11:36,170
+git diff --name-status is
+comparison two, the Y column.
+
+163
+00:11:36,210 --> 00:11:40,318
+src/retriever.py is in both
+lists, so its code is MM.
+
+164
+00:11:40,358 --> 00:11:43,448
+If you had that one, you have the model.
+
+165
+00:11:46,788 --> 00:11:52,298
+The formats for scripts. Read one version
+2 line, the one for src/app.py: the three
+
+166
+00:11:52,338 --> 00:11:57,515
+modes are HEAD, index and working tree.
+The two object IDs are HEAD and index.
+
+167
+00:11:57,555 --> 00:12:02,797
+They're equal, so nothing is staged for
+this path. There's no third ID, because
+
+168
+00:12:02,837 --> 00:12:08,348
+status compares the working-tree file with
+the index entry and doesn't need to name
+
+169
+00:12:08,388 --> 00:12:09,150
+its content.
+
+170
+00:12:09,490 --> 00:12:14,665
+And the untracked modes: all lists the two
+files inside scratch/, and no skips the
+
+171
+00:12:14,705 --> 00:12:14,983
+scan.
+
+172
+00:12:16,823 --> 00:12:18,471
+Five mistakes to watch for.
+
+173
+00:12:18,811 --> 00:12:23,144
+Taking a clean git status to mean
+"the directory equals the commit".
+
+174
+00:12:23,184 --> 00:12:28,416
+Root cause: ignored files are present and
+hidden; git status --ignored lists them.
+
+175
+00:12:28,756 --> 00:12:32,967
+Thinking "tracked" means "committed".
+Root cause: tracked means "has an index
+
+176
+00:12:33,007 --> 00:12:35,286
+entry"; a path becomes tracked at git add.
+
+177
+00:12:35,626 --> 00:12:40,153
+Reading a path listed twice as a
+contradiction. Root cause: status makes two
+
+178
+00:12:40,193 --> 00:12:44,300
+comparisons, and a file staged and
+then edited again differs in both.
+
+179
+00:12:44,640 --> 00:12:50,216
+Parsing the long or short format in a script.
+Root cause: those formats follow user
+
+180
+00:12:50,256 --> 00:12:55,628
+configuration and may change; --porcelain
+is the stable one, with -z for unusual
+
+181
+00:12:55,668 --> 00:12:56,373
+file names.
+
+182
+00:12:56,713 --> 00:13:01,171
+Using git diff --exit-code to prove
+that a build left the tree clean.
+
+183
+00:13:01,211 --> 00:13:06,320
+Root cause: it performs comparison two
+only, so a generator that created a new,
+
+184
+00:13:06,360 --> 00:13:08,406
+untracked file passes unnoticed.
+
+185
+00:13:10,246 --> 00:13:15,115
+Now, out of the lab. A CI job has to
+prove that the build left the tree clean:
+
+186
+00:13:15,155 --> 00:13:19,080
+generated code is committed, and
+the formatter changed nothing.
+
+187
+00:13:19,120 --> 00:13:22,856
+The job should test git status
+--porcelain for empty output.
+
+188
+00:13:22,896 --> 00:13:28,079
+git diff --exit-code isn't enough, for the
+reason you now know: it covers the index
+
+189
+00:13:28,119 --> 00:13:32,799
+against the working tree and nothing
+else, so a generator that wrote a new,
+
+190
+00:13:32,839 --> 00:13:34,184
+untracked file passes.
+
+191
+00:13:34,524 --> 00:13:38,955
+And for the laptop-versus-CI difference
+from the hook: a build that must contain
+
+192
+00:13:38,995 --> 00:13:42,699
+exactly the commit should run in a
+fresh clone or a fresh worktree.
+
+193
+00:13:44,539 --> 00:13:52,347
+Your turn. Do Exercise 2.1, Level 1, "every
+short status code, made on purpose", in
+
+194
+00:13:52,387 --> 00:13:55,467
+exercises/m01-m05-foundations.md.
+
+195
+00:13:55,807 --> 00:14:00,471
+For each file, write the two-letter code
+you expect before you run git status
+
+196
+00:14:00,511 --> 00:14:04,565
+--short, and say which of the two
+comparisons produced each letter.
+
+197
+00:14:06,405 --> 00:14:10,519
+Q5: "Define tracked, untracked and
+ignored in terms of the index.
+
+198
+00:14:10,559 --> 00:14:13,843
+Can a path be tracked and
+ignored at the same time?"
+
+199
+00:14:16,183 --> 00:14:21,068
+Answer out loud. A strong answer defines
+all three from one question about the index
+
+200
+00:14:21,108 --> 00:14:25,877
+and one about ignore patterns, in that
+order, and derives the answer to the second
+
+201
+00:14:25,917 --> 00:14:30,509
+half from the definitions instead of
+asserting it. Say which command lists each
+
+202
+00:14:30,549 --> 00:14:31,036
+category.
+
+203
+00:14:32,876 --> 00:14:37,669
+Let's land this. You should now be able to
+say: the working tree is one checked-out
+
+204
+00:14:37,709 --> 00:14:42,211
+version plus whatever else lies in the
+directory, and it has no history and no
+
+205
+00:14:42,251 --> 00:14:47,044
+second copy. A path is tracked if it has
+an index entry, ignored if it has none and
+
+206
+00:14:47,084 --> 00:14:49,548
+matches a pattern, and
+untracked otherwise.
+
+207
+00:14:49,888 --> 00:14:54,796
+git status is two comparisons and one
+scan: HEAD against the index, the index
+
+208
+00:14:54,836 --> 00:14:59,294
+against the working tree, and a scan
+for paths without an index entry.
+
+209
+00:14:59,334 --> 00:15:04,692
+In the short format the left column is the
+index and the right column is the working
+
+210
+00:15:04,732 --> 00:15:06,749
+tree. Scripts parse --porcelain.
+
+211
+00:15:08,589 --> 00:15:12,139
+Read sections 4.1 to 4.4 of Chapter 4.
+
+212
+00:15:12,479 --> 00:15:18,705
+Challenge: Exercise 2.9, Level 4,
+"Git does not see my edits", in
+
+213
+00:15:18,745 --> 00:15:21,887
+exercises/m01-m05-foundations.md.
+
+214
+00:15:22,227 --> 00:15:27,251
+You can now read every line and every letter
+that git status prints, and that's the
+
+215
+00:15:27,291 --> 00:15:32,193
+report you'll read most often. Do the
+status-code exercise before the next video.
+
+216
+00:15:32,233 --> 00:15:35,488
+Next time: ignore rules, and
+the already-tracked trap.
+
+217
+00:15:35,528 --> 00:15:38,661
+Until then, look at the
+state first and type second.
+
+218
+00:15:38,701 --> 00:15:40,126
+See you in the next one.

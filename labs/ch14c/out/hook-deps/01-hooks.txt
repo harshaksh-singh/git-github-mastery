@@ -1,0 +1,15 @@
+$ cat .git/hooks/post-checkout
+#!/bin/sh
+# post-checkout <old-HEAD> <new-HEAD> <flag>: flag 1 is a branch checkout, 0 a file checkout.
+# Tell the developer when the dependency lock file differs between the two commits.
+[ "$3" = 1 ] || exit 0
+if ! git diff --quiet "$1" "$2" -- requirements.lock; then
+  echo "post-checkout: requirements.lock changed. Run: pip install -r requirements.lock"
+fi
+$ cat .git/hooks/post-merge
+#!/bin/sh
+# post-merge <squash-flag>: runs after a merge that succeeded, which includes "git pull".
+# ORIG_HEAD is the commit the branch was on before the merge.
+if ! git diff --quiet ORIG_HEAD HEAD -- requirements.lock; then
+  echo "post-merge: requirements.lock changed. Run: pip install -r requirements.lock"
+fi

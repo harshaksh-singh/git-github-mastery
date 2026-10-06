@@ -1,0 +1,7629 @@
+{
+ "id": "V070",
+ "version": 22,
+ "title": "git blame: what a row asserts, reformatting commits, moved code, and a method for finding the origin of a bug",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 26,
+ "chapters": [
+  "ch14a-history-investigation.md"
+ ],
+ "script": "video/scripts/V070-git-blame-what-a-row-asserts-reformatting-commits-moved-code-and-a-method-for-finding-the-origin-of-a-bug.md",
+ "script_sha1": "27f2f53881b0ca88d2858dc33423fe67a7fd3f4c",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 18
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 8,
+   "line": 24
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 14,
+   "line": 34
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 31,
+   "line": 78
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 35,
+   "line": 92
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 42,
+   "line": 129
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 79,
+   "line": 728
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 86,
+   "line": 738
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 89,
+   "line": 750
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 93,
+   "line": 758
+  },
+  {
+   "name": "RECAP",
+   "beat": 97,
+   "line": 768
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 104,
+   "line": 778
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "git blame: what a row asserts, reformatting commits, moved code, and a method for finding the origin of a bug",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0018
+  },
+  {
+   "kind": "callout",
+   "direction": "\"`git blame` says one person wrote most of the file last Friday. That cannot be right. Where is the real history?\"",
+   "quotes": [
+    "<code>git blame</code> says one person wrote most of the file last Friday. That cannot be right. Where is the real history?"
+   ],
+   "quoted": true,
+   "caption": "It isn't right, and Git didn't lie.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0031
+  },
+  {
+   "kind": "callout",
+   "direction": "\"`git blame` says one person wrote most of the file last Friday. That cannot be right. Where is the real history?\"",
+   "quotes": [
+    "<code>git blame</code> says one person wrote most of the file last Friday. That cannot be right. Where is the real history?"
+   ],
+   "quoted": true,
+   "caption": "Every line whose indentation or quotes changed now carries that commit and that name.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0203
+  },
+  {
+   "kind": "callout",
+   "direction": "\"`git blame` says one person wrote most of the file last Friday. That cannot be right. Where is the real history?\"",
+   "quotes": [
+    "<code>git blame</code> says one person wrote most of the file last Friday. That cannot be right. Where is the real history?"
+   ],
+   "quoted": true,
+   "caption": "There's a second way blame misleads, and it's worse.",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0356
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0527
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0541
+  },
+  {
+   "kind": "keypoint",
+   "body": "One note on the method. The curriculum summary for this video calls it a seven-step method.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0833
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.0958
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "state precisely what one row of <code>git blame</code> asserts;",
+    "look through a reformatting commit with <code>-w</code>, <code>--ignore-rev</code> and an ignore-revs file;",
+    "follow moved and copied code with <code>-M</code> and <code>-C</code>;",
+    "explain what blame shows after a squash merge;",
+    "apply the method from symptom to blast radius."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.0972
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "state precisely what one row of <code>git blame</code> asserts;",
+    "look through a reformatting commit with <code>-w</code>, <code>--ignore-rev</code> and an ignore-revs file;",
+    "follow moved and copied code with <code>-M</code> and <code>-C</code>;",
+    "explain what blame shows after a squash merge;",
+    "apply the method from symptom to blast radius."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1004
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "state precisely what one row of <code>git blame</code> asserts;",
+    "look through a reformatting commit with <code>-w</code>, <code>--ignore-rev</code> and an ignore-revs file;",
+    "follow moved and copied code with <code>-M</code> and <code>-C</code>;",
+    "explain what blame shows after a squash merge;",
+    "apply the method from symptom to blast radius."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1047
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "state precisely what one row of <code>git blame</code> asserts;",
+    "look through a reformatting commit with <code>-w</code>, <code>--ignore-rev</code> and an ignore-revs file;",
+    "follow moved and copied code with <code>-M</code> and <code>-C</code>;",
+    "explain what blame shows after a squash merge;",
+    "apply the method from symptom to blast radius."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1079
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "state precisely what one row of <code>git blame</code> asserts;",
+    "look through a reformatting commit with <code>-w</code>, <code>--ignore-rev</code> and an ignore-revs file;",
+    "follow moved and copied code with <code>-M</code> and <code>-C</code>;",
+    "explain what blame shows after a squash merge;",
+    "apply the method from symptom to blast radius."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1107
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 15,
+   "progress": 0.1136
+  },
+  {
+   "kind": "keypoint",
+   "body": "In one sentence: 🟢 SAFE, <code>git blame</code> annotates every line of a file, as it is in one revision, with the commit that last changed that line.",
+   "section": "CONCEPT",
+   "n": 16,
+   "progress": 0.1149
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1271
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "upto": 2,
+   "says": [
+    "A_row:_the_last_commit_whose_diff_against_its_parent_shows_this_line_as_added"
+   ],
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1982
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch14a-history-investigation.md",
+    "line": 1881,
+    "section": "14A.16",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The table \"What blame does not tell you\" from section 14A.16.",
+   "header": [
+    "You want to know",
+    "Blame gives",
+    "Use instead"
+   ],
+   "fs": 32,
+   "cols": [
+    30.22,
+    36.76,
+    33.02
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Who wrote this logic",
+     "who last changed the line, possibly a formatter or a rename of a variable",
+     "<code>--ignore-rev</code> (14A.17), <code>git log -L</code> (14A.12)"
+    ],
+    [
+     "Who removed the line that used to be here",
+     "nothing: there is no row for a line that no longer exists",
+     "<code>git log -S</code> (14A.11), <code>git log -L</code>"
+    ],
+    [
+     "Why it was changed",
+     "an ID",
+     "<code>git show &lt;id&gt;</code>: the message and the whole commit"
+    ],
+    [
+     "Who to ask about code that arrived in a squash merge",
+     "the person who ran the merge",
+     "the trailers of the commit, or the pull request (14A.18)"
+    ],
+    [
+     "Whether the line is the bug",
+     "nothing: the defect may be a line that is missing, or one in another file",
+     "<code>git bisect</code> (14A.20)"
+    ]
+   ],
+   "caption": "You want to know who wrote this logic.",
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.2107
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch14a-history-investigation.md",
+    "line": 1881,
+    "section": "14A.16",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The table \"What blame does not tell you\" from section 14A.16.",
+   "header": [
+    "You want to know",
+    "Blame gives",
+    "Use instead"
+   ],
+   "fs": 32,
+   "cols": [
+    30.22,
+    36.76,
+    33.02
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Who wrote this logic",
+     "who last changed the line, possibly a formatter or a rename of a variable",
+     "<code>--ignore-rev</code> (14A.17), <code>git log -L</code> (14A.12)"
+    ],
+    [
+     "Who removed the line that used to be here",
+     "nothing: there is no row for a line that no longer exists",
+     "<code>git log -S</code> (14A.11), <code>git log -L</code>"
+    ],
+    [
+     "Why it was changed",
+     "an ID",
+     "<code>git show &lt;id&gt;</code>: the message and the whole commit"
+    ],
+    [
+     "Who to ask about code that arrived in a squash merge",
+     "the person who ran the merge",
+     "the trailers of the commit, or the pull request (14A.18)"
+    ],
+    [
+     "Whether the line is the bug",
+     "nothing: the defect may be a line that is missing, or one in another file",
+     "<code>git bisect</code> (14A.20)"
+    ]
+   ],
+   "caption": "You want to know why. Blame gives an ID, and <code>git show</code> gives the message and the whole commit.",
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.2285
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch14a-history-investigation.md",
+    "line": 1881,
+    "section": "14A.16",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The table \"What blame does not tell you\" from section 14A.16.",
+   "header": [
+    "You want to know",
+    "Blame gives",
+    "Use instead"
+   ],
+   "fs": 32,
+   "cols": [
+    30.22,
+    36.76,
+    33.02
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Who wrote this logic",
+     "who last changed the line, possibly a formatter or a rename of a variable",
+     "<code>--ignore-rev</code> (14A.17), <code>git log -L</code> (14A.12)"
+    ],
+    [
+     "Who removed the line that used to be here",
+     "nothing: there is no row for a line that no longer exists",
+     "<code>git log -S</code> (14A.11), <code>git log -L</code>"
+    ],
+    [
+     "Why it was changed",
+     "an ID",
+     "<code>git show &lt;id&gt;</code>: the message and the whole commit"
+    ],
+    [
+     "Who to ask about code that arrived in a squash merge",
+     "the person who ran the merge",
+     "the trailers of the commit, or the pull request (14A.18)"
+    ],
+    [
+     "Whether the line is the bug",
+     "nothing: the defect may be a line that is missing, or one in another file",
+     "<code>git bisect</code> (14A.20)"
+    ]
+   ],
+   "caption": "You want to know whether the line is the bug.",
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.2524
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch14a-history-investigation.md",
+    "line": 1881,
+    "section": "14A.16",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The table \"What blame does not tell you\" from section 14A.16.",
+   "header": [
+    "You want to know",
+    "Blame gives",
+    "Use instead"
+   ],
+   "fs": 32,
+   "cols": [
+    30.22,
+    36.76,
+    33.02
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Who wrote this logic",
+     "who last changed the line, possibly a formatter or a rename of a variable",
+     "<code>--ignore-rev</code> (14A.17), <code>git log -L</code> (14A.12)"
+    ],
+    [
+     "Who removed the line that used to be here",
+     "nothing: there is no row for a line that no longer exists",
+     "<code>git log -S</code> (14A.11), <code>git log -L</code>"
+    ],
+    [
+     "Why it was changed",
+     "an ID",
+     "<code>git show &lt;id&gt;</code>: the message and the whole commit"
+    ],
+    [
+     "Who to ask about code that arrived in a squash merge",
+     "the person who ran the merge",
+     "the trailers of the commit, or the pull request (14A.18)"
+    ],
+    [
+     "Whether the line is the bug",
+     "nothing: the defect may be a line that is missing, or one in another file",
+     "<code>git bisect</code> (14A.20)"
+    ]
+   ],
+   "caption": "Three refinements deal with the three ways the last change can be uninteresting.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2681
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "base": 2,
+   "says_before": [
+    "A_row:_the_last_commit_whose_diff_against_its_parent_shows_this_line_as_added"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2728
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=option,where_blame_looks_for_the_origin_of_a_line rows=-M:other_places_of_the_same_file|-C:files_modified_in_the_same_commit|-C_-C:every_file_of_the_parent,_for_commits_that_create_the_blamed_file|-C_-C_-C:every_file_of_the_parent,_in_every_commit title=Moved_code:_each_rung_costs_more id=moves",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "option",
+     "where blame looks for the origin of a line"
+    ],
+    "rows": [
+     [
+      "-M",
+      "other places of the same file"
+     ],
+     [
+      "-C",
+      "files modified in the same commit"
+     ],
+     [
+      "-C -C",
+      "every file of the parent, for commits that create the blamed file"
+     ],
+     [
+      "-C -C -C",
+      "every file of the parent, in every commit"
+     ]
+    ],
+    "title": "Moved code: each rung costs more",
+    "id": "moves"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2953
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: ...older-9c8df98-7823232-...newer; 9c8df98-1cbe38a-80ee55f-2f2883f feat/rouge-l; HEAD=none; note:7823232:squash:_one_commit,_one_author; title:A_squash_merge; say:Nothing_links_the_two_in_the_graph id=squash",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "...older",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "elision",
+      "text": "older"
+     },
+     {
+      "id": "9c8df98",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "...older"
+      ]
+     },
+     {
+      "id": "7823232",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "9c8df98"
+      ]
+     },
+     {
+      "id": "...newer",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "7823232"
+      ],
+      "kind": "elision",
+      "text": "newer"
+     },
+     {
+      "id": "1cbe38a",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "9c8df98"
+      ]
+     },
+     {
+      "id": "80ee55f",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "1cbe38a"
+      ]
+     },
+     {
+      "id": "2f2883f",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "80ee55f"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "...older",
+       "9c8df98",
+       "7823232",
+       "...newer",
+       "1cbe38a",
+       "80ee55f",
+       "2f2883f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "Nothing links the two in the graph",
+      "title": "A squash merge"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rouge-l": "2f2883f"
+      },
+      "head": null,
+      "notes": [
+       {
+        "text": "squash: one commit, one author",
+        "at": "7823232"
+       }
+      ]
+     }
+    ],
+    "settle": "on",
+    "id": "squash"
+   },
+   "steps": [
+    "grow",
+    "state-1"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.321
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "base": 3,
+   "upto": 3,
+   "says": [
+    "The_attribution_of_an_ignored_line_is_a_guess"
+   ],
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.3302
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 27,
+   "progress": 0.3563
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "base": 3,
+   "says_before": [
+    "The_attribution_of_an_ignored_line_is_a_guess"
+   ],
+   "upto": 3,
+   "says": [
+    "The_attribution_of_an_ignored_line_is_a_guess",
+    "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 28,
+   "progress": 0.3576
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "base": 3,
+   "says_before": [
+    "The_attribution_of_an_ignored_line_is_a_guess"
+   ],
+   "upto": 3,
+   "says": [
+    "The_attribution_of_an_ignored_line_is_a_guess",
+    "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+    "Which_old_line_is_this_line?_A_diff_decides"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.3766
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "base": 3,
+   "says_before": [
+    "The_attribution_of_an_ignored_line_is_a_guess"
+   ],
+   "upto": 3,
+   "says": [
+    "The_attribution_of_an_ignored_line_is_a_guess",
+    "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+    "Which_old_line_is_this_line?_A_diff_decides",
+    "A_pointer_into_history,_never_a_verdict_about_a_person"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.3912
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 31,
+   "progress": 0.403
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "upto": 2,
+   "section": "DIAGRAM",
+   "n": 32,
+   "progress": 0.4043
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "upto": 3,
+   "section": "DIAGRAM",
+   "n": 33,
+   "progress": 0.4086
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "upto": 4,
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.4118
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "upto": 5,
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.4182
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "upto": 6,
+   "section": "DIAGRAM",
+   "n": 36,
+   "progress": 0.4282
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.4414
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-basics/01-file",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5 (Ravi Menon 2026-09-10 13:36:00 +0530  1) import re"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao   2026-09-09 11:01:00 +0530  2)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao   2026-09-11 10:16:00 +0530  3) _PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao   2026-09-09 11:01:00 +0530  4)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao   2026-09-09 11:01:00 +0530  5)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao   2026-09-09 11:01:00 +0530  6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao   2026-09-11 10:16:00 +0530  7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao   2026-09-11 10:16:00 +0530  8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao   2026-09-09 13:21:00 +0530  9)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao   2026-09-09 13:21:00 +0530 10)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao   2026-09-09 13:21:00 +0530 11) def tokens(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao   2026-09-11 10:16:00 +0530 12)     return normalize(text).split()"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.4428
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-basics/02-lines",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame -s -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -L :normalize scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982  7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982  8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57  9)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 10)"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame --date=short -L '/^def load/,+3' scorekit/runner.py"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09  9) def load(path):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 10)     rows = []"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 11)     for line in open(path):"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.4588
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-basics/04-older-revision",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame -s v0.1.0 -- scorekit/metrics.py"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py  1) from collections import Counter"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py  2)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py  3)"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py  4) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py  5)   return ' '.join(text.lower().split())"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py  6)"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py  7)"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py  8) def exact_match(prediction, reference):"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py  9)   return normalize(prediction) == normalize(reference)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 10)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 11)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 12) def token_f1(prediction, reference):"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 13)   pred = normalize(prediction).split()"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 14)   ref = normalize(reference).split()"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 15)   overlap = sum((Counter(pred) & Counter(ref)).values())"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 16)   if overlap == 0:"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 17)     return 0.0"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 18)   precision = overlap / len(pred)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 19)   recall = overlap / len(ref)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py 20)   return 2 * precision * recall / (precision + recall)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.4635
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-basics/03-porcelain",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame --line-porcelain -L 7,7 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "9c8df98229e009115b3044edb1181d11075ecbbb 7 7 1"
+    },
+    {
+     "t": "out",
+     "s": "author Asha Rao"
+    },
+    {
+     "t": "out",
+     "s": "author-mail <asha@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "author-time 1789101960"
+    },
+    {
+     "t": "out",
+     "s": "author-tz +0530"
+    },
+    {
+     "t": "out",
+     "s": "committer Asha Rao"
+    },
+    {
+     "t": "out",
+     "s": "committer-mail <asha@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "committer-time 1789101960"
+    },
+    {
+     "t": "out",
+     "s": "committer-tz +0530"
+    },
+    {
+     "t": "out",
+     "s": "summary Reformat sources: four-space indent, double quotes"
+    },
+    {
+     "t": "out",
+     "s": "previous d926d3c5a77b586297eb25335c33fed4aee6f053 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "filename scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "            text = _PUNCTUATION.sub(\"\", text)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.476
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-basics/06-not-shown",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The line that lowercased the text is gone. Blame annotates lines that exist; it has no row for it."
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s d926d3c~1 -L 7,7 -- scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 7)   text = text.lower().translate(_PUNCTUATION)"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -L 7,7 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 7)     text = _PUNCTUATION.sub(\"\", text)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.4996
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/01-plain",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame --date=short -L '/^def load/,+7' scorekit/runner.py"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09  9) def load(path):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 10)     rows = []"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 11)     for line in open(path):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 12)         row = json.loads(line)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 13)         if not row[\"reference\"].strip():"
+    },
+    {
+     "t": "out",
+     "s": "ca7e2b7f (Asha Rao 2026-09-14 14)             raise ValueError(\"empty reference in row %d\" % row[\"id\"])"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 15)         rows.append(row)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5117
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/02-w",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame --date=short -w -L '/^def load/,+7' scorekit/runner.py"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09  9) def load(path):"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 10)     rows = []"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 11)     for line in open(path):"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 12)         row = json.loads(line)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11 13)         if not row[\"reference\"].strip():"
+    },
+    {
+     "t": "out",
+     "s": "ca7e2b7f (Asha Rao 2026-09-14 14)             raise ValueError(\"empty reference in row %d\" % row[\"id\"])"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 15)         rows.append(row)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5265
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/03-ignore-rev",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame --date=short --ignore-rev 9c8df98 -L '/^def load/,+7' scorekit/runner.py"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09  9) def load(path):"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 10)     rows = []"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 11)     for line in open(path):"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 12)         row = json.loads(line)"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 13)         if not row[\"reference\"].strip():"
+    },
+    {
+     "t": "out",
+     "s": "ca7e2b7f (Asha Rao 2026-09-14 14)             raise ValueError(\"empty reference in row %d\" % row[\"id\"])"
+    },
+    {
+     "t": "out",
+     "s": "b4b066b4 (Lab User 2026-09-09 15)         rows.append(row)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.5368
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/04-file",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git-blame-ignore-revs"
+    },
+    {
+     "t": "out",
+     "s": "# Formatter run: four-space indent, double quotes"
+    },
+    {
+     "t": "out",
+     "s": "9c8df98229e009115b3044edb1181d11075ecbbb"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s --ignore-revs-file .git-blame-ignore-revs scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5  1) import re"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  2)"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5  3) _PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  4)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  5)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5  7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57  9)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 10)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 11) def tokens(text):"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 12)     return normalize(text).split()"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.5514
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/05-config",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git config set blame.ignoreRevsFile .git-blame-ignore-revs"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set blame.markIgnoredLines true"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5  1) import re"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  2)"
+    },
+    {
+     "t": "out",
+     "s": "?d926d3c  3) _PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  4)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  5)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4  6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "?d926d3c  7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "?dd70d9e  8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57  9)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 10)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 11) def tokens(text):"
+    },
+    {
+     "t": "out",
+     "s": "?c0d33a5 12)     return normalize(text).split()"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.5577
+  },
+  {
+   "kind": "keypoint",
+   "body": "Two failures are common enough to show.",
+   "badge": "GitHub",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.5688
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/06-short-id",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat ../short-ids.txt"
+    },
+    {
+     "t": "out",
+     "s": "9c8df98"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s --ignore-revs-file ../short-ids.txt -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "fatal: invalid object name: 9c8df98"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.5734
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/07-missing-file",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The list is committed on main. An older commit does not have the file:"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch --detach --quiet v0.2.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "fatal: could not open object name list: .git-blame-ignore-revs"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s --ignore-revs-file \"\" -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "fatal: could not open object name list: .git-blame-ignore-revs"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.5809
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-reformat/08-optional",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git config set blame.ignoreRevsFile ':(optional).git-blame-ignore-revs'"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch --quiet main"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "?d926d3c 7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "?dd70d9e 8)     return \" \".join(text.split())"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6009
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-moves/02-moved-between-files",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# dd70d9e moved normalize() from scorekit/metrics.py into the new file scorekit/text.py."
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s dd70d9e -- scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 1) import string"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 2)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 3) _PUNCTUATION = str.maketrans('', '', string.punctuation)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 4)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 5)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 7)   text = text.lower().translate(_PUNCTUATION)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 8)   return ' '.join(text.split())"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -C dd70d9e -- scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 scorekit/text.py    1) import string"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py           2)"
+    },
+    {
+     "t": "out",
+     "s": "8e2cac1a scorekit/metrics.py 3) _PUNCTUATION = str.maketrans('', '', string.punctuation)"
+    },
+    {
+     "t": "out",
+     "s": "8e2cac1a scorekit/metrics.py 4)"
+    },
+    {
+     "t": "out",
+     "s": "bb5eb57c scorer.py           5)"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py           6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "8e2cac1a scorekit/metrics.py 7)   text = text.lower().translate(_PUNCTUATION)"
+    },
+    {
+     "t": "out",
+     "s": "8e2cac1a scorekit/metrics.py 8)   return ' '.join(text.split())"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6062
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-moves/03-threshold",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Today only two short lines of that move are left unchanged. -C wants 40 alphanumeric characters."
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -C --ignore-rev 9c8df98 -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5 7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -s -C5 --ignore-rev 9c8df98 -L 6,8 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "b2502383 scorer.py        6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5 scorekit/text.py 7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 scorekit/text.py 8)     return \" \".join(text.split())"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6159
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-moves/05-squash",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame -L 15,18 scorekit/rouge.py"
+    },
+    {
+     "t": "out",
+     "s": "78232321 (Lab User 2026-09-11 15:01:00 +0530 15) def rouge_l(prediction, reference):"
+    },
+    {
+     "t": "out",
+     "s": "78232321 (Lab User 2026-09-11 15:01:00 +0530 16)     pred = tokens(prediction)"
+    },
+    {
+     "t": "out",
+     "s": "78232321 (Lab User 2026-09-11 15:01:00 +0530 17)     ref = tokens(reference)"
+    },
+    {
+     "t": "out",
+     "s": "78232321 (Lab User 2026-09-11 15:01:00 +0530 18)     lcs = _lcs(pred, ref)"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame -L 15,18 feat/rouge-l -- scorekit/rouge.py"
+    },
+    {
+     "t": "out",
+     "s": "80ee55fe (Asha Rao 2026-09-11 12:11:00 +0530 15) def rouge_l(prediction, reference):"
+    },
+    {
+     "t": "out",
+     "s": "80ee55fe (Asha Rao 2026-09-11 12:11:00 +0530 16)     pred = tokens(prediction)"
+    },
+    {
+     "t": "out",
+     "s": "80ee55fe (Asha Rao 2026-09-11 12:11:00 +0530 17)     ref = tokens(reference)"
+    },
+    {
+     "t": "out",
+     "s": "80ee55fe (Asha Rao 2026-09-11 12:11:00 +0530 18)     lcs = _lcs(pred, ref)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6316
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-moves/06-squash-who",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log -1 --format='%h %an: %s%n%(trailers:key=Co-authored-by)' 7823232"
+    },
+    {
+     "t": "out",
+     "s": "7823232 Lab User: Add ROUGE-L metric"
+    },
+    {
+     "t": "out",
+     "s": "Co-authored-by: Asha Rao <asha@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "Co-authored-by: Ravi Menon <ravi@example.com>"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmd",
+     "s": "git branch --no-merged main"
+    },
+    {
+     "t": "out",
+     "s": "  feat/report"
+    },
+    {
+     "t": "out",
+     "s": "  feat/rouge-l"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.6408
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/blame-moves/08-first-parent",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame -s --first-parent -L 10,12 scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "86572733 10) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 11)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 12)     return \" \".join(text.split())"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.6608
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay `labs/run ch14a/find-origin`. Now the method.",
+   "mode": "cmd",
+   "title": "labs/run ch14a/find-origin",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch14a/find-origin"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.6644
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch14a-history-investigation.md",
+    "line": 2248,
+    "section": "14A.19",
+    "kind": "table",
+    "score": 18,
+    "candidates": 1
+   },
+   "direction": "The nine-step table of section 14A.19: pin the symptom, fix two endpoints, locate, read the lines' history, look for what is gone, search by behavior, confirm, measure the spread, choose the fix.",
+   "header": [
+    "Step",
+    "Do",
+    "With"
+   ],
+   "fs": 28,
+   "cols": [
+    23.86,
+    43.35,
+    32.79
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "1. Pin the symptom",
+     "Reduce it to one command with a yes-or-no outcome",
+     "the smallest input that shows the problem"
+    ],
+    [
+     "2. Fix two endpoints",
+     "One commit known good, one known bad",
+     "tags, deploy records, <code>git describe</code>"
+    ],
+    [
+     "3. Locate",
+     "Find the code that produces the behavior",
+     "<code>git grep</code>"
+    ],
+    [
+     "4. Read the lines' history",
+     "Last change per line; through formatters and moves",
+     "<code>git blame -w -C --ignore-rev</code>, <code>git log -L</code>"
+    ],
+    [
+     "5. Look for what is gone",
+     "A removed call, check or string",
+     "<code>git log -S</code>, <code>-G</code>"
+    ],
+    [
+     "6. Search by behavior",
+     "When steps 3 to 5 give no suspect or several",
+     "<code>git bisect</code>"
+    ],
+    [
+     "7. Confirm",
+     "The suspect shows the symptom, its parent does not",
+     "a test at both commits"
+    ],
+    [
+     "8. Measure the spread",
+     "Which releases and branches contain the commit",
+     "<code>git tag --contains</code>, <code>git branch -a --contains</code>"
+    ],
+    [
+     "9. Choose the fix",
+     "Revert or fix forward; add the test from step 1",
+     "Chapter 11"
+    ]
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.6666
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/01-symptom",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "python3 -B -m scorekit.runner data/smoke.jsonl"
+    },
+    {
+     "t": "out",
+     "s": "rows=10 exact_match=0.400 token_f1=0.444 rouge_l=0.489"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -n \"exact_match\" -- docs"
+    },
+    {
+     "t": "out",
+     "s": "docs/metrics.md:3:- exact_match: 1 when prediction and reference are equal after normalization, else 0."
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -n -W \"def exact_match\""
+    },
+    {
+     "t": "out",
+     "s": "scorekit/metrics.py:4:def exact_match(prediction, reference):"
+    },
+    {
+     "t": "out",
+     "s": "scorekit/metrics.py-5-    return normalize(prediction) == normalize(reference)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.6852
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/02-locate",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git grep -n \"def normalize\""
+    },
+    {
+     "t": "out",
+     "s": "scorekit/text.py:6:def normalize(text):"
+    },
+    {
+     "t": "cmd",
+     "s": "git blame --date=short -L :normalize scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao 2026-09-09  6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11  7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "9c8df982 (Asha Rao 2026-09-11  8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao 2026-09-09  9)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao 2026-09-09 10)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.6888
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/03-through-the-formatter",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git blame --date=short --ignore-rev 9c8df98 -L :normalize scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao   2026-09-09  6) def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5 (Ravi Menon 2026-09-10  7)     text = _PUNCTUATION.sub(\"\", text)"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e4 (Asha Rao   2026-09-09  8)     return \" \".join(text.split())"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao   2026-09-09  9)"
+    },
+    {
+     "t": "out",
+     "s": "c0d33a57 (Asha Rao   2026-09-09 10)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.693
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/04-read",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git show d926d3c"
+    },
+    {
+     "t": "out",
+     "s": "commit d926d3c5a77b586297eb25335c33fed4aee6f053"
+    },
+    {
+     "t": "out",
+     "s": "Author: Ravi Menon <ravi@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "Date:   Thu Sep 10 13:36:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    str.translate built a table lookup per call. One compiled pattern is faster on the nightly set."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/scorekit/text.py b/scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "index 48081af..3075545 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "@@ -1,10 +1,10 @@"
+    },
+    {
+     "t": "out",
+     "s": "-import string"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.7002
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/04-read",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "git show d926d3c"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "+import re"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "-_PUNCTUATION = str.maketrans('', '', string.punctuation)"
+    },
+    {
+     "t": "out",
+     "s": "+_PUNCTUATION = re.compile(r'[^\\w\\s]')"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": " def normalize(text):"
+    },
+    {
+     "t": "out",
+     "s": "-  text = text.lower().translate(_PUNCTUATION)"
+    },
+    {
+     "t": "out",
+     "s": "+  text = _PUNCTUATION.sub('', text)"
+    },
+    {
+     "t": "out",
+     "s": "   return ' '.join(text.split())"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.7029
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/05-confirm",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --format='%h %ad %<(10)%an %s' --date=short -S'.lower()'"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c 2026-09-10 Ravi Menon Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": "dd70d9e 2026-09-09 Asha Rao   Move normalize into scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "b250238 2026-09-07 Lab User   Add exact-match scorer"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.7193
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/06-test-both-sides",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# One call that separates right from wrong, at the suspect and at its parent, without touching the"
+    },
+    {
+     "t": "wrap",
+     "s": "working tree:",
+     "of": "out"
+    },
+    {
+     "t": "cmd",
+     "s": "git worktree add --detach --quiet ../before d926d3c~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git worktree add --detach --quiet ../after d926d3c"
+    },
+    {
+     "t": "cmd",
+     "s": "(cd ../before && python3 -B -c 'from scorekit.metrics import exact_match; print(exact_match(\"Paris\","
+    },
+    {
+     "t": "wrap",
+     "s": "\"paris\"))')",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "True"
+    },
+    {
+     "t": "cmd",
+     "s": "(cd ../after && python3 -B -c 'from scorekit.metrics import exact_match; print(exact_match(\"Paris\","
+    },
+    {
+     "t": "wrap",
+     "s": "\"paris\"))')",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "False"
+    },
+    {
+     "t": "cmd",
+     "s": "git worktree remove ../before && git worktree remove ../after"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.7361
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/find-origin/07-blast-radius",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git tag --contains d926d3c"
+    },
+    {
+     "t": "out",
+     "s": "v0.2.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch --all --contains d926d3c"
+    },
+    {
+     "t": "out",
+     "s": "  feat/report"
+    },
+    {
+     "t": "out",
+     "s": "  feat/rouge-l"
+    },
+    {
+     "t": "out",
+     "s": "* main"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --contains d926d3c"
+    },
+    {
+     "t": "out",
+     "s": "v0.2.0~3"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline d926d3c..main -- scorekit/text.py"
+    },
+    {
+     "t": "out",
+     "s": "9c8df98 Reformat sources: four-space indent, double quotes"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.74
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "base": 6,
+   "upto": 6,
+   "says": [
+    "d926d3c_dropped_the_lowercasing._Release_v0.2.0_contains_it"
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.7449
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 68,
+   "progress": 0.7677
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 69,
+   "progress": 0.7691
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Reading a blame row as authorship of the logic.</b> Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+    "<b>Looking in blame for who removed something.</b> Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+    "<b>Short IDs in the ignore-revs file.</b> Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+    "<b>Blame fails on an old commit after <code>blame.ignoreRevsFile</code> is set.</b> Root cause: the configured file must exist in the checked-out state; the <code>:(optional)</code> prefix makes the setting tolerate its absence.",
+    "<b>Listing a commit before it reached the shared branch.</b> Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 70,
+   "progress": 0.7709
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Reading a blame row as authorship of the logic.</b> Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+    "<b>Looking in blame for who removed something.</b> Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+    "<b>Short IDs in the ignore-revs file.</b> Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+    "<b>Blame fails on an old commit after <code>blame.ignoreRevsFile</code> is set.</b> Root cause: the configured file must exist in the checked-out state; the <code>:(optional)</code> prefix makes the setting tolerate its absence.",
+    "<b>Listing a commit before it reached the shared branch.</b> Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 71,
+   "progress": 0.7841
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Reading a blame row as authorship of the logic.</b> Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+    "<b>Looking in blame for who removed something.</b> Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+    "<b>Short IDs in the ignore-revs file.</b> Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+    "<b>Blame fails on an old commit after <code>blame.ignoreRevsFile</code> is set.</b> Root cause: the configured file must exist in the checked-out state; the <code>:(optional)</code> prefix makes the setting tolerate its absence.",
+    "<b>Listing a commit before it reached the shared branch.</b> Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 72,
+   "progress": 0.7926
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Reading a blame row as authorship of the logic.</b> Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+    "<b>Looking in blame for who removed something.</b> Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+    "<b>Short IDs in the ignore-revs file.</b> Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+    "<b>Blame fails on an old commit after <code>blame.ignoreRevsFile</code> is set.</b> Root cause: the configured file must exist in the checked-out state; the <code>:(optional)</code> prefix makes the setting tolerate its absence.",
+    "<b>Listing a commit before it reached the shared branch.</b> Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 73,
+   "progress": 0.8023
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Reading a blame row as authorship of the logic.</b> Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+    "<b>Looking in blame for who removed something.</b> Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+    "<b>Short IDs in the ignore-revs file.</b> Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+    "<b>Blame fails on an old commit after <code>blame.ignoreRevsFile</code> is set.</b> Root cause: the configured file must exist in the checked-out state; the <code>:(optional)</code> prefix makes the setting tolerate its absence.",
+    "<b>Listing a commit before it reached the shared branch.</b> Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 74,
+   "progress": 0.813
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 75,
+   "progress": 0.8219
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. A backend team adopts a formatter across a Java and Python monorepo.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 76,
+   "progress": 0.8232
+  },
+  {
+   "kind": "scene",
+   "direction": "blame: file=scorekit/text.py lines=d926d3c5:import_re|dd70d9e4:|9c8df982:​__PUNCTUATION_=_re.compile(r\"[^\\w\\s]\")|dd70d9e4:|dd70d9e4:|dd70d9e4:def_normalize(text):|9c8df982:____text_=_​__PUNCTUATION.sub(\"\",_text)|9c8df982:____return_\"_\".join(text.split())|c0d33a57: after=d926d3c5,dd70d9e4,d926d3c5,dd70d9e4,dd70d9e4,dd70d9e4,d926d3c5,dd70d9e4,c0d33a57 say_after=With_the_formatter_commit_9c8df98_ignored id=text",
+   "scene": "blame",
+   "params": {
+    "file": "scorekit/text.py",
+    "lines": [
+     [
+      "d926d3c5",
+      "import re"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "9c8df982",
+      "​_PUNCTUATION = re.compile(r\"[^\\w\\s]\")"
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      ""
+     ],
+     [
+      "dd70d9e4",
+      "def normalize(text):"
+     ],
+     [
+      "9c8df982",
+      "    text = ​_PUNCTUATION.sub(\"\", text)"
+     ],
+     [
+      "9c8df982",
+      "    return \" \".join(text.split())"
+     ],
+     [
+      "c0d33a57",
+      ""
+     ]
+    ],
+    "after": [
+     "d926d3c5",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "dd70d9e4",
+     "dd70d9e4",
+     "d926d3c5",
+     "dd70d9e4",
+     "c0d33a57"
+    ],
+    "say": {
+     "after": "With the formatter commit 9c8df98 ignored"
+    },
+    "id": "text"
+   },
+   "steps": [
+    "file",
+    "blame",
+    "after"
+   ],
+   "base": 3,
+   "says_before": [
+    "The_attribution_of_an_ignored_line_is_a_guess",
+    "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+    "Which_old_line_is_this_line?_A_diff_decides",
+    "A_pointer_into_history,_never_a_verdict_about_a_person"
+   ],
+   "upto": 3,
+   "says": [
+    "The_attribution_of_an_ignored_line_is_a_guess",
+    "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+    "Which_old_line_is_this_line?_A_diff_decides",
+    "A_pointer_into_history,_never_a_verdict_about_a_person",
+    "In_scorekit:_the_same_file_with_the_formatter_commit_on_the_ignore_list"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 77,
+   "progress": 0.8393
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 78,
+   "progress": 0.87
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 11.6, \"Blame through a reformatting commit with an ignore-revs file\", in <code>lab-manual/m11-history-forensics.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 79,
+   "progress": 0.8713
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before you run blame with the ignore list, predict for each line of the function which commit it will be attributed to, and which lines will carry a question mark.",
+   "section": "PRACTICE EXERCISE",
+   "n": 80,
+   "progress": 0.877
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 11.3, Level 1, \"Blame, and one step further back\", in <code>exercises/m11-m15-investigation-recovery.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 81,
+   "progress": 0.8938
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 82,
+   "progress": 0.8992
+  },
+  {
+   "kind": "callout",
+   "direction": "Q395: \"What exactly does a row of `git blame` assert? Give three situations in which the named author did not write the logic on that line.\"",
+   "label": "Q395",
+   "quotes": [
+    "What exactly does a row of <code>git blame</code> assert? Give three situations in which the named author did not write the logic on that line."
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 83,
+   "progress": 0.9005
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 84,
+   "progress": 0.9374
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+    "<code>-w</code> and <code>--ignore-rev</code> look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+    "<code>-M</code> and <code>-C</code> follow moved and copied code at increasing cost and with minimum sizes.",
+    "After a squash merge, blame on the target branch knows one commit and one author.",
+    "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 85,
+   "progress": 0.9387
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+    "<code>-w</code> and <code>--ignore-rev</code> look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+    "<code>-M</code> and <code>-C</code> follow moved and copied code at increasing cost and with minimum sizes.",
+    "After a squash merge, blame on the target branch knows one commit and one author.",
+    "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 86,
+   "progress": 0.9423
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+    "<code>-w</code> and <code>--ignore-rev</code> look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+    "<code>-M</code> and <code>-C</code> follow moved and copied code at increasing cost and with minimum sizes.",
+    "After a squash merge, blame on the target branch knows one commit and one author.",
+    "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 87,
+   "progress": 0.9515
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+    "<code>-w</code> and <code>--ignore-rev</code> look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+    "<code>-M</code> and <code>-C</code> follow moved and copied code at increasing cost and with minimum sizes.",
+    "After a squash merge, blame on the target branch knows one commit and one author.",
+    "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 88,
+   "progress": 0.9583
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+    "<code>-w</code> and <code>--ignore-rev</code> look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+    "<code>-M</code> and <code>-C</code> follow moved and copied code at increasing cost and with minimum sizes.",
+    "After a squash merge, blame on the target branch knows one commit and one author.",
+    "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 89,
+   "progress": 0.9637
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+    "<code>-w</code> and <code>--ignore-rev</code> look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+    "<code>-M</code> and <code>-C</code> follow moved and copied code at increasing cost and with minimum sizes.",
+    "After a squash merge, blame on the target branch knows one commit and one author.",
+    "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 90,
+   "progress": 0.969
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 91,
+   "progress": 0.9755
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 14A.16 to 14A.19 of Chapter 14A.",
+   "section": "HOMEWORK",
+   "n": 92,
+   "progress": 0.9768
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8e2cac1-dd70d9e-...6-d926d3c-9c8df98; HEAD=none; note:9c8df98:formatter:_quotes_changed; note:d926d3c:.lower()_gone; note:dd70d9e:function_moved_into_text.py; note:8e2cac1:older_line,_metrics.py; title:Who_wrote_line_7_of_scorekit/text.py? => + mark:plain_blame:9c8df98; cmd:git_blame_-L_7,7_scorekit/text.py; say:Plain_blame_stops_at_the_formatter; name:plain => + mark:--ignore-rev:d926d3c; cmd:git_blame_--ignore-rev_9c8df98_-L_7,7_scorekit/text.py; say:With_the_formatter_ignored:_Ravi's_commit,_where_the_line_was_replaced; name:ignore => + mark:d926d3c~1:dd70d9e; cmd:git_blame_d926d3c~1_-L_7,7_--_scorekit/text.py; say:Blame_the_parent:_an_older_line_7,_and_Asha's_move; name:parent => + mark:-C:8e2cac1; cmd:git_blame_-C_dd70d9e; say:With_-C,_blame_crosses_into_metrics.py,_where_Ravi_wrote_the_older_line; name:copy dx=300 id=line7",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8e2cac1",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "dd70d9e",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8e2cac1"
+      ]
+     },
+     {
+      "id": "...6",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "dd70d9e"
+      ],
+      "kind": "elision",
+      "text": "6 more"
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...6"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8e2cac1",
+       "dd70d9e",
+       "...6",
+       "d926d3c",
+       "9c8df98"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Who wrote line 7 of scorekit/text.py?"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame"
+      },
+      "caption": "Plain blame stops at the formatter",
+      "cmd": "git blame -L 7,7 scorekit/text.py",
+      "name": "plain"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev"
+      },
+      "caption": "With the formatter ignored: Ravi's commit, where the line was replaced",
+      "cmd": "git blame --ignore-rev 9c8df98 -L 7,7 scorekit/text.py",
+      "name": "ignore"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1"
+      },
+      "caption": "Blame the parent: an older line 7, and Asha's move",
+      "cmd": "git blame d926d3c~1 -L 7,7 -- scorekit/text.py",
+      "name": "parent"
+     },
+     {
+      "add": [],
+      "refs": {},
+      "head": null,
+      "notes": [
+       {
+        "text": "formatter: quotes changed",
+        "at": "9c8df98"
+       },
+       {
+        "text": ".lower() gone",
+        "at": "d926d3c"
+       },
+       {
+        "text": "function moved into text.py",
+        "at": "dd70d9e"
+       },
+       {
+        "text": "older line, metrics.py",
+        "at": "8e2cac1"
+       }
+      ],
+      "marks": {
+       "9c8df98": "plain blame",
+       "d926d3c": "--ignore-rev",
+       "dd70d9e": "d926d3c~1",
+       "8e2cac1": "-C"
+      },
+      "caption": "With -C, blame crosses into metrics.py, where Ravi wrote the older line",
+      "cmd": "git blame -C dd70d9e",
+      "name": "copy"
+     }
+    ],
+    "settle": "on",
+    "dx": "300",
+    "id": "line7"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "plain",
+    "ignore",
+    "parent",
+    "copy"
+   ],
+   "base": 6,
+   "says_before": [
+    "d926d3c_dropped_the_lowercasing._Release_v0.2.0_contains_it"
+   ],
+   "upto": 6,
+   "says": [
+    "d926d3c_dropped_the_lowercasing._Release_v0.2.0_contains_it"
+   ],
+   "section": "HOMEWORK",
+   "n": 93,
+   "progress": 0.9797
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "It isn't right, and Git didn't lie. git blame labels every line of a file with the commit that last changed it. A commit is one saved snapshot of the project, with its author. On Friday someone ran a formatter, a tool that tidies the layout of code.",
+   "tele": "It isn't right, and Git didn't lie. `git blame` labels every line of a file with the commit that last changed it. A commit is one saved snapshot of the project, with its author. On Friday someone ran a formatter, a tool that tidies the layout of code.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "0869044b",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Every line whose indentation or quotes changed now carries that commit and that name. The person who wrote the logic, the person who introduced the bug, and the reason for either are one step further back, and plain blame doesn't take that step.",
+   "tele": "Every line whose indentation or quotes changed now carries that commit and that name. The person who wrote the logic, the person who introduced the bug, and the reason for either are one step further back, and plain blame doesn't take that step.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 4,
+   "line": 14,
+   "t0": 22.7,
+   "h": "c8a0fe3e",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "There's a second way blame misleads, and it's worse. The line that caused the regression in scorekit was deleted. Blame annotates lines that exist. It has no row for a line that is gone. Keep that Friday formatter in mind. By the end you'll look straight through it.",
+   "tele": "There's a second way blame misleads, and it's worse. The line that caused the regression in `scorekit` was deleted. Blame annotates lines that exist. It has no row for a line that is gone. Keep that Friday formatter in mind. By the end you'll look straight through it.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 5,
+   "line": 16,
+   "t0": 39.9,
+   "h": "66e6afc3",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 18,
+   "t0": 59.1,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In the previous video you searched history for content: a string, a function, a deleted file. Today you look at the tool most engineers reach for first, and you learn to state exactly what it claims. Then you put all the tools of this module in order: a method that takes you from a symptom to the commit, to a confirmation, and to the list of releases that contain it.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In the previous video you searched history for content: a string, a function, a deleted file. Today you look at the tool most engineers reach for first, and you learn to state exactly what it claims. Then you put all the tools of this module in order: a method that takes you from a symptom to the commit, to a confirmation, and to the list of releases that contain it.",
+   "words": 82,
+   "est": 32.8,
+   "slide": 7,
+   "line": 20,
+   "t0": 60.6,
+   "h": "0c220fb9",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "One note on the method. The curriculum summary for this video calls it a seven-step method. The textbook's table in section 14A.19 has nine steps, and the textbook is the authority, so you'll see nine.",
+   "tele": "One note on the method. The curriculum summary for this video calls it a seven-step method. The textbook's table in section 14A.19 has nine steps, and the textbook is the authority, so you'll see nine.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 8,
+   "line": 22,
+   "t0": 93.4,
+   "h": "397461fe",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 24,
+   "t0": 107.4,
+   "h": "",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "state precisely what one row of git blame asserts;",
+   "tele": "state precisely what one row of `git blame` asserts;",
+   "words": 9,
+   "est": 3.6,
+   "slide": 10,
+   "line": 28,
+   "t0": 108.9,
+   "h": "03e5cc81",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "look through a reformatting commit with -w, --ignore-rev and an ignore-revs file;",
+   "tele": "look through a reformatting commit with `-w`, `--ignore-rev` and an ignore-revs file;",
+   "words": 12,
+   "est": 4.8,
+   "slide": 11,
+   "line": 28,
+   "t0": 112.5,
+   "h": "6f0baeb9",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "follow moved and copied code with -M and -C;",
+   "tele": "follow moved and copied code with `-M` and `-C`;",
+   "words": 9,
+   "est": 3.6,
+   "slide": 12,
+   "line": 28,
+   "t0": 117.3,
+   "h": "04808443",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain what blame shows after a squash merge;",
+   "tele": "explain what blame shows after a squash merge;",
+   "words": 8,
+   "est": 3.2,
+   "slide": 13,
+   "line": 28,
+   "t0": 120.9,
+   "h": "7f30dcfc",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "apply the method from symptom to blast radius.",
+   "tele": "apply the method from symptom to blast radius.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 14,
+   "line": 28,
+   "t0": 124.1,
+   "h": "9e0b19d1",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 15,
+   "line": 34,
+   "t0": 127.3,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: 🟢 SAFE, git blame annotates every line of a file, as it is in one revision, with the commit that last changed that line. A revision is any commit you can name.",
+   "tele": "In one sentence: 🟢 SAFE, `git blame` annotates every line of a file, as it is in one revision, with the commit that last changed that line. A revision is any commit you can name.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 16,
+   "line": 36,
+   "t0": 128.8,
+   "h": "cc7279de",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. Blame starts from the file in the given revision. That's HEAD by default, the commit you're on, or the working tree file, the one on your disk, if it has uncommitted changes, which are attributed to \"Not Committed Yet\".",
+   "tele": "Precisely. Blame starts from the file in the given revision. That's HEAD by default, the commit you're on, or the working tree file, the one on your disk, if it has uncommitted changes, which are attributed to \"Not Committed Yet\".",
+   "words": 40,
+   "est": 16.0,
+   "slide": 17,
+   "line": 42,
+   "t0": 142.4,
+   "h": "d61070f4",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.048,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "It compares the file with the same file in the parent commit, the commit this one was built on. Lines that the diff shows as unchanged are passed to the parent. Lines that it shows as added stay with the commit.",
+   "tele": "It compares the file with the same file in the parent commit, the commit this one was built on. Lines that the diff shows as unchanged are passed to the parent. Lines that it shows as added stay with the commit.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 17,
+   "line": 42,
+   "t0": 158.4,
+   "h": "ab0a8ff2",
+   "anim": {
+    "group": 10,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The parent is then treated the same way, until every line has an owner. The manual adds two sentences you should be able to quote: \"The origin of lines is automatically followed across whole-file renames\", and \"the report does not tell you anything about lines which have been deleted or replaced\".",
+   "tele": "The parent is then treated the same way, until every line has an owner. The manual adds two sentences you should be able to quote: \"The origin of lines is automatically followed across whole-file renames\", and \"the report does not tell you anything about lines which have been deleted or replaced\".",
+   "words": 51,
+   "est": 20.4,
+   "slide": 17,
+   "line": 42,
+   "t0": 174.8,
+   "h": "e1999f28",
+   "anim": {
+    "group": 10,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Inside .git, nothing is written. The work is one diff per commit that touched the file, so blame on an old, busy file in a large repository takes noticeable time.",
+   "tele": "Inside `.git`, nothing is written. The work is one diff per commit that touched the file, so blame on an old, busy file in a large repository takes noticeable time.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 17,
+   "line": 44,
+   "t0": 195.2,
+   "h": "be73f7b8",
+   "anim": {
+    "group": 10,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "So what does a row assert? Try it now, on paper, for thirty seconds: write one sentence that starts \"this commit is\". Then say your answer.",
+   "tele": "So what does a row assert? Try it now, on paper, for thirty seconds: write one sentence that starts \"this commit is\". Then say your answer.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 17,
+   "line": 46,
+   "t0": 207.2,
+   "h": "3a38073c",
+   "anim": {
+    "group": 10,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 17,
+   "line": 48,
+   "t0": 217.6,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Here's the exact version. This commit is the last one whose diff against its parent shows this line as added. Nothing about who designed the logic. Nothing about why. Nothing about what stood here before.",
+   "tele": "Here's the exact version. This commit is the last one whose diff against its parent shows this line as added. Nothing about who designed the logic. Nothing about why. Nothing about what stood here before.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 18,
+   "line": 52,
+   "t0": 222.1,
+   "h": "8d20350c",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 2,
+      "to": 2,
+      "says": [
+       "A_row:_the_last_commit_whose_diff_against_its_parent_shows_this_line_as_added"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "You want to know who wrote this logic. Blame gives who last changed the line, possibly a formatter or a rename of a variable. You want to know who removed the line that used to be here. Blame gives nothing, and you use git log -S or git log -L.",
+   "tele": "You want to know who wrote this logic. Blame gives who last changed the line, possibly a formatter or a rename of a variable. You want to know who removed the line that used to be here. Blame gives nothing, and you use `git log -S` or `git log -L`.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 19,
+   "line": 56,
+   "t0": 236.1,
+   "h": "652de450",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 5
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "You want to know why. Blame gives an ID, and git show gives the message and the whole commit. You want to know whom to ask about code that arrived in a squash merge. Blame gives the person who ran the merge, and you read the trailers, the key and value lines that end a commit message, or the pull request, GitHub's proposal to merge the branch.",
+   "tele": "You want to know why. Blame gives an ID, and `git show` gives the message and the whole commit. You want to know whom to ask about code that arrived in a squash merge. Blame gives the person who ran the merge, and you read the trailers, the key and value lines that end a commit message, or the pull request, GitHub's proposal to merge the branch.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 20,
+   "line": 56,
+   "t0": 256.1,
+   "h": "5dde72d4",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "You want to know whether the line is the bug. Blame gives nothing, because the defect may be a line that is missing or one in another file, and that's what git bisect is for: a binary search over commits, in the next video.",
+   "tele": "You want to know whether the line is the bug. Blame gives nothing, because the defect may be a line that is missing or one in another file, and that's what `git bisect` is for: a binary search over commits, in the next video.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 21,
+   "line": 56,
+   "t0": 282.9,
+   "h": "eb175f7d",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three refinements deal with the three ways the last change can be uninteresting.",
+   "tele": "Three refinements deal with the three ways the last change can be uninteresting.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 22,
+   "line": 58,
+   "t0": 300.5,
+   "h": "7ec1afe9",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A reformatting commit. -w ignores whitespace when blame compares a commit with its parent. --ignore-rev goes further: it removes one commit from consideration, \"as if the change never happened\", and blames its lines \"on the previous commit that changed that line or nearby lines\". A file of full object IDs, read with --ignore-revs-file or named by blame.ignoreRevsFile, makes that permanent for a repository.",
+   "tele": "A reformatting commit. `-w` ignores whitespace when blame compares a commit with its parent. `--ignore-rev` goes further: it removes one commit from consideration, \"as if the change never happened\", and blames its lines \"on the previous commit that changed that line or nearby lines\". A file of full object IDs, read with `--ignore-revs-file` or named by `blame.ignoreRevsFile`, makes that permanent for a repository.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 23,
+   "line": 62,
+   "t0": 305.7,
+   "h": "13ae6b45",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Moved code. -M looks for the origin of a line in other places of the same file. -C looks in files modified in the same commit. A second -C also looks in every file of the parent, for commits that create the blamed file. A third looks in every file of the parent, in every commit. Each rung costs more. And there are minimums: 20 alphanumeric characters for -M, 40 for -C.",
+   "tele": "Moved code. `-M` looks for the origin of a line in other places of the same file. `-C` looks in files modified in the same commit. A second `-C` also looks in every file of the parent, for commits that create the blamed file. A third looks in every file of the parent, in every commit. Each rung costs more. And there are minimums: 20 alphanumeric characters for `-M`, 40 for `-C`.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 24,
+   "line": 66,
+   "t0": 330.9,
+   "h": "c2848a24",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.428,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.856,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.856,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.856,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A squash merge. It records the content of a branch as one new commit. Blame on the target branch then knows one commit and one author.",
+   "tele": "A squash merge. It records the content of a branch as one new commit. Blame on the target branch then knows one commit and one author.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 25,
+   "line": 70,
+   "t0": 359.7,
+   "h": "071e145c",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.328,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When not to rely on the ignore list: its attribution is a guess. Git maps an ignored line to the line of the parent that looks like its origin, and for a line that the ignored commit really introduced there is no origin. And list only commits that change no behavior: formatter runs, mass renames of a symbol, license header updates. Listing a commit that also changed logic hides that logic from blame.",
+   "tele": "When not to rely on the ignore list: its attribution is a guess. Git maps an ignored line to the line of the parent that looks like its origin, and for a line that the ignored commit really introduced there is no origin. And list only commits that change no behavior: formatter runs, mass renames of a symbol, license header updates. Listing a commit that also changed logic hides that logic from blame.",
+   "words": 73,
+   "est": 29.2,
+   "slide": 26,
+   "line": 76,
+   "t0": 370.1,
+   "h": "3e353333",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_attribution_of_an_ignored_line_is_a_guess"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 27,
+   "line": 78,
+   "t0": 399.3,
+   "h": "",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Now a picture to keep. The textbook's analogy: a \"last edited by\" column beside a document. The column is reliable about the last edit and silent about everything else: the edit before it, the paragraph that used to stand here, and whether the last editor wrote the sentence or only fixed its spacing.",
+   "tele": "Now a picture to keep. The textbook's analogy: a \"last edited by\" column beside a document. The column is reliable about the last edit and silent about everything else: the edit before it, the paragraph that used to stand here, and whether the last editor wrote the sentence or only fixed its spacing.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 28,
+   "line": 82,
+   "t0": 400.8,
+   "h": "057348fa",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_attribution_of_an_ignored_line_is_a_guess",
+       "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else"
+      ],
+      "says_from": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks on the word \"line\". A document editor knows which sentence you touched. Git doesn't. It decides which old line corresponds to which new line by running a diff, so the attribution depends on how the diff aligned them.",
+   "tele": "The analogy breaks on the word \"line\". A document editor knows which sentence you touched. Git doesn't. It decides which old line corresponds to which new line by running a diff, so the attribution depends on how the diff aligned them.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 29,
+   "line": 86,
+   "t0": 422.0,
+   "h": "83a1c09d",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_attribution_of_an_ignored_line_is_a_guess",
+       "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+       "Which_old_line_is_this_line?_A_diff_decides"
+      ],
+      "says_from": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The working rule that follows: treat a blame row as a pointer into history, never as a verdict about a person. The next command after git blame is git show with that ID.",
+   "tele": "The working rule that follows: treat a blame row as a pointer into history, never as a verdict about a person. The next command after `git blame` is `git show` with that ID.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 30,
+   "line": 90,
+   "t0": 438.4,
+   "h": "55c19848",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_attribution_of_an_ignored_line_is_a_guess",
+       "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+       "Which_old_line_is_this_line?_A_diff_decides",
+       "A_pointer_into_history,_never_a_verdict_about_a_person"
+      ],
+      "says_from": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 31,
+   "line": 92,
+   "t0": 451.6,
+   "h": "",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "One line, line 7 of scorekit/text.py, and four commits of its history.",
+   "tele": "One line, line 7 of `scorekit/text.py`, and four commits of its history.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 32,
+   "line": 109,
+   "t0": 453.1,
+   "h": "33ebc119",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Plain blame stops at the newest commit, the formatter.",
+   "tele": "Plain blame stops at the newest commit, the formatter.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 33,
+   "line": 113,
+   "t0": 457.9,
+   "h": "db04fb56",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "With --ignore-rev for the formatter, it stops at d926d3c, where the line was replaced and the lowercasing disappeared.",
+   "tele": "With `--ignore-rev` for the formatter, it stops at `d926d3c`, where the line was replaced and the lowercasing disappeared.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 34,
+   "line": 117,
+   "t0": 461.5,
+   "h": "828280ec",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "If you blame the parent of that commit, you're asking about an older line 7, and you stop at the commit that moved the function into the file.",
+   "tele": "If you blame the parent of that commit, you're asking about an older line 7, and you stop at the commit that moved the function into the file.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 35,
+   "line": 121,
+   "t0": 468.7,
+   "h": "c360e19c",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "With -C at that commit, blame crosses into the file the function came from.",
+   "tele": "With `-C` at that commit, blame crosses into the file the function came from.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 36,
+   "line": 125,
+   "t0": 479.9,
+   "h": "962cd1df",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Four marks, four different answers to \"who wrote line 7\", and every one of them is correct for the question that was asked.",
+   "tele": "Four marks, four different answers to \"who wrote line 7\", and every one of them is correct for the question that was asked.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 36,
+   "line": 127,
+   "t0": 485.5,
+   "h": "46f05fc3",
+   "anim": {
+    "group": 19,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 37,
+   "line": 129,
+   "t0": 494.7,
+   "h": "",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read one row out loud: the abbreviated commit ID, the author and author date of that commit, the line number in this revision, and the line. -s drops author and date, and -L limits the output with the same range syntax as git log -L.",
+   "tele": "Read one row out loud: the abbreviated commit ID, the author and author date of that commit, the line number in this revision, and the line. `-s` drops author and date, and `-L` limits the output with the same range syntax as `git log -L`.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 38,
+   "line": 155,
+   "t0": 496.2,
+   "h": "2f08c81e",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A revision before the path asks about an older state of the file.",
+   "tele": "A revision before the path asks about an older state of the file.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 39,
+   "line": 181,
+   "t0": 514.2,
+   "h": "d9633aec",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Point at the extra column, scorer.py. It appears whenever a line comes from a commit in which the file had another name. A whole-file rename doesn't disturb blame.",
+   "tele": "Point at the extra column, `scorer.py`. It appears whenever a line comes from a commit in which the file had another name. A whole-file rename doesn't disturb blame.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 40,
+   "line": 213,
+   "t0": 519.4,
+   "h": "b3bdf12b",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "For scripts there is a porcelain format.",
+   "tele": "For scripts there is a porcelain format.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 40,
+   "line": 215,
+   "t0": 530.6,
+   "h": "91211129",
+   "anim": {
+    "group": 23,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Full IDs and one header per attribution. Find the field named previous: the commit before the blamed one. That's the key to stepping further back.",
+   "tele": "Full IDs and one header per attribution. Find the field named `previous`: the commit before the blamed one. That's the key to stepping further back.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 41,
+   "line": 240,
+   "t0": 533.4,
+   "h": "52f8be29",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the limit that matters for our regression. Predict: line 7 used to lowercase the text. What does blame say about that line today? Say it out loud. I'll wait.",
+   "tele": "Now the limit that matters for our regression. Predict: line 7 used to lowercase the text. What does blame say about that line today? Say it out loud. I'll wait.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 41,
+   "line": 242,
+   "t0": 543.4,
+   "h": "a2cffacd",
+   "anim": {
+    "group": 24,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 41,
+   "line": 244,
+   "t0": 555.4,
+   "h": "",
+   "anim": {
+    "group": 24,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Before d926d3c, line 7 contained .lower(). Today a different line 7 exists, and blame reports on that one. There's no row for the line that is gone. That's the second trap from the opening.",
+   "tele": "Before `d926d3c`, line 7 contained `.lower()`. Today a different line 7 exists, and blame reports on that one. There's no row for the line that is gone. That's the second trap from the opening.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 42,
+   "line": 261,
+   "t0": 559.9,
+   "h": "5188d1fe",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.036,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Five of seven lines carry 9c8df982. Quick quiz, three options. With -w, do all five fall through to an older commit, four of them, or none? Say it out loud.",
+   "tele": "Five of seven lines carry `9c8df982`. Quick quiz, three options. With `-w`, do all five fall through to an older commit, four of them, or none? Say it out loud.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 43,
+   "line": 282,
+   "t0": 573.5,
+   "h": "e98336e8",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 284,
+   "t0": 585.5,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Four. The lines that were only re-indented fall through to b4b066b4. Line 13 stays with the formatter, because there it also changed the quotes. Whitespace wasn't the only change.",
+   "tele": "Four. The lines that were only re-indented fall through to `b4b066b4`. Line 13 stays with the formatter, because there it also changed the quotes. Whitespace wasn't the only change.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 44,
+   "line": 303,
+   "t0": 590.0,
+   "h": "68b7b7de",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now line 13 goes back too. That's the Friday formatter from the opening, looked through. Typing the option every time doesn't scale, so the IDs go into a file: one full object ID per line, with comments after a hash sign.",
+   "tele": "Now line 13 goes back too. That's the Friday formatter from the opening, looked through. Typing the option every time doesn't scale, so the IDs go into a file: one full object ID per line, with comments after a hash sign.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 45,
+   "line": 322,
+   "t0": 601.6,
+   "h": "7b6a028f",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 7.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 7.0,
+   "slide": 46,
+   "line": null,
+   "t0": 618.0,
+   "h": "",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.9,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Point at the question mark on line 3. blame.markIgnoredLines flags every line whose attribution passed through an ignored commit. Keep that mark: the attribution of an ignored line is a guess.",
+   "tele": "Point at the question mark on line 3. `blame.markIgnoredLines` flags every line whose attribution passed through an ignored commit. Keep that mark: the attribution of an ignored line is a guess.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 47,
+   "line": 378,
+   "t0": 625.0,
+   "h": "77ca7a4f",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.7,
+      "dissolve": true
+     },
+     {
+      "at": 0.196,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Two failures are common enough to show. Almost everyone meets the first one.",
+   "tele": "Two failures are common enough to show. Almost everyone meets the first one.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 48,
+   "line": 382,
+   "t0": 637.4,
+   "h": "55b13668",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The file must contain full IDs. And once the key is set, the file must exist in every commit you visit.",
+   "tele": "The file must contain full IDs. And once the key is set, the file must exist in every commit you visit.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 49,
+   "line": 399,
+   "t0": 642.6,
+   "h": "d7913e0a",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The tag, a fixed name for an older commit, predates the file, and blame fails. An empty --ignore-revs-file clears the list of revisions. It doesn't stop Git from opening the configured file. The manual documents a prefix for path-valued settings, :(optional): the variable is treated as if it doesn't exist when the named path doesn't exist.",
+   "tele": "The tag, a fixed name for an older commit, predates the file, and blame fails. An empty `--ignore-revs-file` clears the list of revisions. It doesn't stop Git from opening the configured file. The manual documents a prefix for path-valued settings, `:(optional)`: the variable is treated as if it doesn't exist when the named path doesn't exist.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 50,
+   "line": 420,
+   "t0": 651.0,
+   "h": "3125595c",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.255,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "At v0.2.0 blame runs and nothing is ignored. Back on main the list applies again.",
+   "tele": "At `v0.2.0` blame runs and nothing is ignored. Back on `main` the list applies again.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 51,
+   "line": 444,
+   "t0": 673.4,
+   "h": "ab88f0d7",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 4.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Every line belongs to the commit that moved it. Now today's file, with -C, and a prediction: -C wants 40 alphanumeric characters. Are there 40 left unchanged?",
+   "tele": "Every line belongs to the commit that moved it. Now today's file, with `-C`, and a prediction: `-C` wants 40 alphanumeric characters. Are there 40 left unchanged?",
+   "words": 27,
+   "est": 10.8,
+   "slide": 52,
+   "line": 476,
+   "t0": 679.4,
+   "h": "e198d10d",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "No. After later edits only short fragments of the moved block survive, and the default threshold rejects them. With a lower one, given as -C5, line 6 goes back to b2502383 in scorer.py. That's why moved code is sometimes not recognized.",
+   "tele": "No. After later edits only short fragments of the moved block survive, and the default threshold rejects them. With a lower one, given as `-C5`, line 6 goes back to `b2502383` in `scorer.py`. That's why moved code is sometimes not recognized.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 53,
+   "line": 497,
+   "t0": 690.2,
+   "h": "68705c9d",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The squash merge.",
+   "tele": "The squash merge.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 53,
+   "line": 499,
+   "t0": 706.6,
+   "h": "b395ec12",
+   "anim": {
+    "group": 36,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On main, the person who squashed \"wrote\" the function. The branch, while it still exists, has the real history. Nothing links the two in the graph.",
+   "tele": "On `main`, the person who squashed \"wrote\" the function. The branch, while it still exists, has the real history. Nothing links the two in the graph.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 54,
+   "line": 521,
+   "t0": 707.8,
+   "h": "f5cbe6b8",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After the branch is deleted, the Co-authored-by trailers and the pull request are the only record of who wrote which part. That's a real cost of squash-merge workflows, to be weighed against the linear history they give. The opposite question, \"which merge put this line on main\", is answered by --first-parent: blame then stops at merges.",
+   "tele": "After the branch is deleted, the `Co-authored-by` trailers and the pull request are the only record of who wrote which part. That's a real cost of squash-merge workflows, to be weighed against the linear history they give. The opposite question, \"which merge put this line on `main`\", is answered by `--first-parent`: blame then stops at merges.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 55,
+   "line": 541,
+   "t0": 718.2,
+   "h": "62939ffc",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 56,
+   "line": null,
+   "t0": 740.6,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 57,
+   "line": null,
+   "t0": 744.6,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Steps 3 to 5 are fast and need an idea of where the fault is. Step 6, bisect, is slower and needs no idea at all, only the test. Step 7 isn't optional: every tool before it produces a suspect, not a proof.",
+   "tele": "Steps 3 to 5 are fast and need an idea of where the fault is. Step 6, bisect, is slower and needs no idea at all, only the test. Step 7 isn't optional: every tool before it produces a suspect, not a proof.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 58,
+   "line": 560,
+   "t0": 747.1,
+   "h": "2c747fc8",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 9
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The symptom, and the code that produces the behavior.",
+   "tele": "The symptom, and the code that produces the behavior.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 58,
+   "line": 562,
+   "t0": 764.3,
+   "h": "5208ad56",
+   "anim": {
+    "group": 41,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The documentation says \"equal after normalization\". That points at normalize().",
+   "tele": "The documentation says \"equal after normalization\". That points at `normalize()`.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 59,
+   "line": 583,
+   "t0": 767.9,
+   "h": "998efd03",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both body lines are owned by the formatter commit. Look through it.",
+   "tele": "Both body lines are owned by the formatter commit. Look through it.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 60,
+   "line": 603,
+   "t0": 771.9,
+   "h": "60326b1b",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 3.36,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One line was last changed for a real reason, by d926d3c, the day before the formatter ran. Read that commit.",
+   "tele": "One line was last changed for a real reason, by `d926d3c`, the day before the formatter ran. Read that commit.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 61,
+   "line": 620,
+   "t0": 776.7,
+   "h": "d3e8f29a",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 62,
+   "line": null,
+   "t0": 784.7,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The message promises speed and no change of behavior. The patch replaces the lowercasing call with a pattern substitution, and .lower() is gone, while the documentation still says that normalization lowercases the text. The pickaxe confirms that this is where the call left the code base.",
+   "tele": "The message promises speed and no change of behavior. The patch replaces the lowercasing call with a pattern substitution, and `.lower()` is gone, while the documentation still says that normalization lowercases the text. The pickaxe confirms that this is where the call left the code base.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 63,
+   "line": 658,
+   "t0": 787.7,
+   "h": "16c006b0",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 7. Test on both sides of the suspect, in two temporary worktrees, extra working directories of the same repository, so that the main working tree isn't touched. git worktree add is 🟢 SAFE, and worktrees have their own videos later in this part. Predict the two results.",
+   "tele": "Step 7. Test on both sides of the suspect, in two temporary worktrees, extra working directories of the same repository, so that the main working tree isn't touched. `git worktree add` is 🟢 SAFE, and worktrees have their own videos later in this part. Predict the two results.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 64,
+   "line": 673,
+   "t0": 806.1,
+   "h": "f28e9e8e",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "True before, False after. That's the proof. Step 8, the spread.",
+   "tele": "True before, False after. That's the proof. Step 8, the spread.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 65,
+   "line": 696,
+   "t0": 824.9,
+   "h": "825c87ed",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 3.08,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.5,
+   "slide": 66,
+   "line": null,
+   "t0": 829.3,
+   "h": "",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.85,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The answer for the CTO: the harness regressed, not the model. Commit d926d3c, on Thursday 10 September, dropped lowercasing from normalization while optimizing it. Release v0.2.0 contains the commit, and so does every branch cut since. The fix is one line, plus a test with a capitalized answer. Notice how that sentence is phrased: it names a commit and a mechanism, not a culprit.",
+   "tele": "The answer for the CTO: the harness regressed, not the model. Commit `d926d3c`, on Thursday 10 September, dropped lowercasing from normalization while optimizing it. Release `v0.2.0` contains the commit, and so does every branch cut since. The fix is one line, plus a test with a capitalized answer. Notice how that sentence is phrased: it names a commit and a mechanism, not a culprit.",
+   "words": 64,
+   "est": 25.6,
+   "slide": 67,
+   "line": 724,
+   "t0": 834.8,
+   "h": "147e33ef",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 6,
+      "to": 6,
+      "says": [
+       "d926d3c_dropped_the_lowercasing._Release_v0.2.0_contains_it"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 68,
+   "line": 728,
+   "t0": 860.4,
+   "h": "",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 69,
+   "line": 730,
+   "t0": 861.9,
+   "h": "76698d9b",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Reading a blame row as authorship of the logic. Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+   "tele": "Reading a blame row as authorship of the logic. Root cause: a row names the last commit whose diff shows the line as added, which may be a formatter, a rename of a variable or a squash.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 70,
+   "line": 732,
+   "t0": 863.9,
+   "h": "6ba12df3",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Looking in blame for who removed something. Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+   "tele": "Looking in blame for who removed something. Root cause: blame annotates lines that exist in the blamed revision; a deleted line has no row.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 71,
+   "line": 732,
+   "t0": 878.7,
+   "h": "7d44c619",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Short IDs in the ignore-revs file. Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+   "tele": "Short IDs in the ignore-revs file. Root cause: the file is a list of full object IDs, and Git rejects an abbreviation as an invalid object name.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 72,
+   "line": 732,
+   "t0": 888.3,
+   "h": "fff43146",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Blame fails on an old commit after blame.ignoreRevsFile is set. Root cause: the configured file must exist in the checked-out state; the :(optional) prefix makes the setting tolerate its absence.",
+   "tele": "Blame fails on an old commit after `blame.ignoreRevsFile` is set. Root cause: the configured file must exist in the checked-out state; the `:(optional)` prefix makes the setting tolerate its absence.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 73,
+   "line": 732,
+   "t0": 899.1,
+   "h": "182db3dc",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Listing a commit before it reached the shared branch. Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry.",
+   "tele": "Listing a commit before it reached the shared branch. Root cause: rebasing or squashing the listed commit changes its ID and silently empties the entry.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 74,
+   "line": 732,
+   "t0": 911.1,
+   "h": "239eac91",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 75,
+   "line": 738,
+   "t0": 921.1,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A backend team adopts a formatter across a Java and Python monorepo. The formatter commit touches most files. From that day, the blame view names one engineer on almost every line, and code review comments begin with \"you wrote this\".",
+   "tele": "Now, out of the lab. A backend team adopts a formatter across a Java and Python monorepo. The formatter commit touches most files. From that day, the blame view names one engineer on almost every line, and code review comments begin with \"you wrote this\".",
+   "words": 45,
+   "est": 18.0,
+   "slide": 76,
+   "line": 740,
+   "t0": 922.6,
+   "h": "a4823a2d",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The team does three things, in this order. They wait until the formatter commit is on main, so its ID is final. They commit a file named .git-blame-ignore-revs in the root, with the full ID and a comment that says what the commit was. And they add the configuration key to the onboarding script with the :(optional) prefix, because engineers bisect across commits that predate the file. They also turn on the mark for ignored lines, so that nobody mistakes a guessed attribution for a fact.",
+   "tele": "The team does three things, in this order. They wait until the formatter commit is on `main`, so its ID is final. They commit a file named `.git-blame-ignore-revs` in the root, with the full ID and a comment that says what the commit was. And they add the configuration key to the onboarding script with the `:(optional)` prefix, because engineers bisect across commits that predate the file. They also turn on the mark for ignored lines, so that nobody mistakes a guessed attribution for a fact.",
+   "words": 86,
+   "est": 34.4,
+   "slide": 77,
+   "line": 746,
+   "t0": 940.6,
+   "h": "90baa40b",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_attribution_of_an_ignored_line_is_a_guess",
+       "Last_edited_by:_reliable_about_the_last_edit,_silent_about_everything_else",
+       "Which_old_line_is_this_line?_A_diff_decides",
+       "A_pointer_into_history,_never_a_verdict_about_a_person",
+       "In_scorekit:_the_same_file_with_the_formatter_commit_on_the_ignore_list"
+      ],
+      "says_from": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 78,
+   "line": 750,
+   "t0": 975.0,
+   "h": "",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 11.6, \"Blame through a reformatting commit with an ignore-revs file\", in lab-manual/m11-history-forensics.md.",
+   "tele": "Your turn. Do Lab 11.6, \"Blame through a reformatting commit with an ignore-revs file\", in `lab-manual/m11-history-forensics.md`.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 79,
+   "line": 752,
+   "t0": 976.5,
+   "h": "f1f9c821",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before you run blame with the ignore list, predict for each line of the function which commit it will be attributed to, and which lines will carry a question mark. Then make the lab's failure happen on purpose and predict the error text before you read it.",
+   "tele": "Before you run blame with the ignore list, predict for each line of the function which commit it will be attributed to, and which lines will carry a question mark. Then make the lab's failure happen on purpose and predict the error text before you read it.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 80,
+   "line": 754,
+   "t0": 982.9,
+   "h": "c470da6d",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 11.3, Level 1, \"Blame, and one step further back\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "The challenge is Exercise 11.3, Level 1, \"Blame, and one step further back\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 81,
+   "line": 756,
+   "t0": 1001.7,
+   "h": "eac3bb7e",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 82,
+   "line": 758,
+   "t0": 1007.7,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Pause and answer out loud.",
+   "tele": "Pause and answer out loud.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 83,
+   "line": 762,
+   "t0": 1009.2,
+   "h": "062dffe0",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 95,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 83,
+   "line": 764,
+   "t0": 1011.2,
+   "h": "",
+   "anim": {
+    "group": 62,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 96,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer opens with a definition that is narrow and exact: one revision, one line as it stands, the last commit that changed it, decided by a diff. It then gives three situations that are different in kind, not three formatter stories, and for each one names the tool or option that recovers the real origin. It mentions what blame can't show at all. And it ends with the practice that follows from the definition: what you run next, and how you speak about the result.",
+   "tele": "A strong answer opens with a definition that is narrow and exact: one revision, one line as it stands, the last commit that changed it, decided by a diff. It then gives three situations that are different in kind, not three formatter stories, and for each one names the tool or option that recovers the real origin. It mentions what blame can't show at all. And it ends with the practice that follows from the definition: what you run next, and how you speak about the result.",
+   "words": 87,
+   "est": 34.8,
+   "slide": 83,
+   "line": 766,
+   "t0": 1015.7,
+   "h": "eb0c6ee2",
+   "anim": {
+    "group": 62,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 97,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 84,
+   "line": 768,
+   "t0": 1050.5,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 98,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 85,
+   "line": 770,
+   "t0": 1052.0,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 99,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+   "tele": "A blame row names the last commit that changed a line as it stands in one revision; it is a pointer to a commit to read.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 86,
+   "line": 772,
+   "t0": 1056.0,
+   "h": "94576333",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 100,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "-w and --ignore-rev look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+   "tele": "`-w` and `--ignore-rev` look through reformatting; an ignore-revs file holds full IDs, and its attributions are guesses worth marking.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 87,
+   "line": 772,
+   "t0": 1066.4,
+   "h": "485ca1b9",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 101,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "-M and -C follow moved and copied code at increasing cost and with minimum sizes.",
+   "tele": "`-M` and `-C` follow moved and copied code at increasing cost and with minimum sizes.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 88,
+   "line": 772,
+   "t0": 1074.0,
+   "h": "c5425b63",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 102,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "After a squash merge, blame on the target branch knows one commit and one author.",
+   "tele": "After a squash merge, blame on the target branch knows one commit and one author.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 89,
+   "line": 772,
+   "t0": 1080.0,
+   "h": "30ba8665",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 103,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof.",
+   "tele": "Every investigative tool produces a suspect; the test at the suspect and at its parent is the proof.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 90,
+   "line": 772,
+   "t0": 1086.0,
+   "h": "52384e52",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 104,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 91,
+   "line": 778,
+   "t0": 1093.2,
+   "h": "",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 105,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 14A.16 to 14A.19 of Chapter 14A.",
+   "tele": "Read sections 14A.16 to 14A.19 of Chapter 14A.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 92,
+   "line": 780,
+   "t0": 1094.7,
+   "h": "90fd9b12",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 106,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you learned to read a blame row as a pointer and not a verdict, and you walked from a symptom to a proven commit. Try the ignore-revs lab before the next video. Next time: git bisect, binary search over commits. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you learned to read a blame row as a pointer and not a verdict, and you walked from a symptom to a proven commit. Try the ignore-revs lab before the next video. Next time: `git bisect`, binary search over commits. Until then, look at the state first and type second. See you in the next one.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 93,
+   "line": 784,
+   "t0": 1097.9,
+   "h": "10c1d536",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 6,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1120.7,
+ "narration_words": 2648,
+ "warnings": [],
+ "anim_version": 3
+}

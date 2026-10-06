@@ -1,0 +1,6254 @@
+{
+ "id": "V146",
+ "version": 22,
+ "title": "Controlling jobs, matrix strategies, dependency caching, and artifacts",
+ "part": 6,
+ "part_label": "ACTIONS",
+ "part_name": "CI/CD with GitHub Actions",
+ "palette": {
+  "accent": "#2DD4BF",
+  "accent2": "#A7F3E8",
+  "bg1": "#0B1716",
+  "bg2": "#15302D"
+ },
+ "planned_minutes": 26,
+ "chapters": [
+  "ch20a-actions-fundamentals.md"
+ ],
+ "script": "video/scripts/V146-controlling-jobs-matrix-strategies-dependency-caching-and-artifacts.md",
+ "script_sha1": "c76bf60ea1ab2386c3762f63eb39b03c7e09b33e",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 4,
+   "line": 18
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 8,
+   "line": 26
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 16,
+   "line": 38
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 59,
+   "line": 180
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 67,
+   "line": 204
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 72,
+   "line": 239
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 95,
+   "line": 394
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 102,
+   "line": 404
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 107,
+   "line": 412
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 111,
+   "line": 420
+  },
+  {
+   "name": "RECAP",
+   "beat": 114,
+   "line": 428
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 122,
+   "line": 440
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Controlling jobs, matrix strategies, dependency caching, and artifacts",
+   "part_name": "CI/CD with GitHub Actions",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0015
+  },
+  {
+   "kind": "callout",
+   "direction": "Two lines. \"We upgraded the dependency two days ago. CI is still installing the old version.\" \"And what we deployed is not what we tested.\"",
+   "label": "Two lines.",
+   "quotes": [
+    "We upgraded the dependency two days ago. CI is still installing the old version.",
+    "And what we deployed is not what we tested."
+   ],
+   "quoted": true,
+   "caption": "Two complaints, and no bug in GitHub.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0027
+  },
+  {
+   "kind": "callout",
+   "direction": "Two lines. \"We upgraded the dependency two days ago. CI is still installing the old version.\" \"And what we deployed is not what we tested.\"",
+   "label": "Two lines.",
+   "quotes": [
+    "We upgraded the dependency two days ago. CI is still installing the old version.",
+    "And what we deployed is not what we tested."
+   ],
+   "quoted": true,
+   "caption": "Both come from using a cache or an artifact without knowing what each one promises.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.025
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 5,
+   "progress": 0.0469
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0481
+  },
+  {
+   "kind": "keypoint",
+   "body": "Four topics, in the order of sections 20A.9 to 20A.12.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0737
+  },
+  {
+   "kind": "keypoint",
+   "body": "The local demonstration computes a cache key and consumes a simulated artifact.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0969
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.1034
+  },
+  {
+   "kind": "keypoint",
+   "body": "Here's what you'll walk away with.",
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1045
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "order jobs with <code>needs</code> and predict what <code>if</code>, <code>timeout-minutes</code> and <code>continue-on-error</code> do to the run's result;",
+    "count the jobs of a matrix with <code>include</code> and <code>exclude</code>;",
+    "design a cache key and say what happens on a miss and on a stale hit;",
+    "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+    "carry one build from a build job to a later job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1064
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "order jobs with <code>needs</code> and predict what <code>if</code>, <code>timeout-minutes</code> and <code>continue-on-error</code> do to the run's result;",
+    "count the jobs of a matrix with <code>include</code> and <code>exclude</code>;",
+    "design a cache key and say what happens on a miss and on a stale hit;",
+    "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+    "carry one build from a build job to a later job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1079
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "order jobs with <code>needs</code> and predict what <code>if</code>, <code>timeout-minutes</code> and <code>continue-on-error</code> do to the run's result;",
+    "count the jobs of a matrix with <code>include</code> and <code>exclude</code>;",
+    "design a cache key and say what happens on a miss and on a stale hit;",
+    "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+    "carry one build from a build job to a later job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1129
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "order jobs with <code>needs</code> and predict what <code>if</code>, <code>timeout-minutes</code> and <code>continue-on-error</code> do to the run's result;",
+    "count the jobs of a matrix with <code>include</code> and <code>exclude</code>;",
+    "design a cache key and say what happens on a miss and on a stale hit;",
+    "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+    "carry one build from a build job to a later job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.116
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "order jobs with <code>needs</code> and predict what <code>if</code>, <code>timeout-minutes</code> and <code>continue-on-error</code> do to the run's result;",
+    "count the jobs of a matrix with <code>include</code> and <code>exclude</code>;",
+    "design a cache key and say what happens on a miss and on a stale hit;",
+    "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+    "carry one build from a build job to a later job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1209
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "order jobs with <code>needs</code> and predict what <code>if</code>, <code>timeout-minutes</code> and <code>continue-on-error</code> do to the run's result;",
+    "count the jobs of a matrix with <code>include</code> and <code>exclude</code>;",
+    "design a cache key and say what happens on a miss and on a stale hit;",
+    "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+    "carry one build from a build job to a later job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1246
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.128
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "<code>needs</code> orders jobs and carries their results, <code>if</code> decides whether a job or step runs, <code>timeout-minutes</code> bounds how long it may run, and <code>continue-on-error</code> lets a failure pass without failing what contains it.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1292
+  },
+  {
+   "kind": "scene",
+   "direction": "decide: id=needs nodes=q:needs:_this_job_waits_for_the_listed_jobs|a:this_job_runs|b:this_job_is_skipped|c:its_if_says_otherwise:_it_runs edges=q>a:all_succeed|q>b:one_fails_or_is_skipped|b>c:unless title=needs_orders_jobs",
+   "scene": "decide",
+   "params": {
+    "id": "needs",
+    "nodes": [
+     [
+      "q",
+      "needs: this job waits for the listed jobs"
+     ],
+     [
+      "a",
+      "this job runs"
+     ],
+     [
+      "b",
+      "this job is skipped"
+     ],
+     [
+      "c",
+      "its if says otherwise: it runs"
+     ]
+    ],
+    "edges": [
+     [
+      "q",
+      "a",
+      "all succeed"
+     ],
+     [
+      "q",
+      "b",
+      "one fails or is skipped"
+     ],
+     [
+      "b",
+      "c",
+      "unless"
+     ]
+    ],
+    "title": "needs orders jobs",
+    "cols": [
+     [
+      "q"
+     ],
+     [
+      "a",
+      "b"
+     ],
+     [
+      "c"
+     ]
+    ]
+   },
+   "steps": [
+    "level-1",
+    "level-2",
+    "level-3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1409
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "<code>if</code>, at job or step level: the job or step runs when the expression is truthy, meaning it counts as true.",
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1514
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "<code>timeout-minutes</code>: the job or step is cancelled after that many minutes.",
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1691
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "<code>continue-on-error</code>: a failure doesn't fail the job, at step level, or the run, at job level.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.1746
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=status columns=function,true_when rows=success():the_default|failure():an_earlier_step_or_needed_job_failed|always():always,_even_when_the_run_was_cancelled|cancelled():on_cancellation|!cancelled():recommended:_run_whether_or_not_the_earlier_steps_passed marks=3.2:wait,5.2:ok title=Status_functions at_1=3 at_2=12 at_3=25 at_4=37 at_5=60",
+   "scene": "walk",
+   "params": {
+    "id": "status",
+    "columns": [
+     "function",
+     "true when"
+    ],
+    "rows": [
+     [
+      "success()",
+      "the default"
+     ],
+     [
+      "failure()",
+      "an earlier step or needed job failed"
+     ],
+     [
+      "always()",
+      "always, even when the run was cancelled"
+     ],
+     [
+      "cancelled()",
+      "on cancellation"
+     ],
+     [
+      "!cancelled()",
+      "recommended: run whether or not the earlier steps passed"
+     ]
+    ],
+    "marks": {
+     "3.2": "wait",
+     "5.2": "ok"
+    },
+    "title": "Status functions",
+    "at": {
+     "1": 0.03,
+     "2": 0.12,
+     "3": 0.25,
+     "4": 0.37,
+     "5": 0.6
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 6,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.1796
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=coe question=A_failed_step_with_continue-on-error cards=outcome_=_failure:the_result_before_the_setting_is_applied|conclusion_=_success:the_result_after marks=1:bad,2:ok at_1=30 at_2=50 at_marks=75",
+   "scene": "cards",
+   "params": {
+    "id": "coe",
+    "question": "A failed step with continue-on-error",
+    "cards": [
+     [
+      "outcome = failure",
+      "the result before the setting is applied"
+     ],
+     [
+      "conclusion = success",
+      "the result after"
+     ]
+    ],
+    "marks": [
+     [
+      "1",
+      "bad"
+     ],
+     [
+      "2",
+      "ok"
+     ]
+    ],
+    "at": {
+     "1": 0.3,
+     "2": 0.5,
+     "marks": 0.75
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "marks"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.1994
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "Quick quiz. A required check is a check that a rule says must pass before a pull request can merge.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2111
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "B, and most people say A the first time.",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.2282
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=skip columns=what_happens,it_reports,a_required_check rows=a_job_is_skipped_by_its_if:success:is_satisfied|a_workflow_never_starts:nothing:stays_pending marks=1.2:ok,1.3:ok,2.2:wait,2.3:wait mono=off title=Two_rules_about_skipping",
+   "scene": "walk",
+   "params": {
+    "id": "skip",
+    "columns": [
+     "what happens",
+     "it reports",
+     "a required check"
+    ],
+    "rows": [
+     [
+      "a job is skipped by its if",
+      "success",
+      "is satisfied"
+     ],
+     [
+      "a workflow never starts",
+      "nothing",
+      "stays pending"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "1.3": "ok",
+     "2.2": "wait",
+     "2.3": "wait"
+    },
+    "mono": "off",
+    "title": "Two rules about skipping"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.2371
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=skip columns=what_happens,it_reports,a_required_check rows=a_job_is_skipped_by_its_if:success:is_satisfied|a_workflow_never_starts:nothing:stays_pending marks=1.2:ok,1.3:ok,2.2:wait,2.3:wait mono=off title=Two_rules_about_skipping",
+   "scene": "walk",
+   "params": {
+    "id": "skip",
+    "columns": [
+     "what happens",
+     "it reports",
+     "a required check"
+    ],
+    "rows": [
+     [
+      "a job is skipped by its if",
+      "success",
+      "is satisfied"
+     ],
+     [
+      "a workflow never starts",
+      "nothing",
+      "stays pending"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "1.3": "ok",
+     "2.2": "wait",
+     "2.3": "wait"
+    },
+    "mono": "off",
+    "title": "Two rules about skipping"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.2424
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=skip columns=what_happens,it_reports,a_required_check rows=a_job_is_skipped_by_its_if:success:is_satisfied|a_workflow_never_starts:nothing:stays_pending marks=1.2:ok,1.3:ok,2.2:wait,2.3:wait mono=off title=Two_rules_about_skipping",
+   "scene": "walk",
+   "params": {
+    "id": "skip",
+    "columns": [
+     "what happens",
+     "it reports",
+     "a required check"
+    ],
+    "rows": [
+     [
+      "a job is skipped by its if",
+      "success",
+      "is satisfied"
+     ],
+     [
+      "a workflow never starts",
+      "nothing",
+      "stays pending"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "1.3": "ok",
+     "2.2": "wait",
+     "2.3": "wait"
+    },
+    "mono": "off",
+    "title": "Two rules about skipping"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "upto": 3,
+   "says": [
+    "if on a job: a bypass by accident. paths on a workflow: blocks unrelated pull requests"
+   ],
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.2498
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Controlling jobs. In one sentence",
+   "body": "And one instruction for production: set <code>timeout-minutes</code> on every job.",
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.2594
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "a matrix turns one job definition into one job per combination of the values you list, each with its own runner and its own <code>matrix</code> context.",
+   "section": "CONCEPT",
+   "n": 31,
+   "progress": 0.2742
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "<code>strategy.matrix</code> maps variable names to lists, and the jobs are the Cartesian product: every combination of one value from each list.",
+   "section": "CONCEPT",
+   "n": 32,
+   "progress": 0.2835
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "<code>exclude</code> removes combinations, and a partial match is enough.",
+   "section": "CONCEPT",
+   "n": 33,
+   "progress": 0.2903
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "<code>include</code> is processed after <code>exclude</code>.",
+   "section": "CONCEPT",
+   "n": 34,
+   "progress": 0.2931
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "<code>fail-fast</code> defaults to true: when one matrix job fails, the in-progress and queued ones are cancelled.",
+   "section": "CONCEPT",
+   "n": 35,
+   "progress": 0.3039
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "A run may generate at most 256 matrix jobs.",
+   "section": "CONCEPT",
+   "n": 36,
+   "progress": 0.311
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "A job-level <code>if</code> is evaluated before the matrix is expanded, so it can't read <code>matrix</code>.",
+   "section": "CONCEPT",
+   "n": 37,
+   "progress": 0.3138
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "And outputs of matrix jobs are merged into one set, and the last writer wins, in no guaranteed order.",
+   "section": "CONCEPT",
+   "n": 38,
+   "progress": 0.3184
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Matrix. In one sentence",
+   "body": "Try it now, on paper. Thirty seconds.",
+   "section": "CONCEPT",
+   "n": 39,
+   "progress": 0.3243
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=grid columns=-,3.11,3.12,3.13,3.14 rows=ubuntu-24.04:job_1:job_2:job_3:job_6,_experimental|macos-15:exclude:job_4:job_5:- marks=2.2:bad,1.5:hl title=The_matrix_of_workflow_10 at_1=5 at_2=12 say_2=2_x_3_=_6,_minus_1_excluded_=_5,_plus_1_included_=_6_jobs",
+   "scene": "walk",
+   "params": {
+    "id": "grid",
+    "columns": [
+     "",
+     "3.11",
+     "3.12",
+     "3.13",
+     "3.14"
+    ],
+    "rows": [
+     [
+      "ubuntu-24.04",
+      "job 1",
+      "job 2",
+      "job 3",
+      "job 6, experimental"
+     ],
+     [
+      "macos-15",
+      "exclude",
+      "job 4",
+      "job 5",
+      "-"
+     ]
+    ],
+    "marks": {
+     "2.2": "bad",
+     "1.5": "hl"
+    },
+    "title": "The matrix of workflow 10",
+    "at": {
+     "1": 0.05,
+     "2": 0.12
+    },
+    "say": {
+     "2": "2 x 3 = 6, minus 1 excluded = 5, plus 1 included = 6 jobs"
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 40,
+   "progress": 0.3376
+  },
+  {
+   "kind": "callout",
+   "direction": "Callout: Unverified. The names of the checks that matrix jobs report are not specified on an official page that the course's research could find. Workflow 10 therefore sets the job name explicitly from the matrix values, and adds a final job with a fixed name to serve as the required check.",
+   "quotes": [
+    "Unverified. The names of the checks that matrix jobs report are not specified on an official page that the course's research could find. Workflow 10 therefore sets the job name explicitly from the matrix values, and adds a final job with a fixed name to serve as the required check."
+   ],
+   "quoted": false,
+   "section": "CONCEPT",
+   "n": 41,
+   "progress": 0.3475
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=cache columns=where_the_key_is_looked_for,cache-hit rows=the_exact_key:true|entries_whose_key_starts_with_the_key:false|each_restore-keys_prefix,_in_order:false|nothing_restored:false marks=1.2:ok,4.2:bad mono=off title=The_restore_order at_1=12 at_2=35 at_3=60",
+   "scene": "walk",
+   "params": {
+    "id": "cache",
+    "columns": [
+     "where the key is looked for",
+     "cache-hit"
+    ],
+    "rows": [
+     [
+      "the exact key",
+      "true"
+     ],
+     [
+      "entries whose key starts with the key",
+      "false"
+     ],
+     [
+      "each restore-keys prefix, in order",
+      "false"
+     ],
+     [
+      "nothing restored",
+      "false"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "4.2": "bad"
+    },
+    "mono": "off",
+    "title": "The restore order",
+    "at": {
+     "1": 0.12,
+     "2": 0.35,
+     "3": 0.6
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 42,
+   "progress": 0.3775
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=cache columns=where_the_key_is_looked_for,cache-hit rows=the_exact_key:true|entries_whose_key_starts_with_the_key:false|each_restore-keys_prefix,_in_order:false|nothing_restored:false marks=1.2:ok,4.2:bad mono=off title=The_restore_order at_1=12 at_2=35 at_3=60",
+   "scene": "walk",
+   "params": {
+    "id": "cache",
+    "columns": [
+     "where the key is looked for",
+     "cache-hit"
+    ],
+    "rows": [
+     [
+      "the exact key",
+      "true"
+     ],
+     [
+      "entries whose key starts with the key",
+      "false"
+     ],
+     [
+      "each restore-keys prefix, in order",
+      "false"
+     ],
+     [
+      "nothing restored",
+      "false"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "4.2": "bad"
+    },
+    "mono": "off",
+    "title": "The restore order",
+    "at": {
+     "1": 0.12,
+     "2": 0.35,
+     "3": 0.6
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 43,
+   "progress": 0.3858
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=cache columns=where_the_key_is_looked_for,cache-hit rows=the_exact_key:true|entries_whose_key_starts_with_the_key:false|each_restore-keys_prefix,_in_order:false|nothing_restored:false marks=1.2:ok,4.2:bad mono=off title=The_restore_order at_1=12 at_2=35 at_3=60",
+   "scene": "walk",
+   "params": {
+    "id": "cache",
+    "columns": [
+     "where the key is looked for",
+     "cache-hit"
+    ],
+    "rows": [
+     [
+      "the exact key",
+      "true"
+     ],
+     [
+      "entries whose key starts with the key",
+      "false"
+     ],
+     [
+      "each restore-keys prefix, in order",
+      "false"
+     ],
+     [
+      "nothing restored",
+      "false"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "4.2": "bad"
+    },
+    "mono": "off",
+    "title": "The restore order",
+    "at": {
+     "1": 0.12,
+     "2": 0.35,
+     "3": 0.6
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "says": [
+    "cache-hit is true only for an exact match on the primary key"
+   ],
+   "section": "CONCEPT",
+   "n": 44,
+   "progress": 0.3923
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=scope columns=a_cache_created_on,can_be_restored_by rows=the_run's_own_branch:a_run_on_that_branch|the_default_branch:any_run|the_base_branch:a_pull_request_run|a_sibling_branch:not_by_its_siblings|the_merge_ref:only_re-runs_of_that_pull_request marks=4.2:bad mono=off title=Scope at_1=3 at_2=14 at_3=28 at_4=45 at_5=60",
+   "scene": "walk",
+   "params": {
+    "id": "scope",
+    "columns": [
+     "a cache created on",
+     "can be restored by"
+    ],
+    "rows": [
+     [
+      "the run's own branch",
+      "a run on that branch"
+     ],
+     [
+      "the default branch",
+      "any run"
+     ],
+     [
+      "the base branch",
+      "a pull request run"
+     ],
+     [
+      "a sibling branch",
+      "not by its siblings"
+     ],
+     [
+      "the merge ref",
+      "only re-runs of that pull request"
+     ]
+    ],
+    "marks": {
+     "4.2": "bad"
+    },
+    "mono": "off",
+    "title": "Scope",
+    "at": {
+     "1": 0.03,
+     "2": 0.14,
+     "3": 0.28,
+     "4": 0.45,
+     "5": 0.6
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 6,
+   "section": "CONCEPT",
+   "n": 45,
+   "progress": 0.3994
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=evict boxes=eviction:what_removes_an_entry|trust:who_can_read_a_cache rows=1:A:not_accessed_for_7_days:_removed|1:A:10_GB_per_repository_without_charge|1:A:above_the_limit:_least_recently_used_first|2:B:anyone_who_can_open_a_pull_request:_the_base_branch's_caches|2:B:contents_are_not_signed|3:B:since_26_June_2026:_a_read-only_token_for_events_without_write_access|4:B:since_10_September_2026:_cache-mode_states_the_access title=Eviction_and_trust at_1=5 at_2=3 at_3=30 at_4=60",
+   "scene": "stores",
+   "params": {
+    "id": "evict",
+    "boxes": [
+     [
+      "eviction",
+      "what removes an entry"
+     ],
+     [
+      "trust",
+      "who can read a cache"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "not accessed for 7 days: removed"
+     ],
+     [
+      1,
+      "A",
+      "10 GB per repository without charge"
+     ],
+     [
+      1,
+      "A",
+      "above the limit: least recently used first"
+     ],
+     [
+      2,
+      "B",
+      "anyone who can open a pull request: the base branch's caches"
+     ],
+     [
+      2,
+      "B",
+      "contents are not signed"
+     ],
+     [
+      3,
+      "B",
+      "since 26 June 2026: a read-only token for events without write access"
+     ],
+     [
+      4,
+      "B",
+      "since 10 September 2026: cache-mode states the access"
+     ]
+    ],
+    "title": "Eviction and trust",
+    "at": {
+     "1": 0.05,
+     "2": 0.03,
+     "3": 0.3,
+     "4": 0.6
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 46,
+   "progress": 0.4192
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=evict boxes=eviction:what_removes_an_entry|trust:who_can_read_a_cache rows=1:A:not_accessed_for_7_days:_removed|1:A:10_GB_per_repository_without_charge|1:A:above_the_limit:_least_recently_used_first|2:B:anyone_who_can_open_a_pull_request:_the_base_branch's_caches|2:B:contents_are_not_signed|3:B:since_26_June_2026:_a_read-only_token_for_events_without_write_access|4:B:since_10_September_2026:_cache-mode_states_the_access title=Eviction_and_trust at_1=5 at_2=3 at_3=30 at_4=60",
+   "scene": "stores",
+   "params": {
+    "id": "evict",
+    "boxes": [
+     [
+      "eviction",
+      "what removes an entry"
+     ],
+     [
+      "trust",
+      "who can read a cache"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "not accessed for 7 days: removed"
+     ],
+     [
+      1,
+      "A",
+      "10 GB per repository without charge"
+     ],
+     [
+      1,
+      "A",
+      "above the limit: least recently used first"
+     ],
+     [
+      2,
+      "B",
+      "anyone who can open a pull request: the base branch's caches"
+     ],
+     [
+      2,
+      "B",
+      "contents are not signed"
+     ],
+     [
+      3,
+      "B",
+      "since 26 June 2026: a read-only token for events without write access"
+     ],
+     [
+      4,
+      "B",
+      "since 10 September 2026: cache-mode states the access"
+     ]
+    ],
+    "title": "Eviction and trust",
+    "at": {
+     "1": 0.05,
+     "2": 0.03,
+     "3": 0.3,
+     "4": 0.6
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 47,
+   "progress": 0.4309
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Caching. In one sentence",
+   "body": "Most projects never write a cache block, because the setup actions, packaged steps, contain it.",
+   "section": "CONCEPT",
+   "n": 48,
+   "progress": 0.4535
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Artifacts. In one sentence",
+   "body": "an artifact is a set of files that a job uploads to GitHub, where it's stored with the run, can be downloaded by later jobs or by people, and expires after a retention period.",
+   "section": "CONCEPT",
+   "n": 49,
+   "progress": 0.4699
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Immutability",
+     "an artifact cannot be changed after upload. A second upload with the same name in one run fails unless <code>overwrite: true</code>, which replaces it"
+    ],
+    [
+     "Availability",
+     "scoped to the job: downloadable by a later job of the same run as soon as the upload step ends"
+    ],
+    [
+     "Retention",
+     "90 days by default; <code>retention-days</code> from 1 to 90, never above the repository or organization setting. Since 1 October 2026 the same setting also deletes checks, workflow runs and commit statuses (changelog)"
+    ]
+   ],
+   "hl": 0,
+   "page": [
+    1,
+    2
+   ],
+   "caption": "Immutability: an artifact can't be changed after upload.",
+   "section": "CONCEPT",
+   "n": 50,
+   "progress": 0.4816
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Immutability",
+     "an artifact cannot be changed after upload. A second upload with the same name in one run fails unless <code>overwrite: true</code>, which replaces it"
+    ],
+    [
+     "Availability",
+     "scoped to the job: downloadable by a later job of the same run as soon as the upload step ends"
+    ],
+    [
+     "Retention",
+     "90 days by default; <code>retention-days</code> from 1 to 90, never above the repository or organization setting. Since 1 October 2026 the same setting also deletes checks, workflow runs and commit statuses (changelog)"
+    ]
+   ],
+   "hl": 1,
+   "page": [
+    1,
+    2
+   ],
+   "caption": "Availability: downloadable by a later job of the same run as soon as the upload step ends.",
+   "section": "CONCEPT",
+   "n": 51,
+   "progress": 0.4887
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Immutability",
+     "an artifact cannot be changed after upload. A second upload with the same name in one run fails unless <code>overwrite: true</code>, which replaces it"
+    ],
+    [
+     "Availability",
+     "scoped to the job: downloadable by a later job of the same run as soon as the upload step ends"
+    ],
+    [
+     "Retention",
+     "90 days by default; <code>retention-days</code> from 1 to 90, never above the repository or organization setting. Since 1 October 2026 the same setting also deletes checks, workflow runs and commit statuses (changelog)"
+    ]
+   ],
+   "hl": 2,
+   "page": [
+    1,
+    2
+   ],
+   "caption": "Retention: 90 days by default.",
+   "section": "CONCEPT",
+   "n": 52,
+   "progress": 0.494
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Limits",
+     "500 artifacts per job; hidden files are excluded unless <code>include-hidden-files: true</code>"
+    ],
+    [
+     "Permissions",
+     "zipped uploads do not keep file permissions (files become 644). Tar the files first if the executable bit matters"
+    ],
+    [
+     "Outputs",
+     "<code>artifact-id</code>, <code>artifact-url</code>, <code>artifact-digest</code> (SHA-256)"
+    ],
+    [
+     "Download",
+     "by <code>name</code> into <code>path</code>; without <code>name</code>, all artifacts, each in a directory of its name. v8 fails on a digest mismatch (<code>digest-mismatch: error</code> is the default)"
+    ],
+    [
+     "Since v7",
+     "<code>archive: false</code> uploads one file without zipping it"
+    ]
+   ],
+   "hl": 0,
+   "page": [
+    2,
+    2
+   ],
+   "caption": "Limits: 500 artifacts per job.",
+   "section": "CONCEPT",
+   "n": 53,
+   "progress": 0.5048
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Limits",
+     "500 artifacts per job; hidden files are excluded unless <code>include-hidden-files: true</code>"
+    ],
+    [
+     "Permissions",
+     "zipped uploads do not keep file permissions (files become 644). Tar the files first if the executable bit matters"
+    ],
+    [
+     "Outputs",
+     "<code>artifact-id</code>, <code>artifact-url</code>, <code>artifact-digest</code> (SHA-256)"
+    ],
+    [
+     "Download",
+     "by <code>name</code> into <code>path</code>; without <code>name</code>, all artifacts, each in a directory of its name. v8 fails on a digest mismatch (<code>digest-mismatch: error</code> is the default)"
+    ],
+    [
+     "Since v7",
+     "<code>archive: false</code> uploads one file without zipping it"
+    ]
+   ],
+   "hl": 1,
+   "page": [
+    2,
+    2
+   ],
+   "caption": "Permissions: zipped uploads don't keep file permissions.",
+   "section": "CONCEPT",
+   "n": 54,
+   "progress": 0.5091
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Limits",
+     "500 artifacts per job; hidden files are excluded unless <code>include-hidden-files: true</code>"
+    ],
+    [
+     "Permissions",
+     "zipped uploads do not keep file permissions (files become 644). Tar the files first if the executable bit matters"
+    ],
+    [
+     "Outputs",
+     "<code>artifact-id</code>, <code>artifact-url</code>, <code>artifact-digest</code> (SHA-256)"
+    ],
+    [
+     "Download",
+     "by <code>name</code> into <code>path</code>; without <code>name</code>, all artifacts, each in a directory of its name. v8 fails on a digest mismatch (<code>digest-mismatch: error</code> is the default)"
+    ],
+    [
+     "Since v7",
+     "<code>archive: false</code> uploads one file without zipping it"
+    ]
+   ],
+   "hl": 2,
+   "page": [
+    2,
+    2
+   ],
+   "caption": "Outputs: an artifact ID, a URL, and a SHA-256 digest, a fingerprint of the uploaded bytes.",
+   "section": "CONCEPT",
+   "n": 55,
+   "progress": 0.5141
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 847,
+    "section": "20A.12",
+    "kind": "table",
+    "score": 5,
+    "candidates": 1
+   },
+   "direction": "The property table of section 20A.12, from the READMEs of the upload action at version 7.0.1 and the download action at version 8.0.1.",
+   "header": [
+    "Property",
+    "Rule"
+   ],
+   "fs": 36,
+   "cols": [
+    16.07,
+    83.93
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Limits",
+     "500 artifacts per job; hidden files are excluded unless <code>include-hidden-files: true</code>"
+    ],
+    [
+     "Permissions",
+     "zipped uploads do not keep file permissions (files become 644). Tar the files first if the executable bit matters"
+    ],
+    [
+     "Outputs",
+     "<code>artifact-id</code>, <code>artifact-url</code>, <code>artifact-digest</code> (SHA-256)"
+    ],
+    [
+     "Download",
+     "by <code>name</code> into <code>path</code>; without <code>name</code>, all artifacts, each in a directory of its name. v8 fails on a digest mismatch (<code>digest-mismatch: error</code> is the default)"
+    ],
+    [
+     "Since v7",
+     "<code>archive: false</code> uploads one file without zipping it"
+    ]
+   ],
+   "hl": 3,
+   "page": [
+    2,
+    2
+   ],
+   "caption": "Download: by name into a path.",
+   "section": "CONCEPT",
+   "n": 56,
+   "progress": 0.519
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 57,
+   "progress": 0.5236
+  },
+  {
+   "kind": "keypoint",
+   "body": "A picture helps.",
+   "section": "MENTAL MODEL",
+   "n": 58,
+   "progress": 0.5248
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy,",
+   "body": "from the textbook. A cache is the shared fridge at work with labelled boxes.",
+   "section": "MENTAL MODEL",
+   "n": 59,
+   "progress": 0.5257
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy,",
+   "body": "The textbook says where it holds and where it breaks.",
+   "section": "MENTAL MODEL",
+   "n": 60,
+   "progress": 0.5421
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy,",
+   "body": "That immutability is the mechanism behind the first complaint from the opening.",
+   "section": "MENTAL MODEL",
+   "n": 61,
+   "progress": 0.5548
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=two boxes=cache:may_be_absent|*artifact:the_bytes_that_were_uploaded rows=1:A:files_reused_between_runs|1:A:can_be_recreated:_dependencies|2:B:files_a_job_produced|2:B:passed_to_another_job,_or_kept|2:B:build_outputs,_test_reports|3:A:could_I_lose_it_without_consequence?@hl|3:B:is_this_the_thing_itself?@hl title=Cache_or_artifact? at_1=15 at_2=55",
+   "scene": "stores",
+   "params": {
+    "id": "two",
+    "boxes": [
+     [
+      "cache",
+      "may be absent"
+     ],
+     [
+      "*artifact",
+      "the bytes that were uploaded"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "files reused between runs"
+     ],
+     [
+      1,
+      "A",
+      "can be recreated: dependencies"
+     ],
+     [
+      2,
+      "B",
+      "files a job produced"
+     ],
+     [
+      2,
+      "B",
+      "passed to another job, or kept"
+     ],
+     [
+      2,
+      "B",
+      "build outputs, test reports"
+     ],
+     [
+      3,
+      "A",
+      "could I lose it without consequence?",
+      "hl"
+     ],
+     [
+      3,
+      "B",
+      "is this the thing itself?",
+      "hl"
+     ]
+    ],
+    "title": "Cache or artifact?",
+    "at": {
+     "1": 0.15,
+     "2": 0.55
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "MENTAL MODEL",
+   "n": 62,
+   "progress": 0.5631
+  },
+  {
+   "kind": "scene",
+   "direction": "run: id=once event=push jobs=build|deploy:build artifact=build>deploy:dist title=The_files_that_were_tested_are_the_files_that_are_deployed",
+   "scene": "run",
+   "params": {
+    "id": "once",
+    "event": "push",
+    "jobs": [
+     [
+      "build",
+      ""
+     ],
+     [
+      "deploy",
+      "build"
+     ]
+    ],
+    "artifact": [
+     "build",
+     "deploy",
+     "dist"
+    ],
+    "title": "The files that were tested are the files that are deployed",
+    "cols": [
+     [
+      "build"
+     ],
+     [
+      "deploy"
+     ]
+    ]
+   },
+   "steps": [
+    "event",
+    "jobs",
+    "data"
+   ],
+   "upto": 3,
+   "section": "MENTAL MODEL",
+   "n": 63,
+   "progress": 0.5789
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=two boxes=cache:may_be_absent|*artifact:the_bytes_that_were_uploaded rows=1:A:files_reused_between_runs|1:A:can_be_recreated:_dependencies|2:B:files_a_job_produced|2:B:passed_to_another_job,_or_kept|2:B:build_outputs,_test_reports|3:A:could_I_lose_it_without_consequence?@hl|3:B:is_this_the_thing_itself?@hl title=Cache_or_artifact? at_1=15 at_2=55",
+   "scene": "stores",
+   "params": {
+    "id": "two",
+    "boxes": [
+     [
+      "cache",
+      "may be absent"
+     ],
+     [
+      "*artifact",
+      "the bytes that were uploaded"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "files reused between runs"
+     ],
+     [
+      1,
+      "A",
+      "can be recreated: dependencies"
+     ],
+     [
+      2,
+      "B",
+      "files a job produced"
+     ],
+     [
+      2,
+      "B",
+      "passed to another job, or kept"
+     ],
+     [
+      2,
+      "B",
+      "build outputs, test reports"
+     ],
+     [
+      3,
+      "A",
+      "could I lose it without consequence?",
+      "hl"
+     ],
+     [
+      3,
+      "B",
+      "is this the thing itself?",
+      "hl"
+     ]
+    ],
+    "title": "Cache or artifact?",
+    "at": {
+     "1": 0.15,
+     "2": 0.55
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "MENTAL MODEL",
+   "n": 64,
+   "progress": 0.59
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 65,
+   "progress": 0.5993
+  },
+  {
+   "kind": "diagram",
+   "direction": "The matrix of workflow 10 as a grid. Draw the two-by-three grid from the two lists first and count: six. Then cross out the excluded cell: five. Then add the included entry and ask: does it extend an existing cell, or become a new one?",
+   "text": "  matrix:  os: [ubuntu-24.04, macos-15]   python: [\"3.11\", \"3.12\", \"3.13\"]   experimental: [false]\n\n                    3.11          3.12          3.13          3.14\n                 +-----------+-------------+-------------+................+\n  ubuntu-24.04   |   job 1   |    job 2    |    job 3    :  job 6         :   include:\n                 |           |             |             :  experimental  :   would overwrite python\n                 +-----------+-------------+-------------+................+   and experimental, so it\n  macos-15       |  XXXXXXX  |    job 4    |    job 5    |                    becomes a NEW combination\n                 |  exclude  |             |             |\n                 +-----------+-------------+-------------+\n\n  2 x 3 = 6     minus 1 excluded = 5     plus 1 included = 6 jobs, one of them experimental",
+   "section": "DIAGRAM",
+   "n": 66,
+   "progress": 0.6004
+  },
+  {
+   "kind": "callout",
+   "direction": "Then the last job of the workflow, outside the grid: \"All matrix tests\", with `needs: test` and `if: always()`. That one fixed name is what a ruleset requires.",
+   "label": "Then the last job of the workflow, outside the grid",
+   "quotes": [
+    "All matrix tests"
+   ],
+   "quoted": true,
+   "section": "DIAGRAM",
+   "n": 67,
+   "progress": 0.6079
+  },
+  {
+   "kind": "scene",
+   "direction": "run: id=m10 event=pull_request jobs=test|all-tests:test matrix=test:3.11+3.12+3.13+3.14 say_matrix=Six_jobs:_five_combinations_and_one_experimental title=workflows/10-matrix.yml at_jobs=15",
+   "scene": "run",
+   "params": {
+    "id": "m10",
+    "event": "pull_request",
+    "jobs": [
+     [
+      "test",
+      ""
+     ],
+     [
+      "all-tests",
+      "test"
+     ]
+    ],
+    "matrix": [
+     "test",
+     "3.11+3.12+3.13+3.14"
+    ],
+    "say": {
+     "matrix": "Six jobs: five combinations and one experimental"
+    },
+    "title": "workflows/10-matrix.yml",
+    "at": {
+     "jobs": 0.15
+    },
+    "cols": [
+     [
+      "test"
+     ],
+     [
+      "all-tests"
+     ]
+    ]
+   },
+   "steps": [
+    "event",
+    "jobs",
+    "matrix"
+   ],
+   "upto": 2,
+   "section": "DIAGRAM",
+   "n": 68,
+   "progress": 0.6119
+  },
+  {
+   "kind": "diagram",
+   "source": {
+    "file": "textbook/ch20a-actions-fundamentals.md",
+    "line": 829,
+    "section": "20A.11",
+    "kind": "box",
+    "score": 52,
+    "candidates": 1
+   },
+   "direction": "The root-cause box of section 20A.11, one line at a time. Observed behavior: a dependency was upgraded, CI still installs the old version from cache. Mechanism: the key had no lock-file hash, or a broad restore key matched an old entry, which was then extended and saved under the new key. Root cause: caches are immutable per key and restore keys match by prefix. Correct fix: put `hashFiles` of the lock file in the key; install from the lock file, with `uv sync --locked`, so that a stale cache cannot change what is installed. Prevention: a manual prefix, such as `v2-`, to invalidate everything at once.",
+   "text": "Observed behavior : a dependency was upgraded, CI still installs the old version from cache\nMechanism         : the key had no lock-file hash, or a broad restore key matched an old entry,\n                    which was then extended and saved under the new key\nRoot cause        : caches are immutable per key and restore keys match by prefix\nCorrect fix       : put hashFiles of the lock file in the key; install from the lock file\n                    (uv sync --locked) so that a stale cache cannot change what is installed\nPrevention        : a manual prefix (v2-) to invalidate everything at once",
+   "section": "DIAGRAM",
+   "n": 69,
+   "progress": 0.6171
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.6221
+  },
+  {
+   "kind": "keypoint",
+   "body": "Into the lab.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 71,
+   "progress": 0.6232
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay with `labs/run ch20a/lab-26-4-cache-key`. It computes locally the kind of value a cache key is built from. `hashFiles` is described in the documentation as a SHA-256 per matched file and then one over those; the replay uses `shasum` on the lock file to show the principle, which is that the key changes exactly when the file changes.",
+   "mode": "cmd",
+   "title": "labs/run ch20a/lab-26-4-cache-key",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch20a/lab-26-4-cache-key"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 72,
+   "progress": 0.6242
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch20a/lab-26-4-cache-key/01-key",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat uv.lock"
+    },
+    {
+     "t": "out",
+     "s": "version = 1"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "[[package]]"
+    },
+    {
+     "t": "out",
+     "s": "name = \"pytest\""
+    },
+    {
+     "t": "out",
+     "s": "version = \"8.4.0\""
+    },
+    {
+     "t": "cmd",
+     "s": "shasum -a 256 uv.lock | cut -c1-16"
+    },
+    {
+     "t": "out",
+     "s": "0071e96c6821a1de"
+    },
+    {
+     "t": "out",
+     "s": "# A commit that does not touch the lock file: same hash, same key, cache hit."
+    },
+    {
+     "t": "cmd",
+     "s": "echo \"Run the linter with: uv run ruff check .\" >> README.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -am \"Document the linter\""
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat HEAD~1 -- uv.lock"
+    },
+    {
+     "t": "cmd",
+     "s": "shasum -a 256 uv.lock | cut -c1-16"
+    },
+    {
+     "t": "out",
+     "s": "0071e96c6821a1de"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 73,
+   "progress": 0.6266
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: two commits",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 74,
+   "progress": 0.6322
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch20a/lab-26-4-cache-key",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -am \"Document the linter\""
+    },
+    {
+     "t": "cmd",
+     "s": "shasum -a 256 uv.lock | cut -c1-16"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -am \"Update pytest in the lock file\""
+    },
+    {
+     "t": "cmd",
+     "s": "shasum -a 256 uv.lock | cut -c1-16"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 75,
+   "progress": 0.6334
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch20a/lab-26-4-cache-key/02-key-changes",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A dependency update: new hash, new key, cache miss, and a new cache saved after the job."
+    },
+    {
+     "t": "cmd",
+     "s": "sed -i.bak 's/8.4.0/8.4.1/' uv.lock && rm uv.lock.bak"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -am \"Update pytest in the lock file\""
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat HEAD~1 -- uv.lock"
+    },
+    {
+     "t": "out",
+     "s": " uv.lock | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "shasum -a 256 uv.lock | cut -c1-16"
+    },
+    {
+     "t": "out",
+     "s": "6ac54238033dafef"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 76,
+   "progress": 0.6558
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte title=A_key_from_the_lock_file left=uv.lock right=uv.lock_after_a_commit lines=version_=_1,[[package]],name_=_\"pytest\",version_=_\"8.4.0\" alt=version_=_\"8.4.1\" ids=0071e96c6821a1de,6ac54238033dafef fn=shasum same=Same_hash,_same_key:_a_cache_hit diff=New_hash,_new_key:_a_cache_miss",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "title": "A key from the lock file",
+    "left": "uv.lock",
+    "right": "uv.lock after a commit",
+    "lines": [
+     "version = 1",
+     "[[package]]",
+     "name = \"pytest\"",
+     "version = \"8.4.0\""
+    ],
+    "alt": "version = \"8.4.1\"",
+    "ids": [
+     "0071e96c6821a1de",
+     "6ac54238033dafef"
+    ],
+    "fn": "shasum",
+    "same": "Same hash, same key: a cache hit",
+    "diff": "New hash, new key: a cache miss"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 2,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 77,
+   "progress": 0.6596
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte title=A_key_from_the_lock_file left=uv.lock right=uv.lock_after_a_commit lines=version_=_1,[[package]],name_=_\"pytest\",version_=_\"8.4.0\" alt=version_=_\"8.4.1\" ids=0071e96c6821a1de,6ac54238033dafef fn=shasum same=Same_hash,_same_key:_a_cache_hit diff=New_hash,_new_key:_a_cache_miss",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "title": "A key from the lock file",
+    "left": "uv.lock",
+    "right": "uv.lock after a commit",
+    "lines": [
+     "version = 1",
+     "[[package]]",
+     "name = \"pytest\"",
+     "version = \"8.4.0\""
+    ],
+    "alt": "version = \"8.4.1\"",
+    "ids": [
+     "0071e96c6821a1de",
+     "6ac54238033dafef"
+    ],
+    "fn": "shasum",
+    "same": "Same hash, same key: a cache hit",
+    "diff": "New hash, new key: a cache miss"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 78,
+   "progress": 0.663
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: two commits",
+   "body": "Now turn it around. If the key had been built without the lock file, both commits would have hit the old entry.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 79,
+   "progress": 0.6717
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 3: consuming an artifact",
+   "body": "Replay <code>labs/run ch20a/lab-26-7-artifact</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 80,
+   "progress": 0.6834
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch20a/lab-26-4-cache-key",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "mkdir dist"
+    },
+    {
+     "t": "cmd",
+     "s": "touch dist/inventory_api-0.1.0.tar.gz dist/inventory_api-0.1.0-py3-none-any.whl"
+    },
+    {
+     "t": "cmd",
+     "s": "bash scripts/deploy.sh staging dist"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 81,
+   "progress": 0.6905
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch20a/lab-26-7-artifact/01-deploy",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "mkdir dist"
+    },
+    {
+     "t": "cmd",
+     "s": "touch dist/inventory_api-0.1.0.tar.gz dist/inventory_api-0.1.0-py3-none-any.whl"
+    },
+    {
+     "t": "cmd",
+     "s": "bash scripts/deploy.sh staging dist"
+    },
+    {
+     "t": "out",
+     "s": "Simulated deployment of inventory-api"
+    },
+    {
+     "t": "out",
+     "s": "  environment : staging"
+    },
+    {
+     "t": "out",
+     "s": "  target      : https://staging.inventory.example.com"
+    },
+    {
+     "t": "out",
+     "s": "  commit      : unknown"
+    },
+    {
+     "t": "out",
+     "s": "  ref         : local"
+    },
+    {
+     "t": "out",
+     "s": "  artifacts   :"
+    },
+    {
+     "t": "out",
+     "s": "    - inventory_api-0.1.0-py3-none-any.whl"
+    },
+    {
+     "t": "out",
+     "s": "    - inventory_api-0.1.0.tar.gz"
+    },
+    {
+     "t": "out",
+     "s": "Nothing was changed anywhere. A real script would now upload the artifacts to"
+    },
+    {
+     "t": "wrap",
+     "s": "https://staging.inventory.example.com.",
+     "of": "out"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 82,
+   "progress": 0.6961
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 4: when the artifact did not arrive",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 83,
+   "progress": 0.7051
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch20a/lab-26-4-cache-key",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "mkdir empty"
+    },
+    {
+     "t": "cmd",
+     "s": "bash scripts/deploy.sh staging empty"
+    },
+    {
+     "t": "cmd",
+     "s": "bash scripts/deploy.sh stagging dist"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 84,
+   "progress": 0.7075
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch20a/lab-26-7-artifact/02-failures",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The artifact did not arrive: the directory is empty."
+    },
+    {
+     "t": "cmd",
+     "s": "mkdir empty"
+    },
+    {
+     "t": "cmd",
+     "s": "bash scripts/deploy.sh staging empty"
+    },
+    {
+     "t": "out",
+     "s": "Simulated deployment of inventory-api"
+    },
+    {
+     "t": "out",
+     "s": "  environment : staging"
+    },
+    {
+     "t": "out",
+     "s": "  target      : https://staging.inventory.example.com"
+    },
+    {
+     "t": "out",
+     "s": "  commit      : unknown"
+    },
+    {
+     "t": "out",
+     "s": "  ref         : local"
+    },
+    {
+     "t": "out",
+     "s": "deploy.sh: no build outputs in 'empty'; nothing to deploy"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "out",
+     "s": "# A misspelled environment name:"
+    },
+    {
+     "t": "cmd",
+     "s": "bash scripts/deploy.sh stagging dist"
+    },
+    {
+     "t": "out",
+     "s": "deploy.sh: unknown environment 'stagging' (expected staging or production)"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 2]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 85,
+   "progress": 0.7194
+  },
+  {
+   "kind": "callout",
+   "direction": "Lower third: GitHub Actions. Screen walkthrough, with `workflows/10-matrix.yml` on screen first.",
+   "code": [
+    "workflows/10-matrix.yml"
+   ],
+   "quoted": false,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 86,
+   "progress": 0.7333
+  },
+  {
+   "kind": "scene",
+   "direction": "run: id=m10 event=pull_request jobs=test|all-tests:test matrix=test:3.11+3.12+3.13+3.14 say_matrix=Six_jobs:_five_combinations_and_one_experimental title=workflows/10-matrix.yml at_jobs=15",
+   "scene": "run",
+   "params": {
+    "id": "m10",
+    "event": "pull_request",
+    "jobs": [
+     [
+      "test",
+      ""
+     ],
+     [
+      "all-tests",
+      "test"
+     ]
+    ],
+    "matrix": [
+     "test",
+     "3.11+3.12+3.13+3.14"
+    ],
+    "say": {
+     "matrix": "Six jobs: five combinations and one experimental"
+    },
+    "title": "workflows/10-matrix.yml",
+    "at": {
+     "jobs": 0.15
+    },
+    "cols": [
+     [
+      "test"
+     ],
+     [
+      "all-tests"
+     ]
+    ]
+   },
+   "steps": [
+    "event",
+    "jobs",
+    "matrix"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 87,
+   "progress": 0.7371
+  },
+  {
+   "kind": "scene",
+   "direction": "run: id=m10 event=pull_request jobs=test|all-tests:test matrix=test:3.11+3.12+3.13+3.14 say_matrix=Six_jobs:_five_combinations_and_one_experimental title=workflows/10-matrix.yml at_jobs=15",
+   "scene": "run",
+   "params": {
+    "id": "m10",
+    "event": "pull_request",
+    "jobs": [
+     [
+      "test",
+      ""
+     ],
+     [
+      "all-tests",
+      "test"
+     ]
+    ],
+    "matrix": [
+     "test",
+     "3.11+3.12+3.13+3.14"
+    ],
+    "say": {
+     "matrix": "Six jobs: five combinations and one experimental"
+    },
+    "title": "workflows/10-matrix.yml",
+    "at": {
+     "jobs": 0.15
+    },
+    "cols": [
+     [
+      "test"
+     ],
+     [
+      "all-tests"
+     ]
+    ]
+   },
+   "steps": [
+    "event",
+    "jobs",
+    "matrix"
+   ],
+   "base": 2,
+   "upto": 3,
+   "says": [
+    "all-tests needs test, and runs with if: always()"
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 88,
+   "progress": 0.7507
+  },
+  {
+   "kind": "callout",
+   "direction": "Callout: Unverified. How the result of a needed matrix job is aggregated when its only failure had `continue-on-error` is not spelled out on the pages read for the chapter. The expectation, from the definition of `continue-on-error`, is `success`. Lab 26.8 has you observe it.",
+   "quotes": [
+    "Unverified. How the result of a needed matrix job is aggregated when its only failure had <code>continue-on-error</code> is not spelled out on the pages read for the chapter. The expectation, from the definition of <code>continue-on-error</code>, is <code>success</code>. Lab 26.8 has you observe it."
+   ],
+   "quoted": false,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 89,
+   "progress": 0.768
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 90,
+   "progress": 0.7918
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 91,
+   "progress": 0.793
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A cache key without the lock file's hash, or with a broad restore key.</b> Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+    "<b>Rebuilding in the deploy job.</b> Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+    "<b>An <code>if</code> on a job that is a required check.</b> Root cause: a job skipped by its <code>if</code> reports success for its check.",
+    "<b>No <code>timeout-minutes</code>.</b> Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+    "<b>Requiring the individual matrix jobs in a ruleset.</b> Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 92,
+   "progress": 0.7945
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A cache key without the lock file's hash, or with a broad restore key.</b> Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+    "<b>Rebuilding in the deploy job.</b> Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+    "<b>An <code>if</code> on a job that is a required check.</b> Root cause: a job skipped by its <code>if</code> reports success for its check.",
+    "<b>No <code>timeout-minutes</code>.</b> Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+    "<b>Requiring the individual matrix jobs in a ruleset.</b> Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 93,
+   "progress": 0.8051
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A cache key without the lock file's hash, or with a broad restore key.</b> Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+    "<b>Rebuilding in the deploy job.</b> Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+    "<b>An <code>if</code> on a job that is a required check.</b> Root cause: a job skipped by its <code>if</code> reports success for its check.",
+    "<b>No <code>timeout-minutes</code>.</b> Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+    "<b>Requiring the individual matrix jobs in a ruleset.</b> Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 94,
+   "progress": 0.8137
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A cache key without the lock file's hash, or with a broad restore key.</b> Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+    "<b>Rebuilding in the deploy job.</b> Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+    "<b>An <code>if</code> on a job that is a required check.</b> Root cause: a job skipped by its <code>if</code> reports success for its check.",
+    "<b>No <code>timeout-minutes</code>.</b> Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+    "<b>Requiring the individual matrix jobs in a ruleset.</b> Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 95,
+   "progress": 0.8208
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A cache key without the lock file's hash, or with a broad restore key.</b> Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+    "<b>Rebuilding in the deploy job.</b> Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+    "<b>An <code>if</code> on a job that is a required check.</b> Root cause: a job skipped by its <code>if</code> reports success for its check.",
+    "<b>No <code>timeout-minutes</code>.</b> Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+    "<b>Requiring the individual matrix jobs in a ruleset.</b> Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 96,
+   "progress": 0.8285
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 97,
+   "progress": 0.8369
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. The textbook's instruction for an ML team: cache package downloads and small test models, never multi-gigabyte checkpoints.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 98,
+   "progress": 0.838
+  },
+  {
+   "kind": "keypoint",
+   "body": "Here's how that goes wrong. A team that evaluates language models caches a model checkpoint of several gigabytes \"to make the evaluation job faster\".",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 99,
+   "progress": 0.8448
+  },
+  {
+   "kind": "keypoint",
+   "body": "The decision is the one from the mental model.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 100,
+   "progress": 0.868
+  },
+  {
+   "kind": "keypoint",
+   "body": "Upload test reports with <code>if: failure()</code> and a short retention.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 101,
+   "progress": 0.8844
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 102,
+   "progress": 0.8968
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 26.4, \"Workflow 4, Python tests with uv and caching\", in <code>lab-manual/m26-actions-fundamentals.md</code>, in your normal shell.",
+   "section": "PRACTICE EXERCISE",
+   "n": 103,
+   "progress": 0.8979
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before each run, predict whether the cache will be hit or missed, and say which file decides.",
+   "section": "PRACTICE EXERCISE",
+   "n": 104,
+   "progress": 0.9038
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 26.6, \"Caches and artifacts\", in <code>exercises/m26-m31-actions-security.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 105,
+   "progress": 0.9118
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 106,
+   "progress": 0.9149
+  },
+  {
+   "kind": "callout",
+   "direction": "Q281: \"What is the difference between a cache and an artifact in purpose, scope, lifetime and trust? Which one may a release job consume?\"",
+   "label": "Q281",
+   "quotes": [
+    "What is the difference between a cache and an artifact in purpose, scope, lifetime and trust? Which one may a release job consume?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 107,
+   "progress": 0.9161
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 108,
+   "progress": 0.9448
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this.",
+   "section": "RECAP",
+   "n": 109,
+   "progress": 0.946
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>needs</code> orders jobs; a job that needs a failed or skipped job is skipped unless its own <code>if</code> says otherwise.",
+    "A job skipped by its <code>if</code> reports success; a workflow that never starts reports nothing.",
+    "A matrix is the Cartesian product, minus <code>exclude</code>, then <code>include</code>, which extends a combination or adds a new one.",
+    "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+    "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 110,
+   "progress": 0.9469
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>needs</code> orders jobs; a job that needs a failed or skipped job is skipped unless its own <code>if</code> says otherwise.",
+    "A job skipped by its <code>if</code> reports success; a workflow that never starts reports nothing.",
+    "A matrix is the Cartesian product, minus <code>exclude</code>, then <code>include</code>, which extends a combination or adds a new one.",
+    "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+    "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 111,
+   "progress": 0.9491
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>needs</code> orders jobs; a job that needs a failed or skipped job is skipped unless its own <code>if</code> says otherwise.",
+    "A job skipped by its <code>if</code> reports success; a workflow that never starts reports nothing.",
+    "A matrix is the Cartesian product, minus <code>exclude</code>, then <code>include</code>, which extends a combination or adds a new one.",
+    "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+    "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 112,
+   "progress": 0.9553
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>needs</code> orders jobs; a job that needs a failed or skipped job is skipped unless its own <code>if</code> says otherwise.",
+    "A job skipped by its <code>if</code> reports success; a workflow that never starts reports nothing.",
+    "A matrix is the Cartesian product, minus <code>exclude</code>, then <code>include</code>, which extends a combination or adds a new one.",
+    "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+    "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 113,
+   "progress": 0.9599
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>needs</code> orders jobs; a job that needs a failed or skipped job is skipped unless its own <code>if</code> says otherwise.",
+    "A job skipped by its <code>if</code> reports success; a workflow that never starts reports nothing.",
+    "A matrix is the Cartesian product, minus <code>exclude</code>, then <code>include</code>, which extends a combination or adds a new one.",
+    "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+    "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 114,
+   "progress": 0.9658
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>needs</code> orders jobs; a job that needs a failed or skipped job is skipped unless its own <code>if</code> says otherwise.",
+    "A job skipped by its <code>if</code> reports success; a workflow that never starts reports nothing.",
+    "A matrix is the Cartesian product, minus <code>exclude</code>, then <code>include</code>, which extends a combination or adds a new one.",
+    "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+    "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 115,
+   "progress": 0.9707
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 116,
+   "progress": 0.9781
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 20A.9 to 20A.12 of Chapter 20A.",
+   "section": "HOMEWORK",
+   "n": 117,
+   "progress": 0.9793
+  },
+  {
+   "kind": "keypoint",
+   "body": "You can now say what a cache promises, nothing, and what an artifact promises, the same bytes.",
+   "section": "HOMEWORK",
+   "n": 118,
+   "progress": 0.9845
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Two complaints, and no bug in GitHub. CI is the automated testing that runs on each change, and a dependency is a package your project needs. The first complaint is a cache doing exactly what a cache is defined to do. The second is a team that rebuilt in the deploy job what it had already built and tested in another job. They got a different result, because the dependencies resolved again.",
+   "tele": "Two complaints, and no bug in GitHub. CI is the automated testing that runs on each change, and a dependency is a package your project needs. The first complaint is a cache doing exactly what a cache is defined to do. The second is a team that rebuilt in the deploy job what it had already built and tested in another job. They got a different result, because the dependencies resolved again.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "86d19d72",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Both come from using a cache or an artifact without knowing what each one promises. A cache promises nothing: it may be absent. An artifact promises that the bytes you download are the bytes that were uploaded. This video gives you both definitions, and the rules for ordering and multiplying jobs that you need before either matters. Keep the first complaint in mind. Why would CI keep installing the old version?",
+   "tele": "Both come from using a cache or an artifact without knowing what each one promises. A cache promises nothing: it may be absent. An artifact promises that the bytes you download are the bytes that were uploaded. This video gives you both definitions, and the rules for ordering and multiplying jobs that you need before either matters. Keep the first complaint in mind. Why would CI keep installing the old version?",
+   "words": 71,
+   "est": 28.4,
+   "slide": 4,
+   "line": 16,
+   "t0": 32.3,
+   "h": "ee884a84",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 5,
+   "line": 18,
+   "t0": 60.7,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In GitHub Actions, a workflow is a file that says: when this event happens, run these jobs. A job is a list of steps that run in order on one fresh machine, the runner. You can now read a trigger, an expression and a shell invocation, and you know what the checkout leaves on the runner. This video is about the structure above the steps: how jobs relate to each other.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In GitHub Actions, a workflow is a file that says: when this event happens, run these jobs. A job is a list of steps that run in order on one fresh machine, the runner. You can now read a trigger, an expression and a shell invocation, and you know what the checkout leaves on the runner. This video is about the structure above the steps: how jobs relate to each other.",
+   "words": 83,
+   "est": 33.2,
+   "slide": 6,
+   "line": 20,
+   "t0": 62.2,
+   "h": "59be7174",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Four topics, in the order of sections 20A.9 to 20A.12. Controlling jobs with needs, if, timeout-minutes and continue-on-error, including two rules about skipping that decide whether a pull request can merge. A pull request is GitHub's proposal to merge one branch into another. Matrix strategies, and how to count the jobs of a matrix. Dependency caching: keys, restore order, scope, eviction and trust. And artifacts: what crosses from one job to the next as files.",
+   "tele": "Four topics, in the order of sections 20A.9 to 20A.12. Controlling jobs with `needs`, `if`, `timeout-minutes` and `continue-on-error`, including two rules about skipping that decide whether a pull request can merge. A pull request is GitHub's proposal to merge one branch into another. Matrix strategies, and how to count the jobs of a matrix. Dependency caching: keys, restore order, scope, eviction and trust. And artifacts: what crosses from one job to the next as files.",
+   "words": 75,
+   "est": 30.0,
+   "slide": 7,
+   "line": 22,
+   "t0": 95.4,
+   "h": "067a19b1",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The local demonstration computes a cache key and consumes a simulated artifact. The matrix is yours to run in Lab 26.8.",
+   "tele": "The local demonstration computes a cache key and consumes a simulated artifact. The matrix is yours to run in Lab 26.8.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 8,
+   "line": 24,
+   "t0": 125.4,
+   "h": "02851a70",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 26,
+   "t0": 133.8,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Here's what you'll walk away with.",
+   "tele": "Here's what you'll walk away with.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 10,
+   "line": 28,
+   "t0": 135.3,
+   "h": "1e7bc081",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 11,
+   "line": 30,
+   "t0": 137.7,
+   "h": "152923b5",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "order jobs with needs and predict what if, timeout-minutes and continue-on-error do to the run's result;",
+   "tele": "order jobs with `needs` and predict what `if`, `timeout-minutes` and `continue-on-error` do to the run's result;",
+   "words": 16,
+   "est": 6.4,
+   "slide": 12,
+   "line": 32,
+   "t0": 139.7,
+   "h": "5d86bab1",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "count the jobs of a matrix with include and exclude;",
+   "tele": "count the jobs of a matrix with `include` and `exclude`;",
+   "words": 10,
+   "est": 4.0,
+   "slide": 13,
+   "line": 32,
+   "t0": 146.1,
+   "h": "e7e3096a",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "design a cache key and say what happens on a miss and on a stale hit;",
+   "tele": "design a cache key and say what happens on a miss and on a stale hit;",
+   "words": 16,
+   "est": 6.4,
+   "slide": 14,
+   "line": 32,
+   "t0": 150.1,
+   "h": "d7ec19d1",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+   "tele": "distinguish a cache from an artifact by purpose, scope, lifetime and trust;",
+   "words": 12,
+   "est": 4.8,
+   "slide": 15,
+   "line": 32,
+   "t0": 156.5,
+   "h": "3bccec95",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "carry one build from a build job to a later job.",
+   "tele": "carry one build from a build job to a later job.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 16,
+   "line": 32,
+   "t0": 161.3,
+   "h": "c20f293f",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 17,
+   "line": 38,
+   "t0": 165.7,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Controlling jobs. In one sentence: needs orders jobs and carries their results, if decides whether a job or step runs, timeout-minutes bounds how long it may run, and continue-on-error lets a failure pass without failing what contains it.",
+   "tele": "Controlling jobs. In one sentence: `needs` orders jobs and carries their results, `if` decides whether a job or step runs, `timeout-minutes` bounds how long it may run, and `continue-on-error` lets a failure pass without failing what contains it.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 18,
+   "line": 42,
+   "t0": 167.2,
+   "h": "12c84134",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "needs, at job level: the job waits for the listed jobs. If one of them fails or is skipped, this job is skipped, unless its if says otherwise. Without needs, jobs run in parallel.",
+   "tele": "`needs`, at job level: the job waits for the listed jobs. If one of them fails or is skipped, this job is skipped, unless its `if` says otherwise. Without `needs`, jobs run in parallel.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 19,
+   "line": 48,
+   "t0": 182.4,
+   "h": "aa0e141c",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "if, at job or step level: the job or step runs when the expression is truthy, meaning it counts as true. An expression is a formula that GitHub Actions replaces with its value. An if without a status function behaves as if success() and a logical \"and\" were in front of it. So the default is success().",
+   "tele": "`if`, at job or step level: the job or step runs when the expression is truthy, meaning it counts as true. An expression is a formula that GitHub Actions replaces with its value. An `if` without a status function behaves as if `success()` and a logical \"and\" were in front of it. So the default is `success()`.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 20,
+   "line": 52,
+   "t0": 196.0,
+   "h": "adb8cc25",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "timeout-minutes: the job or step is cancelled after that many minutes. The default for a job is 360.",
+   "tele": "`timeout-minutes`: the job or step is cancelled after that many minutes. The default for a job is 360.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 21,
+   "line": 54,
+   "t0": 218.8,
+   "h": "6f9ace5b",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "continue-on-error: a failure doesn't fail the job, at step level, or the run, at job level.",
+   "tele": "`continue-on-error`: a failure doesn't fail the job, at step level, or the run, at job level.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 22,
+   "line": 56,
+   "t0": 226.0,
+   "h": "48e4353b",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The status functions change the implicit success(). failure() is true when an earlier step or needed job failed. always() is true even when the run was cancelled. cancelled() is true on cancellation. The expressions page advises against always() for anything that could fail critically and recommends !cancelled() for \"run whether or not the earlier steps passed\". You saw that form in the lint workflow.",
+   "tele": "The status functions change the implicit `success()`. `failure()` is true when an earlier step or needed job failed. `always()` is true even when the run was cancelled. `cancelled()` is true on cancellation. The expressions page advises against `always()` for anything that could fail critically and recommends `!cancelled()` for \"run whether or not the earlier steps passed\". You saw that form in the lint workflow.",
+   "words": 64,
+   "est": 25.6,
+   "slide": 23,
+   "line": 60,
+   "t0": 232.4,
+   "h": "1b06119b",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.03,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.25,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.37,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "continue-on-error at step level splits a step's result in two. The outcome is the result before the setting is applied. The conclusion is the result after. A failed step with the setting has outcome failure and conclusion success.",
+   "tele": "`continue-on-error` at step level splits a step's result in two. The `outcome` is the result before the setting is applied. The `conclusion` is the result after. A failed step with the setting has outcome `failure` and conclusion `success`.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 24,
+   "line": 66,
+   "t0": 258.0,
+   "h": "79b1ba22",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.5,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.75,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Quick quiz. A required check is a check that a rule says must pass before a pull request can merge. Suppose that job gets skipped by its own if. Does the check A, block the pull request, or B, count as passed? Your answer?",
+   "tele": "Quick quiz. A required check is a check that a rule says must pass before a pull request can merge. Suppose that job gets skipped by its own `if`. Does the check A, block the pull request, or B, count as passed? Your answer?",
+   "words": 44,
+   "est": 17.6,
+   "slide": 25,
+   "line": 70,
+   "t0": 273.2,
+   "h": "ea26dbda",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 25,
+   "line": 72,
+   "t0": 290.8,
+   "h": "",
+   "anim": {
+    "group": 18,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "B, and most people say A the first time. There are two rules about skipping. They decide whether a pull request can merge, and they point in opposite directions.",
+   "tele": "B, and most people say A the first time. There are two rules about skipping. They decide whether a pull request can merge, and they point in opposite directions.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 26,
+   "line": 74,
+   "t0": 295.3,
+   "h": "6a0d52e4",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A job skipped by its if reports success for its check. So a required check is satisfied.",
+   "tele": "A job skipped by its `if` reports success for its check. So a required check is satisfied.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 27,
+   "line": 82,
+   "t0": 306.9,
+   "h": "28b947d8",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A workflow that never starts, because of a path or branch filter or a skip instruction, reports nothing. So a required check stays pending.",
+   "tele": "A workflow that never starts, because of a path or branch filter or a skip instruction, reports nothing. So a required check stays pending.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 28,
+   "line": 86,
+   "t0": 313.7,
+   "h": "bc08d25c",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The textbook's summary: they make if on a job a way to bypass a required check by accident, and paths on a workflow a way to block every unrelated pull request.",
+   "tele": "The textbook's summary: they make `if` on a job a way to bypass a required check by accident, and `paths` on a workflow a way to block every unrelated pull request.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 29,
+   "line": 90,
+   "t0": 323.3,
+   "h": "139c33dc",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "if on a job: a bypass by accident. paths on a workflow: blocks unrelated pull requests"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And one instruction for production: set timeout-minutes on every job. The default of 360 minutes is also the hard limit for a GitHub-hosted job, so a test that hangs on a network call bills six hours unless you say otherwise. The course workflows use 5 to 20 minutes.",
+   "tele": "And one instruction for production: set `timeout-minutes` on every job. The default of 360 minutes is also the hard limit for a GitHub-hosted job, so a test that hangs on a network call bills six hours unless you say otherwise. The course workflows use 5 to 20 minutes.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 30,
+   "line": 94,
+   "t0": 335.7,
+   "h": "85f7eeec",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Matrix. In one sentence: a matrix turns one job definition into one job per combination of the values you list, each with its own runner and its own matrix context.",
+   "tele": "Matrix. In one sentence: a matrix turns one job definition into one job per combination of the values you list, each with its own runner and its own `matrix` context.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 31,
+   "line": 96,
+   "t0": 354.9,
+   "h": "222ef5c6",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "strategy.matrix maps variable names to lists, and the jobs are the Cartesian product: every combination of one value from each list. Then:",
+   "tele": "`strategy.matrix` maps variable names to lists, and the jobs are the Cartesian product: every combination of one value from each list. Then:",
+   "words": 22,
+   "est": 8.8,
+   "slide": 32,
+   "line": 98,
+   "t0": 366.9,
+   "h": "919a278d",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "exclude removes combinations, and a partial match is enough.",
+   "tele": "`exclude` removes combinations, and a partial match is enough.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 33,
+   "line": 100,
+   "t0": 375.7,
+   "h": "a360753b",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "include is processed after exclude. An entry is added to every existing combination it can extend without overwriting an original matrix value. If it would overwrite one, it becomes a new combination of its own.",
+   "tele": "`include` is processed after `exclude`. An entry is added to every existing combination it can extend without overwriting an original matrix value. If it would overwrite one, it becomes a new combination of its own.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 34,
+   "line": 102,
+   "t0": 379.3,
+   "h": "085ccb99",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "fail-fast defaults to true: when one matrix job fails, the in-progress and queued ones are cancelled. max-parallel caps how many run at once.",
+   "tele": "`fail-fast` defaults to true: when one matrix job fails, the in-progress and queued ones are cancelled. `max-parallel` caps how many run at once.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 35,
+   "line": 104,
+   "t0": 393.3,
+   "h": "9a1b04ff",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A run may generate at most 256 matrix jobs.",
+   "tele": "A run may generate at most 256 matrix jobs.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 36,
+   "line": 106,
+   "t0": 402.5,
+   "h": "cb2d9ace",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A job-level if is evaluated before the matrix is expanded, so it can't read matrix.",
+   "tele": "A job-level `if` is evaluated before the matrix is expanded, so it can't read `matrix`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 37,
+   "line": 108,
+   "t0": 406.1,
+   "h": "0a802eed",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And outputs of matrix jobs are merged into one set, and the last writer wins, in no guaranteed order.",
+   "tele": "And outputs of matrix jobs are merged into one set, and the last writer wins, in no guaranteed order.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 38,
+   "line": 110,
+   "t0": 412.1,
+   "h": "d316f342",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Try it now, on paper. Thirty seconds. Workflow 10 lists two operating systems and three Python versions. It excludes one combination, and it includes one entry with a fourth Python version. Draw the grid and count the jobs.",
+   "tele": "Try it now, on paper. Thirty seconds. Workflow 10 lists two operating systems and three Python versions. It excludes one combination, and it includes one entry with a fourth Python version. Draw the grid and count the jobs.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 39,
+   "line": 112,
+   "t0": 419.7,
+   "h": "5cd2556f",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 39,
+   "line": 114,
+   "t0": 434.9,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 41,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Six. Two times three is six cells. One is excluded, which leaves five. The included entry would overwrite an original value, so it becomes a new combination of its own: six again.",
+   "tele": "Six. Two times three is six cells. One is excluded, which leaves five. The included entry would overwrite an original value, so it becomes a new combination of its own: six again.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 40,
+   "line": 120,
+   "t0": 436.9,
+   "h": "db52d0d6",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.05,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Caching. In one sentence: a cache stores a directory under a key so that a later run with the same key can restore it and skip the download. It's an optimization that may be absent, never a place to keep something you need.",
+   "tele": "Caching. In one sentence: a cache stores a directory under a key so that a later run with the same key can restore it and skip the download. It's an optimization that may be absent, never a place to keep something you need.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 41,
+   "line": 126,
+   "t0": 449.7,
+   "h": "66a75ee7",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The key: at most 512 characters, usually built from the operating system and hashFiles of a lock file. A lock file pins each dependency to one exact version, and a hash is a fingerprint computed from content. An existing key is never overwritten. The documentation: \"You cannot change the contents of an existing cache.\"",
+   "tele": "The key: at most 512 characters, usually built from the operating system and `hashFiles` of a lock file. A lock file pins each dependency to one exact version, and a hash is a fingerprint computed from content. An existing key is never overwritten. The documentation: \"You cannot change the contents of an existing cache.\"",
+   "words": 54,
+   "est": 21.6,
+   "slide": 41,
+   "line": 128,
+   "t0": 466.9,
+   "h": "3db0dbba",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The restore order. First the exact key. Then entries whose key starts with the key. Then each restore-keys prefix in order, the most recently created match winning.",
+   "tele": "The restore order. First the exact key. Then entries whose key starts with the key. Then each `restore-keys` prefix in order, the most recently created match winning.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 42,
+   "line": 134,
+   "t0": 488.5,
+   "h": "fd1b871d",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.35,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Saving: on a miss, the cache is saved at the end of the job, and only if the job completes successfully.",
+   "tele": "Saving: on a miss, the cache is saved at the end of the job, and only if the job completes successfully.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 43,
+   "line": 138,
+   "t0": 499.3,
+   "h": "7f9c3ceb",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The cache-hit output: true only for an exact match on the primary key. False when a restore key matched, or nothing was restored.",
+   "tele": "The `cache-hit` output: true only for an exact match on the primary key. False when a restore key matched, or nothing was restored.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 44,
+   "line": 142,
+   "t0": 507.7,
+   "h": "0a23ae6b",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 5,
+      "to": 5,
+      "says": [
+       "cache-hit is true only for an exact match on the primary key"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Scope: a run can restore caches created on its own branch or on the default branch. A pull request run can also restore from its base branch. Sibling branches can't read each other's caches. A cache saved by a pull request run belongs to the merge ref, GitHub's test merge of that pull request, and is restorable only by re-runs of that pull request.",
+   "tele": "Scope: a run can restore caches created on its own branch or on the default branch. A pull request run can also restore from its base branch. Sibling branches can't read each other's caches. A cache saved by a pull request run belongs to the merge ref, GitHub's test merge of that pull request, and is restorable only by re-runs of that pull request.",
+   "words": 64,
+   "est": 25.6,
+   "slide": 45,
+   "line": 146,
+   "t0": 516.9,
+   "h": "78c44262",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.03,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.14,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.28,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Eviction: entries not accessed for seven days are removed. A repository gets ten gigabytes without charge. Above the limit the least recently used entries are deleted. Administrators can raise the limit, billed, since the twentieth of November 2025.",
+   "tele": "Eviction: entries not accessed for seven days are removed. A repository gets ten gigabytes without charge. Above the limit the least recently used entries are deleted. Administrators can raise the limit, billed, since the twentieth of November 2025.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 46,
+   "line": 152,
+   "t0": 542.5,
+   "h": "0c66f844",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.05,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Trust: anyone who can open a pull request can read caches of the base branch, and cache contents aren't signed. Since the twenty-sixth of June 2026, events that people without write access can cause get a read-only token for the default branch's caches. And since the tenth of September 2026 the cache-mode key states the access explicitly, with the values read, write, write-only and none. Cache poisoning is a topic of Part 7.",
+   "tele": "Trust: anyone who can open a pull request can read caches of the base branch, and cache contents aren't signed. Since the twenty-sixth of June 2026, events that people without write access can cause get a read-only token for the default branch's caches. And since the tenth of September 2026 the `cache-mode` key states the access explicitly, with the values `read`, `write`, `write-only` and `none`. Cache poisoning is a topic of Part 7.",
+   "words": 73,
+   "est": 29.2,
+   "slide": 47,
+   "line": 156,
+   "t0": 557.7,
+   "h": "23978cfb",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.03,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Most projects never write a cache block, because the setup actions, packaged steps, contain it. actions/setup-java with cache: maven stores the Maven repository under a key that hashes the POM files by default. astral-sh/setup-uv has enable-cache with the default auto: enabled on GitHub-hosted runners except for release, tag push, pull_request_target and workflow_run events.",
+   "tele": "Most projects never write a cache block, because the setup actions, packaged steps, contain it. `actions/setup-java` with `cache: maven` stores the Maven repository under a key that hashes the POM files by default. `astral-sh/setup-uv` has `enable-cache` with the default `auto`: enabled on GitHub-hosted runners except for release, tag push, `pull_request_target` and `workflow_run` events.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 48,
+   "line": 160,
+   "t0": 586.9,
+   "h": "a12ef387",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Artifacts. In one sentence: an artifact is a set of files that a job uploads to GitHub, where it's stored with the run, can be downloaded by later jobs or by people, and expires after a retention period.",
+   "tele": "Artifacts. In one sentence: an artifact is a set of files that a job uploads to GitHub, where it's stored with the run, can be downloaded by later jobs or by people, and expires after a retention period.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 49,
+   "line": 162,
+   "t0": 608.1,
+   "h": "d99368f0",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Immutability: an artifact can't be changed after upload. A second upload with the same name in one run fails unless overwrite is true.",
+   "tele": "Immutability: an artifact can't be changed after upload. A second upload with the same name in one run fails unless `overwrite` is true.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 50,
+   "line": 166,
+   "t0": 623.3,
+   "h": "9f51ccf0",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Availability: downloadable by a later job of the same run as soon as the upload step ends.",
+   "tele": "Availability: downloadable by a later job of the same run as soon as the upload step ends.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 51,
+   "line": 168,
+   "t0": 632.5,
+   "h": "098bd99f",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": {
+       "shown": 1
+      },
+      "to": {
+       "shown": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Retention: 90 days by default. retention-days goes from 1 to 90, never above the repository or organization setting. Since the first of October 2026 the same setting also deletes checks, workflow runs and commit statuses.",
+   "tele": "Retention: 90 days by default. `retention-days` goes from 1 to 90, never above the repository or organization setting. Since the first of October 2026 the same setting also deletes checks, workflow runs and commit statuses.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 52,
+   "line": 170,
+   "t0": 639.3,
+   "h": "7fa348da",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": {
+       "shown": 2
+      },
+      "to": {
+       "shown": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Limits: 500 artifacts per job. Hidden files are excluded unless you include them explicitly.",
+   "tele": "Limits: 500 artifacts per job. Hidden files are excluded unless you include them explicitly.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 53,
+   "line": 172,
+   "t0": 653.3,
+   "h": "fd7951c9",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Permissions: zipped uploads don't keep file permissions. If the executable bit matters, tar the files first.",
+   "tele": "Permissions: zipped uploads don't keep file permissions. If the executable bit matters, tar the files first.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 54,
+   "line": 174,
+   "t0": 658.9,
+   "h": "5ba8e91e",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": {
+       "shown": 1
+      },
+      "to": {
+       "shown": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Outputs: an artifact ID, a URL, and a SHA-256 digest, a fingerprint of the uploaded bytes.",
+   "tele": "Outputs: an artifact ID, a URL, and a SHA-256 digest, a fingerprint of the uploaded bytes.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 55,
+   "line": 176,
+   "t0": 665.3,
+   "h": "88e5cfd9",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": {
+       "shown": 2
+      },
+      "to": {
+       "shown": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Download: by name into a path. Version 8 fails on a digest mismatch by default.",
+   "tele": "Download: by name into a path. Version 8 fails on a digest mismatch by default.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 56,
+   "line": 178,
+   "t0": 671.7,
+   "h": "c50a3d2c",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": {
+       "shown": 3
+      },
+      "to": {
+       "shown": 4
+      },
+      "dissolve": true
+     },
+     {
+      "at": 0.7,
+      "fx": "table",
+      "from": {
+       "shown": 4
+      },
+      "to": {
+       "shown": 5
+      },
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 57,
+   "line": 180,
+   "t0": 677.7,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A picture helps.",
+   "tele": "A picture helps.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 58,
+   "line": 182,
+   "t0": 679.2,
+   "h": "7abe7590",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Analogy, from the textbook. A cache is the shared fridge at work with labelled boxes. If a box with your label is there, lunch is quick. If it was cleared out, you cook again. You don't keep your passport in it, and you don't eat from a box whose label you didn't write.",
+   "tele": "Analogy, from the textbook. A cache is the shared fridge at work with labelled boxes. If a box with your label is there, lunch is quick. If it was cleared out, you cook again. You don't keep your passport in it, and you don't eat from a box whose label you didn't write.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 59,
+   "line": 184,
+   "t0": 680.4,
+   "h": "1ce02fcb",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook says where it holds and where it breaks. It holds for eviction and for trust. It breaks on mutability, because a cache entry can never be changed once saved. The fridge box can be refilled. A cache key can't.",
+   "tele": "The textbook says where it holds and where it breaks. It holds for eviction and for trust. It breaks on mutability, because a cache entry can never be changed once saved. The fridge box can be refilled. A cache key can't.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 60,
+   "line": 186,
+   "t0": 701.6,
+   "h": "8dab3cd8",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "That immutability is the mechanism behind the first complaint from the opening. If the key doesn't change when the dependencies change, the old box keeps being found.",
+   "tele": "That immutability is the mechanism behind the first complaint from the opening. If the key doesn't change when the dependencies change, the old box keeps being found.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 61,
+   "line": 188,
+   "t0": 718.0,
+   "h": "9bc9fb61",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Then the documentation's rule for choosing between the two: a cache for files that are reused between runs and can be recreated, such as dependencies. An artifact for files a job produced that must be passed to another job or kept after the run, such as build outputs and test reports.",
+   "tele": "Then the documentation's rule for choosing between the two: a cache for files that are reused between runs and can be recreated, such as dependencies. An artifact for files a job produced that must be passed to another job or kept after the run, such as build outputs and test reports.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 62,
+   "line": 194,
+   "t0": 728.8,
+   "h": "06e12fb2",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.15,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.55,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "And the reason behind that rule, which the textbook sets in bold: the files that were tested are the files that are deployed. A rebuild in a second job resolves dependencies again, possibly to different versions.",
+   "tele": "And the reason behind that rule, which the textbook sets in bold: the files that were tested are the files that are deployed. A rebuild in a second job resolves dependencies again, possibly to different versions.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 63,
+   "line": 198,
+   "t0": 749.2,
+   "h": "a75799b9",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "So when you see data moving between jobs, ask: is this something I could lose without consequence? Then it's a cache. Is this the thing itself? Then it's an artifact.",
+   "tele": "So when you see data moving between jobs, ask: is this something I could lose without consequence? Then it's a cache. Is this the thing itself? Then it's an artifact.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 64,
+   "line": 202,
+   "t0": 763.6,
+   "h": "b8bb50cc",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 65,
+   "line": 204,
+   "t0": 775.6,
+   "h": "",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Check your paper against the grid. Six cells, one crossed out, and one new combination outside the grid: six jobs, one of them experimental.",
+   "tele": "Check your paper against the grid. Six cells, one crossed out, and one new combination outside the grid: six jobs, one of them experimental.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 66,
+   "line": 223,
+   "t0": 777.1,
+   "h": "cd7d0ff7",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "And outside the grid, the last job of the workflow: \"All matrix tests\".",
+   "tele": "And outside the grid, the last job of the workflow: \"All matrix tests\".",
+   "words": 13,
+   "est": 5.2,
+   "slide": 67,
+   "line": 227,
+   "t0": 786.7,
+   "h": "40d3403b",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "It needs test, and it has if: always(). That one fixed name is what a ruleset requires.",
+   "tele": "It needs `test`, and it has `if: always()`. That one fixed name is what a ruleset requires.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 68,
+   "line": 233,
+   "t0": 791.9,
+   "h": "38c468ab",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.15,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "visual",
+   "hold": 6.4,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 6.4,
+   "slide": 69,
+   "line": null,
+   "t0": 798.7,
+   "h": "",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 70,
+   "line": 239,
+   "t0": 805.1,
+   "h": "",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Into the lab.",
+   "tele": "Into the lab.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 71,
+   "line": 241,
+   "t0": 806.6,
+   "h": "4085916c",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 1: a key from the lock file.",
+   "tele": "Step 1: a key from the lock file.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 72,
+   "line": 245,
+   "t0": 807.8,
+   "h": "4e80a7af",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.24,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A small lock file with one package at one version, and the first sixteen characters of its hash.",
+   "tele": "A small lock file with one package at one version, and the first sixteen characters of its hash.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 73,
+   "line": 271,
+   "t0": 811.0,
+   "h": "a1c1ca48",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 2: two commits.",
+   "tele": "Step 2: two commits.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 74,
+   "line": 273,
+   "t0": 818.2,
+   "h": "17492bb4",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git commit adds an object and moves the branch. The first commit changes only the README. The second changes the version in the lock file.",
+   "tele": "`git commit` adds an object and moves the branch. The first commit changes only the README. The second changes the version in the lock file.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 75,
+   "line": 282,
+   "t0": 819.8,
+   "h": "26e0b305",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "You've seen the README commit leave the hash alone. Now the lock file itself changes. What happens to the hash, and what does that mean for the cache on the next run? Say it out loud.",
+   "tele": "You've seen the README commit leave the hash alone. Now the lock file itself changes. What happens to the hash, and what does that mean for the cache on the next run? Say it out loud.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 75,
+   "line": 284,
+   "t0": 829.8,
+   "h": "9ab25905",
+   "anim": {
+    "group": 58,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 75,
+   "line": 286,
+   "t0": 844.2,
+   "h": "",
+   "anim": {
+    "group": 58,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 80,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 76,
+   "line": null,
+   "t0": 848.7,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After the README commit: the same hash. Same key, cache hit.",
+   "tele": "After the README commit: the same hash. Same key, cache hit.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 77,
+   "line": 305,
+   "t0": 853.7,
+   "h": "0287475a",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After the dependency update: a new hash. New key, cache miss, the dependencies are downloaded, and a new cache is saved after the job, if the job succeeds.",
+   "tele": "After the dependency update: a new hash. New key, cache miss, the dependencies are downloaded, and a new cache is saved after the job, if the job succeeds.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 78,
+   "line": 309,
+   "t0": 858.1,
+   "h": "1d313d8d",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now turn it around. If the key had been built without the lock file, both commits would have hit the old entry. That's the stale hit of the root-cause box, and the first complaint from the opening, explained.",
+   "tele": "Now turn it around. If the key had been built without the lock file, both commits would have hit the old entry. That's the stale hit of the root-cause box, and the first complaint from the opening, explained.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 79,
+   "line": 313,
+   "t0": 869.3,
+   "h": "5544c8a4",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 3: consuming an artifact. Replay labs/run ch20a/lab-26-7-artifact. The sample project has a deployment script that simulates a deployment and changes nothing anywhere.",
+   "tele": "Step 3: consuming an artifact. Replay `labs/run ch20a/lab-26-7-artifact`. The sample project has a deployment script that simulates a deployment and changes nothing anywhere.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 80,
+   "line": 315,
+   "t0": 884.5,
+   "h": "f0ad2919",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The two empty files stand in for the build outputs that a download step would place in dist.",
+   "tele": "The two empty files stand in for the build outputs that a download step would place in `dist`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 81,
+   "line": 323,
+   "t0": 893.7,
+   "h": "7ede389b",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The script names the environment, the target, the commit and ref, which are \"unknown\" and \"local\" outside a runner, and the two files it would deploy. Exit status 0.",
+   "tele": "The script names the environment, the target, the commit and ref, which are \"unknown\" and \"local\" outside a runner, and the two files it would deploy. Exit status 0.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 82,
+   "line": 343,
+   "t0": 900.9,
+   "h": "72fa8144",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 4: when the artifact did not arrive.",
+   "tele": "Step 4: when the artifact did not arrive.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 83,
+   "line": 345,
+   "t0": 912.5,
+   "h": "7d9c1ee5",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "An empty directory, then a misspelled environment name. What should a deployment script do in each case, and what would a careless one do? Make your prediction.",
+   "tele": "An empty directory, then a misspelled environment name. What should a deployment script do in each case, and what would a careless one do? Make your prediction.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 84,
+   "line": 353,
+   "t0": 915.7,
+   "h": "1d94c9ae",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 84,
+   "line": 355,
+   "t0": 926.5,
+   "h": "",
+   "anim": {
+    "group": 66,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 90,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Exit status 1 for \"no build outputs\", exit status 2 for the unknown environment. The script refuses. A careless one would report success on an empty directory, and the run would be green with nothing deployed. Whatever consumes an artifact must check that it arrived.",
+   "tele": "Exit status 1 for \"no build outputs\", exit status 2 for the unknown environment. The script refuses. A careless one would report success on an empty directory, and the run would be green with nothing deployed. Whatever consumes an artifact must check that it arrived.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 85,
+   "line": 376,
+   "t0": 931.0,
+   "h": "b922698f",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 86,
+   "line": null,
+   "t0": 949.0,
+   "h": "",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read the test job. The name is built from the matrix values. runs-on takes the operating system from the matrix. continue-on-error takes its value from matrix.experimental, so it's true only for one job. fail-fast is false, so one failing combination doesn't cancel the others.",
+   "tele": "Read the `test` job. The name is built from the matrix values. `runs-on` takes the operating system from the matrix. `continue-on-error` takes its value from `matrix.experimental`, so it's true only for one job. `fail-fast` is false, so one failing combination doesn't cancel the others.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 87,
+   "line": 382,
+   "t0": 954.0,
+   "h": "5d2f0648",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.16,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Then the all-tests job. if: always() makes it run even when a matrix job failed. Why is that necessary? Because a job that needs a failed job is skipped, and a skipped job reports success, which would satisfy the required check. With always() the job runs, and then fails unless the result of test is success.",
+   "tele": "Then the `all-tests` job. `if: always()` makes it run even when a matrix job failed. Why is that necessary? Because a job that needs a failed job is skipped, and a skipped job reports success, which would satisfy the required check. With `always()` the job runs, and then fails unless the result of `test` is `success`.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 88,
+   "line": 386,
+   "t0": 971.6,
+   "h": "79fcf20b",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "all-tests needs test, and runs with if: always()"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now Lab 26.8 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. Before you open the run, write the list of jobs on paper: operating system, Python version, experimental or not, and the name each will show. Then open the pull request's checks and the run, and count. Find the aggregate job by its fixed name.",
+   "tele": "Now Lab 26.8 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. Before you open the run, write the list of jobs on paper: operating system, Python version, experimental or not, and the name each will show. Then open the pull request's checks and the run, and count. Find the aggregate job by its fixed name.",
+   "words": 77,
+   "est": 30.8,
+   "slide": 89,
+   "line": 392,
+   "t0": 994.0,
+   "h": "bfddb472",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 90,
+   "line": 394,
+   "t0": 1024.8,
+   "h": "",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 91,
+   "line": 396,
+   "t0": 1026.3,
+   "h": "76698d9b",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 97,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "A cache key without the lock file's hash, or with a broad restore key. Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+   "tele": "A cache key without the lock file's hash, or with a broad restore key. Root cause: caches are immutable per key and restore keys match by prefix, so an old entry keeps being restored.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 92,
+   "line": 398,
+   "t0": 1028.3,
+   "h": "05d73524",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 98,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Rebuilding in the deploy job. Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+   "tele": "Rebuilding in the deploy job. Root cause: a second build resolves dependencies again, so the deployed files are not the tested files; pass the build as an artifact.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 93,
+   "line": 398,
+   "t0": 1041.9,
+   "h": "73a443a4",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 99,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "An if on a job that is a required check. Root cause: a job skipped by its if reports success for its check.",
+   "tele": "An `if` on a job that is a required check. Root cause: a job skipped by its `if` reports success for its check.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 94,
+   "line": 398,
+   "t0": 1053.1,
+   "h": "ae7c4f65",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 100,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "No timeout-minutes. Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+   "tele": "No `timeout-minutes`. Root cause: the default of 360 minutes is also the hard limit for a GitHub-hosted job, so a hanging test bills six hours.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 95,
+   "line": 398,
+   "t0": 1062.3,
+   "h": "ae2971be",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 101,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Requiring the individual matrix jobs in a ruleset. Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name.",
+   "tele": "Requiring the individual matrix jobs in a ruleset. Root cause: their set and names change when the matrix changes; require one aggregate job with a fixed name.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 96,
+   "line": 398,
+   "t0": 1072.3,
+   "h": "74fb5c11",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 102,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 97,
+   "line": 404,
+   "t0": 1083.1,
+   "h": "",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 103,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. The textbook's instruction for an ML team: cache package downloads and small test models, never multi-gigabyte checkpoints.",
+   "tele": "Now, out of the lab. The textbook's instruction for an ML team: cache package downloads and small test models, never multi-gigabyte checkpoints.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 98,
+   "line": 406,
+   "t0": 1084.6,
+   "h": "1de7780e",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 104,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Here's how that goes wrong. A team that evaluates language models caches a model checkpoint of several gigabytes \"to make the evaluation job faster\". It works. A week later every other job in the repository is slow. The ten gigabytes per repository are shared by all branches, the checkpoint filled most of them, and above the limit the least recently used entries are deleted. The model cache evicted the dependency caches that made CI fast.",
+   "tele": "Here's how that goes wrong. A team that evaluates language models caches a model checkpoint of several gigabytes \"to make the evaluation job faster\". It works. A week later every other job in the repository is slow. The ten gigabytes per repository are shared by all branches, the checkpoint filled most of them, and above the limit the least recently used entries are deleted. The model cache evicted the dependency caches that made CI fast.",
+   "words": 75,
+   "est": 30.0,
+   "slide": 99,
+   "line": 408,
+   "t0": 1093.4,
+   "h": "7e48dd4a",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 105,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The decision is the one from the mental model. Can the checkpoint be lost without consequence? It can be downloaded again, so it's cache material in principle, but its size makes it the wrong tenant for a shared ten gigabytes. And for upload of reports from that evaluation, the textbook adds two rules.",
+   "tele": "The decision is the one from the mental model. Can the checkpoint be lost without consequence? It can be downloaded again, so it's cache material in principle, but its size makes it the wrong tenant for a shared ten gigabytes. And for upload of reports from that evaluation, the textbook adds two rules.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 100,
+   "line": 410,
+   "t0": 1123.4,
+   "h": "32448234",
+   "anim": {
+    "group": 77,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 106,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Upload test reports with if: failure() and a short retention. And never upload a directory that may contain credential files or a .git folder with persisted credentials, because an artifact is a copy of those files that outlives the job.",
+   "tele": "Upload test reports with `if: failure()` and a short retention. And never upload a directory that may contain credential files or a `.git` folder with persisted credentials, because an artifact is a copy of those files that outlives the job.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 101,
+   "line": 410,
+   "t0": 1144.6,
+   "h": "cc872a8b",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 107,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 102,
+   "line": 412,
+   "t0": 1160.6,
+   "h": "",
+   "anim": {
+    "group": 79,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 108,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 26.4, \"Workflow 4, Python tests with uv and caching\", in lab-manual/m26-actions-fundamentals.md, in your normal shell.",
+   "tele": "Your turn. Do Lab 26.4, \"Workflow 4, Python tests with uv and caching\", in `lab-manual/m26-actions-fundamentals.md`, in your normal shell.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 103,
+   "line": 414,
+   "t0": 1162.1,
+   "h": "15defaef",
+   "anim": {
+    "group": 80,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 109,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before each run, predict whether the cache will be hit or missed, and say which file decides. After a change to the lock file, predict again.",
+   "tele": "Before each run, predict whether the cache will be hit or missed, and say which file decides. After a change to the lock file, predict again.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 104,
+   "line": 416,
+   "t0": 1169.7,
+   "h": "e2644cf2",
+   "anim": {
+    "group": 81,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 110,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 26.6, \"Caches and artifacts\", in exercises/m26-m31-actions-security.md.",
+   "tele": "The challenge is Exercise 26.6, \"Caches and artifacts\", in `exercises/m26-m31-actions-security.md`.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 105,
+   "line": 418,
+   "t0": 1180.1,
+   "h": "1eb1ae6b",
+   "anim": {
+    "group": 82,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 111,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 106,
+   "line": 420,
+   "t0": 1184.1,
+   "h": "",
+   "anim": {
+    "group": 83,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 112,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 107,
+   "line": 424,
+   "t0": 1185.6,
+   "h": "",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 113,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud. A strong answer takes the four words in the question as four rows and fills both columns for each, with the facts from this video. For trust, it says who can read and who can write each. Then it answers the last sentence with a reason, not only a choice. The follow-up is the first line of the hook: a lock file upgraded and CI still installing the old version. Explain the mechanism from immutability and prefix matching, and give the fix and the prevention.",
+   "tele": "Answer out loud. A strong answer takes the four words in the question as four rows and fills both columns for each, with the facts from this video. For trust, it says who can read and who can write each. Then it answers the last sentence with a reason, not only a choice. The follow-up is the first line of the hook: a lock file upgraded and CI still installing the old version. Explain the mechanism from immutability and prefix matching, and give the fix and the prevention.",
+   "words": 88,
+   "est": 35.2,
+   "slide": 107,
+   "line": 426,
+   "t0": 1187.6,
+   "h": "072745e1",
+   "anim": {
+    "group": 84,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 114,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 108,
+   "line": 428,
+   "t0": 1222.8,
+   "h": "",
+   "anim": {
+    "group": 85,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 115,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this.",
+   "tele": "Let's land this.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 109,
+   "line": 430,
+   "t0": 1224.3,
+   "h": "8e062241",
+   "anim": {
+    "group": 86,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 116,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 110,
+   "line": 432,
+   "t0": 1225.5,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 117,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "needs orders jobs; a job that needs a failed or skipped job is skipped unless its own if says otherwise.",
+   "tele": "`needs` orders jobs; a job that needs a failed or skipped job is skipped unless its own `if` says otherwise.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 111,
+   "line": 434,
+   "t0": 1228.3,
+   "h": "2ce91bf2",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 118,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A job skipped by its if reports success; a workflow that never starts reports nothing.",
+   "tele": "A job skipped by its `if` reports success; a workflow that never starts reports nothing.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 112,
+   "line": 434,
+   "t0": 1236.3,
+   "h": "e6855934",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 119,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A matrix is the Cartesian product, minus exclude, then include, which extends a combination or adds a new one.",
+   "tele": "A matrix is the Cartesian product, minus `exclude`, then `include`, which extends a combination or adds a new one.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 113,
+   "line": 434,
+   "t0": 1242.3,
+   "h": "7eb3d25a",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 120,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+   "tele": "A cache is an immutable, evictable speed-up keyed by content; a stale key gives stale dependencies.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 114,
+   "line": 434,
+   "t0": 1249.9,
+   "h": "c84272b3",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 121,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested.",
+   "tele": "An artifact is the output of a job, immutable and kept for a retention period: build once, pass the artifact, deploy what was tested.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 115,
+   "line": 434,
+   "t0": 1256.3,
+   "h": "ff96c93a",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 122,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 116,
+   "line": 440,
+   "t0": 1265.9,
+   "h": "",
+   "anim": {
+    "group": 88,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 123,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 20A.9 to 20A.12 of Chapter 20A. Do Lab 26.8, \"Workflow 10, matrix testing\", in lab-manual/m26-actions-fundamentals.md.",
+   "tele": "Read sections 20A.9 to 20A.12 of Chapter 20A. Do Lab 26.8, \"Workflow 10, matrix testing\", in `lab-manual/m26-actions-fundamentals.md`.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 117,
+   "line": 442,
+   "t0": 1267.4,
+   "h": "d8462cbe",
+   "anim": {
+    "group": 89,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 124,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "You can now say what a cache promises, nothing, and what an artifact promises, the same bytes. Run Lab 26.8 and count the jobs yourself. Next time: workflows 1 to 5, line by line. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "You can now say what a cache promises, nothing, and what an artifact promises, the same bytes. Run Lab 26.8 and count the jobs yourself. Next time: workflows 1 to 5, line by line. Until then, look at the state first and type second. See you in the next one.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 118,
+   "line": 444,
+   "t0": 1274.2,
+   "h": "9ab1ac21",
+   "anim": {
+    "group": 90,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1294.2,
+ "narration_words": 3097,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

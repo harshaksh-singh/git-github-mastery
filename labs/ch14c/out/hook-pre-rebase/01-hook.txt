@@ -1,0 +1,20 @@
+$ cat .git/hooks/pre-rebase
+#!/bin/sh
+# pre-rebase <upstream> [<branch>]: <branch> is absent when the current branch is rebased.
+# Refuse to rebase commits that a remote-tracking branch already contains.
+upstream=$1
+branch=${2:-HEAD}
+all=$(git rev-list --count "$upstream..$branch")
+unpublished=$(git rev-list --count "$upstream..$branch" --not --remotes)
+if [ "$all" != "$unpublished" ]; then
+  echo "pre-rebase: $((all - unpublished)) of $all commits are already on a remote." >&2
+  echo "pre-rebase: rebasing them rewrites published history (Chapter 9)." >&2
+  exit 1
+fi
+$ git log --oneline --graph --all
+* eb2bc26 Add README
+| * 6c7937a Add version endpoint
+|/  
+| * 8cd8387 Add health endpoint
+|/  
+* 0443504 Add service skeleton

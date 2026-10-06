@@ -1,0 +1,5481 @@
+{
+ "id": "V053",
+ "version": 22,
+ "title": "What rebase does internally: the state directory, HEAD, and the special refs",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 20,
+ "chapters": [
+  "ch09-rebase.md"
+ ],
+ "script": "video/scripts/V053-what-rebase-does-internally-the-state-directory-head-and-the-special-refs.md",
+ "script_sha1": "595869e39f7fa62f21941e7ca9b0b4f6a582aa3d",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 4,
+   "line": 18
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 8,
+   "line": 26
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 14,
+   "line": 37
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 25,
+   "line": 71
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 29,
+   "line": 87
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 34,
+   "line": 127
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 60,
+   "line": 393
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 67,
+   "line": 405
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 71,
+   "line": 421
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 79,
+   "line": 435
+  },
+  {
+   "name": "RECAP",
+   "beat": 83,
+   "line": 445
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 89,
+   "line": 467
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "What rebase does internally: the state directory, HEAD, and the special refs",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0021
+  },
+  {
+   "kind": "callout",
+   "direction": "`* (no branch, rebasing feat/rerank)`",
+   "code": [
+    "* (no branch, rebasing feat/rerank)"
+   ],
+   "quoted": false,
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0036
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 4,
+   "progress": 0.0476
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 5,
+   "progress": 0.0491
+  },
+  {
+   "kind": "keypoint",
+   "body": "So today's repository has a conflict built in: the second commit of the feature branch changes a line that <code>main</code> has also changed, and Git can't combine the two by itself.",
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0751
+  },
+  {
+   "kind": "keypoint",
+   "body": "Then you leave with <code>--abort</code>, read the reflogs, and take a short look at the older implementation, the apply backend, because you'll meet its messages in old scripts and old answers.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.1084
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 8,
+   "progress": 0.1211
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say where HEAD, the branch ref, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code> point while a rebase is stopped.",
+    "Read the files of <code>.git/rebase-merge</code> to learn what is done and what remains.",
+    "Explain when the branch ref moves, and what that means for commits made during the stop.",
+    "Contrast the merge backend with the apply backend."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.1227
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say where HEAD, the branch ref, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code> point while a rebase is stopped.",
+    "Read the files of <code>.git/rebase-merge</code> to learn what is done and what remains.",
+    "Explain when the branch ref moves, and what that means for commits made during the stop.",
+    "Contrast the merge backend with the apply backend."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1247
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say where HEAD, the branch ref, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code> point while a rebase is stopped.",
+    "Read the files of <code>.git/rebase-merge</code> to learn what is done and what remains.",
+    "Explain when the branch ref moves, and what that means for commits made during the stop.",
+    "Contrast the merge backend with the apply backend."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1309
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say where HEAD, the branch ref, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code> point while a rebase is stopped.",
+    "Read the files of <code>.git/rebase-merge</code> to learn what is done and what remains.",
+    "Explain when the branch ref moves, and what that means for commits made during the stop.",
+    "Contrast the merge backend with the apply backend."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1362
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say where HEAD, the branch ref, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code> point while a rebase is stopped.",
+    "Read the files of <code>.git/rebase-merge</code> to learn what is done and what remains.",
+    "Explain when the branch ref moves, and what that means for commits made during the stop.",
+    "Contrast the merge backend with the apply backend."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1428
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 14,
+   "progress": 0.1461
+  },
+  {
+   "kind": "keypoint",
+   "body": "In one sentence: a rebase is a small interpreter.",
+   "section": "CONCEPT",
+   "n": 15,
+   "progress": 0.1476
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 16,
+   "progress": 0.1649
+  },
+  {
+   "kind": "scene",
+   "direction": "todo: todo=pick:5ee19f0:Add_reranker_skeleton|pick:569e6c9:Fetch_20_candidates_for_the_reranker|pick:ad106e3:Enable_reranking_in_config title=The_todo_list:_one_line_per_commit id=list",
+   "scene": "todo",
+   "params": {
+    "todo": [
+     [
+      "pick",
+      "5ee19f0",
+      "Add reranker skeleton"
+     ],
+     [
+      "pick",
+      "569e6c9",
+      "Fetch 20 candidates for the reranker"
+     ],
+     [
+      "pick",
+      "ad106e3",
+      "Enable reranking in config"
+     ]
+    ],
+    "title": "The todo list: one line per commit",
+    "id": "list"
+   },
+   "steps": [
+    "list"
+   ],
+   "upto": 1,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1764
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.2048
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "base": 2,
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.257
+  },
+  {
+   "kind": "keypoint",
+   "body": "The textbook attaches a version note to those names.",
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.2702
+  },
+  {
+   "kind": "keypoint",
+   "body": "And the failure mode: deleting the state directory by hand.",
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.2978
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 22,
+   "progress": 0.3052
+  },
+  {
+   "kind": "callout",
+   "direction": "\"An interpreter with a program counter. The branch is the last instruction.\"",
+   "quotes": [
+    "An interpreter with a program counter. The branch is the last instruction."
+   ],
+   "quoted": true,
+   "section": "MENTAL MODEL",
+   "n": 23,
+   "progress": 0.3067
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=done:already_executed|git-rebase-todo:still_to_run|msgnum,_end:the_program_counter rows=1:A:pick_5ee19f0|1:A:pick_569e6c9@hl|2:B:pick_ad106e3|3:C:2_of_3@hl|4:B:then:_move_feat/rerank@dim mono=on title=An_interpreter_with_a_program_counter id=interp at_1=10 at_2=22 at_3=34",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "done",
+      "already executed"
+     ],
+     [
+      "git-rebase-todo",
+      "still to run"
+     ],
+     [
+      "msgnum, end",
+      "the program counter"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "pick 5ee19f0"
+     ],
+     [
+      1,
+      "A",
+      "pick 569e6c9",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "pick ad106e3"
+     ],
+     [
+      3,
+      "C",
+      "2 of 3",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "then: move feat/rerank",
+      "dim"
+     ]
+    ],
+    "mono": "on",
+    "title": "An interpreter with a program counter",
+    "id": "interp",
+    "at": {
+     "1": 0.1,
+     "2": 0.22,
+     "3": 0.34
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "MENTAL MODEL",
+   "n": 24,
+   "progress": 0.3269
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=done:already_executed|git-rebase-todo:still_to_run|msgnum,_end:the_program_counter rows=1:A:pick_5ee19f0|1:A:pick_569e6c9@hl|2:B:pick_ad106e3|3:C:2_of_3@hl|4:B:then:_move_feat/rerank@dim mono=on title=An_interpreter_with_a_program_counter id=interp at_1=10 at_2=22 at_3=34",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "done",
+      "already executed"
+     ],
+     [
+      "git-rebase-todo",
+      "still to run"
+     ],
+     [
+      "msgnum, end",
+      "the program counter"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "pick 5ee19f0"
+     ],
+     [
+      1,
+      "A",
+      "pick 569e6c9",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "pick ad106e3"
+     ],
+     [
+      3,
+      "C",
+      "2 of 3",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "then: move feat/rerank",
+      "dim"
+     ]
+    ],
+    "mono": "on",
+    "title": "An interpreter with a program counter",
+    "id": "interp",
+    "at": {
+     "1": 0.1,
+     "2": 0.22,
+     "3": 0.34
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "says": [
+    "Git holds the state in files: it survives a closed terminal and a restart"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 25,
+   "progress": 0.3363
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 26,
+   "progress": 0.3635
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "DIAGRAM",
+   "n": 27,
+   "progress": 0.365
+  },
+  {
+   "kind": "diagram",
+   "direction": "Second picture: what the files of the state directory mean.",
+   "text": "head-name          the ref that will be moved at the end: refs/heads/feat/rerank\norig-head          where that ref pointed when the rebase started\nonto               the commit that the copies are built on\ngit-rebase-todo    the instructions not yet executed, one per line: Git calls this the todo list\ndone               the instructions already executed\nmsgnum, end        the position: instruction 2 of 3\nauthor-script      author name, email and date of the commit being replayed, reused for its copy\nmessage            the commit message that will be reused when you continue\nstopped-sha        the commit at which the rebase stopped\nrewritten-list     \"old ID, new ID\" for each commit copied so far; input for the post-rewrite hook\ninteractive        marker of the merge backend (see the note on \"git status\" below)",
+   "section": "DIAGRAM",
+   "n": 28,
+   "progress": 0.3972
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 29,
+   "progress": 0.4046
+  },
+  {
+   "kind": "terminal",
+   "direction": "`labs/run ch09/rebase-internals`.",
+   "mode": "cmd",
+   "title": "labs/run ch09/rebase-internals",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch09/rebase-internals"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 30,
+   "progress": 0.4061
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/01-before",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* 439e4c6 (main) Raise TOP_K to 8 after recall regression"
+    },
+    {
+     "t": "out",
+     "s": "| * ad106e3 (HEAD -> feat/rerank) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "| * 569e6c9 Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "out",
+     "s": "| * 5ee19f0 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 8afc6bd Add retriever and model config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 31,
+   "progress": 0.4074
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: the stop",
+   "body": "<code>git rebase</code> 🟡 CAUTION.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 32,
+   "progress": 0.4172
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/02-stop",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rebase main"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (1/3)"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (2/3)"
+    },
+    {
+     "t": "out",
+     "s": "Auto-merging app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": "CONFLICT (content): Merge conflict in app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": "error: could not apply 569e6c9... Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "out",
+     "s": "hint: Resolve all conflicts manually, mark them as resolved with"
+    },
+    {
+     "t": "out",
+     "s": "hint: \"git add/rm <conflicted_files>\", then run \"git rebase --continue\"."
+    },
+    {
+     "t": "out",
+     "s": "hint: You can instead skip this commit: run \"git rebase --skip\"."
+    },
+    {
+     "t": "out",
+     "s": "hint: To abort and get back to the state before \"git rebase\", run \"git rebase --abort\"."
+    },
+    {
+     "t": "out",
+     "s": "hint: Disable this message with \"git config set advice.mergeConflict false\""
+    },
+    {
+     "t": "out",
+     "s": "Could not apply 569e6c9... # Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 33,
+   "progress": 0.4201
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 3: HEAD",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 34,
+   "progress": 0.4437
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/03-head",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "1c9f69a02aeeb08430a5015ba7af214c9b96d0a0"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch"
+    },
+    {
+     "t": "out",
+     "s": "* (no branch, rebasing feat/rerank)"
+    },
+    {
+     "t": "out",
+     "s": "  feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "  main"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --decorate -3"
+    },
+    {
+     "t": "out",
+     "s": "1c9f69a (HEAD) Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "439e4c6 (main) Raise TOP_K to 8 after recall regression"
+    },
+    {
+     "t": "out",
+     "s": "8afc6bd Add retriever and model config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 35,
+   "progress": 0.4449
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 4: the state directory",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.4609
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/04-state-dir",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls .git/rebase-merge"
+    },
+    {
+     "t": "out",
+     "s": "author-script"
+    },
+    {
+     "t": "out",
+     "s": "done"
+    },
+    {
+     "t": "out",
+     "s": "drop_redundant_commits"
+    },
+    {
+     "t": "out",
+     "s": "end"
+    },
+    {
+     "t": "out",
+     "s": "git-rebase-todo"
+    },
+    {
+     "t": "out",
+     "s": "git-rebase-todo.backup"
+    },
+    {
+     "t": "out",
+     "s": "head-name"
+    },
+    {
+     "t": "out",
+     "s": "interactive"
+    },
+    {
+     "t": "out",
+     "s": "message"
+    },
+    {
+     "t": "out",
+     "s": "msgnum"
+    },
+    {
+     "t": "out",
+     "s": "no-reschedule-failed-exec"
+    },
+    {
+     "t": "out",
+     "s": "onto"
+    },
+    {
+     "t": "out",
+     "s": "orig-head"
+    },
+    {
+     "t": "out",
+     "s": "patch"
+    },
+    {
+     "t": "out",
+     "s": "rewritten-list"
+    },
+    {
+     "t": "out",
+     "s": "stopped-sha"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.463
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/05-state-files",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/head-name"
+    },
+    {
+     "t": "out",
+     "s": "refs/heads/feat/rerank"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/orig-head"
+    },
+    {
+     "t": "out",
+     "s": "ad106e3ecc6f4d2e14376112d9580c6892a12093"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/onto"
+    },
+    {
+     "t": "out",
+     "s": "439e4c6ba104e7816d32d16fd3bd9548e536b33f"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/done"
+    },
+    {
+     "t": "out",
+     "s": "pick 5ee19f03aa988c15717abc4b6c14104fc8d23a97 # Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "pick 569e6c983316561062d42644d649129e50eeda5d # Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/git-rebase-todo"
+    },
+    {
+     "t": "out",
+     "s": "pick ad106e3ecc6f4d2e14376112d9580c6892a12093 # Enable reranking in config"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/msgnum .git/rebase-merge/end"
+    },
+    {
+     "t": "out",
+     "s": "2"
+    },
+    {
+     "t": "out",
+     "s": "3"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/rebase-merge/author-script"
+    },
+    {
+     "t": "out",
+     "s": "GIT_AUTHOR_NAME='Lab User'"
+    },
+    {
+     "t": "out",
+     "s": "GIT_AUTHOR_EMAIL='you@example.com'"
+    },
+    {
+     "t": "out",
+     "s": "GIT_AUTHOR_DATE='@1788755640 +0530'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.4659
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 5: the four names",
+   "body": "HEAD, the branch, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.4979
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/06-special-refs",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rev-parse --short ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ad106e3"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --short REBASE_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "569e6c9"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --short feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "ad106e3"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --short HEAD"
+    },
+    {
+     "t": "out",
+     "s": "1c9f69a"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.5137
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 6: status",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5384
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/07-status",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git status"
+    },
+    {
+     "t": "out",
+     "s": "interactive rebase in progress; onto 439e4c6"
+    },
+    {
+     "t": "out",
+     "s": "Last commands done (2 commands done):"
+    },
+    {
+     "t": "out",
+     "s": "   pick 5ee19f0 # Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "   pick 569e6c9 # Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "out",
+     "s": "Next command to do (1 remaining command):"
+    },
+    {
+     "t": "out",
+     "s": "   pick ad106e3 # Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "  (use \"git rebase --edit-todo\" to view and edit)"
+    },
+    {
+     "t": "out",
+     "s": "You are currently rebasing branch 'feat/rerank' on '439e4c6'."
+    },
+    {
+     "t": "out",
+     "s": "  (fix conflicts and then run \"git rebase --continue\")"
+    },
+    {
+     "t": "out",
+     "s": "  (use \"git rebase --skip\" to skip this patch)"
+    },
+    {
+     "t": "out",
+     "s": "  (use \"git rebase --abort\" to check out the original branch)"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Unmerged paths:"
+    },
+    {
+     "t": "out",
+     "s": "  (use \"git restore --staged <file>...\" to unstage)"
+    },
+    {
+     "t": "out",
+     "s": "  (use \"git add <file>...\" to mark resolution)"
+    },
+    {
+     "t": "out",
+     "s": "        both modified:   app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "no changes added to commit (use \"git add\" and/or \"git commit -a\")"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5396
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 7: leave the way you came",
+   "body": "<code>git rebase --abort</code> 🟡 CAUTION in the textbook's table, with one thing it can't give back.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5676
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 7: leave the way you came",
+   "body": "Preview with <code>git status</code>. There's no recovery for unstaged resolution edits, and the copies already made stay in the reflog.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5893
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-internals/08-abort",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rebase --abort"
+    },
+    {
+     "t": "cmd",
+     "s": "git status"
+    },
+    {
+     "t": "out",
+     "s": "On branch feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "nothing to commit, working tree clean"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog -3"
+    },
+    {
+     "t": "out",
+     "s": "ad106e3 HEAD@{0}: rebase (abort): returning to refs/heads/feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "1c9f69a HEAD@{1}: rebase (pick): Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "439e4c6 HEAD@{2}: rebase (start): checkout main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.6066
+  },
+  {
+   "kind": "table",
+   "direction": "The state table of section 9.4, three rows.",
+   "header": [
+    "Operation",
+    "Working tree",
+    "Index",
+    "HEAD",
+    "Current branch ref",
+    "Other refs and files in .git"
+   ],
+   "fs": 34,
+   "cols": [
+    13.6,
+    15.64,
+    15.64,
+    13.6,
+    15.64,
+    25.86
+   ],
+   "mono": true,
+   "rows": [
+    [
+     "stopped at a conflict",
+     "conflict markers in the conflicted files",
+     "stages 1, 2 and 3 for conflicted paths",
+     "detached at the last copy",
+     "unchanged: still the old tip",
+     "state directory .git/rebase-merge/; REBASE_HEAD; ORIG_HEAD"
+    ],
+    [
+     "git rebase --abort",
+     "reset to the old tip: resolution work is lost",
+     "reset to the old tip",
+     "attached to the branch again",
+     "unchanged",
+     "state directory and REBASE_HEAD removed; ORIG_HEAD stays"
+    ],
+    [
+     "git rebase --quit",
+     "unchanged",
+     "unchanged",
+     "stays detached where it is",
+     "unchanged",
+     "state directory removed; an autostash moves to the stash list"
+    ]
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.6161
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=after_a_finished_rebase,what_it_holds rows=the_HEAD_reflog:one_line_per_step|the_branch_reflog:one_line_for_the_whole_rebase|<branch>@{1}:this_branch_before_its_last_rebase mono=off title=Two_reflogs,_one_undo_handle id=logs at_1=30 at_2=44 at_3=64",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "after a finished rebase",
+     "what it holds"
+    ],
+    "rows": [
+     [
+      "the HEAD reflog",
+      "one line per step"
+     ],
+     [
+      "the branch reflog",
+      "one line for the whole rebase"
+     ],
+     [
+      "<branch>@{1}",
+      "this branch before its last rebase"
+     ]
+    ],
+    "mono": "off",
+    "title": "Two reflogs, one undo handle",
+    "id": "logs",
+    "at": {
+     "1": 0.3,
+     "2": 0.44,
+     "3": 0.64
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.6383
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 8: the other backend",
+   "body": "<code>labs/run ch09/apply-backend</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.665
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/apply-backend/01-apply-stops",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rebase --apply main"
+    },
+    {
+     "t": "out",
+     "s": "First, rewinding head to replay your work on top of it..."
+    },
+    {
+     "t": "out",
+     "s": "Applying: Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "Applying: Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "out",
+     "s": "Using index info to reconstruct a base tree..."
+    },
+    {
+     "t": "out",
+     "s": "M       app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": "Falling back to patching base and 3-way merge..."
+    },
+    {
+     "t": "out",
+     "s": "Auto-merging app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": "CONFLICT (content): Merge conflict in app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": "error: Failed to merge in the changes."
+    },
+    {
+     "t": "out",
+     "s": "hint: Use 'git am --show-current-patch=diff' to see the failed patch"
+    },
+    {
+     "t": "out",
+     "s": "hint: Resolve all conflicts manually, mark them as resolved with"
+    },
+    {
+     "t": "out",
+     "s": "hint: \"git add/rm <conflicted_files>\", then run \"git rebase --continue\"."
+    },
+    {
+     "t": "out",
+     "s": "hint: You can instead skip this commit: run \"git rebase --skip\"."
+    },
+    {
+     "t": "out",
+     "s": "hint: To abort and get back to the state before \"git rebase\", run \"git rebase --abort\"."
+    },
+    {
+     "t": "out",
+     "s": "hint: Disable this message with \"git config set advice.mergeConflict false\""
+    },
+    {
+     "t": "out",
+     "s": "Patch failed at 0002 Fetch 20 candidates for the reranker"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6774
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/apply-backend/02-state",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls .git | grep rebase"
+    },
+    {
+     "t": "out",
+     "s": "rebase-apply"
+    },
+    {
+     "t": "cmd",
+     "s": "ls .git/rebase-apply | head -5"
+    },
+    {
+     "t": "out",
+     "s": "0001"
+    },
+    {
+     "t": "out",
+     "s": "0002"
+    },
+    {
+     "t": "out",
+     "s": "0003"
+    },
+    {
+     "t": "out",
+     "s": "abort-safety"
+    },
+    {
+     "t": "out",
+     "s": "apply-opt"
+    },
+    {
+     "t": "cmd",
+     "s": "git status | head -2"
+    },
+    {
+     "t": "out",
+     "s": "rebase in progress; onto 439e4c6"
+    },
+    {
+     "t": "out",
+     "s": "You are currently rebasing branch 'feat/rerank' on '439e4c6'."
+    },
+    {
+     "t": "cmd",
+     "s": "head -5 app/retriever.py"
+    },
+    {
+     "t": "out",
+     "s": "<<<<<<< HEAD"
+    },
+    {
+     "t": "out",
+     "s": "TOP_K = 8"
+    },
+    {
+     "t": "out",
+     "s": "======="
+    },
+    {
+     "t": "out",
+     "s": "TOP_K = 20"
+    },
+    {
+     "t": "out",
+     "s": ">>>>>>> Fetch 20 candidates for the reranker"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6811
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/apply-backend/03-abort",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rebase --abort"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short --branch"
+    },
+    {
+     "t": "out",
+     "s": "## feat/rerank"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.695
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=backend,merge,apply rows=state_directory:.git/rebase-merge:.git/rebase-apply|it_holds:a_todo_list:one_numbered_patch_file_per_commit|git_status_says:interactive_rebase_in_progress:rebase_in_progress|the_default:since_Git_2.26:until_Git_2.26 mono=off title=Two_backends id=backends",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "backend",
+     "merge",
+     "apply"
+    ],
+    "rows": [
+     [
+      "state directory",
+      ".git/rebase-merge",
+      ".git/rebase-apply"
+     ],
+     [
+      "it holds",
+      "a todo list",
+      "one numbered patch file per commit"
+     ],
+     [
+      "git status says",
+      "interactive rebase in progress",
+      "rebase in progress"
+     ],
+     [
+      "the default",
+      "since Git 2.26",
+      "until Git 2.26"
+     ]
+    ],
+    "mono": "off",
+    "title": "Two backends",
+    "id": "backends"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6979
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 53,
+   "progress": 0.7168
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 54,
+   "progress": 0.7184
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Believing the branch has already moved when a rebase stops.</b> Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals <code>ORIG_HEAD</code>.",
+    "<b>Deleting <code>.git/rebase-merge</code> to \"get out\".</b> Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what <code>--quit</code> does deliberately.",
+    "<b>Panicking at \"interactive rebase in progress\".</b> Root cause: the default backend always writes the marker file <code>interactive</code>, and <code>git status</code> reports the file, not what you typed.",
+    "<b>Reading <code>ORIG_HEAD</code> or <code>REBASE_HEAD</code> with <code>cat</code>.</b> Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; <code>git rev-parse</code> reads them correctly.",
+    "<b>Aborting after an hour of conflict resolution to \"start clean\".</b> Root cause: <code>--abort</code> resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 55,
+   "progress": 0.7204
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Believing the branch has already moved when a rebase stops.</b> Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals <code>ORIG_HEAD</code>.",
+    "<b>Deleting <code>.git/rebase-merge</code> to \"get out\".</b> Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what <code>--quit</code> does deliberately.",
+    "<b>Panicking at \"interactive rebase in progress\".</b> Root cause: the default backend always writes the marker file <code>interactive</code>, and <code>git status</code> reports the file, not what you typed.",
+    "<b>Reading <code>ORIG_HEAD</code> or <code>REBASE_HEAD</code> with <code>cat</code>.</b> Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; <code>git rev-parse</code> reads them correctly.",
+    "<b>Aborting after an hour of conflict resolution to \"start clean\".</b> Root cause: <code>--abort</code> resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 56,
+   "progress": 0.7344
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Believing the branch has already moved when a rebase stops.</b> Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals <code>ORIG_HEAD</code>.",
+    "<b>Deleting <code>.git/rebase-merge</code> to \"get out\".</b> Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what <code>--quit</code> does deliberately.",
+    "<b>Panicking at \"interactive rebase in progress\".</b> Root cause: the default backend always writes the marker file <code>interactive</code>, and <code>git status</code> reports the file, not what you typed.",
+    "<b>Reading <code>ORIG_HEAD</code> or <code>REBASE_HEAD</code> with <code>cat</code>.</b> Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; <code>git rev-parse</code> reads them correctly.",
+    "<b>Aborting after an hour of conflict resolution to \"start clean\".</b> Root cause: <code>--abort</code> resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 57,
+   "progress": 0.7459
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Believing the branch has already moved when a rebase stops.</b> Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals <code>ORIG_HEAD</code>.",
+    "<b>Deleting <code>.git/rebase-merge</code> to \"get out\".</b> Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what <code>--quit</code> does deliberately.",
+    "<b>Panicking at \"interactive rebase in progress\".</b> Root cause: the default backend always writes the marker file <code>interactive</code>, and <code>git status</code> reports the file, not what you typed.",
+    "<b>Reading <code>ORIG_HEAD</code> or <code>REBASE_HEAD</code> with <code>cat</code>.</b> Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; <code>git rev-parse</code> reads them correctly.",
+    "<b>Aborting after an hour of conflict resolution to \"start clean\".</b> Root cause: <code>--abort</code> resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 58,
+   "progress": 0.757
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Believing the branch has already moved when a rebase stops.</b> Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals <code>ORIG_HEAD</code>.",
+    "<b>Deleting <code>.git/rebase-merge</code> to \"get out\".</b> Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what <code>--quit</code> does deliberately.",
+    "<b>Panicking at \"interactive rebase in progress\".</b> Root cause: the default backend always writes the marker file <code>interactive</code>, and <code>git status</code> reports the file, not what you typed.",
+    "<b>Reading <code>ORIG_HEAD</code> or <code>REBASE_HEAD</code> with <code>cat</code>.</b> Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; <code>git rev-parse</code> reads them correctly.",
+    "<b>Aborting after an hour of conflict resolution to \"start clean\".</b> Root cause: <code>--abort</code> resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 59,
+   "progress": 0.7698
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 60,
+   "progress": 0.7825
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "base": 4,
+   "upto": 4,
+   "says": [
+    "Left in the middle of a rebase: the branch ref has not moved"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 61,
+   "progress": 0.7841
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "base": 4,
+   "upto": 5,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 62,
+   "progress": 0.8026
+  },
+  {
+   "kind": "keypoint",
+   "body": "The second lesson from that incident is for the pipeline, not for the person: an automated job that rebases must handle a non-zero exit status by aborting, so that it never leaves a state directory behind for the next job to find.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 63,
+   "progress": 0.8252
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 64,
+   "progress": 0.8425
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Exercise 9.3, Level 1, \"a conflict, a look around, and the way back\", in <code>exercises/m06-m10-integration.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 65,
+   "progress": 0.844
+  },
+  {
+   "kind": "bullets",
+   "lead": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "items": [
+    "The content of <code>.git/HEAD</code>.",
+    "The four values: HEAD, the branch, <code>ORIG_HEAD</code>, <code>REBASE_HEAD</code>. Which of them are equal?",
+    "The content of <code>done</code> and of <code>git-rebase-todo</code>."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "PRACTICE EXERCISE",
+   "n": 66,
+   "progress": 0.8514
+  },
+  {
+   "kind": "bullets",
+   "lead": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "items": [
+    "The content of <code>.git/HEAD</code>.",
+    "The four values: HEAD, the branch, <code>ORIG_HEAD</code>, <code>REBASE_HEAD</code>. Which of them are equal?",
+    "The content of <code>done</code> and of <code>git-rebase-todo</code>."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "PRACTICE EXERCISE",
+   "n": 67,
+   "progress": 0.8568
+  },
+  {
+   "kind": "bullets",
+   "lead": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "items": [
+    "The content of <code>.git/HEAD</code>.",
+    "The four values: HEAD, the branch, <code>ORIG_HEAD</code>, <code>REBASE_HEAD</code>. Which of them are equal?",
+    "The content of <code>done</code> and of <code>git-rebase-todo</code>."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "PRACTICE EXERCISE",
+   "n": 68,
+   "progress": 0.8584
+  },
+  {
+   "kind": "bullets",
+   "lead": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "items": [
+    "The content of <code>.git/HEAD</code>.",
+    "The four values: HEAD, the branch, <code>ORIG_HEAD</code>, <code>REBASE_HEAD</code>. Which of them are equal?",
+    "The content of <code>done</code> and of <code>git-rebase-todo</code>."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "PRACTICE EXERCISE",
+   "n": 69,
+   "progress": 0.8638
+  },
+  {
+   "kind": "bullets",
+   "lead": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "items": [
+    "The content of <code>.git/HEAD</code>.",
+    "The four values: HEAD, the branch, <code>ORIG_HEAD</code>, <code>REBASE_HEAD</code>. Which of them are equal?",
+    "The content of <code>done</code> and of <code>git-rebase-todo</code>."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "section": "PRACTICE EXERCISE",
+   "n": 70,
+   "progress": 0.8666
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 71,
+   "progress": 0.879
+  },
+  {
+   "kind": "callout",
+   "label": "Q147",
+   "quotes": [
+    "A rebase is stopped at a conflict. Where do the branch ref, HEAD, <code>ORIG_HEAD</code> and <code>REBASE_HEAD</code> point? What does that imply for <code>--abort</code>?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 72,
+   "progress": 0.8805
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 73,
+   "progress": 0.9233
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this. You should now be able to say:",
+   "section": "RECAP",
+   "n": 74,
+   "progress": 0.9248
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "upto": 4,
+   "section": "RECAP",
+   "n": 75,
+   "progress": 0.929
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=done:already_executed|git-rebase-todo:still_to_run|msgnum,_end:the_program_counter rows=1:A:pick_5ee19f0|1:A:pick_569e6c9@hl|2:B:pick_ad106e3|3:C:2_of_3@hl|4:B:then:_move_feat/rerank@dim mono=on title=An_interpreter_with_a_program_counter id=interp at_1=10 at_2=22 at_3=34",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "done",
+      "already executed"
+     ],
+     [
+      "git-rebase-todo",
+      "still to run"
+     ],
+     [
+      "msgnum, end",
+      "the program counter"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "pick 5ee19f0"
+     ],
+     [
+      1,
+      "A",
+      "pick 569e6c9",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "pick ad106e3"
+     ],
+     [
+      3,
+      "C",
+      "2 of 3",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "then: move feat/rerank",
+      "dim"
+     ]
+    ],
+    "mono": "on",
+    "title": "An interpreter with a program counter",
+    "id": "interp",
+    "at": {
+     "1": 0.1,
+     "2": 0.22,
+     "3": 0.34
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "says_before": [
+    "Git holds the state in files: it survives a closed terminal and a restart"
+   ],
+   "upto": 5,
+   "says": [
+    "Git holds the state in files: it survives a closed terminal and a restart"
+   ],
+   "section": "RECAP",
+   "n": 76,
+   "progress": 0.9475
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank => 439e4c6-1c9f69a; 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => 439e4c6 main; ad106e3 feat/rerank ORIG_HEAD; HEAD=feat/rerank; reflog:1c9f69a; cmd:git_rebase_--abort; name:abort title=A_rebase,_stopped_at_its_second_commit id=stop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "439e4c6",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "569e6c9",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "ad106e3",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "569e6c9"
+      ]
+     },
+     {
+      "id": "1c9f69a",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "439e4c6"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "439e4c6",
+       "5ee19f0",
+       "569e6c9",
+       "ad106e3"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "1c9f69a"
+      ],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3",
+       "REBASE_HEAD": "569e6c9"
+      },
+      "head": "1c9f69a",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "439e4c6",
+       "feat/rerank": "ad106e3",
+       "ORIG_HEAD": "ad106e3"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "1c9f69a"
+      ],
+      "cmd": "git rebase --abort",
+      "name": "abort"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase, stopped at its second commit",
+    "id": "stop"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "abort"
+   ],
+   "base": 4,
+   "upto": 5,
+   "section": "RECAP",
+   "n": 77,
+   "progress": 0.9528
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=backend,merge,apply rows=state_directory:.git/rebase-merge:.git/rebase-apply|it_holds:a_todo_list:one_numbered_patch_file_per_commit|git_status_says:interactive_rebase_in_progress:rebase_in_progress|the_default:since_Git_2.26:until_Git_2.26 mono=off title=Two_backends id=backends",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "backend",
+     "merge",
+     "apply"
+    ],
+    "rows": [
+     [
+      "state directory",
+      ".git/rebase-merge",
+      ".git/rebase-apply"
+     ],
+     [
+      "it holds",
+      "a todo list",
+      "one numbered patch file per commit"
+     ],
+     [
+      "git status says",
+      "interactive rebase in progress",
+      "rebase in progress"
+     ],
+     [
+      "the default",
+      "since Git 2.26",
+      "until Git 2.26"
+     ]
+    ],
+    "mono": "off",
+    "title": "Two backends",
+    "id": "backends"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9606
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 79,
+   "progress": 0.968
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read section 9.4 of Chapter 9.",
+   "section": "HOMEWORK",
+   "n": 80,
+   "progress": 0.9696
+  },
+  {
+   "kind": "keypoint",
+   "body": "A stopped rebase used to look like a broken branch.",
+   "section": "HOMEWORK",
+   "n": 81,
+   "progress": 0.972
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "A colleague calls you over. Their terminal shows a wall of hints ending in \"Could not apply\". git branch prints the line on screen. git status says \"interactive rebase in progress\", and they're certain they never typed -i. They ask two things: \"Have I broken the branch?\" and \"Is it safe to delete whatever is stuck?\"",
+   "tele": "A colleague calls you over. Their terminal shows a wall of hints ending in \"Could not apply\". `git branch` prints the line on screen. `git status` says \"interactive rebase in progress\", and they're certain they never typed `-i`. They ask two things: \"Have I broken the branch?\" and \"Is it safe to delete whatever is stuck?\"",
+   "words": 56,
+   "est": 22.4,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "9b6c432d",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The answer to the first is no, and you can prove it with one command. The answer to the second is also no, and the reason is a directory inside .git that almost nobody has opened. Today you open it. Keep both questions in mind. Each gets its proof on screen.",
+   "tele": "The answer to the first is no, and you can prove it with one command. The answer to the second is also no, and the reason is a directory inside `.git` that almost nobody has opened. Today you open it. Keep both questions in mind. Each gets its proof on screen.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 3,
+   "line": 16,
+   "t0": 25.9,
+   "h": "982bdf88",
+   "anim": {
+    "group": 2,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 4,
+   "line": 18,
+   "t0": 46.3,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. A rebase, remember, copies your branch's commits onto a new base and then moves the branch. In the last video one ran from start to finish in one second, and you saw only the before and the after. To see the machinery you have to make it stop in the middle.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. A rebase, remember, copies your branch's commits onto a new base and then moves the branch. In the last video one ran from start to finish in one second, and you saw only the before and the after. To see the machinery you have to make it stop in the middle.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 5,
+   "line": 20,
+   "t0": 47.8,
+   "h": "f9bad5df",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "So today's repository has a conflict built in: the second commit of the feature branch changes a line that main has also changed, and Git can't combine the two by itself. The rebase replays one commit, stops at the second, and waits. The conflict itself is the subject of a later video. Today you leave it alone and look around: where HEAD is, where the branch is, what the state directory contains, and what the special refs ORIG_HEAD and REBASE_HEAD name.",
+   "tele": "So today's repository has a conflict built in: the second commit of the feature branch changes a line that `main` has also changed, and Git can't combine the two by itself. The rebase replays one commit, stops at the second, and waits. The conflict itself is the subject of a later video. Today you leave it alone and look around: where HEAD is, where the branch is, what the state directory contains, and what the special refs `ORIG_HEAD` and `REBASE_HEAD` name.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 6,
+   "line": 22,
+   "t0": 73.0,
+   "h": "6fc462e9",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Then you leave with --abort, read the reflogs, and take a short look at the older implementation, the apply backend, because you'll meet its messages in old scripts and old answers.",
+   "tele": "Then you leave with `--abort`, read the reflogs, and take a short look at the older implementation, the apply backend, because you'll meet its messages in old scripts and old answers.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 7,
+   "line": 24,
+   "t0": 105.4,
+   "h": "8d9a9ba6",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 8,
+   "line": 26,
+   "t0": 117.8,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 9,
+   "line": 30,
+   "t0": 119.3,
+   "h": "152923b5",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say where HEAD, the branch ref, ORIG_HEAD and REBASE_HEAD point while a rebase is stopped.",
+   "tele": "Say where HEAD, the branch ref, `ORIG_HEAD` and `REBASE_HEAD` point while a rebase is stopped.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 10,
+   "line": 32,
+   "t0": 121.3,
+   "h": "18de9525",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Read the files of .git/rebase-merge to learn what is done and what remains.",
+   "tele": "Read the files of `.git/rebase-merge` to learn what is done and what remains.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 11,
+   "line": 32,
+   "t0": 127.3,
+   "h": "f717a577",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain when the branch ref moves, and what that means for commits made during the stop.",
+   "tele": "Explain when the branch ref moves, and what that means for commits made during the stop.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 12,
+   "line": 32,
+   "t0": 132.5,
+   "h": "6b90d9cd",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Contrast the merge backend with the apply backend.",
+   "tele": "Contrast the merge backend with the apply backend.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 13,
+   "line": 32,
+   "t0": 138.9,
+   "h": "6d6d9123",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 14,
+   "line": 37,
+   "t0": 142.1,
+   "h": "",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: a rebase is a small interpreter. It writes a list of instructions into a state directory inside .git, executes them one at a time on a detached HEAD, and touches the branch ref only when the list is empty.",
+   "tele": "In one sentence: a rebase is a small interpreter. It writes a list of instructions into a state directory inside `.git`, executes them one at a time on a detached HEAD, and touches the branch ref only when the list is empty.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 15,
+   "line": 39,
+   "t0": 143.6,
+   "h": "14d2872d",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Each clause of that sentence is something you can check. On screen is today's repository before the rebase: three commits on feat/rerank, and one new commit on main.",
+   "tele": "Each clause of that sentence is something you can check. On screen is today's repository before the rebase: three commits on `feat/rerank`, and one new commit on `main`.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 16,
+   "line": 45,
+   "t0": 160.4,
+   "h": "f0ffc8c3",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "\"A list of instructions\": one line per commit, each beginning with pick. Git calls it the todo list, and the file is git-rebase-todo.",
+   "tele": "\"A list of instructions\": one line per commit, each beginning with `pick`. Git calls it the todo list, and the file is `git-rebase-todo`.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 17,
+   "line": 49,
+   "t0": 171.6,
+   "h": "1d889a60",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "\"A state directory\": .git/rebase-merge/. It exists exactly as long as a rebase is in progress. It records which ref will be moved at the end, where that ref pointed at the start, which commit the copies are built on, what has been done and what remains.",
+   "tele": "\"A state directory\": `.git/rebase-merge/`. It exists exactly as long as a rebase is in progress. It records which ref will be moved at the end, where that ref pointed at the start, which commit the copies are built on, what has been done and what remains.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 17,
+   "line": 51,
+   "t0": 180.8,
+   "h": "c4d8e58c",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "\"On a detached HEAD\": while the rebase runs, .git/HEAD holds a raw commit ID, not the name of a branch. HEAD walks along the new commits as they're made.",
+   "tele": "\"On a detached HEAD\": while the rebase runs, `.git/HEAD` holds a raw commit ID, not the name of a branch. HEAD walks along the new commits as they're made.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 18,
+   "line": 55,
+   "t0": 199.2,
+   "h": "e7b4e499",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "\"Touches the branch ref only when the list is empty\": this is the clause people get wrong. While a rebase is stopped, the branch hasn't moved. It still names the old tip. The new commits made so far are reachable only from HEAD.",
+   "tele": "\"Touches the branch ref only when the list is empty\": this is the clause people get wrong. While a rebase is stopped, the branch hasn't moved. It still names the old tip. The new commits made so far are reachable only from HEAD.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 18,
+   "line": 57,
+   "t0": 210.8,
+   "h": "1cbd6ca5",
+   "anim": {
+    "group": 13,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two consequences. First, --abort is cheap and safe: it only has to attach HEAD to the branch again, and restore the index and working tree from it. Second, if you make commits of your own during the stop, they're made on the detached HEAD. They become part of the branch only if the rebase finishes.",
+   "tele": "Two consequences. First, `--abort` is cheap and safe: it only has to attach HEAD to the branch again, and restore the index and working tree from it. Second, if you make commits of your own during the stop, they're made on the detached HEAD. They become part of the branch only if the rebase finishes.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 18,
+   "line": 59,
+   "t0": 228.0,
+   "h": "962fc615",
+   "anim": {
+    "group": 13,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The special names. ORIG_HEAD is the tip of the branch before the rebase began. REBASE_HEAD is the commit that's being replayed right now, and it exists only while a rebase is stopped.",
+   "tele": "The special names. `ORIG_HEAD` is the tip of the branch before the rebase began. `REBASE_HEAD` is the commit that's being replayed right now, and it exists only while a rebase is stopped.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 19,
+   "line": 63,
+   "t0": 250.0,
+   "h": "552777fa",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The textbook attaches a version note to those names. Older behavior: the glossary called every such file, ORIG_HEAD and REBASE_HEAD included, a pseudoref, and most tutorials still do. Current behavior, since Git 2.46: \"pseudoref\" means only FETCH_HEAD and MERGE_HEAD, and the others are ordinary refs that live at the root of the ref namespace. Recommended: say \"root ref\", and read them with git rev-parse, not with cat.",
+   "tele": "The textbook attaches a version note to those names. Older behavior: the glossary called every such file, `ORIG_HEAD` and `REBASE_HEAD` included, a pseudoref, and most tutorials still do. Current behavior, since Git 2.46: \"pseudoref\" means only `FETCH_HEAD` and `MERGE_HEAD`, and the others are ordinary refs that live at the root of the ref namespace. Recommended: say \"root ref\", and read them with `git rev-parse`, not with `cat`.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 20,
+   "line": 67,
+   "t0": 262.8,
+   "h": "40b80a4a",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And the failure mode: deleting the state directory by hand. That leaves HEAD detached on a half-built history.",
+   "tele": "And the failure mode: deleting the state directory by hand. That leaves HEAD detached on a half-built history.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 21,
+   "line": 69,
+   "t0": 289.6,
+   "h": "9842df95",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 22,
+   "line": 71,
+   "t0": 296.8,
+   "h": "",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A picture helps. Think of a tiny interpreter running a script. The script is the todo list. done is the part already executed, git-rebase-todo the part still to run, and msgnum and end are the program counter: instruction 2 of 3. A conflict is the interpreter pausing for input.",
+   "tele": "A picture helps. Think of a tiny interpreter running a script. The script is the todo list. `done` is the part already executed, `git-rebase-todo` the part still to run, and `msgnum` and `end` are the program counter: instruction 2 of 3. A conflict is the interpreter pausing for input.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 23,
+   "line": 75,
+   "t0": 298.3,
+   "h": "24251c3d",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The move of the branch isn't something that happens along the way. It's the last step of the script, after the last pick.",
+   "tele": "The move of the branch isn't something that happens along the way. It's the last step of the script, after the last `pick`.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 24,
+   "line": 81,
+   "t0": 317.9,
+   "h": "d5d2d8c9",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.1,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.22,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.34,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Where the picture breaks: a paused program usually holds its state in memory, and killing the process loses it. Git holds the state in files. You can close the terminal, restart the machine, come back the next day, and git status will read the same state directory back to you. That's also why a rebase left half done by somebody else is still sitting there, waiting.",
+   "tele": "Where the picture breaks: a paused program usually holds its state in memory, and killing the process loses it. Git holds the state in files. You can close the terminal, restart the machine, come back the next day, and `git status` will read the same state directory back to you. That's also why a rebase left half done by somebody else is still sitting there, waiting.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 25,
+   "line": 85,
+   "t0": 327.1,
+   "h": "0d222cdf",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 5,
+      "to": 5,
+      "says": [
+       "Git holds the state in files: it survives a closed terminal and a restart"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 26,
+   "line": 87,
+   "t0": 353.5,
+   "h": "",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "This is the picture to keep. HEAD is detached on 1c9f69a, the one copy made so far. feat/rerank and ORIG_HEAD are both on the old tip, ad106e3. And REBASE_HEAD marks 569e6c9, the commit being replayed.",
+   "tele": "This is the picture to keep. HEAD is detached on `1c9f69a`, the one copy made so far. `feat/rerank` and `ORIG_HEAD` are both on the old tip, `ad106e3`. And `REBASE_HEAD` marks `569e6c9`, the commit being replayed.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 27,
+   "line": 103,
+   "t0": 355.0,
+   "h": "a44d4f85",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, on paper: copy this graph with its four labels. You'll check each one against the terminal in step five. Say the labels out loud as you draw.",
+   "tele": "Try it now, thirty seconds, on paper: copy this graph with its four labels. You'll check each one against the terminal in step five. Say the labels out loud as you draw.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 27,
+   "line": 105,
+   "t0": 369.0,
+   "h": "4b976788",
+   "anim": {
+    "group": 20,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 27,
+   "line": 107,
+   "t0": 381.8,
+   "h": "",
+   "anim": {
+    "group": 20,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 33,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "And this is what the files of the state directory mean. The demo opens the ones you need.",
+   "tele": "And this is what the files of the state directory mean. The demo opens the ones you need.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 28,
+   "line": 125,
+   "t0": 386.3,
+   "h": "8d64f786",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 29,
+   "line": 127,
+   "t0": 393.5,
+   "h": "",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 1: before.",
+   "tele": "Step 1: before.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 30,
+   "line": 131,
+   "t0": 395.0,
+   "h": "d4deaf26",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three commits on feat/rerank, one new commit on main. The middle commit, \"Fetch 20 candidates for the reranker\", touches the line that main changed.",
+   "tele": "Three commits on `feat/rerank`, one new commit on `main`. The middle commit, \"Fetch 20 candidates for the reranker\", touches the line that `main` changed.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 31,
+   "line": 145,
+   "t0": 396.2,
+   "h": "48eb2d5d",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 2: the stop. git rebase 🟡 CAUTION.",
+   "tele": "Step 2: the stop. `git rebase` 🟡 CAUTION.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 32,
+   "line": 147,
+   "t0": 405.8,
+   "h": "1c671795",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One commit replayed, the second stopped with a conflict, exit status 1. Now the question of this video, as a quick quiz. Where does feat/rerank point right now? A, at the old tip. B, at the one copy that was made. C, somewhere else. Your answer?",
+   "tele": "One commit replayed, the second stopped with a conflict, exit status 1. Now the question of this video, as a quick quiz. Where does `feat/rerank` point right now? A, at the old tip. B, at the one copy that was made. C, somewhere else. Your answer?",
+   "words": 46,
+   "est": 18.4,
+   "slide": 33,
+   "line": 167,
+   "t0": 408.6,
+   "h": "d79a8965",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 33,
+   "line": 169,
+   "t0": 427.0,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 3: HEAD.",
+   "tele": "Step 3: HEAD.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 34,
+   "line": 171,
+   "t0": 431.5,
+   "h": "8442d06a",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": ".git/HEAD holds a raw commit ID, not ref: refs/heads/.... HEAD is detached. It sits on 1c9f69a, the copy of \"Add reranker skeleton\", which sits on the tip of main. git branch describes the situation as \"no branch, rebasing feat/rerank\".",
+   "tele": "`.git/HEAD` holds a raw commit ID, not `ref: refs/heads/...`. HEAD is detached. It sits on `1c9f69a`, the copy of \"Add reranker skeleton\", which sits on the tip of `main`. `git branch` describes the situation as \"no branch, rebasing feat/rerank\".",
+   "words": 39,
+   "est": 15.6,
+   "slide": 35,
+   "line": 188,
+   "t0": 432.7,
+   "h": "c5aae76c",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.699,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.28,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 4: the state directory.",
+   "tele": "Step 4: the state directory.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 36,
+   "line": 190,
+   "t0": 448.3,
+   "h": "d132c62a",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Sixteen files. You need six of them.",
+   "tele": "Sixteen files. You need six of them.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 37,
+   "line": 214,
+   "t0": 450.3,
+   "h": "8c4cd579",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.96,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "head-name: the ref that will be moved at the end. orig-head: where it pointed at the start. onto: what the copies are built on. done: two picks, the one that succeeded and the one that stopped. git-rebase-todo: one pick left. msgnum and end: 2 of 3. And author-script: the author name, email and date of the commit being replayed, to be reused for its copy. That file is how a rebase keeps the author while changing the committer.",
+   "tele": "`head-name`: the ref that will be moved at the end. `orig-head`: where it pointed at the start. `onto`: what the copies are built on. `done`: two picks, the one that succeeded and the one that stopped. `git-rebase-todo`: one pick left. `msgnum` and `end`: 2 of 3. And `author-script`: the author name, email and date of the commit being replayed, to be reused for its copy. That file is how a rebase keeps the author while changing the committer.",
+   "words": 78,
+   "est": 31.2,
+   "slide": 38,
+   "line": 239,
+   "t0": 453.1,
+   "h": "bbfa789a",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.55,
+      "dissolve": true
+     },
+     {
+      "at": 0.117,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     },
+     {
+      "at": 0.453,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.66,
+      "dissolve": false
+     },
+     {
+      "at": 0.529,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 1.57,
+      "dissolve": false
+     },
+     {
+      "at": 0.601,
+      "fx": "terminal",
+      "from": {
+       "blocks": 6
+      },
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 5: the four names. HEAD, the branch, ORIG_HEAD and REBASE_HEAD. Take out your drawing, and predict which two are equal. Say it out loud. I'll wait.",
+   "tele": "Step 5: the four names. HEAD, the branch, `ORIG_HEAD` and `REBASE_HEAD`. Take out your drawing, and predict which two are equal. Say it out loud. I'll wait.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 39,
+   "line": 241,
+   "t0": 484.3,
+   "h": "69a3c340",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 39,
+   "line": 243,
+   "t0": 495.1,
+   "h": "",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Four names, three commits. ORIG_HEAD is ad106e3, the tip before the rebase. REBASE_HEAD is 569e6c9, the commit being replayed. HEAD is 1c9f69a, the last copy made. And feat/rerank is ad106e3: it still equals ORIG_HEAD. The branch hasn't moved. That's the answer to the quiz, A, and to your colleague's first question: no, the branch isn't broken. It hasn't been touched.",
+   "tele": "Four names, three commits. `ORIG_HEAD` is `ad106e3`, the tip before the rebase. `REBASE_HEAD` is `569e6c9`, the commit being replayed. HEAD is `1c9f69a`, the last copy made. And `feat/rerank` is `ad106e3`: it still equals `ORIG_HEAD`. The branch hasn't moved. That's the answer to the quiz, A, and to your colleague's first question: no, the branch isn't broken. It hasn't been touched.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 40,
+   "line": 258,
+   "t0": 499.6,
+   "h": "309081da",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.48,
+      "dissolve": true
+     },
+     {
+      "at": 0.207,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.27,
+      "dissolve": false
+     },
+     {
+      "at": 0.461,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 6: status.",
+   "tele": "Step 6: status.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 41,
+   "line": 260,
+   "t0": 523.6,
+   "h": "c0aef13d",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git status reads the state directory back to you: what was done, what remains, and the three ways out. And the first line says \"interactive rebase in progress\", although no -i was typed. The root cause, from the textbook: the default backend of git rebase is the machinery that once served only interactive rebases. It always writes the marker file interactive, and git status reports what it finds.",
+   "tele": "`git status` reads the state directory back to you: what was done, what remains, and the three ways out. And the first line says \"interactive rebase in progress\", although no `-i` was typed. The root cause, from the textbook: the default backend of `git rebase` is the machinery that once served only interactive rebases. It always writes the marker file `interactive`, and `git status` reports what it finds.",
+   "words": 68,
+   "est": 27.2,
+   "slide": 42,
+   "line": 286,
+   "t0": 524.8,
+   "h": "60bc037d",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 7: leave the way you came. git rebase --abort 🟡 CAUTION in the textbook's table, with one thing it can't give back. The five answers. It changes HEAD, the index and the working tree: all return to the old tip. It destroys resolution work in progress, the edits you made to conflicted files.",
+   "tele": "Step 7: leave the way you came. `git rebase --abort` 🟡 CAUTION in the textbook's table, with one thing it can't give back. The five answers. It changes HEAD, the index and the working tree: all return to the old tip. It destroys resolution work in progress, the edits you made to conflicted files.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 43,
+   "line": 288,
+   "t0": 552.0,
+   "h": "46468a41",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Preview with git status. There's no recovery for unstaged resolution edits, and the copies already made stay in the reflog. It's appropriate whenever you want the state before the rebase and have no resolution work worth keeping. Here nothing has been resolved.",
+   "tele": "Preview with `git status`. There's no recovery for unstaged resolution edits, and the copies already made stay in the reflog. It's appropriate whenever you want the state before the rebase and have no resolution work worth keeping. Here nothing has been resolved.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 44,
+   "line": 288,
+   "t0": 573.2,
+   "h": "d08d61ce",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On the branch again, clean. The reflog shows start, one pick, abort. The copy 1c9f69a is now reachable from nothing except the reflog.",
+   "tele": "On the branch again, clean. The reflog shows start, one pick, abort. The copy `1c9f69a` is now reachable from nothing except the reflog.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 45,
+   "line": 303,
+   "t0": 590.0,
+   "h": "0f91cbfb",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Look at the column \"Current branch ref\". Unchanged, unchanged, unchanged. And look at --quit: it removes the state directory and leaves HEAD detached where it is. That's what deleting the directory by hand does, except that --quit does it on purpose. So that's your colleague's second question: no, don't delete what is stuck. Abort.",
+   "tele": "Look at the column \"Current branch ref\". Unchanged, unchanged, unchanged. And look at `--quit`: it removes the state directory and leaves HEAD detached where it is. That's what deleting the directory by hand does, except that `--quit` does it on purpose. So that's your colleague's second question: no, don't delete what is stuck. Abort.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 46,
+   "line": 318,
+   "t0": 599.2,
+   "h": "093f8ce1",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "When a rebase runs to the end, the two reflogs record it differently, as you saw in the last video. The HEAD reflog has one line per step. The branch reflog has one line for the whole rebase, and the line below it's the old tip. So <branch>@{1} means \"this branch before its last rebase\", and that's the most reliable undo handle you have.",
+   "tele": "When a rebase runs to the end, the two reflogs record it differently, as you saw in the last video. The HEAD reflog has one line per step. The branch reflog has one line for the whole rebase, and the line below it's the old tip. So `<branch>@{1}` means \"this branch before its last rebase\", and that's the most reliable undo handle you have.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 47,
+   "line": 324,
+   "t0": 620.8,
+   "h": "4d3211d9",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.44,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.64,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 8: the other backend. labs/run ch09/apply-backend. Until Git 2.26 the default implementation turned each commit into a patch and applied the patches. It's still there, as git rebase --apply.",
+   "tele": "Step 8: the other backend. `labs/run ch09/apply-backend`. Until Git 2.26 the default implementation turned each commit into a patch and applied the patches. It's still there, as `git rebase --apply`.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 48,
+   "line": 326,
+   "t0": 646.8,
+   "h": "729e9db0",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Different words: \"rewinding head\", \"Applying\", \"Patch failed at 0002\".",
+   "tele": "Different words: \"rewinding head\", \"Applying\", \"Patch failed at 0002\".",
+   "words": 9,
+   "est": 3.6,
+   "slide": 49,
+   "line": 351,
+   "t0": 658.8,
+   "h": "9fb35936",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.52,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A different state directory, .git/rebase-apply, with one numbered patch file per commit. \"Rebase in progress\" without the word interactive. And a conflict label that carries only the subject of your commit, not its ID.",
+   "tele": "A different state directory, `.git/rebase-apply`, with one numbered patch file per commit. \"Rebase in progress\" without the word interactive. And a conflict label that carries only the subject of your commit, not its ID.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 50,
+   "line": 375,
+   "t0": 662.4,
+   "h": "9bd0ed1f",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.25,
+      "dissolve": true
+     },
+     {
+      "at": 0.132,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The way out is the same command.",
+   "tele": "The way out is the same command.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 51,
+   "line": 385,
+   "t0": 676.0,
+   "h": "b600afe1",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 1.96,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The manual lists what the apply backend does worse: it works from patch context and can apply a hunk in the wrong place without reporting a conflict, it can't detect directory renames, and it drops empty commits. The textbook's advice is four words: leave rebase.backend alone.",
+   "tele": "The manual lists what the apply backend does worse: it works from patch context and can apply a hunk in the wrong place without reporting a conflict, it can't detect directory renames, and it drops empty commits. The textbook's advice is four words: leave `rebase.backend` alone.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 52,
+   "line": 391,
+   "t0": 678.8,
+   "h": "67cc20fc",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.205,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.615,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 53,
+   "line": 393,
+   "t0": 697.2,
+   "h": "",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 54,
+   "line": 395,
+   "t0": 698.7,
+   "h": "76698d9b",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Believing the branch has already moved when a rebase stops. Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals ORIG_HEAD.",
+   "tele": "Believing the branch has already moved when a rebase stops. Root cause: the branch ref is touched only when the todo list is empty; until then HEAD is detached and the branch equals `ORIG_HEAD`.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 55,
+   "line": 399,
+   "t0": 700.7,
+   "h": "7983d532",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Deleting .git/rebase-merge to \"get out\". Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what --quit does deliberately.",
+   "tele": "Deleting `.git/rebase-merge` to \"get out\". Root cause: the directory is the interpreter's state; removing it leaves HEAD detached on a half-built history, which is what `--quit` does deliberately.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 56,
+   "line": 399,
+   "t0": 714.3,
+   "h": "7d91a446",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Panicking at \"interactive rebase in progress\". Root cause: the default backend always writes the marker file interactive, and git status reports the file, not what you typed.",
+   "tele": "Panicking at \"interactive rebase in progress\". Root cause: the default backend always writes the marker file `interactive`, and `git status` reports the file, not what you typed.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 57,
+   "line": 399,
+   "t0": 725.5,
+   "h": "78149738",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Reading ORIG_HEAD or REBASE_HEAD with cat. Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; git rev-parse reads them correctly.",
+   "tele": "Reading `ORIG_HEAD` or `REBASE_HEAD` with `cat`. Root cause: since Git 2.46 they are ordinary root refs, not pseudorefs, and their storage depends on the ref format; `git rev-parse` reads them correctly.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 58,
+   "line": 399,
+   "t0": 736.3,
+   "h": "3ebbb25d",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Aborting after an hour of conflict resolution to \"start clean\". Root cause: --abort resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere.",
+   "tele": "Aborting after an hour of conflict resolution to \"start clean\". Root cause: `--abort` resets the working tree and the index to the old tip, and unstaged resolution edits are objects nowhere.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 59,
+   "line": 399,
+   "t0": 748.7,
+   "h": "963b767e",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 60,
+   "line": 405,
+   "t0": 761.1,
+   "h": "",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A shared build machine for nightly evaluations starts failing with a strange message about a detached HEAD. Someone logs in and finds that the workspace was left in the middle of a rebase by an interrupted job, three days ago.",
+   "tele": "Now, out of the lab. A shared build machine for nightly evaluations starts failing with a strange message about a detached HEAD. Someone logs in and finds that the workspace was left in the middle of a rebase by an interrupted job, three days ago.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 61,
+   "line": 411,
+   "t0": 762.6,
+   "h": "8f5475ef",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 4,
+      "to": 4,
+      "says": [
+       "Left in the middle of a rebase: the branch ref has not moved"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The textbook's routine for this is short. \"Is a rebase in progress here?\" The first line of git status answers it, and so does ls .git | grep rebase. If the answer is yes, nothing is lost: the branch ref hasn't moved, and git rebase --abort returns to it. Don't delete the state directory by hand.",
+   "tele": "The textbook's routine for this is short. \"Is a rebase in progress here?\" The first line of `git status` answers it, and so does `ls .git | grep rebase`. If the answer is yes, nothing is lost: the branch ref hasn't moved, and `git rebase --abort` returns to it. Don't delete the state directory by hand.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 62,
+   "line": 415,
+   "t0": 780.6,
+   "h": "afed4268",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     },
+     {
+      "at": 0.776,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The second lesson from that incident is for the pipeline, not for the person: an automated job that rebases must handle a non-zero exit status by aborting, so that it never leaves a state directory behind for the next job to find.",
+   "tele": "The second lesson from that incident is for the pipeline, not for the person: an automated job that rebases must handle a non-zero exit status by aborting, so that it never leaves a state directory behind for the next job to find.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 63,
+   "line": 419,
+   "t0": 802.6,
+   "h": "76042abb",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 64,
+   "line": 421,
+   "t0": 819.4,
+   "h": "",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Exercise 9.3, Level 1, \"a conflict, a look around, and the way back\", in exercises/m06-m10-integration.md.",
+   "tele": "Your turn. Do Exercise 9.3, Level 1, \"a conflict, a look around, and the way back\", in `exercises/m06-m10-integration.md`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 65,
+   "line": 423,
+   "t0": 820.9,
+   "h": "84f1bd13",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "tele": "When the rebase stops, don't resolve anything. First write down your predictions for:",
+   "words": 13,
+   "est": 5.2,
+   "slide": 66,
+   "line": 425,
+   "t0": 828.1,
+   "h": "2af6d252",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The content of .git/HEAD.",
+   "tele": "The content of `.git/HEAD`.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 67,
+   "line": 427,
+   "t0": 833.3,
+   "h": "86f0d210",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The four values: HEAD, the branch, ORIG_HEAD, REBASE_HEAD. Which of them are equal?",
+   "tele": "The four values: HEAD, the branch, `ORIG_HEAD`, `REBASE_HEAD`. Which of them are equal?",
+   "words": 13,
+   "est": 5.2,
+   "slide": 68,
+   "line": 427,
+   "t0": 834.9,
+   "h": "c6cacfcb",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The content of done and of git-rebase-todo.",
+   "tele": "The content of `done` and of `git-rebase-todo`.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 69,
+   "line": 427,
+   "t0": 840.1,
+   "h": "9404bbfd",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Then check each one with a command, and only then leave.",
+   "tele": "Then check each one with a command, and only then leave.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 70,
+   "line": 431,
+   "t0": 842.9,
+   "h": "5c112b2a",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 3,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 9.7, Level 3, \"a rebase that stopped at an exec line\", in the same file.",
+   "tele": "The challenge is Exercise 9.7, Level 3, \"a rebase that stopped at an `exec` line\", in the same file.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 70,
+   "line": 433,
+   "t0": 847.3,
+   "h": "260f4b40",
+   "anim": {
+    "group": 54,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 71,
+   "line": 435,
+   "t0": 854.9,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Q147: \"A rebase is stopped at a conflict. Where do the branch ref, HEAD, ORIG_HEAD and REBASE_HEAD point? What does that imply for --abort?\"",
+   "tele": "Q147: \"A rebase is stopped at a conflict. Where do the branch ref, HEAD, `ORIG_HEAD` and `REBASE_HEAD` point? What does that imply for `--abort`?\"",
+   "words": 24,
+   "est": 9.6,
+   "slide": 72,
+   "line": 439,
+   "t0": 856.4,
+   "h": "ef532d4b",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 81,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 72,
+   "line": 441,
+   "t0": 866.0,
+   "h": "",
+   "anim": {
+    "group": 56,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 82,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud first. A strong answer gives four positions without hesitation, and says which two are equal and why. It then derives the second half from the first: what --abort has to do, and what it therefore can't give back. It mentions where the information for the abort is stored. If the follow-up asks what happens to a commit you made by hand during the stop, be ready to reason from \"HEAD is detached\".",
+   "tele": "Answer out loud first. A strong answer gives four positions without hesitation, and says which two are equal and why. It then derives the second half from the first: what `--abort` has to do, and what it therefore can't give back. It mentions where the information for the abort is stored. If the follow-up asks what happens to a commit you made by hand during the stop, be ready to reason from \"HEAD is detached\".",
+   "words": 75,
+   "est": 30.0,
+   "slide": 72,
+   "line": 443,
+   "t0": 868.0,
+   "h": "f75d5594",
+   "anim": {
+    "group": 56,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 83,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 73,
+   "line": 445,
+   "t0": 898.0,
+   "h": "",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 84,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 74,
+   "line": 447,
+   "t0": 899.5,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A rebase writes a todo list into .git/rebase-merge, runs it on a detached HEAD, and moves the branch only when the list is empty. While it's stopped, the branch still equals ORIG_HEAD, HEAD is on the last copy, and REBASE_HEAD names the commit being replayed.",
+   "tele": "A rebase writes a todo list into `.git/rebase-merge`, runs it on a detached HEAD, and moves the branch only when the list is empty. While it's stopped, the branch still equals `ORIG_HEAD`, HEAD is on the last copy, and `REBASE_HEAD` names the commit being replayed.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 75,
+   "line": 453,
+   "t0": 903.5,
+   "h": "57389072",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.355,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.587,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git status reads the state directory back: done, remaining, and the ways out.",
+   "tele": "`git status` reads the state directory back: done, remaining, and the ways out.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 76,
+   "line": 457,
+   "t0": 921.5,
+   "h": "c4577af1",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "--abort returns to the branch and discards resolution work in progress. --quit removes the state and leaves HEAD detached.",
+   "tele": "`--abort` returns to the branch and discards resolution work in progress. `--quit` removes the state and leaves HEAD detached.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 77,
+   "line": 461,
+   "t0": 926.7,
+   "h": "bd509606",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The apply backend uses .git/rebase-apply and patch files, and the default merge backend is the one to keep.",
+   "tele": "The apply backend uses `.git/rebase-apply` and patch files, and the default merge backend is the one to keep.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 78,
+   "line": 465,
+   "t0": 934.3,
+   "h": "e56daa63",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 79,
+   "line": 467,
+   "t0": 941.5,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read section 9.4 of Chapter 9.",
+   "tele": "Read section 9.4 of Chapter 9.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 80,
+   "line": 469,
+   "t0": 943.0,
+   "h": "f9565d04",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "A stopped rebase used to look like a broken branch. Now you can open the state directory, name all four labels, and leave safely. Stop a rebase in the lab and look around before the next video. Next time: choosing what moves and where it lands, with upstream, onto, keep-base and root. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "A stopped rebase used to look like a broken branch. Now you can open the state directory, name all four labels, and leave safely. Stop a rebase in the lab and look around before the next video. Next time: choosing what moves and where it lands, with upstream, onto, keep-base and root. Until then, look at the state first and type second. See you in the next one.",
+   "words": 68,
+   "est": 27.2,
+   "slide": 81,
+   "line": 471,
+   "t0": 945.4,
+   "h": "214ca3df",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 972.6,
+ "narration_words": 2339,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

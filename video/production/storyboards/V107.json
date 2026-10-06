@@ -1,0 +1,5863 @@
+{
+ "id": "V107",
+ "version": 22,
+ "title": "The reftable backend, and SHA-1 with collision detection versus SHA-256",
+ "part": 4,
+ "part_label": "INTERNALS",
+ "part_name": "Git internals",
+ "palette": {
+  "accent": "#BC8CFF",
+  "accent2": "#E2CCFF",
+  "bg1": "#15111F",
+  "bg2": "#261D3A"
+ },
+ "planned_minutes": 22,
+ "chapters": [
+  "ch03-git-internals.md"
+ ],
+ "script": "video/scripts/V107-the-reftable-backend-and-sha-1-with-collision-detection-versus-sha-256.md",
+ "script_sha1": "d227c6f9dc4a3a48f0a85046a5312d0c1a9f8f35",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 9,
+   "line": 32
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 16,
+   "line": 42
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 29,
+   "line": 98
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 33,
+   "line": 110
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 37,
+   "line": 140
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 68,
+   "line": 590
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 75,
+   "line": 600
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 79,
+   "line": 614
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 82,
+   "line": 620
+  },
+  {
+   "name": "RECAP",
+   "beat": 85,
+   "line": 628
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 93,
+   "line": 644
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "The reftable backend, and SHA-1 with collision detection versus SHA-256",
+   "part_name": "Git internals",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0021
+  },
+  {
+   "kind": "keypoint",
+   "body": "Two videos ago a release script failed because it read <code>.git/refs/heads/main</code> and the ref was packed.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0037
+  },
+  {
+   "kind": "keypoint",
+   "body": "It will fail again, in two new ways.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0281
+  },
+  {
+   "kind": "keypoint",
+   "body": "Neither repository is damaged.",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0445
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0626
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=the_choice,Git_2.55_default,the_alternative rows=ref_format,_how_names_are_stored:files:reftable|object_format,_which_hash_names_objects:SHA-1:SHA-256 title=Two_independent_choices,_made_when_a_repository_is_created mono=off id=choices",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "the choice",
+     "Git 2.55 default",
+     "the alternative"
+    ],
+    "rows": [
+     [
+      "ref format, how names are stored",
+      "files",
+      "reftable"
+     ],
+     [
+      "object format, which hash names objects",
+      "SHA-1",
+      "SHA-256"
+     ]
+    ],
+    "title": "Two independent choices, made when a repository is created",
+    "mono": "off",
+    "id": "choices"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "upto": 3,
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0642
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three replays from <code>labs/ch03</code>: <code>reftable.sh</code>, <code>sha256.sh</code>, and the replay of Lab 17.2 up to its checkpoint.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0898
+  },
+  {
+   "kind": "keypoint",
+   "body": "One labelled command is discussed and not run in the two demos: <code>git refs migrate --ref-format=reftable</code>, 🟡 CAUTION.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0966
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1155
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Create a repository with the reftable backend and show what replaces the ref files.",
+    "Show that ref plumbing gives the same answers in both backends.",
+    "Say what breaks when tools read <code>.git/refs</code> directly.",
+    "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+    "State what Git 3.0 plans for new repositories, as the section gives it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1171
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Create a repository with the reftable backend and show what replaces the ref files.",
+    "Show that ref plumbing gives the same answers in both backends.",
+    "Say what breaks when tools read <code>.git/refs</code> directly.",
+    "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+    "State what Git 3.0 plans for new repositories, as the section gives it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1192
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Create a repository with the reftable backend and show what replaces the ref files.",
+    "Show that ref plumbing gives the same answers in both backends.",
+    "Say what breaks when tools read <code>.git/refs</code> directly.",
+    "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+    "State what Git 3.0 plans for new repositories, as the section gives it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1251
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Create a repository with the reftable backend and show what replaces the ref files.",
+    "Show that ref plumbing gives the same answers in both backends.",
+    "Say what breaks when tools read <code>.git/refs</code> directly.",
+    "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+    "State what Git 3.0 plans for new repositories, as the section gives it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1297
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Create a repository with the reftable backend and show what replaces the ref files.",
+    "Show that ref plumbing gives the same answers in both backends.",
+    "Say what breaks when tools read <code>.git/refs</code> directly.",
+    "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+    "State what Git 3.0 plans for new repositories, as the section gives it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1331
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Create a repository with the reftable backend and show what replaces the ref files.",
+    "Show that ref plumbing gives the same answers in both backends.",
+    "Say what breaks when tools read <code>.git/refs</code> directly.",
+    "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+    "State what Git 3.0 plans for new repositories, as the section gives it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1394
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1449
+  },
+  {
+   "kind": "keypoint",
+   "body": "Reftable first. In one sentence: reftable stores refs and reflogs in binary, block-structured tables under <code>.git/reftable/</code> instead of in loose files, <code>packed-refs</code> and <code>logs/</code>.",
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1464
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=two_names_that_differ_only_in_case:cannot_both_be_stored_on_macOS_and_Windows|deleting_a_packed_ref:rewrites_the_whole_packed-refs_file|multi-ref_updates:are_not_atomic title=Three_problems_of_the_files_format numbered=on id=why",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "two names that differ only in case",
+      "cannot both be stored on macOS and Windows"
+     ],
+     [
+      "deleting a packed ref",
+      "rewrites the whole packed-refs file"
+     ],
+     [
+      "multi-ref updates",
+      "are not atomic"
+     ]
+    ],
+    "title": "Three problems of the files format",
+    "numbered": "on",
+    "id": "why"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1696
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=reftable/tables.list:oldest_first|after_git_pack-refs_--all:compacted rows=1:A:one_table:_updates_1_to_3|1:A:one_table:_update_4,_the_tag@hl|2:B:one_table:_updates_1_to_4 arrows=2:A>B:merged title=A_stack_of_tables say_1=Every_transaction_adds_a_thin_table_on_top say_2=Thin_tables_are_merged_into_a_thick_one._A_table_is_never_amended id=tables at_1=15",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "reftable/tables.list",
+      "oldest first"
+     ],
+     [
+      "after git pack-refs --all",
+      "compacted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "one table: updates 1 to 3"
+     ],
+     [
+      1,
+      "A",
+      "one table: update 4, the tag",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "one table: updates 1 to 4"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A",
+      "B",
+      "merged"
+     ]
+    ],
+    "title": "A stack of tables",
+    "say": {
+     "1": "Every transaction adds a thin table on top",
+     "2": "Thin tables are merged into a thick one. A table is never amended"
+    },
+    "id": "tables",
+    "at": {
+     "1": 0.15
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1923
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=files_backend:.git|*reftable_backend:.git rows=1:A:HEAD_-_ref:_refs/heads/main|1:A:refs/heads/_-_one_file_per_loose_ref|1:A:packed-refs_-_many_refs_in_one_file|1:A:logs/_-_one_reflog_file_per_ref|2:B:HEAD_-_ref:_refs/heads/.invalid_(stub)@hl|2:B:refs/heads_-_a_regular_file_(stub)@hl|3:B:reftable/tables.list_-_the_tables_in_use|3:B:reftable/*.ref_-_refs_and_reflogs|4:A:config|4:B:config_-_extensions.refstorage_=_reftable|4:B:config_-_core.repositoryformatversion_=_1|5:A:MERGE__HEAD,_FETCH__HEAD_-_files@ok|5:B:MERGE__HEAD,_FETCH__HEAD_-_files@ok title=Two_.git_directories_side_by_side say_2=Two_stubs_stay_for_tools_that_look_for_them say_3=No_packed-refs_and_no_logs/:_refs_and_reflogs_are_in_the_tables say_5=The_two_pseudorefs_are_files_in_both_formats id=layout",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "files backend",
+      ".git"
+     ],
+     [
+      "*reftable backend",
+      ".git"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "HEAD - ref: refs/heads/main"
+     ],
+     [
+      1,
+      "A",
+      "refs/heads/ - one file per loose ref"
+     ],
+     [
+      1,
+      "A",
+      "packed-refs - many refs in one file"
+     ],
+     [
+      1,
+      "A",
+      "logs/ - one reflog file per ref"
+     ],
+     [
+      2,
+      "B",
+      "HEAD - ref: refs/heads/.invalid (stub)",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "refs/heads - a regular file (stub)",
+      "hl"
+     ],
+     [
+      3,
+      "B",
+      "reftable/tables.list - the tables in use"
+     ],
+     [
+      3,
+      "B",
+      "reftable/*.ref - refs and reflogs"
+     ],
+     [
+      4,
+      "A",
+      "config"
+     ],
+     [
+      4,
+      "B",
+      "config - extensions.refstorage = reftable"
+     ],
+     [
+      4,
+      "B",
+      "config - core.repositoryformatversion = 1"
+     ],
+     [
+      5,
+      "A",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ],
+     [
+      5,
+      "B",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ]
+    ],
+    "title": "Two .git directories side by side",
+    "say": {
+     "2": "Two stubs stay for tools that look for them",
+     "3": "No packed-refs and no logs/: refs and reflogs are in the tables",
+     "5": "The two pseudorefs are files in both formats"
+    },
+    "id": "layout",
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.215
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=git_init_or_git_clone:--ref-format=reftable|init.defaultRefFormat:a_setting,_since_Git_2.47|git_refs_migrate:since_Git_2.46,_for_an_existing_repository title=Three_ways_in numbered=on id=ways at_2=40 at_3=62",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "git init or git clone",
+      "--ref-format=reftable"
+     ],
+     [
+      "init.defaultRefFormat",
+      "a setting, since Git 2.47"
+     ],
+     [
+      "git refs migrate",
+      "since Git 2.46, for an existing repository"
+     ]
+    ],
+    "title": "Three ways in",
+    "numbered": "on",
+    "id": "ways",
+    "at": {
+     "2": 0.4,
+     "3": 0.62
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2323
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=git_init_or_git_clone:--ref-format=reftable|init.defaultRefFormat:a_setting,_since_Git_2.47|git_refs_migrate:since_Git_2.46,_for_an_existing_repository title=Three_ways_in numbered=on id=ways at_2=40 at_3=62",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "git init or git clone",
+      "--ref-format=reftable"
+     ],
+     [
+      "init.defaultRefFormat",
+      "a setting, since Git 2.47"
+     ],
+     [
+      "git refs migrate",
+      "since Git 2.46, for an existing repository"
+     ]
+    ],
+    "title": "Three ways in",
+    "numbered": "on",
+    "id": "ways",
+    "at": {
+     "2": 0.4,
+     "3": 0.62
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "says": [
+    "The ref format is local to each repository"
+   ],
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2516
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte steps=one,same left=git_hash-object_in_sha256-repo right=shasum_-a_256,_outside_Git lines=blob_16,\\0,retry__limit_=_3 alt=retry__limit_=_3 ids=ca399e7a...,ca399e7a... fn=SHA-256 same=The_same_bytes_through_the_same_function_give_the_same_ID title=SHA-256:_another_hash_function,_the_same_object id=same256",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "git hash-object in sha256-repo",
+    "right": "shasum -a 256, outside Git",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "alt": "retry_limit = 3",
+    "ids": [
+     "ca399e7a...",
+     "ca399e7a..."
+    ],
+    "fn": "SHA-256",
+    "same": "The same bytes through the same function give the same ID",
+    "title": "SHA-256: another hash function, the same object",
+    "id": "same256"
+   },
+   "steps": [
+    "one",
+    "same"
+   ],
+   "upto": 1,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2605
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=created_by:git_init_--object-format=sha256|fixed:for_the_life_of_the_repository|covers:object_IDs,_the_index_checksum,_the_pack_checksums|no_interoperability:with_SHA-1_repositories title=A_SHA-256_repository id=sha at_1=30 at_2=60 at_3=86 at_4=40",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "created by",
+      "git init --object-format=sha256"
+     ],
+     [
+      "fixed",
+      "for the life of the repository"
+     ],
+     [
+      "covers",
+      "object IDs, the index checksum, the pack checksums"
+     ],
+     [
+      "no interoperability",
+      "with SHA-1 repositories"
+     ]
+    ],
+    "title": "A SHA-256 repository",
+    "id": "sha",
+    "at": {
+     "1": 0.3,
+     "2": 0.6,
+     "3": 0.86,
+     "4": 0.4
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2845
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=created_by:git_init_--object-format=sha256|fixed:for_the_life_of_the_repository|covers:object_IDs,_the_index_checksum,_the_pack_checksums|no_interoperability:with_SHA-1_repositories title=A_SHA-256_repository id=sha at_1=30 at_2=60 at_3=86 at_4=40",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "created by",
+      "git init --object-format=sha256"
+     ],
+     [
+      "fixed",
+      "for the life of the repository"
+     ],
+     [
+      "covers",
+      "object IDs, the index checksum, the pack checksums"
+     ],
+     [
+      "no interoperability",
+      "with SHA-1 repositories"
+     ]
+    ],
+    "title": "A SHA-256 repository",
+    "id": "sha",
+    "at": {
+     "1": 0.3,
+     "2": 0.6,
+     "3": 0.86,
+     "4": 0.4
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.3143
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=SHA-256:conditional,_with_no_plan_to_deprecate_SHA-1|reftable|main:as_the_initial_branch title=Planned_defaults_for_new_repositories_in_Git_3.0:_unreleased,_no_date id=plan",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "SHA-256",
+      "conditional, with no plan to deprecate SHA-1"
+     ],
+     [
+      "reftable",
+      ""
+     ],
+     [
+      "main",
+      "as the initial branch"
+     ]
+    ],
+    "title": "Planned defaults for new repositories in Git 3.0: unreleased, no date",
+    "id": "plan"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.3291
+  },
+  {
+   "kind": "callout",
+   "direction": "\"GitHub, not Git.\"",
+   "quotes": [
+    "GitHub, not Git."
+   ],
+   "quoted": true,
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.3518
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=two_names_that_differ_only_in_case:cannot_both_be_stored_on_macOS_and_Windows|deleting_a_packed_ref:rewrites_the_whole_packed-refs_file|multi-ref_updates:are_not_atomic title=Three_problems_of_the_files_format numbered=on id=why",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "two names that differ only in case",
+      "cannot both be stored on macOS and Windows"
+     ],
+     [
+      "deleting a packed ref",
+      "rewrites the whole packed-refs file"
+     ],
+     [
+      "multi-ref updates",
+      "are not atomic"
+     ]
+    ],
+    "title": "Three problems of the files format",
+    "numbered": "on",
+    "id": "why"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "upto": 3,
+   "says": [
+    "Adopt it where it solves a problem you have, after checking every tool"
+   ],
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.3821
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.4086
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=reftable/tables.list:oldest_first|after_git_pack-refs_--all:compacted rows=1:A:one_table:_updates_1_to_3|1:A:one_table:_update_4,_the_tag@hl|2:B:one_table:_updates_1_to_4 arrows=2:A>B:merged title=A_stack_of_tables say_1=Every_transaction_adds_a_thin_table_on_top say_2=Thin_tables_are_merged_into_a_thick_one._A_table_is_never_amended id=tables at_1=15",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "reftable/tables.list",
+      "oldest first"
+     ],
+     [
+      "after git pack-refs --all",
+      "compacted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "one table: updates 1 to 3"
+     ],
+     [
+      1,
+      "A",
+      "one table: update 4, the tag",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "one table: updates 1 to 4"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A",
+      "B",
+      "merged"
+     ]
+    ],
+    "title": "A stack of tables",
+    "say": {
+     "1": "Every transaction adds a thin table on top",
+     "2": "Thin tables are merged into a thick one. A table is never amended"
+    },
+    "id": "tables",
+    "at": {
+     "1": 0.15
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.4102
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte lines=blob_16|\\0|retry__limit_=_3 fn=SHA-1 fn2=SHA-256 ids=f784b58423ef67be5af8d1cfdfd9bea5eaa26bae,ca399e7aeebdebc3e8ae90cbb2d8cab88b72cd16ebf654d483f48652356f1d68 steps=one,different left=in_sha1-repo right=in_sha256-repo diff=The_same_bytes,_two_functions,_two_IDs:_40_digits_and_64 title=What_differs_is_how_long_an_ID_is id=two",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "fn": "SHA-1",
+    "fn2": "SHA-256",
+    "ids": [
+     "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae",
+     "ca399e7aeebdebc3e8ae90cbb2d8cab88b72cd16ebf654d483f48652356f1d68"
+    ],
+    "left": "in sha1-repo",
+    "right": "in sha256-repo",
+    "diff": "The same bytes, two functions, two IDs: 40 digits and 64",
+    "title": "What differs is how long an ID is",
+    "id": "two"
+   },
+   "steps": [
+    "one",
+    "different"
+   ],
+   "upto": 2,
+   "section": "MENTAL MODEL",
+   "n": 32,
+   "progress": 0.4358
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 33,
+   "progress": 0.4598
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=files_backend:.git|*reftable_backend:.git rows=1:A:HEAD_-_ref:_refs/heads/main|1:A:refs/heads/_-_one_file_per_loose_ref|1:A:packed-refs_-_many_refs_in_one_file|1:A:logs/_-_one_reflog_file_per_ref|2:B:HEAD_-_ref:_refs/heads/.invalid_(stub)@hl|2:B:refs/heads_-_a_regular_file_(stub)@hl|3:B:reftable/tables.list_-_the_tables_in_use|3:B:reftable/*.ref_-_refs_and_reflogs|4:A:config|4:B:config_-_extensions.refstorage_=_reftable|4:B:config_-_core.repositoryformatversion_=_1|5:A:MERGE__HEAD,_FETCH__HEAD_-_files@ok|5:B:MERGE__HEAD,_FETCH__HEAD_-_files@ok title=Two_.git_directories_side_by_side say_2=Two_stubs_stay_for_tools_that_look_for_them say_3=No_packed-refs_and_no_logs/:_refs_and_reflogs_are_in_the_tables say_5=The_two_pseudorefs_are_files_in_both_formats id=layout",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "files backend",
+      ".git"
+     ],
+     [
+      "*reftable backend",
+      ".git"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "HEAD - ref: refs/heads/main"
+     ],
+     [
+      1,
+      "A",
+      "refs/heads/ - one file per loose ref"
+     ],
+     [
+      1,
+      "A",
+      "packed-refs - many refs in one file"
+     ],
+     [
+      1,
+      "A",
+      "logs/ - one reflog file per ref"
+     ],
+     [
+      2,
+      "B",
+      "HEAD - ref: refs/heads/.invalid (stub)",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "refs/heads - a regular file (stub)",
+      "hl"
+     ],
+     [
+      3,
+      "B",
+      "reftable/tables.list - the tables in use"
+     ],
+     [
+      3,
+      "B",
+      "reftable/*.ref - refs and reflogs"
+     ],
+     [
+      4,
+      "A",
+      "config"
+     ],
+     [
+      4,
+      "B",
+      "config - extensions.refstorage = reftable"
+     ],
+     [
+      4,
+      "B",
+      "config - core.repositoryformatversion = 1"
+     ],
+     [
+      5,
+      "A",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ],
+     [
+      5,
+      "B",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ]
+    ],
+    "title": "Two .git directories side by side",
+    "say": {
+     "2": "Two stubs stay for tools that look for them",
+     "3": "No packed-refs and no logs/: refs and reflogs are in the tables",
+     "5": "The two pseudorefs are files in both formats"
+    },
+    "id": "layout",
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.4614
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=files_backend:.git|*reftable_backend:.git rows=1:A:HEAD_-_ref:_refs/heads/main|1:A:refs/heads/_-_one_file_per_loose_ref|1:A:packed-refs_-_many_refs_in_one_file|1:A:logs/_-_one_reflog_file_per_ref|2:B:HEAD_-_ref:_refs/heads/.invalid_(stub)@hl|2:B:refs/heads_-_a_regular_file_(stub)@hl|3:B:reftable/tables.list_-_the_tables_in_use|3:B:reftable/*.ref_-_refs_and_reflogs|4:A:config|4:B:config_-_extensions.refstorage_=_reftable|4:B:config_-_core.repositoryformatversion_=_1|5:A:MERGE__HEAD,_FETCH__HEAD_-_files@ok|5:B:MERGE__HEAD,_FETCH__HEAD_-_files@ok title=Two_.git_directories_side_by_side say_2=Two_stubs_stay_for_tools_that_look_for_them say_3=No_packed-refs_and_no_logs/:_refs_and_reflogs_are_in_the_tables say_5=The_two_pseudorefs_are_files_in_both_formats id=layout",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "files backend",
+      ".git"
+     ],
+     [
+      "*reftable backend",
+      ".git"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "HEAD - ref: refs/heads/main"
+     ],
+     [
+      1,
+      "A",
+      "refs/heads/ - one file per loose ref"
+     ],
+     [
+      1,
+      "A",
+      "packed-refs - many refs in one file"
+     ],
+     [
+      1,
+      "A",
+      "logs/ - one reflog file per ref"
+     ],
+     [
+      2,
+      "B",
+      "HEAD - ref: refs/heads/.invalid (stub)",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "refs/heads - a regular file (stub)",
+      "hl"
+     ],
+     [
+      3,
+      "B",
+      "reftable/tables.list - the tables in use"
+     ],
+     [
+      3,
+      "B",
+      "reftable/*.ref - refs and reflogs"
+     ],
+     [
+      4,
+      "A",
+      "config"
+     ],
+     [
+      4,
+      "B",
+      "config - extensions.refstorage = reftable"
+     ],
+     [
+      4,
+      "B",
+      "config - core.repositoryformatversion = 1"
+     ],
+     [
+      5,
+      "A",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ],
+     [
+      5,
+      "B",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ]
+    ],
+    "title": "Two .git directories side by side",
+    "say": {
+     "2": "Two stubs stay for tools that look for them",
+     "3": "No packed-refs and no logs/: refs and reflogs are in the tables",
+     "5": "The two pseudorefs are files in both formats"
+    },
+    "id": "layout",
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "base": 5,
+   "upto": 5,
+   "says": [
+    "On the right: two stubs, no packed-refs, no logs/"
+   ],
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.4707
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=files_backend:.git|*reftable_backend:.git rows=1:A:HEAD_-_ref:_refs/heads/main|1:A:refs/heads/_-_one_file_per_loose_ref|1:A:packed-refs_-_many_refs_in_one_file|1:A:logs/_-_one_reflog_file_per_ref|2:B:HEAD_-_ref:_refs/heads/.invalid_(stub)@hl|2:B:refs/heads_-_a_regular_file_(stub)@hl|3:B:reftable/tables.list_-_the_tables_in_use|3:B:reftable/*.ref_-_refs_and_reflogs|4:A:config|4:B:config_-_extensions.refstorage_=_reftable|4:B:config_-_core.repositoryformatversion_=_1|5:A:MERGE__HEAD,_FETCH__HEAD_-_files@ok|5:B:MERGE__HEAD,_FETCH__HEAD_-_files@ok title=Two_.git_directories_side_by_side say_2=Two_stubs_stay_for_tools_that_look_for_them say_3=No_packed-refs_and_no_logs/:_refs_and_reflogs_are_in_the_tables say_5=The_two_pseudorefs_are_files_in_both_formats id=layout",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "files backend",
+      ".git"
+     ],
+     [
+      "*reftable backend",
+      ".git"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "HEAD - ref: refs/heads/main"
+     ],
+     [
+      1,
+      "A",
+      "refs/heads/ - one file per loose ref"
+     ],
+     [
+      1,
+      "A",
+      "packed-refs - many refs in one file"
+     ],
+     [
+      1,
+      "A",
+      "logs/ - one reflog file per ref"
+     ],
+     [
+      2,
+      "B",
+      "HEAD - ref: refs/heads/.invalid (stub)",
+      "hl"
+     ],
+     [
+      2,
+      "B",
+      "refs/heads - a regular file (stub)",
+      "hl"
+     ],
+     [
+      3,
+      "B",
+      "reftable/tables.list - the tables in use"
+     ],
+     [
+      3,
+      "B",
+      "reftable/*.ref - refs and reflogs"
+     ],
+     [
+      4,
+      "A",
+      "config"
+     ],
+     [
+      4,
+      "B",
+      "config - extensions.refstorage = reftable"
+     ],
+     [
+      4,
+      "B",
+      "config - core.repositoryformatversion = 1"
+     ],
+     [
+      5,
+      "A",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ],
+     [
+      5,
+      "B",
+      "MERGE_HEAD, FETCH_HEAD - files",
+      "ok"
+     ]
+    ],
+    "title": "Two .git directories side by side",
+    "say": {
+     "2": "Two stubs stay for tools that look for them",
+     "3": "No packed-refs and no logs/: refs and reflogs are in the tables",
+     "5": "The two pseudorefs are files in both formats"
+    },
+    "id": "layout",
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "base": 5,
+   "upto": 6,
+   "section": "DIAGRAM",
+   "n": 36,
+   "progress": 0.4862
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.4955
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/reftable"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.4971
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/01-init",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git init --ref-format=reftable inference-service"
+    },
+    {
+     "t": "out",
+     "s": "Initialized empty Git repository in $LAB/ch03/reftable/inference-service/.git/"
+    },
+    {
+     "t": "cmd",
+     "s": "cd inference-service"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --show-ref-format"
+    },
+    {
+     "t": "out",
+     "s": "reftable"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/config"
+    },
+    {
+     "t": "out",
+     "s": "[extensions]"
+    },
+    {
+     "t": "out",
+     "s": "        refstorage = reftable"
+    },
+    {
+     "t": "out",
+     "s": "[core]"
+    },
+    {
+     "t": "out",
+     "s": "        repositoryformatversion = 1"
+    },
+    {
+     "t": "out",
+     "s": "        filemode = true"
+    },
+    {
+     "t": "out",
+     "s": "        bare = false"
+    },
+    {
+     "t": "out",
+     "s": "        logallrefupdates = true"
+    },
+    {
+     "t": "out",
+     "s": "        ignorecase = true"
+    },
+    {
+     "t": "out",
+     "s": "        precomposeunicode = true"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.4997
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads"
+    },
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref HEAD"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.5073
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/02-stubs",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    },
+    {
+     "t": "out",
+     "s": "reftable"
+    },
+    {
+     "t": "out",
+     "s": "# Two stub files are kept for tools that look for them. Neither holds a ref:"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/.invalid"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads"
+    },
+    {
+     "t": "out",
+     "s": "this repository uses the reftable format"
+    },
+    {
+     "t": "out",
+     "s": "# The real answer comes from Git:"
+    },
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs/heads/main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5191
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/03-tables",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "printf 'retry_limit = 3\\n' > config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git add config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -m \"Add service configuration\""
+    },
+    {
+     "t": "cmd",
+     "s": "git branch feature/batching"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag -a v1.0.0 -m \"Release 1.0.0\""
+    },
+    {
+     "t": "out",
+     "s": "# Refs and reflogs live in binary tables. tables.list names the tables in use, oldest first."
+    },
+    {
+     "t": "out",
+     "s": "# A table name is first update number, last update number and a random suffix (masked here)."
+    },
+    {
+     "t": "cmd",
+     "s": "sed -E 's/-[0-9a-f]{8}\\./-<random>./' .git/reftable/tables.list"
+    },
+    {
+     "t": "out",
+     "s": "0x000000000001-0x000000000003-<random>.ref"
+    },
+    {
+     "t": "out",
+     "s": "0x000000000004-0x000000000004-<random>.ref"
+    },
+    {
+     "t": "out",
+     "s": "# Compaction merges tables. Git does it on its own; git pack-refs asks for it explicitly:"
+    },
+    {
+     "t": "cmd",
+     "s": "git pack-refs --all"
+    },
+    {
+     "t": "cmd",
+     "s": "sed -E 's/-[0-9a-f]{8}\\./-<random>./' .git/reftable/tables.list"
+    },
+    {
+     "t": "out",
+     "s": "0x000000000001-0x000000000004-<random>.ref"
+    },
+    {
+     "t": "out",
+     "s": "# The 24-byte header: REFT, version 1, block size, first and last update number."
+    },
+    {
+     "t": "cmd",
+     "s": "head -c 24 .git/reftable/*.ref | xxd"
+    },
+    {
+     "t": "out",
+     "s": "00000000: 5245 4654 0100 1000 0000 0000 0000 0001  REFT............"
+    },
+    {
+     "t": "out",
+     "s": "00000010: 0000 0000 0000 0004                      ........"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5402
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/04-same-answers",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# No logs directory and no packed-refs file. Plumbing answers as in any other repository:"
+    },
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    },
+    {
+     "t": "out",
+     "s": "reftable"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref"
+    },
+    {
+     "t": "out",
+     "s": "849357d27dcaa9267a13a0be93d3ea0b5c52ea01 commit refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "849357d27dcaa9267a13a0be93d3ea0b5c52ea01 commit refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "90350c8a07136a48c3b158534161e6057047243a tag    refs/tags/v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog show feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "849357d feature/batching@{0}: branch: Created from main"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse main"
+    },
+    {
+     "t": "out",
+     "s": "849357d27dcaa9267a13a0be93d3ea0b5c52ea01"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5616
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/05-root-refs",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A conflicted merge, to see where the refs outside refs/ are kept in this format:"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch --quiet feature/batching && printf 'retry_limit = 4\\n' > config.toml && git commit --quiet"
+    },
+    {
+     "t": "wrap",
+     "s": "-am 'Allow four retries'",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch --quiet main && printf 'retry_limit = 5\\n' > config.toml && git commit --quiet -am 'Allow"
+    },
+    {
+     "t": "wrap",
+     "s": "five retries'",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "Auto-merging config.toml"
+    },
+    {
+     "t": "out",
+     "s": "CONFLICT (content): Merge conflict in config.toml"
+    },
+    {
+     "t": "out",
+     "s": "Automatic merge failed; fix conflicts and then commit the result."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "out",
+     "s": "# MERGE_HEAD is a file, as in every repository. ORIG_HEAD and AUTO_MERGE are not files here:"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5925
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/05-root-refs",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "MERGE_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "MERGE_MODE"
+    },
+    {
+     "t": "out",
+     "s": "MERGE_MSG"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    },
+    {
+     "t": "out",
+     "s": "reftable"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --include-root-refs | grep -v refs/"
+    },
+    {
+     "t": "out",
+     "s": "4c07605aeed786c4596df1b9212ab37962730b08 tree   AUTO_MERGE"
+    },
+    {
+     "t": "out",
+     "s": "1dd74b5d1a428941e018b4c2f6f98f0559cc5b27 commit HEAD"
+    },
+    {
+     "t": "out",
+     "s": "1dd74b5d1a428941e018b4c2f6f98f0559cc5b27 commit ORIG_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge --abort"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.5956
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/06-names",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Names that differ only in case are two refs here, on a filesystem that ignores case:"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch Hotfix"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch hotfix"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch --list \"[Hh]otfix\""
+    },
+    {
+     "t": "out",
+     "s": "  Hotfix"
+    },
+    {
+     "t": "out",
+     "s": "  hotfix"
+    },
+    {
+     "t": "out",
+     "s": "# The same two commands in a files-format repository on the same disk:"
+    },
+    {
+     "t": "cmd",
+     "s": "git init --quiet ../files-repo"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C ../files-repo commit --quiet --allow-empty -m \"Start\""
+    },
+    {
+     "t": "cmd",
+     "s": "git -C ../files-repo branch Hotfix"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C ../files-repo branch hotfix"
+    },
+    {
+     "t": "out",
+     "s": "fatal: a branch named 'hotfix' already exists"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "out",
+     "s": "# One rule of the files layout is kept: a ref cannot be both a name and a prefix of names."
+    },
+    {
+     "t": "cmd",
+     "s": "git branch feature"
+    },
+    {
+     "t": "out",
+     "s": "fatal: 'refs/heads/feature/batching' exists; cannot create 'refs/heads/feature'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.6082
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/reftable/07-git-3-preview",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The two formats that Git 3.0 plans as defaults for new repositories can be chosen today:"
+    },
+    {
+     "t": "cmd",
+     "s": "git init --quiet --object-format=sha256 --ref-format=reftable ../future-repo"
+    },
+    {
+     "t": "cmd",
+     "s": "cat ../future-repo/.git/config"
+    },
+    {
+     "t": "out",
+     "s": "[extensions]"
+    },
+    {
+     "t": "out",
+     "s": "        objectformat = sha256"
+    },
+    {
+     "t": "out",
+     "s": "        refstorage = reftable"
+    },
+    {
+     "t": "out",
+     "s": "[core]"
+    },
+    {
+     "t": "out",
+     "s": "        repositoryformatversion = 1"
+    },
+    {
+     "t": "out",
+     "s": "        filemode = true"
+    },
+    {
+     "t": "out",
+     "s": "        bare = false"
+    },
+    {
+     "t": "out",
+     "s": "        logallrefupdates = true"
+    },
+    {
+     "t": "out",
+     "s": "        ignorecase = true"
+    },
+    {
+     "t": "out",
+     "s": "        precomposeunicode = true"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.6263
+  },
+  {
+   "kind": "terminal",
+   "direction": "The object format.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/sha256"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.6327
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/sha256/01-build",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# What this Git was built with:"
+    },
+    {
+     "t": "cmd",
+     "s": "git version --build-options | grep -e SHA -e default"
+    },
+    {
+     "t": "out",
+     "s": "SHA-1: SHA1_DC"
+    },
+    {
+     "t": "out",
+     "s": "SHA-256: SHA256_BLK"
+    },
+    {
+     "t": "out",
+     "s": "default-ref-format: files"
+    },
+    {
+     "t": "out",
+     "s": "default-hash: sha1"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6353
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/sha256/02-init",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git init --quiet sha1-repo"
+    },
+    {
+     "t": "cmd",
+     "s": "git init --quiet --object-format=sha256 sha256-repo"
+    },
+    {
+     "t": "cmd",
+     "s": "cat sha256-repo/.git/config"
+    },
+    {
+     "t": "out",
+     "s": "[extensions]"
+    },
+    {
+     "t": "out",
+     "s": "        objectformat = sha256"
+    },
+    {
+     "t": "out",
+     "s": "[core]"
+    },
+    {
+     "t": "out",
+     "s": "        repositoryformatversion = 1"
+    },
+    {
+     "t": "out",
+     "s": "        filemode = true"
+    },
+    {
+     "t": "out",
+     "s": "        bare = false"
+    },
+    {
+     "t": "out",
+     "s": "        logallrefupdates = true"
+    },
+    {
+     "t": "out",
+     "s": "        ignorecase = true"
+    },
+    {
+     "t": "out",
+     "s": "        precomposeunicode = true"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha1-repo rev-parse --show-object-format"
+    },
+    {
+     "t": "out",
+     "s": "sha1"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo rev-parse --show-object-format"
+    },
+    {
+     "t": "out",
+     "s": "sha256"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6416
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git -C sha1-repo hash-object config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo hash-object config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'blob 16\\0retry_limit = 3\\n' | shasum -a 256"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6632
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/sha256/03-ids",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The same sixteen bytes, hashed by each repository:"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'retry_limit = 3\\n' > sha1-repo/config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "cp sha1-repo/config.toml sha256-repo/config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha1-repo hash-object config.toml"
+    },
+    {
+     "t": "out",
+     "s": "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo hash-object config.toml"
+    },
+    {
+     "t": "out",
+     "s": "ca399e7aeebdebc3e8ae90cbb2d8cab88b72cd16ebf654d483f48652356f1d68"
+    },
+    {
+     "t": "out",
+     "s": "# The object format is the same; only the hash function differs:"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'blob 16\\0retry_limit = 3\\n' | shasum -a 256"
+    },
+    {
+     "t": "out",
+     "s": "ca399e7aeebdebc3e8ae90cbb2d8cab88b72cd16ebf654d483f48652356f1d68  -"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "ecfdab6 Add service configuration"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo cat-file -p HEAD"
+    },
+    {
+     "t": "out",
+     "s": "tree 13e25952da64d7ebd81886b745d0ddef276fe0249a4869054efe6b27a72675b5"
+    },
+    {
+     "t": "out",
+     "s": "author Lab User <you@example.com> 1788756240 +0530"
+    },
+    {
+     "t": "out",
+     "s": "committer Lab User <you@example.com> 1788756240 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Add service configuration"
+    },
+    {
+     "t": "cmd",
+     "s": "cat sha256-repo/.git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "ecfdab60723aa25daa18b6d1de7fba739cdd5c2013ef47d827cc33d48261bfb5"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6767
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte steps=one,same left=git_hash-object_in_sha256-repo right=shasum_-a_256,_outside_Git lines=blob_16,\\0,retry__limit_=_3 alt=retry__limit_=_3 ids=ca399e7a...,ca399e7a... fn=SHA-256 same=The_same_bytes_through_the_same_function_give_the_same_ID title=SHA-256:_another_hash_function,_the_same_object id=same256",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "git hash-object in sha256-repo",
+    "right": "shasum -a 256, outside Git",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "alt": "retry_limit = 3",
+    "ids": [
+     "ca399e7a...",
+     "ca399e7a..."
+    ],
+    "fn": "SHA-256",
+    "same": "The same bytes through the same function give the same ID",
+    "title": "SHA-256: another hash function, the same object",
+    "id": "same256"
+   },
+   "steps": [
+    "one",
+    "same"
+   ],
+   "base": 1,
+   "upto": 2,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6927
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/sha256/04-no-interop",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The two formats cannot exchange objects, in either direction:"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha1-repo fetch ../sha256-repo main"
+    },
+    {
+     "t": "out",
+     "s": "fatal: mismatched algorithms: client sha1; server sha256"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha1-repo push ../sha256-repo main:refs/heads/from-sha1"
+    },
+    {
+     "t": "out",
+     "s": "fatal: the receiving end does not support this repository's hash algorithm"
+    },
+    {
+     "t": "out",
+     "s": "fatal: the remote end hung up unexpectedly"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo push ../sha1-repo main:refs/heads/from-sha256"
+    },
+    {
+     "t": "out",
+     "s": "fatal: the receiving end does not support this repository's hash algorithm"
+    },
+    {
+     "t": "out",
+     "s": "fatal: the remote end hung up unexpectedly"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "out",
+     "s": "# A clone adopts the format of what it clones:"
+    },
+    {
+     "t": "cmd",
+     "s": "git clone --quiet sha256-repo sha256-clone"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-clone rev-parse --show-object-format"
+    },
+    {
+     "t": "out",
+     "s": "sha256"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6995
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/sha256/05-forty-hex",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A check that assumes forty hexadecimal digits accepts one repository and rejects the other:"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha1-repo rev-parse HEAD | grep -E -c '^[0-9a-f]{40}$'"
+    },
+    {
+     "t": "out",
+     "s": "1"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C sha256-repo rev-parse HEAD | grep -E -c '^[0-9a-f]{40}$'"
+    },
+    {
+     "t": "out",
+     "s": "0"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.7142
+  },
+  {
+   "kind": "terminal",
+   "direction": "Lab 17.2, up to the checkpoint.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/lab-17-2-files-vs-reftable"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.723
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-2-files-vs-reftable/02-on-disk",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -A files-repo/.git"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "logs"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    }
+   ],
+   "page": [
+    1,
+    3
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.7256
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-2-files-vs-reftable/02-on-disk",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -A reftable-repo/.git"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    },
+    {
+     "t": "out",
+     "s": "reftable"
+    },
+    {
+     "t": "cmd",
+     "s": "cat files-repo/.git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "cat reftable-repo/.git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/.invalid"
+    },
+    {
+     "t": "cmd",
+     "s": "cat reftable-repo/.git/refs/heads"
+    },
+    {
+     "t": "out",
+     "s": "this repository uses the reftable format"
+    },
+    {
+     "t": "cmd",
+     "s": "ls reftable-repo/.git/reftable | sed -E 's/-[0-9a-f]{8}\\./-<random>./'"
+    },
+    {
+     "t": "out",
+     "s": "0x000000000001-0x000000000003-<random>.ref"
+    },
+    {
+     "t": "out",
+     "s": "tables.list"
+    },
+    {
+     "t": "cmd",
+     "s": "diff files-repo/.git/config reftable-repo/.git/config"
+    }
+   ],
+   "page": [
+    2,
+    3
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.7288
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-2-files-vs-reftable/02-on-disk",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "diff files-repo/.git/config reftable-repo/.git/config"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "2c2"
+    },
+    {
+     "t": "out",
+     "s": "<       repositoryformatversion = 0"
+    },
+    {
+     "t": "out",
+     "s": "---"
+    },
+    {
+     "t": "out",
+     "s": ">       repositoryformatversion = 1"
+    },
+    {
+     "t": "out",
+     "s": "7a8,9"
+    },
+    {
+     "t": "out",
+     "s": "> [extensions]"
+    },
+    {
+     "t": "out",
+     "s": ">       refstorage = reftable"
+    }
+   ],
+   "page": [
+    3,
+    3
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.732
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-2-files-vs-reftable/03-plumbing",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Ask Git instead of the filesystem, and the two repositories give the same answers:"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C files-repo for-each-ref"
+    },
+    {
+     "t": "out",
+     "s": "c2b21cba9323b02eb5f48fb94b95c5fc58519c16 commit refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "c2b21cba9323b02eb5f48fb94b95c5fc58519c16 commit refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "2d188081f73eaeaeea778324d89466d19b5d8e0a tag    refs/tags/v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C reftable-repo for-each-ref"
+    },
+    {
+     "t": "out",
+     "s": "c2b21cba9323b02eb5f48fb94b95c5fc58519c16 commit refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "c2b21cba9323b02eb5f48fb94b95c5fc58519c16 commit refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "2d188081f73eaeaeea778324d89466d19b5d8e0a tag    refs/tags/v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C files-repo symbolic-ref HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C reftable-repo symbolic-ref HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C reftable-repo reflog show main"
+    },
+    {
+     "t": "out",
+     "s": "c2b21cb main@{0}: commit (initial): Add service configuration"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C files-repo rev-parse --show-ref-format"
+    },
+    {
+     "t": "out",
+     "s": "files"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C reftable-repo rev-parse --show-ref-format"
+    },
+    {
+     "t": "out",
+     "s": "reftable"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.7351
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 61,
+   "progress": 0.7562
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 62,
+   "progress": 0.7577
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/HEAD</code> or <code>.git/refs</code> in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+    "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+    "Editing <code>extensions.objectFormat</code> or <code>extensions.refStorage</code> in <code>.git/config</code>. Root cause: they are set by <code>git init</code> and <code>git refs migrate</code>; editing them corrupts the repository.",
+    "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+    "Migrating a shared repository while it is in use. Root cause: <code>git refs migrate</code> must not run while anything else writes, and linked worktrees block it."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 63,
+   "progress": 0.7598
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/HEAD</code> or <code>.git/refs</code> in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+    "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+    "Editing <code>extensions.objectFormat</code> or <code>extensions.refStorage</code> in <code>.git/config</code>. Root cause: they are set by <code>git init</code> and <code>git refs migrate</code>; editing them corrupts the repository.",
+    "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+    "Migrating a shared repository while it is in use. Root cause: <code>git refs migrate</code> must not run while anything else writes, and linked worktrees block it."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 64,
+   "progress": 0.7695
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/HEAD</code> or <code>.git/refs</code> in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+    "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+    "Editing <code>extensions.objectFormat</code> or <code>extensions.refStorage</code> in <code>.git/config</code>. Root cause: they are set by <code>git init</code> and <code>git refs migrate</code>; editing them corrupts the repository.",
+    "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+    "Migrating a shared repository while it is in use. Root cause: <code>git refs migrate</code> must not run while anything else writes, and linked worktrees block it."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 65,
+   "progress": 0.7792
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/HEAD</code> or <code>.git/refs</code> in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+    "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+    "Editing <code>extensions.objectFormat</code> or <code>extensions.refStorage</code> in <code>.git/config</code>. Root cause: they are set by <code>git init</code> and <code>git refs migrate</code>; editing them corrupts the repository.",
+    "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+    "Migrating a shared repository while it is in use. Root cause: <code>git refs migrate</code> must not run while anything else writes, and linked worktrees block it."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 66,
+   "progress": 0.7889
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/HEAD</code> or <code>.git/refs</code> in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+    "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+    "Editing <code>extensions.objectFormat</code> or <code>extensions.refStorage</code> in <code>.git/config</code>. Root cause: they are set by <code>git init</code> and <code>git refs migrate</code>; editing them corrupts the repository.",
+    "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+    "Migrating a shared repository while it is in use. Root cause: <code>git refs migrate</code> must not run while anything else writes, and linked worktrees block it."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 67,
+   "progress": 0.799
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 68,
+   "progress": 0.8099
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=two_names_that_differ_only_in_case:cannot_both_be_stored_on_macOS_and_Windows|deleting_a_packed_ref:rewrites_the_whole_packed-refs_file|multi-ref_updates:are_not_atomic title=Three_problems_of_the_files_format numbered=on id=why",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "two names that differ only in case",
+      "cannot both be stored on macOS and Windows"
+     ],
+     [
+      "deleting a packed ref",
+      "rewrites the whole packed-refs file"
+     ],
+     [
+      "multi-ref updates",
+      "are not atomic"
+     ]
+    ],
+    "title": "Three problems of the files format",
+    "numbered": "on",
+    "id": "why"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "says_before": [
+    "Adopt it where it solves a problem you have, after checking every tool"
+   ],
+   "upto": 3,
+   "says": [
+    "Adopt it where it solves a problem you have, after checking every tool",
+    "Names that differ only in case: the problem this team has"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 69,
+   "progress": 0.8115
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=git_init_or_git_clone:--ref-format=reftable|init.defaultRefFormat:a_setting,_since_Git_2.47|git_refs_migrate:since_Git_2.46,_for_an_existing_repository title=Three_ways_in numbered=on id=ways at_2=40 at_3=62",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "git init or git clone",
+      "--ref-format=reftable"
+     ],
+     [
+      "init.defaultRefFormat",
+      "a setting, since Git 2.47"
+     ],
+     [
+      "git refs migrate",
+      "since Git 2.46, for an existing repository"
+     ]
+    ],
+    "title": "Three ways in",
+    "numbered": "on",
+    "id": "ways",
+    "at": {
+     "2": 0.4,
+     "3": 0.62
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "says_before": [
+    "The ref format is local to each repository"
+   ],
+   "upto": 3,
+   "says": [
+    "The ref format is local to each repository",
+    "Before migrating: check every tool, stop all writers, no linked worktrees"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 70,
+   "progress": 0.8502
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 71,
+   "progress": 0.8649
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 17.2, \"The <code>files</code> backend versus reftable\", in <code>lab-manual/m17-index-refs-gitdir.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 72,
+   "progress": 0.8665
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 16.8, \"Scripts that read <code>.git</code> by hand\", in <code>exercises/m16-m18-internals.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 73,
+   "progress": 0.8833
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 74,
+   "progress": 0.8964
+  },
+  {
+   "kind": "keypoint",
+   "body": "Question 86 of the CTO question bank:",
+   "section": "INTERVIEW QUESTION",
+   "n": 75,
+   "progress": 0.898
+  },
+  {
+   "kind": "callout",
+   "quotes": [
+    "\"When would you migrate a repository to reftable, what breaks if you do it carelessly, and what stays the same?\""
+   ],
+   "quoted": false,
+   "section": "INTERVIEW QUESTION",
+   "n": 76,
+   "progress": 0.9009
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 77,
+   "progress": 0.9262
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=the_choice,Git_2.55_default,the_alternative rows=ref_format,_how_names_are_stored:files:reftable|object_format,_which_hash_names_objects:SHA-1:SHA-256 title=Two_independent_choices,_made_when_a_repository_is_created mono=off id=choices",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "the choice",
+     "Git 2.55 default",
+     "the alternative"
+    ],
+    "rows": [
+     [
+      "ref format, how names are stored",
+      "files",
+      "reftable"
+     ],
+     [
+      "object format, which hash names objects",
+      "SHA-1",
+      "SHA-256"
+     ]
+    ],
+    "title": "Two independent choices, made when a repository is created",
+    "mono": "off",
+    "id": "choices"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "base": 3,
+   "upto": 3,
+   "says": [
+    "The format belongs to the repository. You ask Git"
+   ],
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9277
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Reftable keeps refs and reflogs in binary tables; <code>.git/HEAD</code> and <code>.git/refs/heads</code> remain as stubs.",
+    "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+    "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+    "Decide the object format at <code>git init</code>; keep repositories for GitHub in SHA-1.",
+    "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 79,
+   "progress": 0.9366
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Reftable keeps refs and reflogs in binary tables; <code>.git/HEAD</code> and <code>.git/refs/heads</code> remain as stubs.",
+    "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+    "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+    "Decide the object format at <code>git init</code>; keep repositories for GitHub in SHA-1.",
+    "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 80,
+   "progress": 0.9395
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Reftable keeps refs and reflogs in binary tables; <code>.git/HEAD</code> and <code>.git/refs/heads</code> remain as stubs.",
+    "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+    "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+    "Decide the object format at <code>git init</code>; keep repositories for GitHub in SHA-1.",
+    "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 81,
+   "progress": 0.9454
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Reftable keeps refs and reflogs in binary tables; <code>.git/HEAD</code> and <code>.git/refs/heads</code> remain as stubs.",
+    "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+    "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+    "Decide the object format at <code>git init</code>; keep repositories for GitHub in SHA-1.",
+    "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 82,
+   "progress": 0.9526
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Reftable keeps refs and reflogs in binary tables; <code>.git/HEAD</code> and <code>.git/refs/heads</code> remain as stubs.",
+    "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+    "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+    "Decide the object format at <code>git init</code>; keep repositories for GitHub in SHA-1.",
+    "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 83,
+   "progress": 0.9606
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Reftable keeps refs and reflogs in binary tables; <code>.git/HEAD</code> and <code>.git/refs/heads</code> remain as stubs.",
+    "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+    "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+    "Decide the object format at <code>git init</code>; keep repositories for GitHub in SHA-1.",
+    "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 84,
+   "progress": 0.966
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 85,
+   "progress": 0.9723
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 3.13 to 3.17 of Chapter 3 and do the Practice section 3.19.",
+   "section": "HOMEWORK",
+   "n": 86,
+   "progress": 0.9739
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you met both formats that Git 3.0 plans, and you know what stays the same across them.",
+   "section": "HOMEWORK",
+   "n": 87,
+   "progress": 0.9798
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Two videos ago a release script failed because it read .git/refs/heads/main and the ref was packed. A ref is a name, such as a branch, that holds a commit ID. Suppose the team patched it: the script now reads the file if it exists and greps packed-refs otherwise, and it checks that the result is forty hexadecimal digits.",
+   "tele": "Two videos ago a release script failed because it read `.git/refs/heads/main` and the ref was packed. A ref is a name, such as a branch, that holds a commit ID. Suppose the team patched it: the script now reads the file if it exists and greps `packed-refs` otherwise, and it checks that the result is forty hexadecimal digits.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "ac86b239",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "It will fail again, in two new ways. In one repository, .git/refs/heads isn't a directory at all. It's a file that says \"this repository uses the reftable format\". In another, the commit ID is correct and has sixty-four digits.",
+   "tele": "It will fail again, in two new ways. In one repository, `.git/refs/heads` isn't a directory at all. It's a file that says \"this repository uses the reftable format\". In another, the commit ID is correct and has sixty-four digits.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 4,
+   "line": 16,
+   "t0": 26.7,
+   "h": "847a66cf",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Neither repository is damaged. Both use storage formats that Git supports today and plans as defaults for new repositories in Git 3.0. This video shows both formats and what stays the same across them. Keep those two failures in mind. Both come back.",
+   "tele": "Neither repository is damaged. Both use storage formats that Git supports today and plans as defaults for new repositories in Git 3.0. This video shows both formats and what stays the same across them. Keep those two failures in mind. Both come back.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 5,
+   "line": 18,
+   "t0": 42.3,
+   "h": "0da7d10b",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 59.5,
+   "h": "",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Two independent choices are made when a repository is created. The ref format: how names are stored. The object format: which hash function names the objects. A hash function computes an object's ID from its bytes. Git 2.55 defaults to files and SHA-1. The alternatives are reftable and SHA-256.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Two independent choices are made when a repository is created. The ref format: how names are stored. The object format: which hash function names the objects. A hash function computes an object's ID from its bytes. Git 2.55 defaults to `files` and SHA-1. The alternatives are reftable and SHA-256.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 7,
+   "line": 24,
+   "t0": 61.0,
+   "h": "4dcff817",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Three replays from labs/ch03: reftable.sh, sha256.sh, and the replay of Lab 17.2 up to its checkpoint.",
+   "tele": "Three replays from `labs/ch03`: `reftable.sh`, `sha256.sh`, and the replay of Lab 17.2 up to its checkpoint.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 8,
+   "line": 28,
+   "t0": 85.4,
+   "h": "bee15b82",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "One labelled command is discussed and not run in the two demos: git refs migrate --ref-format=reftable, 🟡 CAUTION. It changes the ref storage format and keeps the values. Preview it with --dry-run. Recover by migrating back, or by restoring the copy of .git you made first.",
+   "tele": "One labelled command is discussed and not run in the two demos: `git refs migrate --ref-format=reftable`, 🟡 CAUTION. It changes the ref storage format and keeps the values. Preview it with `--dry-run`. Recover by migrating back, or by restoring the copy of `.git` you made first.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 9,
+   "line": 30,
+   "t0": 91.8,
+   "h": "f612b609",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 10,
+   "line": 32,
+   "t0": 109.8,
+   "h": "",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 11,
+   "line": 34,
+   "t0": 111.3,
+   "h": "152923b5",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Create a repository with the reftable backend and show what replaces the ref files.",
+   "tele": "Create a repository with the reftable backend and show what replaces the ref files.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 12,
+   "line": 36,
+   "t0": 113.3,
+   "h": "f172ea7c",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Show that ref plumbing gives the same answers in both backends.",
+   "tele": "Show that ref plumbing gives the same answers in both backends.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 13,
+   "line": 36,
+   "t0": 118.9,
+   "h": "6a698669",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say what breaks when tools read .git/refs directly.",
+   "tele": "Say what breaks when tools read `.git/refs` directly.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 14,
+   "line": 36,
+   "t0": 123.3,
+   "h": "8c310440",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+   "tele": "Create a SHA-256 repository and state why it cannot exchange objects with a SHA-1 repository.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 15,
+   "line": 36,
+   "t0": 126.5,
+   "h": "18702a02",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "State what Git 3.0 plans for new repositories, as the section gives it.",
+   "tele": "State what Git 3.0 plans for new repositories, as the section gives it.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 16,
+   "line": 36,
+   "t0": 132.5,
+   "h": "56cfb10f",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 17,
+   "line": 42,
+   "t0": 137.7,
+   "h": "",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Reftable first. In one sentence: reftable stores refs and reflogs in binary, block-structured tables under .git/reftable/ instead of in loose files, packed-refs and logs/. It has been available since Git 2.45 and is planned as the default for new repositories in Git 3.0. A reflog is the journal of the values a ref has had.",
+   "tele": "Reftable first. In one sentence: reftable stores refs and reflogs in binary, block-structured tables under `.git/reftable/` instead of in loose files, `packed-refs` and `logs/`. It has been available since Git 2.45 and is planned as the default for new repositories in Git 3.0. A reflog is the journal of the values a ref has had.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 18,
+   "line": 44,
+   "t0": 139.2,
+   "h": "84a23644",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why does it exist? The project gives three reasons. The files format can't store two refs whose names differ only in case on the case-insensitive filesystems of macOS and Windows. Deleting a packed ref rewrites the whole packed-refs file. And multi-ref updates aren't atomic. Reftable compacts geometrically after every write and uses prefix compression.",
+   "tele": "Why does it exist? The project gives three reasons. The `files` format can't store two refs whose names differ only in case on the case-insensitive filesystems of macOS and Windows. Deleting a packed ref rewrites the whole `packed-refs` file. And multi-ref updates aren't atomic. Reftable compacts geometrically after every write and uses prefix compression.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 19,
+   "line": 48,
+   "t0": 161.2,
+   "h": "eaab8233",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now precisely. The tables live in $GIT_DIR/reftable/, and the file tables.list names the ones in use, oldest first. A table name is its first and last update number and a random suffix. Each table starts with a 24-byte header: REFT, a version byte, a block size, and the range of update numbers it covers.",
+   "tele": "Now precisely. The tables live in `$GIT_DIR/reftable/`, and the file `tables.list` names the ones in use, oldest first. A table name is its first and last update number and a random suffix. Each table starts with a 24-byte header: `REFT`, a version byte, a block size, and the range of update numbers it covers.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 20,
+   "line": 54,
+   "t0": 182.8,
+   "h": "bf11338c",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.15,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two stubs stay for tools that look for them: .git/HEAD containing ref: refs/heads/.invalid, and .git/refs/heads as a regular file. The format is declared by extensions.refstorage = reftable with core.repositoryformatversion = 1, and a Git that doesn't know the extension must refuse the repository.",
+   "tele": "Two stubs stay for tools that look for them: `.git/HEAD` containing `ref: refs/heads/.invalid`, and `.git/refs/heads` as a regular file. The format is declared by `extensions.refstorage = reftable` with `core.repositoryformatversion = 1`, and a Git that doesn't know the extension must refuse the repository.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 21,
+   "line": 60,
+   "t0": 204.4,
+   "h": "5c6fc1a1",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.205,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.615,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "There are three ways in. git init --ref-format=reftable, or git clone --ref-format=reftable. The setting init.defaultRefFormat, since Git 2.47. Or, for an existing repository, git refs migrate --ref-format=reftable, since Git 2.46, which can't migrate a repository with linked worktrees and must not run while anything else writes.",
+   "tele": "There are three ways in. `git init --ref-format=reftable`, or `git clone --ref-format=reftable`. The setting `init.defaultRefFormat`, since Git 2.47. Or, for an existing repository, `git refs migrate --ref-format=reftable`, since Git 2.46, which can't migrate a repository with linked worktrees and must not run while anything else writes.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 22,
+   "line": 66,
+   "t0": 220.8,
+   "h": "77e99b7d",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.4,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.62,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The ref format is local to each repository. A files clone fetches from a reftable server, and the other way round.",
+   "tele": "The ref format is local to each repository. A `files` clone fetches from a reftable server, and the other way round.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 23,
+   "line": 70,
+   "t0": 239.2,
+   "h": "0d6103f8",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The ref format is local to each repository"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now the object format. In one sentence: Git names objects with SHA-1 by default, computed by an implementation that detects attempted collision attacks, and can create repositories that use SHA-256 instead. The two kinds can't exchange objects, and a repository that must live on GitHub stays SHA-1. A collision is two different contents with the same hash.",
+   "tele": "Now the object format. In one sentence: Git names objects with SHA-1 by default, computed by an implementation that detects attempted collision attacks, and can create repositories that use SHA-256 instead. The two kinds can't exchange objects, and a repository that must live on GitHub stays SHA-1. A collision is two different contents with the same hash.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 24,
+   "line": 76,
+   "t0": 247.6,
+   "h": "c1e5d9f3",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Since Git 2.13 the default SHA-1 code is the collision-detecting variant, \"SHA1_DC\", which recognises the patterns of the known attacks on SHA-1. SHA-256 repositories were experimental in 2.29 and are a supported format since 2.42. You create one with git init --object-format=sha256. It's declared by extensions.objectformat = sha256, and it's fixed for the life of the repository: changing the setting afterwards, the documentation says, \"will not work and will produce hard-to-diagnose issues\".",
+   "tele": "Since Git 2.13 the default SHA-1 code is the collision-detecting variant, \"SHA1_DC\", which recognises the patterns of the known attacks on SHA-1. SHA-256 repositories were experimental in 2.29 and are a supported format since 2.42. You create one with `git init --object-format=sha256`. It's declared by `extensions.objectformat = sha256`, and it's fixed for the life of the repository: changing the setting afterwards, the documentation says, \"will not work and will produce hard-to-diagnose issues\".",
+   "words": 71,
+   "est": 28.4,
+   "slide": 25,
+   "line": 80,
+   "t0": 270.4,
+   "h": "5aeddc37",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.86,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The format applies to object IDs, the index checksum and the pack checksums alike. And the documentation states \"no interoperability between SHA-256 repositories and SHA-1 repositories\". A clone adopts the format of what it clones.",
+   "tele": "The format applies to object IDs, the index checksum and the pack checksums alike. And the documentation states \"no interoperability between SHA-256 repositories and SHA-1 repositories\". A clone adopts the format of what it clones.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 26,
+   "line": 80,
+   "t0": 298.8,
+   "h": "de46a5ba",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     },
+     {
+      "at": 0.4,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The Git 3.0 plans, exactly as the chapter gives them: for new repositories, SHA-256 and reftable as defaults, and main as the initial branch. The plan for SHA-256 is conditional on libraries, applications and forges being ready, with no plan to deprecate SHA-1. Git 3.0 is unreleased, and the official documentation gives no date.",
+   "tele": "The Git 3.0 plans, exactly as the chapter gives them: for new repositories, SHA-256 and reftable as defaults, and `main` as the initial branch. The plan for SHA-256 is conditional on libraries, applications and forges being ready, with no plan to deprecate SHA-1. Git 3.0 is unreleased, and the official documentation gives no date.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 27,
+   "line": 84,
+   "t0": 312.8,
+   "h": "69813596",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "GitHub had no publicly available support for SHA-256 repositories on 1 October 2026. A private preview is reported by GitLab's blog, by a community comment and by a conference speaker, but no GitHub blog post, changelog entry or documentation page announces it, so the course marks it unverified. Forgejo supports SHA-256 repositories since v7.0; GitLab announced experimental support in August 2024. Every repository in this course that touches GitHub therefore stays SHA-1.",
+   "tele": "GitHub had no publicly available support for SHA-256 repositories on 1 October 2026. A private preview is reported by GitLab's blog, by a community comment and by a conference speaker, but no GitHub blog post, changelog entry or documentation page announces it, so the course marks it unverified. Forgejo supports SHA-256 repositories since v7.0; GitLab announced experimental support in August 2024. Every repository in this course that touches GitHub therefore stays SHA-1.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 28,
+   "line": 90,
+   "t0": 334.4,
+   "h": "7b779147",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When to adopt reftable: where it solves a problem you have. Branch names that collide on a case-insensitive disk, tens of thousands of refs, or automation that updates many refs at once. When not: before you've checked every tool that opens the repository. A tool built on an older Git library refuses such a repository. The repository is fine. The tool is behind.",
+   "tele": "When to adopt reftable: where it solves a problem you have. Branch names that collide on a case-insensitive disk, tens of thousands of refs, or automation that updates many refs at once. When not: before you've checked every tool that opens the repository. A tool built on an older Git library refuses such a repository. The repository is fine. The tool is behind.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 29,
+   "line": 96,
+   "t0": 363.2,
+   "h": "905f4aa4",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "Adopt it where it solves a problem you have, after checking every tool"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 30,
+   "line": 98,
+   "t0": 388.4,
+   "h": "",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook's analogy for reftable: a stack of ledgers instead of a drawer of index cards. Every transaction adds a thin ledger on top. From time to time thin ledgers are merged into a thick one, and a lookup reads the stack from the newest down.",
+   "tele": "The textbook's analogy for reftable: a stack of ledgers instead of a drawer of index cards. Every transaction adds a thin ledger on top. From time to time thin ledgers are merged into a thick one, and a lookup reads the stack from the newest down.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 31,
+   "line": 102,
+   "t0": 389.9,
+   "h": "77666811",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks at correction: a ledger page could be amended, a table never is.",
+   "tele": "The analogy breaks at correction: a ledger page could be amended, a table never is.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 31,
+   "line": 104,
+   "t0": 408.3,
+   "h": "44bf7466",
+   "anim": {
+    "group": 23,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "For both formats, hold one model: the format is a property of the repository, not of Git. The names and the objects are the same things in every format. What differs is where the bytes are, and how long an ID is. Plumbing, Git's low-level commands, hides the first difference. git rev-parse --show-object-format tells you the second.",
+   "tele": "For both formats, hold one model: the format is a property of the repository, not of Git. The names and the objects are the same things in every format. What differs is where the bytes are, and how long an ID is. Plumbing, Git's low-level commands, hides the first difference. `git rev-parse --show-object-format` tells you the second.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 32,
+   "line": 108,
+   "t0": 414.3,
+   "h": "7db2e2d1",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.472,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 33,
+   "line": 110,
+   "t0": 437.1,
+   "h": "",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "On the left, what you know: HEAD as a text file naming a branch, a directory of loose refs, packed-refs, and logs/.",
+   "tele": "On the left, what you know: HEAD as a text file naming a branch, a directory of loose refs, `packed-refs`, and `logs/`.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 34,
+   "line": 130,
+   "t0": 438.6,
+   "h": "854dbc51",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "On the right: HEAD is still a file, and it's a stub. refs/heads is a regular file, also a stub. There's no packed-refs and no logs/. The refs and the reflogs are in the tables under reftable/.",
+   "tele": "On the right: HEAD is still a file, and it's a stub. `refs/heads` is a regular file, also a stub. There's no `packed-refs` and no `logs/`. The refs and the reflogs are in the tables under `reftable/`.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 35,
+   "line": 134,
+   "t0": 447.4,
+   "h": "8fc493c7",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 5,
+      "to": 5,
+      "says": [
+       "On the right: two stubs, no packed-refs, no logs/"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "The bottom line is the same on both sides: MERGE_HEAD and FETCH_HEAD are files in every format. That's what makes them pseudorefs.",
+   "tele": "The bottom line is the same on both sides: `MERGE_HEAD` and `FETCH_HEAD` are files in every format. That's what makes them pseudorefs.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 36,
+   "line": 138,
+   "t0": 462.2,
+   "h": "8d06df7f",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 37,
+   "line": 140,
+   "t0": 471.0,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 38,
+   "line": null,
+   "t0": 472.5,
+   "h": "",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git init is 🟢. Look at the two lines of the configuration: refstorage = reftable under extensions, and repositoryformatversion = 1.",
+   "tele": "`git init` is 🟢. Look at the two lines of the configuration: `refstorage = reftable` under `extensions`, and `repositoryformatversion = 1`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 39,
+   "line": 175,
+   "t0": 475.0,
+   "h": "6fb69613",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The repository is on main. What does the file .git/HEAD contain? Say it out loud. I'll wait.",
+   "tele": "The repository is on `main`. What does the file `.git/HEAD` contain? Say it out loud. I'll wait.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 40,
+   "line": 184,
+   "t0": 482.2,
+   "h": "a9baf027",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.38,
+      "dissolve": true
+     },
+     {
+      "at": 0.5,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 2.38,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 40,
+   "line": 186,
+   "t0": 489.0,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "ref: refs/heads/.invalid. Neither stub holds a ref. The real answer comes from Git: git symbolic-ref HEAD prints refs/heads/main. This is what breaks a tool that reads .git/refs directly: it finds a file where it expects a directory, and a HEAD that names nothing. That's the first failure of the hook.",
+   "tele": "`ref: refs/heads/.invalid`. Neither stub holds a ref. The real answer comes from Git: `git symbolic-ref HEAD` prints `refs/heads/main`. This is what breaks a tool that reads `.git/refs` directly: it finds a file where it expects a directory, and a HEAD that names nothing. That's the first failure of the hook.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 41,
+   "line": 210,
+   "t0": 493.5,
+   "h": "ff381f88",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.561,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The commit wrote update 2, the branch update 3, the tag update 4. Auto-compaction had already merged updates 1 to 3 into one table, and git pack-refs --all merged all four. The header bytes read REFT, version 1, the block size of 4,096 bytes, then update numbers 1 and 4.",
+   "tele": "The commit wrote update 2, the branch update 3, the tag update 4. Auto-compaction had already merged updates 1 to 3 into one table, and `git pack-refs --all` merged all four. The header bytes read `REFT`, version 1, the block size of 4,096 bytes, then update numbers 1 and 4.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 42,
+   "line": 244,
+   "t0": 513.5,
+   "h": "ee7da9f7",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.495,
+      "fx": "terminal",
+      "from": {
+       "blocks": 6
+      },
+      "to": {
+       "blocks": 9
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "No logs/, no packed-refs, and every plumbing command answers as before. The reflog of the branch is in the same tables as the branch.",
+   "tele": "No `logs/`, no `packed-refs`, and every plumbing command answers as before. The reflog of the branch is in the same tables as the branch.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 43,
+   "line": 278,
+   "t0": 533.9,
+   "h": "9c6e2efa",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A conflicted merge, to see where the root refs are kept.",
+   "tele": "A conflicted merge, to see where the root refs are kept.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 43,
+   "line": 280,
+   "t0": 543.5,
+   "h": "5cbb09d8",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A quick quiz. After the merge stops: which of MERGE_HEAD, ORIG_HEAD and AUTO_MERGE will ls -A .git show as files? All three, two, or one? Your answer?",
+   "tele": "A quick quiz. After the merge stops: which of `MERGE_HEAD`, `ORIG_HEAD` and `AUTO_MERGE` will `ls -A .git` show as files? All three, two, or one? Your answer?",
+   "words": 27,
+   "est": 10.8,
+   "slide": 43,
+   "line": 282,
+   "t0": 547.9,
+   "h": "8f318502",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0.595,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.06,
+      "dissolve": false
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 284,
+   "t0": 558.7,
+   "h": "",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 44,
+   "line": null,
+   "t0": 563.2,
+   "h": "",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One: only MERGE_HEAD. ORIG_HEAD and AUTO_MERGE are refs and live in the tables, and git for-each-ref --include-root-refs lists them. This is the cleanest demonstration of the root-ref and pseudoref distinction.",
+   "tele": "One: only `MERGE_HEAD`. `ORIG_HEAD` and `AUTO_MERGE` are refs and live in the tables, and `git for-each-ref --include-root-refs` lists them. This is the cleanest demonstration of the root-ref and pseudoref distinction.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 45,
+   "line": 319,
+   "t0": 566.2,
+   "h": "a8d17598",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.47,
+      "dissolve": true
+     },
+     {
+      "at": 0.413,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.93,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Two branches whose names differ only in case, on a filesystem that ignores case. In the files repository on the same disk, the second is refused. One rule is kept on purpose: feature and feature/batching can't both exist, so that repositories stay interchangeable.",
+   "tele": "Two branches whose names differ only in case, on a filesystem that ignores case. In the `files` repository on the same disk, the second is refused. One rule is kept on purpose: `feature` and `feature/batching` can't both exist, so that repositories stay interchangeable.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 46,
+   "line": 350,
+   "t0": 578.2,
+   "h": "a8e00fcc",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 8
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.656,
+      "fx": "terminal",
+      "from": {
+       "blocks": 8
+      },
+      "to": {
+       "blocks": 9
+      },
+      "budget": 4.15,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both planned formats can be chosen today, with --object-format=sha256 --ref-format=reftable. Use that in throwaway repositories.",
+   "tele": "Both planned formats can be chosen today, with `--object-format=sha256 --ref-format=reftable`. Use that in throwaway repositories.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 47,
+   "line": 370,
+   "t0": 595.4,
+   "h": "2d6c15d3",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.52,
+      "dissolve": true
+     },
+     {
+      "at": 0.362,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.68,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 48,
+   "line": null,
+   "t0": 601.4,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "SHA-1: SHA1_DC: the collision-detecting implementation. And the two defaults of this build: files and sha1.",
+   "tele": "`SHA-1: SHA1_DC`: the collision-detecting implementation. And the two defaults of this build: `files` and `sha1`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 49,
+   "line": 393,
+   "t0": 603.9,
+   "h": "2bb60b4c",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, in a repository in the lab shell: run git rev-parse --show-object-format, then git rev-parse --show-ref-format. I'll wait.",
+   "tele": "Try it now, thirty seconds, in a repository in the lab shell: run `git rev-parse --show-object-format`, then `git rev-parse --show-ref-format`. I'll wait.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 50,
+   "line": 423,
+   "t0": 609.9,
+   "h": "fa301b2e",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 50,
+   "line": 425,
+   "t0": 618.7,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "With the defaults of Git 2.55 you read sha1 and files. Two words, and you know both formats.",
+   "tele": "With the defaults of Git 2.55 you read `sha1` and `files`. Two words, and you know both formats.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 50,
+   "line": 427,
+   "t0": 623.2,
+   "h": "f19c77e2",
+   "anim": {
+    "group": 40,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A quick quiz. The same sixteen bytes in both repositories. Is the object stored differently, or only named differently? Your answer?",
+   "tele": "A quick quiz. The same sixteen bytes in both repositories. Is the object stored differently, or only named differently? Your answer?",
+   "words": 21,
+   "est": 8.4,
+   "slide": 51,
+   "line": 435,
+   "t0": 630.4,
+   "h": "2cbeb4c2",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 51,
+   "line": 437,
+   "t0": 638.8,
+   "h": "",
+   "anim": {
+    "group": 41,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Only named differently. The same blob 16, the same NUL, the same sixteen bytes, and shasum -a 256 agrees with Git. Everything in that repository now carries 64-digit IDs: the tree header of the commit, and the ref.",
+   "tele": "Only named differently. The same `blob 16`, the same NUL, the same sixteen bytes, and `shasum -a 256` agrees with Git. Everything in that repository now carries 64-digit IDs: the tree header of the commit, and the ref.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 52,
+   "line": 464,
+   "t0": 643.3,
+   "h": "71685f7a",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.61,
+      "dissolve": true
+     },
+     {
+      "at": 0.151,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 9
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The same bytes through the same function, inside Git or outside it, give the same ID.",
+   "tele": "The same bytes through the same function, inside Git or outside it, give the same ID.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 53,
+   "line": 468,
+   "t0": 658.5,
+   "h": "1c39dc33",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "\"Mismatched algorithms: client sha1; server sha256\", and in both push directions \"the receiving end does not support this repository's hash algorithm\". There's no conversion. The fix is to recreate one side in the other format.",
+   "tele": "\"Mismatched algorithms: client sha1; server sha256\", and in both push directions \"the receiving end does not support this repository's hash algorithm\". There's no conversion. The fix is to recreate one side in the other format.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 54,
+   "line": 500,
+   "t0": 664.9,
+   "h": "16ff5c13",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "And the second failure of the hook: a check that assumes forty hexadecimal digits accepts one repository and rejects the other.",
+   "tele": "And the second failure of the hook: a check that assumes forty hexadecimal digits accepts one repository and rejects the other.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 55,
+   "line": 512,
+   "t0": 678.9,
+   "h": "ad60e35f",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 56,
+   "line": null,
+   "t0": 687.3,
+   "h": "",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 57,
+   "line": null,
+   "t0": 689.8,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 58,
+   "line": null,
+   "t0": 692.8,
+   "h": "",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 59,
+   "line": null,
+   "t0": 695.8,
+   "h": "",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The lab builds the same history in both backends. On disk they differ, as in the diagram. Asked through Git, they give the same answers, ID for ID. The lab's failure scenario is a fetch that collides on a case-insensitive filesystem, and its recovery uses the migration. Those are yours.",
+   "tele": "The lab builds the same history in both backends. On disk they differ, as in the diagram. Asked through Git, they give the same answers, ID for ID. The lab's failure scenario is a fetch that collides on a case-insensitive filesystem, and its recovery uses the migration. Those are yours.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 60,
+   "line": 588,
+   "t0": 698.8,
+   "h": "72f14da0",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 8
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 61,
+   "line": 590,
+   "t0": 718.8,
+   "h": "",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 62,
+   "line": 592,
+   "t0": 720.3,
+   "h": "76698d9b",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Reading .git/HEAD or .git/refs in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+   "tele": "Reading `.git/HEAD` or `.git/refs` in a tool. Root cause: in a reftable repository both are stubs and the refs are in binary tables.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 63,
+   "line": 594,
+   "t0": 722.3,
+   "h": "b95555da",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+   "tele": "Validating a commit ID as forty hexadecimal digits. Root cause: the length is a property of the repository's object format, not of Git.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 64,
+   "line": 594,
+   "t0": 731.5,
+   "h": "a68658fd",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Editing extensions.objectFormat or extensions.refStorage in .git/config. Root cause: they are set by git init and git refs migrate; editing them corrupts the repository.",
+   "tele": "Editing `extensions.objectFormat` or `extensions.refStorage` in `.git/config`. Root cause: they are set by `git init` and `git refs migrate`; editing them corrupts the repository.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 65,
+   "line": 594,
+   "t0": 740.7,
+   "h": "c0dddb2d",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+   "tele": "Trying to push a SHA-256 repository to a SHA-1 remote. Root cause: there is no interoperability between the two object formats, and no conversion.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 66,
+   "line": 594,
+   "t0": 749.9,
+   "h": "f19f103a",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Migrating a shared repository while it is in use. Root cause: git refs migrate must not run while anything else writes, and linked worktrees block it.",
+   "tele": "Migrating a shared repository while it is in use. Root cause: `git refs migrate` must not run while anything else writes, and linked worktrees block it.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 67,
+   "line": 594,
+   "t0": 759.5,
+   "h": "0071be2f",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 68,
+   "line": 600,
+   "t0": 769.9,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. An ML team has contributors on Linux and on macOS. Someone on Linux pushes a branch Fix/tokenizer while fix/tokenizer exists. On the Macs, git fetch now complains about a case-insensitive filesystem. The diagnosis: git ls-remote shows names that differ only in case, and git rev-parse and git for-each-ref disagree.",
+   "tele": "Now, out of the lab. An ML team has contributors on Linux and on macOS. Someone on Linux pushes a branch `Fix/tokenizer` while `fix/tokenizer` exists. On the Macs, `git fetch` now complains about a case-insensitive filesystem. The diagnosis: `git ls-remote` shows names that differ only in case, and `git rev-parse` and `git for-each-ref` disagree.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 69,
+   "line": 606,
+   "t0": 771.4,
+   "h": "f91343a1",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "Adopt it where it solves a problem you have, after checking every tool",
+       "Names that differ only in case: the problem this team has"
+      ],
+      "says_from": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Two fixes are available. Rename a branch on the server, and add a branch naming rule. Or migrate the affected clones with git refs migrate --ref-format=reftable. The server stays as it is, because the ref format is local.",
+   "tele": "Two fixes are available. Rename a branch on the server, and add a branch naming rule. Or migrate the affected clones with `git refs migrate --ref-format=reftable`. The server stays as it is, because the ref format is local.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 69,
+   "line": 606,
+   "t0": 793.0,
+   "h": "d4f6a09f",
+   "anim": {
+    "group": 55,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Before migrating the shared build repository, the same team checks every tool that opens it, stops all writers, and remembers that linked worktrees block the migration. Their repositories that are pushed to GitHub stay SHA-1.",
+   "tele": "Before migrating the shared build repository, the same team checks every tool that opens it, stops all writers, and remembers that linked worktrees block the migration. Their repositories that are pushed to GitHub stay SHA-1.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 70,
+   "line": 612,
+   "t0": 808.2,
+   "h": "72ebcf31",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The ref format is local to each repository",
+       "Before migrating: check every tool, stop all writers, no linked worktrees"
+      ],
+      "says_from": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 71,
+   "line": 614,
+   "t0": 822.2,
+   "h": "",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 17.2, \"The files backend versus reftable\", in lab-manual/m17-index-refs-gitdir.md. Before you list each .git directory, predict which entries exist in one and not in the other. Before each plumbing command, predict whether the two repositories answer identically.",
+   "tele": "Your turn. Do Lab 17.2, \"The `files` backend versus reftable\", in `lab-manual/m17-index-refs-gitdir.md`. Before you list each `.git` directory, predict which entries exist in one and not in the other. Before each plumbing command, predict whether the two repositories answer identically.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 72,
+   "line": 616,
+   "t0": 823.7,
+   "h": "f82930ce",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 16.8, \"Scripts that read .git by hand\", in exercises/m16-m18-internals.md. With this video you can now answer every part of it, and Question 81 from the refs video.",
+   "tele": "The challenge is Exercise 16.8, \"Scripts that read `.git` by hand\", in `exercises/m16-m18-internals.md`. With this video you can now answer every part of it, and Question 81 from the refs video.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 73,
+   "line": 618,
+   "t0": 839.7,
+   "h": "fe7f4fee",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 74,
+   "line": 620,
+   "t0": 852.1,
+   "h": "",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Question 86 of the CTO question bank:",
+   "tele": "Question 86 of the CTO question bank:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 75,
+   "line": 622,
+   "t0": 853.6,
+   "h": "1f828b0b",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer starts with the problems that reftable solves and says which of them the team has. It lists the preconditions of the migration command and the tools that must be checked. For \"what stays the same\" it names the layer at which nothing changes and the commands that prove it. It keeps the Git 3.0 plan a plan.",
+   "tele": "A strong answer starts with the problems that reftable solves and says which of them the team has. It lists the preconditions of the migration command and the tools that must be checked. For \"what stays the same\" it names the layer at which nothing changes and the commands that prove it. It keeps the Git 3.0 plan a plan.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 76,
+   "line": 626,
+   "t0": 856.4,
+   "h": "1cdbac51",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 77,
+   "line": 628,
+   "t0": 880.4,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. The format belongs to the repository, the names and the objects stay the same, and you ask Git.",
+   "tele": "Let's land this. The format belongs to the repository, the names and the objects stay the same, and you ask Git.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 78,
+   "line": 634,
+   "t0": 881.9,
+   "h": "26853cf0",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The format belongs to the repository. You ask Git"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 79,
+   "line": 636,
+   "t0": 890.3,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Reftable keeps refs and reflogs in binary tables; .git/HEAD and .git/refs/heads remain as stubs.",
+   "tele": "Reftable keeps refs and reflogs in binary tables; `.git/HEAD` and `.git/refs/heads` remain as stubs.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 80,
+   "line": 638,
+   "t0": 893.1,
+   "h": "22c4b1f5",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+   "tele": "Ref plumbing gives the same answers in both backends; only the two pseudorefs are files in both.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 81,
+   "line": 638,
+   "t0": 898.7,
+   "h": "00395581",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 90,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+   "tele": "Git's SHA-1 implementation detects known collision attacks; SHA-256 is a separate object format with 64-digit IDs and no interoperability.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 82,
+   "line": 638,
+   "t0": 905.5,
+   "h": "208f3bc0",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 91,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Decide the object format at git init; keep repositories for GitHub in SHA-1.",
+   "tele": "Decide the object format at `git init`; keep repositories for GitHub in SHA-1.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 83,
+   "line": 638,
+   "t0": 913.1,
+   "h": "3ac979be",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 92,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date.",
+   "tele": "Git 3.0 plans SHA-256 and reftable as defaults for new repositories, conditionally, with no date.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 84,
+   "line": 638,
+   "t0": 918.3,
+   "h": "6ce3cad1",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 93,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 85,
+   "line": 644,
+   "t0": 924.3,
+   "h": "",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 3.13 to 3.17 of Chapter 3 and do the Practice section 3.19.",
+   "tele": "Read sections 3.13 to 3.17 of Chapter 3 and do the Practice section 3.19.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 86,
+   "line": 646,
+   "t0": 925.8,
+   "h": "bb371432",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you met both formats that Git 3.0 plans, and you know what stays the same across them. Do the lab before the next video: the commit-graph, the multi-pack-index and reachability bitmaps. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you met both formats that Git 3.0 plans, and you know what stays the same across them. Do the lab before the next video: the commit-graph, the multi-pack-index and reachability bitmaps. Until then, look at the state first and type second. See you in the next one.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 87,
+   "line": 648,
+   "t0": 931.4,
+   "h": "49511e76",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 950.6,
+ "narration_words": 2229,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

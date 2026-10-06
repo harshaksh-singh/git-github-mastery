@@ -1,0 +1,49 @@
+# Workflow 1: minimal continuous integration. Run the tests.
+#
+# Teaches: the smallest useful workflow; the nesting workflow > job > step; two events with a
+# branch filter; least-privilege `permissions`; what `actions/checkout` puts on the runner.
+# Chapter 20A, section 20A.13. Lab 26.1.
+#
+# Copy to .github/workflows/01-tests.yml in the inventory-api practice repository.
+# Parse-checked and assembled from documented syntax; not executed on GitHub by the author.
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The job token may read the repository contents and nothing else.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Show what was checked out
+        run: |
+          echo "event      : $GITHUB_EVENT_NAME"
+          echo "GITHUB_REF : $GITHUB_REF"
+          echo "GITHUB_SHA : $GITHUB_SHA"
+          git log -1 --format='HEAD       : %H %s'
+          git rev-parse --is-shallow-repository
+          git status --short --branch
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Run the tests with the standard library
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -v

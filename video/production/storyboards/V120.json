@@ -1,0 +1,5913 @@
+{
+ "id": "V120",
+ "version": 22,
+ "title": "SSH: key pairs, the agent, ~/.ssh/config, host keys, and testing the connection",
+ "part": 5,
+ "part_label": "GITHUB",
+ "part_name": "GitHub",
+ "palette": {
+  "accent": "#F778BA",
+  "accent2": "#FFC2E0",
+  "bg1": "#150D13",
+  "bg2": "#2A1A26"
+ },
+ "planned_minutes": 26,
+ "chapters": [
+  "ch16-authentication.md"
+ ],
+ "script": "video/scripts/V120-ssh-key-pairs-the-agent-ssh-config-host-keys-and-testing-the-connection.md",
+ "script_sha1": "b839769fe73322286420da04fe47bfd29434a090",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 9,
+   "line": 28
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 16,
+   "line": 38
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 42,
+   "line": 104
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 46,
+   "line": 116
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 50,
+   "line": 157
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 86,
+   "line": 514
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 93,
+   "line": 524
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 97,
+   "line": 538
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 100,
+   "line": 544
+  },
+  {
+   "name": "RECAP",
+   "beat": 104,
+   "line": 556
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 112,
+   "line": 568
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "SSH: key pairs, the agent, ~/.ssh/config, host keys, and testing the connection",
+   "part_name": "GitHub",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0016
+  },
+  {
+   "kind": "callout",
+   "direction": "`WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!` … `Host key verification failed.`",
+   "code": [
+    "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
+    "Host key verification failed."
+   ],
+   "quoted": false,
+   "caption": "Picture a build machine restored from a disk image made in 2022. This morning it fetches from GitHub for the first time since then, and stops.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0028
+  },
+  {
+   "kind": "callout",
+   "direction": "`WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!` … `Host key verification failed.`",
+   "code": [
+    "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
+    "Host key verification failed."
+   ],
+   "quoted": false,
+   "caption": "Your CTO asks: is someone intercepting our connection, or did GitHub change something?",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.02
+  },
+  {
+   "kind": "callout",
+   "direction": "`WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!` … `Host key verification failed.`",
+   "code": [
+    "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
+    "Host key verification failed."
+   ],
+   "quoted": false,
+   "caption": "There are exactly two explanations, a published key rotation or an attack, and a fixed way to decide between them.",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0261
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0429
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0441
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three replays from <code>labs/ch16</code>.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.071
+  },
+  {
+   "kind": "keypoint",
+   "body": "Labels from the chapter's table.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0885
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1117
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Generate a key pair and say what each half is for and where it goes.",
+    "Explain what the agent holds and what the passphrase protects.",
+    "Write a <code>~/.ssh/config</code> entry with a host alias and show what SSH resolves it to.",
+    "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+    "Test the connection and use SSH over port 443."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.113
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Generate a key pair and say what each half is for and where it goes.",
+    "Explain what the agent holds and what the passphrase protects.",
+    "Write a <code>~/.ssh/config</code> entry with a host alias and show what SSH resolves it to.",
+    "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+    "Test the connection and use SSH over port 443."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1146
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Generate a key pair and say what each half is for and where it goes.",
+    "Explain what the agent holds and what the passphrase protects.",
+    "Write a <code>~/.ssh/config</code> entry with a host alias and show what SSH resolves it to.",
+    "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+    "Test the connection and use SSH over port 443."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1194
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Generate a key pair and say what each half is for and where it goes.",
+    "Explain what the agent holds and what the passphrase protects.",
+    "Write a <code>~/.ssh/config</code> entry with a host alias and show what SSH resolves it to.",
+    "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+    "Test the connection and use SSH over port 443."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1227
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Generate a key pair and say what each half is for and where it goes.",
+    "Explain what the agent holds and what the passphrase protects.",
+    "Write a <code>~/.ssh/config</code> entry with a host alias and show what SSH resolves it to.",
+    "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+    "Test the connection and use SSH over port 443."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1275
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Generate a key pair and say what each half is for and where it goes.",
+    "Explain what the agent holds and what the passphrase protects.",
+    "Write a <code>~/.ssh/config</code> entry with a host alias and show what SSH resolves it to.",
+    "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+    "Test the connection and use SSH over port 443."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1317
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1346
+  },
+  {
+   "kind": "keypoint",
+   "body": "In one sentence: with SSH you prove who you are by signing a challenge with a private key that never leaves your machine.",
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1358
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=keys boxes=~/.ssh:your_machine|the_agent:a_background_process|*GitHub:your_account rows=1:A:id__ed25519:_private_key@hl|1:A:id__ed25519.pub|2:C:your_public_key@ok|3:A:a_passphrase_encrypts_the_file@ref|4:B:the_key,_decrypted,_in_memory arrows=2:A2>C1:uploaded|4:A1>B1:ssh-add title=The_private_key_never_leaves at_1=22 at_2=42 at_3=5 at_4=58",
+   "scene": "stores",
+   "params": {
+    "id": "keys",
+    "boxes": [
+     [
+      "~/.ssh",
+      "your machine"
+     ],
+     [
+      "the agent",
+      "a background process"
+     ],
+     [
+      "*GitHub",
+      "your account"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "id_ed25519: private key",
+      "hl"
+     ],
+     [
+      1,
+      "A",
+      "id_ed25519.pub"
+     ],
+     [
+      2,
+      "C",
+      "your public key",
+      "ok"
+     ],
+     [
+      3,
+      "A",
+      "a passphrase encrypts the file",
+      "ref"
+     ],
+     [
+      4,
+      "B",
+      "the key, decrypted, in memory"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A2",
+      "C1",
+      "uploaded"
+     ],
+     [
+      4,
+      "A1",
+      "B1",
+      "ssh-add"
+     ]
+    ],
+    "title": "The private key never leaves",
+    "at": {
+     "1": 0.22,
+     "2": 0.42,
+     "3": 0.05,
+     "4": 0.58
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1452
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=keys boxes=~/.ssh:your_machine|the_agent:a_background_process|*GitHub:your_account rows=1:A:id__ed25519:_private_key@hl|1:A:id__ed25519.pub|2:C:your_public_key@ok|3:A:a_passphrase_encrypts_the_file@ref|4:B:the_key,_decrypted,_in_memory arrows=2:A2>C1:uploaded|4:A1>B1:ssh-add title=The_private_key_never_leaves at_1=22 at_2=42 at_3=5 at_4=58",
+   "scene": "stores",
+   "params": {
+    "id": "keys",
+    "boxes": [
+     [
+      "~/.ssh",
+      "your machine"
+     ],
+     [
+      "the agent",
+      "a background process"
+     ],
+     [
+      "*GitHub",
+      "your account"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "id_ed25519: private key",
+      "hl"
+     ],
+     [
+      1,
+      "A",
+      "id_ed25519.pub"
+     ],
+     [
+      2,
+      "C",
+      "your public key",
+      "ok"
+     ],
+     [
+      3,
+      "A",
+      "a passphrase encrypts the file",
+      "ref"
+     ],
+     [
+      4,
+      "B",
+      "the key, decrypted, in memory"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A2",
+      "C1",
+      "uploaded"
+     ],
+     [
+      4,
+      "A1",
+      "B1",
+      "ssh-add"
+     ]
+    ],
+    "title": "The private key never leaves",
+    "at": {
+     "1": 0.22,
+     "2": 0.42,
+     "3": 0.05,
+     "4": 0.58
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1857
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=states columns=state,exit_status,note rows=a_list_of_keys:0:-|The_agent_has_no_identities.:1:-|no_agent_can_be_reached:2:under_sudo,_in_cron,_in_containers title=ssh-add_-l:_three_states at_1=24 at_2=30 at_3=38",
+   "scene": "walk",
+   "params": {
+    "id": "states",
+    "columns": [
+     "state",
+     "exit status",
+     "note"
+    ],
+    "rows": [
+     [
+      "a list of keys",
+      "0",
+      "-"
+     ],
+     [
+      "The agent has no identities.",
+      "1",
+      "-"
+     ],
+     [
+      "no agent can be reached",
+      "2",
+      "under sudo, in cron, in containers"
+     ]
+    ],
+    "title": "ssh-add -l: three states",
+    "at": {
+     "1": 0.24,
+     "2": 0.3,
+     "3": 0.38
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.2089
+  },
+  {
+   "kind": "keypoint",
+   "body": "One warning: agent forwarding lets a remote machine use your local agent.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2676
+  },
+  {
+   "kind": "keypoint",
+   "body": "Quick quiz. When you connect to GitHub over SSH, which user name does <code>ssh</code> send: your account name, your email address, or <code>git</code>?",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2782
+  },
+  {
+   "kind": "keypoint",
+   "body": "The configuration file. In one sentence: <code>~/.ssh/config</code> maps the host name that Git hands to <code>ssh</code> onto a real host, a user, a port and a key, and <code>ssh -G</code> prints the result of that mapping without connecting.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2906
+  },
+  {
+   "kind": "keypoint",
+   "body": "The file is a list of <code>Host</code> blocks.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.3029
+  },
+  {
+   "kind": "keypoint",
+   "body": "<code>HostName</code> is the real host. <code>User</code> is always <code>git</code>, and that's the quiz answer.",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.3191
+  },
+  {
+   "kind": "keypoint",
+   "body": "Git's part is small: it splits the URL and runs <code>ssh</code> with what it found.",
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.3352
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_key_GitHub_presents right=the_key_in_known__hosts lines=github.com_ED25519,the_published_key alt=a_different_key ids=+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU,8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw fn=SHA256 same=The_same_key_gives_the_same_fingerprint diff=A_different_key_under_the_same_name:_another_fingerprint title=The_host_key_check",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the key GitHub presents",
+    "right": "the key in known_hosts",
+    "lines": [
+     "github.com ED25519",
+     "the published key"
+    ],
+    "alt": "a different key",
+    "ids": [
+     "+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU",
+     "8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    ],
+    "fn": "SHA256",
+    "same": "The same key gives the same fingerprint",
+    "diff": "A different key under the same name: another fingerprint",
+    "title": "The host key check"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 1,
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.3414
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_key_GitHub_presents right=the_key_in_known__hosts lines=github.com_ED25519,the_published_key alt=a_different_key ids=+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU,8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw fn=SHA256 same=The_same_key_gives_the_same_fingerprint diff=A_different_key_under_the_same_name:_another_fingerprint title=The_host_key_check",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the key GitHub presents",
+    "right": "the key in known_hosts",
+    "lines": [
+     "github.com ED25519",
+     "the published key"
+    ],
+    "alt": "a different key",
+    "ids": [
+     "+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU",
+     "8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    ],
+    "fn": "SHA256",
+    "same": "The same key gives the same fingerprint",
+    "diff": "A different key under the same name: another fingerprint",
+    "title": "The host key check"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.3521
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_key_GitHub_presents right=the_key_in_known__hosts lines=github.com_ED25519,the_published_key alt=a_different_key ids=+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU,8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw fn=SHA256 same=The_same_key_gives_the_same_fingerprint diff=A_different_key_under_the_same_name:_another_fingerprint title=The_host_key_check",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the key GitHub presents",
+    "right": "the key in known_hosts",
+    "lines": [
+     "github.com ED25519",
+     "the published key"
+    ],
+    "alt": "a different key",
+    "ids": [
+     "+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU",
+     "8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    ],
+    "fn": "SHA256",
+    "same": "The same key gives the same fingerprint",
+    "diff": "A different key under the same name: another fingerprint",
+    "title": "The host key check"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.3734
+  },
+  {
+   "kind": "keypoint",
+   "body": "The 🔴 item: <code>StrictHostKeyChecking no</code>, and deleting <code>known_hosts</code> wholesale.",
+   "section": "CONCEPT",
+   "n": 31,
+   "progress": 0.4048
+  },
+  {
+   "kind": "keypoint",
+   "body": "Testing. <code>ssh -T git@github.com</code> authenticates and runs nothing.",
+   "section": "CONCEPT",
+   "n": 32,
+   "progress": 0.4261
+  },
+  {
+   "kind": "keypoint",
+   "body": "Some networks block port 22. GitHub accepts SSH on port 443 of a different host name, <code>ssh.github.com</code>.",
+   "section": "CONCEPT",
+   "n": 33,
+   "progress": 0.454
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 34,
+   "progress": 0.4717
+  },
+  {
+   "kind": "keypoint",
+   "body": "The textbook's analogy: a signet ring and its wax impression.",
+   "section": "MENTAL MODEL",
+   "n": 35,
+   "progress": 0.473
+  },
+  {
+   "kind": "keypoint",
+   "body": "The analogy breaks because a wax seal can be copied from a sample, and a private key can't be derived from the public key.",
+   "section": "MENTAL MODEL",
+   "n": 36,
+   "progress": 0.4839
+  },
+  {
+   "kind": "scene",
+   "direction": "flow: id=proofs actors=your_ssh,*GitHub msgs=2>1:a_signature_made_with_the_host_key|1>1:checked_against_known__hosts|1>2:a_challenge_signed_with_your_private_key|2>2:checked_against_the_public_keys_of_accounts|2>1:the_account_found_=_who_you_are:ok title=An_SSH_connection_is_two_proofs at_1=28 at_2=38 at_3=52 at_4=60 at_5=68",
+   "scene": "flow",
+   "params": {
+    "id": "proofs",
+    "actors": [
+     "your ssh",
+     "*GitHub"
+    ],
+    "msgs": [
+     [
+      2,
+      1,
+      "a signature made with the host key"
+     ],
+     [
+      1,
+      1,
+      "checked against known_hosts"
+     ],
+     [
+      1,
+      2,
+      "a challenge signed with your private key"
+     ],
+     [
+      2,
+      2,
+      "checked against the public keys of accounts"
+     ],
+     [
+      2,
+      1,
+      "the account found = who you are",
+      "ok"
+     ]
+    ],
+    "title": "An SSH connection is two proofs",
+    "at": {
+     "1": 0.28,
+     "2": 0.38,
+     "3": 0.52,
+     "4": 0.6,
+     "5": 0.68
+    }
+   },
+   "steps": [
+    "actors",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 6,
+   "section": "MENTAL MODEL",
+   "n": 37,
+   "progress": 0.4917
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 38,
+   "progress": 0.5127
+  },
+  {
+   "kind": "diagram",
+   "direction": "Client on the left, server on the right. What stays, what is registered, what crosses.",
+   "text": "   your machine                                              GitHub\n  +-----------------------------+                    +------------------------------+\n  | ~/.ssh/id_ed25519           |                    | host key (private half)      |\n  |   private key: never leaves |                    |                              |\n  | agent: holds it decrypted   |                    | your account:                |\n  | ~/.ssh/id_ed25519.pub       | -- uploaded once ->|   your public key            |\n  | ~/.ssh/known_hosts          |                    |                              |\n  |   GitHub's public host key  |                    |                              |\n  +-----------------------------+                    +------------------------------+\n        1. server proves itself:   <---- signature made with the host key ----\n           checked against known_hosts\n        2. you prove yourself:     ---- challenge signed with your private key --->\n           checked against the public keys of accounts;  the account found = who you are",
+   "section": "DIAGRAM",
+   "n": 39,
+   "progress": 0.5139
+  },
+  {
+   "kind": "diagram",
+   "direction": "And the path from a remote URL to a key, from section 16.10.",
+   "text": "  remote.origin.url = git@github-work:acme-pay/billing-api.git\n        |                         Git: user \"git\", host \"github-work\", path\n        v\n  ssh git@github-work git-upload-pack 'acme-pay/billing-api.git'\n        |                         ssh: ~/.ssh/config, first value wins\n        v\n  HostName github.com   Port 22   User git   IdentityFile ~/.ssh/id_ed25519_work\n        |                         server: host key checked against known_hosts (16.11)\n        v\n  GitHub: which account has this public key?  may that account do this to acme-pay/billing-api?",
+   "section": "DIAGRAM",
+   "n": 40,
+   "progress": 0.5382
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5447
+  },
+  {
+   "kind": "terminal",
+   "direction": "A throwaway key in the sandbox. This replay is volatile: your key and fingerprints will differ from mine and from the book. It has no passphrase at first only because a transcript cannot type one.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch16/ssh-keys"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5459
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-keys/01-generate",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -q -t ed25519 -N '' -C 'you@example.com laptop 2026' -f ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "cmd",
+     "s": "cd ~/.ssh && stat -f '%Sp  %N' id_ed25519_personal id_ed25519_personal.pub && cd ~"
+    },
+    {
+     "t": "out",
+     "s": "-rw-------  id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "-rw-r--r--  id_ed25519_personal.pub"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5479
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-keys/02-public-half",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat ~/.ssh/id_ed25519_personal.pub"
+    },
+    {
+     "t": "out",
+     "s": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA8GlpVWYok0FGT/hmYU56d4Hw4gnMrujJRDYhk8ZDvu you@example.com laptop"
+    },
+    {
+     "t": "wrap",
+     "s": "2026",
+     "of": "out"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -f ~/.ssh/id_ed25519_personal.pub"
+    },
+    {
+     "t": "out",
+     "s": "256 SHA256:OV5JdQEk7wx2wTQatqOVlFtaBWvv+9G9fkq1plvs5ig you@example.com laptop 2026 (ED25519)"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -E md5 -f ~/.ssh/id_ed25519_personal.pub"
+    },
+    {
+     "t": "out",
+     "s": "256 MD5:29:38:de:ca:c6:b1:c4:64:ba:27:29:0f:a8:35:21:38 you@example.com laptop 2026 (ED25519)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.555
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "head -1 ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -y -f ~/.ssh/id_ed25519_personal"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.568
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-keys/03-private-half",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "head -1 ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "-----BEGIN OPENSSH PRIVATE KEY-----"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -y -f ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA8GlpVWYok0FGT/hmYU56d4Hw4gnMrujJRDYhk8ZDvu you@example.com laptop"
+    },
+    {
+     "t": "wrap",
+     "s": "2026",
+     "of": "out"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.5768
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-keys/04-passphrase",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -p -q -P '' -N 'lab passphrase, not a real one' -f ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "Key has comment 'you@example.com laptop 2026'"
+    },
+    {
+     "t": "out",
+     "s": "Your identification has been saved with the new passphrase."
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -y -P 'a wrong guess' -f ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "Load key \"$LAB/ch16/ssh-keys/home/.ssh/id_ed25519_personal\": incorrect passphrase supplied to decrypt"
+    },
+    {
+     "t": "wrap",
+     "s": "private key",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 255]"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -y -P 'lab passphrase, not a real one' -f ~/.ssh/id_ed25519_personal | cut -c1-40"
+    },
+    {
+     "t": "out",
+     "s": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA8G"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.5803
+  },
+  {
+   "kind": "terminal",
+   "direction": "The configuration file. `ssh` finds its files through the account's home directory and not through `$HOME`, so every command here names the sandbox file with `-F`. On your machine you omit `-F`.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch16/ssh-config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.5936
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/01-config",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat ~/.ssh/config"
+    },
+    {
+     "t": "out",
+     "s": "# Personal account: plain github.com URLs"
+    },
+    {
+     "t": "out",
+     "s": "Host github.com"
+    },
+    {
+     "t": "out",
+     "s": "  HostName github.com"
+    },
+    {
+     "t": "out",
+     "s": "  User git"
+    },
+    {
+     "t": "out",
+     "s": "  IdentityFile ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "  IdentitiesOnly yes"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "# Work account: URLs written with the alias, git@github-work:ORG/REPO.git"
+    },
+    {
+     "t": "out",
+     "s": "Host github-work"
+    },
+    {
+     "t": "out",
+     "s": "  HostName github.com"
+    },
+    {
+     "t": "out",
+     "s": "  User git"
+    },
+    {
+     "t": "out",
+     "s": "  IdentityFile ~/.ssh/id_ed25519_work"
+    },
+    {
+     "t": "out",
+     "s": "  IdentitiesOnly yes"
+    },
+    {
+     "t": "out",
+     "s": ""
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.5956
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/01-config",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "cat ~/.ssh/config"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "# Port 22 blocked: SSH over the HTTPS port"
+    },
+    {
+     "t": "out",
+     "s": "Host github-443"
+    },
+    {
+     "t": "out",
+     "s": "  HostName ssh.github.com"
+    },
+    {
+     "t": "out",
+     "s": "  Port 443"
+    },
+    {
+     "t": "out",
+     "s": "  User git"
+    },
+    {
+     "t": "out",
+     "s": "  IdentityFile ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "  IdentitiesOnly yes"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "# Defaults for every host come last"
+    },
+    {
+     "t": "out",
+     "s": "Host *"
+    },
+    {
+     "t": "out",
+     "s": "  AddKeysToAgent yes"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.5989
+  },
+  {
+   "kind": "scene",
+   "direction": "match: id=cfg header=~/.ssh/config rules=Host_github.com:id__ed25519__personal|Host_github-work:id__ed25519__work|Host_github-443:ssh.github.com,_port_443|Host_*:AddKeysToAgent_yes paths=github.com:1+4|github-work:2+4|github-443:3+4 wins=first at_2=12",
+   "scene": "match",
+   "params": {
+    "id": "cfg",
+    "header": "~/.ssh/config",
+    "rules": [
+     [
+      "Host github.com",
+      "id_ed25519_personal"
+     ],
+     [
+      "Host github-work",
+      "id_ed25519_work"
+     ],
+     [
+      "Host github-443",
+      "ssh.github.com, port 443"
+     ],
+     [
+      "Host *",
+      "AddKeysToAgent yes"
+     ]
+    ],
+    "paths": [
+     [
+      "github.com",
+      "1+4"
+     ],
+     [
+      "github-work",
+      "2+4"
+     ],
+     [
+      "github-443",
+      "3+4"
+     ]
+    ],
+    "wins": "first",
+    "at": {
+     "2": 0.12
+    }
+   },
+   "steps": [
+    "rules",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 1,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6021
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config -G github.com | grep -E '^(hostname|user|port|identityfile|identitiesonly|addke"
+    },
+    {
+     "t": "wrap",
+     "s": "ystoagent) '",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config -G github-work | grep -E '^(hostname|user|port|identityfile|identitiesonly|addk"
+    },
+    {
+     "t": "wrap",
+     "s": "eystoagent) '",
+     "of": "cmd"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6089
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/02-github",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config -G github.com | grep -E '^(hostname|user|port|identityfile|identitiesonly|addke"
+    },
+    {
+     "t": "wrap",
+     "s": "ystoagent) '",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "user git"
+    },
+    {
+     "t": "out",
+     "s": "hostname github.com"
+    },
+    {
+     "t": "out",
+     "s": "port 22"
+    },
+    {
+     "t": "out",
+     "s": "identitiesonly yes"
+    },
+    {
+     "t": "out",
+     "s": "identityfile ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "addkeystoagent true"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6177
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/03-alias",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config -G github-work | grep -E '^(hostname|user|port|identityfile|identitiesonly|addk"
+    },
+    {
+     "t": "wrap",
+     "s": "eystoagent) '",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "user git"
+    },
+    {
+     "t": "out",
+     "s": "hostname github.com"
+    },
+    {
+     "t": "out",
+     "s": "port 22"
+    },
+    {
+     "t": "out",
+     "s": "identitiesonly yes"
+    },
+    {
+     "t": "out",
+     "s": "identityfile ~/.ssh/id_ed25519_work"
+    },
+    {
+     "t": "out",
+     "s": "addkeystoagent true"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6216
+  },
+  {
+   "kind": "scene",
+   "direction": "match: id=cfg header=~/.ssh/config rules=Host_github.com:id__ed25519__personal|Host_github-work:id__ed25519__work|Host_github-443:ssh.github.com,_port_443|Host_*:AddKeysToAgent_yes paths=github.com:1+4|github-work:2+4|github-443:3+4 wins=first at_2=12",
+   "scene": "match",
+   "params": {
+    "id": "cfg",
+    "header": "~/.ssh/config",
+    "rules": [
+     [
+      "Host github.com",
+      "id_ed25519_personal"
+     ],
+     [
+      "Host github-work",
+      "id_ed25519_work"
+     ],
+     [
+      "Host github-443",
+      "ssh.github.com, port 443"
+     ],
+     [
+      "Host *",
+      "AddKeysToAgent yes"
+     ]
+    ],
+    "paths": [
+     [
+      "github.com",
+      "1+4"
+     ],
+     [
+      "github-work",
+      "2+4"
+     ],
+     [
+      "github-443",
+      "3+4"
+     ]
+    ],
+    "wins": "first",
+    "at": {
+     "2": 0.12
+    }
+   },
+   "steps": [
+    "rules",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 1,
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.6255
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/04-port-443",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config -G github-443 | grep -E '^(hostname|user|port|identityfile|identitiesonly|addke"
+    },
+    {
+     "t": "wrap",
+     "s": "ystoagent) '",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "user git"
+    },
+    {
+     "t": "out",
+     "s": "hostname ssh.github.com"
+    },
+    {
+     "t": "out",
+     "s": "port 443"
+    },
+    {
+     "t": "out",
+     "s": "identitiesonly yes"
+    },
+    {
+     "t": "out",
+     "s": "identityfile ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "addkeystoagent true"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.6326
+  },
+  {
+   "kind": "scene",
+   "direction": "match: id=cfg header=~/.ssh/config rules=Host_github.com:id__ed25519__personal|Host_github-work:id__ed25519__work|Host_github-443:ssh.github.com,_port_443|Host_*:AddKeysToAgent_yes paths=github.com:1+4|github-work:2+4|github-443:3+4 wins=first at_2=12",
+   "scene": "match",
+   "params": {
+    "id": "cfg",
+    "header": "~/.ssh/config",
+    "rules": [
+     [
+      "Host github.com",
+      "id_ed25519_personal"
+     ],
+     [
+      "Host github-work",
+      "id_ed25519_work"
+     ],
+     [
+      "Host github-443",
+      "ssh.github.com, port 443"
+     ],
+     [
+      "Host *",
+      "AddKeysToAgent yes"
+     ]
+    ],
+    "paths": [
+     [
+      "github.com",
+      "1+4"
+     ],
+     [
+      "github-work",
+      "2+4"
+     ],
+     [
+      "github-443",
+      "3+4"
+     ]
+    ],
+    "wins": "first",
+    "at": {
+     "2": 0.12
+    }
+   },
+   "steps": [
+    "rules",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.6365
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/05-user-in-url",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A user written in the command or in the URL beats \"User git\" in the file:"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config -G asha-rao@github.com | grep -E '^(hostname|user) '"
+    },
+    {
+     "t": "out",
+     "s": "user asha-rao"
+    },
+    {
+     "t": "out",
+     "s": "hostname github.com"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.639
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/06-order",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The same file with the defaults moved to the top, and a default user added to them:"
+    },
+    {
+     "t": "cmd",
+     "s": "head -4 ~/.ssh/config-defaults-first"
+    },
+    {
+     "t": "out",
+     "s": "Host *"
+    },
+    {
+     "t": "out",
+     "s": "  User deploy"
+    },
+    {
+     "t": "out",
+     "s": "  IdentityFile ~/.ssh/id_rsa_old"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -T -F ~/.ssh/config-defaults-first -G github.com | grep -E"
+    },
+    {
+     "t": "wrap",
+     "s": "'^(hostname|user|port|identityfile|identitiesonly|addkeystoagent) '",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "user deploy"
+    },
+    {
+     "t": "out",
+     "s": "hostname github.com"
+    },
+    {
+     "t": "out",
+     "s": "port 22"
+    },
+    {
+     "t": "out",
+     "s": "identitiesonly yes"
+    },
+    {
+     "t": "out",
+     "s": "identityfile ~/.ssh/id_rsa_old"
+    },
+    {
+     "t": "out",
+     "s": "identityfile ~/.ssh/id_ed25519_personal"
+    },
+    {
+     "t": "out",
+     "s": "addkeystoagent false"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.6605
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/ssh-config/07-what-git-runs",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# ~/lab-bin/fake-ssh prints the arguments Git gives to ssh and exits. No connection is made."
+    },
+    {
+     "t": "cmd",
+     "s": "cd ~ && git init -q work/billing-api && cd work/billing-api"
+    },
+    {
+     "t": "cmd",
+     "s": "git remote add origin git@github-work:acme-pay/billing-api.git"
+    },
+    {
+     "t": "cmd",
+     "s": "GIT_SSH_COMMAND=~/lab-bin/fake-ssh git fetch origin"
+    },
+    {
+     "t": "out",
+     "s": "ssh was asked to run: git@github-work git-upload-pack 'acme-pay/billing-api.git'"
+    },
+    {
+     "t": "out",
+     "s": "fatal: Could not read from remote repository."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Please make sure you have the correct access rights"
+    },
+    {
+     "t": "out",
+     "s": "and the repository exists."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.6734
+  },
+  {
+   "kind": "terminal",
+   "direction": "Host keys, with no connection at all.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch16/known-hosts"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.6818
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/known-hosts/01-published-lines",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cut -c1-78 ~/github-known-hosts.txt"
+    },
+    {
+     "t": "out",
+     "s": "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9o"
+    },
+    {
+     "t": "out",
+     "s": "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTY"
+    },
+    {
+     "t": "out",
+     "s": "github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.6838
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/known-hosts/02-fingerprints",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -f ~/github-known-hosts.txt"
+    },
+    {
+     "t": "out",
+     "s": "256 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU github.com (ED25519)"
+    },
+    {
+     "t": "out",
+     "s": "256 SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM github.com (ECDSA)"
+    },
+    {
+     "t": "out",
+     "s": "3072 SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s github.com (RSA)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.6871
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/known-hosts/03-find",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cp ~/github-known-hosts.txt ~/.ssh/known_hosts"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com -f ~/.ssh/known_hosts"
+    },
+    {
+     "t": "out",
+     "s": "# Host github.com found: line 1"
+    },
+    {
+     "t": "out",
+     "s": "github.com ED25519 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU"
+    },
+    {
+     "t": "out",
+     "s": "# Host github.com found: line 2"
+    },
+    {
+     "t": "out",
+     "s": "github.com ECDSA SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM"
+    },
+    {
+     "t": "out",
+     "s": "# Host github.com found: line 3"
+    },
+    {
+     "t": "out",
+     "s": "github.com RSA SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F ssh.github.com -f ~/.ssh/known_hosts"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.6994
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/known-hosts/04-stale",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A different key filed under the name github.com: what a stale or forged entry looks like."
+    },
+    {
+     "t": "out",
+     "s": "# stale-host-key.pub is a throwaway public key made for this course."
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'github.com %s\\n' \"$(cut -d' ' -f1,2 ~/stale-host-key.pub)\" > ~/.ssh/known_hosts"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com -f ~/.ssh/known_hosts"
+    },
+    {
+     "t": "out",
+     "s": "# Host github.com found: line 1"
+    },
+    {
+     "t": "out",
+     "s": "github.com ED25519 SHA256:8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -f ~/github-known-hosts.txt | grep ED25519"
+    },
+    {
+     "t": "out",
+     "s": "256 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU github.com (ED25519)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.7074
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_key_GitHub_presents right=the_key_in_known__hosts lines=github.com_ED25519,the_published_key alt=a_different_key ids=+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU,8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw fn=SHA256 same=The_same_key_gives_the_same_fingerprint diff=A_different_key_under_the_same_name:_another_fingerprint title=The_host_key_check",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the key GitHub presents",
+    "right": "the key in known_hosts",
+    "lines": [
+     "github.com ED25519",
+     "the published key"
+    ],
+    "alt": "a different key",
+    "ids": [
+     "+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU",
+     "8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    ],
+    "fn": "SHA256",
+    "same": "The same key gives the same fingerprint",
+    "diff": "A different key under the same name: another fingerprint",
+    "title": "The host key check"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 1,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.7165
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_key_GitHub_presents right=the_key_in_known__hosts lines=github.com_ED25519,the_published_key alt=a_different_key ids=+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU,8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw fn=SHA256 same=The_same_key_gives_the_same_fingerprint diff=A_different_key_under_the_same_name:_another_fingerprint title=The_host_key_check",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the key GitHub presents",
+    "right": "the key in known_hosts",
+    "lines": [
+     "github.com ED25519",
+     "the published key"
+    ],
+    "alt": "a different key",
+    "ids": [
+     "+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU",
+     "8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    ],
+    "fn": "SHA256",
+    "same": "The same key gives the same fingerprint",
+    "diff": "A different key under the same name: another fingerprint",
+    "title": "The host key check"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 2,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.7217
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=the_key_GitHub_presents right=the_key_in_known__hosts lines=github.com_ED25519,the_published_key alt=a_different_key ids=+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU,8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw fn=SHA256 same=The_same_key_gives_the_same_fingerprint diff=A_different_key_under_the_same_name:_another_fingerprint title=The_host_key_check",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "the key GitHub presents",
+    "right": "the key in known_hosts",
+    "lines": [
+     "github.com ED25519",
+     "the published key"
+    ],
+    "alt": "a different key",
+    "ids": [
+     "+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU",
+     "8UpYeYa2V/LbESZNhPkXZY4AOtNVNIYX1YezLa3mHbw"
+    ],
+    "fn": "SHA256",
+    "same": "The same key gives the same fingerprint",
+    "diff": "A different key under the same name: another fingerprint",
+    "title": "The host key check"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 68,
+   "progress": 0.7291
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch16/known-hosts/05-remove",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The repair: remove the lines for the host, then add the published ones."
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -R github.com -f ~/.ssh/known_hosts"
+    },
+    {
+     "t": "out",
+     "s": "# Host github.com found: line 1"
+    },
+    {
+     "t": "out",
+     "s": "$LAB/ch16/known-hosts/home/.ssh/known_hosts updated."
+    },
+    {
+     "t": "out",
+     "s": "Original contents retained as $LAB/ch16/known-hosts/home/.ssh/known_hosts.old"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com -f ~/.ssh/known_hosts"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "cat ~/github-known-hosts.txt >> ~/.ssh/known_hosts"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com -f ~/.ssh/known_hosts | grep -c SHA256"
+    },
+    {
+     "t": "out",
+     "s": "3"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 69,
+   "progress": 0.7382
+  },
+  {
+   "kind": "terminal",
+   "direction": "GitHub walkthrough, Lab 20.1 Part B, in the normal shell. The interface changes; GitHub's guide, which the lab links, is the reference. No output is shown, and no key material is shown.",
+   "mode": "cmd",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -al ~/.ssh"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -t ed25519 -C \"your_email@example.com\""
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-add --apple-use-keychain ~/.ssh/id_ed25519"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-add -l"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -G git@github.com | grep -E '^(hostname|user|port|identityfile|identitiesonly) '"
+    },
+    {
+     "t": "cmd",
+     "s": "gh ssh-key add ~/.ssh/id_ed25519.pub --title \"MacBook 2026\" --type authentication"
+    },
+    {
+     "t": "cmd",
+     "s": "gh ssh-key list"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -T git@github.com"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-remote git@github.com:YOUR-ORG/practice-repo.git"
+    }
+   ],
+   "caption": "Narrate each step by what it changes.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.744
+  },
+  {
+   "kind": "terminal",
+   "direction": "GitHub walkthrough, Lab 20.1 Part B, in the normal shell. The interface changes; GitHub's guide, which the lab links, is the reference. No output is shown, and no key material is shown.",
+   "mode": "cmd",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -al ~/.ssh"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -t ed25519 -C \"your_email@example.com\""
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-add --apple-use-keychain ~/.ssh/id_ed25519"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-add -l"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -G git@github.com | grep -E '^(hostname|user|port|identityfile|identitiesonly) '"
+    },
+    {
+     "t": "cmd",
+     "s": "gh ssh-key add ~/.ssh/id_ed25519.pub --title \"MacBook 2026\" --type authentication"
+    },
+    {
+     "t": "cmd",
+     "s": "gh ssh-key list"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -T git@github.com"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-remote git@github.com:YOUR-ORG/practice-repo.git"
+    }
+   ],
+   "caption": "<code>ssh-add</code> gives the key to the agent and the passphrase to the keychain.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 71,
+   "progress": 0.7598
+  },
+  {
+   "kind": "terminal",
+   "direction": "GitHub walkthrough, Lab 20.1 Part B, in the normal shell. The interface changes; GitHub's guide, which the lab links, is the reference. No output is shown, and no key material is shown.",
+   "mode": "cmd",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -al ~/.ssh"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -t ed25519 -C \"your_email@example.com\""
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-add --apple-use-keychain ~/.ssh/id_ed25519"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-add -l"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -G git@github.com | grep -E '^(hostname|user|port|identityfile|identitiesonly) '"
+    },
+    {
+     "t": "cmd",
+     "s": "gh ssh-key add ~/.ssh/id_ed25519.pub --title \"MacBook 2026\" --type authentication"
+    },
+    {
+     "t": "cmd",
+     "s": "gh ssh-key list"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh -T git@github.com"
+    },
+    {
+     "t": "cmd",
+     "s": "ssh-keygen -l -F github.com"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-remote git@github.com:YOUR-ORG/practice-repo.git"
+    }
+   ],
+   "caption": "On the first <code>ssh -T</code>, stop at the fingerprint prompt and compare before you answer.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 72,
+   "progress": 0.7767
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 73,
+   "progress": 0.786
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 74,
+   "progress": 0.7873
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Silencing a host key error with <code>StrictHostKeyChecking no</code>. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+    "Writing your account name into the URL, as in <code>USERNAME@github.com</code>. Root cause: all connections are made as the user <code>git</code>; a user in the URL overrides the configuration.",
+    "Putting <code>Host *</code> defaults at the top of <code>~/.ssh/config</code>. Root cause: for each setting the first value obtained wins.",
+    "Expecting SSH to work under <code>sudo</code>, in <code>cron</code> or in a container because it works in your terminal. Root cause: those environments do not inherit <code>SSH_AUTH_SOCK</code>, so no agent can be reached.",
+    "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 75,
+   "progress": 0.7889
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Silencing a host key error with <code>StrictHostKeyChecking no</code>. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+    "Writing your account name into the URL, as in <code>USERNAME@github.com</code>. Root cause: all connections are made as the user <code>git</code>; a user in the URL overrides the configuration.",
+    "Putting <code>Host *</code> defaults at the top of <code>~/.ssh/config</code>. Root cause: for each setting the first value obtained wins.",
+    "Expecting SSH to work under <code>sudo</code>, in <code>cron</code> or in a container because it works in your terminal. Root cause: those environments do not inherit <code>SSH_AUTH_SOCK</code>, so no agent can be reached.",
+    "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 76,
+   "progress": 0.7979
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Silencing a host key error with <code>StrictHostKeyChecking no</code>. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+    "Writing your account name into the URL, as in <code>USERNAME@github.com</code>. Root cause: all connections are made as the user <code>git</code>; a user in the URL overrides the configuration.",
+    "Putting <code>Host *</code> defaults at the top of <code>~/.ssh/config</code>. Root cause: for each setting the first value obtained wins.",
+    "Expecting SSH to work under <code>sudo</code>, in <code>cron</code> or in a container because it works in your terminal. Root cause: those environments do not inherit <code>SSH_AUTH_SOCK</code>, so no agent can be reached.",
+    "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 77,
+   "progress": 0.8073
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Silencing a host key error with <code>StrictHostKeyChecking no</code>. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+    "Writing your account name into the URL, as in <code>USERNAME@github.com</code>. Root cause: all connections are made as the user <code>git</code>; a user in the URL overrides the configuration.",
+    "Putting <code>Host *</code> defaults at the top of <code>~/.ssh/config</code>. Root cause: for each setting the first value obtained wins.",
+    "Expecting SSH to work under <code>sudo</code>, in <code>cron</code> or in a container because it works in your terminal. Root cause: those environments do not inherit <code>SSH_AUTH_SOCK</code>, so no agent can be reached.",
+    "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 78,
+   "progress": 0.8131
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Silencing a host key error with <code>StrictHostKeyChecking no</code>. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+    "Writing your account name into the URL, as in <code>USERNAME@github.com</code>. Root cause: all connections are made as the user <code>git</code>; a user in the URL overrides the configuration.",
+    "Putting <code>Host *</code> defaults at the top of <code>~/.ssh/config</code>. Root cause: for each setting the first value obtained wins.",
+    "Expecting SSH to work under <code>sudo</code>, in <code>cron</code> or in a container because it works in your terminal. Root cause: those environments do not inherit <code>SSH_AUTH_SOCK</code>, so no agent can be reached.",
+    "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 79,
+   "progress": 0.8235
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 80,
+   "progress": 0.8322
+  },
+  {
+   "kind": "scene",
+   "direction": "decide: id=changed nodes=q1:Does_the_fingerprint_match_one_that_GitHub_publishes?|a:A_published_rotation:_install_the_published_lines|b:Someone_may_be_in_the_path:_off_the_network,_hand_it_to_security edges=q1>a:yes|q1>b:no path=q1,a title=The_host_key_has_changed at_level_1=12 at_level_2=45 at_path=78",
+   "scene": "decide",
+   "params": {
+    "id": "changed",
+    "nodes": [
+     [
+      "q1",
+      "Does the fingerprint match one that GitHub publishes?"
+     ],
+     [
+      "a",
+      "A published rotation: install the published lines"
+     ],
+     [
+      "b",
+      "Someone may be in the path: off the network, hand it to security"
+     ]
+    ],
+    "edges": [
+     [
+      "q1",
+      "a",
+      "yes"
+     ],
+     [
+      "q1",
+      "b",
+      "no"
+     ]
+    ],
+    "path": [
+     "q1",
+     "a"
+    ],
+    "title": "The host key has changed",
+    "at": {
+     "level-1": 0.12,
+     "level-2": 0.45,
+     "path": 0.78
+    },
+    "cols": [
+     [
+      "q1"
+     ],
+     [
+      "a",
+      "b"
+     ]
+    ]
+   },
+   "steps": [
+    "level-1",
+    "level-2",
+    "path"
+   ],
+   "upto": 3,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 81,
+   "progress": 0.8334
+  },
+  {
+   "kind": "scene",
+   "direction": "match: id=cfg header=~/.ssh/config rules=Host_github.com:id__ed25519__personal|Host_github-work:id__ed25519__work|Host_github-443:ssh.github.com,_port_443|Host_*:AddKeysToAgent_yes paths=github.com:1+4|github-work:2+4|github-443:3+4 wins=first at_2=12",
+   "scene": "match",
+   "params": {
+    "id": "cfg",
+    "header": "~/.ssh/config",
+    "rules": [
+     [
+      "Host github.com",
+      "id_ed25519_personal"
+     ],
+     [
+      "Host github-work",
+      "id_ed25519_work"
+     ],
+     [
+      "Host github-443",
+      "ssh.github.com, port 443"
+     ],
+     [
+      "Host *",
+      "AddKeysToAgent yes"
+     ]
+    ],
+    "paths": [
+     [
+      "github.com",
+      "1+4"
+     ],
+     [
+      "github-work",
+      "2+4"
+     ],
+     [
+      "github-443",
+      "3+4"
+     ]
+    ],
+    "wins": "first",
+    "at": {
+     "2": 0.12
+    }
+   },
+   "steps": [
+    "rules",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 82,
+   "progress": 0.8697
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 83,
+   "progress": 0.8904
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 20.1, \"SSH setup and verification\", in <code>lab-manual/m20-authentication-ssh.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 84,
+   "progress": 0.8916
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 20.4, \"<code>Permission denied (publickey)</code>\", in <code>exercises/m19-m25-github.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 85,
+   "progress": 0.9103
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 86,
+   "progress": 0.9136
+  },
+  {
+   "kind": "keypoint",
+   "body": "Question 233 of the CTO question bank:",
+   "section": "INTERVIEW QUESTION",
+   "n": 87,
+   "progress": 0.9148
+  },
+  {
+   "kind": "callout",
+   "quotes": [
+    "\"<code>ssh</code> reports that GitHub's host key has changed. What are the two explanations, how do you decide between them, and what do you never do?\""
+   ],
+   "quoted": false,
+   "section": "INTERVIEW QUESTION",
+   "n": 88,
+   "progress": 0.917
+  },
+  {
+   "kind": "scene",
+   "direction": "decide: id=changed nodes=q1:Does_the_fingerprint_match_one_that_GitHub_publishes?|a:A_published_rotation:_install_the_published_lines|b:Someone_may_be_in_the_path:_off_the_network,_hand_it_to_security edges=q1>a:yes|q1>b:no path=q1,a title=The_host_key_has_changed at_level_1=12 at_level_2=45 at_path=78",
+   "scene": "decide",
+   "params": {
+    "id": "changed",
+    "nodes": [
+     [
+      "q1",
+      "Does the fingerprint match one that GitHub publishes?"
+     ],
+     [
+      "a",
+      "A published rotation: install the published lines"
+     ],
+     [
+      "b",
+      "Someone may be in the path: off the network, hand it to security"
+     ]
+    ],
+    "edges": [
+     [
+      "q1",
+      "a",
+      "yes"
+     ],
+     [
+      "q1",
+      "b",
+      "no"
+     ]
+    ],
+    "path": [
+     "q1",
+     "a"
+    ],
+    "title": "The host key has changed",
+    "at": {
+     "level-1": 0.12,
+     "level-2": 0.45,
+     "path": 0.78
+    },
+    "cols": [
+     [
+      "q1"
+     ],
+     [
+      "a",
+      "b"
+     ]
+    ]
+   },
+   "steps": [
+    "level-1",
+    "level-2",
+    "path"
+   ],
+   "base": 3,
+   "upto": 3,
+   "section": "INTERVIEW QUESTION",
+   "n": 89,
+   "progress": 0.9187
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 90,
+   "progress": 0.9361
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this.",
+   "section": "RECAP",
+   "n": 91,
+   "progress": 0.9373
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+    "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+    "<code>~/.ssh/config</code> maps a host or alias to a host name, user <code>git</code>, port and key, first value wins; <code>ssh -G</code> prints the result without connecting.",
+    "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+    "<code>ssh -T git@github.com</code> tells you which account the server sees; <code>ssh.github.com</code> on port 443 is the fallback when port 22 is blocked."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 92,
+   "progress": 0.9383
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+    "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+    "<code>~/.ssh/config</code> maps a host or alias to a host name, user <code>git</code>, port and key, first value wins; <code>ssh -G</code> prints the result without connecting.",
+    "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+    "<code>ssh -T git@github.com</code> tells you which account the server sees; <code>ssh.github.com</code> on port 443 is the fallback when port 22 is blocked."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 93,
+   "progress": 0.9406
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+    "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+    "<code>~/.ssh/config</code> maps a host or alias to a host name, user <code>git</code>, port and key, first value wins; <code>ssh -G</code> prints the result without connecting.",
+    "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+    "<code>ssh -T git@github.com</code> tells you which account the server sees; <code>ssh.github.com</code> on port 443 is the fallback when port 22 is blocked."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 94,
+   "progress": 0.9474
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+    "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+    "<code>~/.ssh/config</code> maps a host or alias to a host name, user <code>git</code>, port and key, first value wins; <code>ssh -G</code> prints the result without connecting.",
+    "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+    "<code>ssh -T git@github.com</code> tells you which account the server sees; <code>ssh.github.com</code> on port 443 is the fallback when port 22 is blocked."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 95,
+   "progress": 0.9519
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+    "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+    "<code>~/.ssh/config</code> maps a host or alias to a host name, user <code>git</code>, port and key, first value wins; <code>ssh -G</code> prints the result without connecting.",
+    "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+    "<code>ssh -T git@github.com</code> tells you which account the server sees; <code>ssh.github.com</code> on port 443 is the fallback when port 22 is blocked."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 96,
+   "progress": 0.96
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+    "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+    "<code>~/.ssh/config</code> maps a host or alias to a host name, user <code>git</code>, port and key, first value wins; <code>ssh -G</code> prints the result without connecting.",
+    "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+    "<code>ssh -T git@github.com</code> tells you which account the server sees; <code>ssh.github.com</code> on port 443 is the fallback when port 22 is blocked."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 97,
+   "progress": 0.9668
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 98,
+   "progress": 0.9742
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 16.8 to 16.12 of Chapter 16.",
+   "section": "HOMEWORK",
+   "n": 99,
+   "progress": 0.9754
+  },
+  {
+   "kind": "scene",
+   "direction": "flow: id=proofs actors=your_ssh,*GitHub msgs=2>1:a_signature_made_with_the_host_key|1>1:checked_against_known__hosts|1>2:a_challenge_signed_with_your_private_key|2>2:checked_against_the_public_keys_of_accounts|2>1:the_account_found_=_who_you_are:ok title=An_SSH_connection_is_two_proofs at_1=28 at_2=38 at_3=52 at_4=60 at_5=68",
+   "scene": "flow",
+   "params": {
+    "id": "proofs",
+    "actors": [
+     "your ssh",
+     "*GitHub"
+    ],
+    "msgs": [
+     [
+      2,
+      1,
+      "a signature made with the host key"
+     ],
+     [
+      1,
+      1,
+      "checked against known_hosts"
+     ],
+     [
+      1,
+      2,
+      "a challenge signed with your private key"
+     ],
+     [
+      2,
+      2,
+      "checked against the public keys of accounts"
+     ],
+     [
+      2,
+      1,
+      "the account found = who you are",
+      "ok"
+     ]
+    ],
+    "title": "An SSH connection is two proofs",
+    "at": {
+     "1": 0.28,
+     "2": 0.38,
+     "3": 0.52,
+     "4": 0.6,
+     "5": 0.68
+    }
+   },
+   "steps": [
+    "actors",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "base": 6,
+   "upto": 6,
+   "section": "HOMEWORK",
+   "n": 100,
+   "progress": 0.978
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Picture a build machine restored from a disk image made in 2022. This morning it fetches from GitHub for the first time since then, and stops. The message says the remote host identification has changed, and ends with \"Host key verification failed.\" A search result offers a one-line fix: switch the check off.",
+   "tele": "Picture a build machine restored from a disk image made in 2022. This morning it fetches from GitHub for the first time since then, and stops. The message says the remote host identification has changed, and ends with \"Host key verification failed.\" A search result offers a one-line fix: switch the check off.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "98175ee2",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Your CTO asks: is someone intercepting our connection, or did GitHub change something? And what do we never do?",
+   "tele": "Your CTO asks: is someone intercepting our connection, or did GitHub change something? And what do we never do?",
+   "words": 19,
+   "est": 7.6,
+   "slide": 4,
+   "line": 16,
+   "t0": 24.7,
+   "h": "7f77ce2f",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "There are exactly two explanations, a published key rotation or an attack, and a fixed way to decide between them. And the one-line fix is the thing you never do: it makes the error disappear by removing the check. Hold on to that build machine. You'll repair it properly before the end.",
+   "tele": "There are exactly two explanations, a published key rotation or an attack, and a fixed way to decide between them. And the one-line fix is the thing you never do: it makes the error disappear by removing the check. Hold on to that build machine. You'll repair it properly before the end.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 5,
+   "line": 18,
+   "t0": 32.3,
+   "h": "6f4e7ec6",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 53.1,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. The last two videos covered HTTPS, where a secret travels: a token. SSH works on a different principle, and this video covers it end to end in five steps. The key pair. The agent that holds it. The configuration file that decides which key goes to which host. The host key, which is the server proving itself to you. And the test that tells you who the server thinks you are.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. The last two videos covered HTTPS, where a secret travels: a token. SSH works on a different principle, and this video covers it end to end in five steps. The key pair. The agent that holds it. The configuration file that decides which key goes to which host. The host key, which is the server proving itself to you. And the test that tells you who the server thinks you are.",
+   "words": 83,
+   "est": 33.2,
+   "slide": 7,
+   "line": 22,
+   "t0": 54.6,
+   "h": "4dc194e3",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Three replays from labs/ch16. ssh-keys.sh generates a throwaway key inside the sandbox. It's volatile, so the key and its fingerprints differ on every run and won't match the book. ssh-config.sh and known-hosts.sh are deterministic. None of the replays reaches an agent or the network. Then the walkthrough of Lab 20.1 in the normal shell.",
+   "tele": "Three replays from `labs/ch16`. `ssh-keys.sh` generates a throwaway key inside the sandbox. It's volatile, so the key and its fingerprints differ on every run and won't match the book. `ssh-config.sh` and `known-hosts.sh` are deterministic. None of the replays reaches an agent or the network. Then the walkthrough of Lab 20.1 in the normal shell.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 8,
+   "line": 24,
+   "t0": 87.8,
+   "h": "7d558bb7",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Labels from the chapter's table. ssh -G, ssh-add -l, ssh-keygen -l and ssh-keygen -F are 🟢 SAFE. ssh -T git@github.com is 🟢, and on first contact may add a line to known_hosts after asking you. ssh-keygen -t ed25519 is 🟡 CAUTION: it creates two files and overwrites an existing key only after asking. ssh-add is 🟡. ssh-keygen -R is 🟡: it removes a host's lines from known_hosts, keeping a .old copy. And StrictHostKeyChecking no is 🔴 DANGEROUS.",
+   "tele": "Labels from the chapter's table. `ssh -G`, `ssh-add -l`, `ssh-keygen -l` and `ssh-keygen -F` are 🟢 SAFE. `ssh -T git@github.com` is 🟢, and on first contact may add a line to `known_hosts` after asking you. `ssh-keygen -t ed25519` is 🟡 CAUTION: it creates two files and overwrites an existing key only after asking. `ssh-add` is 🟡. `ssh-keygen -R` is 🟡: it removes a host's lines from `known_hosts`, keeping a `.old` copy. And `StrictHostKeyChecking no` is 🔴 DANGEROUS.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 9,
+   "line": 26,
+   "t0": 109.4,
+   "h": "b2822a1f",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 10,
+   "line": 28,
+   "t0": 138.2,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 11,
+   "line": 30,
+   "t0": 139.7,
+   "h": "152923b5",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Generate a key pair and say what each half is for and where it goes.",
+   "tele": "Generate a key pair and say what each half is for and where it goes.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 12,
+   "line": 32,
+   "t0": 141.7,
+   "h": "5537e8ed",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain what the agent holds and what the passphrase protects.",
+   "tele": "Explain what the agent holds and what the passphrase protects.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 13,
+   "line": 32,
+   "t0": 147.7,
+   "h": "ab93c091",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Write a ~/.ssh/config entry with a host alias and show what SSH resolves it to.",
+   "tele": "Write a `~/.ssh/config` entry with a host alias and show what SSH resolves it to.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 14,
+   "line": 32,
+   "t0": 151.7,
+   "h": "9910a199",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+   "tele": "Verify GitHub's host key against the published fingerprints and handle a changed key.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 15,
+   "line": 32,
+   "t0": 157.7,
+   "h": "a2aab19e",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Test the connection and use SSH over port 443.",
+   "tele": "Test the connection and use SSH over port 443.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 16,
+   "line": 32,
+   "t0": 162.9,
+   "h": "bdeb1137",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 17,
+   "line": 38,
+   "t0": 166.5,
+   "h": "",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: with SSH you prove who you are by signing a challenge with a private key that never leaves your machine. GitHub holds only the public key.",
+   "tele": "In one sentence: with SSH you prove who you are by signing a challenge with a private key that never leaves your machine. GitHub holds only the public key.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 18,
+   "line": 40,
+   "t0": 168.0,
+   "h": "d8cc8f72",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The key pair. ssh-keygen -t ed25519 -C \"your_email@example.com\" is the command GitHub documents. It writes two files: the private key, and a .pub file with one line, type, key and comment, that you upload to your account. For hardware security keys the types are ed25519-sk and ecdsa-sk. When you add a key to GitHub you choose whether it's an authentication key or a signing key. To use one key for both, you upload it twice. And GitHub deletes SSH keys that haven't been used for a year.",
+   "tele": "The key pair. `ssh-keygen -t ed25519 -C \"your_email@example.com\"` is the command GitHub documents. It writes two files: the private key, and a `.pub` file with one line, type, key and comment, that you upload to your account. For hardware security keys the types are `ed25519-sk` and `ecdsa-sk`. When you add a key to GitHub you choose whether it's an authentication key or a signing key. To use one key for both, you upload it twice. And GitHub deletes SSH keys that haven't been used for a year.",
+   "words": 88,
+   "est": 35.2,
+   "slide": 19,
+   "line": 46,
+   "t0": 179.6,
+   "h": "ad803e53",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.22,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.42,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A fingerprint is a hash of the public key, short enough to compare by eye.",
+   "tele": "A fingerprint is a hash of the public key, short enough to compare by eye.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 19,
+   "line": 48,
+   "t0": 214.8,
+   "h": "de56d66b",
+   "anim": {
+    "group": 11,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Inside .git: nothing. Keys live under ~/.ssh, and which key is offered is decided by ssh, unless core.sshCommand or GIT_SSH_COMMAND says otherwise.",
+   "tele": "Inside `.git`: nothing. Keys live under `~/.ssh`, and which key is offered is decided by `ssh`, unless `core.sshCommand` or `GIT_SSH_COMMAND` says otherwise.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 19,
+   "line": 50,
+   "t0": 220.8,
+   "h": "d0583766",
+   "anim": {
+    "group": 11,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The agent. A passphrase encrypts the private key file, so that a copy of the file is useless without it. But a passphrase that must be typed for every fetch gets removed within a week. The agent is the remedy: a background process that holds decrypted keys in memory and signs on request, so that ssh never needs the passphrase again during the session and no program reads the private key file.",
+   "tele": "The agent. A passphrase encrypts the private key file, so that a copy of the file is useless without it. But a passphrase that must be typed for every fetch gets removed within a week. The agent is the remedy: a background process that holds decrypted keys in memory and signs on request, so that `ssh` never needs the passphrase again during the session and no program reads the private key file.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 20,
+   "line": 54,
+   "t0": 229.6,
+   "h": "7b7c7177",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     },
+     {
+      "at": 0.05,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.58,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "ssh-add PATH gives a key to the agent. ssh-add -l lists the keys it holds, and its exit status distinguishes three states. 0 with a list. 1 with \"The agent has no identities.\" And 2 when no agent can be reached. macOS provides an agent for your login session.",
+   "tele": "`ssh-add PATH` gives a key to the agent. `ssh-add -l` lists the keys it holds, and its exit status distinguishes three states. 0 with a list. 1 with \"The agent has no identities.\" And 2 when no agent can be reached. macOS provides an agent for your login session.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 21,
+   "line": 60,
+   "t0": 258.4,
+   "h": "aab542af",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.24,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.38,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "GitHub's guide adds a Host github.com block with AddKeysToAgent yes and UseKeychain yes, and ssh-add --apple-use-keychain, which stores the passphrase in the login keychain so that the agent can load the key after a restart. UseKeychain exists only in Apple's build of OpenSSH.",
+   "tele": "GitHub's guide adds a `Host github.com` block with `AddKeysToAgent yes` and `UseKeychain yes`, and `ssh-add --apple-use-keychain`, which stores the passphrase in the login keychain so that the agent can load the key after a restart. `UseKeychain` exists only in Apple's build of OpenSSH.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 21,
+   "line": 60,
+   "t0": 278.0,
+   "h": "76121875",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, in your normal shell. Run ssh-add -l and decide which of the three states you're in: a list, no identities, or no agent. I'll wait.",
+   "tele": "Try it now, thirty seconds, in your normal shell. Run `ssh-add -l` and decide which of the three states you're in: a list, no identities, or no agent. I'll wait.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 21,
+   "line": 62,
+   "t0": 295.2,
+   "h": "f9c9d82b",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 21,
+   "line": 64,
+   "t0": 307.2,
+   "h": "",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Whichever you got, you now know what your agent holds. That's the first thing to check when SSH surprises you.",
+   "tele": "Whichever you got, you now know what your agent holds. That's the first thing to check when SSH surprises you.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 21,
+   "line": 66,
+   "t0": 311.7,
+   "h": "54f629ae",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "You meet the third state, no agent, under sudo, in cron jobs and in containers: they don't inherit SSH_AUTH_SOCK, the variable that tells ssh where the agent is.",
+   "tele": "You meet the third state, no agent, under `sudo`, in `cron` jobs and in containers: they don't inherit `SSH_AUTH_SOCK`, the variable that tells `ssh` where the agent is.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 21,
+   "line": 68,
+   "t0": 319.7,
+   "h": "57447cd0",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "One warning: agent forwarding lets a remote machine use your local agent. The manual says it \"should be enabled with caution\": whoever controls that machine can use your identity while you are connected.",
+   "tele": "One warning: agent forwarding lets a remote machine use your local agent. The manual says it \"should be enabled with caution\": whoever controls that machine can use your identity while you are connected.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 22,
+   "line": 72,
+   "t0": 330.9,
+   "h": "7910dbb4",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Quick quiz. When you connect to GitHub over SSH, which user name does ssh send: your account name, your email address, or git? Say it out loud.",
+   "tele": "Quick quiz. When you connect to GitHub over SSH, which user name does `ssh` send: your account name, your email address, or `git`? Say it out loud.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 23,
+   "line": 74,
+   "t0": 344.1,
+   "h": "25d58585",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 23,
+   "line": 76,
+   "t0": 354.9,
+   "h": "",
+   "anim": {
+    "group": 14,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The configuration file. In one sentence: ~/.ssh/config maps the host name that Git hands to ssh onto a real host, a user, a port and a key, and ssh -G prints the result of that mapping without connecting.",
+   "tele": "The configuration file. In one sentence: `~/.ssh/config` maps the host name that Git hands to `ssh` onto a real host, a user, a port and a key, and `ssh -G` prints the result of that mapping without connecting.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 24,
+   "line": 78,
+   "t0": 359.4,
+   "h": "6a7dfb0f",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The file is a list of Host blocks. For each setting, the first value obtained wins, so specific blocks go first and Host * defaults go last. The keywords that matter for GitHub. Host is the name or pattern that appears in a URL: github.com, or an alias of your own.",
+   "tele": "The file is a list of `Host` blocks. For each setting, the first value obtained wins, so specific blocks go first and `Host *` defaults go last. The keywords that matter for GitHub. `Host` is the name or pattern that appears in a URL: `github.com`, or an alias of your own.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 25,
+   "line": 80,
+   "t0": 374.6,
+   "h": "82849d12",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "HostName is the real host. User is always git, and that's the quiz answer. IdentityFile is a private key to offer. IdentitiesOnly yes means offer only the configured files, even if the agent holds more keys. Your GitHub account name appears nowhere. GitHub identifies you by which key was accepted.",
+   "tele": "`HostName` is the real host. `User` is always `git`, and that's the quiz answer. `IdentityFile` is a private key to offer. `IdentitiesOnly yes` means offer only the configured files, even if the agent holds more keys. Your GitHub account name appears nowhere. GitHub identifies you by which key was accepted.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 26,
+   "line": 80,
+   "t0": 394.6,
+   "h": "a7349542",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Git's part is small: it splits the URL and runs ssh with what it found. Git doesn't read ~/.ssh/config.",
+   "tele": "Git's part is small: it splits the URL and runs `ssh` with what it found. Git doesn't read `~/.ssh/config`.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 27,
+   "line": 82,
+   "t0": 414.6,
+   "h": "19b4ecbc",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Host keys. In one sentence: before you prove who you are, the server proves who it is with its host key, and ssh compares that key with the one it remembered in ~/.ssh/known_hosts.",
+   "tele": "Host keys. In one sentence: before you prove who you are, the server proves who it is with its host key, and `ssh` compares that key with the one it remembered in `~/.ssh/known_hosts`.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 28,
+   "line": 86,
+   "t0": 422.2,
+   "h": "1a16704d",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Without this check, anyone on the network path could pose as GitHub, accept your connection and relay it. On the first connection ssh shows the server key's fingerprint and asks whether to continue. Your answer is the whole security of the scheme, so compare it with the fingerprints GitHub publishes. GitHub also publishes the three known_hosts lines, so you can install them and never be asked.",
+   "tele": "Without this check, anyone on the network path could pose as GitHub, accept your connection and relay it. On the first connection `ssh` shows the server key's fingerprint and asks whether to continue. Your answer is the whole security of the scheme, so compare it with the fingerprints GitHub publishes. GitHub also publishes the three `known_hosts` lines, so you can install them and never be asked.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 29,
+   "line": 90,
+   "t0": 435.4,
+   "h": "cf4b1bbd",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A changed host key has two explanations. One: a published rotation. GitHub replaced its RSA host key on the twenty-fourth of March 2023, after the private key was briefly exposed in a public repository. The ECDSA and Ed25519 keys didn't change. Two: someone is in the path.",
+   "tele": "A changed host key has two explanations. One: a published rotation. GitHub replaced its RSA host key on the twenty-fourth of March 2023, after the private key was briefly exposed in a public repository. The ECDSA and Ed25519 keys didn't change. Two: someone is in the path.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 30,
+   "line": 94,
+   "t0": 461.8,
+   "h": "9a9f9700",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "How do you decide? GitHub states that a host key change \"will be announced on the GitHub Blog\". So you find the announcement first, and you compare the fingerprint with the published ones. Only then do you remove the old lines with ssh-keygen -R github.com and install the published lines.",
+   "tele": "How do you decide? GitHub states that a host key change \"will be announced on the GitHub Blog\". So you find the announcement first, and you compare the fingerprint with the published ones. Only then do you remove the old lines with `ssh-keygen -R github.com` and install the published lines.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 30,
+   "line": 94,
+   "t0": 480.6,
+   "h": "17a963c2",
+   "anim": {
+    "group": 19,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The 🔴 item: StrictHostKeyChecking no, and deleting known_hosts wholesale. What it changes: ssh stops verifying the server. What it can destroy: the guarantee that you're talking to GitHub, and with it the confidentiality of everything you push. There's no preview and no recovery for a connection already intercepted. It isn't appropriate. On a CI runner, the machine that runs an automated job, install the published lines instead.",
+   "tele": "The 🔴 item: `StrictHostKeyChecking no`, and deleting `known_hosts` wholesale. What it changes: `ssh` stops verifying the server. What it can destroy: the guarantee that you're talking to GitHub, and with it the confidentiality of everything you push. There's no preview and no recovery for a connection already intercepted. It isn't appropriate. On a CI runner, the machine that runs an automated job, install the published lines instead.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 31,
+   "line": 98,
+   "t0": 500.6,
+   "h": "e9e77589",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 40,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Testing. ssh -T git@github.com authenticates and runs nothing. GitHub's documented answer is \"Hi USERNAME! You've successfully authenticated, but GitHub does not provide shell access.\", and the command exits with status 1, which is expected. The name in the greeting is the answer to \"who does the server say I am\", and it is the first thing to read when a repository is \"not found\". ssh -vT adds the client's reasoning: which configuration files were read, which host and port were contacted, which keys were offered.",
+   "tele": "Testing. `ssh -T git@github.com` authenticates and runs nothing. GitHub's documented answer is \"Hi USERNAME! You've successfully authenticated, but GitHub does not provide shell access.\", and the command exits with status 1, which is expected. The name in the greeting is the answer to \"who does the server say I am\", and it is the first thing to read when a repository is \"not found\". `ssh -vT` adds the client's reasoning: which configuration files were read, which host and port were contacted, which keys were offered.",
+   "words": 86,
+   "est": 34.4,
+   "slide": 32,
+   "line": 100,
+   "t0": 527.0,
+   "h": "ec44a648",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Some networks block port 22. GitHub accepts SSH on port 443 of a different host name, ssh.github.com. GitHub's page notes that the first connection asks about the host key again, under that other name, and that this is not available on GitHub Enterprise Server. The textbook did not verify the host-key behaviour beyond that page.",
+   "tele": "Some networks block port 22. GitHub accepts SSH on port 443 of a different host name, `ssh.github.com`. GitHub's page notes that the first connection asks about the host key again, under that other name, and that this is not available on GitHub Enterprise Server. The textbook did not verify the host-key behaviour beyond that page.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 33,
+   "line": 102,
+   "t0": 561.4,
+   "h": "38de394f",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 34,
+   "line": 104,
+   "t0": 583.4,
+   "h": "",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook's analogy: a signet ring and its wax impression. You give everyone a sample impression, the public key. Only the ring, the private key, can make a new one, and anyone can compare.",
+   "tele": "The textbook's analogy: a signet ring and its wax impression. You give everyone a sample impression, the public key. Only the ring, the private key, can make a new one, and anyone can compare.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 35,
+   "line": 106,
+   "t0": 584.9,
+   "h": "61feb393",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks because a wax seal can be copied from a sample, and a private key can't be derived from the public key.",
+   "tele": "The analogy breaks because a wax seal can be copied from a sample, and a private key can't be derived from the public key.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 36,
+   "line": 108,
+   "t0": 598.5,
+   "h": "eefad1e6",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Add the second ring to the picture: the server has one too. An SSH connection is two proofs. First the server shows its impression and you compare it with the sample in known_hosts. Then you show yours and the server compares it with the samples in your account. The hook of this video is the first proof failing. Most \"permission denied\" problems are the second.",
+   "tele": "Add the second ring to the picture: the server has one too. An SSH connection is two proofs. First the server shows its impression and you compare it with the sample in `known_hosts`. Then you show yours and the server compares it with the samples in your account. The hook of this video is the first proof failing. Most \"permission denied\" problems are the second.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 37,
+   "line": 114,
+   "t0": 608.1,
+   "h": "622b0de0",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.28,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.38,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.52,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.68,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 38,
+   "line": 116,
+   "t0": 634.1,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "On the left, the private key stays, and the agent holds it decrypted. The public half was uploaded once and is attached to your account on the right. On the left again, known_hosts holds GitHub's public host key.",
+   "tele": "On the left, the private key stays, and the agent holds it decrypted. The public half was uploaded once and is attached to your account on the right. On the left again, `known_hosts` holds GitHub's public host key.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 39,
+   "line": 136,
+   "t0": 635.6,
+   "h": "3af0a6eb",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Two arrows cross. First from right to left: the server proves itself, and your ssh checks that against known_hosts. Then from left to right: a challenge signed with your private key. Nothing secret travels in either direction.",
+   "tele": "Two arrows cross. First from right to left: the server proves itself, and your `ssh` checks that against `known_hosts`. Then from left to right: a challenge signed with your private key. Nothing secret travels in either direction.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 39,
+   "line": 138,
+   "t0": 650.8,
+   "h": "907e418e",
+   "anim": {
+    "group": 28,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Four layers. Git splits the URL. ssh applies its configuration. The host key is checked. And GitHub authenticates, then authorizes.",
+   "tele": "Four layers. Git splits the URL. `ssh` applies its configuration. The host key is checked. And GitHub authenticates, then authorizes.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 40,
+   "line": 155,
+   "t0": 665.6,
+   "h": "ec24e307",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 41,
+   "line": 157,
+   "t0": 673.6,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 42,
+   "line": null,
+   "t0": 675.1,
+   "h": "",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Two files. The private file is readable by its owner only, and ssh ignores a private key file that others can access.",
+   "tele": "Two files. The private file is readable by its owner only, and `ssh` ignores a private key file that others can access.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 43,
+   "line": 179,
+   "t0": 677.6,
+   "h": "55ee249d",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The public half: one line of type, key and comment. Below it the fingerprint in the SHA256 form, which is the form GitHub lists in your account, and in the older MD5 form with colons that some tools still print.",
+   "tele": "The public half: one line of type, key and comment. Below it the fingerprint in the SHA256 form, which is the form GitHub lists in your account, and in the older MD5 form with colons that some tools still print.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 44,
+   "line": 198,
+   "t0": 686.4,
+   "h": "f46b723f",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Suppose you lose the .pub file. What have you lost? Say it out loud. I'll wait.",
+   "tele": "Suppose you lose the `.pub` file. What have you lost? Say it out loud. I'll wait.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 45,
+   "line": 205,
+   "t0": 702.4,
+   "h": "baa1c72b",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.48,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 45,
+   "line": 207,
+   "t0": 708.8,
+   "h": "",
+   "anim": {
+    "group": 34,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Nothing: ssh-keygen -y recomputes the public key from the private one.",
+   "tele": "Nothing: `ssh-keygen -y` recomputes the public key from the private one.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 46,
+   "line": 218,
+   "t0": 713.3,
+   "h": "cadf83a5",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.125,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.7,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A passphrase is set, and a wrong guess fails: \"incorrect passphrase supplied to decrypt private key\". On your machine ssh-keygen asks for the passphrase interactively. It never belongs on a command line. The replay does it only because it can't type.",
+   "tele": "A passphrase is set, and a wrong guess fails: \"incorrect passphrase supplied to decrypt private key\". On your machine `ssh-keygen` asks for the passphrase interactively. It never belongs on a command line. The replay does it only because it can't type.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 47,
+   "line": 234,
+   "t0": 717.7,
+   "h": "e62a764e",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.468,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 48,
+   "line": null,
+   "t0": 734.1,
+   "h": "",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 49,
+   "line": null,
+   "t0": 736.6,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 50,
+   "line": null,
+   "t0": 740.6,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Four blocks: a personal identity for github.com, a work identity behind the alias github-work, the port-443 fallback, and the defaults last.",
+   "tele": "Four blocks: a personal identity for `github.com`, a work identity behind the alias `github-work`, the port-443 fallback, and the defaults last.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 51,
+   "line": 281,
+   "t0": 744.6,
+   "h": "2ec6903d",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The alias github-work. Which host will ssh connect to, and with which key? Make your prediction.",
+   "tele": "The alias `github-work`. Which host will `ssh` connect to, and with which key? Make your prediction.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 52,
+   "line": 288,
+   "t0": 753.0,
+   "h": "6b886ec5",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.1,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.03,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 52,
+   "line": 290,
+   "t0": 759.4,
+   "h": "",
+   "anim": {
+    "group": 41,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.8,
+   "slide": 53,
+   "line": null,
+   "t0": 763.9,
+   "h": "",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.36,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.8,
+   "slide": 54,
+   "line": null,
+   "t0": 768.7,
+   "h": "",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.36,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The same host, github.com, as a different key holder. Nothing was contacted: -G evaluates the Host blocks, prints the settings, and exits.",
+   "tele": "The same host, `github.com`, as a different key holder. Nothing was contacted: `-G` evaluates the `Host` blocks, prints the settings, and exits.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 55,
+   "line": 318,
+   "t0": 773.5,
+   "h": "72fa228c",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.8,
+   "slide": 56,
+   "line": null,
+   "t0": 782.3,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.36,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The port-443 block resolves to ssh.github.com, port 443.",
+   "tele": "The port-443 block resolves to `ssh.github.com`, port 443.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 57,
+   "line": 334,
+   "t0": 787.1,
+   "h": "b328913c",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A user written in the command or in the URL beats User git in the file. That's how a well-meant USERNAME@github.com breaks a working setup.",
+   "tele": "A user written in the command or in the URL beats `User git` in the file. That's how a well-meant `USERNAME@github.com` breaks a working setup.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 58,
+   "line": 345,
+   "t0": 790.3,
+   "h": "178d1c2a",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the same file with a Host * block moved to the top, containing a default user and an old key. What does github.com resolve to? Say it out loud.",
+   "tele": "Now the same file with a `Host *` block moved to the top, containing a default user and an old key. What does `github.com` resolve to? Say it out loud.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 58,
+   "line": 347,
+   "t0": 800.7,
+   "h": "4a2c79a9",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0.728,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 58,
+   "line": 349,
+   "t0": 812.3,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "User deploy won because it was obtained first, and an old RSA key is now offered before the right one. On GitHub this configuration fails with Permission denied (publickey), and the only place the cause is visible is this output.",
+   "tele": "`User deploy` won because it was obtained first, and an old RSA key is now offered before the right one. On GitHub this configuration fails with `Permission denied (publickey)`, and the only place the cause is visible is this output.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 59,
+   "line": 370,
+   "t0": 816.8,
+   "h": "53fb2ffa",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A stand-in for ssh prints the arguments Git gives it and exits. Git passed the alias github-work untouched. Git doesn't know that the alias means github.com.",
+   "tele": "A stand-in for `ssh` prints the arguments Git gives it and exits. Git passed the alias `github-work` untouched. Git doesn't know that the alias means `github.com`.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 60,
+   "line": 392,
+   "t0": 832.8,
+   "h": "aa68fa79",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 3.89,
+      "dissolve": true
+     },
+     {
+      "at": 0.534,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.39,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 61,
+   "line": null,
+   "t0": 843.2,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 62,
+   "line": null,
+   "t0": 845.7,
+   "h": "",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The three lines GitHub publishes, copied for the course on the second of October 2026, and their fingerprints computed locally. Compare these three with the table in section 16.11 and with GitHub's page on the day you record.",
+   "tele": "The three lines GitHub publishes, copied for the course on the second of October 2026, and their fingerprints computed locally. Compare these three with the table in section 16.11 and with GitHub's page on the day you record.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 63,
+   "line": 422,
+   "t0": 849.7,
+   "h": "df6fe1bd",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "ssh-keygen -F answers \"what do I have on file for this host\". Three entries for github.com, and none for ssh.github.com, which is a different name.",
+   "tele": "`ssh-keygen -F` answers \"what do I have on file for this host\". Three entries for `github.com`, and none for `ssh.github.com`, which is a different name.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 64,
+   "line": 445,
+   "t0": 864.9,
+   "h": "27020fbd",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.75,
+      "dissolve": true
+     },
+     {
+      "at": 0.536,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 1.24,
+      "dissolve": false
+     },
+     {
+      "at": 0.712,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.01,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A different key filed under the name github.com: what a stale or forged entry looks like. It looks like any other line. Only the fingerprint gives it away.",
+   "tele": "A different key filed under the name `github.com`: what a stale or forged entry looks like. It looks like any other line. Only the fingerprint gives it away.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 65,
+   "line": 460,
+   "t0": 874.9,
+   "h": "3c26c5b3",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.85,
+      "dissolve": true
+     },
+     {
+      "at": 0.236,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Here's that check as a picture. On the left, the key GitHub presents, and its fingerprint.",
+   "tele": "Here's that check as a picture. On the left, the key GitHub presents, and its fingerprint.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 66,
+   "line": 464,
+   "t0": 886.1,
+   "h": "0799923c",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On the right, the key on file. A fingerprint is a hash of the key, so the same key gives the same fingerprint.",
+   "tele": "On the right, the key on file. A fingerprint is a hash of the key, so the same key gives the same fingerprint.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 67,
+   "line": 468,
+   "t0": 892.5,
+   "h": "c6ab32b0",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "With the stale line on file, the two no longer match, and a connection to the real GitHub fails with \"Host key verification failed.\" That's the check working.",
+   "tele": "With the stale line on file, the two no longer match, and a connection to the real GitHub fails with \"Host key verification failed.\" That's the check working.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 68,
+   "line": 472,
+   "t0": 901.7,
+   "h": "ac6ee031",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The repair: remove the lines for the host, which keeps a .old copy, then add the published ones.",
+   "tele": "The repair: remove the lines for the host, which keeps a `.old` copy, then add the published ones.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 69,
+   "line": 495,
+   "t0": 912.9,
+   "h": "789f76aa",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Narrate each step by what it changes. ssh-keygen asks for a file and a passphrase and writes two files under ~/.ssh. If id_ed25519 already exists, choose another file name. Between the second and third commands the lab has you add the Host github.com block to ~/.ssh/config with your editor.",
+   "tele": "Narrate each step by what it changes. `ssh-keygen` asks for a file and a passphrase and writes two files under `~/.ssh`. If `id_ed25519` already exists, choose another file name. Between the second and third commands the lab has you add the `Host github.com` block to `~/.ssh/config` with your editor.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 70,
+   "line": 512,
+   "t0": 920.1,
+   "h": "8385ac67",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.73,
+      "dissolve": true
+     },
+     {
+      "at": 0.126,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 3.33,
+      "dissolve": false
+     },
+     {
+      "at": 0.369,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "ssh-add gives the key to the agent and the passphrase to the keychain. gh ssh-key add attaches the public key to your account. If it refuses for a missing scope, the lab gives the web form: in your settings, the page for SSH and GPG keys, a new key of type \"authentication\".",
+   "tele": "`ssh-add` gives the key to the agent and the passphrase to the keychain. `gh ssh-key add` attaches the public key to your account. If it refuses for a missing scope, the lab gives the web form: in your settings, the page for SSH and GPG keys, a new key of type \"authentication\".",
+   "words": 52,
+   "est": 20.8,
+   "slide": 71,
+   "line": 512,
+   "t0": 939.7,
+   "h": "3438ddd8",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.82,
+      "dissolve": true
+     },
+     {
+      "at": 0.263,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On the first ssh -T, stop at the fingerprint prompt and compare before you answer. The documentation says the greeting names your account and the exit status is 1.",
+   "tele": "On the first `ssh -T`, stop at the fingerprint prompt and compare before you answer. The documentation says the greeting names your account and the exit status is 1.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 72,
+   "line": 512,
+   "t0": 960.5,
+   "h": "30922b14",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": {
+       "blocks": 7
+      },
+      "dissolve": true
+     },
+     {
+      "at": 0.079,
+      "fx": "terminal",
+      "from": {
+       "blocks": 7
+      },
+      "to": {
+       "blocks": 10
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 73,
+   "line": 514,
+   "t0": 972.1,
+   "h": "",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 74,
+   "line": 516,
+   "t0": 973.6,
+   "h": "76698d9b",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Silencing a host key error with StrictHostKeyChecking no. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+   "tele": "Silencing a host key error with `StrictHostKeyChecking no`. Root cause: the error is the check working; switching it off removes the only proof that the server is GitHub.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 75,
+   "line": 518,
+   "t0": 975.6,
+   "h": "539e9946",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Writing your account name into the URL, as in USERNAME@github.com. Root cause: all connections are made as the user git; a user in the URL overrides the configuration.",
+   "tele": "Writing your account name into the URL, as in `USERNAME@github.com`. Root cause: all connections are made as the user `git`; a user in the URL overrides the configuration.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 76,
+   "line": 518,
+   "t0": 986.8,
+   "h": "130c1914",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Putting Host * defaults at the top of ~/.ssh/config. Root cause: for each setting the first value obtained wins.",
+   "tele": "Putting `Host *` defaults at the top of `~/.ssh/config`. Root cause: for each setting the first value obtained wins.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 77,
+   "line": 518,
+   "t0": 998.4,
+   "h": "4eb12c14",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting SSH to work under sudo, in cron or in a container because it works in your terminal. Root cause: those environments do not inherit SSH_AUTH_SOCK, so no agent can be reached.",
+   "tele": "Expecting SSH to work under `sudo`, in `cron` or in a container because it works in your terminal. Root cause: those environments do not inherit `SSH_AUTH_SOCK`, so no agent can be reached.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 78,
+   "line": 518,
+   "t0": 1005.6,
+   "h": "f9ec41b0",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion.",
+   "tele": "Copying one private key to several machines. Root cause: a lost machine then forces revocation everywhere at once; one key per machine limits that to one deletion.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 79,
+   "line": 518,
+   "t0": 1018.4,
+   "h": "595d89da",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 80,
+   "line": 524,
+   "t0": 1029.2,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. The build machine from the hook. The engineer doesn't touch the configuration first. She reads the fingerprint in the error, opens GitHub's page of published fingerprints from another machine, and searches the GitHub Blog for an announcement. The machine's known_hosts was written in 2022. It holds the RSA host key that GitHub replaced on the twenty-fourth of March 2023. The published RSA fingerprint matches what the server now presents. Explanation one: a rotation, announced. She runs ssh-keygen -R github.com and installs the three published lines.",
+   "tele": "Now, out of the lab. The build machine from the hook. The engineer doesn't touch the configuration first. She reads the fingerprint in the error, opens GitHub's page of published fingerprints from another machine, and searches the GitHub Blog for an announcement. The machine's `known_hosts` was written in 2022. It holds the RSA host key that GitHub replaced on the twenty-fourth of March 2023. The published RSA fingerprint matches what the server now presents. Explanation one: a rotation, announced. She runs `ssh-keygen -R github.com` and installs the three published lines.",
+   "words": 90,
+   "est": 36.0,
+   "slide": 81,
+   "line": 530,
+   "t0": 1030.7,
+   "h": "e2afbb64",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.78,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Had the fingerprint matched nothing GitHub publishes, the machine would have been taken off that network and the incident handed to security.",
+   "tele": "Had the fingerprint matched nothing GitHub publishes, the machine would have been taken off that network and the incident handed to security.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 81,
+   "line": 532,
+   "t0": 1066.7,
+   "h": "3176010f",
+   "anim": {
+    "group": 62,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "A second habit from the same team: a support ticket that says \"SSH is broken since yesterday\" gets one request before anything else, the output of ssh -G github.com filtered to host name, user, port and identity files. It shows a corporate tool that prepended a Host * block, an alias that someone shadowed, or a port override, in less time than reading ssh -v.",
+   "tele": "A second habit from the same team: a support ticket that says \"SSH is broken since yesterday\" gets one request before anything else, the output of `ssh -G github.com` filtered to host name, user, port and identity files. It shows a corporate tool that prepended a `Host *` block, an alias that someone shadowed, or a port override, in less time than reading `ssh -v`.",
+   "words": 64,
+   "est": 25.6,
+   "slide": 82,
+   "line": 536,
+   "t0": 1075.5,
+   "h": "072b38e8",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 97,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 83,
+   "line": 538,
+   "t0": 1101.1,
+   "h": "",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 98,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 20.1, \"SSH setup and verification\", in lab-manual/m20-authentication-ssh.md. Part A is a rehearsal in the lab shell with a throwaway key, and Part B is the real setup in your normal shell. Before each ssh -G, predict the host name, the user and the identity file. Before your first connection, have the published fingerprints open.",
+   "tele": "Your turn. Do Lab 20.1, \"SSH setup and verification\", in `lab-manual/m20-authentication-ssh.md`. Part A is a rehearsal in the lab shell with a throwaway key, and Part B is the real setup in your normal shell. Before each `ssh -G`, predict the host name, the user and the identity file. Before your first connection, have the published fingerprints open.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 84,
+   "line": 540,
+   "t0": 1102.6,
+   "h": "c266dfda",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 99,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 20.4, \"Permission denied (publickey)\", in exercises/m19-m25-github.md.",
+   "tele": "The challenge is Exercise 20.4, \"`Permission denied (publickey)`\", in `exercises/m19-m25-github.md`.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 85,
+   "line": 542,
+   "t0": 1125.8,
+   "h": "96c79959",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 100,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 86,
+   "line": 544,
+   "t0": 1129.8,
+   "h": "",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 101,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Question 233 of the CTO question bank:",
+   "tele": "Question 233 of the CTO question bank:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 87,
+   "line": 546,
+   "t0": 1131.3,
+   "h": "740a05f4",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 102,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 88,
+   "line": 550,
+   "t0": 1134.1,
+   "h": "",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 103,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud. A strong answer names both explanations without ranking one as \"probably\", and bases the decision on evidence from outside the affected connection. It knows the documented rotation and its date as an example. It gives the repair commands in order, and it's unambiguous about the forbidden shortcut and why it's forbidden.",
+   "tele": "Answer out loud. A strong answer names both explanations without ranking one as \"probably\", and bases the decision on evidence from outside the affected connection. It knows the documented rotation and its date as an example. It gives the repair commands in order, and it's unambiguous about the forbidden shortcut and why it's forbidden.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 89,
+   "line": 554,
+   "t0": 1136.1,
+   "h": "ba8ece30",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 104,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 90,
+   "line": 556,
+   "t0": 1157.7,
+   "h": "",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 105,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this.",
+   "tele": "Let's land this.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 91,
+   "line": 558,
+   "t0": 1159.2,
+   "h": "8e062241",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 106,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 92,
+   "line": 560,
+   "t0": 1160.4,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 107,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+   "tele": "The private key never leaves the machine; GitHub holds the public key; a fingerprint is a hash of the public key.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 93,
+   "line": 562,
+   "t0": 1163.2,
+   "h": "53df7ced",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 108,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+   "tele": "The agent holds decrypted keys in memory; the passphrase protects the file on disk.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 94,
+   "line": 562,
+   "t0": 1171.6,
+   "h": "8f2752b6",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 109,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "~/.ssh/config maps a host or alias to a host name, user git, port and key, first value wins; ssh -G prints the result without connecting.",
+   "tele": "`~/.ssh/config` maps a host or alias to a host name, user `git`, port and key, first value wins; `ssh -G` prints the result without connecting.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 95,
+   "line": 562,
+   "t0": 1177.2,
+   "h": "73c1d6c3",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 110,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+   "tele": "A host key mismatch is a published rotation or an attack; the published fingerprints decide; the check is never switched off.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 96,
+   "line": 562,
+   "t0": 1187.2,
+   "h": "b027a383",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 111,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "ssh -T git@github.com tells you which account the server sees; ssh.github.com on port 443 is the fallback when port 22 is blocked.",
+   "tele": "`ssh -T git@github.com` tells you which account the server sees; `ssh.github.com` on port 443 is the fallback when port 22 is blocked.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 97,
+   "line": 562,
+   "t0": 1195.6,
+   "h": "346d80fe",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 112,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 98,
+   "line": 568,
+   "t0": 1204.8,
+   "h": "",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 113,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 16.8 to 16.12 of Chapter 16.",
+   "tele": "Read sections 16.8 to 16.12 of Chapter 16.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 99,
+   "line": 570,
+   "t0": 1206.3,
+   "h": "4bad44a8",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 114,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you followed an SSH connection through both proofs, and you repaired a host key error without switching the check off. That's a lot of moving parts, so if one of the five steps still blurs, replay its demo. Next time: two identities on one machine, credentials for machines, and single sign-on. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you followed an SSH connection through both proofs, and you repaired a host key error without switching the check off. That's a lot of moving parts, so if one of the five steps still blurs, replay its demo. Next time: two identities on one machine, credentials for machines, and single sign-on. Until then, look at the state first and type second. See you in the next one.",
+   "words": 68,
+   "est": 27.2,
+   "slide": 100,
+   "line": 574,
+   "t0": 1209.5,
+   "h": "49c9856d",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 6,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1236.7,
+ "narration_words": 2892,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

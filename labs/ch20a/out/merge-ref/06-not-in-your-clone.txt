@@ -1,0 +1,17 @@
+# Back in your clone: the commit CI tested is not there, and your branch is unchanged.
+$ cd ../you/inventory-api
+$ merge=$(git ls-remote "$HUB" refs/pull/7/merge | cut -f1)
+$ git cat-file -t $merge
+fatal: git cat-file: could not get object info
+[exit status: 128]
+# Reproduce what CI tested: merge the current base into a throwaway copy of your branch.
+$ git fetch --quiet origin
+$ git switch --quiet --detach feature/reorder-report
+$ git merge --quiet --no-edit origin/main
+$ git rev-parse HEAD^{tree}
+745aaaaed0f47d2429feeb200e9776b329be83ef
+$ git -C ../../runner rev-parse HEAD^{tree}
+745aaaaed0f47d2429feeb200e9776b329be83ef
+$ PYTHONPATH=src python3 -m unittest discover -s tests 2>&1 | tail -1
+FAILED (failures=1)
+$ git switch --quiet feature/reorder-report

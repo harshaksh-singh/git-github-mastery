@@ -1,0 +1,24 @@
+$ git switch -c fix/restore-overload-fix
+Switched to a new branch 'fix/restore-overload-fix'
+# (edit limiter/bucket.py: DEFAULT_RATE = 50, and the min(BURST, ...) cap in refill)
+$ git diff
+diff --git a/limiter/bucket.py b/limiter/bucket.py
+index 771c807..6eeda30 100644
+--- a/limiter/bucket.py
++++ b/limiter/bucket.py
+@@ -1,4 +1,4 @@
+-DEFAULT_RATE = 100
++DEFAULT_RATE = 50
+ BURST = 200
+ 
+ 
+@@ -9,5 +9,5 @@ def allow(key, now):
+ 
+ 
+ def refill(bucket, now, rate):
+-    bucket.tokens = bucket.tokens + (now - bucket.ts) * rate
++    bucket.tokens = min(BURST, bucket.tokens + (now - bucket.ts) * rate)
+     bucket.ts = now
+$ git commit -a -m 'Restore the burst cap and the lowered default rate' -m 'Merge d7497e2 resolved a conflict in limiter/bucket.py by keeping one side of the whole file, which discarded bfd1f07 and 8a11540.'
+[fix/restore-overload-fix ea9eb30] Restore the burst cap and the lowered default rate
+ 1 file changed, 2 insertions(+), 2 deletions(-)

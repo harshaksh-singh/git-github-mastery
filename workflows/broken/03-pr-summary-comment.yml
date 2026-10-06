@@ -1,0 +1,47 @@
+# Broken workflow 3 of 6 (Lab 28.1): comment the test result on the pull request.
+#
+# Intended behavior: on every pull request from a branch of this repository, run the tests and
+# post one comment on the pull request with the result, using the GitHub CLI that is installed
+# on the runner and the job's own token.
+#
+# Observed: read the lab. Diagnose before you change anything.
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Pull request summary comment
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-comment:
+    name: Test and comment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - run: uv sync --locked
+
+      - name: Run the tests
+        id: tests
+        shell: bash
+        run: |
+          uv run pytest | tee pytest-output.txt
+          tail -n 1 pytest-output.txt > summary.txt
+
+      - name: Comment on the pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr comment "$PR_NUMBER" --body-file summary.txt

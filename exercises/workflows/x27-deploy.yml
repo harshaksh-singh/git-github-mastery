@@ -1,0 +1,56 @@
+# TEACHING MATERIAL for Exercise 27.2 (Module 27). This workflow has five planted flaws in
+# how it delivers. The analysis is in solutions/exercises-m26-m31.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# Intended behavior: on every push to main, test and build inventory-api once, then deploy
+# that build to production after an approval. The environment "production" exists and has a
+# required reviewer and the secret DEPLOY_TOKEN.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --locked
+      - run: uv run pytest
+      - run: uv build
+      - name: Check that the deployment credential is configured
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: test -n "$DEPLOY_TOKEN"
+
+  deploy-production:
+    name: Deploy to production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: prodution
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync
+      - run: uv build
+      - name: Deploy
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: bash scripts/deploy.sh production

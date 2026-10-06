@@ -1,0 +1,969 @@
+1
+00:00:04,500 --> 00:00:07,379
+A status page says "3 commits
+ahead". Ahead of what?
+
+2
+00:00:07,719 --> 00:00:12,038
+Here's a second puzzle. An engineer opens
+a review for a small change, one commit,
+
+3
+00:00:12,078 --> 00:00:15,174
+on a branch they created from
+a colleague's feature branch.
+
+4
+00:00:15,214 --> 00:00:19,585
+The review shows forty changed files. Their
+one commit is in there somewhere, under
+
+5
+00:00:19,625 --> 00:00:23,359
+everything the colleague did. What
+went wrong? Say your guess out loud.
+
+6
+00:00:28,199 --> 00:00:33,790
+Nothing is broken. The engineer assumed that
+Git knows which branch their branch was
+
+7
+00:00:33,830 --> 00:00:37,678
+created from, and compares
+against that. Git doesn't know.
+
+8
+00:00:37,718 --> 00:00:42,437
+Nothing in a repository records which
+branch a branch was created from.
+
+9
+00:00:42,477 --> 00:00:47,867
+Every comparison needs a base that you
+name, and "3 commits ahead" is meaningless
+
+10
+00:00:47,907 --> 00:00:51,755
+until you say ahead of what.
+Hold on to those forty files.
+
+11
+00:00:51,795 --> 00:00:52,761
+They come back.
+
+12
+00:00:54,601 --> 00:00:58,311
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:58,351 --> 00:01:02,308
+A commit is one saved snapshot,
+and it points back at its parent.
+
+14
+00:01:02,348 --> 00:01:06,859
+A branch is a name that points at one
+commit. You know what one branch is.
+
+15
+00:01:06,899 --> 00:01:09,626
+This video is about the
+relation between two.
+
+16
+00:01:09,966 --> 00:01:15,480
+First, the arithmetic: divergence, the
+merge base, and how to count how far each
+
+17
+00:01:15,520 --> 00:01:21,035
+side is ahead. Then the test behind "merged"
+and "can be fast-forwarded": is one
+
+18
+00:01:21,075 --> 00:01:26,659
+commit an ancestor of another? Then the
+absence that surprises people: Git has no
+
+19
+00:01:26,699 --> 00:01:31,798
+parent-branch concept. And last, a
+preview of remote-tracking branches and
+
+20
+00:01:31,838 --> 00:01:37,422
+upstreams. "Ahead" and "behind" in git
+status are this same arithmetic, against a
+
+21
+00:01:37,462 --> 00:01:40,546
+ref that is only as fresh
+as your last fetch.
+
+22
+00:01:42,386 --> 00:01:43,965
+Here's what you'll walk away with.
+
+23
+00:01:44,305 --> 00:01:45,717
+After this video you can:
+
+24
+00:01:46,057 --> 00:01:50,187
+Compute the merge base of two branches,
+and count how far each is ahead.
+
+25
+00:01:50,527 --> 00:01:55,408
+Test whether one commit is
+an ancestor of another.
+
+26
+00:01:55,748 --> 00:01:59,619
+Explain why Git cannot say which
+branch a branch was created from.
+
+27
+00:01:59,959 --> 00:02:04,403
+Read ahead and behind against a remote-tracking
+branch as a statement about the last
+
+28
+00:02:04,443 --> 00:02:04,723
+fetch.
+
+29
+00:02:06,563 --> 00:02:11,301
+Divergence and ancestry. In one sentence:
+two branches have diverged when neither
+
+30
+00:02:11,341 --> 00:02:16,137
+tip is an ancestor of the other. Their
+merge base is the best common ancestor, and
+
+31
+00:02:16,177 --> 00:02:20,914
+"ahead" and "behind" are counted from it.
+A tip is the commit a branch points at.
+
+32
+00:02:20,954 --> 00:02:24,925
+An ancestor is any commit you reach
+by walking back through parents.
+
+33
+00:02:25,265 --> 00:02:29,077
+Precisely. A common ancestor is a
+commit reachable from both tips.
+
+34
+00:02:29,117 --> 00:02:33,921
+The manual says: "One common ancestor is
+better than another common ancestor if the
+
+35
+00:02:33,961 --> 00:02:37,948
+latter is an ancestor of the former",
+and a best one is a merge base.
+
+36
+00:02:37,988 --> 00:02:41,566
+There can be more than one, which
+the videos on merge take up.
+
+37
+00:02:41,906 --> 00:02:47,831
+Ranges are sets of commits. A..B, two dots,
+is everything reachable from B but not
+
+38
+00:02:47,871 --> 00:02:53,869
+from A. A...B, three dots, is the symmetric
+difference: reachable from one side but
+
+39
+00:02:53,909 --> 00:02:59,906
+not both. git merge-base --is-ancestor A B
+exits with 0 when A is an ancestor of B,
+
+40
+00:02:59,946 --> 00:03:01,798
+and with 1 when it is not.
+
+41
+00:03:02,138 --> 00:03:06,875
+The dots mean something else in git diff.
+This is a known trap, and the textbook
+
+42
+00:03:06,915 --> 00:03:10,040
+gives it a table. Almost
+everyone falls into it once.
+
+43
+00:03:10,380 --> 00:03:15,700
+In git log and git rev-list, A..B is the
+commits reachable from B and not from A,
+
+44
+00:03:15,740 --> 00:03:19,473
+and A...B is the commits
+reachable from exactly one side.
+
+45
+00:03:19,513 --> 00:03:24,436
+In git diff, A..B compares the two tips
+directly, the same as git diff A B.
+
+46
+00:03:24,476 --> 00:03:29,135
+And A...B compares from the merge
+base of A and B to B: what B changed.
+
+47
+00:03:29,475 --> 00:03:33,993
+No parent branch. In one sentence: nothing
+in a repository records which branch a
+
+48
+00:03:34,033 --> 00:03:38,382
+branch was created from. The only trace
+is a line in a local reflog, and every
+
+49
+00:03:38,422 --> 00:03:42,941
+comparison needs a base that you name.
+Look at the picture: three branch names on
+
+50
+00:03:42,981 --> 00:03:46,317
+one line of commits, and nothing
+says which came from which.
+
+51
+00:03:46,657 --> 00:03:49,858
+Look for the relationship
+in each place it could be.
+
+52
+00:03:49,898 --> 00:03:54,282
+The new ref holds an ID. The commit
+it names has no field for a branch.
+
+53
+00:03:54,322 --> 00:03:59,267
+The local configuration has no entry for
+it. The only mention is the reflog line
+
+54
+00:03:59,307 --> 00:04:04,501
+branch: Created from the other branch. The
+reflog is a local journal of where a name
+
+55
+00:04:04,541 --> 00:04:09,611
+has pointed. So that line exists in this
+clone and nowhere else, and git branch -D
+
+56
+00:04:09,651 --> 00:04:11,356
+or reflog expiry removes it.
+
+57
+00:04:11,696 --> 00:04:15,963
+git branch --contains answers
+"which branches reach this commit".
+
+58
+00:04:16,003 --> 00:04:18,084
+That's reachability, not origin.
+
+59
+00:04:18,424 --> 00:04:23,146
+The nearest thing to an answer is a guess.
+The field %(is-base:<commit>) of git
+
+60
+00:04:23,186 --> 00:04:28,209
+for-each-ref marks, in the manual's words,
+"the ref that is most likely the ref used
+
+61
+00:04:28,249 --> 00:04:31,887
+as a starting point for the
+branch that produced" the commit.
+
+62
+00:04:31,927 --> 00:04:36,769
+It's chosen by a first-parent heuristic,
+and the guess changes with the refs that
+
+63
+00:04:36,809 --> 00:04:41,652
+exist. It exists since Git 2.47, and the
+textbook's recommendation is: a hint for
+
+64
+00:04:41,692 --> 00:04:43,882
+humans, never an input to automation.
+
+65
+00:04:44,222 --> 00:04:49,175
+This is why git rebase and git merge take
+the target as an argument: Git can't infer
+
+66
+00:04:49,215 --> 00:04:49,354
+it.
+
+67
+00:04:54,694 --> 00:04:59,462
+Remote-tracking branches and upstream. In
+one sentence: a remote-tracking branch
+
+68
+00:04:59,502 --> 00:05:04,390
+such as origin/main is a ref in your own
+repository that records the last position
+
+69
+00:05:04,430 --> 00:05:09,319
+of a branch in another repository, and an
+upstream is two configuration lines that
+
+70
+00:05:09,359 --> 00:05:11,062
+pair a local branch with one.
+
+71
+00:05:11,402 --> 00:05:14,882
+Remote-tracking branches live
+under refs/remotes/<remote>/.
+
+72
+00:05:14,922 --> 00:05:19,895
+When a teammate pushes, your origin/main
+stays where it was, until git fetch updates
+
+73
+00:05:19,935 --> 00:05:20,074
+it.
+
+74
+00:05:20,414 --> 00:05:25,565
+The upstream of a branch B is configured
+by branch.B.remote and branch.B.merge, and
+
+75
+00:05:25,605 --> 00:05:29,944
+B@{upstream}, or @{u}, names the
+corresponding remote-tracking branch.
+
+76
+00:05:29,984 --> 00:05:34,197
+git status -sb and git branch -v
+compare a branch with its upstream.
+
+77
+00:05:34,237 --> 00:05:37,137
+Nothing in that comparison
+talks to the server.
+
+78
+00:05:37,477 --> 00:05:41,521
+A branch created from another
+local branch has no upstream.
+
+79
+00:05:41,561 --> 00:05:46,575
+A branch created from a remote-tracking
+branch gets one automatically, by
+
+80
+00:05:46,615 --> 00:05:49,759
+branch.autoSetupMerge,
+which defaults to true.
+
+81
+00:05:50,099 --> 00:05:55,988
+Risk labels. Everything in this video is 🟢
+SAFE, reading state or adding a ref, with
+
+82
+00:05:56,028 --> 00:06:01,352
+two exceptions that appear once each.
+git branch -D, 🔴 DANGEROUS, whose five
+
+83
+00:06:01,392 --> 00:06:05,587
+questions video 23 answered.
+And git fetch, which is 🟢 SAFE.
+
+84
+00:06:05,927 --> 00:06:10,094
+When this arithmetic is the wrong tool.
+When the question is about content and not
+
+85
+00:06:10,134 --> 00:06:13,993
+commits. A squash merge puts a branch's
+content into main without any of its
+
+86
+00:06:14,033 --> 00:06:18,200
+commits, and then the ranges say "three
+commits ahead" about work that has landed.
+
+87
+00:06:18,240 --> 00:06:20,355
+The next video deals with that blind spot.
+
+88
+00:06:22,195 --> 00:06:27,506
+Picture a road that forks. Two cars start
+at the fork and drive down different arms.
+
+89
+00:06:27,546 --> 00:06:32,794
+The fork is the merge base. "Ahead by three"
+is how far one car has driven from the
+
+90
+00:06:32,834 --> 00:06:36,043
+fork, and "behind by two"
+is how far the other has.
+
+91
+00:06:36,383 --> 00:06:40,030
+Now the limit of the picture,
+which is the point of the video.
+
+92
+00:06:40,070 --> 00:06:45,026
+On a real road, each arm has a name painted
+on a sign at the fork, so you know which
+
+93
+00:06:45,066 --> 00:06:50,023
+arm branched off which. In Git there is no
+sign. The fork is a commit, and both arms
+
+94
+00:06:50,063 --> 00:06:54,781
+are equally "the road". Which one you call
+the trunk is your decision, made each
+
+95
+00:06:54,821 --> 00:06:55,792
+time you compare.
+
+96
+00:06:56,132 --> 00:07:00,225
+And for remote-tracking branches: origin/main
+is a photograph of where the other car
+
+97
+00:07:00,265 --> 00:07:04,112
+was when you last looked. Until you look
+again, with a fetch, every "ahead" and
+
+98
+00:07:04,152 --> 00:07:06,277
+"behind" is measured
+against the photograph.
+
+99
+00:07:08,117 --> 00:07:12,555
+Now the textbook's drawing, with
+the counts. Two commits are shared.
+
+100
+00:07:12,595 --> 00:07:18,020
+The fork is at 03f74b9: that's the merge
+base. main has two commits of its own, and
+
+101
+00:07:18,060 --> 00:07:23,486
+feature/rouge has three. Three numbers and
+a merge base describe the relation: two,
+
+102
+00:07:23,526 --> 00:07:24,737
+three, and 03f74b9.
+
+103
+00:07:29,077 --> 00:07:33,377
+Into the lab. main and feature/rouge
+after both received commits.
+
+104
+00:07:33,417 --> 00:07:38,785
+Try it now, thirty seconds, on paper. From
+the graph alone, write the merge base.
+
+105
+00:07:38,825 --> 00:07:43,392
+Then write how many commits
+main..feature/rouge selects, and how many
+
+106
+00:07:43,432 --> 00:07:46,463
+feature/rouge..main. Say
+your answer out loud.
+
+107
+00:07:51,303 --> 00:07:57,099
+Check your paper. The merge base is 03f74b9.
+main..feature/rouge is what the feature
+
+108
+00:07:57,139 --> 00:08:02,379
+has that main lacks: three commits.
+feature/rouge..main is the reverse: two.
+
+109
+00:08:02,719 --> 00:08:07,523
+--left-right --count prints the two
+numbers in the order of the operands: two
+
+110
+00:08:07,563 --> 00:08:10,983
+commits only on the left side,
+three only on the right.
+
+111
+00:08:11,023 --> 00:08:16,205
+The %(ahead-behind:main) field of git
+for-each-ref computes the same pair for every
+
+112
+00:08:16,245 --> 00:08:19,224
+branch at once, from the
+branch's point of view.
+
+113
+00:08:19,564 --> 00:08:23,542
+Now the yes-or-no test. Predict
+the three exit statuses.
+
+114
+00:08:23,582 --> 00:08:25,623
+Say them out loud. I'll wait.
+
+115
+00:08:30,463 --> 00:08:34,089
+main is not an ancestor of
+the feature branch: status 1.
+
+116
+00:08:34,129 --> 00:08:37,820
+So merging the feature into
+main can't be a fast-forward.
+
+117
+00:08:37,860 --> 00:08:42,009
+main~2, the merge base, is an
+ancestor of both: status 0, twice.
+
+118
+00:08:42,349 --> 00:08:50,799
+Quick quiz. In git diff, which form
+lists only the feature's own work?
+
+119
+00:08:50,839 --> 00:08:55,650
+A, two dots. B, three dots. Your answer?
+
+120
+00:09:00,490 --> 00:09:06,477
+B, three dots. That's the dots trap. git
+diff --stat main...feature/rouge, three
+
+121
+00:09:06,517 --> 00:09:12,806
+dots, lists the feature's own work.
+main..feature/rouge, two dots, also shows main's
+
+122
+00:09:12,846 --> 00:09:14,463
+two commits, reversed.
+
+123
+00:09:14,803 --> 00:09:18,740
+Create a branch from feature/rouge,
+and look for the relationship.
+
+124
+00:09:18,780 --> 00:09:22,537
+Predict where, if anywhere, the
+name feature/rouge is recorded.
+
+125
+00:09:22,577 --> 00:09:23,803
+Make your prediction.
+
+126
+00:09:28,643 --> 00:09:33,943
+The new ref holds an ID. The
+commit has no field for a branch.
+
+127
+00:09:33,983 --> 00:09:41,092
+The configuration has no entry. The only
+mention is the reflog line branch: Created
+
+128
+00:09:41,132 --> 00:09:42,729
+from feature/rouge.
+
+129
+00:09:43,069 --> 00:09:47,443
+git branch --contains feature/rouge
+lists both branches: the commits of
+
+130
+00:09:47,483 --> 00:09:51,919
+feature/rouge are on feature/rouge-stemming
+as much as on feature/rouge.
+
+131
+00:09:52,259 --> 00:09:57,823
+You choose the base. Against main, three
+commits. Against feature/rouge, one.
+
+132
+00:09:57,863 --> 00:10:02,844
+Then the script deletes feature/rouge
+with git branch -D 🔴 DANGEROUS.
+
+133
+00:10:02,884 --> 00:10:08,811
+Its commits remain reachable from the
+stemming branch, so no commit loses its last
+
+134
+00:10:08,851 --> 00:10:14,779
+name here. And the first answer doesn't
+change, because the commits never belonged
+
+135
+00:10:14,819 --> 00:10:15,652
+to a branch.
+
+136
+00:10:18,492 --> 00:10:23,282
+%(is-base:...): the guess, and how
+it changes with the refs that exist.
+
+137
+00:10:23,322 --> 00:10:28,929
+First it marks feature/rouge. Delete that
+branch, and the same question marks main.
+
+138
+00:10:31,769 --> 00:10:41,258
+Two refs, same ID, two namespaces:
+refs/heads/main and refs/remotes/origin/main.
+
+139
+00:10:41,598 --> 00:10:45,052
+@{upstream} resolves through the
+two configuration entries to
+
+140
+00:10:45,092 --> 00:10:46,484
+refs/remotes/origin/main.
+
+141
+00:10:46,824 --> 00:10:50,539
+Now Asha pushes a commit to
+the server from her own clone.
+
+142
+00:10:50,579 --> 00:10:54,877
+Your repository hasn't been told.
+Predict what git status -sb says.
+
+143
+00:10:54,917 --> 00:10:55,913
+Say it out loud.
+
+144
+00:11:00,753 --> 00:11:05,039
+Before the fetch, no difference, because
+origin/main is what your repository last
+
+145
+00:11:05,079 --> 00:11:09,205
+heard. git fetch 🟢 SAFE moves origin/main,
+and the status changes to behind 1.
+
+146
+00:11:09,245 --> 00:11:13,691
+So "Up to date with origin/main" is a
+statement about your copy of the remote, never
+
+147
+00:11:13,731 --> 00:11:14,973
+about the remote itself.
+
+148
+00:11:15,313 --> 00:11:19,285
+A branch created from another
+local branch has no upstream.
+
+149
+00:11:19,325 --> 00:11:24,998
+A branch created from a remote-tracking
+branch gets one automatically, which is what
+
+150
+00:11:25,038 --> 00:11:27,243
+the line set up to track reports.
+
+151
+00:11:29,083 --> 00:11:30,731
+Five mistakes to watch for.
+
+152
+00:11:31,071 --> 00:11:35,853
+Saying "3 commits ahead" without a base.
+Root cause: ahead and behind are counted
+
+153
+00:11:35,893 --> 00:11:40,557
+from a merge base with a second ref, and
+Git has no default "parent" to compare
+
+154
+00:11:40,597 --> 00:11:40,855
+with.
+
+155
+00:11:41,195 --> 00:11:44,864
+Using two dots in git diff to
+see what a branch changed.
+
+156
+00:11:44,904 --> 00:11:50,228
+Root cause: in git diff, A..B compares the
+tips directly; A...B compares from the
+
+157
+00:11:50,268 --> 00:11:50,956
+merge base.
+
+158
+00:11:51,296 --> 00:11:59,302
+Asking Git which branch a branch was created
+from. Root cause: a branch stores one
+
+159
+00:11:59,342 --> 00:12:05,483
+commit ID and no origin; the only
+trace is a local reflog line.
+
+160
+00:12:05,823 --> 00:12:10,163
+Reading "up to date with 'origin/main'"
+as the state of the server.
+
+161
+00:12:10,203 --> 00:12:15,327
+Root cause: origin/main is the last-known
+state, updated only by fetch or push.
+
+162
+00:12:15,667 --> 00:12:19,647
+Feeding %(is-base:...) to automation. Root
+cause: it is a first-parent heuristic
+
+163
+00:12:19,687 --> 00:12:21,959
+whose answer changes with
+the refs that exist.
+
+164
+00:12:23,799 --> 00:12:28,599
+Now, out of the lab. Stacked branches
+are where this bites, as the textbook
+
+165
+00:12:28,639 --> 00:12:33,503
+describes. Branch B was created from
+branch A. A is merged with a squash, or
+
+166
+00:12:33,543 --> 00:12:38,794
+deleted. B's "changes against main" suddenly
+include everything A did, because the
+
+167
+00:12:38,834 --> 00:12:43,827
+base you implied no longer exists. That's
+the forty-file review from the hook.
+
+168
+00:12:43,867 --> 00:12:47,957
+The repair is git rebase --onto,
+which moves B to its real base.
+
+169
+00:12:47,997 --> 00:12:49,699
+The rebase videos cover it.
+
+170
+00:12:50,039 --> 00:12:54,634
+And the general rule for reports and
+dashboards. [ahead 2, behind 3] in git status,
+
+171
+00:12:54,674 --> 00:12:59,270
+the counts on a pull request, "can this be
+fast-forwarded", and "which commits does
+
+172
+00:12:59,310 --> 00:13:03,794
+this release contain" are all this arithmetic.
+Compute them with ranges, not with
+
+173
+00:13:03,834 --> 00:13:05,246
+dates, and state the base.
+
+174
+00:13:07,086 --> 00:13:13,503
+Your turn. Do Lab 4.4,
+"Counting divergence", in
+
+175
+00:13:13,543 --> 00:13:18,480
+lab-manual/m04-refs-branches-head.md.
+
+176
+00:13:18,820 --> 00:13:23,308
+For each pair of branches in the lab, write
+the merge base and the two counts from
+
+177
+00:13:23,348 --> 00:13:27,615
+the graph before you run git merge-base
+and git rev-list --left-right --count.
+
+178
+00:13:27,655 --> 00:13:31,205
+Then predict the exit status of
+--is-ancestor in both directions.
+
+179
+00:13:33,045 --> 00:13:36,658
+Q108: "Does Git know which branch
+a branch was created from?
+
+180
+00:13:36,698 --> 00:13:41,591
+What is the closest it can offer, and why
+is a pull request's base branch not the
+
+181
+00:13:41,631 --> 00:13:42,321
+same thing?"
+
+182
+00:13:44,661 --> 00:13:48,826
+Answer out loud. A strong answer goes through
+the places where such a fact could be
+
+183
+00:13:48,866 --> 00:13:52,980
+stored, and says what each holds. It names
+the local trace and the heuristic, with
+
+184
+00:13:53,020 --> 00:13:56,981
+the limits of both. Then it separates the
+layers: what Git stores, and what the
+
+185
+00:13:57,021 --> 00:13:57,792
+platform stores.
+
+186
+00:13:59,632 --> 00:14:04,622
+Let's land this. You should now be able
+to say: two branches have diverged when
+
+187
+00:14:04,662 --> 00:14:09,462
+neither tip is an ancestor of the other.
+The merge base is their best common
+
+188
+00:14:09,502 --> 00:14:14,428
+ancestor, and I count each side from it
+with git rev-list --left-right --count
+
+189
+00:14:14,468 --> 00:14:19,140
+A...B. git merge-base --is-ancestor
+answers ancestry with its exit status.
+
+190
+00:14:19,480 --> 00:14:23,188
+In git log, two dots and three
+dots select sets of commits.
+
+191
+00:14:23,228 --> 00:14:26,490
+In git diff, three dots
+means "from the merge base".
+
+192
+00:14:26,530 --> 00:14:30,873
+Git records no parent branch, so I
+name the base in every comparison.
+
+193
+00:14:30,913 --> 00:14:35,954
+And ahead and behind against origin/main
+describe my last fetch, not the server.
+
+194
+00:14:37,794 --> 00:14:41,370
+Read sections 7.8 to 7.10 of Chapter 7.
+
+195
+00:14:41,710 --> 00:14:47,524
+Challenge: Exercise 4.6, Level 2, "from
+which branch was it created?", in
+
+196
+00:14:47,564 --> 00:14:50,171
+exercises/m01-m05-foundations.md.
+
+197
+00:14:50,511 --> 00:14:55,030
+You can now answer "ahead of what?" for
+any two branches, and that one question
+
+198
+00:14:55,070 --> 00:14:59,012
+prevents a forty-file review. Do the
+counting lab before you move on.
+
+199
+00:14:59,052 --> 00:15:02,590
+Next time: lightweight tags,
+branch names, and stale branches.
+
+200
+00:15:02,630 --> 00:15:05,591
+Until then, look at the
+state first and type second.
+
+201
+00:15:05,631 --> 00:15:06,976
+See you in the next one.

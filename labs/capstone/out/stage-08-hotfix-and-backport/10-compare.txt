@@ -1,0 +1,38 @@
+# The backport next to the original. By default range-diff does not pair two commits
+# whose diffs differ this much; --creation-factor=100 makes it pair them and show how.
+$ git range-diff b360489~1..b360489 HEAD~1..HEAD
+1:  b360489 < -:  ------- Treat a missing embedding score as 0 (#24)
+-:  ------- > 1:  6e291e5 Treat a missing embedding score as 0 (#24)
+$ git range-diff --creation-factor=100 b360489~1..b360489 HEAD~1..HEAD
+1:  b360489 ! 1:  6e291e5 Treat a missing embedding score as 0 (#24)
+    @@ Metadata
+      ## Commit message ##
+         Treat a missing embedding score as 0 (#24)
+     
+    +    (cherry picked from commit b3604896a20d1db6d1ed9f4d4dc90a418c0673b5)
+    +
+      ## router/classify.py ##
+    -@@ router/classify.py: def classify(candidates, tenant=None):
+    +@@ router/classify.py: def classify(candidates):
+          """candidates: (intent, keyword_score, embed_score) tuples. Returns the intent to route to."""
+    -     best, best_score = fallback_for(tenant), THRESHOLD
+    +     best, best_score = FALLBACK, THRESHOLD
+          for intent, kw, emb in candidates:
+     +        if emb is None:
+     +            emb = 0.0  # the embedding service timed out: decide on the keywords alone
+    -         score = blend(kw, emb, tenant)
+    +         score = blend(kw, emb)
+              if score > best_score:
+                  best, best_score = intent, score
+     
+      ## tests/test_classify.py ##
+     @@ tests/test_classify.py: class ClassifyTest(unittest.TestCase):
+    -     def test_a_tenant_can_have_its_own_fallback(self):
+    -         self.assertEqual(fallback_for("acme-retail"), "store_support")
+    -         self.assertEqual(classify([("billing_refund", 0.2, 0.1)], "acme-retail"), "store_support")
+    + 
+    +     def test_weak_evidence_goes_to_a_human(self):
+    +         self.assertEqual(classify([("billing_refund", 0.2, 0.1)]), FALLBACK)
+     +
+     +    def test_a_missing_embedding_score_counts_as_zero(self):
+     +        self.assertEqual(classify([("billing_refund", 1.0, None)]), "human_agent")

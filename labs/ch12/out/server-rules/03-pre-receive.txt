@@ -1,0 +1,20 @@
+$ git -C ../../server/support-bot.git config unset receive.denyNonFastForwards
+$ cp ../../pre-receive ../../server/support-bot.git/hooks/pre-receive
+$ chmod +x ../../server/support-bot.git/hooks/pre-receive
+$ cat ../../server/support-bot.git/hooks/pre-receive
+#!/bin/sh
+# Refuse every direct update of main. Standard input has one line per ref:
+#   <old-id> <new-id> <ref-name>
+while read old new ref; do
+  if [ "$ref" = "refs/heads/main" ]; then
+    echo "policy: main only changes through a reviewed merge" >&2
+    exit 1
+  fi
+done
+exit 0
+$ git push --force
+remote: policy: main only changes through a reviewed merge        
+To ../../server/support-bot.git
+ ! [remote rejected] main -> main (pre-receive hook declined)
+error: failed to push some refs to '../../server/support-bot.git'
+[exit status: 1]

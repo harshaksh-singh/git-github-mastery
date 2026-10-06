@@ -1,0 +1,5245 @@
+{
+ "id": "V085",
+ "version": 22,
+ "title": "Stash internals: a stash entry is a small commit graph",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 16,
+ "chapters": [
+  "ch14c-stash-rerere-attributes-hooks.md"
+ ],
+ "script": "video/scripts/V085-stash-internals-a-stash-entry-is-a-small-commit-graph.md",
+ "script_sha1": "d4165df806c2f141ccd489997eabf56799427e46",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 8,
+   "line": 26
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 14,
+   "line": 36
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 27,
+   "line": 82
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 30,
+   "line": 96
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 34,
+   "line": 117
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 54,
+   "line": 392
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 61,
+   "line": 402
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 64,
+   "line": 408
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 68,
+   "line": 416
+  },
+  {
+   "name": "RECAP",
+   "beat": 72,
+   "line": 430
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 79,
+   "line": 440
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Stash internals: a stash entry is a small commit graph",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0025
+  },
+  {
+   "kind": "callout",
+   "direction": "\"An engineer popped a stash and says the careful staging is gone. Was anything lost?\"",
+   "quotes": [
+    "An engineer popped a stash and says the careful staging is gone. Was anything lost?"
+   ],
+   "quoted": true,
+   "caption": "She had spent twenty minutes with <code>git add -p</code>, staging exactly the hunks, the blocks of changed lines, that belonged in the next commit …",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0044
+  },
+  {
+   "kind": "callout",
+   "direction": "\"An engineer popped a stash and says the careful staging is gone. Was anything lost?\"",
+   "quotes": [
+    "An engineer popped a stash and says the careful staging is gone. Was anything lost?"
+   ],
+   "quoted": true,
+   "caption": "The short answer for the CTO is: nothing was lost.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0377
+  },
+  {
+   "kind": "callout",
+   "direction": "\"An engineer popped a stash and says the careful staging is gone. Was anything lost?\"",
+   "quotes": [
+    "An engineer popped a stash and says the careful staging is gone. Was anything lost?"
+   ],
+   "quoted": true,
+   "caption": "To give that answer with confidence you have to know what a stash entry is made of.",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0631
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0716
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0735
+  },
+  {
+   "kind": "keypoint",
+   "body": "This chapter has a theme that will come back in every video of this module.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0974
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.1238
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "draw the commits of a stash entry made with and without untracked files;",
+    "say which tree holds the staged state and which the unstaged state;",
+    "show that the stash list is the reflog of one ref;",
+    "create a stash commit without touching the list, and store it;",
+    "recover a dropped entry by ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1257
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "draw the commits of a stash entry made with and without untracked files;",
+    "say which tree holds the staged state and which the unstaged state;",
+    "show that the stash list is the reflog of one ref;",
+    "create a stash commit without touching the list, and store it;",
+    "recover a dropped entry by ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1321
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "draw the commits of a stash entry made with and without untracked files;",
+    "say which tree holds the staged state and which the unstaged state;",
+    "show that the stash list is the reflog of one ref;",
+    "create a stash commit without touching the list, and store it;",
+    "recover a dropped entry by ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1381
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "draw the commits of a stash entry made with and without untracked files;",
+    "say which tree holds the staged state and which the unstaged state;",
+    "show that the stash list is the reflog of one ref;",
+    "create a stash commit without touching the list, and store it;",
+    "recover a dropped entry by ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1436
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "draw the commits of a stash entry made with and without untracked files;",
+    "say which tree holds the staged state and which the unstaged state;",
+    "show that the stash list is the reflog of one ref;",
+    "create a stash commit without touching the list, and store it;",
+    "recover a dropped entry by ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1491
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 15,
+   "progress": 0.1521
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 16,
+   "progress": 0.1539
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1833
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "says": [
+    "git_stash_show_-p_compares_H_with_W"
+   ],
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.2252
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "says": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I"
+   ],
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.2356
+  },
+  {
+   "kind": "keypoint",
+   "body": "Revision syntax works on an entry.",
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.2535
+  },
+  {
+   "kind": "keypoint",
+   "body": "Inside the dot git folder: new objects for W, I and, with <code>-u</code> or <code>-a</code>, U.",
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.2715
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=list dx=330 title=One_ref_and_its_log,_each_entry_drawn_as_its_W_only 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 962e38f special:stash@{1}; e5fe338 special:refs/stash special:stash@{0}; say:Two_entries:_the_ref_holds_the_newest => 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 8f8672d-4bd62aa; role:4bd62aa:W; 962e38f special:stash@{1}; e5fe338 special:refs/stash special:stash@{0}; cmd:git_stash_create; say:create_builds_the_commits._No_ref_is_written; name:create => 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 8f8672d-4bd62aa; role:4bd62aa:W; 962e38f special:stash@{2}; e5fe338 special:stash@{1}; 4bd62aa special:refs/stash special:stash@{0}; cmd:git_stash_store_4bd62aa; say:store_puts_an_existing_stash_commit_on_the_list; name:store => 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 8f8672d-4bd62aa; role:4bd62aa:W; 962e38f special:stash@{1}; 4bd62aa special:refs/stash special:stash@{0}; ghost:e5fe338; cmd:git_stash_drop_stash@{1}; say:drop_removes_a_log_line._The_commit_still_exists,_unreachable; name:drop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "e5fe338",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "962e38f",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "4bd62aa",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "e5fe338",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "ghost": [],
+      "caption": "Two entries: the ref holds the newest"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{1}": "962e38f",
+       "refs/stash": "e5fe338",
+       "stash@{0}": "e5fe338"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       }
+      ]
+     },
+     {
+      "add": [
+       "4bd62aa"
+      ],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{1}": "962e38f",
+       "refs/stash": "e5fe338",
+       "stash@{0}": "e5fe338"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       },
+       {
+        "text": "W",
+        "at": "4bd62aa"
+       }
+      ],
+      "caption": "create builds the commits. No ref is written",
+      "cmd": "git stash create",
+      "name": "create"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{2}": "962e38f",
+       "stash@{1}": "e5fe338",
+       "refs/stash": "4bd62aa",
+       "stash@{0}": "4bd62aa"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       },
+       {
+        "text": "W",
+        "at": "4bd62aa"
+       }
+      ],
+      "caption": "store puts an existing stash commit on the list",
+      "cmd": "git stash store 4bd62aa",
+      "name": "store"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{1}": "962e38f",
+       "refs/stash": "4bd62aa",
+       "stash@{0}": "4bd62aa"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [
+       "e5fe338"
+      ],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       },
+       {
+        "text": "W",
+        "at": "4bd62aa"
+       }
+      ],
+      "caption": "drop removes a log line. The commit still exists, unreachable",
+      "cmd": "git stash drop stash@{1}",
+      "name": "drop"
+     }
+    ],
+    "kinds": {
+     "stash@{1}": "special",
+     "refs/stash": "special",
+     "stash@{0}": "special",
+     "stash@{2}": "special"
+    },
+    "settle": "on",
+    "title": "One ref and its log, each entry drawn as its W only",
+    "dx": "330",
+    "id": "list"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "create",
+    "store",
+    "drop"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2849
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=list dx=330 title=One_ref_and_its_log,_each_entry_drawn_as_its_W_only 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 962e38f special:stash@{1}; e5fe338 special:refs/stash special:stash@{0}; say:Two_entries:_the_ref_holds_the_newest => 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 8f8672d-4bd62aa; role:4bd62aa:W; 962e38f special:stash@{1}; e5fe338 special:refs/stash special:stash@{0}; cmd:git_stash_create; say:create_builds_the_commits._No_ref_is_written; name:create => 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 8f8672d-4bd62aa; role:4bd62aa:W; 962e38f special:stash@{2}; e5fe338 special:stash@{1}; 4bd62aa special:refs/stash special:stash@{0}; cmd:git_stash_store_4bd62aa; say:store_puts_an_existing_stash_commit_on_the_list; name:store => 8f8672d-e5fe338; ^8f8672d-962e38f; 8f8672d main; HEAD=main; role:8f8672d:H; role:962e38f:W; role:e5fe338:W; 8f8672d-4bd62aa; role:4bd62aa:W; 962e38f special:stash@{1}; 4bd62aa special:refs/stash special:stash@{0}; ghost:e5fe338; cmd:git_stash_drop_stash@{1}; say:drop_removes_a_log_line._The_commit_still_exists,_unreachable; name:drop",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "e5fe338",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "962e38f",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "4bd62aa",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "e5fe338",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "ghost": [],
+      "caption": "Two entries: the ref holds the newest"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{1}": "962e38f",
+       "refs/stash": "e5fe338",
+       "stash@{0}": "e5fe338"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       }
+      ]
+     },
+     {
+      "add": [
+       "4bd62aa"
+      ],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{1}": "962e38f",
+       "refs/stash": "e5fe338",
+       "stash@{0}": "e5fe338"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       },
+       {
+        "text": "W",
+        "at": "4bd62aa"
+       }
+      ],
+      "caption": "create builds the commits. No ref is written",
+      "cmd": "git stash create",
+      "name": "create"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{2}": "962e38f",
+       "stash@{1}": "e5fe338",
+       "refs/stash": "4bd62aa",
+       "stash@{0}": "4bd62aa"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       },
+       {
+        "text": "W",
+        "at": "4bd62aa"
+       }
+      ],
+      "caption": "store puts an existing stash commit on the list",
+      "cmd": "git stash store 4bd62aa",
+      "name": "store"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "stash@{1}": "962e38f",
+       "refs/stash": "4bd62aa",
+       "stash@{0}": "4bd62aa"
+      },
+      "head": "main",
+      "notes": [],
+      "ghost": [
+       "e5fe338"
+      ],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "W",
+        "at": "e5fe338"
+       },
+       {
+        "text": "W",
+        "at": "4bd62aa"
+       }
+      ],
+      "caption": "drop removes a log line. The commit still exists, unreachable",
+      "cmd": "git stash drop stash@{1}",
+      "name": "drop"
+     }
+    ],
+    "kinds": {
+     "stash@{1}": "special",
+     "refs/stash": "special",
+     "stash@{0}": "special",
+     "stash@{2}": "special"
+    },
+    "settle": "on",
+    "title": "One ref and its log, each entry drawn as its W only",
+    "dx": "330",
+    "id": "list"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "create",
+    "store",
+    "drop"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.3178
+  },
+  {
+   "kind": "keypoint",
+   "body": "And travel: nothing fetches or pushes <code>refs/stash</code>.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.3333
+  },
+  {
+   "kind": "keypoint",
+   "body": "When not to stash: for anything long-lived.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.3532
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 26,
+   "progress": 0.3676
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "says_before": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I"
+   ],
+   "upto": 3,
+   "says": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+    "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 27,
+   "progress": 0.3695
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "says_before": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I"
+   ],
+   "upto": 3,
+   "says": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+    "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes",
+    "Ordinary_commits,_held_by_one_ref_and_its_log"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 28,
+   "progress": 0.3894
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 29,
+   "progress": 0.4123
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, on paper, from memory.",
+   "section": "DIAGRAM",
+   "n": 30,
+   "progress": 0.4142
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=anat title=With_-u,_and_without 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f special:refs/stash; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; note:7ee160e:the_index_as_it_was; note:962e38f:tracked_files_as_on_disk; note:8fb87d5:untracked_files,_no_parent; say:Staged:_H_to_I._Not_staged:_I_to_W => 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f special:refs/stash; 7ee160e-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; note:7ee160e:the_index_as_it_was; note:962e38f:tracked_files_as_on_disk; gone:8fb87d5; say:Without_-u_there_is_no_U:_W_has_two_parents; name:without",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "Staged: H to I. Not staged: I to W"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "the index as it was",
+        "at": "7ee160e"
+       },
+       {
+        "text": "tracked files as on disk",
+        "at": "962e38f"
+       },
+       {
+        "text": "untracked files, no parent",
+        "at": "8fb87d5"
+       }
+      ],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "the index as it was",
+        "at": "7ee160e"
+       },
+       {
+        "text": "tracked files as on disk",
+        "at": "962e38f"
+       }
+      ],
+      "gone": [
+       "8fb87d5"
+      ],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       }
+      ],
+      "caption": "Without -u there is no U: W has two parents",
+      "name": "without"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "With -u, and without",
+    "id": "anat"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "without"
+   ],
+   "upto": 3,
+   "section": "DIAGRAM",
+   "n": 31,
+   "progress": 0.4362
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 32,
+   "progress": 0.4557
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay `labs/run ch14c/stash-anatomy`. A repository with one staged change in `score.py`, one unstaged change in `config.yaml` and one untracked file, `notes.md`.",
+   "mode": "cmd",
+   "title": "labs/run ch14c/stash-anatomy",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch14c/stash-anatomy"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 33,
+   "progress": 0.4575
+  },
+  {
+   "kind": "terminal",
+   "direction": "🟡 CAUTION: `git stash push`. Tracked files and the index are reset to HEAD; with `-u` untracked files are removed from the working tree; objects are written, `refs/stash` moves, and `ORIG_HEAD` is rewritten.",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/01-push",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "M  score.py"
+    },
+    {
+     "t": "out",
+     "s": "?? notes.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash push -u -m \"wip: strip whitespace\""
+    },
+    {
+     "t": "out",
+     "s": "Saved working directory and index state On main: wip: strip whitespace"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: On main: wip: strip whitespace"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 34,
+   "progress": 0.4606
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/02-graph",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Each line: commit, [its parents], subject."
+    },
+    {
+     "t": "cmd",
+     "s": "git log --graph --format='%h [%p] %s' 'stash@{0}'"
+    },
+    {
+     "t": "out",
+     "s": "*-.   962e38f [8f8672d 7ee160e 8fb87d5] On main: wip: strip whitespace"
+    },
+    {
+     "t": "out",
+     "s": "|\\ \\"
+    },
+    {
+     "t": "out",
+     "s": "| | * 8fb87d5 [] untracked files on main: 8f8672d Add scorer and config"
+    },
+    {
+     "t": "out",
+     "s": "| * 7ee160e [8f8672d] index on main: 8f8672d Add scorer and config"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 8f8672d [] Add scorer and config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 35,
+   "progress": 0.4777
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/03-commit-object",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git show -s --format=raw 'stash@{0}'"
+    },
+    {
+     "t": "out",
+     "s": "commit 962e38fce2cce7e6ec1b3897921414fceb38409b"
+    },
+    {
+     "t": "out",
+     "s": "tree 36051caa44c7daac943f640b3d43f0a50a135455"
+    },
+    {
+     "t": "out",
+     "s": "parent 8f8672db13ec116a0e66b597dde4c3f41fdc2dd2"
+    },
+    {
+     "t": "out",
+     "s": "parent 7ee160e569bbbb323ff60b5e84b8f54b9ef16013"
+    },
+    {
+     "t": "out",
+     "s": "parent 8fb87d55587295bedf701e94a8d5a9d1de921a08"
+    },
+    {
+     "t": "out",
+     "s": "author Lab User <you@example.com> 1788755880 +0530"
+    },
+    {
+     "t": "out",
+     "s": "committer Lab User <you@example.com> 1788755880 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    On main: wip: strip whitespace"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.5001
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/04-trees",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# H, the commit that was HEAD:"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-tree -r 'stash@{0}^1'"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 464dad17678e625818cf5f96c2e878a8b8e21647    config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 2c9e3f43f09999102c43be95c5d1f3ef1d6f6bc0    score.py"
+    },
+    {
+     "t": "out",
+     "s": "# I, the index as it was (second parent):"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-tree -r 'stash@{0}^2'"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 464dad17678e625818cf5f96c2e878a8b8e21647    config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 6ba285dc88264166ccae82826a80ecacdd417104    score.py"
+    },
+    {
+     "t": "out",
+     "s": "# W, the tracked files as they were on disk (the stash commit itself):"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-tree -r 'stash@{0}'"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob b571eab8daac6f68438fc7580829f656c4427932    config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 6ba285dc88264166ccae82826a80ecacdd417104    score.py"
+    },
+    {
+     "t": "out",
+     "s": "# U, the untracked files (third parent, only with -u or -a):"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-tree -r 'stash@{0}^3'"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 8b2489b1aa1ff7ba005bedb45f156e8dd99f77f9    notes.md"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.5091
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=trees columns=commit,config.yaml,score.py,notes.md rows=H__8f8672d:464dad1:2c9e3f4:-|I__7ee160e:464dad1:6ba285d:-|W__962e38f:b571eab:6ba285d:-|U__8fb87d5:-:-:8b2489b marks=2.3:hl,3.2:hl,4.4:hl title=Four_trees,_compared_by_blob_ID",
+   "scene": "walk",
+   "params": {
+    "id": "trees",
+    "columns": [
+     "commit",
+     "config.yaml",
+     "score.py",
+     "notes.md"
+    ],
+    "rows": [
+     [
+      "H_8f8672d",
+      "464dad1",
+      "2c9e3f4",
+      "-"
+     ],
+     [
+      "I_7ee160e",
+      "464dad1",
+      "6ba285d",
+      "-"
+     ],
+     [
+      "W_962e38f",
+      "b571eab",
+      "6ba285d",
+      "-"
+     ],
+     [
+      "U_8fb87d5",
+      "-",
+      "-",
+      "8b2489b"
+     ]
+    ],
+    "marks": {
+     "2.3": "hl",
+     "3.2": "hl",
+     "4.4": "hl"
+    },
+    "title": "Four trees, compared by blob ID"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.5176
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/05-show",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# What \"git stash show -p\" prints is the difference between H and W:"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash show -p"
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/config.yaml b/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "index 464dad1..b571eab 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "@@ -1 +1 @@"
+    },
+    {
+     "t": "out",
+     "s": "-threshold: 0.5"
+    },
+    {
+     "t": "out",
+     "s": "+threshold: 0.7"
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/score.py b/score.py"
+    },
+    {
+     "t": "out",
+     "s": "index 2c9e3f4..6ba285d 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/score.py"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/score.py"
+    },
+    {
+     "t": "out",
+     "s": "@@ -1,2 +1,2 @@"
+    },
+    {
+     "t": "out",
+     "s": " def score(pred, gold):"
+    },
+    {
+     "t": "out",
+     "s": "-    return pred == gold"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.541
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/05-show",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "git stash show -p"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "+    return pred.strip() == gold.strip()"
+    },
+    {
+     "t": "out",
+     "s": "# The staged part is H against I, the unstaged part is I against W:"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat 'stash@{0}^1' 'stash@{0}^2'"
+    },
+    {
+     "t": "out",
+     "s": " score.py | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat 'stash@{0}^2' 'stash@{0}'"
+    },
+    {
+     "t": "out",
+     "s": " config.yaml | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash show --only-untracked"
+    },
+    {
+     "t": "out",
+     "s": " notes.md | 1 +"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+)"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.5447
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/06-ref-and-reflog",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "printf 'threshold: 0.9\\n' > config.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash push -m \"wip: threshold 0.9\""
+    },
+    {
+     "t": "out",
+     "s": "Saved working directory and index state On main: wip: threshold 0.9"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: On main: wip: threshold 0.9"
+    },
+    {
+     "t": "out",
+     "s": "stash@{1}: On main: wip: strip whitespace"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/stash"
+    },
+    {
+     "t": "out",
+     "s": "e5fe33887289800d1015fbecba39e952ff467eb9"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/logs/refs/stash"
+    },
+    {
+     "t": "out",
+     "s": "0000000000000000000000000000000000000000 962e38fce2cce7e6ec1b3897921414fceb38409b Lab User"
+    },
+    {
+     "t": "wrap",
+     "s": "<you@example.com> 1788755880 +0530   On main: wip: strip whitespace",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "962e38fce2cce7e6ec1b3897921414fceb38409b e5fe33887289800d1015fbecba39e952ff467eb9 Lab User"
+    },
+    {
+     "t": "wrap",
+     "s": "<you@example.com> 1788756720 +0530   On main: wip: threshold 0.9",
+     "of": "out"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse 'stash@{0}' 'stash@{1}'"
+    },
+    {
+     "t": "out",
+     "s": "e5fe33887289800d1015fbecba39e952ff467eb9"
+    },
+    {
+     "t": "out",
+     "s": "962e38fce2cce7e6ec1b3897921414fceb38409b"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5681
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/07-create-store",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "printf 'threshold: 0.8\\n' > config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "# \"create\" builds the commits and prints the ID. No ref is written and the files stay as they are."
+    },
+    {
+     "t": "cmd",
+     "s": "git stash create \"wip: threshold 0.8\""
+    },
+    {
+     "t": "out",
+     "s": "4bd62aa12a2c6896b596b2b7e718393ed816ccb1"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: On main: wip: threshold 0.9"
+    },
+    {
+     "t": "out",
+     "s": "stash@{1}: On main: wip: strip whitespace"
+    },
+    {
+     "t": "cmd",
+     "s": "git status -s"
+    },
+    {
+     "t": "out",
+     "s": " M config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "# \"store\" puts an existing stash commit on the list:"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash store -m 'stored by hand' 4bd62aa"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: stored by hand"
+    },
+    {
+     "t": "out",
+     "s": "stash@{1}: On main: wip: threshold 0.9"
+    },
+    {
+     "t": "out",
+     "s": "stash@{2}: On main: wip: strip whitespace"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.591
+  },
+  {
+   "kind": "terminal",
+   "direction": "🔴 DANGEROUS: `git stash drop`. What it changes: one log line is removed and `refs/stash` moves or is deleted. What it can destroy: the only name of that entry. Preview: `git stash show -p` on the entry. Recovery: by the ID that `drop` prints, while the objects exist. Appropriate: for an entry you have applied or no longer need.",
+   "mode": "cmd",
+   "title": "labs/run ch14c/stash-anatomy",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git stash drop 'stash@{1}'"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/logs/refs/stash"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -t e5fe338"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.6139
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/08-drop",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git stash drop 'stash@{1}'"
+    },
+    {
+     "t": "out",
+     "s": "Dropped stash@{1} (e5fe33887289800d1015fbecba39e952ff467eb9)"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: stored by hand"
+    },
+    {
+     "t": "out",
+     "s": "stash@{1}: On main: wip: strip whitespace"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/logs/refs/stash"
+    },
+    {
+     "t": "out",
+     "s": "0000000000000000000000000000000000000000 962e38fce2cce7e6ec1b3897921414fceb38409b Lab User"
+    },
+    {
+     "t": "wrap",
+     "s": "<you@example.com> 1788755880 +0530   On main: wip: strip whitespace",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "962e38fce2cce7e6ec1b3897921414fceb38409b 4bd62aa12a2c6896b596b2b7e718393ed816ccb1 Lab User"
+    },
+    {
+     "t": "wrap",
+     "s": "<you@example.com> 1788757260 +0530   stored by hand",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "# The dropped commit still exists as an unreachable object:"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -t e5fe338"
+    },
+    {
+     "t": "out",
+     "s": "commit"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.6295
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/09-export",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git stash export --to-ref refs/stashes/laptop"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --graph --format='%h %s' refs/stashes/laptop"
+    },
+    {
+     "t": "out",
+     "s": "*   14ab5f1 git stash: On main: wip: threshold 0.8"
+    },
+    {
+     "t": "out",
+     "s": "|\\"
+    },
+    {
+     "t": "out",
+     "s": "| *   4bd62aa On main: wip: threshold 0.8"
+    },
+    {
+     "t": "out",
+     "s": "| |\\"
+    },
+    {
+     "t": "out",
+     "s": "| | * b01d0a0 index on main: 8f8672d Add scorer and config"
+    },
+    {
+     "t": "out",
+     "s": "| |/"
+    },
+    {
+     "t": "out",
+     "s": "* |   1f87106 git stash: On main: wip: strip whitespace"
+    },
+    {
+     "t": "out",
+     "s": "|\\ \\"
+    },
+    {
+     "t": "out",
+     "s": "| | \\"
+    },
+    {
+     "t": "out",
+     "s": "| |  \\"
+    },
+    {
+     "t": "out",
+     "s": "| *-. \\   962e38f On main: wip: strip whitespace"
+    },
+    {
+     "t": "out",
+     "s": "| |\\ \\ \\"
+    },
+    {
+     "t": "out",
+     "s": "| | |_|/"
+    },
+    {
+     "t": "out",
+     "s": "| |/| |"
+    },
+    {
+     "t": "out",
+     "s": "| | | * 8fb87d5 untracked files on main: 8f8672d Add scorer and config"
+    },
+    {
+     "t": "out",
+     "s": "| | * 7ee160e index on main: 8f8672d Add scorer and config"
+    },
+    {
+     "t": "out",
+     "s": "| |/"
+    },
+    {
+     "t": "out",
+     "s": "| * 8f8672d Add scorer and config"
+    },
+    {
+     "t": "out",
+     "s": "* 73c9bab"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.6554
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14c/stash-anatomy/10-import",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone -q . ../evalkit-desktop"
+    },
+    {
+     "t": "cmd",
+     "s": "cd ../evalkit-desktop"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "cmd",
+     "s": "git fetch -q origin refs/stashes/laptop"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash import FETCH_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "out",
+     "s": "stash@{0}: On main: wip: threshold 0.8"
+    },
+    {
+     "t": "out",
+     "s": "stash@{1}: On main: wip: strip whitespace"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.6719
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 47,
+   "progress": 0.6838
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for. Almost everyone makes the first one.",
+   "section": "COMMON MISTAKES",
+   "n": 48,
+   "progress": 0.6857
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Expecting <code>git stash pop</code> to restore what was staged.</b> Root cause: apply and pop merge W with H as the base; only <code>--index</code> also reads I, the second parent.",
+    "<b>Reading <code>git stash show -p</code> as \"what I had unstaged\".</b> Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+    "<b>Treating a dropped stash as deleted.</b> Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+    "<b>Expecting stashes on another machine after a push.</b> Root cause: nothing fetches or pushes <code>refs/stash</code>; export and import exist since Git 2.51 for that purpose.",
+    "<b>Searching for a stash by the message shown in the list.</b> Root cause: the list prints the reflog message, which can differ from the commit's subject."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 49,
+   "progress": 0.6912
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Expecting <code>git stash pop</code> to restore what was staged.</b> Root cause: apply and pop merge W with H as the base; only <code>--index</code> also reads I, the second parent.",
+    "<b>Reading <code>git stash show -p</code> as \"what I had unstaged\".</b> Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+    "<b>Treating a dropped stash as deleted.</b> Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+    "<b>Expecting stashes on another machine after a push.</b> Root cause: nothing fetches or pushes <code>refs/stash</code>; export and import exist since Git 2.51 for that purpose.",
+    "<b>Searching for a stash by the message shown in the list.</b> Root cause: the list prints the reflog message, which can differ from the commit's subject."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 50,
+   "progress": 0.7056
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Expecting <code>git stash pop</code> to restore what was staged.</b> Root cause: apply and pop merge W with H as the base; only <code>--index</code> also reads I, the second parent.",
+    "<b>Reading <code>git stash show -p</code> as \"what I had unstaged\".</b> Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+    "<b>Treating a dropped stash as deleted.</b> Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+    "<b>Expecting stashes on another machine after a push.</b> Root cause: nothing fetches or pushes <code>refs/stash</code>; export and import exist since Git 2.51 for that purpose.",
+    "<b>Searching for a stash by the message shown in the list.</b> Root cause: the list prints the reflog message, which can differ from the commit's subject."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 51,
+   "progress": 0.7205
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Expecting <code>git stash pop</code> to restore what was staged.</b> Root cause: apply and pop merge W with H as the base; only <code>--index</code> also reads I, the second parent.",
+    "<b>Reading <code>git stash show -p</code> as \"what I had unstaged\".</b> Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+    "<b>Treating a dropped stash as deleted.</b> Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+    "<b>Expecting stashes on another machine after a push.</b> Root cause: nothing fetches or pushes <code>refs/stash</code>; export and import exist since Git 2.51 for that purpose.",
+    "<b>Searching for a stash by the message shown in the list.</b> Root cause: the list prints the reflog message, which can differ from the commit's subject."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 52,
+   "progress": 0.7325
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Expecting <code>git stash pop</code> to restore what was staged.</b> Root cause: apply and pop merge W with H as the base; only <code>--index</code> also reads I, the second parent.",
+    "<b>Reading <code>git stash show -p</code> as \"what I had unstaged\".</b> Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+    "<b>Treating a dropped stash as deleted.</b> Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+    "<b>Expecting stashes on another machine after a push.</b> Root cause: nothing fetches or pushes <code>refs/stash</code>; export and import exist since Git 2.51 for that purpose.",
+    "<b>Searching for a stash by the message shown in the list.</b> Root cause: the list prints the reflog message, which can differ from the commit's subject."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 53,
+   "progress": 0.745
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 54,
+   "progress": 0.7579
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab, and back to the engineer whose staging disappeared.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 55,
+   "progress": 0.7598
+  },
+  {
+   "kind": "keypoint",
+   "body": "The team's note afterwards is two lines from the textbook.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 56,
+   "progress": 0.7941
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 57,
+   "progress": 0.821
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 14.6, \"Stash anatomy\", in <code>lab-manual/m14-hooks-rerere-attributes.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 58,
+   "progress": 0.8229
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before you look at the graph of your entry, draw it: how many commits, which parents, which one has none.",
+   "section": "PRACTICE EXERCISE",
+   "n": 59,
+   "progress": 0.8274
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 14.4, Level 2, draw the graph, \"The shape of a stash entry\", in <code>exercises/m11-m15-investigation-recovery.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 60,
+   "progress": 0.8523
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 61,
+   "progress": 0.8613
+  },
+  {
+   "kind": "callout",
+   "direction": "Q178: \"Draw the commits of a stash entry made with `git stash push -u`. Which tree holds the staged change, which the unstaged one, and what does `git stash show -p` compare?\"",
+   "label": "Q178",
+   "quotes": [
+    "Draw the commits of a stash entry made with <code>git stash push -u</code>. Which tree holds the staged change, which the unstaged one, and what does <code>git stash show -p</code> compare?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 62,
+   "progress": 0.8631
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=entry title=A_stash_entry_made_with_-u 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; say:W_has_three_parents:_H,_I_and_the_parentless_U => + 962e38f special:refs/stash; say:refs/stash_points_at_the_newest_W pace=quick",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8f8672d",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "7ee160e",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "8f8672d"
+      ]
+     },
+     {
+      "id": "8fb87d5",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "962e38f",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8f8672d",
+       "7ee160e",
+       "8fb87d5",
+       "962e38f"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "caption": "W has three parents: H, I and the parentless U"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ]
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8f8672d",
+       "refs/stash": "962e38f"
+      },
+      "head": "main",
+      "notes": [],
+      "roles": [
+       {
+        "text": "H",
+        "at": "8f8672d"
+       },
+       {
+        "text": "I",
+        "at": "7ee160e"
+       },
+       {
+        "text": "W",
+        "at": "962e38f"
+       },
+       {
+        "text": "U",
+        "at": "8fb87d5"
+       }
+      ],
+      "caption": "refs/stash points at the newest W"
+     }
+    ],
+    "kinds": {
+     "refs/stash": "special"
+    },
+    "settle": "on",
+    "title": "A stash entry made with -u",
+    "id": "entry",
+    "pace": "quick"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "says_before": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+    "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes",
+    "Ordinary_commits,_held_by_one_ref_and_its_log"
+   ],
+   "upto": 3,
+   "says": [
+    "git_stash_show_-p_compares_H_with_W",
+    "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+    "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes",
+    "Ordinary_commits,_held_by_one_ref_and_its_log",
+    "Staged:_H_to_I._Not_staged:_I_to_W._show_-p_compares_H_with_W"
+   ],
+   "section": "INTERVIEW QUESTION",
+   "n": 63,
+   "progress": 0.8742
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 64,
+   "progress": 0.9146
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+    "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+    "<code>refs/stash</code> names the newest entry and the stash list is that ref's reflog.",
+    "<code>git stash create</code> builds an entry without touching anything, and <code>git stash store</code> lists an existing one.",
+    "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 65,
+   "progress": 0.9164
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+    "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+    "<code>refs/stash</code> names the newest entry and the stash list is that ref's reflog.",
+    "<code>git stash create</code> builds an entry without touching anything, and <code>git stash store</code> lists an existing one.",
+    "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 66,
+   "progress": 0.9214
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+    "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+    "<code>refs/stash</code> names the newest entry and the stash list is that ref's reflog.",
+    "<code>git stash create</code> builds an entry without touching anything, and <code>git stash store</code> lists an existing one.",
+    "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 67,
+   "progress": 0.9334
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+    "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+    "<code>refs/stash</code> names the newest entry and the stash list is that ref's reflog.",
+    "<code>git stash create</code> builds an entry without touching anything, and <code>git stash store</code> lists an existing one.",
+    "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 68,
+   "progress": 0.9433
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+    "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+    "<code>refs/stash</code> names the newest entry and the stash list is that ref's reflog.",
+    "<code>git stash create</code> builds an entry without touching anything, and <code>git stash store</code> lists an existing one.",
+    "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 69,
+   "progress": 0.9498
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+    "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+    "<code>refs/stash</code> names the newest entry and the stash list is that ref's reflog.",
+    "<code>git stash create</code> builds an entry without touching anything, and <code>git stash store</code> lists an existing one.",
+    "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 70,
+   "progress": 0.9583
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 71,
+   "progress": 0.9682
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read section 14C.2 of Chapter 14C.",
+   "section": "HOMEWORK",
+   "n": 72,
+   "progress": 0.9701
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you opened a stash entry and found ordinary commits inside.",
+   "section": "HOMEWORK",
+   "n": 73,
+   "progress": 0.9731
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "She had spent twenty minutes with git add -p, staging exactly the hunks, the blocks of changed lines, that belonged in the next commit, and leaving the debugging lines unstaged. Then an interruption, git stash, which parks uncommitted work and resets the files. A branch switch, and later git stash pop. Every change came back as unstaged. The separation she had built is gone from git status.",
+   "tele": "She had spent twenty minutes with `git add -p`, staging exactly the hunks, the blocks of changed lines, that belonged in the next commit, and leaving the debugging lines unstaged. Then an interruption, `git stash`, which parks uncommitted work and resets the files. A branch switch, and later `git stash pop`. Every change came back as unstaged. The separation she had built is gone from `git status`.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "bc436d99",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The short answer for the CTO is: nothing was lost. A stash entry is a commit with two or three parents, and the second parent holds the index, the staging area, as it was. A plain git stash pop ignores it. And pop printed the ID of the commit it dropped.",
+   "tele": "The short answer for the CTO is: nothing was lost. A stash entry is a commit with two or three parents, and the second parent holds the index, the staging area, as it was. A plain `git stash pop` ignores it. And `pop` printed the ID of the commit it dropped.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 4,
+   "line": 16,
+   "t0": 30.3,
+   "h": "d4ee71ad",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "To give that answer with confidence you have to know what a stash entry is made of.",
+   "tele": "To give that answer with confidence you have to know what a stash entry is made of.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 5,
+   "line": 18,
+   "t0": 50.7,
+   "h": "995981f9",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 57.5,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You learned the stash commands in the undo module: push, list, apply, pop, drop. In the recovery module you rescued a dropped entry by treating it as an unreachable merge commit. Today you open one up.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You learned the stash commands in the undo module: push, list, apply, pop, drop. In the recovery module you rescued a dropped entry by treating it as an unreachable merge commit. Today you open one up.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 7,
+   "line": 22,
+   "t0": 59.0,
+   "h": "4846fb7a",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "This chapter has a theme that will come back in every video of this module. A repository holds content that is versioned and travels with clone, fetch and push. And it holds machinery that is local and never travels: .git/config, .git/hooks, .git/rr-cache, refs/stash. The stash is on the local side of that line.",
+   "tele": "This chapter has a theme that will come back in every video of this module. A repository holds content that is versioned and travels with clone, fetch and push. And it holds machinery that is local and never travels: `.git/config`, `.git/hooks`, `.git/rr-cache`, `refs/stash`. The stash is on the local side of that line.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 8,
+   "line": 24,
+   "t0": 78.2,
+   "h": "75d670cf",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 26,
+   "t0": 99.4,
+   "h": "",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "draw the commits of a stash entry made with and without untracked files;",
+   "tele": "draw the commits of a stash entry made with and without untracked files;",
+   "words": 13,
+   "est": 5.2,
+   "slide": 10,
+   "line": 30,
+   "t0": 100.9,
+   "h": "a4bafbf9",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "say which tree holds the staged state and which the unstaged state;",
+   "tele": "say which tree holds the staged state and which the unstaged state;",
+   "words": 12,
+   "est": 4.8,
+   "slide": 11,
+   "line": 30,
+   "t0": 106.1,
+   "h": "354385c3",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "show that the stash list is the reflog of one ref;",
+   "tele": "show that the stash list is the reflog of one ref;",
+   "words": 11,
+   "est": 4.4,
+   "slide": 12,
+   "line": 30,
+   "t0": 110.9,
+   "h": "c0c842f5",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "create a stash commit without touching the list, and store it;",
+   "tele": "create a stash commit without touching the list, and store it;",
+   "words": 11,
+   "est": 4.4,
+   "slide": 13,
+   "line": 30,
+   "t0": 115.3,
+   "h": "5aff6bac",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "recover a dropped entry by ID.",
+   "tele": "recover a dropped entry by ID.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 14,
+   "line": 30,
+   "t0": 119.7,
+   "h": "7d406238",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 15,
+   "line": 36,
+   "t0": 122.1,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: a stash entry is a commit W that records your tracked files. Its first parent is H, the commit that was HEAD. Its second parent is a commit I that records the index. And when you stash untracked files, a parentless commit U is its third. A parent is the commit another commit was built on.",
+   "tele": "In one sentence: a stash entry is a commit W that records your tracked files. Its first parent is H, the commit that was HEAD. Its second parent is a commit I that records the index. And when you stash untracked files, a parentless commit U is its third. A parent is the commit another commit was built on.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 16,
+   "line": 42,
+   "t0": 123.6,
+   "h": "340d0900",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.09,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "refs/stash points at the newest W, and the stash list is the reflog of that ref: the local list of values the ref has had.",
+   "tele": "`refs/stash` points at the newest W, and the stash list is the reflog of that ref: the local list of values the ref has had.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 17,
+   "line": 46,
+   "t0": 147.2,
+   "h": "992c8a94",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely, in the manual's words: W is \"a commit whose tree records the state of the working directory\", its first parent is the commit at HEAD, and \"the tree of the second parent records the state of the index\". The manual doesn't name the third parent. git stash show --include-untracked and --only-untracked read it.",
+   "tele": "Precisely, in the manual's words: W is \"a commit whose tree records the state of the working directory\", its first parent is the commit at HEAD, and \"the tree of the second parent records the state of the index\". The manual doesn't name the third parent. `git stash show --include-untracked` and `--only-untracked` read it.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 17,
+   "line": 48,
+   "t0": 157.2,
+   "h": "782a317c",
+   "anim": {
+    "group": 9,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three consequences of the shape.",
+   "tele": "Three consequences of the shape.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 17,
+   "line": 50,
+   "t0": 178.8,
+   "h": "c283ebdd",
+   "anim": {
+    "group": 9,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "git stash show -p is the diff from H to W. The staged and the unstaged part appear as one change.",
+   "tele": "`git stash show -p` is the diff from H to W. The staged and the unstaged part appear as one change.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 18,
+   "line": 54,
+   "t0": 180.8,
+   "h": "0b61b3d6",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "git_stash_show_-p_compares_H_with_W"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "git stash apply merges W into your files with H as the base. Only --index also reads I. That's the whole explanation of the hook: a plain pop restores the files and doesn't restore the staging.",
+   "tele": "`git stash apply` merges W into your files with H as the base. Only `--index` also reads I. That's the whole explanation of the hook: a plain pop restores the files and doesn't restore the staging.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 19,
+   "line": 58,
+   "t0": 189.2,
+   "h": "32f56916",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "git_stash_show_-p_compares_H_with_W",
+       "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I"
+      ],
+      "says_from": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Revision syntax works on an entry. stash@{1}^2 is the index commit of the second entry. stash@{0}:config.yaml is one file of the newest. And stash@{n} is reflog syntax. There is one ref.",
+   "tele": "Revision syntax works on an entry. `stash@{1}^2` is the index commit of the second entry. `stash@{0}:config.yaml` is one file of the newest. And `stash@{n}` is reflog syntax. There is one ref.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 20,
+   "line": 62,
+   "t0": 203.6,
+   "h": "7cc78a95",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Inside the dot git folder: new objects for W, I and, with -u or -a, U. The ref refs/stash. And the log logs/refs/stash, one line per entry.",
+   "tele": "Inside the dot git folder: new objects for W, I and, with `-u` or `-a`, U. The ref `refs/stash`. And the log `logs/refs/stash`, one line per entry.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 21,
+   "line": 64,
+   "t0": 218.0,
+   "h": "9484505b",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two plumbing subcommands split push into its halves. git stash create builds the commits and prints the ID of W. No ref is written and the files stay as they are. git stash store puts an existing stash commit on the list. Scripts use them, and so does Git: the autostash of git rebase --autostash is a stash commit that is never put on the list.",
+   "tele": "Two plumbing subcommands split `push` into its halves. `git stash create` builds the commits and prints the ID of W. No ref is written and the files stay as they are. `git stash store` puts an existing stash commit on the list. Scripts use them, and so does Git: the autostash of `git rebase --autostash` is a stash commit that is never put on the list.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 22,
+   "line": 70,
+   "t0": 228.8,
+   "h": "56c20d54",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.089,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.178,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.49,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "What drop does: it deletes one line from the log and adjusts the ref. No object is deleted. The commit is unreachable until unreachable objects are pruned, two weeks by default.",
+   "tele": "What `drop` does: it deletes one line from the log and adjusts the ref. No object is deleted. The commit is unreachable until unreachable objects are pruned, two weeks by default.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 23,
+   "line": 74,
+   "t0": 255.2,
+   "h": "241eb225",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And travel: nothing fetches or pushes refs/stash. Since Git 2.51, git stash export writes all entries into one chain of ordinary commits that can be pushed like a branch, and git stash import turns such a chain back into entries.",
+   "tele": "And travel: nothing fetches or pushes `refs/stash`. Since Git 2.51, `git stash export` writes all entries into one chain of ordinary commits that can be pushed like a branch, and `git stash import` turns such a chain back into entries.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 24,
+   "line": 78,
+   "t0": 267.6,
+   "h": "e6bea034",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When not to stash: for anything long-lived. You saw in the recovery module that only the newest entry is held by a ref. Long-lived work belongs on a branch.",
+   "tele": "When not to stash: for anything long-lived. You saw in the recovery module that only the newest entry is held by a ref. Long-lived work belongs on a branch.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 25,
+   "line": 80,
+   "t0": 283.6,
+   "h": "2e32d26d",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 26,
+   "line": 82,
+   "t0": 295.2,
+   "h": "",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook's analogy: a labelled envelope with two or three sheets. A photocopy of the bench, which is the files. A photocopy of the outbox, which is the index. And the loose notes that were lying around, the untracked files.",
+   "tele": "The textbook's analogy: a labelled envelope with two or three sheets. A photocopy of the bench, which is the files. A photocopy of the outbox, which is the index. And the loose notes that were lying around, the untracked files.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 27,
+   "line": 88,
+   "t0": 296.7,
+   "h": "e884621c",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "git_stash_show_-p_compares_H_with_W",
+       "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+       "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes"
+      ],
+      "says_from": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks in one place: there is no drawer for the envelopes. They are ordinary commits in the object database, held by one ref and its log. That's why a dropped stash can be found again, and also why an expired log loses the list.",
+   "tele": "The analogy breaks in one place: there is no drawer for the envelopes. They are ordinary commits in the object database, held by one ref and its log. That's why a dropped stash can be found again, and also why an expired log loses the list.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 28,
+   "line": 92,
+   "t0": 312.7,
+   "h": "a1cf6f9f",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "git_stash_show_-p_compares_H_with_W",
+       "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+       "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes",
+       "Ordinary_commits,_held_by_one_ref_and_its_log"
+      ],
+      "says_from": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 29,
+   "line": 96,
+   "t0": 331.1,
+   "h": "",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Try it now, on paper, from memory. Draw H, I, W and U with their parent edges, and put refs/stash on the right commit. Pause me for thirty seconds and draw your answer.",
+   "tele": "Try it now, on paper, from memory. Draw H, I, W and U with their parent edges, and put `refs/stash` on the right commit. Pause me for thirty seconds and draw your answer.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 30,
+   "line": 98,
+   "t0": 332.6,
+   "h": "d54ce8bd",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 30,
+   "line": 100,
+   "t0": 345.8,
+   "h": "",
+   "anim": {
+    "group": 18,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 33,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Compare with yours. Without -u, erase U and its edge: W then has two parents. In both forms, the difference between H and I is what was staged, and the difference between I and W is what was not.",
+   "tele": "Compare with yours. Without `-u`, erase U and its edge: W then has two parents. In both forms, the difference between H and I is what was staged, and the difference between I and W is what was not.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 31,
+   "line": 115,
+   "t0": 350.3,
+   "h": "13f368c5",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.051,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.102,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 32,
+   "line": 117,
+   "t0": 365.9,
+   "h": "",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 33,
+   "line": null,
+   "t0": 367.4,
+   "h": "",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The entry exists. Predict the shape of the graph: how many parents does the stash commit have? Say it out loud. I'll wait.",
+   "tele": "The entry exists. Predict the shape of the graph: how many parents does the stash commit have? Say it out loud. I'll wait.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 34,
+   "line": 137,
+   "t0": 369.9,
+   "h": "a1eff9a0",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 34,
+   "line": 139,
+   "t0": 379.1,
+   "h": "",
+   "anim": {
+    "group": 22,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 38,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three. 962e38f is W. In its brackets: 8f8672d, the commit you were on. Then 7ee160e, which is I, a child of that commit. And 8fb87d5, which is U. Look at U's own brackets: empty. It has no parent. The raw commit shows the same thing.",
+   "tele": "Three. `962e38f` is W. In its brackets: `8f8672d`, the commit you were on. Then `7ee160e`, which is I, a child of that commit. And `8fb87d5`, which is U. Look at U's own brackets: empty. It has no parent. The raw commit shows the same thing.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 35,
+   "line": 158,
+   "t0": 383.6,
+   "h": "33ce9806",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "An ordinary commit object with three parent lines. Now the trees. Compare the blob IDs column by column.",
+   "tele": "An ordinary commit object with three `parent` lines. Now the trees. Compare the blob IDs column by column.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 36,
+   "line": 179,
+   "t0": 401.6,
+   "h": "03dd2477",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 6.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 6.8,
+   "slide": 37,
+   "line": null,
+   "t0": 408.8,
+   "h": "",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.76,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "score.py changes between H and I: 2c9e3f4 becomes 6ba285d. That's the staged change. config.yaml changes between I and W: 464dad1 becomes b571eab. That's the unstaged one. U holds only the untracked file. No tree mixes the three kinds of work, so they can be taken apart again.",
+   "tele": "`score.py` changes between H and I: `2c9e3f4` becomes `6ba285d`. That's the staged change. `config.yaml` changes between I and W: `464dad1` becomes `b571eab`. That's the unstaged one. U holds only the untracked file. No tree mixes the three kinds of work, so they can be taken apart again.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 38,
+   "line": 210,
+   "t0": 415.6,
+   "h": "7ea069d6",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.443,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.569,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.694,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 39,
+   "line": null,
+   "t0": 434.4,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git stash show -p prints both tracked changes together, because it compares H with W. The two git diff commands at the end of the snippet separate them, because each compares the right pair of commits.",
+   "tele": "`git stash show -p` prints both tracked changes together, because it compares H with W. The two `git diff` commands at the end of the snippet separate them, because each compares the right pair of commits.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 40,
+   "line": 248,
+   "t0": 437.4,
+   "h": "b2501436",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 4.72,
+      "dissolve": true
+     },
+     {
+      "at": 0.468,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the ref and its log. A second entry is pushed.",
+   "tele": "Now the ref and its log. A second entry is pushed.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 40,
+   "line": 250,
+   "t0": 451.8,
+   "h": "26ce1f40",
+   "anim": {
+    "group": 28,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The ref holds the ID of the newest entry. The log has one line per entry, oldest first, in the reflog format you know. git stash list prints the message column of this file.",
+   "tele": "The ref holds the ID of the newest entry. The log has one line per entry, oldest first, in the reflog format you know. `git stash list` prints the message column of this file.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 41,
+   "line": 278,
+   "t0": 456.2,
+   "h": "a76406fe",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.68,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 3.05,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Build an entry without touching anything. 🟢 SAFE: git stash create, then store.",
+   "tele": "Build an entry without touching anything. 🟢 SAFE: `git stash create`, then `store`.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 41,
+   "line": 280,
+   "t0": 469.8,
+   "h": "a95428fc",
+   "anim": {
+    "group": 29,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "create printed the ID of W, 4bd62aa. The list didn't change and the file is still modified. store appended a reflog line with your message. The commit's own subject is still \"On main: wip: threshold 0.8\". The list shows the reflog message, not the commit subject.",
+   "tele": "`create` printed the ID of W, `4bd62aa`. The list didn't change and the file is still modified. `store` appended a reflog line with your message. The commit's own subject is still \"On main: wip: threshold 0.8\". The list shows the reflog message, not the commit subject.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 42,
+   "line": 309,
+   "t0": 474.6,
+   "h": "ea2a78b2",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.44,
+      "dissolve": true
+     },
+     {
+      "at": 0.112,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Quick quiz, two options. After the drop, the commit object is deleted. Or it still exists. Say it out loud.",
+   "tele": "Quick quiz, two options. After the drop, the commit object is deleted. Or it still exists. Say it out loud.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 43,
+   "line": 320,
+   "t0": 493.0,
+   "h": "ef7fc0d9",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 322,
+   "t0": 501.0,
+   "h": "",
+   "anim": {
+    "group": 31,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It still exists. \"Dropped stash@{1}\" and the full ID. The line is gone from the log, and the next line was rewritten to follow the entry before it. git cat-file -t still says commit. That ID, with git stash store or git stash apply, is the recovery.",
+   "tele": "It still exists. \"Dropped stash@{1}\" and the full ID. The line is gone from the log, and the next line was rewritten to follow the entry before it. `git cat-file -t` still says `commit`. That ID, with `git stash store` or `git stash apply`, is the recovery.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 44,
+   "line": 340,
+   "t0": 505.5,
+   "h": "2c6f80a7",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.576,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Last, stashes that travel.",
+   "tele": "Last, stashes that travel.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 44,
+   "line": 342,
+   "t0": 524.7,
+   "h": "6306678b",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Each \"git stash:\" commit has two parents: the previous commit of the chain and one stash commit. After a push of that ref and a fetch elsewhere, git stash import rebuilds the list.",
+   "tele": "Each \"git stash:\" commit has two parents: the previous commit of the chain and one stash commit. After a push of that ref and a fetch elsewhere, `git stash import` rebuilds the list.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 45,
+   "line": 375,
+   "t0": 526.3,
+   "h": "31f0e413",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Imported entries show their commit subjects, because messages such as \"stored by hand\" exist only in the reflog of the repository that wrote them.",
+   "tele": "Imported entries show their commit subjects, because messages such as \"stored by hand\" exist only in the reflog of the repository that wrote them.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 46,
+   "line": 390,
+   "t0": 539.5,
+   "h": "30f80bec",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 47,
+   "line": 392,
+   "t0": 549.1,
+   "h": "",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for. Almost everyone makes the first one.",
+   "tele": "Five mistakes to watch for. Almost everyone makes the first one.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 48,
+   "line": 394,
+   "t0": 550.6,
+   "h": "47200c90",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting git stash pop to restore what was staged. Root cause: apply and pop merge W with H as the base; only --index also reads I, the second parent.",
+   "tele": "Expecting `git stash pop` to restore what was staged. Root cause: apply and pop merge W with H as the base; only `--index` also reads I, the second parent.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 49,
+   "line": 396,
+   "t0": 555.0,
+   "h": "74313e7b",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Reading git stash show -p as \"what I had unstaged\". Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+   "tele": "Reading `git stash show -p` as \"what I had unstaged\". Root cause: it is the diff from H to W, so the staged and unstaged parts appear as one change.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 50,
+   "line": 396,
+   "t0": 566.6,
+   "h": "0d369894",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Treating a dropped stash as deleted. Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+   "tele": "Treating a dropped stash as deleted. Root cause: drop removes a reflog line; the commits stay in the object database, unreachable, until a prune.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 51,
+   "line": 396,
+   "t0": 578.6,
+   "h": "d32f5a08",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting stashes on another machine after a push. Root cause: nothing fetches or pushes refs/stash; export and import exist since Git 2.51 for that purpose.",
+   "tele": "Expecting stashes on another machine after a push. Root cause: nothing fetches or pushes `refs/stash`; export and import exist since Git 2.51 for that purpose.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 52,
+   "line": 396,
+   "t0": 588.2,
+   "h": "4a113c44",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Searching for a stash by the message shown in the list. Root cause: the list prints the reflog message, which can differ from the commit's subject.",
+   "tele": "Searching for a stash by the message shown in the list. Root cause: the list prints the reflog message, which can differ from the commit's subject.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 53,
+   "line": 396,
+   "t0": 598.2,
+   "h": "444e0097",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 54,
+   "line": 402,
+   "t0": 608.6,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab, and back to the engineer whose staging disappeared. Her terminal still shows the line that pop printed: \"Dropped refs/stash@{0}\" and an ID. The lead asks her to change nothing else and reads the dropped commit's second parent: that tree is the index as she had built it. The staged hunks are restored from it, and the debugging lines stay unstaged, as they were.",
+   "tele": "Now, out of the lab, and back to the engineer whose staging disappeared. Her terminal still shows the line that `pop` printed: \"Dropped refs/stash@{0}\" and an ID. The lead asks her to change nothing else and reads the dropped commit's second parent: that tree is the index as she had built it. The staged hunks are restored from it, and the debugging lines stay unstaged, as they were.",
+   "words": 69,
+   "est": 27.6,
+   "slide": 55,
+   "line": 404,
+   "t0": 610.1,
+   "h": "b932707f",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The team's note afterwards is two lines from the textbook. When the staging mattered, bring work back with git stash pop --index. And when you need one file from an entry, read it with git show on the entry and the path, or git restore --source from the entry, and leave the entry alone.",
+   "tele": "The team's note afterwards is two lines from the textbook. When the staging mattered, bring work back with `git stash pop --index`. And when you need one file from an entry, read it with `git show` on the entry and the path, or `git restore --source` from the entry, and leave the entry alone.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 56,
+   "line": 406,
+   "t0": 637.7,
+   "h": "b61b12bf",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 57,
+   "line": 408,
+   "t0": 659.3,
+   "h": "",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 14.6, \"Stash anatomy\", in lab-manual/m14-hooks-rerere-attributes.md.",
+   "tele": "Your turn. Do Lab 14.6, \"Stash anatomy\", in `lab-manual/m14-hooks-rerere-attributes.md`.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 58,
+   "line": 410,
+   "t0": 660.8,
+   "h": "9bdc122d",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before you look at the graph of your entry, draw it: how many commits, which parents, which one has none. Before each git ls-tree, predict which blob IDs will differ from the previous listing. In the recovery part, predict what a plain pop will restore and what it will not.",
+   "tele": "Before you look at the graph of your entry, draw it: how many commits, which parents, which one has none. Before each `git ls-tree`, predict which blob IDs will differ from the previous listing. In the recovery part, predict what a plain pop will restore and what it will not.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 59,
+   "line": 412,
+   "t0": 664.4,
+   "h": "6775efd4",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 14.4, Level 2, draw the graph, \"The shape of a stash entry\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "The challenge is Exercise 14.4, Level 2, draw the graph, \"The shape of a stash entry\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 60,
+   "line": 414,
+   "t0": 684.4,
+   "h": "86a9adf7",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 61,
+   "line": 416,
+   "t0": 691.6,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Pause, draw it on paper, and answer out loud. I'll wait.",
+   "tele": "Pause, draw it on paper, and answer out loud. I'll wait.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 62,
+   "line": 420,
+   "t0": 693.1,
+   "h": "ea52bc54",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 70,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 62,
+   "line": 422,
+   "t0": 697.5,
+   "h": "",
+   "anim": {
+    "group": 46,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 71,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer draws four commits with the right parent edges and says which one has no parent and why that is unusual. It locates each kind of work as a difference between two named trees, not as \"in the stash\". It states the pair of commits that show -p compares, and from that explains a behavior the interviewer didn't ask about, such as what a plain pop restores. It also says what holds the entry: one ref and a log.",
+   "tele": "A strong answer draws four commits with the right parent edges and says which one has no parent and why that is unusual. It locates each kind of work as a difference between two named trees, not as \"in the stash\". It states the pair of commits that `show -p` compares, and from that explains a behavior the interviewer didn't ask about, such as what a plain pop restores. It also says what holds the entry: one ref and a log.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 63,
+   "line": 428,
+   "t0": 702.0,
+   "h": "cdd285e3",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "git_stash_show_-p_compares_H_with_W",
+       "apply_and_pop_merge_W_with_H_as_the_base._Only_--index_reads_I",
+       "W_is_the_bench,_I_is_the_outbox,_U_is_the_loose_notes",
+       "Ordinary_commits,_held_by_one_ref_and_its_log",
+       "Staged:_H_to_I._Not_staged:_I_to_W._show_-p_compares_H_with_W"
+      ],
+      "says_from": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 64,
+   "line": 430,
+   "t0": 734.4,
+   "h": "",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 73,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 65,
+   "line": 432,
+   "t0": 735.9,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 74,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+   "tele": "A stash entry is a merge commit W with parents H and I, and a third parentless parent U when untracked files are included.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 66,
+   "line": 434,
+   "t0": 739.9,
+   "h": "034695ce",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 75,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+   "tele": "The staged change is the difference between H and I; the unstaged change is the difference between I and W.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 67,
+   "line": 434,
+   "t0": 749.5,
+   "h": "3f0df4d0",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 76,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "refs/stash names the newest entry and the stash list is that ref's reflog.",
+   "tele": "`refs/stash` names the newest entry and the stash list is that ref's reflog.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 68,
+   "line": 434,
+   "t0": 757.5,
+   "h": "bc8441b1",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 77,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git stash create builds an entry without touching anything, and git stash store lists an existing one.",
+   "tele": "`git stash create` builds an entry without touching anything, and `git stash store` lists an existing one.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 69,
+   "line": 434,
+   "t0": 762.7,
+   "h": "9adc09a2",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 78,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned.",
+   "tele": "A dropped entry is still a commit; with its ID I can store or apply it until it is pruned.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 70,
+   "line": 434,
+   "t0": 769.5,
+   "h": "cef962ff",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 79,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 71,
+   "line": 440,
+   "t0": 777.5,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read section 14C.2 of Chapter 14C.",
+   "tele": "Read section 14C.2 of Chapter 14C.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 72,
+   "line": 442,
+   "t0": 779.0,
+   "h": "2e1c3d36",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you opened a stash entry and found ordinary commits inside. Before the next video, stash something in the lab and draw its graph before you print it. Next time: rerere, which lets you resolve a conflict once. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you opened a stash entry and found ordinary commits inside. Before the next video, stash something in the lab and draw its graph before you print it. Next time: rerere, which lets you resolve a conflict once. Until then, look at the state first and type second. See you in the next one.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 73,
+   "line": 444,
+   "t0": 781.4,
+   "h": "710f8934",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 803.0,
+ "narration_words": 1878,
+ "warnings": [],
+ "anim_version": 3
+}

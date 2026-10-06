@@ -1,0 +1,863 @@
+1
+00:00:04,500 --> 00:00:09,741
+Your CTO has a calm question: "A contractor
+says two days of work vanished after she
+
+2
+00:00:09,781 --> 00:00:12,947
+'checked out a tag to test
+something'. Is it gone?"
+
+3
+00:00:13,287 --> 00:00:19,098
+She checked out a tag, a
+fixed name for one commit.
+
+4
+00:00:19,138 --> 00:00:28,506
+She kept working, and committed, for two
+days. Then she switched back to main, and
+
+5
+00:00:28,546 --> 00:00:34,472
+her commits aren't in any
+log she knows how to read.
+
+6
+00:00:34,512 --> 00:00:37,914
+Gone, or not? Say it out loud.
+
+7
+00:00:42,754 --> 00:00:47,444
+No, it's not gone. The commits exist, and
+are recoverable from the reflog, Git's
+
+8
+00:00:47,484 --> 00:00:52,291
+local diary of where HEAD has been. And
+Git told her so at the moment she left: it
+
+9
+00:00:52,331 --> 00:00:57,139
+printed a warning, named the commits, and
+printed the command that would have kept
+
+10
+00:00:57,179 --> 00:01:02,104
+them. This video is about the state she was
+in, why it's normal, and why one command
+
+11
+00:01:02,144 --> 00:01:05,474
+is enough to keep work made
+there. Remember that warning.
+
+12
+00:01:05,514 --> 00:01:07,602
+You'll read it yourself in the demo.
+
+13
+00:01:09,442 --> 00:01:14,590
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:14,630 --> 00:01:21,224
+"Detached HEAD" is one of the most searched
+phrases in Git, and it sounds like
+
+15
+00:01:21,264 --> 00:01:28,283
+damage. It's not an error. HEAD is Git's
+note of where you are, and video 22 showed
+
+16
+00:01:28,323 --> 00:01:35,172
+its three possible contents. This is the
+second: a commit ID in place of a branch
+
+17
+00:01:35,212 --> 00:01:35,597
+name.
+
+18
+00:01:35,937 --> 00:01:41,382
+Today you enter the state on purpose,
+commit in it, leave it, lose sight of the
+
+19
+00:01:41,422 --> 00:01:46,867
+commits, and bring them back. Then you
+see the ordinary operations that put you
+
+20
+00:01:46,907 --> 00:01:52,213
+there without asking: checking out a tag
+or a remote-tracking branch, bisect,
+
+21
+00:01:52,253 --> 00:01:55,962
+rebase, a clone of one release,
+a worktree from a tag.
+
+22
+00:01:56,002 --> 00:02:01,100
+If some of those words are new, that's
+fine. Each has its own video later.
+
+23
+00:02:02,940 --> 00:02:04,519
+Here's what you'll walk away with.
+
+24
+00:02:04,859 --> 00:02:06,271
+After this video you can:
+
+25
+00:02:06,611 --> 00:02:11,373
+Explain detached HEAD as HEAD holding
+a commit ID in place of a branch name.
+
+26
+00:02:11,713 --> 00:02:13,881
+List the ordinary operations
+that detach HEAD.
+
+27
+00:02:14,221 --> 00:02:17,516
+Make commits while detached,
+and keep them before leaving.
+
+28
+00:02:17,856 --> 00:02:20,481
+Recover commits left behind
+after switching away.
+
+29
+00:02:22,321 --> 00:02:27,169
+In one sentence. HEAD is detached when
+it holds a commit ID instead of a branch
+
+30
+00:02:27,209 --> 00:02:31,933
+name. Git works normally, and new commits
+advance HEAD itself rather than any
+
+31
+00:02:31,973 --> 00:02:35,460
+branch. Here HEAD sits on the
+tagged commit, not on main.
+
+32
+00:02:35,799 --> 00:02:40,336
+Precisely. The manual says that in detached
+HEAD state "HEAD refers to a specific
+
+33
+00:02:40,376 --> 00:02:45,081
+commit, as opposed to referring to a named
+branch", and that a commit made there "is
+
+34
+00:02:45,121 --> 00:02:49,658
+referenced only by HEAD". Git detaches
+HEAD whenever you ask for a commit that no
+
+35
+00:02:49,698 --> 00:02:52,426
+branch names, and several
+commands do it for you.
+
+36
+00:02:52,766 --> 00:02:58,088
+Recall the state table from video 19. git
+commit in detached HEAD sets HEAD to the
+
+37
+00:02:58,128 --> 00:03:03,516
+new commit ID. There is no current branch,
+no branch moves, and one line is written
+
+38
+00:03:03,556 --> 00:03:04,693
+in logs/HEAD only.
+
+39
+00:03:05,033 --> 00:03:10,646
+Quick quiz. You made these two commits
+while detached, and now you switch to main.
+
+40
+00:03:10,686 --> 00:03:15,196
+What happens to them? A, Git deletes
+them. B, they move onto main.
+
+41
+00:03:15,236 --> 00:03:17,953
+C, they stay, with no name. Your answer?
+
+42
+00:03:22,793 --> 00:03:27,934
+What happens when you leave. The answer
+is C. Commits made while detached are
+
+43
+00:03:27,974 --> 00:03:33,182
+reachable only through HEAD. Once HEAD
+moves to a branch, no ref reaches them.
+
+44
+00:03:33,222 --> 00:03:38,094
+They still exist as objects, and the
+reflog of HEAD still refers to them.
+
+45
+00:03:38,434 --> 00:03:43,510
+Three ways to ask "which branch am I on".
+Each answers differently when the answer
+
+46
+00:03:43,550 --> 00:03:46,942
+is "none". git symbolic-ref
+HEAD fails with status 128.
+
+47
+00:03:46,982 --> 00:03:52,184
+git branch --show-current prints nothing.
+git rev-parse --abbrev-ref HEAD prints the
+
+48
+00:03:52,224 --> 00:03:55,241
+literal word HEAD. Scripts
+must handle all three.
+
+49
+00:03:55,581 --> 00:04:00,491
+Where git status gets its words. It reads
+the HEAD reflog backwards for the latest
+
+50
+00:04:00,531 --> 00:04:05,442
+checkout: moving from ... to X entry. X is
+printed after "at" if HEAD still equals
+
+51
+00:04:05,482 --> 00:04:10,392
+that entry's commit, and after "from"
+otherwise. With no such entry, as in a fresh
+
+52
+00:04:10,432 --> 00:04:15,161
+clone, it prints Not currently on any
+branch. The textbook cites the Git 2.55.0
+
+53
+00:04:15,201 --> 00:04:16,127
+source for this.
+
+54
+00:04:16,467 --> 00:04:17,705
+Every way it happens.
+
+55
+00:04:18,045 --> 00:04:22,776
+Checking out a tag. Checking out a commit
+by ID, or by a relative name such as
+
+56
+00:04:22,816 --> 00:04:26,814
+HEAD~1. Checking out a remote-tracking
+branch such as origin/main.
+
+57
+00:04:26,854 --> 00:04:31,769
+git bisect, a binary search over commits:
+every step checks out a commit to test.
+
+58
+00:04:31,809 --> 00:04:36,724
+git rebase, while it runs or is stopped.
+The rebase replays commits on a detached
+
+59
+00:04:36,764 --> 00:04:41,740
+HEAD, and moves the branch only at the end.
+That's why an interrupted rebase looks
+
+60
+00:04:41,780 --> 00:04:43,698
+like a detached HEAD: it is one.
+
+61
+00:04:44,038 --> 00:04:49,080
+git clone --branch <tag>: a clone of one
+release, the shape of many deploy scripts.
+
+62
+00:04:49,120 --> 00:04:54,223
+git worktree add with a tag or a commit.
+git submodule update: the default mode puts
+
+63
+00:04:54,263 --> 00:04:58,142
+each submodule on a detached HEAD,
+and that one is not run here.
+
+64
+00:04:58,182 --> 00:05:01,815
+And a CI checkout, the copy an
+automated build job works in.
+
+65
+00:05:02,155 --> 00:05:06,672
+Keeping the work. Three commands create
+a ref for the commit HEAD is on, as the
+
+66
+00:05:06,712 --> 00:05:11,055
+manual lists them. git switch -c <name>
+attaches HEAD to a new branch there.
+
+67
+00:05:11,095 --> 00:05:14,631
+git branch <name> creates the
+branch and leaves HEAD detached.
+
+68
+00:05:14,671 --> 00:05:18,553
+git tag <name> creates a tag. All
+three are 🟢 SAFE: each adds a ref.
+
+69
+00:05:18,593 --> 00:05:21,840
+After you've moved away, find
+the ID in git reflog first.
+
+70
+00:05:22,180 --> 00:05:26,802
+When to use it, and when not. Use it on
+purpose to look at an old state, to test a
+
+71
+00:05:26,842 --> 00:05:31,407
+release, to try an experiment you may throw
+away. Don't leave it with commits you
+
+72
+00:05:31,447 --> 00:05:36,069
+want and no name for them. The rule for
+people is one sentence: before you leave a
+
+73
+00:05:36,109 --> 00:05:39,082
+detached HEAD with commits
+on it, give them a branch.
+
+74
+00:05:39,422 --> 00:05:44,852
+How long recovery works. The reflog is the
+safety net, and it expires: by default,
+
+75
+00:05:44,892 --> 00:05:50,255
+entries not reachable from the current tip
+after 30 days, as you learned in video
+
+76
+00:05:50,295 --> 00:05:53,390
+21. The lab configuration
+sets expiry to never.
+
+77
+00:05:55,230 --> 00:06:00,087
+A picture helps. The textbook's analogy:
+reading a book with no bookmark in it.
+
+78
+00:06:00,127 --> 00:06:03,619
+You can read any page, and
+even write notes on new pages.
+
+79
+00:06:03,659 --> 00:06:07,772
+But when you put the book down,
+nothing marks where your notes are.
+
+80
+00:06:08,112 --> 00:06:11,826
+The analogy breaks because Git keeps a
+diary of where you've been, the reflog, and
+
+81
+00:06:11,866 --> 00:06:13,658
+the notes can be found again through it.
+
+82
+00:06:13,998 --> 00:06:17,778
+So the contractor's two days
+are notes on unmarked pages.
+
+83
+00:06:17,818 --> 00:06:19,588
+The diary says which pages.
+
+84
+00:06:19,928 --> 00:06:23,795
+One bookmark, placed now, makes
+them part of the story again.
+
+85
+00:06:25,635 --> 00:06:30,671
+Try it now. Thirty seconds, on paper. Draw
+three commits in a row, and write main
+
+86
+00:06:30,711 --> 00:06:35,747
+under the last one. Then draw HEAD twice:
+once attached, and once detached on the
+
+87
+00:06:35,787 --> 00:06:39,632
+middle commit. What does each
+arrow point at? Say it out loud.
+
+88
+00:06:44,472 --> 00:06:49,549
+Attached first. HEAD points at a branch,
+and the branch points at a commit.
+
+89
+00:06:49,589 --> 00:06:50,163
+Two hops.
+
+90
+00:06:50,503 --> 00:06:57,063
+Now detached, two commits later.
+HEAD points at a commit directly.
+
+91
+00:06:57,103 --> 00:07:05,163
+One hop. Two commits grow from the tagged
+commit 8c6d240, and the only thing that
+
+92
+00:07:05,203 --> 00:07:13,463
+names the newer one, b23bce3, is HEAD. There
+is no branch label on that lower line.
+
+93
+00:07:13,503 --> 00:07:18,263
+If HEAD moves away, the
+line has no name at all.
+
+94
+00:07:20,103 --> 00:07:25,799
+Into the lab. Check out a tag. The script
+uses the older git checkout spelling here,
+
+95
+00:07:25,839 --> 00:07:31,056
+which detaches without being asked. git
+switch --detach is the explicit form.
+
+96
+00:07:31,096 --> 00:07:32,149
+Both are 🟢 SAFE.
+
+97
+00:07:35,489 --> 00:07:41,555
+Read the advice block. It's Git's own
+explanation, printed once per detach unless
+
+98
+00:07:41,595 --> 00:07:47,133
+advice.detachedHead is false. Then the
+evidence. .git/HEAD holds a raw ID.
+
+99
+00:07:47,173 --> 00:07:53,466
+git status says HEAD detached at v0.1.0.
+And git branch lists a pseudo-entry instead
+
+100
+00:07:53,506 --> 00:07:54,973
+of a current branch.
+
+101
+00:07:55,313 --> 00:07:59,704
+The three answers to "which branch am I
+on": an error with status 128, an empty
+
+102
+00:07:59,744 --> 00:08:01,218
+line, and the literal HEAD.
+
+103
+00:08:01,558 --> 00:08:05,658
+Now two commits. Predict: which
+ref moves? Say it out loud.
+
+104
+00:08:10,498 --> 00:08:15,246
+No branch. The summary line says [detached
+HEAD f678c98], then [detached HEAD
+
+105
+00:08:15,286 --> 00:08:19,039
+b23bce3]. The status line now
+says HEAD detached from v0.1.0.
+
+106
+00:08:19,079 --> 00:08:23,640
+The word "at" became "from", because
+HEAD has moved since it was detached.
+
+107
+00:08:23,680 --> 00:08:27,931
+And git log --all shows the new
+commits, because --all includes HEAD.
+
+108
+00:08:28,271 --> 00:08:33,625
+Now leave. Before the output: what do you
+expect Git to print, and will git log
+
+109
+00:08:33,665 --> 00:08:38,132
+--all still show the two commits
+afterwards? Make your prediction.
+
+110
+00:08:42,972 --> 00:08:48,197
+Read the warning aloud. "You are leaving
+2 commits behind, not connected to any of
+
+111
+00:08:48,237 --> 00:08:51,472
+your branches." It names
+them: b23bce3 and f678c98.
+
+112
+00:08:51,512 --> 00:08:56,673
+And it prints the command that keeps them:
+git branch, a new branch name, and the
+
+113
+00:08:56,713 --> 00:09:02,003
+ID. That's the warning the contractor was
+given. Then git log --all no longer shows
+
+114
+00:09:02,043 --> 00:09:03,672
+them: no ref reaches them.
+
+115
+00:09:04,012 --> 00:09:07,479
+git branch experiment/judge-threshold
+b23bce3 🟢 SAFE.
+
+116
+00:09:07,519 --> 00:09:12,773
+The graph shows both commits again. One
+command. And if the warning has scrolled
+
+117
+00:09:12,813 --> 00:09:18,066
+away, git reflog has the ID: look for the
+commit: lines above the last checkout:
+
+118
+00:09:18,106 --> 00:09:20,051
+moving from an ID to a branch.
+
+119
+00:09:20,391 --> 00:09:25,783
+Two more ways in. git switch --detach
+origin/main: a remote-tracking branch isn't a
+
+120
+00:09:25,823 --> 00:09:31,150
+local branch, so standing on it means
+detached. And git bisect, which checks out a
+
+121
+00:09:31,190 --> 00:09:32,132
+commit to test.
+
+122
+00:09:35,472 --> 00:09:40,563
+During a stopped rebase, git branch prints
+(no branch, rebasing main), and .git/HEAD
+
+123
+00:09:40,603 --> 00:09:43,678
+holds an ID. The rebase
+moves main only at the end.
+
+124
+00:09:46,518 --> 00:09:48,150
+By relative name and by ID.
+
+125
+00:09:48,490 --> 00:09:53,372
+A deploy script that clones one
+release with --branch v0.1.0.
+
+126
+00:09:53,412 --> 00:09:59,504
+The clone has no local branch at all.
+git status prints Not currently on any
+
+127
+00:09:59,544 --> 00:10:05,153
+branch., because the fresh clone's
+HEAD reflog has no checkout: entry.
+
+128
+00:10:05,193 --> 00:10:11,850
+A deploy script that commits a generated
+file in such a clone commits onto nothing.
+
+129
+00:10:12,190 --> 00:10:17,040
+And a linked worktree created from a tag:
+detached, while the main working tree
+
+130
+00:10:17,080 --> 00:10:17,906
+stays on main.
+
+131
+00:10:19,746 --> 00:10:21,394
+Five mistakes to watch for.
+
+132
+00:10:21,734 --> 00:10:26,209
+Commits "disappeared" after switching
+branches. Root cause: they were made in
+
+133
+00:10:26,249 --> 00:10:31,017
+detached HEAD and were reachable only
+through HEAD; git reflog shows them, and git
+
+134
+00:10:31,057 --> 00:10:33,128
+branch <name> <id> brings them back.
+
+135
+00:10:33,468 --> 00:10:36,451
+Treating the detached-HEAD message
+as an error to make go away.
+
+136
+00:10:36,491 --> 00:10:40,289
+Root cause: it is a normal state that Git
+itself uses for bisect and rebase; the
+
+137
+00:10:40,329 --> 00:10:41,152
+message is advice.
+
+138
+00:10:41,492 --> 00:10:45,183
+A script that calls git branch
+--show-current fails in CI.
+
+139
+00:10:45,223 --> 00:10:50,457
+Root cause: CI jobs, deploy checkouts and
+submodules are in detached HEAD, and the
+
+140
+00:10:50,497 --> 00:10:52,322
+command prints nothing there.
+
+141
+00:10:52,662 --> 00:10:56,806
+git push with no refspec from a
+deploy checkout does nothing useful.
+
+142
+00:10:56,846 --> 00:11:01,789
+Root cause: no branch is current; use git
+rev-parse HEAD for the commit, and name
+
+143
+00:11:01,829 --> 00:11:03,942
+the branch explicitly when pushing.
+
+144
+00:11:04,282 --> 00:11:15,417
+Assuming an interrupted rebase broke the
+branch. Root cause: a rebase runs on a
+
+145
+00:11:15,457 --> 00:11:22,631
+detached HEAD and moves the
+branch only at the end.
+
+146
+00:11:24,471 --> 00:11:29,327
+Now, out of the lab. The textbook states
+the production rule in one paragraph.
+
+147
+00:11:29,367 --> 00:11:34,600
+Detached HEAD is the normal state of a CI
+job, a deploy checkout and a submodule, so
+
+148
+00:11:34,640 --> 00:11:38,931
+a script that assumes a current
+branch fails in exactly those places.
+
+149
+00:11:39,271 --> 00:11:44,157
+An ML team's release job clones the
+repository at a tag, generates a model card,
+
+150
+00:11:44,197 --> 00:11:47,729
+commits it, and pushes. The
+commit succeeds, onto nothing.
+
+151
+00:11:47,769 --> 00:11:52,717
+The push has no refspec, meaning it names
+no branch, so it has no branch to push.
+
+152
+00:11:52,757 --> 00:11:57,890
+The repaired job uses git rev-parse HEAD to
+record the commit it built from, creates
+
+153
+00:11:57,930 --> 00:12:02,878
+a branch with git switch -c before committing,
+and names that branch in the push.
+
+154
+00:12:04,718 --> 00:12:08,397
+Your turn. Do Lab 4.2,
+"Detached HEAD rescue", in
+
+155
+00:12:08,437 --> 00:12:11,205
+lab-manual/m04-refs-branches-head.md.
+
+156
+00:12:11,545 --> 00:12:17,076
+Before you leave the detached HEAD in the
+lab, write down what you expect in three
+
+157
+00:12:17,116 --> 00:12:21,084
+places afterwards: git log
+--all, git reflog, and git fsck.
+
+158
+00:12:21,124 --> 00:12:23,054
+Then switch away and compare.
+
+159
+00:12:24,894 --> 00:12:29,712
+Q98: "A colleague's two days of commits
+are "gone" after she checked out a tag and
+
+160
+00:12:29,752 --> 00:12:34,511
+later switched back to main. Walk through
+the recovery and explain why it works."
+
+161
+00:12:36,851 --> 00:12:41,295
+Answer out loud. A strong answer starts
+with the state of HEAD after the checkout,
+
+162
+00:12:41,335 --> 00:12:45,889
+and says which ref her commits moved. It
+names where the IDs can still be found, and
+
+163
+00:12:45,929 --> 00:12:50,483
+the one command that makes them reachable.
+It explains why the objects were never in
+
+164
+00:12:50,523 --> 00:12:53,436
+danger at that point, and
+says what the time limit is.
+
+165
+00:12:53,476 --> 00:12:56,061
+Mention what Git printed
+when she switched away.
+
+166
+00:12:57,901 --> 00:13:03,659
+Let's land this. You should now be able to
+say: detached HEAD means .git/HEAD holds
+
+167
+00:13:03,699 --> 00:13:09,527
+a commit ID instead of a branch name. It's
+a normal state, entered by checking out a
+
+168
+00:13:09,567 --> 00:13:15,325
+tag, a commit or a remote-tracking branch,
+and by bisect, rebase, a clone at a tag,
+
+169
+00:13:15,365 --> 00:13:18,887
+a worktree from a tag,
+submodules and CI checkouts.
+
+170
+00:13:19,227 --> 00:13:25,120
+Commits made there advance HEAD only. When
+I switch away, Git names the commits and
+
+171
+00:13:25,160 --> 00:13:31,053
+prints the command that keeps them. Afterwards
+the HEAD reflog still has their IDs.
+
+172
+00:13:31,093 --> 00:13:34,555
+Keeping the work is one
+command: create a branch.
+
+173
+00:13:36,395 --> 00:13:39,132
+Read section 7.7 of Chapter 7.
+
+174
+00:13:39,472 --> 00:13:46,489
+Challenge: Exercise 4.4, Level 2, "a
+commit made while HEAD was detached", in
+
+175
+00:13:46,529 --> 00:13:49,513
+exercises/m01-m05-foundations.md.
+
+176
+00:13:49,853 --> 00:13:58,691
+A phrase that sounds like damage is now
+a state you can enter, use and leave on
+
+177
+00:13:58,731 --> 00:14:07,794
+purpose. Try the rescue in the lab yourself.
+Next time: divergence, ancestry, and
+
+178
+00:14:07,834 --> 00:14:17,010
+why Git has no parent-branch concept. Until
+then, look at the state first and type
+
+179
+00:14:17,050 --> 00:14:20,606
+second. See you in the next one.

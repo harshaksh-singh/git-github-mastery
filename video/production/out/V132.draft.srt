@@ -1,0 +1,1236 @@
+1
+00:00:04,500 --> 00:00:08,387
+A pull request fixes a typo in
+the README. It has an approval.
+
+2
+00:00:08,427 --> 00:00:13,645
+It has been open for three days, because
+one required check, build, says "Expected,
+
+3
+00:00:13,685 --> 00:00:17,762
+waiting for status to be reported".
+Nobody can find a failed run.
+
+4
+00:00:17,802 --> 00:00:19,283
+Nobody can find any run.
+
+5
+00:00:19,623 --> 00:00:21,990
+Your CTO asks: what is broken?
+
+6
+00:00:22,330 --> 00:00:26,988
+Nothing in Git, and nothing in the workflow.
+The workflow has a path filter, so for
+
+7
+00:00:27,028 --> 00:00:31,460
+a documentation-only change it never
+starts. A workflow that never starts never
+
+8
+00:00:31,500 --> 00:00:34,687
+reports. And the rule on main
+does not ask "did CI fail?"
+
+9
+00:00:34,727 --> 00:00:39,102
+It asks "is there a passing result under
+the name build on the newest commit?"
+
+10
+00:00:39,142 --> 00:00:41,254
+There is not, and there never will be.
+
+11
+00:00:41,594 --> 00:00:45,003
+That is the most common of about
+ten documented traps of one rule.
+
+12
+00:00:45,043 --> 00:00:49,185
+This video goes through the rules that
+cause nearly all blocked merges, with the
+
+13
+00:00:49,225 --> 00:00:51,327
+local command that predicts each verdict.
+
+14
+00:00:53,167 --> 00:00:57,861
+In the last video a rule was a condition
+on a ref update, a ruleset was a list of
+
+15
+00:00:57,901 --> 00:01:01,893
+rules with a target, a status and a
+bypass list, and layers added up.
+
+16
+00:01:01,933 --> 00:01:03,121
+Now we open the list.
+
+17
+00:01:03,461 --> 00:01:07,839
+A branch or tag ruleset can contain
+about a dozen kinds of rule.
+
+18
+00:01:07,879 --> 00:01:13,569
+Four of them, pull request, status checks,
+signed commits and linear history, cause
+
+19
+00:01:13,609 --> 00:01:19,300
+nearly all blocked merges. Sections 18.6
+to 18.11 take those, and two smaller ones:
+
+20
+00:01:19,340 --> 00:01:23,166
+conversation resolution, and
+force pushes and deletions.
+
+21
+00:01:23,506 --> 00:01:27,927
+The demonstration is a local pre-flight:
+labs/ch18/merge-preflight.sh.
+
+22
+00:01:27,967 --> 00:01:33,153
+It asks Git the questions that can be
+decided from Git data alone, before you ever
+
+23
+00:01:33,193 --> 00:01:38,378
+open the merge box. Every command in it
+reads state and is 🟢 SAFE, except its last
+
+24
+00:01:38,418 --> 00:01:40,672
+step, git merge, which is 🟡 CAUTION.
+
+25
+00:01:41,012 --> 00:01:45,864
+Then a walkthrough of Lab 23.3 on the
+platform. That lab creates and edits rulesets
+
+26
+00:01:45,904 --> 00:01:50,637
+with gh api calls that are not GET; the
+chapter labels those 🔴 DANGEROUS, for the
+
+27
+00:01:50,677 --> 00:01:55,351
+reason given in the last video: the call
+does whatever the endpoint and the JSON
+
+28
+00:01:55,391 --> 00:01:57,178
+say, with all your permissions.
+
+29
+00:01:59,018 --> 00:02:00,577
+After this video you can:
+
+30
+00:02:00,917 --> 00:02:04,782
+List the rules a ruleset offers and
+the sub-options of required reviews.
+
+31
+00:02:05,122 --> 00:02:09,224
+Explain why a required check can stay
+pending forever and design the fix.
+
+32
+00:02:09,564 --> 00:02:12,441
+Say what "require branches
+to be up to date" tests.
+
+33
+00:02:12,781 --> 00:02:16,783
+Explain why a merge method can be blocked
+by "Require signed commits" and which
+
+34
+00:02:16,823 --> 00:02:18,984
+merge methods a
+linear-history rule allows.
+
+35
+00:02:19,324 --> 00:02:22,158
+Run the local pre-flight that
+predicts each rule's verdict.
+
+36
+00:02:23,998 --> 00:02:29,439
+The catalogue, quickly. Restrict creations,
+restrict updates, restrict deletions:
+
+37
+00:02:29,479 --> 00:02:33,770
+only bypass actors may create,
+push to, or delete matching refs.
+
+38
+00:02:33,810 --> 00:02:39,318
+Block force pushes. Require linear history.
+Require a pull request before merging.
+
+39
+00:02:39,358 --> 00:02:42,972
+Require status checks to
+pass. Require signed commits.
+
+40
+00:02:43,012 --> 00:02:48,047
+Require deployments to succeed. Require
+merge queue, documented only in the
+
+41
+00:02:48,087 --> 00:02:49,536
+Enterprise Cloud view.
+
+42
+00:02:49,876 --> 00:02:54,668
+Rules for code scanning and related
+results. Automatically request Copilot code
+
+43
+00:02:54,708 --> 00:02:59,073
+review, which requests and does not
+block. Require workflows to pass, at
+
+44
+00:02:59,113 --> 00:03:04,212
+organization or enterprise level. And metadata
+restrictions, on the Enterprise plan:
+
+45
+00:03:04,252 --> 00:03:09,289
+patterns for commit messages, author and
+committer email, and branch and tag names.
+
+46
+00:03:09,629 --> 00:03:14,324
+A new ruleset starts with two rules already
+selected: restrict deletions and block
+
+47
+00:03:14,364 --> 00:03:16,865
+force pushes. Everything
+else is a decision.
+
+48
+00:03:17,205 --> 00:03:22,048
+Required reviews. In one sentence: the pull
+request rule turns the advisory reviews
+
+49
+00:03:22,088 --> 00:03:26,755
+of the pull request chapter into a gate,
+and each sub-option closes one specific
+
+50
+00:03:26,795 --> 00:03:31,049
+loophole. Note first what the rule
+itself says: "The pull request doesn't
+
+51
+00:03:31,089 --> 00:03:34,344
+necessarily have to be approved,
+but it must be opened."
+
+52
+00:03:34,684 --> 00:03:39,108
+The sub-options, each with the loophole
+it closes. Required approvals: merging
+
+53
+00:03:39,148 --> 00:03:43,688
+without a second person; approvals count
+only from people with write permission.
+
+54
+00:03:43,728 --> 00:03:47,065
+Dismiss stale approvals: commits
+pushed after the approval.
+
+55
+00:03:47,105 --> 00:03:51,644
+Approval of the most recent reviewable
+push: the last pusher approving their own
+
+56
+00:03:51,684 --> 00:03:53,476
+addition; weaker than dismissal.
+
+57
+00:03:53,816 --> 00:03:59,381
+Review from code owners: changes to owned
+paths without their owner; any one listed
+
+58
+00:03:59,421 --> 00:04:04,446
+owner suffices. Restrict who can dismiss
+reviews: someone with write access
+
+59
+00:04:04,486 --> 00:04:08,499
+dismissing a blocking review;
+in rulesets since 7 July 2026.
+
+60
+00:04:08,539 --> 00:04:12,011
+Resolved conversations:
+merging over open questions.
+
+61
+00:04:12,351 --> 00:04:17,093
+Allowed merge methods: history
+written in a form the team rejected.
+
+62
+00:04:17,133 --> 00:04:22,662
+Required reviewers: paths that need a
+specific team, with a count; teams only,
+
+63
+00:04:22,702 --> 00:04:28,016
+organization repositories only, generally
+available since 17 February 2026.
+
+64
+00:04:28,356 --> 00:04:32,351
+Three rules of evaluation that the
+documentation states and people miss.
+
+65
+00:04:32,391 --> 00:04:36,947
+Under this rule, a request for changes now
+blocks: that person must approve before
+
+66
+00:04:36,987 --> 00:04:41,543
+the merge, or someone with write permission
+dismisses the review, unless dismissal
+
+67
+00:04:41,583 --> 00:04:46,251
+is restricted. Twin pull requests block each
+other: you cannot merge if another open
+
+68
+00:04:46,291 --> 00:04:50,903
+pull request has a head branch pointing to
+the same commit with pending or rejected
+
+69
+00:04:50,943 --> 00:04:51,351
+reviews.
+
+70
+00:04:51,691 --> 00:04:56,679
+And method conflicts block: a ruleset that
+allows only squash, in a repository where
+
+71
+00:04:56,719 --> 00:04:59,971
+squash merging is switched
+off, leaves no way to merge.
+
+72
+00:05:00,311 --> 00:05:05,058
+One caveat marked unverified: the
+documentation describes the file patterns of
+
+73
+00:05:05,098 --> 00:05:09,600
+required reviewers as .gitignore-like,
+while the REST schema says fnmatch.
+
+74
+00:05:09,640 --> 00:05:13,160
+The two do not agree; test a
+pattern before relying on it.
+
+75
+00:05:13,500 --> 00:05:18,026
+Required status checks. In one sentence:
+the rule holds a list of check names; a
+
+76
+00:05:18,066 --> 00:05:22,763
+merge is allowed when the newest commit has
+a passing result under every name, from
+
+77
+00:05:22,803 --> 00:05:23,904
+whoever reported it.
+
+78
+00:05:24,244 --> 00:05:27,815
+Read that sentence again,
+because every trap is inside it.
+
+79
+00:05:27,855 --> 00:05:30,678
+Names. The newest commit.
+Whoever reported it.
+
+80
+00:05:31,018 --> 00:05:35,660
+Strict or loose. "Strict" means "Require
+branches to be up to date before merging"
+
+81
+00:05:35,700 --> 00:05:39,656
+is selected: the topic branch must
+be up to date with the base branch.
+
+82
+00:05:39,696 --> 00:05:43,196
+Loose means fewer builds, and
+checks may fail after you merge.
+
+83
+00:05:43,236 --> 00:05:47,992
+"Up to date" is a question about ancestry:
+is the tip of the base an ancestor of the
+
+84
+00:05:48,032 --> 00:05:49,534
+head? You can ask Git that.
+
+85
+00:05:49,874 --> 00:05:54,640
+The traps, all documented. A skipped workflow:
+"If a workflow is skipped due to path
+
+86
+00:05:54,680 --> 00:05:59,275
+filtering, branch filtering or a commit
+message, then checks associated with that
+
+87
+00:05:59,315 --> 00:06:03,623
+workflow will remain in a 'Pending'
+state." The pull request waits for ever.
+
+88
+00:06:03,663 --> 00:06:07,915
+A skipped job: "A job that is skipped
+will report its status as 'Success'."
+
+89
+00:06:08,255 --> 00:06:12,890
+A required check can be green without having
+run. [skip ci] in the head commit: the
+
+90
+00:06:12,930 --> 00:06:16,044
+workflow does not run, and
+required checks stay pending.
+
+91
+00:06:16,084 --> 00:06:20,438
+The seven-day rule: a check name cannot
+be picked in the settings until it has
+
+92
+00:06:20,478 --> 00:06:24,268
+completed successfully in the
+repository during the past seven days.
+
+93
+00:06:24,608 --> 00:06:28,528
+The newest commit: every push and
+every "Update branch" starts over.
+
+94
+00:06:28,568 --> 00:06:33,246
+The same name twice: if a check and a
+commit status have the same name, both must
+
+95
+00:06:33,286 --> 00:06:38,080
+pass. The wrong event: checks from workflow
+jobs count only for runs triggered by a
+
+96
+00:06:38,120 --> 00:06:42,332
+listed set of events; a green manual
+run on the branch satisfies nothing.
+
+97
+00:06:45,672 --> 00:06:48,555
+The merge queue: its groups
+trigger a separate event.
+
+98
+00:06:48,595 --> 00:06:52,196
+The wrong source: a check can be
+pinned to an expected GitHub App.
+
+99
+00:06:52,236 --> 00:06:56,388
+And the row that makes pinning matter:
+"Any person or integration with write
+
+100
+00:06:56,428 --> 00:07:00,083
+permissions to a repository can set
+the state of any status check."
+
+101
+00:07:00,123 --> 00:07:03,337
+An unpinned required check can
+be satisfied by an API call.
+
+102
+00:07:03,677 --> 00:07:08,902
+Check names: for a workflow job the name is
+the job name, and required status checks
+
+103
+00:07:08,942 --> 00:07:12,976
+do not take workflow, matrix or
+event trigger types into account.
+
+104
+00:07:13,016 --> 00:07:17,991
+So make job names unique across all
+workflows. One caveat marked unverified: the
+
+105
+00:07:18,031 --> 00:07:22,190
+exact check name a matrix job reports
+is not stated on these pages.
+
+106
+00:07:22,230 --> 00:07:27,455
+Do not guess it; read the names from a real
+run with gh pr checks, or from the merge
+
+107
+00:07:27,495 --> 00:07:29,398
+box, and require what you read.
+
+108
+00:07:29,738 --> 00:07:34,609
+The fix for the hook. The textbook calls
+it the robust pattern and is explicit that
+
+109
+00:07:34,649 --> 00:07:39,165
+it is an inference from the documented
+rows, not a documented recipe: let the
+
+110
+00:07:39,205 --> 00:07:44,076
+workflow start on every pull request; decide
+inside the workflow which jobs do real
+
+111
+00:07:44,116 --> 00:07:48,927
+work; and require one final job that depends
+on the others, runs always, and fails
+
+112
+00:07:48,967 --> 00:07:53,779
+if any of them failed or was cancelled.
+One stable name, never skipped at workflow
+
+113
+00:07:53,819 --> 00:07:57,388
+level. The path optimization
+survives, as conditions on jobs.
+
+114
+00:07:57,728 --> 00:08:02,050
+Conversation resolution. Every review
+thread must be marked resolved before the
+
+115
+00:08:02,090 --> 00:08:06,633
+merge. The control is weaker than it sounds:
+resolving a thread is a click, and the
+
+116
+00:08:06,673 --> 00:08:11,161
+author may do it. The rule ensures that
+every thread was acknowledged, not that it
+
+117
+00:08:11,201 --> 00:08:11,934
+was addressed.
+
+118
+00:08:12,274 --> 00:08:16,720
+Signed commits. In one sentence: the rule
+accepts only commits with a verified
+
+119
+00:08:16,760 --> 00:08:21,265
+signature on the target, and it is evaluated
+against the commits a pull request
+
+120
+00:08:21,305 --> 00:08:24,601
+introduces, not only against
+the commit the merge creates.
+
+121
+00:08:24,941 --> 00:08:29,548
+The part that surprises teams, in GitHub's
+words: "unsigned commits on the head
+
+122
+00:08:29,588 --> 00:08:34,195
+branch can block a squash merge, even
+though GitHub would sign the final squash
+
+123
+00:08:34,235 --> 00:08:38,784
+commit". So, method by method. Merge
+commit: works if every commit on the head
+
+124
+00:08:38,824 --> 00:08:43,607
+branch is signed and verified. Squash: the
+result would pass, but unsigned commits
+
+125
+00:08:43,647 --> 00:08:48,254
+on the head branch block the merge anyway.
+Rebase: cannot satisfy the rule; the
+
+126
+00:08:48,294 --> 00:08:52,255
+documented workaround is to rebase
+and merge locally, and then push.
+
+127
+00:08:52,595 --> 00:08:56,916
+When not to use it: the rule proves that
+someone holding a registered key made each
+
+128
+00:08:56,956 --> 00:09:01,120
+commit. It does not prove the commit is
+good, and it costs every contributor and
+
+129
+00:09:01,160 --> 00:09:01,961
+every bot a key.
+
+130
+00:09:02,301 --> 00:09:06,668
+Linear history. The rule constrains what
+lands on the target, not the shape of the
+
+131
+00:09:06,708 --> 00:09:11,130
+pull request branch: a branch that contains
+"Merge main into" commits is fine if it
+
+132
+00:09:11,170 --> 00:09:13,925
+is squash-merged, because
+one ordinary commit lands.
+
+133
+00:09:13,965 --> 00:09:16,882
+Under this rule the merge-commit
+method is not allowed.
+
+134
+00:09:17,222 --> 00:09:21,672
+Block force pushes, with GitHub's security
+argument: force pushing can "point a
+
+135
+00:09:21,712 --> 00:09:25,082
+branch to commits that were not
+approved in a pull request".
+
+136
+00:09:25,122 --> 00:09:29,175
+Without this rule, a required pull
+request can be undone after the fact.
+
+137
+00:09:29,215 --> 00:09:33,608
+And restrict deletions keeps main and
+release branches from being deleted by a
+
+138
+00:09:33,648 --> 00:09:34,404
+mistyped push.
+
+139
+00:09:36,244 --> 00:09:40,521
+Think of the merge box as a form with
+one line per rule, and of each line as a
+
+140
+00:09:40,561 --> 00:09:45,058
+question with a yes or no answer. The
+mistake people make is to read the form as a
+
+141
+00:09:45,098 --> 00:09:48,268
+description of their work: "CI
+passed", "it was reviewed".
+
+142
+00:09:48,608 --> 00:09:52,904
+The form does not describe work. Each line
+is a lookup: is there a passing result
+
+143
+00:09:52,944 --> 00:09:57,241
+under this name on this commit ID; is there
+an approval that is still attached to
+
+144
+00:09:57,281 --> 00:10:01,363
+the current diff; does every commit in
+this range carry a verified signature.
+
+145
+00:10:01,703 --> 00:10:06,221
+Half of those lookups you can do yourself,
+because their inputs are Git data:
+
+146
+00:10:06,261 --> 00:10:11,016
+ancestry, parents, signatures, paths. The
+other half need the platform's records.
+
+147
+00:10:11,056 --> 00:10:15,278
+Sorting each rule into one of the two
+halves is the skill of this video.
+
+148
+00:10:15,618 --> 00:10:20,375
+The model breaks for one rule: status
+checks. There the lookup has a third outcome
+
+149
+00:10:20,415 --> 00:10:24,645
+besides yes and no: no answer yet. And
+"no answer yet" can last for ever.
+
+150
+00:10:26,485 --> 00:10:30,326
+The top four rows are decided from
+Git data, and each has a command.
+
+151
+00:10:30,366 --> 00:10:34,605
+Signatures need one qualification: your
+local verdict uses your local trust
+
+152
+00:10:34,645 --> 00:10:39,170
+settings; "Verified" on GitHub needs the
+public key registered with the account.
+
+153
+00:10:39,510 --> 00:10:44,138
+The row for paths is a hybrid: Git gives
+you the list of changed paths, and the
+
+154
+00:10:44,178 --> 00:10:48,923
+platform decides what that list triggers:
+which owners, which reviewers, and, for
+
+155
+00:10:48,963 --> 00:10:50,814
+the hook, which workflows start.
+
+156
+00:10:51,154 --> 00:10:55,538
+The bottom three rows need the platform.
+No local command predicts an approval.
+
+157
+00:10:57,378 --> 00:11:01,498
+You are on feature/priority-routing,
+about to ask for a merge into main.
+
+158
+00:11:01,838 --> 00:11:06,536
+Fresh information first. Every answer below
+is about origin/main as of this fetch.
+
+159
+00:11:08,876 --> 00:11:12,978
+The rule is "require branches to be up to
+date". main gained one commit since you
+
+160
+00:11:13,018 --> 00:11:15,791
+branched. What is the exit
+status of the first command?
+
+161
+00:11:16,131 --> 00:11:20,102
+Exit status 1: the tip of main is
+not an ancestor of the branch.
+
+162
+00:11:20,142 --> 00:11:24,300
+The count says one commit only main
+has, three only the branch has.
+
+163
+00:11:24,340 --> 00:11:29,126
+Under strict checks, this pull request
+cannot merge yet, however green it is.
+
+164
+00:11:29,466 --> 00:11:33,585
+Mergeability: the test merge
+succeeds, exit status 0.
+
+165
+00:11:33,625 --> 00:11:34,526
+No conflict.
+
+166
+00:11:34,866 --> 00:11:39,555
+The commits a rule inspects are those the
+pull request introduces: three, each with
+
+167
+00:11:39,595 --> 00:11:44,056
+one parent. Merge commits among them:
+zero. Linear history is satisfied for any
+
+168
+00:11:44,096 --> 00:11:45,880
+method that lands these commits.
+
+169
+00:11:48,220 --> 00:11:52,838
+The rule is "require signed commits", and
+the team merges by squash, which GitHub
+
+170
+00:11:52,878 --> 00:11:56,748
+signs. These three commits are
+unsigned. Can the pull request merge?
+
+171
+00:11:57,088 --> 00:12:01,800
+N three times: no signature. And no: unsigned
+commits on the head branch block the
+
+172
+00:12:01,840 --> 00:12:05,393
+squash merge, even though GitHub
+would sign the squash commit.
+
+173
+00:12:05,433 --> 00:12:09,913
+The documented repair for unsigned commits
+already pushed is to rebase them to
+
+174
+00:12:09,953 --> 00:12:12,579
+include a verified
+signature, then force push.
+
+175
+00:12:12,919 --> 00:12:16,957
+Author and committer addresses, for
+metadata rules on the Enterprise plan.
+
+176
+00:12:17,297 --> 00:12:21,943
+The changed paths, with three dots. Code
+owners, required reviewers by path, push
+
+177
+00:12:21,983 --> 00:12:26,746
+rules and path filters all key on this list.
+For the pull request in the hook, this
+
+178
+00:12:26,786 --> 00:12:31,375
+command would print one line, README.md,
+and you could read the workflow's paths
+
+179
+00:12:31,415 --> 00:12:34,846
+filter against it and know that
+the workflow will not start.
+
+180
+00:12:35,186 --> 00:12:37,682
+Now fix "not up to date", variant 1.
+
+181
+00:12:40,022 --> 00:12:44,508
+After merging main in: is the branch up
+to date, and what does the merge-commit
+
+182
+00:12:44,548 --> 00:12:48,117
+count say now? Under a linear-history
+rule, can it still merge?
+
+183
+00:12:48,457 --> 00:12:51,757
+Up to date: exit status 0, and
+zero commits only main has.
+
+184
+00:12:51,797 --> 00:12:56,594
+The branch now carries one merge commit.
+Under the linear rule this pull request can
+
+185
+00:12:56,634 --> 00:13:00,222
+still be squash-merged, because
+the rule constrains what lands.
+
+186
+00:13:00,262 --> 00:13:03,390
+Under the merge-commit method
+the rule would refuse it.
+
+187
+00:13:03,730 --> 00:13:07,809
+A third ruleset adds a required
+status check named ci/unit, strict.
+
+188
+00:13:07,849 --> 00:13:12,913
+Nothing in the repository reports that
+check. It is created from a JSON file of the
+
+189
+00:13:12,953 --> 00:13:16,910
+course; read the file first, and
+remember the label on this call.
+
+190
+00:13:17,250 --> 00:13:21,943
+Then the lab opens pull requests that cannot
+merge, each for a different reason, and
+
+191
+00:13:21,983 --> 00:13:25,154
+you diagnose each by working
+from the rules to the cause.
+
+192
+00:13:25,194 --> 00:13:29,661
+For the first case, a required check that
+nobody reports, look at the merge box:
+
+193
+00:13:29,701 --> 00:13:34,112
+according to the documentation, the check
+is listed as expected and waiting for
+
+194
+00:13:34,152 --> 00:13:37,549
+status to be reported. Then use
+the commands that read state:
+
+195
+00:13:37,889 --> 00:13:41,017
+gh pr checks lists what has
+reported on the head commit.
+
+196
+00:13:41,057 --> 00:13:44,468
+gh ruleset check lists what the
+rules require for the branch.
+
+197
+00:13:44,508 --> 00:13:49,107
+The diagnosis is the difference between
+the two lists: a name that is required and
+
+198
+00:13:49,147 --> 00:13:53,520
+that nothing has reported. The lab also
+demonstrates the last row of the traps
+
+199
+00:13:53,560 --> 00:13:58,046
+table, that anyone with write permission
+can set the state of a status check; do
+
+200
+00:13:58,086 --> 00:14:01,666
+that step only in your own practice
+repository, as the lab says.
+
+201
+00:14:03,506 --> 00:14:06,524
+Requiring a check from a
+workflow with a path filter.
+
+202
+00:14:06,564 --> 00:14:11,198
+Root cause: a workflow skipped by a path
+filter never reports, so its checks stay
+
+203
+00:14:11,238 --> 00:14:13,621
+pending and the requirement cannot be met.
+
+204
+00:14:13,961 --> 00:14:17,455
+Trusting a green required check
+that came from a skipped job.
+
+205
+00:14:17,495 --> 00:14:19,889
+Root cause: a skipped job reports success.
+
+206
+00:14:20,229 --> 00:14:24,689
+Expecting a squash merge to pass "Require
+signed commits" because GitHub signs the
+
+207
+00:14:24,729 --> 00:14:28,916
+squash commit. Root cause: the rule is
+evaluated against the commits the pull
+
+208
+00:14:28,956 --> 00:14:32,538
+request introduces, including
+unsigned commits on the head branch.
+
+209
+00:14:32,878 --> 00:14:37,062
+Updating the branch and being surprised
+that checks and approvals start over.
+
+210
+00:14:37,102 --> 00:14:41,505
+Root cause: required checks must pass on
+the latest commit, and the diff changed.
+
+211
+00:14:41,845 --> 00:14:45,007
+Reading "resolved conversations"
+as "addressed feedback".
+
+212
+00:14:45,047 --> 00:14:49,050
+Root cause: the pull request author
+can resolve threads; the rule proves
+
+213
+00:14:49,090 --> 00:14:50,230
+acknowledgement only.
+
+214
+00:14:52,070 --> 00:14:56,516
+The README pull request from the hook.
+The team's CI workflow starts only for
+
+215
+00:14:56,556 --> 00:15:01,119
+changes under src/ and tests/, to save
+runner minutes on documentation changes.
+
+216
+00:15:01,159 --> 00:15:04,848
+The ruleset on main requires the
+check build from that workflow.
+
+217
+00:15:04,888 --> 00:15:09,625
+For three days the two settings contradict
+each other, and nobody sees it, because
+
+218
+00:15:09,665 --> 00:15:11,082
+each looks correct alone.
+
+219
+00:15:11,422 --> 00:15:15,567
+The fix keeps the saving. The workflow
+now starts on every pull request.
+
+220
+00:15:15,607 --> 00:15:20,275
+A first job computes whether code changed.
+The build and test jobs run only if it
+
+221
+00:15:20,315 --> 00:15:25,100
+did; they are skipped by a condition
+otherwise. A final job depends on all of them,
+
+222
+00:15:25,140 --> 00:15:29,227
+runs always, and fails if any job
+that ran has failed or was cancelled.
+
+223
+00:15:29,567 --> 00:15:34,200
+The ruleset requires that one final job, by
+its name, and the team pins the check to
+
+224
+00:15:34,240 --> 00:15:38,761
+the expected source app, because an unpinned
+check can be set by anyone with write
+
+225
+00:15:38,801 --> 00:15:39,373
+permission.
+
+226
+00:15:39,713 --> 00:15:44,291
+They state in the design note what the
+textbook states: this pattern is an inference
+
+227
+00:15:44,331 --> 00:15:48,745
+from the documented behaviour of skipped
+workflows and skipped jobs, not a GitHub
+
+228
+00:15:48,785 --> 00:15:50,724
+recipe. The Actions videos build it.
+
+229
+00:15:52,564 --> 00:15:57,069
+Do Exercise 23.3, "Review this ruleset",
+in exercises/m19-m25-github.md.
+
+230
+00:15:57,109 --> 00:16:02,245
+For each rule and sub-option in the ruleset
+you are given, write down the loophole
+
+231
+00:16:02,285 --> 00:16:06,980
+it closes and the cost it adds, and
+mark every place where two settings can
+
+232
+00:16:07,020 --> 00:16:11,335
+contradict each other, as the path
+filter and the required check did.
+
+233
+00:16:11,675 --> 00:16:16,534
+The challenge is Exercise 23.6, "Four pull
+requests that will not merge", in the
+
+234
+00:16:16,574 --> 00:16:21,555
+same file. Diagnose each from the rules to
+the cause, with the pre-flight commands
+
+235
+00:16:21,595 --> 00:16:22,596
+where they apply.
+
+236
+00:16:24,436 --> 00:16:27,818
+Question 249 of the CTO question bank:
+
+237
+00:16:28,158 --> 00:16:32,810
+A strong answer states what the rule actually
+tests, in terms of names and commits,
+
+238
+00:16:32,850 --> 00:16:35,693
+and why "never started" is
+different from "failed".
+
+239
+00:16:35,733 --> 00:16:39,990
+It distinguishes a skipped workflow from
+a skipped job, with the status each
+
+240
+00:16:40,030 --> 00:16:44,738
+reports. The design it proposes moves the
+decision inside the workflow, requires one
+
+241
+00:16:44,778 --> 00:16:49,148
+stable name, and says what protects that
+name. It is clear about which part is
+
+242
+00:16:49,188 --> 00:16:51,578
+documented and which
+is a design inference.
+
+243
+00:16:53,418 --> 00:16:55,043
+You should now be able to say:
+
+244
+00:16:55,383 --> 00:17:00,851
+The pull request rule has sub-options that
+each close one loophole: approvals, stale
+
+245
+00:17:00,891 --> 00:17:06,229
+dismissal, last-push approval, code owners,
+dismissal restrictions, conversations,
+
+246
+00:17:06,269 --> 00:17:08,393
+merge methods, reviewers by path.
+
+247
+00:17:08,733 --> 00:17:13,199
+Required status checks are matched by name
+on the newest commit; a skipped workflow
+
+248
+00:17:13,239 --> 00:17:15,806
+stays pending and a skipped
+job reports success.
+
+249
+00:17:16,146 --> 00:17:19,271
+"Up to date" means the tip of the
+base is an ancestor of the head.
+
+250
+00:17:19,611 --> 00:17:23,828
+Signed commits are checked on the commits
+a pull request introduces; rebase and
+
+251
+00:17:23,868 --> 00:17:28,247
+merge cannot satisfy the rule; linear
+history forbids merge commits on the target.
+
+252
+00:17:28,587 --> 00:17:33,462
+Ancestry, conflicts, merge commits,
+signatures and paths can be checked locally
+
+253
+00:17:33,502 --> 00:17:35,266
+before you ask for the merge.
+
+254
+00:17:37,106 --> 00:17:41,415
+Read sections 18.6 to 18.11 of Chapter 18.

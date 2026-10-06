@@ -1,0 +1,33 @@
+# TEACHING MATERIAL for Exercise 28.2 (Module 28). This workflow has five planted flaws in
+# its trigger, its conditions and its failure handling. The analysis is in
+# solutions/exercises-m26-m31.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# Intended behavior: every night at 02:00 Indian time, run the evaluation suite against the
+# default branch and fail loudly when the score drops. The team is in Bengaluru (UTC+05:30).
+
+name: Nightly evaluation
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    name: Evaluate
+    if: ${{ github.event_name == 'schedule' }} && github.repository == 'YOUR-ORG/inventory-api'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --locked
+      - name: Run the evaluation suite
+        continue-on-error: true
+        run: uv run pytest tests/eval | tee eval-log.txt
+      - name: Label the report with the version
+        run: echo "version=$(git describe --always)" >> "$GITHUB_STEP_SUMMARY"

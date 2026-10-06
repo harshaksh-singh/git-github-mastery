@@ -1,0 +1,19 @@
+$ cat guard.sh
+#!/bin/sh
+# usage: sh guard.sh <candidate commit>
+# Exit 0 only if the candidate contains everything that production runs, and more.
+deployed=$(git rev-parse --verify --quiet refs/deployed/production^{commit}) || { echo "guard: nothing recorded as deployed"; exit 2; }
+candidate=$(git rev-parse --verify --quiet "$1^{commit}") || { echo "guard: unknown commit $1"; exit 2; }
+if [ "$candidate" = "$deployed" ]; then
+  echo "guard: $1 is what production already runs"; exit 1
+fi
+if git merge-base --is-ancestor "$candidate" "$deployed"; then
+  echo "guard: REFUSED, $1 is older than production; this would roll back:"
+  git log --oneline "$candidate..$deployed"; exit 1
+fi
+if ! git merge-base --is-ancestor "$deployed" "$candidate"; then
+  echo "guard: REFUSED, $1 does not contain what production runs; missing:"
+  git log --oneline "$candidate..$deployed"; exit 1
+fi
+echo "guard: ok, this deployment adds:"
+git log --oneline "$deployed..$candidate"

@@ -1,0 +1,15 @@
+#!/bin/sh
+# clean: working tree -> repository. Put the real bytes into the store and print a pointer.
+store="$(git rev-parse --show-toplevel)/../ptr-store"
+mkdir -p "$store"
+tmp="$store/incoming.$$"
+cat > "$tmp"
+if head -n 1 "$tmp" | grep -q '^ptr-v1 sha256:'; then
+  cat "$tmp"                      # already a pointer: pass it through unchanged
+  rm -f "$tmp"
+  exit 0
+fi
+sum=$(shasum -a 256 < "$tmp" | cut -d' ' -f1)
+size=$(wc -c < "$tmp" | tr -d ' ')
+mv "$tmp" "$store/$sum"
+printf 'ptr-v1 sha256:%s size:%s\n' "$sum" "$size"

@@ -1,0 +1,126 @@
+# Workflow 12: a secure-by-default workflow (Chapter 21A, section 21A.16; Lab 29.2).
+#
+# What it teaches: least-privilege `permissions`, the `pull_request` trigger for CI,
+# actions pinned to full commit SHAs, untrusted event fields passed only through `env`,
+# `persist-credentials: false`, no cache in the job that holds a cloud identity,
+# and OIDC federation behind a protected environment instead of a stored cloud key.
+#
+# Status: assembled from documented syntax and parse-checked with PyYAML.
+# It was NOT executed on GitHub by the author. You run it in Lab 29.2.
+#
+# Pins: workflows/ACTION_PINS.md (read on 1 October 2026).
+
+name: secure-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Control 1: the token starts read-only. Naming one scope sets every other scope to none.
+permissions:
+  contents: read
+
+# One run per pull request or branch; a newer push to a pull request cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Control 2: full commit SHA, version as a comment (the format Dependabot maintains).
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Control 3: this job never pushes, so the token is not left in the Git configuration.
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install the locked dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest
+
+  pr-metadata:
+    name: Check the pull request title
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    # This job needs no repository access at all.
+    permissions: {}
+    steps:
+      - name: Title must not be empty or longer than 72 characters
+        # Control 4: the title is attacker-controlled text. It reaches the script as the
+        # value of an environment variable, never as part of the script text.
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          length=${#PR_TITLE}
+          if [ "$length" -eq 0 ] || [ "$length" -gt 72 ]; then
+            echo "Title length is $length; expected 1 to 72 characters." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Title length is $length." >> "$GITHUB_STEP_SUMMARY"
+
+  dependency-review:
+    name: Review dependency changes
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compare the dependencies of base and head
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: test
+    # Control 5: only trusted code reaches this job: a push to main, never a pull request.
+    # The job is skipped until you create the repository variable AWS_ROLE_ARN.
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Control 6: the environment carries the protection rules, and its name becomes part of
+    # the OIDC subject that the cloud trust policy checks.
+    environment:
+      name: staging
+    # Control 7: the only job that may request an OIDC token, and it gets nothing else extra.
+    permissions:
+      contents: read
+      id-token: write
+    # Control 8: a job that holds a cloud identity neither restores nor saves a cache.
+    cache-mode: none
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Control 9: no stored cloud key. The role is assumed with a short-lived OIDC token.
+      - name: Assume the staging role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy (simulated)
+        run: bash scripts/deploy.sh staging

@@ -1,0 +1,39 @@
+# Broken workflow 2 of 6 (Lab 28.1): run the tests on pull requests.
+#
+# Intended behavior: run the unit tests on every pull request into main. To save runner minutes
+# the team runs them only when code changes. A ruleset on main requires the status check
+# "unit-tests" before a pull request can merge.
+#
+# Observed: read the lab. Diagnose before you change anything.
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Source tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - run: uv sync --locked
+      - run: uv run pytest

@@ -1,0 +1,14 @@
+# Three commits, then a second run. Predict the repack line before you look.
+$ printf 'timeout_ms: 700\nupstream: ranker\n' > services/gateway/config.yaml && git commit -q -am 'gateway: lower the upstream timeout to 700 ms'
+$ printf 'top_k: 20\nmodel: overlap-v1\n' > services/ranker/config.yaml && git commit -q -am 'ranker: return the top 20'
+$ printf 'BATCH_SIZE = 1000\n' > services/ingest/settings.py && git commit -q -am 'ingest: raise the batch size to 1000'
+$ git count-objects -v | grep -e "^count" -e in-pack -e "^packs"
+count: 15
+in-pack: 507
+packs: 1
+$ GIT_TRACE="$PWD/../trace-2.log" git maintenance run
+$ sed -n 's/.*trace: run_command: git //p' ../trace-2.log | grep -e '^repack'
+repack -d -l --geometric=2 --quiet --write-midx
+$ for p in .git/objects/pack/pack-*.idx; do git show-index < "$p" | wc -l; done | sort -rn
+     507
+      15

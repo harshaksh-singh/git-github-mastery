@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>V001 recording booth</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --accent: #F05033; --bg1: #14161C; --bg2: #232733; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg1); color: #e6edf3; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+body { display: flex; flex-direction: column; background: linear-gradient(180deg, var(--bg1), var(--bg2)); }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 18px; border-bottom: 1px solid #30363d; }
+header .num { font: 700 18px Menlo, monospace; color: var(--accent); border: 2px solid var(--accent); border-radius: 8px; padding: 2px 9px; }
+header .title { flex: 1; font-size: 17px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header .state { font: 700 14px Menlo, monospace; letter-spacing: 1px; padding: 4px 12px; border-radius: 20px; background: #30363d; color: #c9d1d9; text-transform: uppercase; }
+header .state.rec { background: #da3633; color: #fff; }
+header .state.paused { background: #e3b341; color: #111; }
+header .state.saved { background: #238636; color: #fff; }
+header .clock { font: 700 22px Menlo, monospace; min-width: 84px; text-align: right; }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(380px, 46%) 1fr; gap: 16px; padding: 14px 18px; }
+aside { overflow-y: auto; border-right: 1px solid #30363d; padding-right: 10px; }
+aside h3 { font-size: 12px; letter-spacing: 2px; color: #8b949e; margin: 4px 0 8px; }
+aside button { display: flex; width: 100%; align-items: center; gap: 8px; text-align: left; background: none; border: 1px solid transparent; color: #c9d1d9; font-size: 13px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+aside button:hover:not(:disabled) { border-color: #30363d; background: rgba(255,255,255,.04); }
+aside button.sel { border-color: var(--accent); color: #fff; }
+aside button.live { background: rgba(255,255,255,.08); color: #fff; }
+aside button:disabled { cursor: default; opacity: .8; }
+aside .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #6e7681; }
+aside .dot.done { background: #3fb950; border-color: #3fb950; }
+aside .dot.part { background: #e3b341; border-color: #e3b341; }
+aside .note { font-size: 12px; color: #8b949e; line-height: 1.4; margin-top: 12px; }
+.stage { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.slidebox { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0b0d12; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; }
+.slidebox img { width: 100%; height: 100%; display: block; }
+.count { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font: 900 160px "Helvetica Neue", Arial; color: #fff; background: rgba(0,0,0,.6); }
+.count.on { display: flex; }
+.meterrow { display: flex; align-items: center; gap: 12px; }
+.meter { position: relative; flex: 1; height: 18px; background: #0b0d12; border: 1px solid #30363d; border-radius: 9px; overflow: hidden; }
+#level { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #3fb950 0%, #3fb950 70%, #e3b341 85%, #f85149 100%); background-size: 1000px 100%; }
+#peak { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; left: 0; opacity: .7; }
+.hint { font-size: 13px; color: #8b949e; min-width: 150px; }
+.hint.bad { color: #f85149; font-weight: 700; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: 600 15px "Helvetica Neue", Arial; }
+.controls button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 9px; padding: 10px 14px; cursor: pointer; }
+.controls button:disabled { opacity: .4; cursor: default; }
+.controls button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 800; }
+.controls button.danger { margin-left: auto; background: #238636; border-color: #2ea043; color: #fff; }
+.msg { font-size: 14px; color: #c9d1d9; line-height: 1.45; min-height: 20px; }
+.msg.err { color: #ff7b72; font-weight: 600; }
+.msg a { color: #79c0ff; }
+.prompter { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.where { display: flex; gap: 14px; align-items: baseline; font: 700 13px Menlo, monospace; letter-spacing: 1px; color: var(--accent); margin-bottom: 10px; }
+.where #beatno, .where #beattime { color: #8b949e; }
+.now { font-size: clamp(24px, 2.35vw, 40px); line-height: 1.5; color: #fff; overflow-y: auto; padding-right: 8px; flex: 0 1 auto; max-height: 68%; }
+.now.hold { color: #e3b341; font-style: italic; }
+.now code, .after code { font-family: Menlo, monospace; font-size: .86em; background: rgba(255,255,255,.1); border-radius: 5px; padding: 1px 6px; }
+.nextlabel { font: 700 12px Menlo, monospace; letter-spacing: 2px; color: #6e7681; margin: 18px 0 6px; border-top: 1px solid #30363d; padding-top: 12px; }
+.after { font-size: clamp(17px, 1.5vw, 24px); line-height: 1.45; color: #8b949e; overflow: hidden; flex: 1; min-height: 0; }
+footer { padding: 8px 18px; font-size: 13px; color: #8b949e; border-top: 1px solid #30363d; }
+footer b { color: #c9d1d9; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; overflow-y: auto; } aside { border: none; display: flex; flex-wrap: wrap; gap: 4px; } aside button { width: auto; } }
+
+</style>
+</head>
+<body>
+<header>
+  <span class="num" id="vid"></span>
+  <span class="title" id="title"></span>
+  <span class="state" id="state">not recording</span>
+  <span class="clock" id="clock">0:00</span>
+</header>
+<main>
+  <aside id="sections" aria-label="Sections"></aside>
+  <section class="stage">
+    <div class="slidebox"><img id="slide" alt="current slide"><div id="count" class="count"></div></div>
+    <div class="meterrow">
+      <div class="meter" title="Microphone level"><div id="level"></div><div id="peak"></div></div>
+      <span id="meterhint" class="hint">microphone off</span>
+    </div>
+    <div class="controls">
+      <button id="start" class="primary">Start recording</button>
+      <button id="pause" disabled>Pause (P)</button>
+      <button id="retake" disabled>Retake beat (&larr;)</button>
+      <button id="next" disabled>Next beat (Space)</button>
+      <button id="finish" class="danger" disabled>Finish</button>
+    </div>
+    <div id="msg" class="msg"></div>
+  </section>
+  <section class="prompter">
+    <div class="where"><span id="secname"></span><span id="beatno"></span><span id="beattime"></span></div>
+    <div id="now" class="now"></div>
+    <div class="nextlabel">NEXT</div>
+    <div id="after" class="after"></div>
+  </section>
+</main>
+<footer>
+  <b>Space</b> or <b>&rarr;</b> next beat &nbsp;·&nbsp; <b>&larr;</b> or <b>Backspace</b> say this beat again &nbsp;·&nbsp; <b>P</b> pause / continue &nbsp;·&nbsp; <b>Finish</b> saves the take
+</footer>
+<script>
+const BOOTH = {"id": "V001", "title": "How this course works: the book, the lab sandbox and the fixed clock", "palette": {"accent": "#F5B700", "accent2": "#FFE28A", "bg1": "#14161C", "bg2": "#232733"}, "sha": "46399aef64c1212747c81cbdaaeb92ff467e193f", "countdown_ms": 1000, "sections": [{"name": "HOOK", "beat": 1}, {"name": "INTRODUCTION", "beat": 5}, {"name": "LEARNING OBJECTIVES", "beat": 9}, {"name": "CONCEPT", "beat": 16}, {"name": "MENTAL MODEL", "beat": 34}, {"name": "DIAGRAM", "beat": 38}, {"name": "LIVE TERMINAL DEMO", "beat": 43}, {"name": "COMMON MISTAKES", "beat": 56}, {"name": "PRODUCTION EXAMPLE", "beat": 62}, {"name": "PRACTICE EXERCISE", "beat": 65}, {"name": "INTERVIEW QUESTION", "beat": 68}, {"name": "RECAP", "beat": 71}, {"name": "HOMEWORK", "beat": 74}], "beats": [{"i": 0, "section": "TITLE", "type": "hold", "why": "title", "hold": 2.0, "tele": "", "est": 2.0, "slide": 1, "h": ""}, {"i": 1, "section": "HOOK", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 2, "h": ""}, {"i": 2, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "A deploy pipeline goes red on a Friday evening. The engineer on call says the fix is committed, and can show the commit on screen. The pipeline fails again, on the same line. Your CTO asks three questions. What exactly is in the commit that the pipeline built? Where does that commit exist right now: on the laptop, on the server, or on both? And what is the smallest change that makes the main branch correct, and how will we know that it worked?", "est": 33.6, "slide": 3, "h": "0e9cd717"}, {"i": 3, "section": "HOOK", "type": "hold", "why": "pause", "hold": 2.0, "tele": "", "est": 2.0, "slide": 3, "h": ""}, {"i": 4, "section": "HOOK", "type": "narration", "why": "", "hold": 0, "tele": "None of these is a question about commands. Each one is a question about state: which bytes Git recorded, which names point at them, and which machine holds them. An engineer who knows fifty commands and cannot answer these questions will try things until something appears to work. An engineer who can answer them needs about ten read-only commands and a method. This course teaches the second engineer.", "est": 27.2, "slide": 4, "h": "b2848ac7"}, {"i": 5, "section": "INTRODUCTION", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 5, "h": ""}, {"i": 6, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "Welcome to Git and GitHub Deep Mastery. This first video contains no Git theory. It sets up the three things that every later video depends on: the way the book and the videos are written, the lab sandbox in which you will type every command, and the fixed clock that makes the output on my screen equal to the output in your book.", "est": 25.2, "slide": 6, "h": "d0b13b71"}, {"i": 7, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "The goal of the course fits in one sentence. You will learn to diagnose a Git or GitHub problem from first principles, choose the lowest-risk fix, verify that it worked, and prevent it from happening silently again. That is four verbs: diagnose, choose, verify, prevent. Knowing commands is not on the list.", "est": 20.8, "slide": 7, "h": "32fe3a6c"}, {"i": 8, "section": "INTRODUCTION", "type": "narration", "why": "", "hold": 0, "tele": "By the end of these sixteen minutes you will have a working sandbox, you will know that nothing in this course reads or writes your real Git configuration, and you will be able to say why the commit ID on screen is the commit ID in the textbook.", "est": 19.2, "slide": 8, "h": "d6a9041f"}, {"i": 9, "section": "LEARNING OBJECTIVES", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 9, "h": ""}, {"i": 10, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "After this video you can:", "est": 2.0, "slide": 10, "h": "152923b5"}, {"i": 11, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "State the goal of the course in one sentence: diagnose from first principles, choose the lowest-risk fix, verify, prevent.", "est": 7.6, "slide": 11, "h": "13a625e1"}, {"i": 12, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Open an isolated lab shell with `labs/shell`, replay a demo with `labs/run`, and check a chapter with `labs/verify-all.sh`.", "est": 7.2, "slide": 12, "h": "16ce54bc"}, {"i": 13, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Explain why the lab configuration is isolated, and name the variable that redirects the global configuration file.", "est": 6.8, "slide": 13, "h": "f19b2644"}, {"i": 14, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Explain why replays pin the clock, and why the sandbox sets the two `gc.reflogExpire` settings to `never`.", "est": 6.8, "slide": 14, "h": "4401919b"}, {"i": 15, "section": "LEARNING OBJECTIVES", "type": "narration", "why": "", "hold": 0, "tele": "Give the meaning of the three risk labels and the five questions asked before a dangerous command.", "est": 6.8, "slide": 15, "h": "d19521b2"}, {"i": 16, "section": "CONCEPT", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 16, "h": ""}, {"i": 17, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Start with why the course is built the way it is.", "est": 4.4, "slide": 17, "h": "f1775290"}, {"i": 18, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "The ladder. Every important concept in the textbook is taught on the same ladder, and the videos follow it. In one sentence: the plain explanation. Analogy: one comparison, and the place where the comparison breaks. Precisely: the technical statement with the correct terms. Inside `.git`: which files change on disk.", "est": 20.0, "slide": 18, "h": "ae3b1377"}, {"i": 19, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "See it: a real transcript. Picture: a diagram. In production: a realistic case from a backend or AI/ML team. The ladder goes from plain words down to files on disk and back up to a real team. When you can walk a concept down and up that ladder yourself, you own it.", "est": 20.8, "slide": 19, "h": "175ab483"}, {"i": 20, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Transcripts are real. Whenever you see terminal output in a `text` block in the book, or on my screen, it is real output. A script under `labs/` produced it and a tool inserted it into the page. Nobody typed it by hand. In those transcripts, `$LAB` stands for the lab root, which is `~/git-mastery-labs` unless you set the variable `GIT_MASTERY_LABS`. A line of the form `[exit status: 1]` is the exit status of the command above it, and a line that starts with `#` is a comment written by the script.", "est": 36.0, "slide": 20, "h": "ab6302ca"}, {"i": 21, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Three tools. You run all three from the course folder, the directory that contains `textbook/`, `labs/` and `lab-manual/`.", "est": 7.2, "slide": 21, "h": "d96ee40c"}, {"i": 22, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "The first is `labs/shell m00`. It opens your shell in `$LAB/hands-on/m00` with an isolated Git configuration and the real clock. This is where you type labs by hand, and `exit` leaves it. The second is `labs/run ch01/first-repo`. It replays one demo or lab with a fixed identity and a fixed clock, prints the transcript, and leaves the sandbox in `$LAB/ch01/first-repo` so that you can inspect it afterwards.", "est": 26.8, "slide": 22, "h": "c8401513"}, {"i": 23, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "The third is `labs/verify-all.sh ch01`. It replays every script of a chapter and compares the output with the snippets printed in the book. For each script it prints `PASS`, `VOLATILE` or `FAIL`.", "est": 12.8, "slide": 22, "h": "da726673"}, {"i": 24, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Why the configuration is isolated. Git reads its settings from several files, and one of them is your personal `~/.gitconfig`. Think about both directions. If the labs read that file, your aliases and your defaults would change the output, and my screen would not match yours.", "est": 18.4, "slide": 23, "h": "7f81502e"}, {"i": 25, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "If the labs wrote that file, an experiment in a lab would change your real setup. So the lab environment points Git at a configuration file inside the sandbox, and switches off the system-wide file. Three variables do this.", "est": 15.6, "slide": 24, "h": "9375f1ba"}, {"i": 26, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "`GIT_CONFIG_GLOBAL` names the file Git reads instead of `~/.gitconfig`. `GIT_CONFIG_NOSYSTEM=1` makes Git skip the system-wide configuration file. `GIT_CEILING_DIRECTORIES` makes Git stop searching for a `.git` directory at the lab root, so a sandbox never acts on a repository above it.", "est": 16.0, "slide": 25, "h": "60aae811"}, {"i": 27, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Why the clock is fixed. A commit records when it was made, and the commit ID is computed from everything in the commit, including that time. So the same commands run at two different moments produce different IDs. Replays pin the identity and the clock. The lab clock starts on Monday 7 September 2026, at 10:00 at UTC plus 05:30, and it advances one minute before each command.", "est": 27.2, "slide": 26, "h": "0b78f0e1"}, {"i": 28, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "That is why the IDs printed in the book are the IDs you get from a replay. In `labs/shell` the clock is real, so commits you type by hand get IDs that differ from the book. That is expected, and Chapter 6 explains it in full.", "est": 18.4, "slide": 27, "h": "afe56ef3"}, {"i": 29, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Risk labels. The first time a state-changing command appears in a chapter, or in a video, it carries one of three labels.", "est": 8.8, "slide": 28, "h": "12ea9280"}, {"i": 30, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "🟢 SAFE: the command reads state or only adds objects. Nothing is lost. The book's examples are `git status`, `git log`, `git fetch`, `git reflog` and `git commit`. 🟡 CAUTION: the command moves refs or rewrites local history. It is recoverable through the reflog if you know how. Examples: `git reset --soft`, `git rebase`, `git commit --amend`. 🔴 DANGEROUS: the command can destroy uncommitted work, remote history, or the safety net itself. Examples: `git reset --hard`, `git clean -fd`, and `git push --force` together with its conditional forms.", "est": 34.0, "slide": 29, "h": "df93d61e"}, {"i": 31, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "The labels describe the worst case. `git commit` is green because it only adds, and a wrong commit is corrected by another commit. `git reset --hard` is red because it overwrites working-tree files that were never recorded anywhere, and Git cannot bring back what it never stored.", "est": 18.8, "slide": 30, "h": "1e1c5b11"}, {"i": 32, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "Before any red command, the book answers five questions, and so will I, aloud, before I run it: what it changes, what it can destroy, how to preview it, how to recover, and when it is appropriate. Make that your own rule. If you cannot answer the five questions, you are not ready to run the command on a repository that matters.", "est": 24.8, "slide": 31, "h": "c8e65fbc"}, {"i": 33, "section": "CONCEPT", "type": "narration", "why": "", "hold": 0, "tele": "GitHub-side material. What happens on GitHub's servers cannot be replayed on your Mac. Those parts of the course show commands without output and describe the expected result from GitHub's documentation, with a link. For the GitHub chapters you create a free organization with public practice repositories yourself. Nothing in this course asks you to type credentials into a script.", "est": 23.6, "slide": 32, "h": "c3083bec"}, {"i": 34, "section": "MENTAL MODEL", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 33, "h": ""}, {"i": 35, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "Hold this model: the lab is a sealed room on your own Mac.", "est": 5.2, "slide": 34, "h": "72d3936b"}, {"i": 36, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "Inside the room there is a Git configuration file that belongs to the room, a clock that I control during replays, and one directory per replay. Outside the room is everything you care about: your real `~/.gitconfig`, your real repositories, your credentials. `labs/shell` and `labs/run` both walk into the room and nowhere else.", "est": 21.2, "slide": 35, "h": "bb945fe3"}, {"i": 37, "section": "MENTAL MODEL", "type": "narration", "why": "", "hold": 0, "tele": "Where does the model break? In two places. First, the room has two doors with different clocks. `labs/run` uses the fixed clock; `labs/shell` uses the real one. So \"inside the sandbox\" does not always mean \"same IDs as the book\". Second, the fixed clock is not airtight. Two parts of Git ignore it and read the real clock, and the sandbox needs two configuration lines to deal with that. The diagram segment shows the reason in a root-cause box, the first of many in this course.", "est": 34.4, "slide": 36, "h": "bc91d705"}, {"i": 38, "section": "DIAGRAM", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 37, "h": ""}, {"i": 39, "section": "DIAGRAM", "type": "narration", "why": "", "hold": 0, "tele": "The outer box is your Mac. On the left is your real configuration file. No arrow reaches it: it is never read and never written. On the right is `$LAB`, which holds the sandbox configuration, the hands-on directories, and one directory per replay. Two arrows enter it, one from `labs/shell`, one from `labs/run`. Nothing points at the left box.", "est": 23.6, "slide": 38, "h": "8f19655a"}, {"i": 40, "section": "DIAGRAM", "type": "narration", "why": "", "hold": 0, "tele": "Read it with me, and notice the form: seven lines, always the same seven. The mechanism is the line to remember: two parts of Git compare reflog dates with the real clock, not with the commit dates. A lab date in the future trips the first rule, and a lab date in the past trips the second once it is old enough.", "est": 24.8, "slide": 39, "h": "646d2562"}, {"i": 41, "section": "DIAGRAM", "type": "narration", "why": "", "hold": 0, "tele": "So the lab clock is kept in the past, and time-based reflog expiry is switched off in the sandbox. That is why you will see `gc.reflogexpire=never` and `gc.reflogexpireunreachable=never` in every sandbox configuration listing in this course.", "est": 14.4, "slide": 40, "h": "30b4dcf8"}, {"i": 42, "section": "DIAGRAM", "type": "narration", "why": "", "hold": 0, "tele": "Three things follow. In a replay your commits always behave like fresh work, on whatever day you run it. Real repositories use Git's defaults, which Chapter 13 covers; the labs demonstrate only explicit expiry, which does not depend on any clock. And the variable `GIT_TEST_DATE_NOW` pins date arithmetic only. `git fsck` and reflog expiry read the real clock regardless, which is why the configuration lines are needed as well. The `git fsck` rule exists in Git 2.53.0 and later; Apple's Git 2.50.1 on the same Mac does not apply it.", "est": 36.0, "slide": 41, "h": "d4b79524"}, {"i": 43, "section": "LIVE TERMINAL DEMO", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 42, "h": ""}, {"i": 44, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "First, proof that the sandbox works. From the course folder, replay the smoke test.", "est": 5.6, "slide": 43, "h": "8e1ff9b6"}, {"i": 45, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Before the output: predict which file the settings will come from. Your home directory, or somewhere under `$LAB`?", "est": 7.2, "slide": 44, "h": "36c3b6db"}, {"i": 46, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Point at the second column. Every `global` line comes from a `.gitconfig` under `$LAB/ch00/smoke-test/home`. The `local` lines come from the repository's own `.git/config`. Your own file is not in the list.", "est": 12.4, "slide": 45, "h": "c30c1a59"}, {"i": 47, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Now the script that shows the room itself.", "est": 3.2, "slide": 46, "h": "73c85b0d"}, {"i": 48, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "The first snippet lists the Git environment that the lab library sets for every replay.", "est": 6.0, "slide": 47, "h": "722acaad"}, {"i": 49, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Read the variables against the table of section 1.7. `GIT_CONFIG_GLOBAL` points into the sandbox: Git reads this file instead of `~/.gitconfig`. `GIT_CONFIG_NOSYSTEM=1`: the system-wide file is skipped. `GIT_CEILING_DIRECTORIES`: Git stops searching for a `.git` directory at the lab root. Those three are also set in `labs/shell`. `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` are the fixed clock, in Git's raw format: seconds since 1 January 1970 UTC, then the time-zone offset.", "est": 26.8, "slide": 48, "h": "e8628945"}, {"i": 50, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`GIT_TEST_DATE_NOW` is a variable that Git's own test suite uses to fix \"now\" for date arithmetic, so that relative dates such as \"2 minutes ago\" give the same answer on every run. The name and email variables are a fixed identity that overrides configuration. `GIT_EDITOR=true`, `GIT_PAGER=cat` and `GIT_TERMINAL_PROMPT=0` mean no editor, no pager and no password prompt, because a script cannot answer them.", "est": 25.2, "slide": 49, "h": "6496cda5"}, {"i": 51, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`GIT_MERGE_AUTOEDIT=no` means a merge does not open an editor for its message. In `labs/shell` the clock, the identity variables and the editor settings are not pinned: the clock is real, the identity comes from the lab configuration, and your editor and pager work.", "est": 17.2, "slide": 50, "h": "9e8474a0"}, {"i": 52, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Next, the script lists the configuration, sets a global alias, and lists the configuration again. `git config set --global` carries the label 🟡 CAUTION in the book's command-safety table, because it writes your personal configuration file. Predict: where will the alias land?", "est": 16.4, "slide": 51, "h": "0f8fd318"}, {"i": 53, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "`--show-scope` and `--show-origin` print the scope of every setting and the file it came from. Point at the last line: `alias.st` is in the sandbox file. Inside the sandbox, a \"global\" setting is global only to the sandbox. Your real configuration was neither read nor written. And there are the two `gc.reflogexpire` lines from the root-cause box.", "est": 22.8, "slide": 52, "h": "ef0c05e0"}, {"i": 54, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Last, the clock. The script makes one empty commit and prints it with both dates.", "est": 6.0, "slide": 53, "h": "6342a220"}, {"i": 55, "section": "LIVE TERMINAL DEMO", "type": "narration", "why": "", "hold": 0, "tele": "Point at `AuthorDate` and `CommitDate`: Monday 7 September 2026, a few minutes after ten, at plus 05:30. Then point at the commit ID, `c672627`. Open section 1.7 of the textbook: the same ID is printed there. It will be the same on your Mac when you replay the script, today or next year. Compare it yourself; that comparison is the test that your lab works.", "est": 26.0, "slide": 54, "h": "5dd387c4"}, {"i": 56, "section": "COMMON MISTAKES", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 55, "h": ""}, {"i": 57, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Expecting the book's commit IDs in `labs/shell`. Root cause: `labs/shell` uses the real clock, and the commit ID is computed from everything in the commit, including the time.", "est": 11.2, "slide": 56, "h": "72b7f2cf"}, {"i": 58, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Running the tools from the wrong directory. Root cause: `labs/shell`, `labs/run` and `labs/verify-all.sh` are run from the course folder, the directory that contains `textbook/`, `labs/` and `lab-manual/`.", "est": 10.8, "slide": 57, "h": "c0340b19"}, {"i": 59, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Believing that `GIT_TEST_DATE_NOW` freezes all of Git's time. Root cause: it pins date arithmetic only; `git fsck` and reflog expiry read the real clock, which is why the two `gc.reflogExpire` settings exist.", "est": 12.8, "slide": 58, "h": "d73cd632"}, {"i": 60, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Reading a risk label as the typical outcome. Root cause: the labels describe the worst case; green means nothing can be lost, not that the result is what you wanted.", "est": 12.0, "slide": 59, "h": "1282a547"}, {"i": 61, "section": "COMMON MISTAKES", "type": "narration", "why": "", "hold": 0, "tele": "Assuming a lab can show what GitHub does. Root cause: what happens on GitHub's servers cannot be replayed on your Mac; those parts are described from the documentation.", "est": 11.2, "slide": 60, "h": "5308ee1b"}, {"i": 62, "section": "PRODUCTION EXAMPLE", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 61, "h": ""}, {"i": 63, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "Two engineers on an evaluation team type the same Git command on two Macs and see different behavior. One has an alias and a personal default in `~/.gitconfig`; the other does not. Neither knows, because neither has ever listed where their settings come from. The command you saw in the demo, `git config list --show-origin --show-scope`, is where that difference shows: every setting in effect and the file it comes from.", "est": 28.4, "slide": 62, "h": "b58c6e34"}, {"i": 64, "section": "PRODUCTION EXAMPLE", "type": "narration", "why": "", "hold": 0, "tele": "The lab removes this whole class of confusion by giving every replay one known configuration file. On your team you cannot isolate everyone's configuration, so you do the next best thing: you look at it before you theorize.", "est": 15.2, "slide": 63, "h": "0b55fd16"}, {"i": 65, "section": "PRACTICE EXERCISE", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 64, "h": ""}, {"i": 66, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "Do Lab 0.1, \"Verify the toolchain and build the sandbox\", in `lab-manual/m00-lab-setup.md`. Type it by hand.", "est": 6.4, "slide": 65, "h": "2c5122c0"}, {"i": 67, "section": "PRACTICE EXERCISE", "type": "narration", "why": "", "hold": 0, "tele": "Before you start, write down two predictions. First: when the lab lists the configuration inside the sandbox, which file will the `global` lines name? Second: when you make a commit by hand in `labs/shell m00`, will its ID equal an ID printed in the book? Check both predictions against what you see, and explain any that were wrong.", "est": 23.2, "slide": 66, "h": "de2a8d99"}, {"i": 68, "section": "INTERVIEW QUESTION", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 67, "h": ""}, {"i": 69, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "Q15: \"The same commands typed at two different times produce different commit IDs. Why? What did the lab environment pin to prevent it, and what did it not need to pin?\"", "est": 12.4, "slide": 68, "h": "48abc46e"}, {"i": 70, "section": "INTERVIEW QUESTION", "type": "narration", "why": "", "hold": 0, "tele": "Answer it aloud before you open the answers file. A strong answer says what a commit ID is computed from, and names time as one of the inputs. It names what the replays pin and by which mechanism. And it reasons about the last part of the question instead of guessing: which inputs to an ID are already identical on two machines without any pinning? You will be able to answer that part fully after V007.", "est": 30.4, "slide": 68, "h": "9ea91f0c"}, {"i": 71, "section": "RECAP", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 69, "h": ""}, {"i": 72, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "You should now be able to say these sentences. The goal of this course is to diagnose from first principles, choose the lowest-risk fix, verify, and prevent. Every transcript is real output from a script under `labs/`, and I can replay it with `labs/run` and check a chapter with `labs/verify-all.sh`. The lab never touches my real configuration, because `GIT_CONFIG_GLOBAL` redirects the global file and `GIT_CONFIG_NOSYSTEM` switches off the system file.", "est": 28.0, "slide": 70, "h": "679aa04e"}, {"i": 73, "section": "RECAP", "type": "narration", "why": "", "hold": 0, "tele": "Replays pin the clock because a commit ID depends on time, and the sandbox sets two reflog-expiry settings to `never` because `git fsck` and expiry read the real clock. A risk label describes the worst case, and before a red command I answer five questions.", "est": 18.0, "slide": 71, "h": "95561077"}, {"i": 74, "section": "HOMEWORK", "type": "hold", "why": "section", "hold": 1.5, "tele": "", "est": 1.5, "slide": 72, "h": ""}, {"i": 75, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Read sections 1.1, 1.7 and 1.8 of Chapter 1.", "est": 3.6, "slide": 73, "h": "012a9ed1"}, {"i": 76, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Run `labs/verify-all.sh ch01` and keep the output.", "est": 2.8, "slide": 74, "h": "c4db49dc"}, {"i": 77, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Read `lab-manual/README.md`.", "est": 1.2, "slide": 75, "h": "4a1e505d"}, {"i": 78, "section": "HOMEWORK", "type": "narration", "why": "", "hold": 0, "tele": "Challenge: without the book open, write the table of the three risk labels with two example commands each, and the five questions for a dangerous command. Then check it against section 1.8.", "est": 12.8, "slide": 76, "h": "cdd1c551"}]};
+// Recording booth. Plain JavaScript, no libraries.
+// The microphone is recorded as ONE continuous file. Every key press is logged with its time on that file's clock;
+// the builder turns the log into "keep this stretch for beat N" and cuts everything else (retakes, pauses, countdown).
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const beats = BOOTH.beats, sections = BOOTH.sections;
+  const last = beats.length - 1;
+  let state = "idle";            // idle | countdown | rec | paused | saving | saved
+  let cur = 0, startBeat = 0, events = [], rec = null, chunks = [], stream = null, t0 = 0, beatT0 = 0;
+  let holdTimer = null, tick = null, audioCtx = null, analyser = null, mime = "", recorded = new Set(), peak = 0, peakAt = 0;
+  const dbg = (window.__booth = { errors: [], saved: null, get state() { return state; }, get cur() { return cur; }, get events() { return events; } });
+  window.addEventListener("error", (e) => dbg.errors.push(String(e.message)));
+  window.addEventListener("unhandledrejection", (e) => dbg.errors.push("promise: " + String(e.reason)));
+
+  document.documentElement.style.setProperty("--accent", BOOTH.palette.accent);
+  document.documentElement.style.setProperty("--bg1", BOOTH.palette.bg1);
+  document.documentElement.style.setProperty("--bg2", BOOTH.palette.bg2);
+  $("vid").textContent = BOOTH.id;
+  $("title").textContent = BOOTH.title;
+
+  const now = () => (performance.now() - t0) / 1000;
+  const pad = (n) => String(n).padStart(3, "0");
+  const fmt = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const rich = (t) => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>");
+  const log = (type, extra) => events.push(Object.assign({ t: +now().toFixed(3), type: type }, extra || {}));
+  const HOLD_TEXT = { title: "Title card", section: "Section card", pause: "Pause", page: "Next page of the output", visual: "Look at the slide" };
+
+  function sectionOf(i) {
+    let k = 0;
+    for (let s = 0; s < sections.length; s++) if (sections[s].beat <= i) k = s;
+    return k;
+  }
+  function sectionRange(s) {
+    const a = s === 0 ? 0 : sections[s].beat;
+    const b = s + 1 < sections.length ? sections[s + 1].beat - 1 : last;
+    return [a, b];
+  }
+
+  function setState(s) {
+    state = s;
+    const el = $("state");
+    el.className = "state" + (s === "rec" || s === "countdown" ? " rec" : s === "paused" ? " paused" : s === "saved" ? " saved" : "");
+    el.textContent = { idle: "not recording", countdown: "get ready", rec: "● recording", paused: "paused", saving: "saving…", saved: "saved" }[s];
+    $("start").disabled = !(s === "idle" || s === "saved");
+    $("start").textContent = s === "saved" ? "Record again from the selected section" : "Start recording";
+    $("pause").disabled = !(s === "rec" || s === "paused");
+    $("pause").textContent = s === "paused" ? "Continue (P)" : "Pause (P)";
+    $("retake").disabled = s !== "rec";
+    $("next").disabled = s !== "rec";
+    $("finish").disabled = !(s === "rec" || s === "paused");
+    drawSections();
+  }
+
+  function drawSections() {
+    const box = $("sections");
+    box.innerHTML = "<h3>SECTIONS</h3>";
+    const live = sectionOf(cur), sel = sectionOf(startBeat);
+    sections.forEach((s, k) => {
+      const [a, b] = sectionRange(k);
+      let need = 0, have = 0;
+      for (let i = a; i <= b; i++) if (beats[i].type === "narration") { need++; if (recorded.has(i)) have++; }
+      const btn = document.createElement("button");
+      btn.innerHTML = '<span class="dot ' + (need && have === need ? "done" : have ? "part" : "") + '"></span><span>' + (k + 1) + ". " + esc(s.name.charAt(0) + s.name.slice(1).toLowerCase()) + "</span>";
+      btn.title = have + " of " + need + " beats recorded";
+      if (state === "idle" || state === "saved") {
+        if (k === sel) btn.className = "sel";
+        btn.onclick = () => { startBeat = a; cur = a; render(); drawSections(); };
+      } else {
+        btn.disabled = true;
+        if (k === live) btn.className = "live";
+      }
+      box.appendChild(btn);
+    });
+    const note = document.createElement("div");
+    note.className = "note";
+    note.innerHTML = "Green: recorded. Yellow: partly recorded.<br>Before you start, click a section to begin there. A new take replaces the old one for the beats you read again.";
+    box.appendChild(note);
+  }
+
+  function render() {
+    const b = beats[cur];
+    $("slide").src = "slides/" + pad(b.slide) + ".png";
+    if (cur < last) { const im = new Image(); im.src = "slides/" + pad(beats[cur + 1].slide) + ".png"; }
+    $("secname").textContent = b.section;
+    $("beatno").textContent = "beat " + (cur + 1) + " / " + beats.length;
+    const el = $("now");
+    if (b.type === "narration") { el.className = "now"; el.innerHTML = rich(b.tele); }
+    else { el.className = "now hold"; el.textContent = (HOLD_TEXT[b.why] || "Silence") + ": stay silent for " + b.hold + " seconds. It moves on by itself."; }
+    el.scrollTop = 0;
+    let nx = "";
+    for (let i = cur + 1, n = 0; i <= last && n < 2; i++) if (beats[i].type === "narration") { nx += "<p>" + rich(beats[i].tele) + "</p>"; n++; }
+    $("after").innerHTML = nx || "<p>(end of the video)</p>";
+  }
+
+  function enterBeat() {
+    clearTimeout(holdTimer);
+    beatT0 = now();
+    render();
+    const b = beats[cur];
+    if (b.type !== "narration") holdTimer = setTimeout(advance, b.hold * 1000);
+  }
+
+  function advance() {
+    if (state !== "rec") return;
+    clearTimeout(holdTimer);
+    if (cur >= last) { finish(); return; }
+    log("advance", { beat: cur, next: cur + 1 });
+    cur += 1;
+    enterBeat();
+  }
+
+  function retake() {
+    if (state !== "rec") return;
+    clearTimeout(holdTimer);
+    // on a silent card, "say it again" means the paragraph just read
+    let target = cur;
+    if (beats[cur].type !== "narration") { while (target > startBeat && beats[target].type !== "narration") target--; }
+    if (target === cur) log("retake", { beat: cur }); else log("goto", { beat: target });
+    cur = target;
+    flash("Retake: read this beat again.");
+    enterBeat();
+  }
+
+  function back() {
+    if (state !== "rec" || cur <= startBeat) return;
+    clearTimeout(holdTimer);
+    let target = cur - 1;
+    while (target > startBeat && beats[target].type !== "narration") target--;
+    log("goto", { beat: target });
+    cur = target;
+    flash("Back one beat: read it again.");
+    enterBeat();
+  }
+
+  function togglePause() {
+    if (state === "rec") {
+      clearTimeout(holdTimer);
+      log("pause", { beat: cur });
+      setState("paused");
+      flash("Paused. Press P to continue; this beat starts again from its first word.");
+    } else if (state === "paused") {
+      setState("rec");
+      log("resume", { beat: cur });
+      flash("");
+      enterBeat();
+    }
+  }
+
+  function flash(text, err) {
+    const m = $("msg");
+    m.className = "msg" + (err ? " err" : "");
+    m.innerHTML = text;
+  }
+
+  function pickMime() {
+    const c = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/ogg;codecs=opus"];
+    for (const m of c) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+    return "";
+  }
+
+  async function start() {
+    if (!(state === "idle" || state === "saved")) return;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { flash("This browser cannot record. Use Google Chrome.", true); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    } catch (e) {
+      flash("The microphone is not available (" + esc(e.name) + "). Click the lock or microphone icon in the address bar, allow the microphone, and press Start again.", true);
+      return;
+    }
+    mime = pickMime();
+    events = []; chunks = []; dbg.saved = null;
+    cur = startBeat;
+    rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 192000 } : {});
+    mime = rec.mimeType || mime;
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstart = () => { t0 = performance.now(); countdown(3); };
+    rec.onerror = (e) => flash("Recorder error: " + esc(String(e.error || e)), true);
+    startMeter();
+    setState("countdown");
+    flash("");
+    render();
+    rec.start(1000);
+    clearInterval(tick);
+    tick = setInterval(clock, 200);
+  }
+
+  function countdown(n) {
+    const c = $("count");
+    if (state !== "countdown") { c.className = "count"; return; }
+    if (n === 0) {
+      c.className = "count";
+      setState("rec");
+      log("begin", { beat: cur });
+      enterBeat();
+      return;
+    }
+    c.className = "count on"; c.textContent = n;
+    setTimeout(() => countdown(n - 1), BOOTH.countdown_ms || 1000);
+  }
+
+  function clock() {
+    if (state === "rec" || state === "paused" || state === "countdown") {
+      $("clock").textContent = fmt(now());
+      const b = beats[cur];
+      $("beattime").textContent = state === "rec" ? (now() - beatT0).toFixed(0) + " s (about " + Math.round(b.est) + " s)" : "";
+    }
+  }
+
+  function startMeter() {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+      const draw = () => {
+        if (!analyser) return;
+        analyser.getFloatTimeDomainData(buf);
+        let sum = 0, mx = 0;
+        for (let i = 0; i < buf.length; i++) { sum += buf[i] * buf[i]; const a = Math.abs(buf[i]); if (a > mx) mx = a; }
+        const db = 20 * Math.log10(Math.sqrt(sum / buf.length) + 1e-7);
+        const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+        const t = performance.now();
+        if (pct > peak || t - peakAt > 1500) { peak = pct; peakAt = t; }
+        $("level").style.width = pct + "%";
+        $("peak").style.left = peak + "%";
+        const h = $("meterhint");
+        if (mx > 0.98) { h.textContent = "too loud: move back a little"; h.className = "hint bad"; }
+        else if (db < -50) { h.textContent = "very quiet / silence"; h.className = "hint"; }
+        else { h.textContent = "level: " + db.toFixed(0) + " dB"; h.className = "hint"; }
+        requestAnimationFrame(draw);
+      };
+      draw();
+    } catch (e) { $("meterhint").textContent = "level meter unavailable"; }
+  }
+
+  function stopMedia() {
+    clearInterval(tick); clearTimeout(holdTimer);
+    analyser = null;
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    $("level").style.width = "0"; $("meterhint").textContent = "microphone off";
+  }
+
+  function finish() {
+    if (!(state === "rec" || state === "paused")) return;
+    clearTimeout(holdTimer);
+    log("finish", { beat: cur, complete: state === "rec" });
+    const duration = now();
+    setState("saving");
+    flash("Saving the take. Do not close this page.");
+    rec.onstop = () => save(new Blob(chunks, { type: mime || "audio/webm" }), duration);
+    rec.stop();
+  }
+
+  async function save(blob, duration) {
+    stopMedia();
+    const ext = /mp4/.test(mime) ? "m4a" : /ogg/.test(mime) ? "ogg" : "webm";
+    const timing = { video: BOOTH.id, storyboard_sha1: BOOTH.sha, mime: mime, duration: +duration.toFixed(3), start_beat: startBeat,
+      beat_hashes: beats.map((b) => b.h), events: events, user_agent: navigator.userAgent };
+    try {
+      const r1 = await fetch("api/audio?ext=" + ext, { method: "POST", headers: { "X-Booth": "1", "Content-Type": "application/octet-stream" }, body: blob });
+      if (!r1.ok) throw new Error("audio upload failed: HTTP " + r1.status);
+      timing.token = (await r1.json()).token;
+      const r2 = await fetch("api/timing", { method: "POST", headers: { "X-Booth": "1", "Content-Type": "application/json" }, body: JSON.stringify(timing) });
+      if (!r2.ok) throw new Error("timing upload failed: HTTP " + r2.status);
+      const res = await r2.json();
+      dbg.saved = res;
+      await loadState();
+      selectFirstIncomplete();
+      setState("saved");
+      flash("Saved <b>" + esc(res.file) + "</b> (" + fmt(duration) + ", " + res.kept + " beats kept, " + res.discarded + " retakes cut). " +
+        (res.missing ? res.missing + " texts of this video are not recorded yet. The first incomplete section is selected on the left: press the Start button to go on, now or later. "
+                     : "Every beat is recorded. Now run: <code>video/production/make.sh build " + BOOTH.id + "</code>"));
+    } catch (e) {
+      dbg.errors.push("save: " + e.message);
+      setState("saved");
+      const a = URL.createObjectURL(blob), j = URL.createObjectURL(new Blob([JSON.stringify(timing, null, 1)], { type: "application/json" }));
+      flash("Saving failed (" + esc(e.message) + "). Is the booth program still running in the Terminal? Your take is not lost: download " +
+        '<a download="' + BOOTH.id + ".rescue." + ext + '" href="' + a + '">the audio</a> and <a download="' + BOOTH.id + '.rescue.timing.json" href="' + j +
+        '">the timing</a>, then see "Troubleshooting" in the README.', true);
+    }
+  }
+
+  async function loadState() {
+    try {
+      const r = await fetch("api/state");
+      const s = await r.json();
+      recorded = new Set(s.recorded || []);
+      if (s.stale) flash("The script changed after " + s.stale + " beat(s) were recorded. They are shown as not recorded; read them again.", true);
+    } catch (e) { /* the page still works without it */ }
+    drawSections();
+  }
+
+  $("start").onclick = start;
+  $("pause").onclick = togglePause;
+  $("retake").onclick = retake;
+  $("next").onclick = advance;
+  $("finish").onclick = finish;
+  document.addEventListener("keydown", (e) => {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const k = e.code;
+    if (["Space", "ArrowRight", "ArrowLeft", "Backspace", "ArrowUp", "KeyP"].includes(k)) e.preventDefault(); else return;
+    if (e.repeat) return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+    if (k === "Space" || k === "ArrowRight") advance();
+    else if (k === "ArrowLeft" || k === "Backspace") retake();
+    else if (k === "ArrowUp") back();
+    else if (k === "KeyP") togglePause();
+  });
+  window.addEventListener("beforeunload", (e) => { if (state === "rec" || state === "paused" || state === "saving") { e.preventDefault(); e.returnValue = ""; } });
+
+  // start where the recording is incomplete
+  function selectFirstIncomplete() {
+    let first = 0;
+    for (let k = 0; k < sections.length; k++) {
+      const [a, b] = sectionRange(k);
+      let miss = false;
+      for (let i = a; i <= b; i++) if (beats[i].type === "narration" && !recorded.has(i)) miss = true;
+      if (miss) { first = a; break; }
+    }
+    startBeat = first; cur = first;
+    render();
+  }
+  loadState().then(() => {
+    selectFirstIncomplete();
+    setState("idle");
+    dbg.ready = true;
+  });
+})();
+
+</script>
+</body>
+</html>

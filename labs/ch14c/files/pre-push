@@ -1,0 +1,30 @@
+#!/bin/sh
+# pre-push <remote-name> <remote-url>, and one line per ref on standard input:
+#   <local-ref> <local-object-ID> <remote-ref> <remote-object-ID>
+# Guard for main: no deletion, no rewrite, no unfinished commits.
+zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+status=0
+while read -r local_ref local_oid remote_ref remote_oid; do
+  [ "$remote_ref" = refs/heads/main ] || continue
+  if [ "$local_oid" = "$zero" ]; then
+    echo "pre-push: refusing to delete main on $1" >&2
+    status=1
+    continue
+  fi
+  if [ "$remote_oid" = "$zero" ]; then
+    range=$local_oid
+  elif git merge-base --is-ancestor "$remote_oid" "$local_oid"; then
+    range="$remote_oid..$local_oid"
+  else
+    echo "pre-push: this push would rewrite main on $1 (not a fast-forward)" >&2
+    status=1
+    continue
+  fi
+  unfinished=$(git log --format='  %h %s' -E --grep='^(WIP|fixup!|squash!)' "$range")
+  if [ -n "$unfinished" ]; then
+    echo "pre-push: unfinished commits must not reach main:" >&2
+    echo "$unfinished" >&2
+    status=1
+  fi
+done
+exit $status

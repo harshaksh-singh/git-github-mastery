@@ -1,0 +1,6037 @@
+{
+ "id": "V113",
+ "version": 22,
+ "title": "Partial clone plus sparse-checkout, what scalar clone configures, and ownership, CI and releases in a monorepo",
+ "part": 4,
+ "part_label": "INTERNALS",
+ "part_name": "Git internals",
+ "palette": {
+  "accent": "#BC8CFF",
+  "accent2": "#E2CCFF",
+  "bg1": "#15111F",
+  "bg2": "#261D3A"
+ },
+ "planned_minutes": 24,
+ "chapters": [
+  "ch24-monorepos.md"
+ ],
+ "script": "video/scripts/V113-partial-clone-plus-sparse-checkout-what-scalar-clone-configures-and-ownership-ci-and-releases-in-a-monorepo.md",
+ "script_sha1": "5f5586b44f0c955688c9d1064a904e7daef1a5d2",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 10,
+   "line": 30
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 17,
+   "line": 40
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 33,
+   "line": 108
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 36,
+   "line": 116
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 43,
+   "line": 166
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 70,
+   "line": 530
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 77,
+   "line": 540
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 80,
+   "line": 546
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 83,
+   "line": 552
+  },
+  {
+   "name": "RECAP",
+   "beat": 87,
+   "line": 564
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 95,
+   "line": 576
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Partial clone plus sparse-checkout, what scalar clone configures, and ownership, CI and releases in a monorepo",
+   "part_name": "Git internals",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0019
+  },
+  {
+   "kind": "callout",
+   "direction": "\"0 projects affected. Skipping tests.\" — on a pull request that changed the ranker.",
+   "quotes": [
+    "0 projects affected. Skipping tests."
+   ],
+   "quoted": true,
+   "tail": "on a pull request that changed the ranker",
+   "caption": "A monorepo's CI computes which projects a pull request affects and runs only their tests.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0033
+  },
+  {
+   "kind": "callout",
+   "direction": "\"0 projects affected. Skipping tests.\" — on a pull request that changed the ranker.",
+   "quotes": [
+    "0 projects affected. Skipping tests."
+   ],
+   "quoted": true,
+   "tail": "on a pull request that changed the ranker",
+   "caption": "The script that computes the list hadn't changed.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0289
+  },
+  {
+   "kind": "callout",
+   "direction": "\"0 projects affected. Skipping tests.\" — on a pull request that changed the ranker.",
+   "quotes": [
+    "0 projects affected. Skipping tests."
+   ],
+   "quoted": true,
+   "tail": "on a pull request that changed the ranker",
+   "caption": "Your CTO asks: what was wrong, and what is the smallest clone that gives the right answer?",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0495
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0647
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0661
+  },
+  {
+   "kind": "keypoint",
+   "body": "First, the combination: a blobless partial clone with a cone-mode sparse checkout, and what the command <code>scalar clone</code> sets up around that combination.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0764
+  },
+  {
+   "kind": "keypoint",
+   "body": "Replays from <code>labs/ch24</code>: <code>sparse-partial.sh</code>, <code>affected-projects.sh</code>, <code>project-tags.sh</code>, and the replay of Lab 18.4 up to its checkpoint.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0955
+  },
+  {
+   "kind": "keypoint",
+   "body": "There's no <code>scalar clone</code> on screen.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.1016
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1325
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Combine a blobless clone with a cone and say what is fetched when.",
+    "List what <code>scalar clone</code> sets up and which parts live outside the repository.",
+    "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+    "Tag and describe releases of several projects in one repository.",
+    "Say how CODEOWNERS is used at this scale, as a pointer to Part 5."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1339
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Combine a blobless clone with a cone and say what is fetched when.",
+    "List what <code>scalar clone</code> sets up and which parts live outside the repository.",
+    "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+    "Tag and describe releases of several projects in one repository.",
+    "Say how CODEOWNERS is used at this scale, as a pointer to Part 5."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1358
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Combine a blobless clone with a cone and say what is fetched when.",
+    "List what <code>scalar clone</code> sets up and which parts live outside the repository.",
+    "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+    "Tag and describe releases of several projects in one repository.",
+    "Say how CODEOWNERS is used at this scale, as a pointer to Part 5."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1407
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Combine a blobless clone with a cone and say what is fetched when.",
+    "List what <code>scalar clone</code> sets up and which parts live outside the repository.",
+    "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+    "Tag and describe releases of several projects in one repository.",
+    "Say how CODEOWNERS is used at this scale, as a pointer to Part 5."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1457
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Combine a blobless clone with a cone and say what is fetched when.",
+    "List what <code>scalar clone</code> sets up and which parts live outside the repository.",
+    "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+    "Tag and describe releases of several projects in one repository.",
+    "Say how CODEOWNERS is used at this scale, as a pointer to Part 5."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1522
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Combine a blobless clone with a cone and say what is fetched when.",
+    "List what <code>scalar clone</code> sets up and which parts live outside the repository.",
+    "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+    "Tag and describe releases of several projects in one repository.",
+    "Say how CODEOWNERS is used at this scale, as a pointer to Part 5."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 17,
+   "progress": 0.156
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1613
+  },
+  {
+   "kind": "keypoint",
+   "body": "In one sentence: a blobless partial clone leaves file contents on the server until something needs them, a sparse checkout limits that \"something\" to your cone …",
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1628
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=combo boxes=the_server:every_object|*your_clone:.git|working_tree:the_cone rows=1:A:commits|1:A:trees|1:A:blobs,_every_version|2:B:commits@ok|2:B:trees@ok|3:C:the_files_of_the_cone|3:B:blobs_of_the_cone@hl|4:B:promise:_.git/config@ref|4:C:cone:_config.worktree@ref arrows=2:A1>B1:blob:none|3:A3>B3:on_demand title=Blobless_plus_cone at_1=5 at_2=35 at_3=80",
+   "scene": "stores",
+   "params": {
+    "id": "combo",
+    "boxes": [
+     [
+      "the server",
+      "every object"
+     ],
+     [
+      "*your clone",
+      ".git"
+     ],
+     [
+      "working tree",
+      "the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "commits"
+     ],
+     [
+      1,
+      "A",
+      "trees"
+     ],
+     [
+      1,
+      "A",
+      "blobs, every version"
+     ],
+     [
+      2,
+      "B",
+      "commits",
+      "ok"
+     ],
+     [
+      2,
+      "B",
+      "trees",
+      "ok"
+     ],
+     [
+      3,
+      "C",
+      "the files of the cone"
+     ],
+     [
+      3,
+      "B",
+      "blobs of the cone",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "promise: .git/config",
+      "ref"
+     ],
+     [
+      4,
+      "C",
+      "cone: config.worktree",
+      "ref"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "blob:none"
+     ],
+     [
+      3,
+      "A3",
+      "B3",
+      "on demand"
+     ]
+    ],
+    "title": "Blobless plus cone",
+    "at": {
+     "1": 0.05,
+     "2": 0.35,
+     "3": 0.8
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1772
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=combo boxes=the_server:every_object|*your_clone:.git|working_tree:the_cone rows=1:A:commits|1:A:trees|1:A:blobs,_every_version|2:B:commits@ok|2:B:trees@ok|3:C:the_files_of_the_cone|3:B:blobs_of_the_cone@hl|4:B:promise:_.git/config@ref|4:C:cone:_config.worktree@ref arrows=2:A1>B1:blob:none|3:A3>B3:on_demand title=Blobless_plus_cone at_1=5 at_2=35 at_3=80",
+   "scene": "stores",
+   "params": {
+    "id": "combo",
+    "boxes": [
+     [
+      "the server",
+      "every object"
+     ],
+     [
+      "*your clone",
+      ".git"
+     ],
+     [
+      "working tree",
+      "the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "commits"
+     ],
+     [
+      1,
+      "A",
+      "trees"
+     ],
+     [
+      1,
+      "A",
+      "blobs, every version"
+     ],
+     [
+      2,
+      "B",
+      "commits",
+      "ok"
+     ],
+     [
+      2,
+      "B",
+      "trees",
+      "ok"
+     ],
+     [
+      3,
+      "C",
+      "the files of the cone"
+     ],
+     [
+      3,
+      "B",
+      "blobs of the cone",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "promise: .git/config",
+      "ref"
+     ],
+     [
+      4,
+      "C",
+      "cone: config.worktree",
+      "ref"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "blob:none"
+     ],
+     [
+      3,
+      "A3",
+      "B3",
+      "on demand"
+     ]
+    ],
+    "title": "Blobless plus cone",
+    "at": {
+     "1": 0.05,
+     "2": 0.35,
+     "3": 0.8
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1974
+  },
+  {
+   "kind": "keypoint",
+   "body": "So what does <code>scalar clone</code> do?",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2096
+  },
+  {
+   "kind": "callout",
+   "direction": "Four parts of `scalar clone`.",
+   "code": [
+    "scalar clone"
+   ],
+   "quoted": false,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2222
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=scalar question=scalar_clone_in_four_parts cards=A_partial_clone:only_commit_and_tree_objects|A_cone-mode_sparse_checkout:only_the_top-level_files|Configuration:to_optimize_for_large_repositories|Background_maintenance:the_scheduler_of_git_maintenance_start numbered=on at_1=0 at_2=3 at_3=14 at_4=86",
+   "scene": "cards",
+   "params": {
+    "id": "scalar",
+    "question": "scalar clone in four parts",
+    "cards": [
+     [
+      "A partial clone",
+      "only commit and tree objects"
+     ],
+     [
+      "A cone-mode sparse checkout",
+      "only the top-level files"
+     ],
+     [
+      "Configuration",
+      "to optimize for large repositories"
+     ],
+     [
+      "Background maintenance",
+      "the scheduler of git maintenance start"
+     ]
+    ],
+    "numbered": "on",
+    "at": {
+     "1": 0.0,
+     "2": 0.03,
+     "3": 0.14,
+     "4": 0.86
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2295
+  },
+  {
+   "kind": "keypoint",
+   "body": "Which parts live outside the repository?",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2542
+  },
+  {
+   "kind": "keypoint",
+   "body": "The enlistment was registered in the global configuration as <code>scalar.repo</code>.",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.2702
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=behind columns=left_behind,where,removed_by rows=a_registration:global_configuration,_scalar.repo:scalar_unregister|scheduler_entries:~/Library/LaunchAgents_on_macOS:scalar_unregister|one_monitor_process:per_enlistment:git_fsmonitor--daemon_stop mono=off title=What_scalar_clone_leaves_outside_the_repository at_1=10 at_2=25 at_3=45",
+   "scene": "walk",
+   "params": {
+    "id": "behind",
+    "columns": [
+     "left behind",
+     "where",
+     "removed by"
+    ],
+    "rows": [
+     [
+      "a registration",
+      "global configuration, scalar.repo",
+      "scalar unregister"
+     ],
+     [
+      "scheduler entries",
+      "~/Library/LaunchAgents on macOS",
+      "scalar unregister"
+     ],
+     [
+      "one monitor process",
+      "per enlistment",
+      "git fsmonitor--daemon stop"
+     ]
+    ],
+    "mono": "off",
+    "title": "What scalar clone leaves outside the repository",
+    "at": {
+     "1": 0.1,
+     "2": 0.25,
+     "3": 0.45
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.2889
+  },
+  {
+   "kind": "keypoint",
+   "body": "Ownership. This is GitHub, not Git: Git stores <code>.github/CODEOWNERS</code> as an ordinary file and gives it no meaning.",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.3087
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=owners question=CODEOWNERS:_four_documented_facts cards=The_last_matching_pattern_wins|Read_from_the_base_branch:of_the_pull_request|It_only_requests_reviews:requiring_them_is_a_ruleset_or_branch_protection_setting|An_invalid_line_is_skipped:the_pull_request_does_not_fail numbered=on at_1=15 at_2=30 at_3=45 at_4=75",
+   "scene": "cards",
+   "params": {
+    "id": "owners",
+    "question": "CODEOWNERS: four documented facts",
+    "cards": [
+     [
+      "The last matching pattern wins",
+      ""
+     ],
+     [
+      "Read from the base branch",
+      "of the pull request"
+     ],
+     [
+      "It only requests reviews",
+      "requiring them is a ruleset or branch protection setting"
+     ],
+     [
+      "An invalid line is skipped",
+      "the pull request does not fail"
+     ]
+    ],
+    "numbered": "on",
+    "at": {
+     "1": 0.15,
+     "2": 0.3,
+     "3": 0.45,
+     "4": 0.75
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.3244
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=dots d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main => + note:d259a34:merge_base; name:base => + mark:from:d259a34; mark:to:88222b7; name:three; say:Three_dots:_from_the_merge_base_to_the_branch_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; mark:from:100bb99; mark:to:88222b7; name:two; say:Two_dots:_tip_against_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; absent:d259a34,9c9fd21; name:shallow; say:Depth_1:_two_tips_with_no_connection",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "d259a34",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "100bb99",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "9c9fd21",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "88222b7",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "9c9fd21"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "d259a34",
+       "100bb99",
+       "9c9fd21",
+       "88222b7"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {},
+      "name": "base"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "d259a34": "from",
+       "88222b7": "to"
+      },
+      "caption": "Three dots: from the merge base to the branch tip",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "100bb99": "from",
+       "88222b7": "to"
+      },
+      "caption": "Two dots: tip against tip",
+      "name": "two"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [
+       "d259a34",
+       "9c9fd21"
+      ],
+      "marks": {},
+      "caption": "Depth 1: two tips with no connection",
+      "name": "shallow"
+     }
+    ],
+    "settle": "on",
+    "id": "dots"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "base",
+    "three",
+    "two",
+    "shallow"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.3457
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=dots d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main => + note:d259a34:merge_base; name:base => + mark:from:d259a34; mark:to:88222b7; name:three; say:Three_dots:_from_the_merge_base_to_the_branch_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; mark:from:100bb99; mark:to:88222b7; name:two; say:Two_dots:_tip_against_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; absent:d259a34,9c9fd21; name:shallow; say:Depth_1:_two_tips_with_no_connection",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "d259a34",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "100bb99",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "9c9fd21",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "88222b7",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "9c9fd21"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "d259a34",
+       "100bb99",
+       "9c9fd21",
+       "88222b7"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {},
+      "name": "base"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "d259a34": "from",
+       "88222b7": "to"
+      },
+      "caption": "Three dots: from the merge base to the branch tip",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "100bb99": "from",
+       "88222b7": "to"
+      },
+      "caption": "Two dots: tip against tip",
+      "name": "two"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [
+       "d259a34",
+       "9c9fd21"
+      ],
+      "marks": {},
+      "caption": "Depth 1: two tips with no connection",
+      "name": "shallow"
+     }
+    ],
+    "settle": "on",
+    "id": "dots"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "base",
+    "three",
+    "two",
+    "shallow"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 31,
+   "progress": 0.3644
+  },
+  {
+   "kind": "keypoint",
+   "body": "Releases. In one sentence: tags name commits of the whole repository, so a monorepo that releases projects separately puts the project into the tag name and into every question about \"the last release\".",
+   "section": "CONCEPT",
+   "n": 32,
+   "progress": 0.3816
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=notmono question=When_not_to_use_a_monorepo cards=Different_readers:Git_cannot_restrict_reading_to_a_part|Unrelated_lifecycles|Large_binaries:a_download_is_postponed,_not_shrunk|No_one_to_own_the_tooling numbered=on at_1=22 at_2=45 at_3=55 at_4=88",
+   "scene": "cards",
+   "params": {
+    "id": "notmono",
+    "question": "When not to use a monorepo",
+    "cards": [
+     [
+      "Different readers",
+      "Git cannot restrict reading to a part"
+     ],
+     [
+      "Unrelated lifecycles",
+      ""
+     ],
+     [
+      "Large binaries",
+      "a download is postponed, not shrunk"
+     ],
+     [
+      "No one to own the tooling",
+      ""
+     ]
+    ],
+    "numbered": "on",
+    "at": {
+     "1": 0.22,
+     "2": 0.45,
+     "3": 0.55,
+     "4": 0.86
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 33,
+   "progress": 0.4086
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 34,
+   "progress": 0.4322
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=combo boxes=the_server:every_object|*your_clone:.git|working_tree:the_cone rows=1:A:commits|1:A:trees|1:A:blobs,_every_version|2:B:commits@ok|2:B:trees@ok|3:C:the_files_of_the_cone|3:B:blobs_of_the_cone@hl|4:B:promise:_.git/config@ref|4:C:cone:_config.worktree@ref arrows=2:A1>B1:blob:none|3:A3>B3:on_demand title=Blobless_plus_cone at_1=5 at_2=35 at_3=80",
+   "scene": "stores",
+   "params": {
+    "id": "combo",
+    "boxes": [
+     [
+      "the server",
+      "every object"
+     ],
+     [
+      "*your clone",
+      ".git"
+     ],
+     [
+      "working tree",
+      "the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "commits"
+     ],
+     [
+      1,
+      "A",
+      "trees"
+     ],
+     [
+      1,
+      "A",
+      "blobs, every version"
+     ],
+     [
+      2,
+      "B",
+      "commits",
+      "ok"
+     ],
+     [
+      2,
+      "B",
+      "trees",
+      "ok"
+     ],
+     [
+      3,
+      "C",
+      "the files of the cone"
+     ],
+     [
+      3,
+      "B",
+      "blobs of the cone",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "promise: .git/config",
+      "ref"
+     ],
+     [
+      4,
+      "C",
+      "cone: config.worktree",
+      "ref"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "blob:none"
+     ],
+     [
+      3,
+      "A3",
+      "B3",
+      "on demand"
+     ]
+    ],
+    "title": "Blobless plus cone",
+    "at": {
+     "1": 0.05,
+     "2": 0.35,
+     "3": 0.8
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "MENTAL MODEL",
+   "n": 35,
+   "progress": 0.4337
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 36,
+   "progress": 0.4775
+  },
+  {
+   "kind": "diagram",
+   "direction": "The monorepo tree, a change in one project, and the jobs that must run.",
+   "text": "   d259a34 ---------------- 100bb99   main        (changed libs/schemas, services/gateway, services/ingest)\n        \\\n         9c9fd21 --- 88222b7   feature/rerank-cache   (changed services/ranker)\n\n   orbit/\n     services/gateway     main touched it          three dots: not affected     two dots: \"affected\"\n     services/ingest      main touched it          three dots: not affected     two dots: \"affected\"\n     services/ranker      the branch touched it    three dots: AFFECTED         two dots: affected\n     libs/schemas         main touched it          three dots: not affected     two dots: \"affected\"\n\n   git diff --name-only main...feature/rerank-cache    = from merge base d259a34 to the branch tip\n   git diff --name-only main..feature/rerank-cache     = tip against tip",
+   "section": "DIAGRAM",
+   "n": 37,
+   "progress": 0.4789
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, thirty seconds, on paper.",
+   "section": "DIAGRAM",
+   "n": 38,
+   "progress": 0.5003
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=dots d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main => + note:d259a34:merge_base; name:base => + mark:from:d259a34; mark:to:88222b7; name:three; say:Three_dots:_from_the_merge_base_to_the_branch_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; mark:from:100bb99; mark:to:88222b7; name:two; say:Two_dots:_tip_against_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; absent:d259a34,9c9fd21; name:shallow; say:Depth_1:_two_tips_with_no_connection",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "d259a34",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "100bb99",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "9c9fd21",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "88222b7",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "9c9fd21"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "d259a34",
+       "100bb99",
+       "9c9fd21",
+       "88222b7"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {},
+      "name": "base"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "d259a34": "from",
+       "88222b7": "to"
+      },
+      "caption": "Three dots: from the merge base to the branch tip",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "100bb99": "from",
+       "88222b7": "to"
+      },
+      "caption": "Two dots: tip against tip",
+      "name": "two"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [
+       "d259a34",
+       "9c9fd21"
+      ],
+      "marks": {},
+      "caption": "Depth 1: two tips with no connection",
+      "name": "shallow"
+     }
+    ],
+    "settle": "on",
+    "id": "dots"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "base",
+    "three",
+    "two",
+    "shallow"
+   ],
+   "base": 5,
+   "upto": 6,
+   "section": "DIAGRAM",
+   "n": 39,
+   "progress": 0.5133
+  },
+  {
+   "kind": "diagram",
+   "direction": "The root-cause box of section 24.9.",
+   "text": "Observed behavior : the \"what changed\" step fails with \"no merge base\", or a script that swallows the\n                    error concludes that nothing changed and skips every test.\nGit state         : a shallow repository; \"git log --all\" shows two commits with no connection.\nMechanism         : each fetch with --depth 1 delivered one commit and recorded it as a boundary.\nRoot cause        : a history question asked of a clone that was told to have no history.\nWhy Git does this : a shallow clone is \"these commits and nothing behind them\" (Chapter 26, 26.11).\nCorrect fix       : a full-depth fetch, or a blobless clone: every commit and tree, no file content\n                    that is not checked out.\nPrevention        : jobs that build one snapshot may be shallow; jobs that compare, describe or\n                    compute versions may not.",
+   "section": "DIAGRAM",
+   "n": 40,
+   "progress": 0.5252
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5332
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch24/sparse-partial"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5346
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone --filter=blob:none --sparse \"file://$PWD/server/orbit.git\" orbit-dev/src"
+    },
+    {
+     "t": "cmd",
+     "s": "cd orbit-dev/src"
+    },
+    {
+     "t": "cmd",
+     "s": "ls -A"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5415
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-partial/01-clone",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone --filter=blob:none --sparse \"file://$PWD/server/orbit.git\" orbit-dev/src"
+    },
+    {
+     "t": "out",
+     "s": "Cloning into 'orbit-dev/src'..."
+    },
+    {
+     "t": "cmd",
+     "s": "cd orbit-dev/src"
+    },
+    {
+     "t": "cmd",
+     "s": "ls -A"
+    },
+    {
+     "t": "out",
+     "s": ".git"
+    },
+    {
+     "t": "out",
+     "s": ".gitignore"
+    },
+    {
+     "t": "out",
+     "s": "pyproject.toml"
+    },
+    {
+     "t": "out",
+     "s": "README.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c"
+    },
+    {
+     "t": "out",
+     "s": "   3 blob"
+    },
+    {
+     "t": "out",
+     "s": "  96 commit"
+    },
+    {
+     "t": "out",
+     "s": "   5 tag"
+    },
+    {
+     "t": "out",
+     "s": " 284 tree"
+    },
+    {
+     "t": "cmd",
+     "s": "git status | sed -n 4p"
+    },
+    {
+     "t": "out",
+     "s": "You are in a sparse checkout with 10% of tracked files present."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5549
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-partial/02-config",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# What makes it partial is in .git/config; what makes it sparse is in .git/config.worktree:"
+    },
+    {
+     "t": "cmd",
+     "s": "git config list --local --show-origin | grep -i -e promisor -e partialclone -e worktreeconfig"
+    },
+    {
+     "t": "out",
+     "s": "file:.git/config        remote.origin.promisor=true"
+    },
+    {
+     "t": "out",
+     "s": "file:.git/config        remote.origin.partialclonefilter=blob:none"
+    },
+    {
+     "t": "out",
+     "s": "file:.git/config        extensions.worktreeconfig=true"
+    },
+    {
+     "t": "cmd",
+     "s": "git config list --worktree --show-origin"
+    },
+    {
+     "t": "out",
+     "s": "file:.git/config.worktree       core.sparsecheckout=true"
+    },
+    {
+     "t": "out",
+     "s": "file:.git/config.worktree       core.sparsecheckoutcone=true"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.5595
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-partial/03-widen",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Widening the cone downloads the blobs of those directories, and only those:"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set services/ranker libs/tokenizer"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c"
+    },
+    {
+     "t": "out",
+     "s": "   9 blob"
+    },
+    {
+     "t": "out",
+     "s": "  96 commit"
+    },
+    {
+     "t": "out",
+     "s": "   5 tag"
+    },
+    {
+     "t": "out",
+     "s": " 284 tree"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-list --objects --all --missing=print | grep -c '^?'"
+    },
+    {
+     "t": "out",
+     "s": "113"
+    },
+    {
+     "t": "cmd",
+     "s": "git status | sed -n 4p"
+    },
+    {
+     "t": "out",
+     "s": "You are in a sparse checkout with 28% of tracked files present."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.5648
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-partial/04-history-in-cone",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# History of the cone, fetched in one batch instead of one request per commit:"
+    },
+    {
+     "t": "cmd",
+     "s": "git backfill --sparse"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c"
+    },
+    {
+     "t": "out",
+     "s": "  33 blob"
+    },
+    {
+     "t": "out",
+     "s": "  96 commit"
+    },
+    {
+     "t": "out",
+     "s": "   5 tag"
+    },
+    {
+     "t": "out",
+     "s": " 284 tree"
+    },
+    {
+     "t": "cmd",
+     "s": "git log -p --format=%s -1 -- services/ranker/features.py | sed -n 1,12p"
+    },
+    {
+     "t": "out",
+     "s": "ranker: add ranking signal 12"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/services/ranker/features.py b/services/ranker/features.py"
+    },
+    {
+     "t": "out",
+     "s": "index 04b3cf5..2e52099 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/services/ranker/features.py"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/services/ranker/features.py"
+    },
+    {
+     "t": "out",
+     "s": "@@ -11,4 +11,5 @@ FEATURES = ["
+    },
+    {
+     "t": "out",
+     "s": "     \"signal_09\","
+    },
+    {
+     "t": "out",
+     "s": "     \"signal_10\","
+    },
+    {
+     "t": "out",
+     "s": "     \"signal_11\","
+    },
+    {
+     "t": "out",
+     "s": "+    \"signal_12\","
+    },
+    {
+     "t": "out",
+     "s": " ]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.5762
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-partial/05-settings",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A few of the settings that scalar would write, set by hand (the manual lists them all):"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set commitGraph.changedPaths true"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set status.aheadBehind false"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set fetch.showForcedUpdates false"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set advice.fetchShowForcedUpdates false"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set log.excludeDecoration \"refs/prefetch/*\""
+    },
+    {
+     "t": "cmd",
+     "s": "git config set maintenance.auto false"
+    },
+    {
+     "t": "cmd",
+     "s": "git config set maintenance.strategy incremental"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.5907
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-partial/06-maintenance",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# What the scheduler would run every hour, run once in the foreground:"
+    },
+    {
+     "t": "cmd",
+     "s": "GIT_TRACE=\"$PWD/../maintenance.log\" git maintenance run --task=prefetch --task=commit-graph"
+    },
+    {
+     "t": "cmd",
+     "s": "sed -n 's/.*trace: run_command: git //p' ../maintenance.log | grep -v -e '^maintenance' -e"
+    },
+    {
+     "t": "wrap",
+     "s": "'^pack-objects' -e '^index-pack'",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "fetch origin --prefetch --prune --no-tags --no-write-fetch-head --recurse-submodules=no --quiet"
+    },
+    {
+     "t": "out",
+     "s": "commit-graph write --split --reachable --no-progress"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format='%(refname)' refs/prefetch"
+    },
+    {
+     "t": "out",
+     "s": "refs/prefetch/remotes/origin/feature/rerank-cache"
+    },
+    {
+     "t": "out",
+     "s": "refs/prefetch/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": "# The prefetched refs do not move your remote-tracking branches and stay out of the log:"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --decorate -1"
+    },
+    {
+     "t": "out",
+     "s": "100bb99 (HEAD -> main, tag: schemas/v1.1.0, origin/main, origin/HEAD) schemas, gateway, ingest: add the"
+    },
+    {
+     "t": "wrap",
+     "s": "tenant field in one change",
+     "of": "out"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.5972
+  },
+  {
+   "kind": "terminal",
+   "direction": "Affected projects.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch24/affected-projects"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6105
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/affected-projects/01-three-dot",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cd orbit"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph -4 main feature/rerank-cache"
+    },
+    {
+     "t": "out",
+     "s": "* 100bb99 schemas, gateway, ingest: add the tenant field in one change"
+    },
+    {
+     "t": "out",
+     "s": "| * 88222b7 ranker: make the cache size configurable"
+    },
+    {
+     "t": "out",
+     "s": "| * 9c9fd21 ranker: cache scores per query and document"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* d259a34 docs: record architecture change 12"
+    },
+    {
+     "t": "out",
+     "s": "# What the branch changed since it forked (three dots: diff from the merge base):"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only main...feature/rerank-cache"
+    },
+    {
+     "t": "out",
+     "s": "services/ranker/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "services/ranker/model.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only main...feature/rerank-cache | cut -d/ -f1-2 | sort -u"
+    },
+    {
+     "t": "out",
+     "s": "services/ranker"
+    },
+    {
+     "t": "out",
+     "s": "# Two dots compare the two tips, and blame the branch for what main did meanwhile:"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only main..feature/rerank-cache | cut -d/ -f1-2 | sort -u"
+    },
+    {
+     "t": "out",
+     "s": "libs/schemas"
+    },
+    {
+     "t": "out",
+     "s": "services/gateway"
+    },
+    {
+     "t": "out",
+     "s": "services/ingest"
+    },
+    {
+     "t": "out",
+     "s": "services/ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "cd .."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6129
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone -q --depth 1 --branch feature/rerank-cache \"file://$PWD/server/orbit.git\" ci-shallow"
+    },
+    {
+     "t": "cmd",
+     "s": "cd ci-shallow"
+    },
+    {
+     "t": "cmd",
+     "s": "git fetch -q --depth 1 origin main:refs/remotes/origin/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only origin/main...HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge-base origin/main HEAD"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6171
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/affected-projects/02-shallow-ci",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The CI job clones the branch with depth 1 and fetches the tip of main the same way:"
+    },
+    {
+     "t": "cmd",
+     "s": "git clone -q --depth 1 --branch feature/rerank-cache \"file://$PWD/server/orbit.git\" ci-shallow"
+    },
+    {
+     "t": "cmd",
+     "s": "cd ci-shallow"
+    },
+    {
+     "t": "cmd",
+     "s": "git fetch -q --depth 1 origin main:refs/remotes/origin/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --all"
+    },
+    {
+     "t": "out",
+     "s": "100bb99 schemas, gateway, ingest: add the tenant field in one change"
+    },
+    {
+     "t": "out",
+     "s": "88222b7 ranker: make the cache size configurable"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only origin/main...HEAD"
+    },
+    {
+     "t": "out",
+     "s": "fatal: origin/main...HEAD: no merge base"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge-base origin/main HEAD"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "cd .."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6302
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/affected-projects/03-blobless-ci",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A blobless clone without a checkout has every commit and tree and not a single file:"
+    },
+    {
+     "t": "cmd",
+     "s": "git clone -q --filter=blob:none --no-checkout --branch feature/rerank-cache"
+    },
+    {
+     "t": "wrap",
+     "s": "\"file://$PWD/server/orbit.git\" ci-blobless",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "cd ci-blobless"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c"
+    },
+    {
+     "t": "out",
+     "s": "  96 commit"
+    },
+    {
+     "t": "out",
+     "s": "   5 tag"
+    },
+    {
+     "t": "out",
+     "s": " 284 tree"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge-base origin/main HEAD"
+    },
+    {
+     "t": "out",
+     "s": "d259a34f3117e4516fb2f7c071b2dd9c8edc9e5b"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only origin/main...HEAD | cut -d/ -f1-2 | sort -u"
+    },
+    {
+     "t": "out",
+     "s": "services/ranker"
+    },
+    {
+     "t": "out",
+     "s": "# Then check out only what the job needs:"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set services/ranker libs/tokenizer"
+    },
+    {
+     "t": "cmd",
+     "s": "git checkout -q"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6416
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/affected-projects/03-blobless-ci",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "find . -path ./.git -prune -o -type f -print | sort"
+    },
+    {
+     "t": "out",
+     "s": "./.gitignore"
+    },
+    {
+     "t": "out",
+     "s": "./libs/tokenizer/tokenizer.py"
+    },
+    {
+     "t": "out",
+     "s": "./libs/tokenizer/vocab.txt"
+    },
+    {
+     "t": "out",
+     "s": "./pyproject.toml"
+    },
+    {
+     "t": "out",
+     "s": "./README.md"
+    },
+    {
+     "t": "out",
+     "s": "./services/ranker/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "./services/ranker/features.py"
+    },
+    {
+     "t": "out",
+     "s": "./services/ranker/model.py"
+    },
+    {
+     "t": "out",
+     "s": "./services/ranker/tests/test_model.py"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.6599
+  },
+  {
+   "kind": "callout",
+   "direction": "\"GitHub Actions, not Git.\"",
+   "quotes": [
+    "GitHub Actions, not Git."
+   ],
+   "quoted": true,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.6628
+  },
+  {
+   "kind": "terminal",
+   "direction": "Releases.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch24/project-tags"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.6879
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/project-tags/01-tags",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format='%(refname:short) %(objecttype) -> %(*objectname:short) %(*subject)'"
+    },
+    {
+     "t": "wrap",
+     "s": "refs/tags",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "gateway/v1.0.0 tag -> 153c828 gateway: add search route 3"
+    },
+    {
+     "t": "out",
+     "s": "gateway/v1.1.0 tag -> f5915c9 gateway: add search route 9"
+    },
+    {
+     "t": "out",
+     "s": "ranker/v0.9.0 tag -> 52ee19b ranker: add ranking signal 6"
+    },
+    {
+     "t": "out",
+     "s": "schemas/v1.0.0 tag -> 6f3c9a4 docs: record architecture change 2"
+    },
+    {
+     "t": "out",
+     "s": "schemas/v1.1.0 tag -> 100bb99 schemas, gateway, ingest: add the tenant field in one change"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag -l 'gateway/*'"
+    },
+    {
+     "t": "out",
+     "s": "gateway/v1.0.0"
+    },
+    {
+     "t": "out",
+     "s": "gateway/v1.1.0"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.6903
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git describe main"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --match 'gateway/v*' main"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --match 'ranker/v*' main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.6979
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/project-tags/02-describe",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Without a pattern, describe answers with the nearest tag of any project:"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe main"
+    },
+    {
+     "t": "out",
+     "s": "schemas/v1.1.0"
+    },
+    {
+     "t": "out",
+     "s": "# With a pattern it answers for one project:"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --match 'gateway/v*' main"
+    },
+    {
+     "t": "out",
+     "s": "gateway/v1.1.0-28-g100bb99"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --match 'ranker/v*' main"
+    },
+    {
+     "t": "out",
+     "s": "ranker/v0.9.0-48-g100bb99"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.7129
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=tags ...older-52ee19b-...19-f5915c9-...27-100bb99 main tag:schemas/v1.1.0; 52ee19b tag:ranker/v0.9.0; f5915c9 tag:gateway/v1.1.0; HEAD=main; dx=250 => + mark:describe:100bb99; name:any; say:git_describe_main:_the_nearest_tag_of_any_project => ...older-52ee19b-...19-f5915c9-...27-100bb99 main tag:schemas/v1.1.0; 52ee19b tag:ranker/v0.9.0; f5915c9 tag:gateway/v1.1.0; HEAD=main; mark:--match:f5915c9; name:match; say:--match_gateway/v*:_gateway/v1.1.0-28-g100bb99",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "...older",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "elision",
+      "text": "older"
+     },
+     {
+      "id": "52ee19b",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "...older"
+      ]
+     },
+     {
+      "id": "...19",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "52ee19b"
+      ],
+      "kind": "elision",
+      "text": "19 more"
+     },
+     {
+      "id": "f5915c9",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "...19"
+      ]
+     },
+     {
+      "id": "...27",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "f5915c9"
+      ],
+      "kind": "elision",
+      "text": "27 more"
+     },
+     {
+      "id": "100bb99",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "...27"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "...older",
+       "52ee19b",
+       "...19",
+       "f5915c9",
+       "...27",
+       "100bb99"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "schemas/v1.1.0": "100bb99",
+       "ranker/v0.9.0": "52ee19b",
+       "gateway/v1.1.0": "f5915c9"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "schemas/v1.1.0": "100bb99",
+       "ranker/v0.9.0": "52ee19b",
+       "gateway/v1.1.0": "f5915c9"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "100bb99": "describe"
+      },
+      "caption": "git describe main: the nearest tag of any project",
+      "name": "any"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "schemas/v1.1.0": "100bb99",
+       "ranker/v0.9.0": "52ee19b",
+       "gateway/v1.1.0": "f5915c9"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "f5915c9": "--match"
+      },
+      "caption": "--match gateway/v*: gateway/v1.1.0-28-g100bb99",
+      "name": "match"
+     }
+    ],
+    "tags": [
+     "gateway/v1.1.0",
+     "ranker/v0.9.0",
+     "schemas/v1.1.0"
+    ],
+    "settle": "on",
+    "dx": "250",
+    "id": "tags"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "any",
+    "match"
+   ],
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.7176
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/project-tags/03-changelog",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The range between two gateway releases contains everybody else too:"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline gateway/v1.0.0..gateway/v1.1.0 | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "      42"
+    },
+    {
+     "t": "out",
+     "s": "# Limit it to the paths that go into the gateway:"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline gateway/v1.0.0..gateway/v1.1.0 -- services/gateway libs/schemas"
+    },
+    {
+     "t": "out",
+     "s": "f5915c9 gateway: add search route 9"
+    },
+    {
+     "t": "out",
+     "s": "b8f00f5 gateway: add search route 8"
+    },
+    {
+     "t": "out",
+     "s": "6df5fa6 gateway: add search route 7"
+    },
+    {
+     "t": "out",
+     "s": "bc833b0 gateway: add search route 6"
+    },
+    {
+     "t": "out",
+     "s": "f29a33b gateway: add search route 5"
+    },
+    {
+     "t": "out",
+     "s": "aa79006 gateway: add search route 4"
+    },
+    {
+     "t": "out",
+     "s": "# Has anything that the gateway ships changed since its last release?"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline gateway/v1.1.0..main -- services/gateway libs/schemas"
+    },
+    {
+     "t": "out",
+     "s": "100bb99 schemas, gateway, ingest: add the tenant field in one change"
+    },
+    {
+     "t": "out",
+     "s": "cb65af7 gateway: add search route 12"
+    },
+    {
+     "t": "out",
+     "s": "5f20f82 gateway: add search route 11"
+    },
+    {
+     "t": "out",
+     "s": "47dda3a gateway: add search route 10"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --quiet gateway/v1.1.0 main -- services/gateway libs/schemas"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --quiet ranker/v0.9.0 gateway/v1.0.0 -- libs/schemas"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.7337
+  },
+  {
+   "kind": "terminal",
+   "direction": "Lab 18.4, up to the checkpoint.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch24/lab-18-4-scalar-by-hand"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.7516
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/lab-18-4-scalar-by-hand/05-checkpoint",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Checkpoint: the history of the cone without one request per commit."
+    },
+    {
+     "t": "cmd",
+     "s": "git backfill --sparse"
+    },
+    {
+     "t": "cmd",
+     "s": "GIT_TRACE=1 git log -p --format=%s -- services/ranker/features.py 2>&1 >/dev/null | grep -c"
+    },
+    {
+     "t": "wrap",
+     "s": "'run_command: git .*fetch'",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "0"
+    },
+    {
+     "t": "cmd",
+     "s": "GIT_TRACE2_PERF=1 git log --oneline -- services/ranker 2>&1 >/dev/null | sed -n 's/.*statistics://p'"
+    },
+    {
+     "t": "out",
+     "s": "{\"filter_not_present\":0,\"maybe\":13,\"definitely_not\":81,\"false_positive\":0}"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.754
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 65,
+   "progress": 0.7703
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 66,
+   "progress": 0.7718
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what <code>main</code> did meanwhile.",
+    "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each <code>--depth 1</code> fetch delivered one commit and recorded it as a boundary.",
+    "Stamping a build with <code>git describe</code> and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+    "Running <code>scalar clone</code> and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with <code>scalar unregister</code> and <code>git fsmonitor--daemon stop</code>.",
+    "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 67,
+   "progress": 0.7737
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what <code>main</code> did meanwhile.",
+    "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each <code>--depth 1</code> fetch delivered one commit and recorded it as a boundary.",
+    "Stamping a build with <code>git describe</code> and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+    "Running <code>scalar clone</code> and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with <code>scalar unregister</code> and <code>git fsmonitor--daemon stop</code>.",
+    "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 68,
+   "progress": 0.7821
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what <code>main</code> did meanwhile.",
+    "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each <code>--depth 1</code> fetch delivered one commit and recorded it as a boundary.",
+    "Stamping a build with <code>git describe</code> and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+    "Running <code>scalar clone</code> and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with <code>scalar unregister</code> and <code>git fsmonitor--daemon stop</code>.",
+    "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 69,
+   "progress": 0.7946
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what <code>main</code> did meanwhile.",
+    "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each <code>--depth 1</code> fetch delivered one commit and recorded it as a boundary.",
+    "Stamping a build with <code>git describe</code> and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+    "Running <code>scalar clone</code> and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with <code>scalar unregister</code> and <code>git fsmonitor--daemon stop</code>.",
+    "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 70,
+   "progress": 0.8046
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what <code>main</code> did meanwhile.",
+    "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each <code>--depth 1</code> fetch delivered one commit and recorded it as a boundary.",
+    "Stamping a build with <code>git describe</code> and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+    "Running <code>scalar clone</code> and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with <code>scalar unregister</code> and <code>git fsmonitor--daemon stop</code>.",
+    "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 71,
+   "progress": 0.8175
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 72,
+   "progress": 0.8232
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. The search platform team fixes the incident from the hook in three changes.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 73,
+   "progress": 0.8247
+  },
+  {
+   "kind": "keypoint",
+   "body": "For releases, each project has its own release script that calls <code>git describe --match '&lt;project&gt;/v*'</code> and limits its changelog to the project's paths.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 74,
+   "progress": 0.8578
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 75,
+   "progress": 0.875
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 18.4, \"The clone that <code>scalar clone</code> builds, made by hand\", in <code>lab-manual/m18-transfer-scale.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 76,
+   "progress": 0.8764
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 18.9, \"The clone that believes it is up to date\", in <code>exercises/m16-m18-internals.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 77,
+   "progress": 0.8951
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 78,
+   "progress": 0.9012
+  },
+  {
+   "kind": "keypoint",
+   "body": "Question 446 of the CTO question bank:",
+   "section": "INTERVIEW QUESTION",
+   "n": 79,
+   "progress": 0.9026
+  },
+  {
+   "kind": "callout",
+   "quotes": [
+    "\"Our CI computes affected projects with <code>git diff main..HEAD</code>. What is wrong, and why does the fix fail in a shallow clone?\""
+   ],
+   "quoted": false,
+   "section": "INTERVIEW QUESTION",
+   "n": 80,
+   "progress": 0.9053
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=dots d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main => + note:d259a34:merge_base; name:base => + mark:from:d259a34; mark:to:88222b7; name:three; say:Three_dots:_from_the_merge_base_to_the_branch_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; mark:from:100bb99; mark:to:88222b7; name:two; say:Two_dots:_tip_against_tip => d259a34-100bb99 main; d259a34-9c9fd21-88222b7 feature/rerank-cache; HEAD=main; note:d259a34:merge_base; absent:d259a34,9c9fd21; name:shallow; say:Depth_1:_two_tips_with_no_connection",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "d259a34",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "100bb99",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "9c9fd21",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "d259a34"
+      ]
+     },
+     {
+      "id": "88222b7",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "9c9fd21"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "d259a34",
+       "100bb99",
+       "9c9fd21",
+       "88222b7"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {},
+      "name": "base"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "d259a34": "from",
+       "88222b7": "to"
+      },
+      "caption": "Three dots: from the merge base to the branch tip",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [],
+      "marks": {
+       "100bb99": "from",
+       "88222b7": "to"
+      },
+      "caption": "Two dots: tip against tip",
+      "name": "two"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "100bb99",
+       "feature/rerank-cache": "88222b7"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "merge base",
+        "at": "d259a34"
+       }
+      ],
+      "absent": [
+       "d259a34",
+       "9c9fd21"
+      ],
+      "marks": {},
+      "caption": "Depth 1: two tips with no connection",
+      "name": "shallow"
+     }
+    ],
+    "settle": "on",
+    "id": "dots"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "base",
+    "three",
+    "two",
+    "shallow"
+   ],
+   "base": 6,
+   "upto": 6,
+   "section": "INTERVIEW QUESTION",
+   "n": 81,
+   "progress": 0.9072
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 82,
+   "progress": 0.932
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this.",
+   "section": "RECAP",
+   "n": 83,
+   "progress": 0.9334
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+    "<code>scalar clone</code> is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+    "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+    "Tags are repository-wide; prefix them per project and use <code>git describe --match</code>.",
+    "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 42,
+   "section": "RECAP",
+   "n": 84,
+   "progress": 0.9345
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+    "<code>scalar clone</code> is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+    "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+    "Tags are repository-wide; prefix them per project and use <code>git describe --match</code>.",
+    "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "RECAP",
+   "n": 85,
+   "progress": 0.9372
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+    "<code>scalar clone</code> is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+    "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+    "Tags are repository-wide; prefix them per project and use <code>git describe --match</code>.",
+    "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "RECAP",
+   "n": 86,
+   "progress": 0.9448
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+    "<code>scalar clone</code> is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+    "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+    "Tags are repository-wide; prefix them per project and use <code>git describe --match</code>.",
+    "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "RECAP",
+   "n": 87,
+   "progress": 0.9547
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+    "<code>scalar clone</code> is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+    "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+    "Tags are repository-wide; prefix them per project and use <code>git describe --match</code>.",
+    "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "RECAP",
+   "n": 88,
+   "progress": 0.9631
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+    "<code>scalar clone</code> is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+    "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+    "Tags are repository-wide; prefix them per project and use <code>git describe --match</code>.",
+    "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "RECAP",
+   "n": 89,
+   "progress": 0.9677
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 90,
+   "progress": 0.9734
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 24.7 to 24.14 of Chapter 24 and do the Practice section 24.16.",
+   "section": "HOMEWORK",
+   "n": 91,
+   "progress": 0.9748
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=combo boxes=the_server:every_object|*your_clone:.git|working_tree:the_cone rows=1:A:commits|1:A:trees|1:A:blobs,_every_version|2:B:commits@ok|2:B:trees@ok|3:C:the_files_of_the_cone|3:B:blobs_of_the_cone@hl|4:B:promise:_.git/config@ref|4:C:cone:_config.worktree@ref arrows=2:A1>B1:blob:none|3:A3>B3:on_demand title=Blobless_plus_cone at_1=5 at_2=35 at_3=80",
+   "scene": "stores",
+   "params": {
+    "id": "combo",
+    "boxes": [
+     [
+      "the server",
+      "every object"
+     ],
+     [
+      "*your clone",
+      ".git"
+     ],
+     [
+      "working tree",
+      "the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "commits"
+     ],
+     [
+      1,
+      "A",
+      "trees"
+     ],
+     [
+      1,
+      "A",
+      "blobs, every version"
+     ],
+     [
+      2,
+      "B",
+      "commits",
+      "ok"
+     ],
+     [
+      2,
+      "B",
+      "trees",
+      "ok"
+     ],
+     [
+      3,
+      "C",
+      "the files of the cone"
+     ],
+     [
+      3,
+      "B",
+      "blobs of the cone",
+      "hl"
+     ],
+     [
+      4,
+      "B",
+      "promise: .git/config",
+      "ref"
+     ],
+     [
+      4,
+      "C",
+      "cone: config.worktree",
+      "ref"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "blob:none"
+     ],
+     [
+      3,
+      "A3",
+      "B3",
+      "on demand"
+     ]
+    ],
+    "title": "Blobless plus cone",
+    "at": {
+     "1": 0.05,
+     "2": 0.35,
+     "3": 0.8
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "HOMEWORK",
+   "n": 92,
+   "progress": 0.9802
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "A monorepo's CI computes which projects a pull request affects and runs only their tests. A monorepo is one repository that keeps many projects together, CI is its automated checks, and a pull request is a proposal to merge one branch into another. One day a pull request that changes the ranker reports zero affected projects, skips every test, and merges. main is broken an hour later.",
+   "tele": "A monorepo's CI computes which projects a pull request affects and runs only their tests. A monorepo is one repository that keeps many projects together, CI is its automated checks, and a pull request is a proposal to merge one branch into another. One day a pull request that changes the ranker reports zero affected projects, skips every test, and merges. `main` is broken an hour later.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "b19e7ae6",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The script that computes the list hadn't changed. The clone had. Someone made the CI clone shallow to save time: a clone that holds only the newest commits and pretends history ends there. The \"what changed\" step now fails with \"no merge base\", and the script swallowed the error and concluded that nothing changed.",
+   "tele": "The script that computes the list hadn't changed. The clone had. Someone made the CI clone shallow to save time: a clone that holds only the newest commits and pretends history ends there. The \"what changed\" step now fails with \"no merge base\", and the script swallowed the error and concluded that nothing changed.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 4,
+   "line": 16,
+   "t0": 30.3,
+   "h": "8c1b8552",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Your CTO asks: what was wrong, and what is the smallest clone that gives the right answer? You'll be able to say exactly which objects that question needs. Hold on to \"the smallest clone\". You'll build it in the demo.",
+   "tele": "Your CTO asks: what was wrong, and what is the smallest clone that gives the right answer? You'll be able to say exactly which objects that question needs. Hold on to \"the smallest clone\". You'll build it in the demo.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 5,
+   "line": 18,
+   "t0": 51.9,
+   "h": "3e326e37",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 67.9,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. This video closes the monorepo topic and the scale topic by putting the pieces together.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. This video closes the monorepo topic and the scale topic by putting the pieces together.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 7,
+   "line": 22,
+   "t0": 69.4,
+   "h": "c45ffd97",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "First, the combination: a blobless partial clone with a cone-mode sparse checkout, and what the command scalar clone sets up around that combination. Then three things a monorepo needs beyond a small working tree: ownership by path, CI that computes affected projects, and releases of several projects from one repository.",
+   "tele": "First, the combination: a blobless partial clone with a cone-mode sparse checkout, and what the command `scalar clone` sets up around that combination. Then three things a monorepo needs beyond a small working tree: ownership by path, CI that computes affected projects, and releases of several projects from one repository.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 8,
+   "line": 24,
+   "t0": 80.2,
+   "h": "55631b94",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Replays from labs/ch24: sparse-partial.sh, affected-projects.sh, project-tags.sh, and the replay of Lab 18.4 up to its checkpoint.",
+   "tele": "Replays from `labs/ch24`: `sparse-partial.sh`, `affected-projects.sh`, `project-tags.sh`, and the replay of Lab 18.4 up to its checkpoint.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 9,
+   "line": 26,
+   "t0": 100.2,
+   "h": "343fb3e7",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "There's no scalar clone on screen. The lab rules forbid demos that install schedulers or start daemons, and scalar clone does both. It is labelled 🟡 CAUTION in the chapter's table: it also writes global configuration, installs a scheduler unless --no-maintenance, and starts a monitor daemon. The lab builds the same clone by hand and registers nothing. The commands we do run, git clone --filter=blob:none --sparse, git backfill and git maintenance run --task=prefetch, are 🟢 SAFE: they add objects and refs under refs/prefetch/.",
+   "tele": "There's no `scalar clone` on screen. The lab rules forbid demos that install schedulers or start daemons, and `scalar clone` does both. It is labelled 🟡 CAUTION in the chapter's table: it also writes global configuration, installs a scheduler unless `--no-maintenance`, and starts a monitor daemon. The lab builds the same clone by hand and registers nothing. The commands we do run, `git clone --filter=blob:none --sparse`, `git backfill` and `git maintenance run --task=prefetch`, are 🟢 SAFE: they add objects and refs under `refs/prefetch/`.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 10,
+   "line": 28,
+   "t0": 106.6,
+   "h": "cc653e79",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 11,
+   "line": 30,
+   "t0": 139.0,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 12,
+   "line": 32,
+   "t0": 140.5,
+   "h": "152923b5",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Combine a blobless clone with a cone and say what is fetched when.",
+   "tele": "Combine a blobless clone with a cone and say what is fetched when.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 13,
+   "line": 34,
+   "t0": 142.5,
+   "h": "ee639fee",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "List what scalar clone sets up and which parts live outside the repository.",
+   "tele": "List what `scalar clone` sets up and which parts live outside the repository.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 14,
+   "line": 34,
+   "t0": 147.7,
+   "h": "abd3a053",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+   "tele": "Compute affected projects correctly and explain why the naive form fails in shallow and partial CI clones.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 15,
+   "line": 34,
+   "t0": 152.9,
+   "h": "965ec480",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Tag and describe releases of several projects in one repository.",
+   "tele": "Tag and describe releases of several projects in one repository.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 16,
+   "line": 34,
+   "t0": 159.7,
+   "h": "d3731f2a",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say how CODEOWNERS is used at this scale, as a pointer to Part 5.",
+   "tele": "Say how CODEOWNERS is used at this scale, as a pointer to Part 5.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 17,
+   "line": 34,
+   "t0": 163.7,
+   "h": "c3960e4f",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 18,
+   "line": 40,
+   "t0": 169.3,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: a blobless partial clone leaves file contents on the server until something needs them, a sparse checkout limits that \"something\" to your cone, and scalar clone sets up both together with settings and scheduled maintenance.",
+   "tele": "In one sentence: a blobless partial clone leaves file contents on the server until something needs them, a sparse checkout limits that \"something\" to your cone, and `scalar clone` sets up both together with settings and scheduled maintenance.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 19,
+   "line": 42,
+   "t0": 170.8,
+   "h": "887bcbb9",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why combine them? A sparse checkout alone still downloaded every version of every file. git clone --filter=blob:none asks the server for commits and trees without blobs, the objects that hold file contents. Git fetches a blob when a command first needs it. With --sparse, the checkout needs only the blobs of the cone.",
+   "tele": "Why combine them? A sparse checkout alone still downloaded every version of every file. `git clone --filter=blob:none` asks the server for commits and trees without blobs, the objects that hold file contents. Git fetches a blob when a command first needs it. With `--sparse`, the checkout needs only the blobs of the cone.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 20,
+   "line": 48,
+   "t0": 186.0,
+   "h": "9598c52d",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.05,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.35,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.8,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "These are two independent mechanisms in two files. The promise of the remote belongs to the repository and is in .git/config. The cone belongs to the working tree and is in .git/config.worktree.",
+   "tele": "These are two independent mechanisms in two files. The promise of the remote belongs to the repository and is in `.git/config`. The cone belongs to the working tree and is in `.git/config.worktree`.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 21,
+   "line": 52,
+   "t0": 207.2,
+   "h": "20a16135",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "So what does scalar clone do? scalar ships with Git since 2.38 and isn't labelled experimental. Its manual describes scalar clone <url> <enlistment> in four parts. The enlistment is the directory it creates.",
+   "tele": "So what does `scalar clone` do? `scalar` ships with Git since 2.38 and isn't labelled experimental. Its manual describes `scalar clone <url> <enlistment>` in four parts. The enlistment is the directory it creates.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 22,
+   "line": 56,
+   "t0": 220.0,
+   "h": "8d80b228",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "One: a partial clone. \"By default, only commit and tree objects are cloned\", with the working tree in <enlistment>/src.",
+   "tele": "One: a partial clone. \"By default, only commit and tree objects are cloned\", with the working tree in `<enlistment>/src`.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 23,
+   "line": 60,
+   "t0": 233.2,
+   "h": "f02fe922",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two: a cone-mode sparse checkout with only the top-level files, unless --full-clone. Three: configuration \"to optimize for large repositories\", each value with its reason in the manual. Among others: commitGraph.changedPaths=true, core.untrackedCache=true, index.version=4, fetch.unpackLimit=1, gc.auto=0, status.aheadBehind=false, fetch.showForcedUpdates=false, pack.useBitmaps=false, and log.excludeDecoration=refs/prefetch/*. You've met the reason for almost every one of those in the last five videos. Four: background maintenance, the scheduler of git maintenance start, unless --no-maintenance.",
+   "tele": "Two: a cone-mode sparse checkout with only the top-level files, unless `--full-clone`. Three: configuration \"to optimize for large repositories\", each value with its reason in the manual. Among others: `commitGraph.changedPaths=true`, `core.untrackedCache=true`, `index.version=4`, `fetch.unpackLimit=1`, `gc.auto=0`, `status.aheadBehind=false`, `fetch.showForcedUpdates=false`, `pack.useBitmaps=false`, and `log.excludeDecoration=refs/prefetch/*`. You've met the reason for almost every one of those in the last five videos. Four: background maintenance, the scheduler of `git maintenance start`, unless `--no-maintenance`.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 24,
+   "line": 66,
+   "t0": 240.8,
+   "h": "79a531b1",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.03,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.14,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.86,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Which parts live outside the repository? The textbook ran a contained test on Git 2.55.0 on macOS, in a sandbox with its own HOME and the scheduler replaced by a logging stub. It found three things. With --no-maintenance the scheduler wasn't called.",
+   "tele": "Which parts live outside the repository? The textbook ran a contained test on Git 2.55.0 on macOS, in a sandbox with its own `HOME` and the scheduler replaced by a logging stub. It found three things. With `--no-maintenance` the scheduler wasn't called.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 25,
+   "line": 70,
+   "t0": 266.8,
+   "h": "7b52dd6c",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The enlistment was registered in the global configuration as scalar.repo. And the repository received core.fsmonitor=true while scalar ran git fsmonitor--daemon start, which left a daemon running, a process that stays in the background. --no-maintenance doesn't prevent that, and the 2.55 manual page doesn't list the setting. The source does.",
+   "tele": "The enlistment was registered in the global configuration as `scalar.repo`. And the repository received `core.fsmonitor=true` while `scalar` ran `git fsmonitor--daemon start`, which left a daemon running, a process that stays in the background. `--no-maintenance` doesn't prevent that, and the 2.55 manual page doesn't list the setting. The source does.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 26,
+   "line": 70,
+   "t0": 283.6,
+   "h": "8ae384ac",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "So scalar clone leaves three things behind: a registration in your global configuration, scheduler entries, on macOS under ~/Library/LaunchAgents, and one monitor process per enlistment. scalar unregister undoes the first two for a repository. scalar delete <enlistment> also removes the directory. And git fsmonitor--daemon stop inside the working tree stops the daemon.",
+   "tele": "So `scalar clone` leaves three things behind: a registration in your global configuration, scheduler entries, on macOS under `~/Library/LaunchAgents`, and one monitor process per enlistment. `scalar unregister` undoes the first two for a repository. `scalar delete <enlistment>` also removes the directory. And `git fsmonitor--daemon stop` inside the working tree stops the daemon.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 27,
+   "line": 76,
+   "t0": 303.2,
+   "h": "518c3ef2",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.1,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.25,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Ownership. This is GitHub, not Git: Git stores .github/CODEOWNERS as an ordinary file and gives it no meaning. In a monorepo, ownership is a function of the path, and on GitHub that function is the CODEOWNERS file. Part 5 teaches it.",
+   "tele": "Ownership. This is GitHub, not Git: Git stores `.github/CODEOWNERS` as an ordinary file and gives it no meaning. In a monorepo, ownership is a function of the path, and on GitHub that function is the `CODEOWNERS` file. Part 5 teaches it.",
+   "words": 41,
+   "est": 16.4,
+   "slide": 28,
+   "line": 80,
+   "t0": 324.0,
+   "h": "b9cde898",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Four documented facts decide whether it works at this scale. The last matching pattern wins. The file is read from the pull request's base branch. The file only requests reviews. Requiring them is a ruleset or branch protection setting. And a line with invalid syntax is skipped, and the pull request doesn't fail because of it.",
+   "tele": "Four documented facts decide whether it works at this scale. The last matching pattern wins. The file is read from the pull request's base branch. The file only requests reviews. Requiring them is a ruleset or branch protection setting. And a line with invalid syntax is skipped, and the pull request doesn't fail because of it.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 29,
+   "line": 86,
+   "t0": 340.4,
+   "h": "f5cefadc",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.15,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.75,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "CI. A monorepo's CI must first answer: which projects does this change affect? Building everything is correct and unaffordable. Building too little lets a broken main through. Git's part of the answer is a diff against the merge base, the most recent commit that both histories contain: three dots.",
+   "tele": "CI. A monorepo's CI must first answer: which projects does this change affect? Building everything is correct and unaffordable. Building too little lets a broken `main` through. Git's part of the answer is a diff against the merge base, the most recent commit that both histories contain: three dots.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 30,
+   "line": 92,
+   "t0": 362.8,
+   "h": "ce1e9e2f",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.382,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.763,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three dots mean \"from the merge base to the second commit\": what the branch did since it forked. Two dots compare the tips and charge the branch with what main did meanwhile. A build system then extends the list by dependency, which Git can't know.",
+   "tele": "Three dots mean \"from the merge base to the second commit\": what the branch did since it forked. Two dots compare the tips and charge the branch with what `main` did meanwhile. A build system then extends the list by dependency, which Git can't know.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 31,
+   "line": 96,
+   "t0": 382.4,
+   "h": "6aa9d917",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     },
+     {
+      "at": 0.388,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Releases. In one sentence: tags name commits of the whole repository, so a monorepo that releases projects separately puts the project into the tag name and into every question about \"the last release\". A tag is a ref that isn't expected to move. There is one refs/tags/ namespace per repository. The usual convention is a prefix per project. The slash is only a character to Git, and patterns can match it.",
+   "tele": "Releases. In one sentence: tags name commits of the whole repository, so a monorepo that releases projects separately puts the project into the tag name and into every question about \"the last release\". A tag is a ref that isn't expected to move. There is one `refs/tags/` namespace per repository. The usual convention is a prefix per project. The slash is only a character to Git, and patterns can match it.",
+   "words": 71,
+   "est": 28.4,
+   "slide": 32,
+   "line": 100,
+   "t0": 400.4,
+   "h": "38ddaf6a",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And when should you not use a monorepo at all? Section 24.13 gives four cases. When projects have different readers, because Git can't restrict reading to part of a repository. When lifecycles are unrelated. When the content is large binaries, because sparse checkout and partial clone postpone a download and don't shrink it. And when there's no one to own the tooling.",
+   "tele": "And when should you not use a monorepo at all? Section 24.13 gives four cases. When projects have different readers, because Git can't restrict reading to part of a repository. When lifecycles are unrelated. When the content is large binaries, because sparse checkout and partial clone postpone a download and don't shrink it. And when there's no one to own the tooling.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 33,
+   "line": 106,
+   "t0": 428.8,
+   "h": "9f7aa912",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.22,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.55,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.86,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 34,
+   "line": 108,
+   "t0": 453.6,
+   "h": "",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Recall the library with closed stacks from two videos ago: the catalogue lists every book and your desk holds the shelves you asked for. The analogy broke because in a normal clone the stacks are in your building. A partial clone moves the stacks out. Now the catalogue, which is commits and trees, is complete and local. The books, which are blobs, arrive when you ask. And the desk, the cone, limits what you ask for by default.",
+   "tele": "Recall the library with closed stacks from two videos ago: the catalogue lists every book and your desk holds the shelves you asked for. The analogy broke because in a normal clone the stacks are in your building. A partial clone moves the stacks out. Now the catalogue, which is commits and trees, is complete and local. The books, which are blobs, arrive when you ask. And the desk, the cone, limits what you ask for by default.",
+   "words": 78,
+   "est": 31.2,
+   "slide": 35,
+   "line": 112,
+   "t0": 455.1,
+   "h": "706632dd",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Where does this combined model break? Questions about history need the catalogue, not the books. A blobless clone answers them. A shallow clone has thrown away most of the catalogue. That's the whole difference in the hook.",
+   "tele": "Where does this combined model break? Questions about history need the catalogue, not the books. A blobless clone answers them. A shallow clone has thrown away most of the catalogue. That's the whole difference in the hook.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 35,
+   "line": 114,
+   "t0": 486.3,
+   "h": "a3798edb",
+   "anim": {
+    "group": 25,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 36,
+   "line": 116,
+   "t0": 501.1,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "The merge base is d259a34. From there, main went on to 100bb99, which changed the schemas, the gateway and the ingest worker. The branch made two commits that changed the ranker.",
+   "tele": "The merge base is `d259a34`. From there, `main` went on to `100bb99`, which changed the schemas, the gateway and the ingest worker. The branch made two commits that changed the ranker.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 37,
+   "line": 135,
+   "t0": 502.6,
+   "h": "92473a64",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "With three dots, one project is affected: the ranker. With two dots, four are, and three of those are main's work charged to the branch.",
+   "tele": "With three dots, one project is affected: the ranker. With two dots, four are, and three of those are `main`'s work charged to the branch.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 37,
+   "line": 137,
+   "t0": 515.0,
+   "h": "513e383d",
+   "anim": {
+    "group": 27,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, on paper. Copy the four commits, and circle the one that three dots can't work without. I'll wait.",
+   "tele": "Try it now, thirty seconds, on paper. Copy the four commits, and circle the one that three dots can't work without. I'll wait.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 38,
+   "line": 141,
+   "t0": 525.0,
+   "h": "1e689a73",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 38,
+   "line": 143,
+   "t0": 534.2,
+   "h": "",
+   "anim": {
+    "group": 28,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 41,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "It's the merge base. Now cover the commit d259a34 with your hand. That's a shallow CI clone: two tips with no connection. Three dots has no merge base to start from.",
+   "tele": "It's the merge base. Now cover the commit `d259a34` with your hand. That's a shallow CI clone: two tips with no connection. Three dots has no merge base to start from.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 39,
+   "line": 147,
+   "t0": 538.7,
+   "h": "0a736da9",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     },
+     {
+      "at": 0.449,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Read the prevention line: jobs that build one snapshot may be shallow. Jobs that compare, describe or compute versions may not.",
+   "tele": "Read the prevention line: jobs that build one snapshot may be shallow. Jobs that compare, describe or compute versions may not.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 40,
+   "line": 164,
+   "t0": 551.1,
+   "h": "6af0a527",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 41,
+   "line": 166,
+   "t0": 559.5,
+   "h": "",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The layout that scalar clone creates, an enlistment directory with the working tree in src, built by hand.",
+   "tele": "The layout that `scalar clone` creates, an enlistment directory with the working tree in `src`, built by hand.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 42,
+   "line": 174,
+   "t0": 561.0,
+   "h": "4c16c02a",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Blobless and sparse together. How many commits, how many trees, how many blobs? Say it out loud, at least for the blobs. I'll wait.",
+   "tele": "Blobless and sparse together. How many commits, how many trees, how many blobs? Say it out loud, at least for the blobs. I'll wait.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 43,
+   "line": 183,
+   "t0": 568.2,
+   "h": "a5b31a97",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 185,
+   "t0": 577.8,
+   "h": "",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three blobs for three files, and all 96 commits and 284 trees.",
+   "tele": "Three blobs for three files, and all 96 commits and 284 trees.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 44,
+   "line": 207,
+   "t0": 582.3,
+   "h": "30d60d3d",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.36,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "What makes it partial is in .git/config. What makes it sparse is in .git/config.worktree.",
+   "tele": "What makes it partial is in `.git/config`. What makes it sparse is in `.git/config.worktree`.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 45,
+   "line": 222,
+   "t0": 587.1,
+   "h": "44015eec",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.92,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Widening the cone fetched six more blobs, the current versions of six files. 113 objects that the history refers to aren't here, and nothing is wrong. You can breathe out.",
+   "tele": "Widening the cone fetched six more blobs, the current versions of six files. 113 objects that the history refers to aren't here, and nothing is wrong. You can breathe out.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 46,
+   "line": 245,
+   "t0": 592.7,
+   "h": "eda00503",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git backfill --sparse is experimental and needs Git 2.49 or later. It downloads the historical versions of the files in the cone in batches, so that git log -p and git blame there stop fetching blob by blob.",
+   "tele": "`git backfill --sparse` is experimental and needs Git 2.49 or later. It downloads the historical versions of the files in the cone in batches, so that `git log -p` and `git blame` there stop fetching blob by blob.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 47,
+   "line": 277,
+   "t0": 604.7,
+   "h": "8ad06944",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.709,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.1,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A few of the settings that scalar would write, set by hand. The manual lists them all.",
+   "tele": "A few of the settings that `scalar` would write, set by hand. The manual lists them all.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 48,
+   "line": 292,
+   "t0": 619.9,
+   "h": "a85c9b9b",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 8
+      },
+      "budget": 4.76,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "What the scheduler would run every hour, run once in the foreground. The prefetch task fetches into refs/prefetch/. Your remote-tracking branches don't move, and when you run git fetch yourself the objects are already local.",
+   "tele": "What the scheduler would run every hour, run once in the foreground. The `prefetch` task fetches into `refs/prefetch/`. Your remote-tracking branches don't move, and when you run `git fetch` yourself the objects are already local.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 49,
+   "line": 316,
+   "t0": 626.7,
+   "h": "a008a401",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.11,
+      "dissolve": true
+     },
+     {
+      "at": 0.317,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 50,
+   "line": null,
+   "t0": 640.7,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The diagram, measured. One project with three dots, four with two.",
+   "tele": "The diagram, measured. One project with three dots, four with two.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 51,
+   "line": 354,
+   "t0": 643.2,
+   "h": "9ab34b74",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 3.08,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One commit per branch. What do the three-dot diff and git merge-base print, and with what exit status? Make your prediction. I'll wait.",
+   "tele": "One commit per branch. What do the three-dot diff and `git merge-base` print, and with what exit status? Make your prediction. I'll wait.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 52,
+   "line": 364,
+   "t0": 647.6,
+   "h": "f6719a18",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 2.54,
+      "dissolve": true
+     },
+     {
+      "at": 0.394,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.9,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 52,
+   "line": 366,
+   "t0": 656.8,
+   "h": "",
+   "anim": {
+    "group": 42,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "\"No merge base\", status 128. And git merge-base prints nothing with status 1. A script that reads only the output sees an empty list. That's the zero from the hook.",
+   "tele": "\"No merge base\", status 128. And `git merge-base` prints nothing with status 1. A script that reads only the output sees an empty list. That's the zero from the hook.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 53,
+   "line": 386,
+   "t0": 661.3,
+   "h": "c3056da8",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 1.67,
+      "dissolve": true
+     },
+     {
+      "at": 0.199,
+      "fx": "terminal",
+      "from": {
+       "blocks": 6
+      },
+      "to": {
+       "blocks": 8
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Ninety-six commits, 284 trees and no blob are enough for git merge-base and for git diff --name-only, which compares trees. The job then checks out the affected project and its dependencies: nine files. That's the smallest clone that gives the right answer, the one the CTO asked for.",
+   "tele": "Ninety-six commits, 284 trees and no blob are enough for `git merge-base` and for `git diff --name-only`, which compares trees. The job then checks out the affected project and its dependencies: nine files. That's the smallest clone that gives the right answer, the one the CTO asked for.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 54,
+   "line": 426,
+   "t0": 673.3,
+   "h": "689ccdf9",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 2.66,
+      "dissolve": true
+     },
+     {
+      "at": 0.198,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.2,
+      "dissolve": false
+     },
+     {
+      "at": 0.285,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 8
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 55,
+   "line": null,
+   "t0": 692.5,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "By default actions/checkout fetches one commit and no tags, which is the failing state. Its README documents inputs for depth, a partial-clone filter and sparse-checkout. That is described from the documentation and not run here. And one trap that belongs to GitHub: a workflow that a path filter keeps from starting never reports, so a required check on it stays pending. Part 6 returns to it.",
+   "tele": "By default `actions/checkout` fetches one commit and no tags, which is the failing state. Its README documents inputs for depth, a partial-clone filter and sparse-checkout. That is described from the documentation and not run here. And one trap that belongs to GitHub: a workflow that a path filter keeps from starting never reports, so a required check on it stays pending. Part 6 returns to it.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 56,
+   "line": 430,
+   "t0": 695.5,
+   "h": "08bf74e3",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 57,
+   "line": null,
+   "t0": 721.9,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Five tags with project prefixes. schemas/v1.0.0 points at a documentation commit: a tag names a state of the entire tree.",
+   "tele": "Five tags with project prefixes. `schemas/v1.0.0` points at a documentation commit: a tag names a state of the entire tree.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 58,
+   "line": 452,
+   "t0": 724.4,
+   "h": "ef586c48",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Quick quiz. git describe main with no pattern, in a build of the gateway. Which project's tag will it print: gateway, ranker or schemas? Say it out loud.",
+   "tele": "Quick quiz. `git describe main` with no pattern, in a build of the gateway. Which project's tag will it print: gateway, ranker or schemas? Say it out loud.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 59,
+   "line": 460,
+   "t0": 732.4,
+   "h": "8f70d23d",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 59,
+   "line": 462,
+   "t0": 743.6,
+   "h": "",
+   "anim": {
+    "group": 49,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 60,
+   "line": null,
+   "t0": 748.1,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The schemas tag: the nearest tag of any project. If you said gateway, that's the natural guess, and it's the one a build script makes. A build that stamps the gateway with it is wrong, and nothing fails. --match restricts the candidates.",
+   "tele": "The schemas tag: the nearest tag of any project. If you said gateway, that's the natural guess, and it's the one a build script makes. A build that stamps the gateway with it is wrong, and nothing fails. `--match` restricts the candidates.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 61,
+   "line": 481,
+   "t0": 753.1,
+   "h": "562c5801",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.075,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.151,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Of the 42 commits between two gateway releases, six concern the gateway. A changelog, and the question \"does this project need a release\", must be limited to the paths the project ships, its libraries included. git diff --quiet with paths turns the question into an exit status.",
+   "tele": "Of the 42 commits between two gateway releases, six concern the gateway. A changelog, and the question \"does this project need a release\", must be limited to the paths the project ships, its libraries included. `git diff --quiet` with paths turns the question into an exit status.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 62,
+   "line": 509,
+   "t0": 769.9,
+   "h": "a2a50eb6",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.754,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 3.24,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 63,
+   "line": null,
+   "t0": 788.7,
+   "h": "",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "At the checkpoint, the hand-built clone answers git log -p in the cone with zero fetches, and a path-limited log uses the changed-path filters. Then the lab cuts the connection to the server. What still works and what doesn't is yours to predict.",
+   "tele": "At the checkpoint, the hand-built clone answers `git log -p` in the cone with zero fetches, and a path-limited log uses the changed-path filters. Then the lab cuts the connection to the server. What still works and what doesn't is yours to predict.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 64,
+   "line": 528,
+   "t0": 791.2,
+   "h": "d55ea17b",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.33,
+      "dissolve": true
+     },
+     {
+      "at": 0.194,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 65,
+   "line": 530,
+   "t0": 808.4,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 66,
+   "line": 532,
+   "t0": 809.9,
+   "h": "76698d9b",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what main did meanwhile.",
+   "tele": "Computing affected projects with two dots. Root cause: two dots compare the tips and charge the branch with what `main` did meanwhile.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 67,
+   "line": 534,
+   "t0": 811.9,
+   "h": "7f2072e9",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each --depth 1 fetch delivered one commit and recorded it as a boundary.",
+   "tele": "Running the three-dot diff in a depth-1 clone. Root cause: the merge base is a commit in the past, and each `--depth 1` fetch delivered one commit and recorded it as a boundary.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 68,
+   "line": 534,
+   "t0": 820.7,
+   "h": "1620b846",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Stamping a build with git describe and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+   "tele": "Stamping a build with `git describe` and no pattern. Root cause: there is one tag namespace, and describe answers with the nearest tag of any project.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 69,
+   "line": 534,
+   "t0": 833.9,
+   "h": "6a4fc2fb",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Running scalar clone and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with scalar unregister and git fsmonitor--daemon stop.",
+   "tele": "Running `scalar clone` and later finding a daemon and scheduler entries. Root cause: it registers the enlistment globally, installs maintenance and starts a file-system monitor; remove them with `scalar unregister` and `git fsmonitor--daemon stop`.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 70,
+   "line": 534,
+   "t0": 844.3,
+   "h": "fe4fb61e",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix.",
+   "tele": "Triggering deploys on any tag. Root cause: tag-triggered automation must filter on the project prefix.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 71,
+   "line": 534,
+   "t0": 857.9,
+   "h": "0e938894",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 72,
+   "line": 540,
+   "t0": 863.9,
+   "h": "",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. The search platform team fixes the incident from the hook in three changes. The affected-projects job becomes a blobless clone without a checkout, computes git diff --name-only origin/main...HEAD, and then checks out the affected project and its dependencies with a cone. The script stops swallowing the exit status of the diff. And snapshot build jobs stay shallow, under the rule from the root-cause box: jobs that build one snapshot may be shallow, and jobs that compare, describe or compute versions may not.",
+   "tele": "Now, out of the lab. The search platform team fixes the incident from the hook in three changes. The affected-projects job becomes a blobless clone without a checkout, computes `git diff --name-only origin/main...HEAD`, and then checks out the affected project and its dependencies with a cone. The script stops swallowing the exit status of the diff. And snapshot build jobs stay shallow, under the rule from the root-cause box: jobs that build one snapshot may be shallow, and jobs that compare, describe or compute versions may not.",
+   "words": 87,
+   "est": 34.8,
+   "slide": 73,
+   "line": 542,
+   "t0": 865.4,
+   "h": "68b653d9",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "For releases, each project has its own release script that calls git describe --match '<project>/v*' and limits its changelog to the project's paths. And they note one platform fact: on GitHub a release is attached to one tag, so the release list mixes all projects.",
+   "tele": "For releases, each project has its own release script that calls `git describe --match '<project>/v*'` and limits its changelog to the project's paths. And they note one platform fact: on GitHub a release is attached to one tag, so the release list mixes all projects.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 74,
+   "line": 544,
+   "t0": 900.2,
+   "h": "185c4282",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 75,
+   "line": 546,
+   "t0": 918.2,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 18.4, \"The clone that scalar clone builds, made by hand\", in lab-manual/m18-transfer-scale.md. At each step, predict the object counts by type. Before the failure scenario, list which of your next five commands will work without the server and which will fail, and with what message.",
+   "tele": "Your turn. Do Lab 18.4, \"The clone that `scalar clone` builds, made by hand\", in `lab-manual/m18-transfer-scale.md`. At each step, predict the object counts by type. Before the failure scenario, list which of your next five commands will work without the server and which will fail, and with what message.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 76,
+   "line": 548,
+   "t0": 919.7,
+   "h": "43a90355",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 18.9, \"The clone that believes it is up to date\", in exercises/m16-m18-internals.md.",
+   "tele": "The challenge is Exercise 18.9, \"The clone that believes it is up to date\", in `exercises/m16-m18-internals.md`.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 77,
+   "line": 550,
+   "t0": 939.3,
+   "h": "7fa85b36",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 78,
+   "line": 552,
+   "t0": 945.7,
+   "h": "",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Question 446 of the CTO question bank:",
+   "tele": "Question 446 of the CTO question bank:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 79,
+   "line": 554,
+   "t0": 947.2,
+   "h": "5043f958",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 80,
+   "line": 558,
+   "t0": 950.0,
+   "h": "",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 86,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud. A strong answer explains what the two notations compare, with the merge base named. It then says which object the corrected command needs that a shallow clone doesn't have, and what the failure looks like, including the dangerous silent variant. It finishes with the clone shape that fixes it and why that shape is enough, in terms of commits, trees and blobs.",
+   "tele": "Answer out loud. A strong answer explains what the two notations compare, with the merge base named. It then says which object the corrected command needs that a shallow clone doesn't have, and what the failure looks like, including the dangerous silent variant. It finishes with the clone shape that fixes it and why that shape is enough, in terms of commits, trees and blobs.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 81,
+   "line": 562,
+   "t0": 952.0,
+   "h": "90c4c2bb",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 6,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 82,
+   "line": 564,
+   "t0": 978.0,
+   "h": "",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this.",
+   "tele": "Let's land this.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 83,
+   "line": 566,
+   "t0": 979.5,
+   "h": "8e062241",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 84,
+   "line": 568,
+   "t0": 980.7,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 90,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+   "tele": "Blobless plus cone: all commits and trees are local, and blobs are fetched only for the cone and on demand.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 85,
+   "line": 570,
+   "t0": 983.5,
+   "h": "42fe34e8",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 91,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "scalar clone is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+   "tele": "`scalar clone` is a partial clone, a cone, a set of settings and background maintenance; it also registers the enlistment globally and starts a monitor daemon.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 86,
+   "line": 570,
+   "t0": 991.5,
+   "h": "0b6e3623",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 92,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+   "tele": "Affected projects come from a three-dot diff, which needs the merge base; a blobless clone has it, a shallow clone does not.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 87,
+   "line": 570,
+   "t0": 1001.9,
+   "h": "d6df7b80",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 93,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Tags are repository-wide; prefix them per project and use git describe --match.",
+   "tele": "Tags are repository-wide; prefix them per project and use `git describe --match`.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 88,
+   "line": 570,
+   "t0": 1010.7,
+   "h": "1168c413",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 94,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch.",
+   "tele": "CODEOWNERS is GitHub's path-based ownership; it requests reviews and is read from the base branch.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 89,
+   "line": 570,
+   "t0": 1015.5,
+   "h": "a0c5d3b1",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 95,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 90,
+   "line": 576,
+   "t0": 1021.5,
+   "h": "",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 24.7 to 24.14 of Chapter 24 and do the Practice section 24.16.",
+   "tele": "Read sections 24.7 to 24.14 of Chapter 24 and do the Practice section 24.16.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 91,
+   "line": 578,
+   "t0": 1023.0,
+   "h": "0594dab1",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 97,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "That closes scale. You can now say which objects a question needs before you choose a clone, and that's real progress. Practise it on one repository of your own. Next time: the gate briefing for internals. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "That closes scale. You can now say which objects a question needs before you choose a clone, and that's real progress. Practise it on one repository of your own. Next time: the gate briefing for internals. Until then, look at the state first and type second. See you in the next one.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 92,
+   "line": 582,
+   "t0": 1028.6,
+   "h": "c7d75b32",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1049.4,
+ "narration_words": 2481,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

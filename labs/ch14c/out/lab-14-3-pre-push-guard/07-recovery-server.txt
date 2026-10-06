@@ -1,0 +1,29 @@
+# Enforce the rule where every push arrives: in the repository that plays the server.
+$ cat ../hooks/pre-receive
+#!/bin/sh
+# pre-receive (server side): one line per ref on standard input:
+#   <old-object-ID> <new-object-ID> <ref-name>
+# A non-zero exit rejects the whole push. Output goes back to the person who pushes.
+zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+while read -r old new ref; do
+  [ "$ref" = refs/heads/main ] || continue
+  if [ "$new" = "$zero" ]; then
+    echo "policy: main cannot be deleted"
+    exit 1
+  fi
+  if [ "$old" = "$zero" ]; then
+    range=$new
+  elif git merge-base --is-ancestor "$old" "$new"; then
+    range="$old..$new"
+  else
+    echo "policy: main accepts fast-forward updates only"
+    exit 1
+  fi
+  unfinished=$(git log --format='  %h %s' -E --grep='^(WIP|fixup!|squash!)' "$range")
+  if [ -n "$unfinished" ]; then
+    echo "policy: unfinished commits must not reach main:"
+    echo "$unfinished"
+    exit 1
+  fi
+done
+$ cp ../hooks/pre-receive ../server.git/hooks/pre-receive && chmod +x ../server.git/hooks/pre-receive

@@ -1,0 +1,30 @@
+$ ../pr view 24
+#24 Treat a missing embedding score as 0
+state: open   hotfix/embed-none -> main   author: Tanvi Desai
+merge check: clean
+Commits:
+  148f631 Tanvi Desai: Treat a missing embedding score as 0
+Files changed:
+ router/classify.py     | 2 ++
+ tests/test_classify.py | 4 ++++
+ 2 files changed, 6 insertions(+)
+$ git diff origin/main...origin/hotfix/embed-none -- router
+diff --git a/router/classify.py b/router/classify.py
+index ed5a180..eae5037 100644
+--- a/router/classify.py
++++ b/router/classify.py
+@@ -16,6 +16,8 @@ def classify(candidates, tenant=None):
+     """candidates: (intent, keyword_score, embed_score) tuples. Returns the intent to route to."""
+     best, best_score = fallback_for(tenant), THRESHOLD
+     for intent, kw, emb in candidates:
++        if emb is None:
++            emb = 0.0  # the embedding service timed out: decide on the keywords alone
+         score = blend(kw, emb, tenant)
+         if score > best_score:
+             best, best_score = intent, score
+$ git switch --quiet --detach origin/hotfix/embed-none
+$ bash scripts/test.sh
+OK
+$ PYTHONPATH=. python3 -B -c 'from router.classify import classify; print(classify([("billing_refund", 1.0, None)]))' 2>&1 | tail -n 1
+human_agent
+$ git switch --quiet main

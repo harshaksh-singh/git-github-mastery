@@ -1,0 +1,5145 @@
+{
+ "id": "V099",
+ "version": 22,
+ "title": "The .git directory file by file, and the loose object format",
+ "part": 4,
+ "part_label": "INTERNALS",
+ "part_name": "Git internals",
+ "palette": {
+  "accent": "#BC8CFF",
+  "accent2": "#E2CCFF",
+  "bg1": "#15111F",
+  "bg2": "#261D3A"
+ },
+ "planned_minutes": 22,
+ "chapters": [
+  "ch03-git-internals.md"
+ ],
+ "script": "video/scripts/V099-the-git-directory-file-by-file-and-the-loose-object-format.md",
+ "script_sha1": "3c22827d971918ce707120e887d845fb4942d07c",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 8,
+   "line": 27
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 13,
+   "line": 37
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 19,
+   "line": 47
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 32,
+   "line": 89
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 37,
+   "line": 105
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 40,
+   "line": 139
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 69,
+   "line": 422
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 76,
+   "line": 432
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 81,
+   "line": 444
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 85,
+   "line": 452
+  },
+  {
+   "name": "RECAP",
+   "beat": 90,
+   "line": 462
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 98,
+   "line": 476
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "The .git directory file by file, and the loose object format",
+   "part_name": "Git internals",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0018
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "\"A laptop lost power during a commit, and Git now says <code>fatal: index file corrupt</code>. What did we lose: the history, the work in progress, or nothing?\"",
+    "\"The release script stamps builds by reading <code>.git/refs/heads/main</code>. On the new build image that file does not exist. Is the repository damaged?\"",
+    "\"<code>git fsck</code> reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+    "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\""
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0031
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "\"A laptop lost power during a commit, and Git now says <code>fatal: index file corrupt</code>. What did we lose: the history, the work in progress, or nothing?\"",
+    "\"The release script stamps builds by reading <code>.git/refs/heads/main</code>. On the new build image that file does not exist. Is the repository damaged?\"",
+    "\"<code>git fsck</code> reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+    "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\""
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0127
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "\"A laptop lost power during a commit, and Git now says <code>fatal: index file corrupt</code>. What did we lose: the history, the work in progress, or nothing?\"",
+    "\"The release script stamps builds by reading <code>.git/refs/heads/main</code>. On the new build image that file does not exist. Is the repository damaged?\"",
+    "\"<code>git fsck</code> reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+    "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\""
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0205
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "\"A laptop lost power during a commit, and Git now says <code>fatal: index file corrupt</code>. What did we lose: the history, the work in progress, or nothing?\"",
+    "\"The release script stamps builds by reading <code>.git/refs/heads/main</code>. On the new build image that file does not exist. Is the repository damaged?\"",
+    "\"<code>git fsck</code> reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+    "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\""
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "HOOK",
+   "n": 6,
+   "progress": 0.0273
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "\"A laptop lost power during a commit, and Git now says <code>fatal: index file corrupt</code>. What did we lose: the history, the work in progress, or nothing?\"",
+    "\"The release script stamps builds by reading <code>.git/refs/heads/main</code>. On the new build image that file does not exist. Is the repository damaged?\"",
+    "\"<code>git fsck</code> reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+    "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\""
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "section": "HOOK",
+   "n": 7,
+   "progress": 0.034
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=short columns=the_question,the_short_answer rows=index_file_corrupt:the_index_is_rebuilt_with_one_command|.git/refs/heads/main_does_not_exist:the_ref_is_in_packed-refs_or_in_a_reftable|a_dangling_commit:\"dangling\"_says_where_git_fsck_started_looking|400_versions_of_16_MB:probably_not_6_GB,_a_pack_stores_deltas mono=off title=Four_short_answers,_to_be_earned",
+   "scene": "walk",
+   "params": {
+    "id": "short",
+    "columns": [
+     "the question",
+     "the short answer"
+    ],
+    "rows": [
+     [
+      "index file corrupt",
+      "the index is rebuilt with one command"
+     ],
+     [
+      ".git/refs/heads/main does not exist",
+      "the ref is in packed-refs or in a reftable"
+     ],
+     [
+      "a dangling commit",
+      "\"dangling\" says where git fsck started looking"
+     ],
+     [
+      "400 versions of 16 MB",
+      "probably not 6 GB, a pack stores deltas"
+     ]
+    ],
+    "mono": "off",
+    "title": "Four short answers, to be earned"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "HOOK",
+   "n": 8,
+   "progress": 0.0418
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0734
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.0748
+  },
+  {
+   "kind": "keypoint",
+   "body": "I'll say this once for the part: the replays use the fixed lab clock, so the commit IDs on screen equal the IDs in the book and the ones you'll get when you replay.",
+   "section": "INTRODUCTION",
+   "n": 11,
+   "progress": 0.0982
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today, two things. The <code>.git</code> directory, file by file: what <code>git init</code> creates, what the first commit adds, and which of those files Git can rebuild and which it can't.",
+   "section": "INTRODUCTION",
+   "n": 12,
+   "progress": 0.1103
+  },
+  {
+   "kind": "keypoint",
+   "body": "Two habits come out of this chapter, and both begin today.",
+   "section": "INTRODUCTION",
+   "n": 13,
+   "progress": 0.1319
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1494
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "name every entry of a fresh <code>.git</code> directory and say what reads or writes it;",
+    "say which files of <code>.git</code> can be deleted without breaking the repository;",
+    "describe the bytes of a loose object: header, content, compression;",
+    "compute a blob's object ID by hand and explain why the compression level does not matter;",
+    "find the file that holds a given object."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1507
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "name every entry of a fresh <code>.git</code> directory and say what reads or writes it;",
+    "say which files of <code>.git</code> can be deleted without breaking the repository;",
+    "describe the bytes of a loose object: header, content, compression;",
+    "compute a blob's object ID by hand and explain why the compression level does not matter;",
+    "find the file that holds a given object."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.156
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "name every entry of a fresh <code>.git</code> directory and say what reads or writes it;",
+    "say which files of <code>.git</code> can be deleted without breaking the repository;",
+    "describe the bytes of a loose object: header, content, compression;",
+    "compute a blob's object ID by hand and explain why the compression level does not matter;",
+    "find the file that holds a given object."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 17,
+   "progress": 0.1603
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "name every entry of a fresh <code>.git</code> directory and say what reads or writes it;",
+    "say which files of <code>.git</code> can be deleted without breaking the repository;",
+    "describe the bytes of a loose object: header, content, compression;",
+    "compute a blob's object ID by hand and explain why the compression level does not matter;",
+    "find the file that holds a given object."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 18,
+   "progress": 0.1638
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "name every entry of a fresh <code>.git</code> directory and say what reads or writes it;",
+    "say which files of <code>.git</code> can be deleted without breaking the repository;",
+    "describe the bytes of a loose object: header, content, compression;",
+    "compute a blob's object ID by hand and explain why the compression level does not matter;",
+    "find the file that holds a given object."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 19,
+   "progress": 0.1695
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1723
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=kinds cards=Objects:the_object_database|References:names_for_objects|Reflogs:a_log_of_how_those_names_moved|The_index:one_staging_file|Everything_else:settings,_or_the_state_of_an_operation_in_progress title=The_.git_directory_is_the_repository",
+   "scene": "cards",
+   "params": {
+    "id": "kinds",
+    "cards": [
+     [
+      "Objects",
+      "the object database"
+     ],
+     [
+      "References",
+      "names for objects"
+     ],
+     [
+      "Reflogs",
+      "a log of how those names moved"
+     ],
+     [
+      "The index",
+      "one staging file"
+     ],
+     [
+      "Everything else",
+      "settings, or the state of an operation in progress"
+     ]
+    ],
+    "title": "The .git directory is the repository"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1737
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=inv columns=in_.git,primary_or_derived rows=objects,_loose_or_packed:primary|refs,_HEAD,_config,_hooks,_info/exclude:primary|reflogs:primary|the_.idx_and_.rev_files_beside_a_pack:derived_from_the_pack|the_index:derived,_except_for_what_is_staged|COMMIT__EDITMSG:scratch|description:unused_by_Git_itself marks=1.2:ok,2.2:ok,3.2:ok,4.2:hl,5.2:hl,6.2:dim,7.2:dim title=Primary:_Git_cannot_recreate_it",
+   "scene": "walk",
+   "params": {
+    "id": "inv",
+    "columns": [
+     "in .git",
+     "primary or derived"
+    ],
+    "rows": [
+     [
+      "objects, loose or packed",
+      "primary"
+     ],
+     [
+      "refs, HEAD, config, hooks, info/exclude",
+      "primary"
+     ],
+     [
+      "reflogs",
+      "primary"
+     ],
+     [
+      "the .idx and .rev files beside a pack",
+      "derived from the pack"
+     ],
+     [
+      "the index",
+      "derived, except for what is staged"
+     ],
+     [
+      "COMMIT_EDITMSG",
+      "scratch"
+     ],
+     [
+      "description",
+      "unused by Git itself"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "ok",
+     "3.2": "ok",
+     "4.2": "hl",
+     "5.2": "hl",
+     "6.2": "dim",
+     "7.2": "dim"
+    },
+    "title": "Primary: Git cannot recreate it"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7"
+   ],
+   "upto": 8,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2234
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=config.toml right=standard_input lines=blob_16,\\0,retry__limit_=_3 alt=retry__limit_=_4 ids=f784b584,eb1ea65a fn=SHA-1 same=The_same_bytes_give_the_same_ID,_whatever_the_file_is_called diff=One_changed_byte_gives_an_unrelated_ID title=The_ID_is_computed_from_the_bytes",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "config.toml",
+    "right": "standard input",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "alt": "retry_limit = 4",
+    "ids": [
+     "f784b584",
+     "eb1ea65a"
+    ],
+    "fn": "SHA-1",
+    "same": "The same bytes give the same ID, whatever the file is called",
+    "diff": "One changed byte gives an unrelated ID",
+    "title": "The ID is computed from the bytes"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "upto": 1,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2586
+  },
+  {
+   "kind": "keypoint",
+   "headline": "The loose object",
+   "body": "🟢 SAFE: <code>git hash-object &lt;file&gt;</code> computes the ID that the file's content has as a blob, and writes the object with <code>-w</code>.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.3108
+  },
+  {
+   "kind": "keypoint",
+   "headline": "The loose object",
+   "body": "Inside <code>.git</code>, <code>git hash-object -w</code> creates one new file under <code>objects/</code>, read-only.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.3289
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=bytes boxes=config.toml:16_bytes|the_object:24_bytes_before_compression|computed_from_those_bytes:independently rows=1:A:retry__limit_=_3\\n|1:B:blob_16|1:B:\\0|1:B:retry__limit_=_3\\n|2:C:SHA-1:_the_object_ID@hl|3:C:zlib:_the_file@dim arrows=1:A1>B3:data|2:B1>C1:hash|3:B1>C2:compress mono=on title=Two_computations_on_the_same_bytes",
+   "scene": "stores",
+   "params": {
+    "id": "bytes",
+    "boxes": [
+     [
+      "config.toml",
+      "16 bytes"
+     ],
+     [
+      "the object",
+      "24 bytes before compression"
+     ],
+     [
+      "computed from those bytes",
+      "independently"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "retry_limit = 3\\n"
+     ],
+     [
+      1,
+      "B",
+      "blob 16"
+     ],
+     [
+      1,
+      "B",
+      "\\0"
+     ],
+     [
+      1,
+      "B",
+      "retry_limit = 3\\n"
+     ],
+     [
+      2,
+      "C",
+      "SHA-1: the object ID",
+      "hl"
+     ],
+     [
+      3,
+      "C",
+      "zlib: the file",
+      "dim"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B3",
+      "data"
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "hash"
+     ],
+     [
+      3,
+      "B1",
+      "C2",
+      "compress"
+     ]
+    ],
+    "mono": "on",
+    "title": "Two computations on the same bytes"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.3367
+  },
+  {
+   "kind": "keypoint",
+   "headline": "The loose object",
+   "body": "When should you not work at this level?",
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.347
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 28,
+   "progress": 0.3626
+  },
+  {
+   "kind": "keypoint",
+   "body": "The textbook has two analogies, one for each half.",
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.364
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=office cards=The_vault:objects,_filed_under_a_number_computed_from_their_content|The_card_index:refs,_which_document_is_current|The_visitors'_book:reflogs,_every_change_to_a_card|The_tray_on_the_desk:the_index,_the_draft_of_the_next_filing title=A_records_office",
+   "scene": "cards",
+   "params": {
+    "id": "office",
+    "cards": [
+     [
+      "The vault",
+      "objects, filed under a number computed from their content"
+     ],
+     [
+      "The card index",
+      "refs, which document is current"
+     ],
+     [
+      "The visitors' book",
+      "reflogs, every change to a card"
+     ],
+     [
+      "The tray on the desk",
+      "the index, the draft of the next filing"
+     ]
+    ],
+    "title": "A records office"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.3672
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=config.toml right=standard_input lines=blob_16,\\0,retry__limit_=_3 alt=retry__limit_=_4 ids=f784b584,eb1ea65a fn=SHA-1 same=The_same_bytes_give_the_same_ID,_whatever_the_file_is_called diff=One_changed_byte_gives_an_unrelated_ID title=The_ID_is_computed_from_the_bytes",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "config.toml",
+    "right": "standard input",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "alt": "retry_limit = 4",
+    "ids": [
+     "f784b584",
+     "eb1ea65a"
+    ],
+    "fn": "SHA-1",
+    "same": "The same bytes give the same ID, whatever the file is called",
+    "diff": "One changed byte gives an unrelated ID",
+    "title": "The ID is computed from the bytes"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "base": 1,
+   "upto": 2,
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.3981
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=config.toml right=standard_input lines=blob_16,\\0,retry__limit_=_3 alt=retry__limit_=_4 ids=f784b584,eb1ea65a fn=SHA-1 same=The_same_bytes_give_the_same_ID,_whatever_the_file_is_called diff=One_changed_byte_gives_an_unrelated_ID title=The_ID_is_computed_from_the_bytes",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "config.toml",
+    "right": "standard input",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "alt": "retry_limit = 4",
+    "ids": [
+     "f784b584",
+     "eb1ea65a"
+    ],
+    "fn": "SHA-1",
+    "same": "The same bytes give the same ID, whatever the file is called",
+    "diff": "One changed byte gives an unrelated ID",
+    "title": "The ID is computed from the bytes"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "base": 1,
+   "upto": 3,
+   "section": "MENTAL MODEL",
+   "n": 32,
+   "progress": 0.4094
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 33,
+   "progress": 0.4229
+  },
+  {
+   "kind": "diagram",
+   "direction": "First the map of section 3.2: the four kinds of data and where each lives in a new repository.",
+   "text": " .git/\n   objects/                 1. OBJECTS   blobs, trees, commits, tags\n     08/ffd041...               loose: one compressed file per object     section 3.3\n     pack/                      packed: many per file, plus an index      section 3.7\n   refs/   packed-refs      2. REFS      names for object IDs             section 3.9\n   HEAD, ORIG_HEAD, ...                  the current branch; root refs    section 3.10\n   logs/                    3. REFLOGS   how each name moved, when, why   section 3.11\n   index                    4. INDEX     the proposed next commit         section 3.12\n   config  info/  hooks/  description    settings and local policy",
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.4243
+  },
+  {
+   "kind": "diagram",
+   "direction": "Then the picture of section 3.3: the bytes of one loose object, labelled. Draw the file on the left, then the three fields on the right, then the two arrows down.",
+   "text": "  config.toml, 16 bytes              the object, 24 bytes before compression\n +-------------------+              +---------+----+-------------------+\n | retry_limit = 3\\n |   ------->   | blob 16 | \\0 | retry_limit = 3\\n |\n +-------------------+              +---------+----+-------------------+\n                                      |                         |\n                                      | SHA-1 of these bytes    | zlib\n                                      v                         v\n                        f784b58423ef67be5af8...    .git/objects/f7/84b58423ef67be5af8...\n                        the object ID              the file, named after the ID",
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.4349
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.4534
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay `labs/run ch03/gitdir-tour`. What `git init` creates, before anything is recorded.",
+   "mode": "cmd",
+   "title": "labs/run ch03/gitdir-tour",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/gitdir-tour"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.4547
+  },
+  {
+   "kind": "terminal",
+   "direction": "🟢 SAFE: `git init` creates a `.git` directory and changes no existing file.",
+   "mode": "cmd",
+   "title": "labs/run ch03/gitdir-tour",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git init inference-service"
+    },
+    {
+     "t": "cmd",
+     "s": "cd inference-service"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git -not -name '*.sample' | sort"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.4569
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/gitdir-tour/01-init",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git init inference-service"
+    },
+    {
+     "t": "out",
+     "s": "Initialized empty Git repository in $LAB/ch03/gitdir-tour/inference-service/.git/"
+    },
+    {
+     "t": "cmd",
+     "s": "cd inference-service"
+    },
+    {
+     "t": "out",
+     "s": "# Everything Git knows about this repository, minus the 14 sample hooks:"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git -not -name '*.sample' | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git"
+    },
+    {
+     "t": "out",
+     "s": ".git/config"
+    },
+    {
+     "t": "out",
+     "s": ".git/description"
+    },
+    {
+     "t": "out",
+     "s": ".git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/hooks"
+    },
+    {
+     "t": "out",
+     "s": ".git/info"
+    },
+    {
+     "t": "out",
+     "s": ".git/info/exclude"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/info"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/pack"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/heads"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/tags"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.4684
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/gitdir-tour/02-init-contents",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/config"
+    },
+    {
+     "t": "out",
+     "s": "[core]"
+    },
+    {
+     "t": "out",
+     "s": "        repositoryformatversion = 0"
+    },
+    {
+     "t": "out",
+     "s": "        filemode = true"
+    },
+    {
+     "t": "out",
+     "s": "        bare = false"
+    },
+    {
+     "t": "out",
+     "s": "        logallrefupdates = true"
+    },
+    {
+     "t": "out",
+     "s": "        ignorecase = true"
+    },
+    {
+     "t": "out",
+     "s": "        precomposeunicode = true"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/description"
+    },
+    {
+     "t": "out",
+     "s": "Unnamed repository; edit this file 'description' to name the repository."
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/info/exclude"
+    },
+    {
+     "t": "out",
+     "s": "# git ls-files --others --exclude-from=.git/info/exclude"
+    },
+    {
+     "t": "out",
+     "s": "# Lines that start with '#' are comments."
+    },
+    {
+     "t": "out",
+     "s": "# For a project mostly in C, the following would be a good set of"
+    },
+    {
+     "t": "out",
+     "s": "# exclude patterns (uncomment them if you want to use them):"
+    },
+    {
+     "t": "out",
+     "s": "# *.[oa]"
+    },
+    {
+     "t": "out",
+     "s": "# *~"
+    },
+    {
+     "t": "cmd",
+     "s": "ls .git/hooks | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "      14"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.4783
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch03/gitdir-tour",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git add config.toml src/server.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -m \"Add inference service skeleton\""
+    },
+    {
+     "t": "cmd",
+     "s": "find .git -type f -not -name '*.sample' | sort"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5021
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/gitdir-tour/03-first-commit",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git add config.toml src/server.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -m \"Add inference service skeleton\""
+    },
+    {
+     "t": "out",
+     "s": "[main (root-commit) 08ffd04] Add inference service skeleton"
+    },
+    {
+     "t": "out",
+     "s": " 2 files changed, 4 insertions(+)"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 config.toml"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 src/server.py"
+    },
+    {
+     "t": "out",
+     "s": "# What the first commit added to .git:"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5147
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/gitdir-tour/03-first-commit",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "find .git -type f -not -name '*.sample' | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git/COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": ".git/config"
+    },
+    {
+     "t": "out",
+     "s": ".git/description"
+    },
+    {
+     "t": "out",
+     "s": ".git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/index"
+    },
+    {
+     "t": "out",
+     "s": ".git/info/exclude"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/08/ffd041265ea03746a748c35f7d35df9a8e6900"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/36/35c8470ebd3d3e70fb74c4705d011de687e7f9"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/81/e5c25d60a924e6afc7e8f121dd6e78fded11fc"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/bc/cfc53fe1c451c013ac9e612812cfd3543c029a"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/e2/238784c412f0a5151764c07c7a44e7b3a9c073"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/heads/main"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5285
+  },
+  {
+   "kind": "scene",
+   "direction": "objects: id=five cards=commit:08ffd04:tree_(root),tree:root:blob_config.toml+tree_src/,blob:config.toml,tree:src/:blob_server.py,blob:server.py refs=main>08ffd04 title=Two_files,_five_objects",
+   "scene": "objects",
+   "params": {
+    "cards": [
+     {
+      "kind": "commit",
+      "id": "08ffd04",
+      "rows": [
+       "tree (root)"
+      ]
+     },
+     {
+      "kind": "tree",
+      "id": "root",
+      "rows": [
+       "blob config.toml",
+       "tree src/"
+      ]
+     },
+     {
+      "kind": "blob",
+      "id": "config.toml",
+      "rows": []
+     },
+     {
+      "kind": "tree",
+      "id": "src/",
+      "rows": [
+       "blob server.py"
+      ]
+     },
+     {
+      "kind": "blob",
+      "id": "server.py",
+      "rows": []
+     }
+    ],
+    "levels": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2,
+      3,
+      4
+     ]
+    ],
+    "links": [
+     [
+      0,
+      0,
+      1
+     ],
+     [
+      1,
+      0,
+      2
+     ],
+     [
+      1,
+      1,
+      3
+     ],
+     [
+      3,
+      0,
+      4
+     ]
+    ],
+    "refs": [
+     [
+      "main",
+      0
+     ]
+    ],
+    "title": "Two files, five objects",
+    "id": "five"
+   },
+   "steps": [
+    "level-1",
+    "level-2",
+    "level-3"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5312
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/gitdir-tour/04-new-files",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "08ffd041265ea03746a748c35f7d35df9a8e6900"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "Add inference service skeleton"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/logs/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0000000000000000000000000000000000000000 08ffd041265ea03746a748c35f7d35df9a8e6900 Lab User"
+    },
+    {
+     "t": "wrap",
+     "s": "<you@example.com> 1788756240 +0530   commit (initial): Add inference service skeleton",
+     "of": "out"
+    },
+    {
+     "t": "cmd",
+     "s": "git count-objects"
+    },
+    {
+     "t": "out",
+     "s": "5 objects, 20 kilobytes"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.539
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 145,
+    "section": "3.2",
+    "kind": "table",
+    "score": 14,
+    "candidates": 1
+   },
+   "direction": "The inventory table of section 3.2, with the last column highlighted: primary or derived. Read the rows for `objects`, `index`, `logs` and the pack `.idx` files aloud. This column is your triage sheet in an incident.",
+   "header": [
+    "Path",
+    "What it holds",
+    "Written by",
+    "Primary or derived"
+   ],
+   "fs": 30,
+   "cols": [
+    28.27,
+    29.15,
+    23.91,
+    18.67
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>HEAD</code>",
+     "<code>ref: refs/heads/&lt;branch&gt;</code>, or a commit ID when detached",
+     "<code>git init</code>, <code>git switch</code>, <code>git checkout</code>",
+     "primary"
+    ],
+    [
+     "<code>config</code>",
+     "repository-level settings, remotes, upstream branches",
+     "<code>git init</code>, <code>git config set</code>, <code>git remote</code>",
+     "primary"
+    ],
+    [
+     "<code>description</code>",
+     "one line for gitweb",
+     "the template",
+     "unused by Git"
+    ],
+    [
+     "<code>hooks/</code>",
+     "scripts that Git runs at fixed points; samples end in <code>.sample</code>",
+     "you (Chapter 14C)",
+     "primary, never cloned"
+    ],
+    [
+     "<code>info/exclude</code>",
+     "ignore patterns for this clone only",
+     "you (Chapter 4)",
+     "primary, never cloned"
+    ],
+    [
+     "<code>objects/&lt;2 hex&gt;/&lt;38 hex&gt;</code>",
+     "loose objects",
+     "any command that records content",
+     "primary"
+    ],
+    [
+     "<code>objects/pack/pack-*.pack</code>",
+     "packed objects",
+     "<code>git gc</code>, <code>git repack</code>, <code>git fetch</code>, <code>git clone</code>",
+     "primary"
+    ]
+   ],
+   "page": [
+    1,
+    3
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.5564
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 145,
+    "section": "3.2",
+    "kind": "table",
+    "score": 14,
+    "candidates": 1
+   },
+   "direction": "The inventory table of section 3.2, with the last column highlighted: primary or derived. Read the rows for `objects`, `index`, `logs` and the pack `.idx` files aloud. This column is your triage sheet in an incident.",
+   "header": [
+    "Path",
+    "What it holds",
+    "Written by",
+    "Primary or derived"
+   ],
+   "fs": 30,
+   "cols": [
+    28.27,
+    29.15,
+    23.91,
+    18.67
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>objects/pack/pack-*.idx</code>, <code>*.rev</code>",
+     "lookup tables for one pack",
+     "the same commands",
+     "derived from the pack"
+    ],
+    [
+     "<code>objects/info/</code>",
+     "<code>packs</code> (a list for dumb transports), <code>commit-graph</code>, <code>alternates</code>",
+     "<code>git gc</code>; <code>alternates</code> by <code>git clone --shared</code>",
+     "derived, except <code>alternates</code>"
+    ],
+    [
+     "<code>refs/heads/</code>, <code>refs/tags/</code>, <code>refs/remotes/</code>, <code>refs/stash</code>",
+     "loose refs, one file each",
+     "every command that moves a ref",
+     "primary"
+    ],
+    [
+     "<code>packed-refs</code>",
+     "many refs in one text file",
+     "<code>git pack-refs</code>, <code>git gc</code>, <code>git clone</code>",
+     "primary"
+    ],
+    [
+     "<code>logs/HEAD</code>, <code>logs/refs/...</code>",
+     "reflogs",
+     "every ref update",
+     "primary, never cloned or pushed"
+    ],
+    [
+     "<code>index</code>",
+     "the staging area",
+     "<code>git add</code>, <code>git commit</code>, <code>git switch</code>, <code>git merge</code>, <code>git status</code>",
+     "derived, except for what is staged"
+    ]
+   ],
+   "page": [
+    2,
+    3
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.5599
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 145,
+    "section": "3.2",
+    "kind": "table",
+    "score": 14,
+    "candidates": 1
+   },
+   "direction": "The inventory table of section 3.2, with the last column highlighted: primary or derived. Read the rows for `objects`, `index`, `logs` and the pack `.idx` files aloud. This column is your triage sheet in an incident.",
+   "header": [
+    "Path",
+    "What it holds",
+    "Written by",
+    "Primary or derived"
+   ],
+   "fs": 30,
+   "cols": [
+    28.27,
+    29.15,
+    23.91,
+    18.67
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>COMMIT_EDITMSG</code>",
+     "the message of the commit in progress or of the last one",
+     "<code>git commit</code>",
+     "scratch"
+    ],
+    [
+     "<code>ORIG_HEAD</code>, <code>FETCH_HEAD</code>, <code>MERGE_HEAD</code>, <code>CHERRY_PICK_HEAD</code>, <code>REVERT_HEAD</code>, <code>REBASE_HEAD</code>, <code>AUTO_MERGE</code>, <code>MERGE_MSG</code>, <code>MERGE_MODE</code>, <code>rebase-merge/</code>, <code>BISECT_*</code>",
+     "root refs and the state of an operation in progress",
+     "the operation",
+     "state (section 3.10)"
+    ],
+    [
+     "<code>reftable/</code>",
+     "refs and reflogs in the reftable format",
+     "every ref update, in a reftable repository",
+     "primary (section 3.13)"
+    ],
+    [
+     "<code>modules/</code>, <code>worktrees/</code>, <code>shallow</code>",
+     "repositories of submodules; data of linked worktrees; the boundary of a shallow clone",
+     "Chapters 23, 25 and 26",
+     "primary"
+    ]
+   ],
+   "page": [
+    3,
+    3
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.5635
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/loose-object/01-write",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git init inference-service"
+    },
+    {
+     "t": "out",
+     "s": "Initialized empty Git repository in $LAB/ch03/loose-object/inference-service/.git/"
+    },
+    {
+     "t": "cmd",
+     "s": "cd inference-service"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'retry_limit = 3\\n' > config.toml"
+    },
+    {
+     "t": "out",
+     "s": "# Compute the ID only. Nothing is stored yet:"
+    },
+    {
+     "t": "cmd",
+     "s": "git hash-object config.toml"
+    },
+    {
+     "t": "out",
+     "s": "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/objects -type f"
+    },
+    {
+     "t": "out",
+     "s": "# Now store it (-w). One file appears, named after the ID:"
+    },
+    {
+     "t": "cmd",
+     "s": "git hash-object -w config.toml"
+    },
+    {
+     "t": "out",
+     "s": "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/objects -type f"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/f7/84b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.567
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/loose-object/02-inflate",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The file is a zlib stream. Inflate it:"
+    },
+    {
+     "t": "cmd",
+     "s": "python3 -c \"import sys, zlib; print(zlib.decompress(open(sys.argv[1], 'rb').read()))\""
+    },
+    {
+     "t": "wrap",
+     "s": ".git/objects/f7/84b58423ef67be5af8d1cfdfd9bea5eaa26bae",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "b'blob 16\\x00retry_limit = 3\\n'"
+    },
+    {
+     "t": "cmd",
+     "s": "wc -c < config.toml"
+    },
+    {
+     "t": "out",
+     "s": "      16"
+    },
+    {
+     "t": "out",
+     "s": "# Hash the same bytes yourself: header, NUL, content."
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'blob 16\\0retry_limit = 3\\n' | shasum"
+    },
+    {
+     "t": "out",
+     "s": "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae  -"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.5948
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=bytes boxes=config.toml:16_bytes|the_object:24_bytes_before_compression|computed_from_those_bytes:independently rows=1:A:retry__limit_=_3\\n|1:B:blob_16|1:B:\\0|1:B:retry__limit_=_3\\n|2:C:SHA-1:_the_object_ID@hl|3:C:zlib:_the_file@dim arrows=1:A1>B3:data|2:B1>C1:hash|3:B1>C2:compress mono=on title=Two_computations_on_the_same_bytes",
+   "scene": "stores",
+   "params": {
+    "id": "bytes",
+    "boxes": [
+     [
+      "config.toml",
+      "16 bytes"
+     ],
+     [
+      "the object",
+      "24 bytes before compression"
+     ],
+     [
+      "computed from those bytes",
+      "independently"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "retry_limit = 3\\n"
+     ],
+     [
+      1,
+      "B",
+      "blob 16"
+     ],
+     [
+      1,
+      "B",
+      "\\0"
+     ],
+     [
+      1,
+      "B",
+      "retry_limit = 3\\n"
+     ],
+     [
+      2,
+      "C",
+      "SHA-1: the object ID",
+      "hl"
+     ],
+     [
+      3,
+      "C",
+      "zlib: the file",
+      "dim"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B3",
+      "data"
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "hash"
+     ],
+     [
+      3,
+      "B1",
+      "C2",
+      "compress"
+     ]
+    ],
+    "mono": "on",
+    "title": "Two computations on the same bytes"
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6183
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, thirty seconds, in any terminal.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.625
+  },
+  {
+   "kind": "keypoint",
+   "body": "You should see <code>f784</code>, on your machine as on mine, because the ID depends only on those bytes.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.639
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/loose-object/03-read-back",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git cat-file -t f784b584"
+    },
+    {
+     "t": "out",
+     "s": "blob"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -s f784b584"
+    },
+    {
+     "t": "out",
+     "s": "16"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -p f784b584"
+    },
+    {
+     "t": "out",
+     "s": "retry_limit = 3"
+    },
+    {
+     "t": "out",
+     "s": "# The ID depends on content only: another name, another directory, same ID."
+    },
+    {
+     "t": "cmd",
+     "s": "mkdir -p deploy && cp config.toml deploy/production.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git hash-object deploy/production.toml"
+    },
+    {
+     "t": "out",
+     "s": "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'retry_limit = 3\\n' | git hash-object --stdin"
+    },
+    {
+     "t": "out",
+     "s": "f784b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    },
+    {
+     "t": "out",
+     "s": "# One changed byte gives an unrelated ID:"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'retry_limit = 4\\n' | git hash-object --stdin"
+    },
+    {
+     "t": "out",
+     "s": "eb1ea65a46ac10abf5e01a4af8d6a219f5182835"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6454
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Command",
+    "Working tree",
+    "Index",
+    "HEAD",
+    "Current branch ref",
+    "Other refs and files in <code>.git</code>",
+    "Remote",
+    "GitHub"
+   ],
+   "fs": 34,
+   "mono": false,
+   "layout": "cards",
+   "label_w": 30.0,
+   "rows": [
+    [
+     "<code>git hash-object -w &lt;file&gt;</code>",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "one new file under <code>objects/</code>, unless the object already exists; without <code>-w</code>, nothing",
+     "unchanged",
+     "unchanged"
+    ]
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.6752
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/loose-object/04-status",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# An object in the database is not a tracked file. The index is still empty:"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "out",
+     "s": "?? config.toml"
+    },
+    {
+     "t": "out",
+     "s": "?? deploy/"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --stage"
+    },
+    {
+     "t": "cmd",
+     "s": "git add config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --stage"
+    },
+    {
+     "t": "out",
+     "s": "100644 f784b58423ef67be5af8d1cfdfd9bea5eaa26bae 0       config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/objects -type f"
+    },
+    {
+     "t": "out",
+     "s": ".git/objects/f7/84b58423ef67be5af8d1cfdfd9bea5eaa26bae"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.6844
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 57,
+   "progress": 0.6986
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 58,
+   "progress": 0.7
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A script that reads <code>.git/refs/heads/main</code>.</b> Root cause: a ref can be stored as a loose file, in <code>packed-refs</code>, or in a reftable; only plumbing such as <code>git rev-parse</code> reads all forms.",
+    "<b>Assuming the repository is at <code>./.git</code>.</b> Root cause: in a linked worktree or a submodule, <code>.git</code> is a file that points elsewhere; <code>git rev-parse --git-dir</code> gives the location.",
+    "<b>Deleting something under <code>.git</code> without asking \"primary or derived?\".</b> Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+    "<b>Hashing the file's bytes alone and getting a different ID.</b> Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+    "<b>Believing that storing an object makes a file tracked.</b> Root cause: tracking is an index entry; <code>git hash-object -w</code> writes one object file and nothing else."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 59,
+   "progress": 0.7017
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A script that reads <code>.git/refs/heads/main</code>.</b> Root cause: a ref can be stored as a loose file, in <code>packed-refs</code>, or in a reftable; only plumbing such as <code>git rev-parse</code> reads all forms.",
+    "<b>Assuming the repository is at <code>./.git</code>.</b> Root cause: in a linked worktree or a submodule, <code>.git</code> is a file that points elsewhere; <code>git rev-parse --git-dir</code> gives the location.",
+    "<b>Deleting something under <code>.git</code> without asking \"primary or derived?\".</b> Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+    "<b>Hashing the file's bytes alone and getting a different ID.</b> Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+    "<b>Believing that storing an object makes a file tracked.</b> Root cause: tracking is an index entry; <code>git hash-object -w</code> writes one object file and nothing else."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 60,
+   "progress": 0.7128
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A script that reads <code>.git/refs/heads/main</code>.</b> Root cause: a ref can be stored as a loose file, in <code>packed-refs</code>, or in a reftable; only plumbing such as <code>git rev-parse</code> reads all forms.",
+    "<b>Assuming the repository is at <code>./.git</code>.</b> Root cause: in a linked worktree or a submodule, <code>.git</code> is a file that points elsewhere; <code>git rev-parse --git-dir</code> gives the location.",
+    "<b>Deleting something under <code>.git</code> without asking \"primary or derived?\".</b> Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+    "<b>Hashing the file's bytes alone and getting a different ID.</b> Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+    "<b>Believing that storing an object makes a file tracked.</b> Root cause: tracking is an index entry; <code>git hash-object -w</code> writes one object file and nothing else."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 61,
+   "progress": 0.7227
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A script that reads <code>.git/refs/heads/main</code>.</b> Root cause: a ref can be stored as a loose file, in <code>packed-refs</code>, or in a reftable; only plumbing such as <code>git rev-parse</code> reads all forms.",
+    "<b>Assuming the repository is at <code>./.git</code>.</b> Root cause: in a linked worktree or a submodule, <code>.git</code> is a file that points elsewhere; <code>git rev-parse --git-dir</code> gives the location.",
+    "<b>Deleting something under <code>.git</code> without asking \"primary or derived?\".</b> Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+    "<b>Hashing the file's bytes alone and getting a different ID.</b> Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+    "<b>Believing that storing an object makes a file tracked.</b> Root cause: tracking is an index entry; <code>git hash-object -w</code> writes one object file and nothing else."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 62,
+   "progress": 0.7319
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A script that reads <code>.git/refs/heads/main</code>.</b> Root cause: a ref can be stored as a loose file, in <code>packed-refs</code>, or in a reftable; only plumbing such as <code>git rev-parse</code> reads all forms.",
+    "<b>Assuming the repository is at <code>./.git</code>.</b> Root cause: in a linked worktree or a submodule, <code>.git</code> is a file that points elsewhere; <code>git rev-parse --git-dir</code> gives the location.",
+    "<b>Deleting something under <code>.git</code> without asking \"primary or derived?\".</b> Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+    "<b>Hashing the file's bytes alone and getting a different ID.</b> Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+    "<b>Believing that storing an object makes a file tracked.</b> Root cause: tracking is an index entry; <code>git hash-object -w</code> writes one object file and nothing else."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 63,
+   "progress": 0.7419
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 64,
+   "progress": 0.7511
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. A release pipeline for an inference service stamps each build with the commit of <code>main</code> by reading the file <code>.git/refs/heads/main</code>.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 65,
+   "progress": 0.7524
+  },
+  {
+   "kind": "keypoint",
+   "body": "A colleague who knows the layout runs one plumbing command, <code>git rev-parse</code> on the branch name, and gets the commit ID at once.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 66,
+   "progress": 0.7684
+  },
+  {
+   "kind": "keypoint",
+   "body": "The same week a container image for a different service is found to include <code>.git</code>.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 67,
+   "progress": 0.7908
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: id=pay cards=Deduplication:the_same_lock_file_on_forty_branches_is_one_object|Integrity:an_ID_is_a_checksum|Idempotence:recording_the_same_content_twice_changes_nothing numbered=on title=Content_addressing_pays_back_three_ways",
+   "scene": "cards",
+   "params": {
+    "id": "pay",
+    "cards": [
+     [
+      "Deduplication",
+      "the same lock file on forty branches is one object"
+     ],
+     [
+      "Integrity",
+      "an ID is a checksum"
+     ],
+     [
+      "Idempotence",
+      "recording the same content twice changes nothing"
+     ]
+    ],
+    "numbered": "on",
+    "title": "Content addressing pays back three ways"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 68,
+   "progress": 0.8118
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 69,
+   "progress": 0.838
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Exercise 16.1, Level 1, \"An object ID by hand\", in <code>exercises/m16-m18-internals.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 70,
+   "progress": 0.8394
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before you run <code>git hash-object</code>, write down the exact bytes you'll hash: the type word, the size in decimal, where the NUL goes, and whether your content ends in a newline.",
+   "section": "PRACTICE EXERCISE",
+   "n": 71,
+   "progress": 0.8443
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 17.9, Level 4, \"Not a git repository\", in the same file.",
+   "section": "PRACTICE EXERCISE",
+   "n": 72,
+   "progress": 0.8674
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 73,
+   "progress": 0.8728
+  },
+  {
+   "kind": "callout",
+   "direction": "Q68: \"Compute the object ID of a blob by hand. Which bytes are hashed, and why does the compression level not matter?\"",
+   "label": "Q68",
+   "quotes": [
+    "Compute the object ID of a blob by hand. Which bytes are hashed, and why does the compression level not matter?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 74,
+   "progress": 0.8741
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 75,
+   "progress": 0.911
+  },
+  {
+   "kind": "scene",
+   "direction": "hash: differs=byte left=config.toml right=standard_input lines=blob_16,\\0,retry__limit_=_3 alt=retry__limit_=_4 ids=f784b584,eb1ea65a fn=SHA-1 same=The_same_bytes_give_the_same_ID,_whatever_the_file_is_called diff=One_changed_byte_gives_an_unrelated_ID title=The_ID_is_computed_from_the_bytes",
+   "scene": "hash",
+   "params": {
+    "differs": "byte",
+    "left": "config.toml",
+    "right": "standard input",
+    "lines": [
+     "blob 16",
+     "\\0",
+     "retry_limit = 3"
+    ],
+    "alt": "retry_limit = 4",
+    "ids": [
+     "f784b584",
+     "eb1ea65a"
+    ],
+    "fn": "SHA-1",
+    "same": "The same bytes give the same ID, whatever the file is called",
+    "diff": "One changed byte gives an unrelated ID",
+    "title": "The ID is computed from the bytes"
+   },
+   "steps": [
+    "one",
+    "same",
+    "different"
+   ],
+   "base": 3,
+   "upto": 3,
+   "section": "RECAP",
+   "n": 76,
+   "progress": 0.9124
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>.git</code> holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+    "A fresh repository has <code>HEAD</code> naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+    "Before I delete or repair anything under <code>.git</code> I ask whether it is primary or derived, and I read state through plumbing.",
+    "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under <code>objects/</code> in a directory named by the first two digits of its ID.",
+    "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 42,
+   "section": "RECAP",
+   "n": 77,
+   "progress": 0.9198
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>.git</code> holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+    "A fresh repository has <code>HEAD</code> naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+    "Before I delete or repair anything under <code>.git</code> I ask whether it is primary or derived, and I read state through plumbing.",
+    "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under <code>objects/</code> in a directory named by the first two digits of its ID.",
+    "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9223
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>.git</code> holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+    "A fresh repository has <code>HEAD</code> naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+    "Before I delete or repair anything under <code>.git</code> I ask whether it is primary or derived, and I read state through plumbing.",
+    "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under <code>objects/</code> in a directory named by the first two digits of its ID.",
+    "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "RECAP",
+   "n": 79,
+   "progress": 0.9298
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>.git</code> holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+    "A fresh repository has <code>HEAD</code> naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+    "Before I delete or repair anything under <code>.git</code> I ask whether it is primary or derived, and I read state through plumbing.",
+    "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under <code>objects/</code> in a directory named by the first two digits of its ID.",
+    "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "RECAP",
+   "n": 80,
+   "progress": 0.9394
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>.git</code> holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+    "A fresh repository has <code>HEAD</code> naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+    "Before I delete or repair anything under <code>.git</code> I ask whether it is primary or derived, and I read state through plumbing.",
+    "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under <code>objects/</code> in a directory named by the first two digits of its ID.",
+    "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "RECAP",
+   "n": 81,
+   "progress": 0.9472
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "<code>.git</code> holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+    "A fresh repository has <code>HEAD</code> naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+    "Before I delete or repair anything under <code>.git</code> I ask whether it is primary or derived, and I read state through plumbing.",
+    "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under <code>objects/</code> in a directory named by the first two digits of its ID.",
+    "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "RECAP",
+   "n": 82,
+   "progress": 0.956
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 83,
+   "progress": 0.9656
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 3.1 to 3.3 of Chapter 3. Repeat Lab 0.2, \"Read every file in an empty <code>.git</code>\", in <code>lab-manual/m00-lab-setup.md</code>, and name every file from memory.",
+   "section": "HOMEWORK",
+   "n": 84,
+   "progress": 0.967
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you opened the dot git folder and computed an object ID with a tool that knows nothing about Git.",
+   "section": "HOMEWORK",
+   "n": 85,
+   "progress": 0.9762
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"A laptop lost power during a commit, and Git now says fatal: index file corrupt. What did we lose: the history, the work in progress, or nothing?\"",
+   "tele": "\"A laptop lost power during a commit, and Git now says `fatal: index file corrupt`. What did we lose: the history, the work in progress, or nothing?\"",
+   "words": 27,
+   "est": 10.8,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "c3e6b2d9",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"The release script stamps builds by reading .git/refs/heads/main. On the new build image that file does not exist. Is the repository damaged?\"",
+   "tele": "\"The release script stamps builds by reading `.git/refs/heads/main`. On the new build image that file does not exist. Is the repository damaged?\"",
+   "words": 22,
+   "est": 8.8,
+   "slide": 4,
+   "line": 14,
+   "t0": 14.3,
+   "h": "e68ba5d0",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"git fsck reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+   "tele": "\"`git fsck` reports a dangling commit on the build server. Is data at risk? Should somebody run a cleanup?\"",
+   "words": 19,
+   "est": 7.6,
+   "slide": 5,
+   "line": 14,
+   "t0": 23.1,
+   "h": "345a886c",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\"",
+   "tele": "\"We keep four hundred versions of a 16 MB evaluation set in one repository. Are we storing 6 GB?\"",
+   "words": 19,
+   "est": 7.6,
+   "slide": 6,
+   "line": 14,
+   "t0": 30.7,
+   "h": "78b6db1e",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "None of these can be answered with the commands of the earlier parts alone. They are questions about how Git stores things.",
+   "tele": "None of these can be answered with the commands of the earlier parts alone. They are questions about how Git stores things.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 7,
+   "line": 19,
+   "t0": 38.3,
+   "h": "890130f9",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 4,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The short answers, which this part of the course will earn one by one. The index is rebuilt with one command, and only content that was staged and never committed needs a second look. The ref is in packed-refs or in a reftable, and the script should have asked Git. \"Dangling\" describes where git fsck started looking, not what will be deleted, and the cleanup is the risky part. And probably not: a pack stores versions that differ in a few lines as deltas, while every snapshot stays complete.",
+   "tele": "The short answers, which this part of the course will earn one by one. The index is rebuilt with one command, and only content that was staged and never committed needs a second look. The ref is in `packed-refs` or in a reftable, and the script should have asked Git. \"Dangling\" describes where `git fsck` started looking, not what will be deleted, and the cleanup is the risky part. And probably not: a pack stores versions that differ in a few lines as deltas, while every snapshot stays complete.",
+   "words": 89,
+   "est": 35.6,
+   "slide": 8,
+   "line": 25,
+   "t0": 47.1,
+   "h": "0f4a928d",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.205,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.615,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 27,
+   "t0": 82.7,
+   "h": "",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair: this video opens Part 4, Git internals. Since the first part of the course you have had a model. Four object types: blobs for file content, trees for directories, commits for snapshots, and tags. Names that point at them, called refs. And a staging area, the index. In this part you open each box.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair: this video opens Part 4, Git internals. Since the first part of the course you have had a model. Four object types: blobs for file content, trees for directories, commits for snapshots, and tags. Names that point at them, called refs. And a staging area, the index. In this part you open each box.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 10,
+   "line": 29,
+   "t0": 84.2,
+   "h": "313ad163",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "I'll say this once for the part: the replays use the fixed lab clock, so the commit IDs on screen equal the IDs in the book and the ones you'll get when you replay.",
+   "tele": "I'll say this once for the part: the replays use the fixed lab clock, so the commit IDs on screen equal the IDs in the book and the ones you'll get when you replay.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 11,
+   "line": 31,
+   "t0": 110.6,
+   "h": "50cfe789",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Today, two things. The .git directory, file by file: what git init creates, what the first commit adds, and which of those files Git can rebuild and which it can't. And the smallest unit of storage: one loose object, down to its bytes. You'll recompute an object ID with a tool that knows nothing about Git. Hold on to that promise.",
+   "tele": "Today, two things. The `.git` directory, file by file: what `git init` creates, what the first commit adds, and which of those files Git can rebuild and which it can't. And the smallest unit of storage: one loose object, down to its bytes. You'll recompute an object ID with a tool that knows nothing about Git. Hold on to that promise.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 12,
+   "line": 33,
+   "t0": 124.2,
+   "h": "0eadb387",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Two habits come out of this chapter, and both begin today. Read repository state through plumbing commands, the low-level commands with stable output, because the files underneath exist in more than one format. And before you delete or repair anything under .git, decide whether it's primary or derived data.",
+   "tele": "Two habits come out of this chapter, and both begin today. Read repository state through plumbing commands, the low-level commands with stable output, because the files underneath exist in more than one format. And before you delete or repair anything under `.git`, decide whether it's primary or derived data.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 13,
+   "line": 35,
+   "t0": 148.6,
+   "h": "4b7cef60",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 14,
+   "line": 37,
+   "t0": 168.2,
+   "h": "",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "name every entry of a fresh .git directory and say what reads or writes it;",
+   "tele": "name every entry of a fresh `.git` directory and say what reads or writes it;",
+   "words": 15,
+   "est": 6.0,
+   "slide": 15,
+   "line": 41,
+   "t0": 169.7,
+   "h": "64d62415",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "say which files of .git can be deleted without breaking the repository;",
+   "tele": "say which files of `.git` can be deleted without breaking the repository;",
+   "words": 12,
+   "est": 4.8,
+   "slide": 16,
+   "line": 41,
+   "t0": 175.7,
+   "h": "feb3a9cd",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "describe the bytes of a loose object: header, content, compression;",
+   "tele": "describe the bytes of a loose object: header, content, compression;",
+   "words": 10,
+   "est": 4.0,
+   "slide": 17,
+   "line": 41,
+   "t0": 180.5,
+   "h": "7ac49e03",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "compute a blob's object ID by hand and explain why the compression level does not matter;",
+   "tele": "compute a blob's object ID by hand and explain why the compression level does not matter;",
+   "words": 16,
+   "est": 6.4,
+   "slide": 18,
+   "line": 41,
+   "t0": 184.5,
+   "h": "e3311666",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "find the file that holds a given object.",
+   "tele": "find the file that holds a given object.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 19,
+   "line": 41,
+   "t0": 190.9,
+   "h": "49ad519d",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 20,
+   "line": 47,
+   "t0": 194.1,
+   "h": "",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The .git directory. In one sentence: the .git directory is the repository: an object database, names for objects, a log of how those names moved, one staging file, and settings. The files next to it are a working tree that Git can rebuild from it.",
+   "tele": "The `.git` directory. In one sentence: the `.git` directory is the repository: an object database, names for objects, a log of how those names moved, one staging file, and settings. The files next to it are a working tree that Git can rebuild from it.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 21,
+   "line": 53,
+   "t0": 195.6,
+   "h": "0d084778",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.205,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.615,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now precisely. A repository is either a .git directory at the top of a working tree, or a bare directory without one. A .git that's a plain file containing gitdir: and a path points at a repository stored elsewhere, which is how linked worktrees and submodules work.",
+   "tele": "Now precisely. A repository is either a `.git` directory at the top of a working tree, or a bare directory without one. A `.git` that's a plain file containing `gitdir:` and a path points at a repository stored elsewhere, which is how linked worktrees and submodules work.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 21,
+   "line": 55,
+   "t0": 213.6,
+   "h": "7a99bb67",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "You saw both in the last part. The official data model names four kinds of data inside: objects, references, the index and reflogs. Everything else is configuration or the state of an operation in progress. Ask Git where the directory is with git rev-parse --git-dir. Never assume ./.git.",
+   "tele": "You saw both in the last part. The official data model names four kinds of data inside: objects, references, the index and reflogs. Everything else is configuration or the state of an operation in progress. Ask Git where the directory is with `git rev-parse --git-dir`. Never assume `./.git`.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 21,
+   "line": 55,
+   "t0": 232.4,
+   "h": "26b2fbfd",
+   "anim": {
+    "group": 12,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Primary or derived. \"Primary\" means that Git can't recreate the file from anything else. Objects, loose or packed, are primary. Refs, HEAD, config, hooks, info/exclude and reflogs are primary. The lookup tables beside a pack, the .idx and .rev files, are derived from the pack. The index is derived, except for what is staged. COMMIT_EDITMSG is scratch. description is unused by Git itself.",
+   "tele": "Primary or derived. \"Primary\" means that Git can't recreate the file from anything else. Objects, loose or packed, are primary. Refs, `HEAD`, `config`, hooks, `info/exclude` and reflogs are primary. The lookup tables beside a pack, the `.idx` and `.rev` files, are derived from the pack. The index is derived, except for what is staged. `COMMIT_EDITMSG` is scratch. `description` is unused by Git itself.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 22,
+   "line": 61,
+   "t0": 251.6,
+   "h": "9da2e2ca",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.117,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.234,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.351,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.469,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.586,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     },
+     {
+      "at": 0.703,
+      "fx": "scene",
+      "from": 6,
+      "to": 7,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 7,
+      "to": 8,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "That column answers the objective \"which files can be deleted\". Derived data is rebuilt. Primary data is restored from another copy. And three kinds of primary data are never cloned or pushed: hooks, info/exclude, and reflogs.",
+   "tele": "That column answers the objective \"which files can be deleted\". Derived data is rebuilt. Primary data is restored from another copy. And three kinds of primary data are never cloned or pushed: hooks, `info/exclude`, and reflogs.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 22,
+   "line": 63,
+   "t0": 276.8,
+   "h": "e6a9ecf6",
+   "anim": {
+    "group": 13,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The loose object. In one sentence: a loose object is one compressed file whose content is a short header, a NUL byte and the data, and whose file name is the hash of exactly those bytes. A NUL byte is a byte whose value is zero, and a hash is a fixed-length fingerprint computed from bytes.",
+   "tele": "The loose object. In one sentence: a loose object is one compressed file whose content is a short header, a NUL byte and the data, and whose file name is the hash of exactly those bytes. A NUL byte is a byte whose value is zero, and a hash is a fixed-length fingerprint computed from bytes.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 23,
+   "line": 69,
+   "t0": 291.2,
+   "h": "a8ce0fff",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now precisely, in the manual's three sentences. The object is the prefix, type, space, size, NUL, followed by the data, where the type is blob, tree, commit or tag and the size is the length of the data in decimal. Prefix and data together are compressed with zlib, a standard compression format, and stored. And \"the object ID of the object is the SHA-1 or SHA-256 (as appropriate) hash of the uncompressed data\".",
+   "tele": "Now precisely, in the manual's three sentences. The object is the prefix, type, space, size, NUL, followed by the data, where the type is `blob`, `tree`, `commit` or `tag` and the size is the length of the data in decimal. Prefix and data together are compressed with zlib, a standard compression format, and stored. And \"the object ID of the object is the SHA-1 or SHA-256 (as appropriate) hash of the uncompressed data\".",
+   "words": 73,
+   "est": 29.2,
+   "slide": 23,
+   "line": 71,
+   "t0": 313.6,
+   "h": "30be65a6",
+   "anim": {
+    "group": 14,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The file sits under objects/, in a directory named after the first two hexadecimal digits of the ID.",
+   "tele": "The file sits under `objects/`, in a directory named after the first two hexadecimal digits of the ID.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 23,
+   "line": 73,
+   "t0": 342.8,
+   "h": "12bfca30",
+   "anim": {
+    "group": 14,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "🟢 SAFE: git hash-object <file> computes the ID that the file's content has as a blob, and writes the object with -w. It hashes what git add would store: if a clean filter or a line-ending conversion applies to the path, that's the converted content. --no-filters hashes the file as it is.",
+   "tele": "🟢 SAFE: `git hash-object <file>` computes the ID that the file's content has as a blob, and writes the object with `-w`. It hashes what `git add` would store: if a clean filter or a line-ending conversion applies to the path, that's the converted content. `--no-filters` hashes the file as it is.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 24,
+   "line": 77,
+   "t0": 350.0,
+   "h": "2016d875",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Inside .git, git hash-object -w creates one new file under objects/, read-only. Nothing else: no index entry, no ref, no reflog line.",
+   "tele": "Inside `.git`, `git hash-object -w` creates one new file under `objects/`, read-only. Nothing else: no index entry, no ref, no reflog line.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 25,
+   "line": 79,
+   "t0": 370.4,
+   "h": "8b88063f",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why does the compression level not matter? Because the ID is the hash of the uncompressed bytes. The compression is a storage detail and isn't part of the identity.",
+   "tele": "Why does the compression level not matter? Because the ID is the hash of the uncompressed bytes. The compression is a storage detail and isn't part of the identity.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 26,
+   "line": 83,
+   "t0": 379.2,
+   "h": "f5745b41",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.273,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.547,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When should you not work at this level? In scripts that need a branch's value or a file's content. The loose form is one of several storage forms. Use plumbing, git rev-parse, git for-each-ref, git cat-file, git ls-files, and let Git find the bytes.",
+   "tele": "When should you not work at this level? In scripts that need a branch's value or a file's content. The loose form is one of several storage forms. Use plumbing, `git rev-parse`, `git for-each-ref`, `git cat-file`, `git ls-files`, and let Git find the bytes.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 27,
+   "line": 87,
+   "t0": 390.8,
+   "h": "ad8ddabc",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 28,
+   "line": 89,
+   "t0": 408.4,
+   "h": "",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook has two analogies, one for each half.",
+   "tele": "The textbook has two analogies, one for each half.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 29,
+   "line": 91,
+   "t0": 409.9,
+   "h": "686540aa",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "For the directory: a records office. The vault holds sealed documents filed under a number computed from their content: objects. A card index says which document is current for each project: refs. A visitors' book records every change to a card: reflogs. One tray on the clerk's desk holds the draft of the next filing: the index. The analogy breaks in one place that matters. A sealed document can never be amended, not even by the office. Every \"change\" files a new document and moves a card.",
+   "tele": "For the directory: a records office. The vault holds sealed documents filed under a number computed from their content: objects. A card index says which document is current for each project: refs. A visitors' book records every change to a card: reflogs. One tray on the clerk's desk holds the draft of the next filing: the index. The analogy breaks in one place that matters. A sealed document can never be amended, not even by the office. Every \"change\" files a new document and moves a card.",
+   "words": 87,
+   "est": 34.8,
+   "slide": 30,
+   "line": 95,
+   "t0": 413.5,
+   "h": "fddf902e",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.273,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.547,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "For the object: a sealed envelope filed under a number that's computed from what is inside it. Two envelopes with the same content get the same number, so the office keeps one.",
+   "tele": "For the object: a sealed envelope filed under a number that's computed from what is inside it. Two envelopes with the same content get the same number, so the office keeps one.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 31,
+   "line": 99,
+   "t0": 448.3,
+   "h": "9710c5f5",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.67,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "An envelope whose content differs by one character gets an unrelated number. This analogy breaks at correction: a real archive can fix a filing mistake by relabelling, and here the label can't be changed without changing the content.",
+   "tele": "An envelope whose content differs by one character gets an unrelated number. This analogy breaks at correction: a real archive can fix a filing mistake by relabelling, and here the label can't be changed without changing the content.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 32,
+   "line": 103,
+   "t0": 461.1,
+   "h": "1b94ef4d",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.112,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 33,
+   "line": 105,
+   "t0": 476.3,
+   "h": "",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Four numbered lines. Everything else in the directory is settings or the state of an operation in progress. The rest of this part takes these lines one at a time.",
+   "tele": "Four numbered lines. Everything else in the directory is settings or the state of an operation in progress. The rest of this part takes these lines one at a time.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 34,
+   "line": 121,
+   "t0": 477.8,
+   "h": "05f641c5",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Sixteen bytes of content. A header of seven characters, \"blob 16\", and one NUL byte: twenty-four bytes. Two things are computed from those twenty-four bytes, independently: the hash, which is the ID, and the compressed stream, which is the file. The left arrow never looks at the output of the right one.",
+   "tele": "Sixteen bytes of content. A header of seven characters, \"blob 16\", and one NUL byte: twenty-four bytes. Two things are computed from those twenty-four bytes, independently: the hash, which is the ID, and the compressed stream, which is the file. The left arrow never looks at the output of the right one.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 35,
+   "line": 137,
+   "t0": 489.8,
+   "h": "a6d7997d",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 36,
+   "line": 139,
+   "t0": 510.6,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 37,
+   "line": null,
+   "t0": 512.1,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Predict: in a repository with no commit, is there an index? A ref? An object? Say it out loud. I'll wait.",
+   "tele": "Predict: in a repository with no commit, is there an index? A ref? An object? Say it out loud. I'll wait.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 38,
+   "line": 151,
+   "t0": 514.6,
+   "h": "004b621f",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 38,
+   "line": 153,
+   "t0": 523.0,
+   "h": "",
+   "anim": {
+    "group": 28,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "No object, no ref, no index. The listing leaves out the fourteen sample hooks. refs/heads is an empty directory, and yet the repository already has a current branch.",
+   "tele": "No object, no ref, no index. The listing leaves out the fourteen sample hooks. `refs/heads` is an empty directory, and yet the repository already has a current branch.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 39,
+   "line": 178,
+   "t0": 527.5,
+   "h": "9dbe4827",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "HEAD names refs/heads/main, a ref that doesn't exist yet: an \"unborn\" branch, which is legal. The first commit creates the ref. In config, repositoryformatversion = 0 says that no extension is in use. ignorecase was probed from this Mac's filesystem, and precomposeunicode is set on macOS. description is read by the gitweb interface and by one sample hook, and no Git command needs it.",
+   "tele": "`HEAD` names `refs/heads/main`, a ref that doesn't exist yet: an \"unborn\" branch, which is legal. The first commit creates the ref. In `config`, `repositoryformatversion = 0` says that no extension is in use. `ignorecase` was probed from this Mac's filesystem, and `precomposeunicode` is set on macOS. `description` is read by the gitweb interface and by one sample hook, and no Git command needs it.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 40,
+   "line": 213,
+   "t0": 538.7,
+   "h": "3c9277f4",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.338,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": false
+     },
+     {
+      "at": 0.755,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.32,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the first commit.",
+   "tele": "Now the first commit.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 40,
+   "line": 215,
+   "t0": 563.9,
+   "h": "688c752f",
+   "anim": {
+    "group": 30,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A quick quiz: two files in two directories. How many objects does the first commit write: two, three or five? Say it out loud.",
+   "tele": "A quick quiz: two files in two directories. How many objects does the first commit write: two, three or five? Say it out loud.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 41,
+   "line": 223,
+   "t0": 565.5,
+   "h": "f6d3c3f8",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 41,
+   "line": 225,
+   "t0": 575.1,
+   "h": "",
+   "anim": {
+    "group": 31,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Five. Two files in the working tree became five objects: two blobs, the tree for src, the top-level tree, and the commit. Three things appeared besides the objects: the index, the ref refs/heads/main, and two reflog files. And COMMIT_EDITMSG.",
+   "tele": "Five. Two files in the working tree became five objects: two blobs, the tree for `src`, the top-level tree, and the commit. Three things appeared besides the objects: the index, the ref `refs/heads/main`, and two reflog files. And `COMMIT_EDITMSG`.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 42,
+   "line": 254,
+   "t0": 579.6,
+   "h": "0b1779d8",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 43,
+   "line": null,
+   "t0": 595.2,
+   "h": "",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "If you said two or three, you counted the files and forgot the directories and the commit, which is the usual slip.",
+   "tele": "If you said two or three, you counted the files and forgot the directories and the commit, which is the usual slip.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 44,
+   "line": 258,
+   "t0": 598.2,
+   "h": "8ec2c848",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The whole branch is one line of 41 bytes: forty hexadecimal digits and a newline. It holds 08ffd04, the commit you made a moment ago. The reflog line reads: old value, all zeros because the ref didn't exist, then new value, who, when, and why. git count-objects confirms five.",
+   "tele": "The whole branch is one line of 41 bytes: forty hexadecimal digits and a newline. It holds `08ffd04`, the commit you made a moment ago. The reflog line reads: old value, all zeros because the ref didn't exist, then new value, who, when, and why. `git count-objects` confirms five.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 45,
+   "line": 280,
+   "t0": 607.0,
+   "h": "972b281a",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.879,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.67,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 46,
+   "line": null,
+   "t0": 626.6,
+   "h": "",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 7
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 47,
+   "line": null,
+   "t0": 630.6,
+   "h": "",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 6
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 48,
+   "line": null,
+   "t0": 634.6,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Without -w, an ID is printed and nothing is stored: the first find prints nothing. With -w, one file appears. Look at its path: the directory f7, the first two digits of the ID, and a file name made of the remaining thirty-eight.",
+   "tele": "Without `-w`, an ID is printed and nothing is stored: the first `find` prints nothing. With `-w`, one file appears. Look at its path: the directory `f7`, the first two digits of the ID, and a file name made of the remaining thirty-eight.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 49,
+   "line": 314,
+   "t0": 638.6,
+   "h": "2b8bad52",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The object file isn't the working tree file. Decompress it.",
+   "tele": "The object file isn't the working tree file. Decompress it.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 49,
+   "line": 316,
+   "t0": 655.8,
+   "h": "20a0f2a3",
+   "anim": {
+    "group": 39,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The content is sixteen bytes. Predict the bytes that come before it. I'll wait.",
+   "tele": "The content is sixteen bytes. Predict the bytes that come before it. I'll wait.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 49,
+   "line": 318,
+   "t0": 659.8,
+   "h": "1555df08",
+   "anim": {
+    "group": 39,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 49,
+   "line": 320,
+   "t0": 665.4,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read the header bytes aloud: b, l, o, b. A space. One, six. Then \\x00, the NUL byte. Then the content, ending in a newline. wc -c confirms sixteen.",
+   "tele": "Read the header bytes aloud: b, l, o, b. A space. One, six. Then `\\x00`, the NUL byte. Then the content, ending in a newline. `wc -c` confirms sixteen.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 50,
+   "line": 341,
+   "t0": 669.9,
+   "h": "65c44d54",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "And the last command. shasum knows nothing about Git. You hand it the same twenty-four bytes with printf, and it prints the same forty digits: f784b584 and the rest. That's all an object ID is. Promise kept.",
+   "tele": "And the last command. `shasum` knows nothing about Git. You hand it the same twenty-four bytes with `printf`, and it prints the same forty digits: `f784b584` and the rest. That's all an object ID is. Promise kept.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 50,
+   "line": 343,
+   "t0": 681.5,
+   "h": "844ae160",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0.103,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Notice also what wasn't involved in that computation: zlib. The ID was computed from bytes that were never compressed.",
+   "tele": "Notice also what wasn't involved in that computation: zlib. The ID was computed from bytes that were never compressed.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 51,
+   "line": 347,
+   "t0": 696.3,
+   "h": "4795e138",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, in any terminal. Type that printf line, pipe it into shasum, and predict the first four digits before you press return. I'll wait.",
+   "tele": "Try it now, thirty seconds, in any terminal. Type that `printf` line, pipe it into `shasum`, and predict the first four digits before you press return. I'll wait.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 52,
+   "line": 351,
+   "t0": 703.9,
+   "h": "66a106f3",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 52,
+   "line": 353,
+   "t0": 715.1,
+   "h": "",
+   "anim": {
+    "group": 42,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "You should see f784, on your machine as on mine, because the ID depends only on those bytes.",
+   "tele": "You should see `f784`, on your machine as on mine, because the ID depends only on those bytes.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 53,
+   "line": 355,
+   "t0": 719.6,
+   "h": "6651e3bb",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "-t prints the type, -s the size of the data without the header, -p the content. Then three experiments. Another name in another directory: the same ID. The same bytes from standard input, with no file at all: the same ID. One changed byte, a 4 for a 3: an ID that has nothing in common with the old one. The ID depends on nothing except the content. Not the file name, not the directory, not the time, not the author, not the repository.",
+   "tele": "`-t` prints the type, `-s` the size of the data without the header, `-p` the content. Then three experiments. Another name in another directory: the same ID. The same bytes from standard input, with no file at all: the same ID. One changed byte, a 4 for a 3: an ID that has nothing in common with the old one. The ID depends on nothing except the content. Not the file name, not the directory, not the time, not the author, not the repository.",
+   "words": 84,
+   "est": 33.6,
+   "slide": 54,
+   "line": 387,
+   "t0": 726.8,
+   "h": "a47610bc",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One more distinction. An object in the database isn't a tracked file. Predict what git status says about config.toml, whose blob you stored a moment ago.",
+   "tele": "One more distinction. An object in the database isn't a tracked file. Predict what `git status` says about `config.toml`, whose blob you stored a moment ago.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 55,
+   "line": 395,
+   "t0": 760.4,
+   "h": "889424f8",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Untracked. Tracking is a matter of the index, and the index is still empty. git add then created the index entry and wrote no second object: the blob it needed was already there, under the name it would have computed.",
+   "tele": "Untracked. Tracking is a matter of the index, and the index is still empty. `git add` then created the index entry and wrote no second object: the blob it needed was already there, under the name it would have computed.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 56,
+   "line": 420,
+   "t0": 770.8,
+   "h": "f828c990",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.89,
+      "dissolve": true
+     },
+     {
+      "at": 0.347,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 57,
+   "line": 422,
+   "t0": 786.8,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 58,
+   "line": 424,
+   "t0": 788.3,
+   "h": "76698d9b",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "A script that reads .git/refs/heads/main. Root cause: a ref can be stored as a loose file, in packed-refs, or in a reftable; only plumbing such as git rev-parse reads all forms.",
+   "tele": "A script that reads `.git/refs/heads/main`. Root cause: a ref can be stored as a loose file, in `packed-refs`, or in a reftable; only plumbing such as `git rev-parse` reads all forms.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 59,
+   "line": 426,
+   "t0": 790.3,
+   "h": "9cb45a24",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Assuming the repository is at ./.git. Root cause: in a linked worktree or a submodule, .git is a file that points elsewhere; git rev-parse --git-dir gives the location.",
+   "tele": "Assuming the repository is at `./.git`. Root cause: in a linked worktree or a submodule, `.git` is a file that points elsewhere; `git rev-parse --git-dir` gives the location.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 60,
+   "line": 426,
+   "t0": 802.7,
+   "h": "e8eb4cbe",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Deleting something under .git without asking \"primary or derived?\". Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+   "tele": "Deleting something under `.git` without asking \"primary or derived?\". Root cause: an index or a pack index can be rebuilt; an object or a reflog cannot.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 61,
+   "line": 426,
+   "t0": 813.9,
+   "h": "93a7bbeb",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Hashing the file's bytes alone and getting a different ID. Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+   "tele": "Hashing the file's bytes alone and getting a different ID. Root cause: the ID is the hash of header, NUL and content, not of the content by itself.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 62,
+   "line": 426,
+   "t0": 824.3,
+   "h": "5425b53d",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Believing that storing an object makes a file tracked. Root cause: tracking is an index entry; git hash-object -w writes one object file and nothing else.",
+   "tele": "Believing that storing an object makes a file tracked. Root cause: tracking is an index entry; `git hash-object -w` writes one object file and nothing else.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 63,
+   "line": 426,
+   "t0": 835.5,
+   "h": "36af0c60",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 64,
+   "line": 432,
+   "t0": 845.9,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A release pipeline for an inference service stamps each build with the commit of main by reading the file .git/refs/heads/main. After the build image is updated, the stamp step fails: no such file. The on-call engineer's first thought is corruption.",
+   "tele": "Now, out of the lab. A release pipeline for an inference service stamps each build with the commit of `main` by reading the file `.git/refs/heads/main`. After the build image is updated, the stamp step fails: no such file. The on-call engineer's first thought is corruption.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 65,
+   "line": 434,
+   "t0": 847.4,
+   "h": "a3741dc7",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "A colleague who knows the layout runs one plumbing command, git rev-parse on the branch name, and gets the commit ID at once. The repository is healthy. The ref is stored in another form on that image, and the loose file was never a contract. The script is changed to ask Git, and the review comment quotes the first habit of the chapter.",
+   "tele": "A colleague who knows the layout runs one plumbing command, `git rev-parse` on the branch name, and gets the commit ID at once. The repository is healthy. The ref is stored in another form on that image, and the loose file was never a contract. The script is changed to ask Git, and the review comment quotes the first habit of the chapter.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 66,
+   "line": 436,
+   "t0": 865.4,
+   "h": "6b0b6bf8",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The same week a container image for a different service is found to include .git. The team's security note uses the other lesson from section 3.2: the directory is the whole history. An image, a CI cache or a backup that includes .git includes every version of every file, also the credentials file that was \"deleted\" two years ago.",
+   "tele": "The same week a container image for a different service is found to include `.git`. The team's security note uses the other lesson from section 3.2: the directory is the whole history. An image, a CI cache or a backup that includes `.git` includes every version of every file, also the credentials file that was \"deleted\" two years ago.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 67,
+   "line": 438,
+   "t0": 890.6,
+   "h": "ece54cdf",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Content addressing pays the team back in three ways, as the textbook lists them. Deduplication: the same lock file on forty branches is one object. Integrity: an ID is a checksum, so a copy of an object from any clone or backup is known to be the right bytes if its ID matches. Idempotence: recording the same content twice changes nothing. You relied on the second property in every recovery of the last part.",
+   "tele": "Content addressing pays the team back in three ways, as the textbook lists them. Deduplication: the same lock file on forty branches is one object. Integrity: an ID is a checksum, so a copy of an object from any clone or backup is known to be the right bytes if its ID matches. Idempotence: recording the same content twice changes nothing. You relied on the second property in every recovery of the last part.",
+   "words": 74,
+   "est": 29.6,
+   "slide": 68,
+   "line": 442,
+   "t0": 914.2,
+   "h": "4bdc4188",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 69,
+   "line": 444,
+   "t0": 943.8,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Exercise 16.1, Level 1, \"An object ID by hand\", in exercises/m16-m18-internals.md.",
+   "tele": "Your turn. Do Exercise 16.1, Level 1, \"An object ID by hand\", in `exercises/m16-m18-internals.md`.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 70,
+   "line": 446,
+   "t0": 945.3,
+   "h": "fd6952c5",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before you run git hash-object, write down the exact bytes you'll hash: the type word, the size in decimal, where the NUL goes, and whether your content ends in a newline. Predict the path of the object file from the ID. Work in labs/shell. The object ID of a given content is the same on every machine, although commit IDs there differ from the book.",
+   "tele": "Before you run `git hash-object`, write down the exact bytes you'll hash: the type word, the size in decimal, where the NUL goes, and whether your content ends in a newline. Predict the path of the object file from the ID. Work in `labs/shell`. The object ID of a given content is the same on every machine, although commit IDs there differ from the book.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 71,
+   "line": 448,
+   "t0": 950.9,
+   "h": "2b732928",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 17.9, Level 4, \"Not a git repository\", in the same file.",
+   "tele": "The challenge is Exercise 17.9, Level 4, \"Not a git repository\", in the same file.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 72,
+   "line": 450,
+   "t0": 976.9,
+   "h": "0e67cb50",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 73,
+   "line": 452,
+   "t0": 982.9,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 74,
+   "line": 456,
+   "t0": 984.4,
+   "h": "",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 87,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud, with a concrete small file.",
+   "tele": "Answer out loud, with a concrete small file.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 74,
+   "line": 458,
+   "t0": 986.4,
+   "h": "53c21a5d",
+   "anim": {
+    "group": 60,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 88,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer writes out the byte sequence for a specific content, field by field, including the two bytes people forget: the separator after the size and the trailing newline of the content if there is one. It names a tool outside Git that reproduces the ID.",
+   "tele": "A strong answer writes out the byte sequence for a specific content, field by field, including the two bytes people forget: the separator after the size and the trailing newline of the content if there is one. It names a tool outside Git that reproduces the ID.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 74,
+   "line": 460,
+   "t0": 989.6,
+   "h": "7c803cd0",
+   "anim": {
+    "group": 60,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 89,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "It explains the order of operations in storage, hashing and compression as two independent computations on the same input, and concludes about the compression level from that. It may add what else the ID doesn't depend on, and one consequence that matters in production.",
+   "tele": "It explains the order of operations in storage, hashing and compression as two independent computations on the same input, and concludes about the compression level from that. It may add what else the ID doesn't depend on, and one consequence that matters in production.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 74,
+   "line": 460,
+   "t0": 1008.4,
+   "h": "8be9b5e1",
+   "anim": {
+    "group": 60,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 90,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 75,
+   "line": 462,
+   "t0": 1026.0,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 91,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. Bytes in, ID out, and nothing else counts: not the file name, not the place, not the compression.",
+   "tele": "Let's land this. Bytes in, ID out, and nothing else counts: not the file name, not the place, not the compression.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 76,
+   "line": 466,
+   "t0": 1027.5,
+   "h": "c026079b",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 92,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 77,
+   "line": 468,
+   "t0": 1035.9,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 93,
+   "section": "RECAP",
+   "type": "narration",
+   "text": ".git holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+   "tele": "`.git` holds four kinds of data, objects, refs, reflogs and the index, plus settings and the state of operations in progress.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 78,
+   "line": 470,
+   "t0": 1038.7,
+   "h": "b634345d",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 94,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A fresh repository has HEAD naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+   "tele": "A fresh repository has `HEAD` naming an unborn branch and no object, ref or index; the first commit adds objects, the index, a ref and two reflogs.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 79,
+   "line": 470,
+   "t0": 1047.1,
+   "h": "71799c5a",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 95,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Before I delete or repair anything under .git I ask whether it is primary or derived, and I read state through plumbing.",
+   "tele": "Before I delete or repair anything under `.git` I ask whether it is primary or derived, and I read state through plumbing.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 80,
+   "line": 470,
+   "t0": 1057.9,
+   "h": "d8df1f28",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 96,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under objects/ in a directory named by the first two digits of its ID.",
+   "tele": "A loose object is zlib-compressed \"type, space, size, NUL, content\", stored under `objects/` in a directory named by the first two digits of its ID.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 81,
+   "line": 470,
+   "t0": 1066.7,
+   "h": "c7a76296",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 97,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time.",
+   "tele": "The object ID is the hash of the uncompressed bytes, so it depends only on type, size and content, and not on compression, file name or time.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 82,
+   "line": 470,
+   "t0": 1076.7,
+   "h": "4ee5ea59",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 98,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 83,
+   "line": 476,
+   "t0": 1087.5,
+   "h": "",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 99,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 3.1 to 3.3 of Chapter 3. Repeat Lab 0.2, \"Read every file in an empty .git\", in lab-manual/m00-lab-setup.md, and name every file from memory.",
+   "tele": "Read sections 3.1 to 3.3 of Chapter 3. Repeat Lab 0.2, \"Read every file in an empty `.git`\", in `lab-manual/m00-lab-setup.md`, and name every file from memory.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 84,
+   "line": 478,
+   "t0": 1089.0,
+   "h": "3caa63b3",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 100,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you opened the dot git folder and computed an object ID with a tool that knows nothing about Git. That's the foundation for the whole of Part 4. Practise with the exercise before you move on. Next time: the four object types in full, and reading objects with git cat-file. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you opened the dot git folder and computed an object ID with a tool that knows nothing about Git. That's the foundation for the whole of Part 4. Practise with the exercise before you move on. Next time: the four object types in full, and reading objects with `git cat-file`. Until then, look at the state first and type second. See you in the next one.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 85,
+   "line": 480,
+   "t0": 1099.4,
+   "h": "7d77f1bb",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1126.2,
+ "narration_words": 2668,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

@@ -1,0 +1,37 @@
+# Case 3 of Gate 7, variant B. Constructed for the gate: this workflow is teaching material and
+# contains faults on purpose. Do not copy it.
+name: nightly-eval
+
+on:
+  schedule:
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Choose the dataset
+        run: |
+          DATASET=golden-v7
+          echo "chosen: $DATASET"
+
+  evaluate:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run the evaluation
+        run: make eval DATASET="$DATASET" > scores.json
+
+  compare:
+    needs: evaluate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Compare with the last release
+        run: make compare SCORES=scores.json

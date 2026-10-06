@@ -1,0 +1,33 @@
+# A server-side update hook: an existing tag under refs/tags/v* can be neither moved nor deleted.
+$ cat ../../update-hook
+#!/bin/sh
+# update hook: called once per ref with <ref> <old-id> <new-id>.
+# A release tag may be created. It may not be moved or deleted.
+ref=$1 old=$2
+case "$ref" in
+refs/tags/v*)
+  if ! printf '%s' "$old" | grep -q '^0*$'; then
+    echo "policy: $ref is published and immutable; release a new version" >&2
+    exit 1
+  fi ;;
+esac
+exit 0
+$ cp ../../update-hook ../../server/inference-gateway.git/hooks/update
+$ chmod +x ../../server/inference-gateway.git/hooks/update
+$ git push -q origin v1.3.0-rc.1
+$ git tag -f -a v1.3.0-rc.1 -m "Release candidate, moved again" HEAD
+Updated tag 'v1.3.0-rc.1' (was cc3836f)
+$ git push --force origin v1.3.0-rc.1
+remote: policy: refs/tags/v1.3.0-rc.1 is published and immutable; release a new version        
+remote: error: hook declined to update refs/tags/v1.3.0-rc.1        
+To ../../server/inference-gateway.git
+ ! [remote rejected] v1.3.0-rc.1 -> v1.3.0-rc.1 (hook declined)
+error: failed to push some refs to '../../server/inference-gateway.git'
+[exit status: 1]
+$ git push origin --delete v1.3.0-rc.1
+remote: policy: refs/tags/v1.3.0-rc.1 is published and immutable; release a new version        
+remote: error: hook declined to update refs/tags/v1.3.0-rc.1        
+To ../../server/inference-gateway.git
+ ! [remote rejected] v1.3.0-rc.1 (hook declined)
+error: failed to push some refs to '../../server/inference-gateway.git'
+[exit status: 1]

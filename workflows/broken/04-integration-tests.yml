@@ -1,0 +1,46 @@
+# Broken workflow 4 of 6 (Lab 28.1): integration tests against the supplier sandbox.
+#
+# Intended behavior: on every pull request, run the unit tests and then one integration check
+# that calls the supplier's sandbox API with the repository secret SUPPLIER_API_KEY.
+# The secret exists and is correct. Maintainers' pull requests are green.
+#
+# Observed: read the lab. Diagnose before you change anything.
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Integration tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - run: uv sync --locked
+      - run: uv run pytest
+
+      - name: Check the supplier sandbox
+        shell: bash
+        env:
+          SUPPLIER_API_KEY: ${{ secrets.SUPPLIER_API_KEY }}
+        run: |
+          if [ -z "$SUPPLIER_API_KEY" ]; then
+            echo "::error::SUPPLIER_API_KEY is empty"
+            exit 1
+          fi
+          # The call is simulated in this course: no request leaves the runner.
+          echo "would call the supplier sandbox with a key of ${#SUPPLIER_API_KEY} characters"

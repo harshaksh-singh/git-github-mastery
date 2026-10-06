@@ -1,0 +1,36 @@
+# TEACHING MATERIAL. DO NOT USE THIS WORKFLOW IN A REAL REPOSITORY.
+# It contains one deliberately planted security weakness for Lab 29.1 (Module 29).
+# Find it, name its class, and fix it. The analysis is in solutions/m29-vulnerable-workflows.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# What it does: runs the linter and the tests every night and on demand.
+
+name: nightly-check
+
+on:
+  schedule:
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  check:
+    name: Lint and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install the locked dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest

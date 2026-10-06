@@ -1,0 +1,6782 @@
+{
+ "id": "V037",
+ "version": 22,
+ "title": "Clean for Git, wrong for humans: auditing a merge, and git merge-tree",
+ "part": 2,
+ "part_label": "INTEGRATION",
+ "part_name": "Integration and collaboration mechanics",
+ "palette": {
+  "accent": "#3FB950",
+  "accent2": "#9BE9A8",
+  "bg1": "#0F1712",
+  "bg2": "#1B2A20"
+ },
+ "planned_minutes": 26,
+ "chapters": [
+  "ch08-merge.md"
+ ],
+ "script": "video/scripts/V037-clean-for-git-wrong-for-humans-auditing-a-merge-and-git-merge-tree.md",
+ "script_sha1": "37f31f5d9f19f665daec7e8af8f9d5475ba0b5a9",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 7,
+   "line": 24
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 12,
+   "line": 32
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 20,
+   "line": 46
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 32,
+   "line": 98
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 38,
+   "line": 114
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 41,
+   "line": 155
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 84,
+   "line": 593
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 91,
+   "line": 605
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 98,
+   "line": 627
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 105,
+   "line": 639
+  },
+  {
+   "name": "RECAP",
+   "beat": 109,
+   "line": 649
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 113,
+   "line": 661
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Clean for Git, wrong for humans: auditing a merge, and git merge-tree",
+   "part_name": "Integration and collaboration mechanics",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0016
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three questions a CTO can ask after an ordinary release week.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0029
+  },
+  {
+   "kind": "keypoint",
+   "body": "One. \"Both pull requests were green. <code>main</code> is red. The two branches did not touch a single file in common. How?\"",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0065
+  },
+  {
+   "kind": "keypoint",
+   "body": "Two. \"Ravi's retry setting disappeared from the config in a merge commit. <code>git log -p</code> shows no diff for that commit. Who removed the line, and how do we prove it?\"",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0133
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three. \"We reverted the bad merge on Friday. On Monday we merged the repaired branch, the merge was clean, and half of the feature is missing. Where did it go?\"",
+   "section": "HOOK",
+   "n": 6,
+   "progress": 0.0235
+  },
+  {
+   "kind": "keypoint",
+   "body": "None of the three needs a bug in Git.",
+   "section": "HOOK",
+   "n": 7,
+   "progress": 0.0333
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.046
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0473
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three parts. First, why \"no conflicts\" is not \"correct\", with a merge of two green branches, branches whose checks pass, that fails its check.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.0672
+  },
+  {
+   "kind": "keypoint",
+   "body": "It stores a tree, one complete snapshot of the files, and no diff, so the default log shows you nothing.",
+   "section": "INTRODUCTION",
+   "n": 11,
+   "progress": 0.0819
+  },
+  {
+   "kind": "keypoint",
+   "body": "At the end there are three pointers to later chapters: rerere, reverting a merge, and an option that Git 2.56 adds.",
+   "section": "INTRODUCTION",
+   "n": 12,
+   "progress": 0.0996
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1065
+  },
+  {
+   "kind": "keypoint",
+   "body": "Here's what you'll walk away with.",
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1077
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why two green branches can merge without conflict into a broken result.",
+    "Show what a merge resolution changed with <code>--remerge-diff</code>.",
+    "Say what <code>git show</code> displays for a merge commit and what it hides.",
+    "Compute a merge without a working tree with <code>git merge-tree</code>.",
+    "Name the follow-up topics: rerere, reverting a merge, and <code>git add --resolved</code> in Git 2.56."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1096
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why two green branches can merge without conflict into a broken result.",
+    "Show what a merge resolution changed with <code>--remerge-diff</code>.",
+    "Say what <code>git show</code> displays for a merge commit and what it hides.",
+    "Compute a merge without a working tree with <code>git merge-tree</code>.",
+    "Name the follow-up topics: rerere, reverting a merge, and <code>git add --resolved</code> in Git 2.56."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1113
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why two green branches can merge without conflict into a broken result.",
+    "Show what a merge resolution changed with <code>--remerge-diff</code>.",
+    "Say what <code>git show</code> displays for a merge commit and what it hides.",
+    "Compute a merge without a working tree with <code>git merge-tree</code>.",
+    "Name the follow-up topics: rerere, reverting a merge, and <code>git add --resolved</code> in Git 2.56."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 17,
+   "progress": 0.1155
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why two green branches can merge without conflict into a broken result.",
+    "Show what a merge resolution changed with <code>--remerge-diff</code>.",
+    "Say what <code>git show</code> displays for a merge commit and what it hides.",
+    "Compute a merge without a working tree with <code>git merge-tree</code>.",
+    "Name the follow-up topics: rerere, reverting a merge, and <code>git add --resolved</code> in Git 2.56."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 18,
+   "progress": 0.1182
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why two green branches can merge without conflict into a broken result.",
+    "Show what a merge resolution changed with <code>--remerge-diff</code>.",
+    "Say what <code>git show</code> displays for a merge commit and what it hides.",
+    "Compute a merge without a working tree with <code>git merge-tree</code>.",
+    "Name the follow-up topics: rerere, reverting a merge, and <code>git add --resolved</code> in Git 2.56."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 19,
+   "progress": 0.1224
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why two green branches can merge without conflict into a broken result.",
+    "Show what a merge resolution changed with <code>--remerge-diff</code>.",
+    "Say what <code>git show</code> displays for a merge commit and what it hides.",
+    "Compute a merge without a working tree with <code>git merge-tree</code>.",
+    "Name the follow-up topics: rerere, reverting a merge, and <code>git add --resolved</code> in Git 2.56."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 20,
+   "progress": 0.1257
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1306
+  },
+  {
+   "kind": "keypoint",
+   "body": "Start with the one sentence from section 8.15.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.1318
+  },
+  {
+   "kind": "keypoint",
+   "body": "Recall the idea from the start of the chapter.",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.1426
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 68c652c-d1c3cff refactor/mean-score; 68c652c-5008877 feature/leaderboard; d1c3cff-M main; 5008877-M; HEAD=main => + pass:d1c3cff; pass:5008877; mark:not_tested:M; name:tested => + fail:M; name:red title=Two_green_branches,_one_untested_merge id=green dx=430",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "68c652c",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d1c3cff",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "5008877",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d1c3cff",
+       "5008877"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "68c652c",
+       "d1c3cff",
+       "5008877",
+       "M"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "not tested"
+      },
+      "name": "tested"
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "fail"
+      },
+      "name": "red"
+     }
+    ],
+    "settle": "on",
+    "title": "Two green branches, one untested merge",
+    "dx": "430",
+    "id": "green"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "tested",
+    "red"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.1645
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 68c652c-d1c3cff refactor/mean-score; 68c652c-5008877 feature/leaderboard; d1c3cff-M main; 5008877-M; HEAD=main => + pass:d1c3cff; pass:5008877; mark:not_tested:M; name:tested => + fail:M; name:red title=Two_green_branches,_one_untested_merge id=green dx=430",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "68c652c",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d1c3cff",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "5008877",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d1c3cff",
+       "5008877"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "68c652c",
+       "d1c3cff",
+       "5008877",
+       "M"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "not tested"
+      },
+      "name": "tested"
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "fail"
+      },
+      "name": "red"
+     }
+    ],
+    "settle": "on",
+    "title": "Two green branches, one untested merge",
+    "dx": "430",
+    "id": "green"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "tested",
+    "red"
+   ],
+   "upto": 2,
+   "says": [
+    "The quiet variant: nothing fails, and the scores shift"
+   ],
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.1796
+  },
+  {
+   "kind": "keypoint",
+   "body": "A second way a clean merge surprises people: a change that was made on both sides and reverted on one.",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.1979
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=An_evil_merge:_changes_that_appear_in_no_parent cards=a_resolution:that_also_changes_something_outside_the_conflict|an_edit:between_git_merge_--no-commit_and_the_commit|git_commit_--amend:on_a_merge at_1=42 at_2=58 at_3=72",
+   "scene": "cards",
+   "params": {
+    "question": "An evil merge: changes that appear in no parent",
+    "cards": [
+     [
+      "a resolution",
+      "that also changes something outside the conflict"
+     ],
+     [
+      "an edit",
+      "between git merge --no-commit and the commit"
+     ],
+     [
+      "git commit --amend",
+      "on a merge"
+     ]
+    ],
+    "at": {
+     "1": 0.42,
+     "2": 0.58,
+     "3": 0.72
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.209
+  },
+  {
+   "kind": "keypoint",
+   "body": "Which brings you to auditing.",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.2407
+  },
+  {
+   "kind": "table",
+   "direction": "The table of section 8.16.",
+   "header": [
+    "View",
+    "Command",
+    "Shows",
+    "Blind to"
+   ],
+   "fs": 36,
+   "cols": [
+    20.03,
+    25.88,
+    28.21,
+    25.88
+   ],
+   "mono": true,
+   "rows": [
+    [
+     "default log",
+     "git log -p",
+     "no diff at all for merge commits",
+     "everything a merge did"
+    ],
+    [
+     "first-parent diff",
+     "git show --first-parent M<br>git diff M^1 M",
+     "everything the merge brought to the mainline",
+     "which part is branch content and which is hand-made"
+    ],
+    [
+     "combined diff",
+     "git show M (the --cc format)",
+     "lines that differ from every parent",
+     "resolutions that took one side unchanged"
+    ],
+    [
+     "remerge diff",
+     "git show --remerge-diff M<br>git log --merges --remerge-diff",
+     "difference between a mechanical re-merge and the recorded result",
+     "octopus merges, which it skips"
+    ]
+   ],
+   "hl": 3,
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.2518
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=*object_database:all_that_merge-tree_uses|everything_else:not_touched rows=1:A:the_same_strategy_as_git_merge|1:B:no_index@dim|1:B:no_working_tree@dim|1:B:no_ref_update@dim|2:A:writes_the_resulting_tree@hl|2:A:prints_the_tree_ID|3:A:exit_status_0:_clean@ok|3:A:exit_status_1:_conflict@bad title=git_merge-tree_--write-tree at_1=25 at_2=80",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      "*object database",
+      "all that merge-tree uses"
+     ],
+     [
+      "everything else",
+      "not touched"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "the same strategy as git merge"
+     ],
+     [
+      1,
+      "B",
+      "no index",
+      "dim"
+     ],
+     [
+      1,
+      "B",
+      "no working tree",
+      "dim"
+     ],
+     [
+      1,
+      "B",
+      "no ref update",
+      "dim"
+     ],
+     [
+      2,
+      "A",
+      "writes the resulting tree",
+      "hl"
+     ],
+     [
+      2,
+      "A",
+      "prints the tree ID"
+     ],
+     [
+      3,
+      "A",
+      "exit status 0: clean",
+      "ok"
+     ],
+     [
+      3,
+      "A",
+      "exit status 1: conflict",
+      "bad"
+     ]
+    ],
+    "title": "git merge-tree --write-tree",
+    "at": {
+     "1": 0.25,
+     "2": 0.8
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.2639
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.2937
+  },
+  {
+   "kind": "callout",
+   "direction": "\"Git checks one property: the overlap of changed lines.\"",
+   "quotes": [
+    "Git checks one property: the overlap of changed lines."
+   ],
+   "quoted": true,
+   "section": "MENTAL MODEL",
+   "n": 32,
+   "progress": 0.2949
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 68c652c-d1c3cff refactor/mean-score; 68c652c-5008877 feature/leaderboard; d1c3cff-M main; 5008877-M; HEAD=main => + pass:d1c3cff; pass:5008877; mark:not_tested:M; name:tested => + fail:M; name:red title=Two_green_branches,_one_untested_merge id=green dx=430",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "68c652c",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d1c3cff",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "5008877",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d1c3cff",
+       "5008877"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "68c652c",
+       "d1c3cff",
+       "5008877",
+       "M"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "not tested"
+      },
+      "name": "tested"
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "fail"
+      },
+      "name": "red"
+     }
+    ],
+    "settle": "on",
+    "title": "Two green branches, one untested merge",
+    "dx": "430",
+    "id": "green"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "tested",
+    "red"
+   ],
+   "base": 2,
+   "says_before": [
+    "The quiet variant: nothing fails, and the scores shift"
+   ],
+   "upto": 3,
+   "section": "MENTAL MODEL",
+   "n": 33,
+   "progress": 0.332
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.3519
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 68c652c-d1c3cff refactor/mean-score; 68c652c-5008877 feature/leaderboard; d1c3cff-M main; 5008877-M; HEAD=main => + pass:d1c3cff; pass:5008877; mark:not_tested:M; name:tested => + fail:M; name:red title=Two_green_branches,_one_untested_merge id=green dx=430",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "68c652c",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d1c3cff",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "5008877",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d1c3cff",
+       "5008877"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "68c652c",
+       "d1c3cff",
+       "5008877",
+       "M"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "not tested"
+      },
+      "name": "tested"
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "fail"
+      },
+      "name": "red"
+     }
+    ],
+    "settle": "on",
+    "title": "Two green branches, one untested merge",
+    "dx": "430",
+    "id": "green"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "tested",
+    "red"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.3531
+  },
+  {
+   "kind": "diagram",
+   "direction": "Then the root-cause box of section 8.15, one line at a time, after the `no-path-in-common` snippet.",
+   "text": "Observed behavior : Two green branches, a merge without conflict, a red merge commit.\nGit state         : The sides changed disjoint paths: metrics.py and report.py on one,\n                    leaderboard.py on the other.\nMechanism         : By the rule table, a path changed on one side only is taken as it is.\n                    No file-level merge ran. There was nothing for Git to compare.\nRoot cause        : The dependency between the two changes, a renamed function and a new\n                    caller of the old name, lives in the Python import system, not in the\n                    text of any one file.\nWhy Git does this : Git merges snapshots of text. It has no parser, no type checker and no\n                    test runner, for any language.\nCorrect fix       : Update the caller, in a commit on top of the merge (below) or inside the\n                    merge commit (see \"Evil merges\").\nPrevention        : Test the merge result before it reaches main: CI on the pull request's\n                    merge commit, plus a rule that the branch is up to date with main, or a\n                    merge queue (Chapter 18).",
+   "section": "DIAGRAM",
+   "n": 36,
+   "progress": 0.3577
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.3623
+  },
+  {
+   "kind": "terminal",
+   "direction": "`labs/run ch08/clean-but-wrong`. A shell script, `ci/check_imports.sh`, stands in for the test suite: it fails when a module imports a name that `metrics.py` does not define.",
+   "mode": "cmd",
+   "title": "labs/run ch08/clean-but-wrong",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch08/clean-but-wrong"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.3635
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/clean-but-wrong/01-both-merge-cleanly",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --all"
+    },
+    {
+     "t": "out",
+     "s": "* 5008877 Add a leaderboard ranked by accuracy"
+    },
+    {
+     "t": "out",
+     "s": "| * d1c3cff Rename accuracy() to mean_score()"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 68c652c Add the report module and the import check"
+    },
+    {
+     "t": "out",
+     "s": "* 6ae3c51 Add eval config, judge prompt and metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge -q refactor/mean-score"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge feature/leaderboard"
+    },
+    {
+     "t": "out",
+     "s": "Merge made by the 'ort' strategy."
+    },
+    {
+     "t": "out",
+     "s": " evalkit/leaderboard.py | 5 +++++"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 5 insertions(+)"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 evalkit/leaderboard.py"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.3684
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/clean-but-wrong/02-check-fails",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "sh ci/check_imports.sh"
+    },
+    {
+     "t": "out",
+     "s": "FAIL evalkit/leaderboard.py imports accuracy, which evalkit/metrics.py does not define"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.3777
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/clean-but-wrong/03-parents-pass",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The same check on each parent of the merge commit:"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch -q --detach main^1 && sh ci/check_imports.sh"
+    },
+    {
+     "t": "out",
+     "s": "OK every import from evalkit.metrics resolves"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch -q --detach main^2 && sh ci/check_imports.sh"
+    },
+    {
+     "t": "out",
+     "s": "OK every import from evalkit.metrics resolves"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch -q main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.3849
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/clean-but-wrong/04-no-path-in-common",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Paths each side changed since the merge base:"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only main^2...main^1"
+    },
+    {
+     "t": "out",
+     "s": "evalkit/metrics.py"
+    },
+    {
+     "t": "out",
+     "s": "evalkit/report.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --name-only main^1...main^2"
+    },
+    {
+     "t": "out",
+     "s": "evalkit/leaderboard.py"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.3898
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Part 1: clean and wrong",
+   "body": "That's question one, answered.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.3999
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/clean-but-wrong/05-fix",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The repair is a normal, reviewable commit on top of the merge."
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat"
+    },
+    {
+     "t": "out",
+     "s": " evalkit/leaderboard.py | 4 ++--"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 2 insertions(+), 2 deletions(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -q -a -m \"Use mean_score() in the leaderboard\""
+    },
+    {
+     "t": "cmd",
+     "s": "sh ci/check_imports.sh"
+    },
+    {
+     "t": "out",
+     "s": "OK every import from evalkit.metrics resolves"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.4052
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/revert-one-side/01-history",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --all"
+    },
+    {
+     "t": "out",
+     "s": "* a2a0277 Revert \"Allow long answers: max_tokens 2048\""
+    },
+    {
+     "t": "out",
+     "s": "* 523ed40 Allow long answers: max_tokens 2048"
+    },
+    {
+     "t": "out",
+     "s": "| * 4fac9ee Ask for full sentences"
+    },
+    {
+     "t": "out",
+     "s": "| * c8e320d Allow long answers: max_tokens 2048"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 6ae3c51 Add eval config, judge prompt and metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "grep max_tokens config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "max_tokens: 512"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.4163
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/revert-one-side/02-merge",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git merge feature/long-answers"
+    },
+    {
+     "t": "out",
+     "s": "Merge made by the 'ort' strategy."
+    },
+    {
+     "t": "out",
+     "s": " config/eval.yaml  | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " prompts/judge.txt | 1 +"
+    },
+    {
+     "t": "out",
+     "s": " 2 files changed, 2 insertions(+), 1 deletion(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "grep max_tokens config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "max_tokens: 2048"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.4232
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/revert-one-side/03-three-inputs",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# base, ours, theirs, result:"
+    },
+    {
+     "t": "cmd",
+     "s": "git show $(git merge-base HEAD^1 HEAD^2):config/eval.yaml | grep max_tokens"
+    },
+    {
+     "t": "out",
+     "s": "max_tokens: 512"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD^1:config/eval.yaml | grep max_tokens"
+    },
+    {
+     "t": "out",
+     "s": "max_tokens: 512"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD^2:config/eval.yaml | grep max_tokens"
+    },
+    {
+     "t": "out",
+     "s": "max_tokens: 2048"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:config/eval.yaml | grep max_tokens"
+    },
+    {
+     "t": "out",
+     "s": "max_tokens: 2048"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.4285
+  },
+  {
+   "kind": "scene",
+   "direction": "merge: three-way feature/long-answers into main common=6ae3c51 main_only=523ed40,a2a0277 feature_only=c8e320d,4fac9ee title=The_three_inputs_of_that_merge steps=setup,merge-base say_merge_base=Base_512,_ours_512,_theirs_2048",
+   "scene": "merge",
+   "params": {
+    "common": [
+     "6ae3c51"
+    ],
+    "main_only": [
+     "523ed40",
+     "a2a0277"
+    ],
+    "feature_only": [
+     "c8e320d",
+     "4fac9ee"
+    ],
+    "title": "The three inputs of that merge",
+    "say": {
+     "merge-base": "Base 512, ours 512, theirs 2048"
+    },
+    "mode": "three-way",
+    "feature": "feature/long-answers",
+    "main": "main"
+   },
+   "steps": [
+    "setup",
+    "merge-base"
+   ],
+   "upto": 2,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.4327
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Part 3: auditing",
+   "body": "<code>labs/run ch08/audit-merge</code>. The history has three merges.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.4602
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch08/clean-but-wrong",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log -1 -p --format='%h %s' fc83756"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.4759
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/audit-merge/01-log-p-is-blind",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --first-parent -5"
+    },
+    {
+     "t": "out",
+     "s": "9a6385a Merge branch 'topic/max-tokens'"
+    },
+    {
+     "t": "out",
+     "s": "fc83756 Merge branch 'topic/docs'"
+    },
+    {
+     "t": "out",
+     "s": "8353ff1 Add requirements"
+    },
+    {
+     "t": "out",
+     "s": "70bae5f Merge branch 'feature/creative-judge'"
+    },
+    {
+     "t": "out",
+     "s": "5397d5f Use temperature 0 for reproducible evals"
+    },
+    {
+     "t": "out",
+     "s": "# By default git log shows no diff for a merge commit, with -p or with --stat:"
+    },
+    {
+     "t": "cmd",
+     "s": "git log -1 -p --format='%h %s' fc83756"
+    },
+    {
+     "t": "out",
+     "s": "fc83756 Merge branch 'topic/docs'"
+    },
+    {
+     "t": "cmd",
+     "s": "git log -1 --stat --format='%h %s' fc83756"
+    },
+    {
+     "t": "out",
+     "s": "fc83756 Merge branch 'topic/docs'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.4828
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/audit-merge/02-show-combined",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# git show uses the dense combined format (--cc) for merges."
+    },
+    {
+     "t": "cmd",
+     "s": "git show --format='%h %s' 70bae5f"
+    },
+    {
+     "t": "out",
+     "s": "70bae5f Merge branch 'feature/creative-judge'"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmd",
+     "s": "git show --format='%h %s' fc83756"
+    },
+    {
+     "t": "out",
+     "s": "fc83756 Merge branch 'topic/docs'"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "diff --cc config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "index 1642b99,1642b99..29fd375"
+    },
+    {
+     "t": "out",
+     "s": "--- a/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "@@@ -3,5 -3,5 +3,5 @@@ temperature: 0."
+    },
+    {
+     "t": "out",
+     "s": "  max_tokens: 512"
+    },
+    {
+     "t": "out",
+     "s": "  batch_size: 16"
+    },
+    {
+     "t": "out",
+     "s": "  timeout_s: 30"
+    },
+    {
+     "t": "out",
+     "s": "--retries: 2"
+    },
+    {
+     "t": "out",
+     "s": "++retries: 0"
+    },
+    {
+     "t": "out",
+     "s": "  seed: 1234"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.5071
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/audit-merge/03-remerge-diff",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --merges --remerge-diff --format='== %h %s'"
+    },
+    {
+     "t": "out",
+     "s": "== 9a6385a Merge branch 'topic/max-tokens'"
+    },
+    {
+     "t": "out",
+     "s": "== fc83756 Merge branch 'topic/docs'"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/config/eval.yaml b/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "index 1642b99..29fd375 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "@@ -3,5 +3,5 @@ temperature: 0.0"
+    },
+    {
+     "t": "out",
+     "s": " max_tokens: 512"
+    },
+    {
+     "t": "out",
+     "s": " batch_size: 16"
+    },
+    {
+     "t": "out",
+     "s": " timeout_s: 30"
+    },
+    {
+     "t": "out",
+     "s": "-retries: 2"
+    },
+    {
+     "t": "out",
+     "s": "+retries: 0"
+    },
+    {
+     "t": "out",
+     "s": " seed: 1234"
+    },
+    {
+     "t": "out",
+     "s": "== 70bae5f Merge branch 'feature/creative-judge'"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/config/eval.yaml b/config/eval.yaml"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.5297
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/audit-merge/03-remerge-diff",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "git log --merges --remerge-diff --format='== %h %s'"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "remerge CONFLICT (content): Merge conflict in config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "index 2c6727a..1642b99 100644"
+    },
+    {
+     "t": "out",
+     "s": "--- a/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "@@ -1,9 +1,5 @@"
+    },
+    {
+     "t": "out",
+     "s": " model: judge-large-v2"
+    },
+    {
+     "t": "out",
+     "s": "-<<<<<<< 5397d5f (Use temperature 0 for reproducible evals)"
+    },
+    {
+     "t": "out",
+     "s": " temperature: 0.0"
+    },
+    {
+     "t": "out",
+     "s": "-======="
+    },
+    {
+     "t": "out",
+     "s": "-temperature: 0.7"
+    },
+    {
+     "t": "out",
+     "s": "->>>>>>> 45a7a67 (Ask the judge for a rationale)"
+    },
+    {
+     "t": "out",
+     "s": " max_tokens: 512"
+    },
+    {
+     "t": "out",
+     "s": " batch_size: 16"
+    },
+    {
+     "t": "out",
+     "s": " timeout_s: 30"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.5483
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/audit-merge/04-first-parent",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Everything a merge brought to main, as one ordinary diff against its first parent:"
+    },
+    {
+     "t": "cmd",
+     "s": "git show --first-parent --format='%h %s' fc83756"
+    },
+    {
+     "t": "out",
+     "s": "fc83756 Merge branch 'topic/docs'"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/README.md b/README.md"
+    },
+    {
+     "t": "out",
+     "s": "new file mode 100644"
+    },
+    {
+     "t": "out",
+     "s": "index 0000000..e8fdfb1"
+    },
+    {
+     "t": "out",
+     "s": "--- /dev/null"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/README.md"
+    },
+    {
+     "t": "out",
+     "s": "@@ -0,0 +1 @@"
+    },
+    {
+     "t": "out",
+     "s": "+# evalkit"
+    },
+    {
+     "t": "out",
+     "s": "diff --git a/config/eval.yaml b/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "index 1642b99..29fd375 100644"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.5519
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/audit-merge/04-first-parent",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "git show --first-parent --format='%h %s' fc83756"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "--- a/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "+++ b/config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "@@ -3,5 +3,5 @@ temperature: 0.0"
+    },
+    {
+     "t": "out",
+     "s": " max_tokens: 512"
+    },
+    {
+     "t": "out",
+     "s": " batch_size: 16"
+    },
+    {
+     "t": "out",
+     "s": " timeout_s: 30"
+    },
+    {
+     "t": "out",
+     "s": "-retries: 2"
+    },
+    {
+     "t": "out",
+     "s": "+retries: 0"
+    },
+    {
+     "t": "out",
+     "s": " seed: 1234"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.5544
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Part 4: <code>git merge-tree</code>",
+   "body": "<code>labs/run ch08/merge-tree</code>. A bare clone stands in for a server.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.5858
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/merge-tree/01-bare",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone -q --bare evalkit server.git"
+    },
+    {
+     "t": "cmd",
+     "s": "cd server.git"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --is-bare-repository"
+    },
+    {
+     "t": "out",
+     "s": "true"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --all"
+    },
+    {
+     "t": "out",
+     "s": "* 7c974a2 Add a README"
+    },
+    {
+     "t": "out",
+     "s": "| * 5397d5f Use temperature 0 for reproducible evals"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "| * 45a7a67 Ask the judge for a rationale"
+    },
+    {
+     "t": "out",
+     "s": "| * 640bfe1 Raise temperature and reseed for judge diversity"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 6ae3c51 Add eval config, judge prompt and metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge docs/readme"
+    },
+    {
+     "t": "out",
+     "s": "fatal: this operation must be run in a work tree"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.5904
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/merge-tree/02-clean",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git merge-tree --write-tree main docs/readme"
+    },
+    {
+     "t": "out",
+     "s": "0c05f61e275e97d119913a164e7312d48cd50d66"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    },
+    {
+     "t": "cmd",
+     "s": "tree=$(git merge-tree --write-tree main docs/readme)"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-tree -r --abbrev=7 $tree"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob af7f9b5     README.md"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 0e8b97c     config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob 9bbcd7a     evalkit/metrics.py"
+    },
+    {
+     "t": "out",
+     "s": "100644 blob cfe0ef0     prompts/judge.txt"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.5979
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/merge-tree/03-commit",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "commit=$(git commit-tree $tree -p main -p docs/readme -m \"Merge branch 'docs/readme'\")"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/main $commit"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph -4 main"
+    },
+    {
+     "t": "out",
+     "s": "*   40fb5aa Merge branch 'docs/readme'"
+    },
+    {
+     "t": "out",
+     "s": "|\\"
+    },
+    {
+     "t": "out",
+     "s": "| * 7c974a2 Add a README"
+    },
+    {
+     "t": "out",
+     "s": "* | 5397d5f Use temperature 0 for reproducible evals"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 6ae3c51 Add eval config, judge prompt and metrics"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.61
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 6ae3c51-5397d5f main; 6ae3c51-7c974a2 docs/readme; 6ae3c51-640bfe1-45a7a67 feature/creative-judge; HEAD=main => 6ae3c51-5397d5f-40fb5aa main; 6ae3c51-7c974a2 docs/readme; 7c974a2-40fb5aa; 6ae3c51-640bfe1-45a7a67 feature/creative-judge; HEAD=main title=A_merge_without_a_working_tree",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "6ae3c51",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5397d5f",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "7c974a2",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "640bfe1",
+      "col": 1,
+      "row": 2,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "45a7a67",
+      "col": 2,
+      "row": 2,
+      "parents": [
+       "640bfe1"
+      ]
+     },
+     {
+      "id": "40fb5aa",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5397d5f",
+       "7c974a2"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "6ae3c51",
+       "5397d5f",
+       "7c974a2",
+       "640bfe1",
+       "45a7a67"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "5397d5f",
+       "docs/readme": "7c974a2",
+       "feature/creative-judge": "45a7a67"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "40fb5aa"
+      ],
+      "refs": {
+       "main": "40fb5aa",
+       "docs/readme": "7c974a2",
+       "feature/creative-judge": "45a7a67"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "title": "A merge without a working tree"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.6142
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/merge-tree/04-conflict",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git merge-tree --write-tree main feature/creative-judge"
+    },
+    {
+     "t": "out",
+     "s": "9615415b8675a4fb67a61eb8a37e816decd78066"
+    },
+    {
+     "t": "out",
+     "s": "100644 c5b33275d88c041381cff59f23d3cd88b9f22c98 1       config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 0e8b97cd35b023b2949d7efeed9dbd491d065ae8 2       config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 db5c556ef5edb6802e492cd59b5a0b9721a882da 3       config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Auto-merging config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "CONFLICT (content): Merge conflict in config/eval.yaml"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.6274
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/merge-tree/05-conflict-tree",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "tree=$(git merge-tree --write-tree main feature/creative-judge | head -1)"
+    },
+    {
+     "t": "cmd",
+     "s": "git show $tree:config/eval.yaml | head -6"
+    },
+    {
+     "t": "out",
+     "s": "model: judge-large-v2"
+    },
+    {
+     "t": "out",
+     "s": "<<<<<<< main"
+    },
+    {
+     "t": "out",
+     "s": "temperature: 0.0"
+    },
+    {
+     "t": "out",
+     "s": "======="
+    },
+    {
+     "t": "out",
+     "s": "temperature: 0.7"
+    },
+    {
+     "t": "out",
+     "s": ">>>>>>> feature/creative-judge"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.6352
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/merge-tree/06-quiet",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A yes/no answer for a \"can this be merged?\" indicator:"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge-tree --quiet main feature/creative-judge"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge-tree --write-tree --name-only --no-messages main feature/creative-judge"
+    },
+    {
+     "t": "out",
+     "s": "9615415b8675a4fb67a61eb8a37e816decd78066"
+    },
+    {
+     "t": "out",
+     "s": "config/eval.yaml"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.6398
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Part 5: a pointer to the third question",
+   "body": "<code>labs/run ch08/revert-merge-preview</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.6509
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/revert-merge-preview/01-revert",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph"
+    },
+    {
+     "t": "out",
+     "s": "*   821b8ff Merge branch 'feature/rationale'"
+    },
+    {
+     "t": "out",
+     "s": "|\\"
+    },
+    {
+     "t": "out",
+     "s": "| * 58a5e60 Ask the judge to quote evidence"
+    },
+    {
+     "t": "out",
+     "s": "| * 5aec6e0 Ask the judge for a rationale"
+    },
+    {
+     "t": "out",
+     "s": "* | c089834 Use temperature 0 for reproducible evals"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 6ae3c51 Add eval config, judge prompt and metrics"
+    },
+    {
+     "t": "cmd",
+     "s": "git revert --no-edit HEAD"
+    },
+    {
+     "t": "out",
+     "s": "error: commit 821b8ff2e4e35c648578cd9e11514117ae0fd1b9 is a merge but no -m option was given."
+    },
+    {
+     "t": "out",
+     "s": "fatal: revert failed"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git revert --no-edit -m 1 HEAD"
+    },
+    {
+     "t": "out",
+     "s": "[main 504ae98] Revert \"Merge branch 'feature/rationale'\""
+    },
+    {
+     "t": "out",
+     "s": " Date: Mon Sep 7 10:15:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 2 deletions(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "cat prompts/judge.txt"
+    },
+    {
+     "t": "out",
+     "s": "You are a strict grader."
+    },
+    {
+     "t": "out",
+     "s": "Answer with PASS or FAIL."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.6637
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 6ae3c51-c089834-821b8ff main; 6ae3c51-5aec6e0-58a5e60 feature/rationale; 58a5e60-821b8ff; HEAD=main => 6ae3c51-c089834-821b8ff-504ae98 main; 6ae3c51-5aec6e0-58a5e60-b752dc4 feature/rationale; 58a5e60-821b8ff; HEAD=main => + 504ae98-?second_merge main; b752dc4-?second_merge; note:58a5e60:the_merge_base title=Content_undone,_ancestry_kept id=revert",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "6ae3c51",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "c089834",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "5aec6e0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "58a5e60",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5aec6e0"
+      ]
+     },
+     {
+      "id": "821b8ff",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "c089834",
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "504ae98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "821b8ff"
+      ]
+     },
+     {
+      "id": "b752dc4",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "?second_merge",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "kind": "placeholder",
+      "text": "second merge"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "6ae3c51",
+       "c089834",
+       "5aec6e0",
+       "58a5e60",
+       "821b8ff"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "821b8ff",
+       "feature/rationale": "58a5e60"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "refs": {
+       "main": "504ae98",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "?second_merge"
+      ],
+      "refs": {
+       "main": "?second_merge",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "the merge base",
+        "at": "58a5e60"
+       }
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Content undone, ancestry kept",
+    "id": "revert"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3"
+   ],
+   "upto": 2,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.6701
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 6ae3c51-c089834-821b8ff main; 6ae3c51-5aec6e0-58a5e60 feature/rationale; 58a5e60-821b8ff; HEAD=main => 6ae3c51-c089834-821b8ff-504ae98 main; 6ae3c51-5aec6e0-58a5e60-b752dc4 feature/rationale; 58a5e60-821b8ff; HEAD=main => + 504ae98-?second_merge main; b752dc4-?second_merge; note:58a5e60:the_merge_base title=Content_undone,_ancestry_kept id=revert",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "6ae3c51",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "c089834",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "5aec6e0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "58a5e60",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5aec6e0"
+      ]
+     },
+     {
+      "id": "821b8ff",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "c089834",
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "504ae98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "821b8ff"
+      ]
+     },
+     {
+      "id": "b752dc4",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "?second_merge",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "kind": "placeholder",
+      "text": "second merge"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "6ae3c51",
+       "c089834",
+       "5aec6e0",
+       "58a5e60",
+       "821b8ff"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "821b8ff",
+       "feature/rationale": "58a5e60"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "refs": {
+       "main": "504ae98",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "?second_merge"
+      ],
+      "refs": {
+       "main": "?second_merge",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "the merge base",
+        "at": "58a5e60"
+       }
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Content undone, ancestry kept",
+    "id": "revert"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 68,
+   "progress": 0.6776
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch08/revert-merge-preview/02-remerge",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline main..feature/rationale"
+    },
+    {
+     "t": "out",
+     "s": "b752dc4 Give the judge 60 seconds for longer answers"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge feature/rationale"
+    },
+    {
+     "t": "out",
+     "s": "Auto-merging config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "Merge made by the 'ort' strategy."
+    },
+    {
+     "t": "out",
+     "s": " config/eval.yaml | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "out",
+     "s": "# The timeout arrived. The two prompt lines of the first merge did not come back:"
+    },
+    {
+     "t": "cmd",
+     "s": "grep timeout_s config/eval.yaml"
+    },
+    {
+     "t": "out",
+     "s": "timeout_s: 60"
+    },
+    {
+     "t": "cmd",
+     "s": "cat prompts/judge.txt"
+    },
+    {
+     "t": "out",
+     "s": "You are a strict grader."
+    },
+    {
+     "t": "out",
+     "s": "Answer with PASS or FAIL."
+    },
+    {
+     "t": "cmd",
+     "s": "git branch --merged"
+    },
+    {
+     "t": "out",
+     "s": "  feature/rationale"
+    },
+    {
+     "t": "out",
+     "s": "* main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 69,
+   "progress": 0.6898
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 6ae3c51-c089834-821b8ff main; 6ae3c51-5aec6e0-58a5e60 feature/rationale; 58a5e60-821b8ff; HEAD=main => 6ae3c51-c089834-821b8ff-504ae98 main; 6ae3c51-5aec6e0-58a5e60-b752dc4 feature/rationale; 58a5e60-821b8ff; HEAD=main => + 504ae98-?second_merge main; b752dc4-?second_merge; note:58a5e60:the_merge_base title=Content_undone,_ancestry_kept id=revert",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "6ae3c51",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "c089834",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "5aec6e0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "58a5e60",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5aec6e0"
+      ]
+     },
+     {
+      "id": "821b8ff",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "c089834",
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "504ae98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "821b8ff"
+      ]
+     },
+     {
+      "id": "b752dc4",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "?second_merge",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "kind": "placeholder",
+      "text": "second merge"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "6ae3c51",
+       "c089834",
+       "5aec6e0",
+       "58a5e60",
+       "821b8ff"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "821b8ff",
+       "feature/rationale": "58a5e60"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "refs": {
+       "main": "504ae98",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "?second_merge"
+      ],
+      "refs": {
+       "main": "?second_merge",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "the merge base",
+        "at": "58a5e60"
+       }
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Content undone, ancestry kept",
+    "id": "revert"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.697
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 71,
+   "progress": 0.7094
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 72,
+   "progress": 0.7106
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Treating \"merged without conflicts\" as \"tested\".</b> Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+    "<b>Reading <code>git log -p</code> and concluding that a merge changed nothing.</b> Root cause: by default <code>git log</code> shows no diff at all for merge commits.",
+    "<b>Trusting an empty <code>git show</code> on a merge.</b> Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+    "<b>Expecting a revert on <code>main</code> to win over the same change on an unmerged branch.</b> Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+    "<b>Deciding \"can this be merged\" from the list of conflicted files.</b> Root cause: the manual tells you to decide by the exit status of <code>git merge-tree</code>, not by whether that list is empty."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 73,
+   "progress": 0.7123
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Treating \"merged without conflicts\" as \"tested\".</b> Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+    "<b>Reading <code>git log -p</code> and concluding that a merge changed nothing.</b> Root cause: by default <code>git log</code> shows no diff at all for merge commits.",
+    "<b>Trusting an empty <code>git show</code> on a merge.</b> Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+    "<b>Expecting a revert on <code>main</code> to win over the same change on an unmerged branch.</b> Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+    "<b>Deciding \"can this be merged\" from the list of conflicted files.</b> Root cause: the manual tells you to decide by the exit status of <code>git merge-tree</code>, not by whether that list is empty."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 74,
+   "progress": 0.7221
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Treating \"merged without conflicts\" as \"tested\".</b> Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+    "<b>Reading <code>git log -p</code> and concluding that a merge changed nothing.</b> Root cause: by default <code>git log</code> shows no diff at all for merge commits.",
+    "<b>Trusting an empty <code>git show</code> on a merge.</b> Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+    "<b>Expecting a revert on <code>main</code> to win over the same change on an unmerged branch.</b> Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+    "<b>Deciding \"can this be merged\" from the list of conflicted files.</b> Root cause: the manual tells you to decide by the exit status of <code>git merge-tree</code>, not by whether that list is empty."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 75,
+   "progress": 0.7303
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Treating \"merged without conflicts\" as \"tested\".</b> Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+    "<b>Reading <code>git log -p</code> and concluding that a merge changed nothing.</b> Root cause: by default <code>git log</code> shows no diff at all for merge commits.",
+    "<b>Trusting an empty <code>git show</code> on a merge.</b> Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+    "<b>Expecting a revert on <code>main</code> to win over the same change on an unmerged branch.</b> Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+    "<b>Deciding \"can this be merged\" from the list of conflicted files.</b> Root cause: the manual tells you to decide by the exit status of <code>git merge-tree</code>, not by whether that list is empty."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 76,
+   "progress": 0.7407
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Treating \"merged without conflicts\" as \"tested\".</b> Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+    "<b>Reading <code>git log -p</code> and concluding that a merge changed nothing.</b> Root cause: by default <code>git log</code> shows no diff at all for merge commits.",
+    "<b>Trusting an empty <code>git show</code> on a merge.</b> Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+    "<b>Expecting a revert on <code>main</code> to win over the same change on an unmerged branch.</b> Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+    "<b>Deciding \"can this be merged\" from the list of conflicted files.</b> Root cause: the manual tells you to decide by the exit status of <code>git merge-tree</code>, not by whether that list is empty."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 77,
+   "progress": 0.7522
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 78,
+   "progress": 0.763
+  },
+  {
+   "kind": "callout",
+   "direction": "`git log --merges --remerge-diff --first-parent <last-release>..main`",
+   "code": [
+    "git log --merges --remerge-diff --first-parent <last-release>..main"
+   ],
+   "quoted": false,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 79,
+   "progress": 0.7642
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=One_command_over_every_merge_since_the_last_release cards=most_merges:print_nothing|one_merge:a_resolution_in_the_evaluation_config|one_merge:a_change_with_no_markers_nearby marks=3:ring at_1=42 at_2=50 at_3=58",
+   "scene": "cards",
+   "params": {
+    "question": "One command over every merge since the last release",
+    "cards": [
+     [
+      "most merges",
+      "print nothing"
+     ],
+     [
+      "one merge",
+      "a resolution in the evaluation config"
+     ],
+     [
+      "one merge",
+      "a change with no markers nearby"
+     ]
+    ],
+    "marks": [
+     [
+      "3",
+      "ring"
+     ]
+    ],
+    "at": {
+     "1": 0.42,
+     "2": 0.5,
+     "3": 0.58
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "marks"
+   ],
+   "upto": 4,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 80,
+   "progress": 0.775
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 68c652c-d1c3cff refactor/mean-score; 68c652c-5008877 feature/leaderboard; d1c3cff-M main; 5008877-M; HEAD=main => + pass:d1c3cff; pass:5008877; mark:not_tested:M; name:tested => + fail:M; name:red title=Two_green_branches,_one_untested_merge id=green dx=430",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "68c652c",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d1c3cff",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "5008877",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d1c3cff",
+       "5008877"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "68c652c",
+       "d1c3cff",
+       "5008877",
+       "M"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "not tested"
+      },
+      "name": "tested"
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "fail"
+      },
+      "name": "red"
+     }
+    ],
+    "settle": "on",
+    "title": "Two green branches, one untested merge",
+    "dx": "430",
+    "id": "green"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "tested",
+    "red"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 81,
+   "progress": 0.8005
+  },
+  {
+   "kind": "keypoint",
+   "body": "Across the layer boundary: a server has no working tree to merge in.",
+   "badge": "GitHub",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 82,
+   "progress": 0.8054
+  },
+  {
+   "kind": "keypoint",
+   "body": "Neither page says which command GitHub runs.",
+   "badge": "GitHub",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 83,
+   "progress": 0.825
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=rerere:reuse_recorded_resolution,_Chapter_14C|reverting_a_merge:Chapter_11|git_add_--resolved:added_in_Git_2.56,_not_run_here title=Three_pointers at_1=5 at_2=45 at_3=55",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "rerere",
+      "reuse recorded resolution, Chapter 14C"
+     ],
+     [
+      "reverting a merge",
+      "Chapter 11"
+     ],
+     [
+      "git add --resolved",
+      "added in Git 2.56, not run here"
+     ]
+    ],
+    "title": "Three pointers",
+    "at": {
+     "1": 0.05,
+     "2": 0.45,
+     "3": 0.55
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 84,
+   "progress": 0.8414
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 85,
+   "progress": 0.8695
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 6.5, \"A clean merge that breaks the build\", in <code>lab-manual/m06-merge.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 86,
+   "progress": 0.8707
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict first:",
+   "items": [
+    "Will either merge stop? On what do you base that?",
+    "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+    "On which of the three commits, the two parents and the merge, does the check pass?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "PRACTICE EXERCISE",
+   "n": 87,
+   "progress": 0.8753
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict first:",
+   "items": [
+    "Will either merge stop? On what do you base that?",
+    "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+    "On which of the three commits, the two parents and the merge, does the check pass?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "PRACTICE EXERCISE",
+   "n": 88,
+   "progress": 0.8763
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict first:",
+   "items": [
+    "Will either merge stop? On what do you base that?",
+    "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+    "On which of the three commits, the two parents and the merge, does the check pass?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "PRACTICE EXERCISE",
+   "n": 89,
+   "progress": 0.8796
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict first:",
+   "items": [
+    "Will either merge stop? On what do you base that?",
+    "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+    "On which of the three commits, the two parents and the merge, does the check pass?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "PRACTICE EXERCISE",
+   "n": 90,
+   "progress": 0.8858
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict first:",
+   "items": [
+    "Will either merge stop? On what do you base that?",
+    "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+    "On which of the three commits, the two parents and the merge, does the check pass?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "section": "PRACTICE EXERCISE",
+   "n": 91,
+   "progress": 0.891
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 92,
+   "progress": 0.8962
+  },
+  {
+   "kind": "callout",
+   "label": "Q122",
+   "quotes": [
+    "Why can Git merge two files incorrectly from a human perspective?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 93,
+   "progress": 0.8975
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 94,
+   "progress": 0.9315
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this. You should now be able to say:",
+   "section": "RECAP",
+   "n": 95,
+   "progress": 0.9327
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 68c652c-d1c3cff refactor/mean-score; 68c652c-5008877 feature/leaderboard; d1c3cff-M main; 5008877-M; HEAD=main => + pass:d1c3cff; pass:5008877; mark:not_tested:M; name:tested => + fail:M; name:red title=Two_green_branches,_one_untested_merge id=green dx=430",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "68c652c",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "d1c3cff",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "5008877",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "68c652c"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "d1c3cff",
+       "5008877"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "68c652c",
+       "d1c3cff",
+       "5008877",
+       "M"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "not tested"
+      },
+      "name": "tested"
+     },
+     {
+      "add": [],
+      "refs": {
+       "refactor/mean-score": "d1c3cff",
+       "feature/leaderboard": "5008877",
+       "main": "M"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {
+       "d1c3cff": "pass",
+       "5008877": "pass",
+       "M": "fail"
+      },
+      "name": "red"
+     }
+    ],
+    "settle": "on",
+    "title": "Two green branches, one untested merge",
+    "dx": "430",
+    "id": "green"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "tested",
+    "red"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "RECAP",
+   "n": 96,
+   "progress": 0.936
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 6ae3c51-c089834-821b8ff main; 6ae3c51-5aec6e0-58a5e60 feature/rationale; 58a5e60-821b8ff; HEAD=main => 6ae3c51-c089834-821b8ff-504ae98 main; 6ae3c51-5aec6e0-58a5e60-b752dc4 feature/rationale; 58a5e60-821b8ff; HEAD=main => + 504ae98-?second_merge main; b752dc4-?second_merge; note:58a5e60:the_merge_base title=Content_undone,_ancestry_kept id=revert",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "6ae3c51",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "c089834",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "5aec6e0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "6ae3c51"
+      ]
+     },
+     {
+      "id": "58a5e60",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5aec6e0"
+      ]
+     },
+     {
+      "id": "821b8ff",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "c089834",
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "504ae98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "821b8ff"
+      ]
+     },
+     {
+      "id": "b752dc4",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "58a5e60"
+      ]
+     },
+     {
+      "id": "?second_merge",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "kind": "placeholder",
+      "text": "second merge"
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "6ae3c51",
+       "c089834",
+       "5aec6e0",
+       "58a5e60",
+       "821b8ff"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "821b8ff",
+       "feature/rationale": "58a5e60"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "504ae98",
+       "b752dc4"
+      ],
+      "refs": {
+       "main": "504ae98",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "?second_merge"
+      ],
+      "refs": {
+       "main": "?second_merge",
+       "feature/rationale": "b752dc4"
+      },
+      "head": "main",
+      "notes": [
+       {
+        "text": "the merge base",
+        "at": "58a5e60"
+       }
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Content undone, ancestry kept",
+    "id": "revert"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "RECAP",
+   "n": 97,
+   "progress": 0.9497
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 98,
+   "progress": 0.9723
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 8.15 to 8.21 of Chapter 8, and do the Practice section 8.23, including Lab 6.6, \"Audit merges with <code>--remerge-diff</code>\", in <code>lab-manual/m06-merge.md</code>.",
+   "section": "HOMEWORK",
+   "n": 99,
+   "progress": 0.9735
+  },
+  {
+   "kind": "keypoint",
+   "body": "That's the merge module, complete.",
+   "section": "HOMEWORK",
+   "n": 100,
+   "progress": 0.981
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Three questions a CTO can ask after an ordinary release week.",
+   "tele": "Three questions a CTO can ask after an ordinary release week.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "e407ddb3",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "One. \"Both pull requests were green. main is red. The two branches did not touch a single file in common. How?\"",
+   "tele": "One. \"Both pull requests were green. `main` is red. The two branches did not touch a single file in common. How?\"",
+   "words": 21,
+   "est": 8.4,
+   "slide": 4,
+   "line": 16,
+   "t0": 7.9,
+   "h": "4f689cfe",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Two. \"Ravi's retry setting disappeared from the config in a merge commit. git log -p shows no diff for that commit. Who removed the line, and how do we prove it?\"",
+   "tele": "Two. \"Ravi's retry setting disappeared from the config in a merge commit. `git log -p` shows no diff for that commit. Who removed the line, and how do we prove it?\"",
+   "words": 31,
+   "est": 12.4,
+   "slide": 5,
+   "line": 18,
+   "t0": 16.3,
+   "h": "9e345906",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Three. \"We reverted the bad merge on Friday. On Monday we merged the repaired branch, the merge was clean, and half of the feature is missing. Where did it go?\"",
+   "tele": "Three. \"We reverted the bad merge on Friday. On Monday we merged the repaired branch, the merge was clean, and half of the feature is missing. Where did it go?\"",
+   "words": 30,
+   "est": 12.0,
+   "slide": 6,
+   "line": 20,
+   "t0": 28.7,
+   "h": "9fddf9d7",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "None of the three needs a bug in Git. Each follows from what a merge is. This video answers the first two and shows you the mechanism of the third. Keep count. We'll tick them off as we go.",
+   "tele": "None of the three needs a bug in Git. Each follows from what a merge is. This video answers the first two and shows you the mechanism of the third. Keep count. We'll tick them off as we go.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 7,
+   "line": 22,
+   "t0": 40.7,
+   "h": "ee4b5c37",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 8,
+   "line": 24,
+   "t0": 56.3,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. A merge joins another branch's history into yours. This is the last video of the merge module, and it's about the merges that did not stop. A conflict is Git asking for help. A clean merge is Git not asking, and that's the more dangerous case, because nobody looks.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. A merge joins another branch's history into yours. This is the last video of the merge module, and it's about the merges that did not stop. A conflict is Git asking for help. A clean merge is Git not asking, and that's the more dangerous case, because nobody looks.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 9,
+   "line": 26,
+   "t0": 57.8,
+   "h": "15826232",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Three parts. First, why \"no conflicts\" is not \"correct\", with a merge of two green branches, branches whose checks pass, that fails its check. Second, how to audit a merge commit after the fact. A merge commit is a commit with more than one parent.",
+   "tele": "Three parts. First, why \"no conflicts\" is not \"correct\", with a merge of two green branches, branches whose checks pass, that fails its check. Second, how to audit a merge commit after the fact. A merge commit is a commit with more than one parent.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 10,
+   "line": 28,
+   "t0": 82.2,
+   "h": "0c616039",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "It stores a tree, one complete snapshot of the files, and no diff, so the default log shows you nothing. Third, git merge-tree, which computes a merge without a working tree, that is, without files on disk. That's how you dry-run a merge, and it's how stock Git exposes the strategy to a server.",
+   "tele": "It stores a tree, one complete snapshot of the files, and no diff, so the default log shows you nothing. Third, `git merge-tree`, which computes a merge without a working tree, that is, without files on disk. That's how you dry-run a merge, and it's how stock Git exposes the strategy to a server.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 11,
+   "line": 28,
+   "t0": 100.2,
+   "h": "df837ae4",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "At the end there are three pointers to later chapters: rerere, reverting a merge, and an option that Git 2.56 adds.",
+   "tele": "At the end there are three pointers to later chapters: rerere, reverting a merge, and an option that Git 2.56 adds.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 12,
+   "line": 30,
+   "t0": 121.8,
+   "h": "7cff6d74",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 13,
+   "line": 32,
+   "t0": 130.2,
+   "h": "",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Here's what you'll walk away with.",
+   "tele": "Here's what you'll walk away with.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 14,
+   "line": 34,
+   "t0": 131.7,
+   "h": "1e7bc081",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 15,
+   "line": 38,
+   "t0": 134.1,
+   "h": "152923b5",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain why two green branches can merge without conflict into a broken result.",
+   "tele": "Explain why two green branches can merge without conflict into a broken result.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 16,
+   "line": 40,
+   "t0": 136.1,
+   "h": "0fe48647",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Show what a merge resolution changed with --remerge-diff.",
+   "tele": "Show what a merge resolution changed with `--remerge-diff`.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 17,
+   "line": 40,
+   "t0": 141.3,
+   "h": "b37c9206",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say what git show displays for a merge commit and what it hides.",
+   "tele": "Say what `git show` displays for a merge commit and what it hides.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 18,
+   "line": 40,
+   "t0": 144.5,
+   "h": "67b17838",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Compute a merge without a working tree with git merge-tree.",
+   "tele": "Compute a merge without a working tree with `git merge-tree`.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 19,
+   "line": 40,
+   "t0": 149.7,
+   "h": "759fff77",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Name the follow-up topics: rerere, reverting a merge, and git add --resolved in Git 2.56.",
+   "tele": "Name the follow-up topics: rerere, reverting a merge, and `git add --resolved` in Git 2.56.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 20,
+   "line": 40,
+   "t0": 153.7,
+   "h": "9530f345",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 21,
+   "line": 46,
+   "t0": 159.7,
+   "h": "",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Start with the one sentence from section 8.15. A merge without conflicts means that no two text changes overlapped. It says nothing about whether the result builds, passes its tests or makes sense.",
+   "tele": "Start with the one sentence from section 8.15. A merge without conflicts means that no two text changes overlapped. It says nothing about whether the result builds, passes its tests or makes sense.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 22,
+   "line": 48,
+   "t0": 161.2,
+   "h": "aa022978",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Recall the idea from the start of the chapter. A merge is computed from exactly three snapshots, and Git compares lines of text in them. It doesn't know what the lines mean. So there is a class of conflict that Git cannot see by construction: one change depends on another, and the dependency lives outside the text of any one file. The textbook calls these semantic conflicts.",
+   "tele": "Recall the idea from the start of the chapter. A merge is computed from exactly three snapshots, and Git compares lines of text in them. It doesn't know what the lines mean. So there is a class of conflict that Git cannot see by construction: one change depends on another, and the dependency lives outside the text of any one file. The textbook calls these semantic conflicts.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 23,
+   "line": 50,
+   "t0": 174.4,
+   "h": "ed3ab309",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Ravi renames a function. Asha, from the same starting commit, adds a new module that calls the old name. Different files, no overlap, clean merge, broken program. Today's demo is that story: d1c3cff is the rename, 5008877 is the new caller, and M is their merge.",
+   "tele": "Ravi renames a function. Asha, from the same starting commit, adds a new module that calls the old name. Different files, no overlap, clean merge, broken program. Today's demo is that story: `d1c3cff` is the rename, `5008877` is the new caller, and `M` is their merge.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 24,
+   "line": 56,
+   "t0": 201.2,
+   "h": "d2064d8d",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.026,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "There is a quiet variant, and it is worse than the loud one. If one branch renames a configuration key and another adds code that reads the old key with a default, nothing fails. An evaluation run uses the default, the scores shift, and the merge that caused it shows no conflict and no red check.",
+   "tele": "There is a quiet variant, and it is worse than the loud one. If one branch renames a configuration key and another adds code that reads the old key with a default, nothing fails. An evaluation run uses the default, the scores shift, and the merge that caused it shows no conflict and no red check.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 25,
+   "line": 60,
+   "t0": 219.6,
+   "h": "2d47f907",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 2,
+      "to": 2,
+      "says": [
+       "The quiet variant: nothing fails, and the scores shift"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A second way a clean merge surprises people: a change that was made on both sides and reverted on one. You will see it return without a word, and the rule table explains it.",
+   "tele": "A second way a clean merge surprises people: a change that was made on both sides and reverted on one. You will see it return without a word, and the rule table explains it.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 26,
+   "line": 64,
+   "t0": 242.0,
+   "h": "7c8caf67",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Then the term \"evil merge\". The glossary definition is: an evil merge is a merge that introduces changes that do not appear in any parent. It happens through a resolution that also changes something outside the conflict, through an edit between git merge --no-commit and the commit, or through git commit --amend on a merge.",
+   "tele": "Then the term \"evil merge\". The glossary definition is: an evil merge is a merge that introduces changes that do not appear in any parent. It happens through a resolution that also changes something outside the conflict, through an edit between `git merge --no-commit` and the commit, or through `git commit --amend` on a merge.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 27,
+   "line": 70,
+   "t0": 255.6,
+   "h": "2ca54819",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.42,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.58,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.72,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The name is harsher than the practice. Fixing a semantic conflict inside the merge commit is such a change, and it keeps every mainline commit green. git bisect, the search for the commit that changed something, needs that. The cost is visibility.",
+   "tele": "The name is harsher than the practice. Fixing a semantic conflict inside the merge commit is such a change, and it keeps every mainline commit green. `git bisect`, the search for the commit that changed something, needs that. The cost is visibility.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 27,
+   "line": 70,
+   "t0": 277.6,
+   "h": "a9308101",
+   "anim": {
+    "group": 20,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Which brings you to auditing. A merge commit stores a tree and no diff, so \"what did this merge do\" has to be computed, and Git offers three computations that answer three different questions.",
+   "tele": "Which brings you to auditing. A merge commit stores a tree and no diff, so \"what did this merge do\" has to be computed, and Git offers three computations that answer three different questions.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 28,
+   "line": 74,
+   "t0": 294.4,
+   "h": "15e1e8df",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The remerge diff is the one to remember. Git repeats the merge into a temporary tree, conflict markers included, and diffs that tree against the recorded one. Read it as \"what a human did after Git stopped\".",
+   "tele": "The remerge diff is the one to remember. Git repeats the merge into a temporary tree, conflict markers included, and diffs that tree against the recorded one. Read it as \"what a human did after Git stopped\".",
+   "words": 37,
+   "est": 14.8,
+   "slide": 29,
+   "line": 90,
+   "t0": 308.0,
+   "h": "fdd381a0",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Finally git merge-tree --write-tree. It performs a real merge with the same strategy as git merge, using only the object database, Git's store of all objects: no index, no working tree and no ref update. It prints the ID of the resulting tree.",
+   "tele": "Finally `git merge-tree --write-tree`. It performs a real merge with the same strategy as `git merge`, using only the object database, Git's store of all objects: no index, no working tree and no ref update. It prints the ID of the resulting tree.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 30,
+   "line": 96,
+   "t0": 322.8,
+   "h": "e0511278",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.25,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.8,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Its exit status is 0 for a clean merge and 1 for a conflict. It creates objects and changes nothing else, so it works in a bare repository, where git merge cannot run. A bare repository is one with no working tree, like the one on a server.",
+   "tele": "Its exit status is 0 for a clean merge and 1 for a conflict. It creates objects and changes nothing else, so it works in a bare repository, where `git merge` cannot run. A bare repository is one with no working tree, like the one on a server.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 30,
+   "line": 96,
+   "t0": 340.0,
+   "h": "6442f819",
+   "anim": {
+    "group": 23,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 31,
+   "line": 98,
+   "t0": 359.2,
+   "h": "",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A picture helps. The textbook's analogy: a spell-checker passes two paragraphs that contradict each other, because every word is spelled correctly. A clean merge is a document that passed the spell-checker.",
+   "tele": "A picture helps. The textbook's analogy: a spell-checker passes two paragraphs that contradict each other, because every word is spelled correctly. A clean merge is a document that passed the spell-checker.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 32,
+   "line": 102,
+   "t0": 360.7,
+   "h": "18fe815c",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Where it breaks: only in degree. Git checks even less than a spell-checker does. It checks one property, the overlap of changed lines. It has no parser, no type checker and no test runner, for any language.",
+   "tele": "Where it breaks: only in degree. Git checks even less than a spell-checker does. It checks one property, the overlap of changed lines. It has no parser, no type checker and no test runner, for any language.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 32,
+   "line": 104,
+   "t0": 373.1,
+   "h": "16283735",
+   "anim": {
+    "group": 25,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Try it now. Thirty seconds, on paper. Draw two branch tips and the merge commit that joins them. Tick every commit whose tree somebody tested. Which one has no tick? Say it out loud.",
+   "tele": "Try it now. Thirty seconds, on paper. Draw two branch tips and the merge commit that joins them. Tick every commit whose tree somebody tested. Which one has no tick? Say it out loud.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 32,
+   "line": 106,
+   "t0": 387.9,
+   "h": "78fe36dc",
+   "anim": {
+    "group": 25,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 32,
+   "line": 108,
+   "t0": 401.5,
+   "h": "",
+   "anim": {
+    "group": 25,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 37,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The merge has no tick. So the model for the rest of your career: a merge commit is a new tree that nobody has tested. Each parent was tested. The merge result was not, unless you arranged for it. And a merge commit is a change in its own right, which deserves a review, with a tool that can show it.",
+   "tele": "The merge has no tick. So the model for the rest of your career: a merge commit is a new tree that nobody has tested. Each parent was tested. The merge result was not, unless you arranged for it. And a merge commit is a change in its own right, which deserves a review, with a tool that can show it.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 33,
+   "line": 112,
+   "t0": 406.0,
+   "h": "0ba33633",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.368,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 34,
+   "line": 114,
+   "t0": 430.4,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Here's your drawing with today's commits. Each tip passes its check, and M fails.",
+   "tele": "Here's your drawing with today's commits. Each tip passes its check, and `M` fails.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 35,
+   "line": 131,
+   "t0": 431.9,
+   "h": "607c2255",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "And the root-cause box for the first question. It comes back in the demo.",
+   "tele": "And the root-cause box for the first question. It comes back in the demo.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 36,
+   "line": 153,
+   "t0": 437.5,
+   "h": "710152cd",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 37,
+   "line": 155,
+   "t0": 443.1,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Part 1: clean and wrong. Two branches from the same commit. git merge 🟡 CAUTION, twice.",
+   "tele": "Part 1: clean and wrong. Two branches from the same commit. `git merge` 🟡 CAUTION, twice.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 38,
+   "line": 159,
+   "t0": 444.6,
+   "h": "6a62253b",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 4.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both merge without a conflict. Predict the result of the check. Say it out loud. I'll wait.",
+   "tele": "Both merge without a conflict. Predict the result of the check. Say it out loud. I'll wait.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 39,
+   "line": 178,
+   "t0": 450.6,
+   "h": "f92a7fb8",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.76,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 39,
+   "line": 180,
+   "t0": 457.4,
+   "h": "",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It fails: the leaderboard imports accuracy, which metrics.py no longer defines. Now the same check on each parent of the merge commit.",
+   "tele": "It fails: the leaderboard imports `accuracy`, which `metrics.py` no longer defines. Now the same check on each parent of the merge commit.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 40,
+   "line": 190,
+   "t0": 461.9,
+   "h": "0b230430",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both parents pass. The merge fails. List what each side changed since the merge base.",
+   "tele": "Both parents pass. The merge fails. List what each side changed since the merge base.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 41,
+   "line": 203,
+   "t0": 470.7,
+   "h": "517a9e38",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 4.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "No path in common. By the rule table, a path changed on one side only is taken as it is. No file-level merge ran. There was nothing for Git to compare.",
+   "tele": "No path in common. By the rule table, a path changed on one side only is taken as it is. No file-level merge ran. There was nothing for Git to compare.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 42,
+   "line": 216,
+   "t0": 476.7,
+   "h": "88616ee9",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "That's question one, answered. The repair is a normal, reviewable commit on top of the merge.",
+   "tele": "That's question one, answered. The repair is a normal, reviewable commit on top of the merge.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 43,
+   "line": 220,
+   "t0": 489.1,
+   "h": "455fc176",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Part 2: changed on both sides, reverted on one. labs/run ch08/revert-one-side, as a pointer. A fix, max_tokens 2048, was applied to main and to a branch. main then reverted it, for a good reason.",
+   "tele": "Part 2: changed on both sides, reverted on one. `labs/run ch08/revert-one-side`, as a pointer. A fix, `max_tokens` 2048, was applied to `main` and to a branch. `main` then reverted it, for a good reason.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 44,
+   "line": 234,
+   "t0": 495.5,
+   "h": "2d69cdf7",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "main says 512. Predict the value after merging the branch.",
+   "tele": "`main` says 512. Predict the value after merging the branch.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 45,
+   "line": 250,
+   "t0": 509.1,
+   "h": "79f7dc41",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 45,
+   "line": 252,
+   "t0": 513.1,
+   "h": "",
+   "anim": {
+    "group": 38,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The value is 2048. The reverted change is back, without a conflict and without a message.",
+   "tele": "The value is 2048. The reverted change is back, without a conflict and without a message.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 46,
+   "line": 266,
+   "t0": 517.6,
+   "h": "0ad31f4c",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.48,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.2,
+   "slide": 47,
+   "line": null,
+   "t0": 524.0,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Base 512, ours 512, theirs 2048: the row \"only theirs changed it\". The apply-then-revert pair on main cancels out, and the merge never sees it. On screen, the merge base is 6ae3c51 and the two tips are a2a0277 and 4fac9ee. Nothing in the rule looks at 523ed40. The manual describes this behavior and admits that some people find it confusing. If the revert must win, say so in the tree that the merge will see: revert the change on the branch too before merging.",
+   "tele": "Base 512, ours 512, theirs 2048: the row \"only theirs changed it\". The apply-then-revert pair on `main` cancels out, and the merge never sees it. On screen, the merge base is `6ae3c51` and the two tips are `a2a0277` and `4fac9ee`. Nothing in the rule looks at `523ed40`. The manual describes this behavior and admits that some people find it confusing. If the revert must win, say so in the tree that the merge will see: revert the change on the branch too before merging.",
+   "words": 84,
+   "est": 33.6,
+   "slide": 48,
+   "line": 284,
+   "t0": 529.2,
+   "h": "3612aa08",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.337,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Part 3: auditing. labs/run ch08/audit-merge. The history has three merges. One conflict resolved by keeping our temperature. One clean merge in which somebody also set retries to 0, a line that neither branch touched. And one honest clean merge. All commands in this part are 🟢 SAFE: they read.",
+   "tele": "Part 3: auditing. `labs/run ch08/audit-merge`. The history has three merges. One conflict resolved by keeping our temperature. One clean merge in which somebody also set `retries` to 0, a line that neither branch touched. And one honest clean merge. All commands in this part are 🟢 SAFE: they read.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 49,
+   "line": 286,
+   "t0": 562.8,
+   "h": "363e948a",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Predict what git log -p prints for a merge commit.",
+   "tele": "Predict what `git log -p` prints for a merge commit.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 50,
+   "line": 292,
+   "t0": 582.0,
+   "h": "d2400eb2",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 50,
+   "line": 294,
+   "t0": 586.0,
+   "h": "",
+   "anim": {
+    "group": 43,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The subject line and nothing else, with -p and with --stat. By default git log shows no diff for a merge commit. That is the \"no diff\" of the CTO's second question.",
+   "tele": "The subject line and nothing else, with `-p` and with `--stat`. By default `git log` shows no diff for a merge commit. That is the \"no diff\" of the CTO's second question.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 51,
+   "line": 312,
+   "t0": 590.5,
+   "h": "f8550b9a",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.95,
+      "dissolve": true
+     },
+     {
+      "at": 0.441,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git show uses the dense combined format for merges. Quick quiz. 70bae5f is the merge with the hand-resolved conflict. Will git show print that resolution? A, yes. B, no. Your answer?",
+   "tele": "`git show` uses the dense combined format for merges. Quick quiz. `70bae5f` is the merge with the hand-resolved conflict. Will `git show` print that resolution? A, yes. B, no. Your answer?",
+   "words": 31,
+   "est": 12.4,
+   "slide": 51,
+   "line": 314,
+   "t0": 603.3,
+   "h": "3847a02c",
+   "anim": {
+    "group": 44,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 51,
+   "line": 316,
+   "t0": 615.7,
+   "h": "",
+   "anim": {
+    "group": 44,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It's B. For 70bae5f, the merge with the hand-resolved conflict, git show prints nothing. If you said yes, that's the natural guess. The dense combined format omits hunks where the result equals one of the parents, and that resolution took our side exactly. For fc83756 it shows the smuggled line, with two minus signs and two plus signs, because the result differs from both parents.",
+   "tele": "It's B. For `70bae5f`, the merge with the hand-resolved conflict, `git show` prints nothing. If you said yes, that's the natural guess. The dense combined format omits hunks where the result equals one of the parents, and that resolution took our side exactly. For `fc83756` it shows the smuggled line, with two minus signs and two plus signs, because the result differs from both parents.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 52,
+   "line": 341,
+   "t0": 620.2,
+   "h": "dc4d57d2",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.031,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.53,
+      "dissolve": false
+     },
+     {
+      "at": 0.17,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the remerge diff.",
+   "tele": "Now the remerge diff.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 52,
+   "line": 343,
+   "t0": 646.2,
+   "h": "7ca3e023",
+   "anim": {
+    "group": 45,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three merges, three readings. 9a6385a: no output, so the merge is exactly what Git computes on its own. 70bae5f: removed marker lines with one candidate kept. That's a resolution, and you can see which side won. fc83756: a change with no markers nearby. It came from neither branch. This is the view that answers the second question.",
+   "tele": "Three merges, three readings. `9a6385a`: no output, so the merge is exactly what Git computes on its own. `70bae5f`: removed marker lines with one candidate kept. That's a resolution, and you can see which side won. `fc83756`: a change with no markers nearby. It came from neither branch. This is the view that answers the second question.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 53,
+   "line": 386,
+   "t0": 647.8,
+   "h": "7ad198c6",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The first-parent view answers the other question, \"what did main receive\".",
+   "tele": "The first-parent view answers the other question, \"what did `main` receive\".",
+   "words": 11,
+   "est": 4.4,
+   "slide": 54,
+   "line": 388,
+   "t0": 670.6,
+   "h": "cf9bc3bb",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.08,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 55,
+   "line": null,
+   "t0": 675.0,
+   "h": "",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The README from the branch and the retries line, as one ordinary diff. This view cannot tell you which part is branch content and which is hand-made. The remerge diff can.",
+   "tele": "The README from the branch and the `retries` line, as one ordinary diff. This view cannot tell you which part is branch content and which is hand-made. The remerge diff can.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 56,
+   "line": 417,
+   "t0": 678.0,
+   "h": "0394c638",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Two limits from the textbook. The remerge diff repeats the merge with default settings, so a merge made with -X ours or -s ours shows up as a diff, however clean it looked when it was made. And it needs Git 2.36 or later, handles two-parent merges only, and its output format is declared \"subject to change\" by the manual. Read it. Don't parse it.",
+   "tele": "Two limits from the textbook. The remerge diff repeats the merge with default settings, so a merge made with `-X ours` or `-s ours` shows up as a diff, however clean it looked when it was made. And it needs Git 2.36 or later, handles two-parent merges only, and its output format is declared \"subject to change\" by the manual. Read it. Don't parse it.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 56,
+   "line": 419,
+   "t0": 690.4,
+   "h": "981c5d15",
+   "anim": {
+    "group": 49,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Part 4: git merge-tree. labs/run ch08/merge-tree. A bare clone stands in for a server.",
+   "tele": "Part 4: `git merge-tree`. `labs/run ch08/merge-tree`. A bare clone stands in for a server.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 57,
+   "line": 421,
+   "t0": 716.4,
+   "h": "dc015987",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git merge refuses: this operation must be run in a work tree. git merge-tree --write-tree 🟢 SAFE: it adds unreferenced objects and nothing else.",
+   "tele": "`git merge` refuses: this operation must be run in a work tree. `git merge-tree --write-tree` 🟢 SAFE: it adds unreferenced objects and nothing else.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 58,
+   "line": 443,
+   "t0": 722.0,
+   "h": "66e624dd",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One line of output, a tree ID, and exit status 0. A tree is not a commit. Two more plumbing commands, the low-level kind that do one operation each, turn it into a merge and publish it.",
+   "tele": "One line of output, a tree ID, and exit status 0. A tree is not a commit. Two more plumbing commands, the low-level kind that do one operation each, turn it into a merge and publish it.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 59,
+   "line": 459,
+   "t0": 731.2,
+   "h": "36d43a50",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.2,
+   "slide": 60,
+   "line": null,
+   "t0": 746.0,
+   "h": "",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A merge commit with two parents, 40fb5aa, made without a working tree. Now a conflicting pair, main and feature/creative-judge. Predict the exit status, and whether a tree is written.",
+   "tele": "A merge commit with two parents, `40fb5aa`, made without a working tree. Now a conflicting pair, `main` and `feature/creative-judge`. Predict the exit status, and whether a tree is written.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 61,
+   "line": 479,
+   "t0": 751.2,
+   "h": "6433ba8a",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.188,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.376,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 61,
+   "line": 481,
+   "t0": 762.8,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Exit status 1, the three stage entries that git merge would have put into the index, and the messages. The tree is still written.",
+   "tele": "Exit status 1, the three stage entries that `git merge` would have put into the index, and the messages. The tree is still written.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 62,
+   "line": 497,
+   "t0": 767.3,
+   "h": "7b08bece",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It contains the file with markers, labelled with the names from the command line.",
+   "tele": "It contains the file with markers, labelled with the names from the command line.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 63,
+   "line": 512,
+   "t0": 776.9,
+   "h": "0d620fed",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 3.92,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--quiet gives a yes or no through the exit status. --name-only lists the conflicted files. Decide by the exit status, as the manual warns, not by whether the list of conflicted files is empty.",
+   "tele": "`--quiet` gives a yes or no through the exit status. `--name-only` lists the conflicted files. Decide by the exit status, as the manual warns, not by whether the list of conflicted files is empty.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 64,
+   "line": 526,
+   "t0": 782.5,
+   "h": "1cd37c3c",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.57,
+      "dissolve": true
+     },
+     {
+      "at": 0.27,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Part 5: a pointer to the third question. labs/run ch08/revert-merge-preview. git revert 🟡 refuses a merge commit until you say which parent is the mainline. A revert adds a new commit whose change is the opposite of an earlier one.",
+   "tele": "Part 5: a pointer to the third question. `labs/run ch08/revert-merge-preview`. `git revert` 🟡 refuses a merge commit until you say which parent is the mainline. A revert adds a new commit whose change is the opposite of an earlier one.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 65,
+   "line": 528,
+   "t0": 796.1,
+   "h": "63555432",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 7.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 7.8,
+   "slide": 66,
+   "line": null,
+   "t0": 811.7,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "-m 1 creates a commit that undoes the difference between the merge and its first parent. It undoes content. It cannot undo ancestry.",
+   "tele": "`-m 1` creates a commit that undoes the difference between the merge and its first parent. It undoes content. It cannot undo ancestry.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 67,
+   "line": 558,
+   "t0": 819.5,
+   "h": "0ccbeb52",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "That commit is 504ae98. Now Asha adds one more commit, b752dc4, and the branch is merged again. Predict what arrives. Say it out loud. I'll wait.",
+   "tele": "That commit is `504ae98`. Now Asha adds one more commit, `b752dc4`, and the branch is merged again. Predict what arrives. Say it out loud. I'll wait.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 68,
+   "line": 562,
+   "t0": 828.7,
+   "h": "f03587f2",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.161,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 68,
+   "line": 564,
+   "t0": 839.1,
+   "h": "",
+   "anim": {
+    "group": 60,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 82,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Only the new commit arrived. The timeout is 60, and the two prompt lines of the first merge did not come back.",
+   "tele": "Only the new commit arrived. The timeout is 60, and the two prompt lines of the first merge did not come back.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 69,
+   "line": 587,
+   "t0": 843.6,
+   "h": "a6b41be6",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The graph says why. Their commits, 5aec6e0 and 58a5e60, are ancestors of main already, and the merge base is past them. That is the third question. The repair is in Chapter 11, and it has its own video.",
+   "tele": "The graph says why. Their commits, `5aec6e0` and `58a5e60`, are ancestors of `main` already, and the merge base is past them. That is the third question. The repair is in Chapter 11, and it has its own video.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 70,
+   "line": 591,
+   "t0": 852.4,
+   "h": "7a7d4dc8",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 71,
+   "line": 593,
+   "t0": 867.6,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 72,
+   "line": 595,
+   "t0": 869.1,
+   "h": "76698d9b",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Treating \"merged without conflicts\" as \"tested\". Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+   "tele": "Treating \"merged without conflicts\" as \"tested\". Root cause: Git merges snapshots of text and checks only the overlap of changed lines; each parent was tested, the merge tree was not.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 73,
+   "line": 599,
+   "t0": 871.1,
+   "h": "9badc30d",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Reading git log -p and concluding that a merge changed nothing. Root cause: by default git log shows no diff at all for merge commits.",
+   "tele": "Reading `git log -p` and concluding that a merge changed nothing. Root cause: by default `git log` shows no diff at all for merge commits.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 74,
+   "line": 599,
+   "t0": 883.1,
+   "h": "e916038a",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Trusting an empty git show on a merge. Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+   "tele": "Trusting an empty `git show` on a merge. Root cause: the dense combined format omits hunks where the result equals one parent, so a resolution that took one side unchanged is invisible.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 75,
+   "line": 599,
+   "t0": 893.1,
+   "h": "0225510b",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting a revert on main to win over the same change on an unmerged branch. Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+   "tele": "Expecting a revert on `main` to win over the same change on an unmerged branch. Root cause: the apply-then-revert pair cancels out between base and ours, so the rule table sees \"only theirs changed it\".",
+   "words": 35,
+   "est": 14.0,
+   "slide": 76,
+   "line": 599,
+   "t0": 905.9,
+   "h": "f30327a0",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Deciding \"can this be merged\" from the list of conflicted files. Root cause: the manual tells you to decide by the exit status of git merge-tree, not by whether that list is empty.",
+   "tele": "Deciding \"can this be merged\" from the list of conflicted files. Root cause: the manual tells you to decide by the exit status of `git merge-tree`, not by whether that list is empty.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 77,
+   "line": 599,
+   "t0": 919.9,
+   "h": "a890df5d",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 78,
+   "line": 605,
+   "t0": 933.1,
+   "h": "",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. An LLM evaluation team prepares a release. Scores on the regression suite moved slightly and nobody can say why. Every pull request since the last release was green.",
+   "tele": "Now, out of the lab. An LLM evaluation team prepares a release. Scores on the regression suite moved slightly and nobody can say why. Every pull request since the last release was green.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 79,
+   "line": 609,
+   "t0": 934.6,
+   "h": "4bd96f32",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The release engineer runs one command: git log --merges --remerge-diff --first-parent over the range from the last release to main. It lists every hand-made change in every merge since the last release. Most merges print nothing. One prints a resolution in the evaluation config, and one prints a change with no markers nearby. That is where the review starts. Lab 6.6 uses the same command to find a merge where a whole-file --theirs deleted a teammate's retry setting.",
+   "tele": "The release engineer runs one command: `git log --merges --remerge-diff --first-parent` over the range from the last release to `main`. It lists every hand-made change in every merge since the last release. Most merges print nothing. One prints a resolution in the evaluation config, and one prints a change with no markers nearby. That is where the review starts. Lab 6.6 uses the same command to find a merge where a whole-file `--theirs` deleted a teammate's retry setting.",
+   "words": 78,
+   "est": 31.2,
+   "slide": 80,
+   "line": 613,
+   "t0": 947.8,
+   "h": "eed3f8a0",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.42,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.5,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.58,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The prevention is in the root-cause box: test the merge result before it reaches main.",
+   "tele": "The prevention is in the root-cause box: test the merge result before it reaches `main`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 81,
+   "line": 617,
+   "t0": 979.0,
+   "h": "841049d0",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Across the layer boundary: a server has no working tree to merge in. GitHub's engineering blog lists \"It can't check out the repository\" among its requirements for a merge implementation, and its changelog states that when GitHub creates merge commits, to test whether a pull request can be merged cleanly or to actually merge it, it uses the merge-ort strategy.",
+   "tele": "Across the layer boundary: a server has no working tree to merge in. GitHub's engineering blog lists \"It can't check out the repository\" among its requirements for a merge implementation, and its changelog states that when GitHub creates merge commits, to test whether a pull request can be merged cleanly or to actually merge it, it uses the `merge-ort` strategy.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 82,
+   "line": 621,
+   "t0": 985.0,
+   "h": "e2de612a",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Neither page says which command GitHub runs. git merge-tree is how stock Git exposes the same strategy without a working tree. This is described from GitHub's publications and was not run here. One documented consequence: workflows will not run on pull_request activity if the pull request has a merge conflict.",
+   "tele": "Neither page says which command GitHub runs. `git merge-tree` is how stock Git exposes the same strategy without a working tree. This is described from GitHub's publications and was not run here. One documented consequence: workflows will not run on `pull_request` activity if the pull request has a merge conflict.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 83,
+   "line": 621,
+   "t0": 1009.0,
+   "h": "7485a586",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 97,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "And the three pointers. rerere, \"reuse recorded resolution\", remembers how you resolved a conflict and replays the resolution when the identical conflict appears again. It's off until you set rerere.enabled, and Chapter 14C covers it. Reverting a merge is Chapter 11. And git add --resolved was added in Git 2.56, not run here: according to the 2.56 documentation it stages unmerged paths where no conflict markers remain in the working tree, and any path with leftover markers causes the command to refuse to stage any files.",
+   "tele": "And the three pointers. rerere, \"reuse recorded resolution\", remembers how you resolved a conflict and replays the resolution when the identical conflict appears again. It's off until you set `rerere.enabled`, and Chapter 14C covers it. Reverting a merge is Chapter 11. And `git add --resolved` was added in Git 2.56, not run here: according to the 2.56 documentation it stages unmerged paths where no conflict markers remain in the working tree, and any path with leftover markers causes the command to refuse to stage any files.",
+   "words": 86,
+   "est": 34.4,
+   "slide": 84,
+   "line": 625,
+   "t0": 1029.0,
+   "h": "177090a7",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.05,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.55,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 98,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 85,
+   "line": 627,
+   "t0": 1063.4,
+   "h": "",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 99,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 6.5, \"A clean merge that breaks the build\", in lab-manual/m06-merge.md.",
+   "tele": "Your turn. Do Lab 6.5, \"A clean merge that breaks the build\", in `lab-manual/m06-merge.md`.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 86,
+   "line": 629,
+   "t0": 1064.9,
+   "h": "ba5ca77b",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 100,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Predict first:",
+   "tele": "Predict first:",
+   "words": 2,
+   "est": 1.2,
+   "slide": 87,
+   "line": 631,
+   "t0": 1070.5,
+   "h": "c6b1183e",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 101,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Will either merge stop? On what do you base that?",
+   "tele": "Will either merge stop? On what do you base that?",
+   "words": 10,
+   "est": 4.0,
+   "slide": 88,
+   "line": 633,
+   "t0": 1071.7,
+   "h": "9ac03609",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 102,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+   "tele": "Which paths did each side change since the merge base? Write the two lists before you run the command.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 89,
+   "line": 633,
+   "t0": 1075.7,
+   "h": "7d402ed3",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 103,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "On which of the three commits, the two parents and the merge, does the check pass?",
+   "tele": "On which of the three commits, the two parents and the merge, does the check pass?",
+   "words": 16,
+   "est": 6.4,
+   "slide": 90,
+   "line": 633,
+   "t0": 1083.3,
+   "h": "9b3b3ec8",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 104,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Incident 9, incidents/09-misunderstood-conflict. Read the symptoms file only, and work from the repository.",
+   "tele": "The challenge is Incident 9, `incidents/09-misunderstood-conflict`. Read the symptoms file only, and work from the repository.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 91,
+   "line": 637,
+   "t0": 1089.7,
+   "h": "c173d185",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 3,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 105,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 92,
+   "line": 639,
+   "t0": 1096.1,
+   "h": "",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 106,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Q122: \"Why can Git merge two files incorrectly from a human perspective?\"",
+   "tele": "Q122: \"Why can Git merge two files incorrectly from a human perspective?\"",
+   "words": 12,
+   "est": 4.8,
+   "slide": 93,
+   "line": 643,
+   "t0": 1097.6,
+   "h": "d9009288",
+   "anim": {
+    "group": 77,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 107,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 93,
+   "line": 645,
+   "t0": 1102.4,
+   "h": "",
+   "anim": {
+    "group": 77,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 108,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud first. A strong answer starts from what a merge takes as input and what single property it checks, and it says what Git does not have. It gives at least one concrete example where the two changes are in different files, and ideally the quiet kind where nothing fails. It then moves from cause to control: where in the delivery process the merged result gets tested, and how a merge can be audited afterwards. Stop there. Don't turn it into a list of commands.",
+   "tele": "Answer out loud first. A strong answer starts from what a merge takes as input and what single property it checks, and it says what Git does not have. It gives at least one concrete example where the two changes are in different files, and ideally the quiet kind where nothing fails. It then moves from cause to control: where in the delivery process the merged result gets tested, and how a merge can be audited afterwards. Stop there. Don't turn it into a list of commands.",
+   "words": 87,
+   "est": 34.8,
+   "slide": 93,
+   "line": 647,
+   "t0": 1104.4,
+   "h": "5ab37367",
+   "anim": {
+    "group": 77,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 109,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 94,
+   "line": 649,
+   "t0": 1139.2,
+   "h": "",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 110,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 95,
+   "line": 651,
+   "t0": 1140.7,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 79,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 111,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A merge without conflicts means only that no two text changes overlapped. Two green branches can produce a red merge when one change depends on the other through something Git does not read, so the merge result itself has to be tested.",
+   "tele": "A merge without conflicts means only that no two text changes overlapped. Two green branches can produce a red merge when one change depends on the other through something Git does not read, so the merge result itself has to be tested.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 96,
+   "line": 655,
+   "t0": 1144.7,
+   "h": "8677e869",
+   "anim": {
+    "group": 80,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 112,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git log -p shows nothing for a merge, git show hides resolutions that took one side unchanged, and --remerge-diff shows what a human did after Git stopped. git merge-tree --write-tree computes a merge from the object database alone and reports the outcome through its exit status. Reverting a merge undoes content and not ancestry, which is why a later merge of the same branch brings only the new commits.",
+   "tele": "`git log -p` shows nothing for a merge, `git show` hides resolutions that took one side unchanged, and `--remerge-diff` shows what a human did after Git stopped. `git merge-tree --write-tree` computes a merge from the object database alone and reports the outcome through its exit status. Reverting a merge undoes content and not ancestry, which is why a later merge of the same branch brings only the new commits.",
+   "words": 69,
+   "est": 27.6,
+   "slide": 97,
+   "line": 659,
+   "t0": 1161.5,
+   "h": "29fb626c",
+   "anim": {
+    "group": 81,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 113,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 98,
+   "line": 661,
+   "t0": 1189.1,
+   "h": "",
+   "anim": {
+    "group": 82,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 114,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 8.15 to 8.21 of Chapter 8, and do the Practice section 8.23, including Lab 6.6, \"Audit merges with --remerge-diff\", in lab-manual/m06-merge.md.",
+   "tele": "Read sections 8.15 to 8.21 of Chapter 8, and do the Practice section 8.23, including Lab 6.6, \"Audit merges with `--remerge-diff`\", in `lab-manual/m06-merge.md`.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 99,
+   "line": 663,
+   "t0": 1190.6,
+   "h": "7693cc62",
+   "anim": {
+    "group": 83,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 115,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "That's the merge module, complete. You can explain a clean merge that's wrong, audit a merge commit, and compute a merge without a working tree. Do Lab 6.5 while this is fresh. Next time we leave your machine: remotes, and git clone. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "That's the merge module, complete. You can explain a clean merge that's wrong, audit a merge commit, and compute a merge without a working tree. Do Lab 6.5 while this is fresh. Next time we leave your machine: remotes, and `git clone`. Until then, look at the state first and type second. See you in the next one.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 100,
+   "line": 665,
+   "t0": 1199.8,
+   "h": "7f1e8b40",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1223.0,
+ "narration_words": 2866,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

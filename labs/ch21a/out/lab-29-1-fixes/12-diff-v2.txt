@@ -1,0 +1,54 @@
+$ git diff -U2 -- v2-pr-test-report.yml | grep -v '^index '
+diff --git a/.github/workflows/v2-pr-test-report.yml b/.github/workflows/v2-pr-test-report.yml
+--- a/.github/workflows/v2-pr-test-report.yml
++++ b/.github/workflows/v2-pr-test-report.yml
+@@ -1,8 +1,6 @@
+-# TEACHING MATERIAL. DO NOT USE THIS WORKFLOW IN A REAL REPOSITORY.
+-# It contains one deliberately planted security weakness for Lab 29.1 (Module 29).
+-# Find it, name its class, and fix it. The analysis is in solutions/m29-vulnerable-workflows.md.
++# Reference fix for Lab 29.1 (see solutions/m29-vulnerable-workflows.md).
+ # Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+ #
+-# What it does: runs the test suite for a pull request and posts the result as a comment,
++# What it does: runs the test suite for a pull request and writes the result to the job summary,
+ # including on pull requests that come from forks.
+ 
+@@ -10,14 +8,13 @@ name: pr-test-report
+ 
+ on:
+-  pull_request_target:
++  pull_request:
+     types: [opened, synchronize, reopened]
+ 
+ permissions:
+   contents: read
+-  pull-requests: write
+ 
+ jobs:
+-  test-and-comment:
+-    name: Test and comment
++  test:
++    name: Test
+     runs-on: ubuntu-24.04
+     timeout-minutes: 15
+@@ -26,6 +23,4 @@ jobs:
+         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+         with:
+-          ref: ${{ github.event.pull_request.head.sha }}
+-          allow-unsafe-pr-checkout: true
+           persist-credentials: false
+ 
+@@ -40,11 +35,8 @@ jobs:
+         run: uv run pytest
+ 
+-      - name: Comment on the pull request
++      - name: Write the result to the job summary
+         if: ${{ !cancelled() }}
+         env:
+-          GH_TOKEN: ${{ github.token }}
+-          GH_REPO: ${{ github.repository }}
+-          PR_NUMBER: ${{ github.event.pull_request.number }}
+           OUTCOME: ${{ steps.test.outcome }}
+         run: |
+-          gh pr comment "$PR_NUMBER" --body "Test result: $OUTCOME"
++          echo "Test result: $OUTCOME" >> "$GITHUB_STEP_SUMMARY"

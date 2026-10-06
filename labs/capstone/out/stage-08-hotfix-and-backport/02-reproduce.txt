@@ -1,0 +1,13 @@
+# Production runs v1.3.1. The failing input from the alert, on that tag:
+$ git switch --quiet --detach v1.3.1
+$ PYTHONPATH=. python3 -B -c 'from router.classify import classify; print(classify([("billing_refund", 1.0, None)]))' 2>&1 | tail -n 1
+TypeError: unsupported operand type(s) for *: 'float' and 'NoneType'
+# Would a rollback to v1.3.0 help? Is this a regression at all?
+$ git switch --quiet --detach v1.3.0
+$ PYTHONPATH=. python3 -B -c 'from router.classify import classify; print(classify([("billing_refund", 1.0, None)]))' 2>&1 | tail -n 1
+TypeError: unsupported operand type(s) for *: 'float' and 'NoneType'
+$ git blame -s -L '/for intent, kw, emb/,+1' v1.3.1 -- router/classify.py
+^f84d4a2 12)     for intent, kw, emb in candidates:
+$ git log --oneline v1.0.0..v1.3.1 -- router/classify.py
+1cf6842 Route unknown intents to a human agent (#5)
+$ git switch --quiet main

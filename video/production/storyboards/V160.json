@@ -1,0 +1,4787 @@
+{
+ "id": "V160",
+ "version": 22,
+ "title": "Secrets and why masking is not a boundary, OIDC federation, caches and artifacts as untrusted input, self-hosted runners, and environment protection",
+ "part": 7,
+ "part_label": "SECURITY",
+ "part_name": "Security",
+ "palette": {
+  "accent": "#FF5C5C",
+  "accent2": "#FFB3B3",
+  "bg1": "#1A0F10",
+  "bg2": "#33191B"
+ },
+ "planned_minutes": 28,
+ "chapters": [
+  "ch21a-actions-security.md"
+ ],
+ "script": "video/scripts/V160-secrets-and-why-masking-is-not-a-boundary-oidc-federation-caches-and-artifacts-as-untrusted-input-self-hosted-runners-and-environment-protection.md",
+ "script_sha1": "711c6cd71a830d5cddfb2cd1acef9884dab6893c",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 7,
+   "line": 24
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 12,
+   "line": 34
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 20,
+   "line": 46
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 56,
+   "line": 149
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 62,
+   "line": 161
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 67,
+   "line": 193
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 87,
+   "line": 298
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 94,
+   "line": 308
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 99,
+   "line": 316
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 103,
+   "line": 324
+  },
+  {
+   "name": "RECAP",
+   "beat": 108,
+   "line": 334
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 116,
+   "line": 346
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Secrets and why masking is not a boundary, OIDC federation, caches and artifacts as untrusted input, self-hosted runners, and environment protection",
+   "part_name": "Security",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0013
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"Our secrets are safe. They are masked in the logs.\"",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0023
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"We do not store cloud keys any more. We use OIDC.\"",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.005
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"Our release job has <code>contents: read</code>. It cannot be tampered with.\"",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0079
+  },
+  {
+   "kind": "keypoint",
+   "body": "Teams say each of these in good faith, and the incidents of this part show where each belief ends.",
+   "section": "HOOK",
+   "n": 6,
+   "progress": 0.0108
+  },
+  {
+   "kind": "keypoint",
+   "body": "None of the three statements is false.",
+   "section": "HOOK",
+   "n": 7,
+   "progress": 0.0295
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0417
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0427
+  },
+  {
+   "kind": "keypoint",
+   "body": "Four words first. A job is a list of steps that run on one machine, the runner.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.0573
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five topics, in the order of sections 21A.9 to 21A.13.",
+   "section": "INTRODUCTION",
+   "n": 11,
+   "progress": 0.073
+  },
+  {
+   "kind": "keypoint",
+   "body": "The demonstration removes two controls from the course's secure workflow and shows which check notices.",
+   "section": "INTRODUCTION",
+   "n": 12,
+   "progress": 0.0887
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.0986
+  },
+  {
+   "kind": "keypoint",
+   "body": "Here's what you'll walk away with.",
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.0996
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "say who can read a repository, environment and organization secret and when;",
+    "explain why log masking does not protect a secret;",
+    "explain what <code>id-token: write</code> grants and where the access decision is made;",
+    "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+    "state why self-hosted runners and public repositories are a dangerous combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1012
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "say who can read a repository, environment and organization secret and when;",
+    "explain why log masking does not protect a secret;",
+    "explain what <code>id-token: write</code> grants and where the access decision is made;",
+    "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+    "state why self-hosted runners and public repositories are a dangerous combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1025
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "say who can read a repository, environment and organization secret and when;",
+    "explain why log masking does not protect a secret;",
+    "explain what <code>id-token: write</code> grants and where the access decision is made;",
+    "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+    "state why self-hosted runners and public repositories are a dangerous combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 17,
+   "progress": 0.1057
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "say who can read a repository, environment and organization secret and when;",
+    "explain why log masking does not protect a secret;",
+    "explain what <code>id-token: write</code> grants and where the access decision is made;",
+    "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+    "state why self-hosted runners and public repositories are a dangerous combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 18,
+   "progress": 0.1081
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "say who can read a repository, environment and organization secret and when;",
+    "explain why log masking does not protect a secret;",
+    "explain what <code>id-token: write</code> grants and where the access decision is made;",
+    "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+    "state why self-hosted runners and public repositories are a dangerous combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 19,
+   "progress": 0.1113
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "say who can read a repository, environment and organization secret and when;",
+    "explain why log masking does not protect a secret;",
+    "explain what <code>id-token: write</code> grants and where the access decision is made;",
+    "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+    "state why self-hosted runners and public repositories are a dangerous combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 20,
+   "progress": 0.116
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.119
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Secrets. In one sentence",
+   "body": "a secret is as exposed as the least trustworthy code in any job that receives it.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.12
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "Secrets exist at organization, repository and environment level.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.1253
+  },
+  {
+   "kind": "terminal",
+   "direction": "The unsafe and the safe form of section 21A.9.",
+   "mode": "code",
+   "title": "yaml",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "code",
+     "s": "# Unsafe: every step of every job, including third-party actions and your dependencies'"
+    },
+    {
+     "t": "code",
+     "s": "# install scripts, has the token in its environment."
+    },
+    {
+     "t": "code",
+     "s": "env:"
+    },
+    {
+     "t": "code",
+     "s": "  DEPLOY_TOKEN: ${{ secrets.STAGING_DEPLOY_TOKEN }}"
+    },
+    {
+     "t": "code",
+     "s": ""
+    },
+    {
+     "t": "code",
+     "s": "jobs:"
+    },
+    {
+     "t": "code",
+     "s": "  lint: ..."
+    },
+    {
+     "t": "code",
+     "s": "  test: ..."
+    },
+    {
+     "t": "code",
+     "s": "  deploy: ..."
+    }
+   ],
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.1341
+  },
+  {
+   "kind": "terminal",
+   "mode": "code",
+   "title": "yaml",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "code",
+     "s": "# Safe: one step of one job, behind an environment."
+    },
+    {
+     "t": "code",
+     "s": "jobs:"
+    },
+    {
+     "t": "code",
+     "s": "  deploy:"
+    },
+    {
+     "t": "code",
+     "s": "    environment:"
+    },
+    {
+     "t": "code",
+     "s": "      name: staging"
+    },
+    {
+     "t": "code",
+     "s": "    steps:"
+    },
+    {
+     "t": "code",
+     "s": "      - name: Deploy"
+    },
+    {
+     "t": "code",
+     "s": "        env:"
+    },
+    {
+     "t": "code",
+     "s": "          DEPLOY_TOKEN: ${{ secrets.STAGING_DEPLOY_TOKEN }}"
+    },
+    {
+     "t": "code",
+     "s": "        run: bash scripts/deploy.sh staging"
+    }
+   ],
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.1375
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Write access is secret access",
+   "body": "The documentation: \"Any user with write access to your repository has read access to all secrets configured in your repository.\"",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.1623
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Masking is a courtesy for logs",
+   "body": "Registered secrets are redacted from logs.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.1809
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Masking is a courtesy for logs",
+   "body": "Redaction matches known strings in log output.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.1974
+  },
+  {
+   "kind": "keypoint",
+   "headline": "OIDC federation. In one sentence",
+   "body": "instead of storing a cloud key as a secret, the job asks GitHub for a signed statement of what it is, and the cloud exchanges that statement for a credential valid for that job only.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.2133
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "The job or workflow must grant the <code>id-token: write</code> permission to allow GitHub's OIDC provider to create a JSON Web Token, a small signed document.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.224
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "The token's claims describe the run.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 31,
+   "progress": 0.2423
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch21a-actions-security.md",
+    "line": 449,
+    "section": "21A.10",
+    "kind": "table",
+    "score": 3,
+    "candidates": 1
+   },
+   "direction": "The subject table of section 21A.10.",
+   "header": [
+    "Run",
+    "Default subject (<code>sub</code>)"
+   ],
+   "fs": 40,
+   "cols": [
+    35.43,
+    64.57
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Job that references an environment",
+     "<code>repo:ORG-NAME/REPO-NAME:environment:ENVIRONMENT-NAME</code>"
+    ],
+    [
+     "Pull request event, no environment",
+     "<code>repo:ORG-NAME/REPO-NAME:pull_request</code>"
+    ],
+    [
+     "Branch",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/heads/BRANCH-NAME</code>"
+    ],
+    [
+     "Tag",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/tags/TAG-NAME</code>"
+    ]
+   ],
+   "caption": "For a job that references an environment, the default subject is the repository followed by <code>environment</code> and the environment's name.",
+   "section": "CONCEPT",
+   "n": 32,
+   "progress": 0.2631
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch21a-actions-security.md",
+    "line": 449,
+    "section": "21A.10",
+    "kind": "table",
+    "score": 3,
+    "candidates": 1
+   },
+   "direction": "The subject table of section 21A.10.",
+   "header": [
+    "Run",
+    "Default subject (<code>sub</code>)"
+   ],
+   "fs": 40,
+   "cols": [
+    35.43,
+    64.57
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Job that references an environment",
+     "<code>repo:ORG-NAME/REPO-NAME:environment:ENVIRONMENT-NAME</code>"
+    ],
+    [
+     "Pull request event, no environment",
+     "<code>repo:ORG-NAME/REPO-NAME:pull_request</code>"
+    ],
+    [
+     "Branch",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/heads/BRANCH-NAME</code>"
+    ],
+    [
+     "Tag",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/tags/TAG-NAME</code>"
+    ]
+   ],
+   "caption": "Quick quiz. Where is the access decision made?",
+   "section": "CONCEPT",
+   "n": 33,
+   "progress": 0.2769
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch21a-actions-security.md",
+    "line": 449,
+    "section": "21A.10",
+    "kind": "table",
+    "score": 3,
+    "candidates": 1
+   },
+   "direction": "The subject table of section 21A.10.",
+   "header": [
+    "Run",
+    "Default subject (<code>sub</code>)"
+   ],
+   "fs": 40,
+   "cols": [
+    35.43,
+    64.57
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Job that references an environment",
+     "<code>repo:ORG-NAME/REPO-NAME:environment:ENVIRONMENT-NAME</code>"
+    ],
+    [
+     "Pull request event, no environment",
+     "<code>repo:ORG-NAME/REPO-NAME:pull_request</code>"
+    ],
+    [
+     "Branch",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/heads/BRANCH-NAME</code>"
+    ],
+    [
+     "Tag",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/tags/TAG-NAME</code>"
+    ]
+   ],
+   "caption": "B. Not at GitHub. GitHub states facts.",
+   "section": "CONCEPT",
+   "n": 34,
+   "progress": 0.2874
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch21a-actions-security.md",
+    "line": 449,
+    "section": "21A.10",
+    "kind": "table",
+    "score": 3,
+    "candidates": 1
+   },
+   "direction": "The subject table of section 21A.10.",
+   "header": [
+    "Run",
+    "Default subject (<code>sub</code>)"
+   ],
+   "fs": 40,
+   "cols": [
+    35.43,
+    64.57
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Job that references an environment",
+     "<code>repo:ORG-NAME/REPO-NAME:environment:ENVIRONMENT-NAME</code>"
+    ],
+    [
+     "Pull request event, no environment",
+     "<code>repo:ORG-NAME/REPO-NAME:pull_request</code>"
+    ],
+    [
+     "Branch",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/heads/BRANCH-NAME</code>"
+    ],
+    [
+     "Tag",
+     "<code>repo:ORG-NAME/REPO-NAME:ref:refs/tags/TAG-NAME</code>"
+    ]
+   ],
+   "caption": "GitHub's guide for one cloud gives a condition that requires the audience and the exact subject of one environment in one repository.",
+   "section": "CONCEPT",
+   "n": 35,
+   "progress": 0.3023
+  },
+  {
+   "kind": "callout",
+   "direction": "Callout: Version note.",
+   "quotes": [
+    "Version note."
+   ],
+   "quoted": false,
+   "caption": "Older behavior: the subject contains only names, so a deleted and re-registered organization or repository name could mint the same subject.",
+   "section": "CONCEPT",
+   "n": 36,
+   "progress": 0.3195
+  },
+  {
+   "kind": "callout",
+   "direction": "Callout: Version note.",
+   "quotes": [
+    "Version note."
+   ],
+   "quoted": false,
+   "caption": "Renames and transfers after that date switch as well, and existing repositories can opt in.",
+   "section": "CONCEPT",
+   "n": 37,
+   "progress": 0.332
+  },
+  {
+   "kind": "callout",
+   "direction": "Callout: Version note.",
+   "quotes": [
+    "Version note."
+   ],
+   "quoted": false,
+   "caption": "Subject customization lets an organization or repository change which claims form the subject, for example to require the reusable workflow reference …",
+   "section": "CONCEPT",
+   "n": 38,
+   "progress": 0.3461
+  },
+  {
+   "kind": "keypoint",
+   "headline": "What OIDC does not do",
+   "body": "It removes the long-lived key.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 39,
+   "progress": 0.3547
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Caches and artifacts. In one sentence",
+   "body": "a cache is a shared, unsigned directory keyed by a string.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 40,
+   "progress": 0.3757
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "The documentation: \"Anyone with read access can create a pull request on a repository and access the contents of a cache\", and \"cache contents are not signed or verified\".",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 41,
+   "progress": 0.3847
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "A <code>pull_request</code> run saves to its own merge ref, which other branches can't restore.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 42,
+   "progress": 0.3964
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "That's the third sentence of the hook, answered.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 43,
+   "progress": 0.4097
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "The twenty-sixth of June 2026: only <code>push</code>, <code>workflow_dispatch</code>, <code>repository_dispatch</code>, <code>delete</code>, <code>registry_package</code>, <code>page_build</code> and <code>schedule</code> can create or overwrite caches in the default branch's scope.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 44,
+   "progress": 0.4161
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Precisely",
+   "body": "The tenth of September 2026: <code>cache-mode</code>, at workflow or job level, with the values <code>read</code>, <code>write</code>, <code>write-only</code> and <code>none</code>.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 45,
+   "progress": 0.4249
+  },
+  {
+   "kind": "terminal",
+   "mode": "code",
+   "title": "yaml",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "code",
+     "s": "jobs:"
+    },
+    {
+     "t": "code",
+     "s": "  publish:"
+    },
+    {
+     "t": "code",
+     "s": "    cache-mode: none      # a job that holds a publishing identity restores nothing it did not build"
+    }
+   ],
+   "section": "CONCEPT",
+   "n": 46,
+   "progress": 0.4374
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Self-hosted runners. In one sentence",
+   "body": "a self-hosted runner is your machine, on your network, executing whatever the workflow says, and it keeps its state between jobs unless you make it ephemeral.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 47,
+   "progress": 0.4496
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Self-hosted runners. In one sentence",
+   "body": "The documentation: \"Self-hosted runners should almost never be used for public repositories on GitHub, because any user can open pull requests against the repository and compromise the environment.\"",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 48,
+   "progress": 0.4579
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Self-hosted runners. In one sentence",
+   "body": "The fork approval gate doesn't help once a contributor is past it.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 49,
+   "progress": 0.4773
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Self-hosted runners. In one sentence",
+   "body": "The documented controls. Ephemeral runners that take one job and are removed.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 50,
+   "progress": 0.4826
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Environment protection. In one sentence",
+   "body": "an environment puts a human decision, a branch condition, or both between a job and the secrets and cloud identity that belong to a deployment target.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 51,
+   "progress": 0.4925
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Environment protection. In one sentence",
+   "body": "You know the mechanics from video 149. For security review three details matter.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 52,
+   "progress": 0.5007
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Environment protection. In one sentence",
+   "body": "And required reviewers and wait timers are plan-gated, meaning they depend on your GitHub plan: on Free, Pro and Team they exist only for public repositories.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 53,
+   "progress": 0.5185
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Environment protection. In one sentence",
+   "body": "And the combination that makes the whole design hold: with OIDC, an environment name in the subject means the cloud role can be assumed only by a job that passed that environment's rules.",
+   "badge": "GitHub Actions",
+   "section": "CONCEPT",
+   "n": 54,
+   "progress": 0.5254
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 55,
+   "progress": 0.5342
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy for OIDC,",
+   "body": "from the textbook. A notarized letter of introduction in place of a copied house key.",
+   "section": "MENTAL MODEL",
+   "n": 56,
+   "progress": 0.5352
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy for OIDC,",
+   "body": "The analogy breaks at one point: any code running in the job can ask the notary for the letter.",
+   "section": "MENTAL MODEL",
+   "n": 57,
+   "progress": 0.5451
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy for OIDC,",
+   "body": "Take that sentence seriously and the three topics of this video become one.",
+   "section": "MENTAL MODEL",
+   "n": 58,
+   "progress": 0.5501
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy for OIDC,",
+   "body": "So there are only two real levers.",
+   "section": "MENTAL MODEL",
+   "n": 59,
+   "progress": 0.5663
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Analogy for OIDC,",
+   "body": "That's the question from video 156 again, now with a full answer to its third part: \"what can the job reach\" includes what the job can ask for.",
+   "section": "MENTAL MODEL",
+   "n": 60,
+   "progress": 0.5791
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 61,
+   "progress": 0.5866
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, thirty seconds, on paper.",
+   "section": "DIAGRAM",
+   "n": 62,
+   "progress": 0.5876
+  },
+  {
+   "kind": "diagram",
+   "direction": "Two pictures side by side. On the left, a job with a secret and three steps. Draw the three steps, then the secret available to all three, then the arrow from the third step outward. On the right, the OIDC exchange, one arrow at a time.",
+   "text": "  A JOB THAT HOLDS A SECRET                         THE OIDC EXCHANGE\n\n  +------------------------------------+            job (permissions: id-token: write)\n  | job    env: TOKEN = ****           |              |\n  |                                    |              | 1. asks GitHub's OIDC provider for a token\n  |  step 1  your script        TOKEN  |              v\n  |  step 2  a third-party      TOKEN  |            signed token with claims:\n  |          action                    |              repository, ref, environment, event, ...\n  |  step 3  a dependency's     TOKEN -+--> anywhere  sub = repo:ORG/REPO:environment:NAME\n  |          install script            |    on the    |\n  +------------------------------------+    network   | 2. presents it to the cloud provider\n                                                      v\n   the log shows ****                               trust policy: conditions on aud and sub\n   the value left through step 3                      |    <-- THE ACCESS DECISION IS MADE HERE\n                                                      | 3. if the conditions match\n   masking edits log lines;                           v\n   it is not a boundary                             short-lived credential, valid for this job only",
+   "section": "DIAGRAM",
+   "n": 63,
+   "progress": 0.6028
+  },
+  {
+   "kind": "callout",
+   "direction": "On the left, the mask and the leak are unrelated. On the right, the only place where \"no\" can be said is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.",
+   "label": "On the left, the mask and the leak are unrelated. On the right, the only place where",
+   "quotes": [
+    "no"
+   ],
+   "quoted": true,
+   "section": "DIAGRAM",
+   "n": 64,
+   "progress": 0.6182
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.6215
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay with `labs/run ch21a/lab-29-2-controls`. It works on a sandbox copy of workflow 12. The commands are `grep`, `sed` and `git` on one file. Nothing is executed on GitHub.",
+   "mode": "cmd",
+   "title": "labs/run ch21a/lab-29-2-controls",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch21a/lab-29-2-controls"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.6225
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch21a/lab-29-2-controls",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'uses:' .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -n 'uses:' .github/workflows/12-secure.yml | grep -vE '@[0-9a-f]{40}( |$)'"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'persist-credentials: false' .github/workflows/12-secure.yml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.6236
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21a/lab-29-2-controls/01-baseline",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'uses:' .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "out",
+     "s": "6"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -n 'uses:' .github/workflows/12-secure.yml | grep -vE '@[0-9a-f]{40}( |$)'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'persist-credentials: false' .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "out",
+     "s": "4"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 68,
+   "progress": 0.6407
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: a \"cleanup\" that many reviewers would approve",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 69,
+   "progress": 0.6481
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch21a/lab-29-2-controls",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "sed -i.bak -e 's/@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1/@v7/' -e '/persist-credentials:"
+    },
+    {
+     "t": "wrap",
+     "s": "false/d' .github/workflows/12-secure.yml",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.6505
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21a/lab-29-2-controls/02-break",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A \"cleanup\" that many reviewers would approve: readable version tags, less boilerplate."
+    },
+    {
+     "t": "cmd",
+     "s": "sed -i.bak -e 's/@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1/@v7/' -e '/persist-credentials:"
+    },
+    {
+     "t": "wrap",
+     "s": "false/d' .github/workflows/12-secure.yml",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "rm .github/workflows/12-secure.yml.bak"
+    },
+    {
+     "t": "cmd",
+     "s": "git diff --stat"
+    },
+    {
+     "t": "out",
+     "s": " .github/workflows/12-secure.yml | 10 +++-------"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 3 insertions(+), 7 deletions(-)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 71,
+   "progress": 0.659
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 3: which check notices",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 72,
+   "progress": 0.6684
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21a/lab-29-2-controls/03-detect",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "grep -n 'uses:' .github/workflows/12-secure.yml | grep -vE '@[0-9a-f]{40}( |$)'"
+    },
+    {
+     "t": "out",
+     "s": "36:        uses: actions/checkout@v7"
+    },
+    {
+     "t": "out",
+     "s": "82:        uses: actions/checkout@v7"
+    },
+    {
+     "t": "out",
+     "s": "111:        uses: actions/checkout@v7"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'persist-credentials: false' .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "out",
+     "s": "0"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "caption": "The unpinned scan now prints three lines, 36, 82 and 111, each a checkout by tag, with exit status 0: found.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 73,
+   "progress": 0.6697
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21a/lab-29-2-controls/03-detect",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "grep -n 'uses:' .github/workflows/12-secure.yml | grep -vE '@[0-9a-f]{40}( |$)'"
+    },
+    {
+     "t": "out",
+     "s": "36:        uses: actions/checkout@v7"
+    },
+    {
+     "t": "out",
+     "s": "82:        uses: actions/checkout@v7"
+    },
+    {
+     "t": "out",
+     "s": "111:        uses: actions/checkout@v7"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'persist-credentials: false' .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "out",
+     "s": "0"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "caption": "Now the limit of this demonstration, which the lab's objective states: you remove two controls and see which checks notice.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 74,
+   "progress": 0.6803
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 4: recover",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 75,
+   "progress": 0.7019
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch21a/lab-29-2-controls",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git restore .github/workflows/12-secure.yml"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 76,
+   "progress": 0.7027
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21a/lab-29-2-controls/04-recover",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git restore .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -n 'uses:' .github/workflows/12-secure.yml | grep -vE '@[0-9a-f]{40}( |$)'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c 'persist-credentials: false' .github/workflows/12-secure.yml"
+    },
+    {
+     "t": "out",
+     "s": "4"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 77,
+   "progress": 0.7242
+  },
+  {
+   "kind": "scene",
+   "direction": "trees: file=.github/workflows/12-secure.yml versions=the_committed_file,the_cleanup steps=setup,edit,restore title=What_the_restore_did",
+   "scene": "trees",
+   "params": {
+    "file": ".github/workflows/12-secure.yml",
+    "versions": [
+     "the committed file",
+     "the cleanup"
+    ],
+    "title": "What the restore did"
+   },
+   "steps": [
+    "setup",
+    "edit",
+    "restore"
+   ],
+   "upto": 3,
+   "danger": true,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 78,
+   "progress": 0.7279
+  },
+  {
+   "kind": "callout",
+   "direction": "Lower third: GitHub Actions. `workflows/12-secure.yml`, the `deploy-staging` job, then a screen walkthrough.",
+   "code": [
+    "workflows/12-secure.yml",
+    "deploy-staging"
+   ],
+   "quoted": false,
+   "caption": "Read the deploy job with this video's five topics.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 79,
+   "progress": 0.7378
+  },
+  {
+   "kind": "callout",
+   "direction": "Lower third: GitHub Actions. `workflows/12-secure.yml`, the `deploy-staging` job, then a screen walkthrough.",
+   "code": [
+    "workflows/12-secure.yml",
+    "deploy-staging"
+   ],
+   "quoted": false,
+   "caption": "<code>cache-mode: none</code>: it neither restores nor saves a cache.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 80,
+   "progress": 0.7524
+  },
+  {
+   "kind": "callout",
+   "direction": "Lower third: GitHub Actions. `workflows/12-secure.yml`, the `deploy-staging` job, then a screen walkthrough.",
+   "code": [
+    "workflows/12-secure.yml",
+    "deploy-staging"
+   ],
+   "quoted": false,
+   "caption": "Now Lab 29.2, Part B, on your practice repository, in your normal shell.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 81,
+   "progress": 0.7628
+  },
+  {
+   "kind": "callout",
+   "direction": "Lower third: GitHub Actions. `workflows/12-secure.yml`, the `deploy-staging` job, then a screen walkthrough.",
+   "code": [
+    "workflows/12-secure.yml",
+    "deploy-staging"
+   ],
+   "quoted": false,
+   "caption": "Add the workflow through a pull request and look at the list of checks.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 82,
+   "progress": 0.7718
+  },
+  {
+   "kind": "callout",
+   "direction": "Lower third: GitHub Actions. `workflows/12-secure.yml`, the `deploy-staging` job, then a screen walkthrough.",
+   "code": [
+    "workflows/12-secure.yml",
+    "deploy-staging"
+   ],
+   "quoted": false,
+   "caption": "Notice what the lab tells you: editing the title doesn't start a new run, because the trigger without <code>types</code> reacts to opened, synchronize and reopened.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 83,
+   "progress": 0.7875
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 84,
+   "progress": 0.799
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 85,
+   "progress": 0.8
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Putting a secret in workflow-level <code>env</code>.</b> Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+    "<b>Treating log masking as protection.</b> Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+    "<b>A wildcard subject in the cloud's trust policy.</b> Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+    "<b>Letting a job with a publishing identity restore a cache.</b> Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+    "<b>Believing <code>permissions: contents: read</code> protects the cache.</b> Root cause: cache writes used a runner-internal token, not the job token."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 86,
+   "progress": 0.8013
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Putting a secret in workflow-level <code>env</code>.</b> Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+    "<b>Treating log masking as protection.</b> Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+    "<b>A wildcard subject in the cloud's trust policy.</b> Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+    "<b>Letting a job with a publishing identity restore a cache.</b> Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+    "<b>Believing <code>permissions: contents: read</code> protects the cache.</b> Root cause: cache writes used a runner-internal token, not the job token."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 87,
+   "progress": 0.8082
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Putting a secret in workflow-level <code>env</code>.</b> Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+    "<b>Treating log masking as protection.</b> Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+    "<b>A wildcard subject in the cloud's trust policy.</b> Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+    "<b>Letting a job with a publishing identity restore a cache.</b> Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+    "<b>Believing <code>permissions: contents: read</code> protects the cache.</b> Root cause: cache writes used a runner-internal token, not the job token."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 88,
+   "progress": 0.8149
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Putting a secret in workflow-level <code>env</code>.</b> Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+    "<b>Treating log masking as protection.</b> Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+    "<b>A wildcard subject in the cloud's trust policy.</b> Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+    "<b>Letting a job with a publishing identity restore a cache.</b> Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+    "<b>Believing <code>permissions: contents: read</code> protects the cache.</b> Root cause: cache writes used a runner-internal token, not the job token."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 89,
+   "progress": 0.8247
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Putting a secret in workflow-level <code>env</code>.</b> Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+    "<b>Treating log masking as protection.</b> Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+    "<b>A wildcard subject in the cloud's trust policy.</b> Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+    "<b>Letting a job with a publishing identity restore a cache.</b> Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+    "<b>Believing <code>permissions: contents: read</code> protects the cache.</b> Root cause: cache writes used a runner-internal token, not the job token."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 90,
+   "progress": 0.8335
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 91,
+   "progress": 0.8385
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. Picture a team that publishes an evaluation library to a package registry.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 92,
+   "progress": 0.8395
+  },
+  {
+   "kind": "keypoint",
+   "body": "Review that with this video.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 93,
+   "progress": 0.8544
+  },
+  {
+   "kind": "keypoint",
+   "body": "Is the publishing job behind an environment with rules, and is the environment's name in the subject the registry checks?",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 94,
+   "progress": 0.8656
+  },
+  {
+   "kind": "keypoint",
+   "body": "The textbook's summary of what OIDC changes fits on one line: it removes the long-lived key, and it doesn't make the job trustworthy.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 95,
+   "progress": 0.8792
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 96,
+   "progress": 0.8911
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 29.2, \"Justify every control of workflow 12\", in <code>lab-manual/m29-actions-security.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 97,
+   "progress": 0.8921
+  },
+  {
+   "kind": "keypoint",
+   "body": "Write the table the lab asks for: control, line, threat, and what breaks without it.",
+   "section": "PRACTICE EXERCISE",
+   "n": 98,
+   "progress": 0.8969
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 29.6, \"Who can assume the role?\", in <code>exercises/m26-m31-actions-security.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 99,
+   "progress": 0.9092
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 100,
+   "progress": 0.9123
+  },
+  {
+   "kind": "callout",
+   "direction": "Q313: \"What does `id-token: write` grant, and where is the access decision made?\"",
+   "label": "Q313",
+   "quotes": [
+    "What does <code>id-token: write</code> grant, and where is the access decision made?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 101,
+   "progress": 0.9133
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 102,
+   "progress": 0.9456
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this.",
+   "section": "RECAP",
+   "n": 103,
+   "progress": 0.9466
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+    "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+    "<code>id-token: write</code> only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+    "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses <code>cache-mode: none</code> and treats artifacts as data.",
+    "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 42,
+   "section": "RECAP",
+   "n": 104,
+   "progress": 0.9474
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+    "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+    "<code>id-token: write</code> only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+    "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses <code>cache-mode: none</code> and treats artifacts as data.",
+    "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "RECAP",
+   "n": 105,
+   "progress": 0.9493
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+    "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+    "<code>id-token: write</code> only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+    "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses <code>cache-mode: none</code> and treats artifacts as data.",
+    "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "RECAP",
+   "n": 106,
+   "progress": 0.9578
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+    "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+    "<code>id-token: write</code> only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+    "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses <code>cache-mode: none</code> and treats artifacts as data.",
+    "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "RECAP",
+   "n": 107,
+   "progress": 0.9628
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+    "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+    "<code>id-token: write</code> only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+    "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses <code>cache-mode: none</code> and treats artifacts as data.",
+    "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "RECAP",
+   "n": 108,
+   "progress": 0.9687
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+    "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+    "<code>id-token: write</code> only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+    "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses <code>cache-mode: none</code> and treats artifacts as data.",
+    "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "RECAP",
+   "n": 109,
+   "progress": 0.9759
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 110,
+   "progress": 0.9812
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 21A.9 to 21A.13 of Chapter 21A.",
+   "section": "HOMEWORK",
+   "n": 111,
+   "progress": 0.9822
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you drew the real boundary behind three comfortable sentences, and watched two controls vanish in a tidy-looking diff.",
+   "section": "HOMEWORK",
+   "n": 112,
+   "progress": 0.9843
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"Our secrets are safe. They are masked in the logs.\"",
+   "tele": "\"Our secrets are safe. They are masked in the logs.\"",
+   "words": 10,
+   "est": 4.0,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "35e06eee",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"We do not store cloud keys any more. We use OIDC.\"",
+   "tele": "\"We do not store cloud keys any more. We use OIDC.\"",
+   "words": 11,
+   "est": 4.4,
+   "slide": 4,
+   "line": 16,
+   "t0": 7.5,
+   "h": "71e1a492",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"Our release job has contents: read. It cannot be tampered with.\"",
+   "tele": "\"Our release job has `contents: read`. It cannot be tampered with.\"",
+   "words": 11,
+   "est": 4.4,
+   "slide": 5,
+   "line": 18,
+   "t0": 11.9,
+   "h": "03d241c9",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Teams say each of these in good faith, and the incidents of this part show where each belief ends. Masking edits log lines. It does nothing about a process that sends the value somewhere else. OIDC removes the stored key. Any code in the job can still ask for the token. And a read-only job token didn't stop a cache from being written, because cache writes didn't use that token.",
+   "tele": "Teams say each of these in good faith, and the incidents of this part show where each belief ends. Masking edits log lines. It does nothing about a process that sends the value somewhere else. OIDC removes the stored key. Any code in the job can still ask for the token. And a read-only job token didn't stop a cache from being written, because cache writes didn't use that token.",
+   "words": 70,
+   "est": 28.0,
+   "slide": 6,
+   "line": 20,
+   "t0": 16.3,
+   "h": "427c9e77",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "None of the three statements is false. Each is true about a narrower thing than the speaker thinks. This video draws the real boundary for each. Keep the third one in mind, the read-only release job. Its answer is the least expected, and it comes back.",
+   "tele": "None of the three statements is false. Each is true about a narrower thing than the speaker thinks. This video draws the real boundary for each. Keep the third one in mind, the read-only release job. Its answer is the least expected, and it comes back.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 7,
+   "line": 22,
+   "t0": 44.3,
+   "h": "aaad5237",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 8,
+   "line": 24,
+   "t0": 62.7,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You've now seen four of the five parts of the model, and the fifth in the last video. This video is about what a job holds and what it takes in: the things an attacker wants, and the less obvious roads to them.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You've now seen four of the five parts of the model, and the fifth in the last video. This video is about what a job holds and what it takes in: the things an attacker wants, and the less obvious roads to them.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 9,
+   "line": 26,
+   "t0": 64.2,
+   "h": "db3246e5",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Four words first. A job is a list of steps that run on one machine, the runner. A secret is an encrypted value stored in GitHub's settings. Masking means that GitHub replaces a secret's value with stars in the log. And OIDC is a way for a job to prove what it is, in place of a stored key.",
+   "tele": "Four words first. A job is a list of steps that run on one machine, the runner. A secret is an encrypted value stored in GitHub's settings. Masking means that GitHub replaces a secret's value with stars in the log. And OIDC is a way for a job to prove what it is, in place of a stored key.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 10,
+   "line": 28,
+   "t0": 86.2,
+   "h": "ed460f8c",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Five topics, in the order of sections 21A.9 to 21A.13. Secrets: scope, and why masking isn't a boundary. OIDC federation: what id-token: write grants and where the access decision is made. Caches and artifacts as untrusted input. Self-hosted runners, from the security side. And environment protection, which you configured in video 149 and now read as a security control.",
+   "tele": "Five topics, in the order of sections 21A.9 to 21A.13. Secrets: scope, and why masking isn't a boundary. OIDC federation: what `id-token: write` grants and where the access decision is made. Caches and artifacts as untrusted input. Self-hosted runners, from the security side. And environment protection, which you configured in video 149 and now read as a security control.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 11,
+   "line": 30,
+   "t0": 109.8,
+   "h": "be0e6a89",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The demonstration removes two controls from the course's secure workflow and shows which check notices. It's grep and sed on a file in the sandbox: one command finds lines, the other edits them. Nothing runs on GitHub.",
+   "tele": "The demonstration removes two controls from the course's secure workflow and shows which check notices. It's `grep` and `sed` on a file in the sandbox: one command finds lines, the other edits them. Nothing runs on GitHub.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 12,
+   "line": 32,
+   "t0": 133.4,
+   "h": "8519aff6",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 13,
+   "line": 34,
+   "t0": 148.2,
+   "h": "",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Here's what you'll walk away with.",
+   "tele": "Here's what you'll walk away with.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 14,
+   "line": 36,
+   "t0": 149.7,
+   "h": "1e7bc081",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 15,
+   "line": 38,
+   "t0": 152.1,
+   "h": "152923b5",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "say who can read a repository, environment and organization secret and when;",
+   "tele": "say who can read a repository, environment and organization secret and when;",
+   "words": 12,
+   "est": 4.8,
+   "slide": 16,
+   "line": 40,
+   "t0": 154.1,
+   "h": "30aa628b",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain why log masking does not protect a secret;",
+   "tele": "explain why log masking does not protect a secret;",
+   "words": 9,
+   "est": 3.6,
+   "slide": 17,
+   "line": 40,
+   "t0": 158.9,
+   "h": "159afcd3",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain what id-token: write grants and where the access decision is made;",
+   "tele": "explain what `id-token: write` grants and where the access decision is made;",
+   "words": 12,
+   "est": 4.8,
+   "slide": 18,
+   "line": 40,
+   "t0": 162.5,
+   "h": "8a70d15f",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+   "tele": "explain how a cache or an artifact written by a less trusted run can reach a privileged one;",
+   "words": 18,
+   "est": 7.2,
+   "slide": 19,
+   "line": 40,
+   "t0": 167.3,
+   "h": "fe4b9dfa",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "state why self-hosted runners and public repositories are a dangerous combination.",
+   "tele": "state why self-hosted runners and public repositories are a dangerous combination.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 20,
+   "line": 40,
+   "t0": 174.5,
+   "h": "536122e1",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 21,
+   "line": 46,
+   "t0": 178.9,
+   "h": "",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Secrets. In one sentence: a secret is as exposed as the least trustworthy code in any job that receives it.",
+   "tele": "Secrets. In one sentence: a secret is as exposed as the least trustworthy code in any job that receives it.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 22,
+   "line": 50,
+   "t0": 180.4,
+   "h": "96c5896e",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. Secrets exist at organization, repository and environment level. And GitHub Actions can only read a secret if you explicitly include the secret in a workflow. Where you include it sets the exposure.",
+   "tele": "Precisely. Secrets exist at organization, repository and environment level. And GitHub Actions can only read a secret if you explicitly include the secret in a workflow. Where you include it sets the exposure.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 23,
+   "line": 52,
+   "t0": 188.4,
+   "h": "6a70210a",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.2,
+   "slide": 24,
+   "line": null,
+   "t0": 201.6,
+   "h": "",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In the first form the secret is in workflow-level env, the environment variables that every step receives. The lint job has it. The test job has it, and so does every package whose install script or test runs there. In the second form, one step of one job has it, and that job is behind an environment, a named gate the job must pass first. You saw the first form in the inventory of video 156: a secret named on line 19 of a file, before any job.",
+   "tele": "In the first form the secret is in workflow-level `env`, the environment variables that every step receives. The lint job has it. The test job has it, and so does every package whose install script or test runs there. In the second form, one step of one job has it, and that job is behind an environment, a named gate the job must pass first. You saw the first form in the inventory of video 156: a secret named on line 19 of a file, before any job.",
+   "words": 88,
+   "est": 35.2,
+   "slide": 25,
+   "line": 81,
+   "t0": 206.8,
+   "h": "73606215",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two facts are routinely misunderstood.",
+   "tele": "Two facts are routinely misunderstood.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 25,
+   "line": 83,
+   "t0": 242.0,
+   "h": "e84e60a5",
+   "anim": {
+    "group": 19,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Write access is secret access. The documentation: \"Any user with write access to your repository has read access to all secrets configured in your repository.\" The reason: they can push a branch with a workflow that uses them. The textbook says two of the case studies are this sentence at scale. And it names the exception: environment secrets behind required reviewers make the sentence false for your most valuable credentials.",
+   "tele": "Write access is secret access. The documentation: \"Any user with write access to your repository has read access to all secrets configured in your repository.\" The reason: they can push a branch with a workflow that uses them. The textbook says two of the case studies are this sentence at scale. And it names the exception: environment secrets behind required reviewers make the sentence false for your most valuable credentials.",
+   "words": 70,
+   "est": 28.0,
+   "slide": 26,
+   "line": 85,
+   "t0": 244.0,
+   "h": "3b1c078c",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Masking is a courtesy for logs. Registered secrets are redacted from logs. But the documentation says: \"because there are multiple ways a secret value can be transformed, this redaction is not guaranteed\". It adds: \"never use structured data as a secret\". And: \"if an unredacted secret is sent to a workflow run log, you should delete the log and rotate the secret\".",
+   "tele": "Masking is a courtesy for logs. Registered secrets are redacted from logs. But the documentation says: \"because there are multiple ways a secret value can be transformed, this redaction is not guaranteed\". It adds: \"never use structured data as a secret\". And: \"if an unredacted secret is sent to a workflow run log, you should delete the log and rotate the secret\".",
+   "words": 62,
+   "est": 24.8,
+   "slide": 27,
+   "line": 87,
+   "t0": 272.0,
+   "h": "7a94120f",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Redaction matches known strings in log output. It does nothing about a process that sends the value elsewhere, and nothing about code that reads the runner's memory, which the Phase 0 report finds recurring across the incidents. The textbook's conclusion is the sentence to remember: the boundary is which code runs in the job and which secrets the job holds.",
+   "tele": "Redaction matches known strings in log output. It does nothing about a process that sends the value elsewhere, and nothing about code that reads the runner's memory, which the Phase 0 report finds recurring across the incidents. The textbook's conclusion is the sentence to remember: the boundary is which code runs in the job and which secrets the job holds.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 28,
+   "line": 89,
+   "t0": 296.8,
+   "h": "0f19fa41",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "OIDC federation. In one sentence: instead of storing a cloud key as a secret, the job asks GitHub for a signed statement of what it is, and the cloud exchanges that statement for a credential valid for that job only.",
+   "tele": "OIDC federation. In one sentence: instead of storing a cloud key as a secret, the job asks GitHub for a signed statement of what it is, and the cloud exchanges that statement for a credential valid for that job only.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 29,
+   "line": 91,
+   "t0": 320.8,
+   "h": "d99d8620",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. The job or workflow must grant the id-token: write permission to allow GitHub's OIDC provider to create a JSON Web Token, a small signed document. And the documentation is exact about what the permission is: it \"only enables fetching and setting the OIDC token; it does not grant write access to other resources\". The cloud returns a short-lived access token that is only valid for a single job.",
+   "tele": "Precisely. The job or workflow must grant the `id-token: write` permission to allow GitHub's OIDC provider to create a JSON Web Token, a small signed document. And the documentation is exact about what the permission is: it \"only enables fetching and setting the OIDC token; it does not grant write access to other resources\". The cloud returns a short-lived access token that is only valid for a single job.",
+   "words": 69,
+   "est": 27.6,
+   "slide": 30,
+   "line": 93,
+   "t0": 336.8,
+   "h": "d356c6fd",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The token's claims describe the run. A claim is one stated fact inside the token. Besides the standard ones there are the repository and its ID, the owner and its ID, the visibility, the ref and its type, the environment, the event name, the workflow reference, the runner environment, the actor, and others. The cloud's trust policy matches on them, above all on the subject, the claim that says which repository, and which branch or environment, is asking.",
+   "tele": "The token's claims describe the run. A claim is one stated fact inside the token. Besides the standard ones there are the repository and its ID, the owner and its ID, the visibility, the ref and its type, the environment, the event name, the workflow reference, the runner environment, the actor, and others. The cloud's trust policy matches on them, above all on the subject, the claim that says which repository, and which branch or environment, is asking.",
+   "words": 78,
+   "est": 31.2,
+   "slide": 31,
+   "line": 95,
+   "t0": 364.4,
+   "h": "38800641",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "For a job that references an environment, the default subject is the repository followed by environment and the environment's name. For a pull request event with no environment: the repository and pull_request. For a branch: the repository and the full branch ref. For a tag: the repository and the full tag ref.",
+   "tele": "For a job that references an environment, the default subject is the repository followed by `environment` and the environment's name. For a pull request event with no environment: the repository and `pull_request`. For a branch: the repository and the full branch ref. For a tag: the repository and the full tag ref.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 32,
+   "line": 99,
+   "t0": 395.6,
+   "h": "6f1c7e75",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Quick quiz. Where is the access decision made? A, at GitHub, when it signs the token. B, at the cloud provider, when it reads the token. Your answer?",
+   "tele": "Quick quiz. Where is the access decision made? A, at GitHub, when it signs the token. B, at the cloud provider, when it reads the token. Your answer?",
+   "words": 28,
+   "est": 11.2,
+   "slide": 33,
+   "line": 101,
+   "t0": 416.4,
+   "h": "d2d6fd82",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 34,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 33,
+   "line": 103,
+   "t0": 427.6,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 35,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "B. Not at GitHub. GitHub states facts. The cloud provider decides, by comparing those facts with its trust policy, its own list of conditions. The OIDC reference: \"You must define at least one condition, so that untrusted repositories can't request access tokens for your cloud resources.\" The textbook: the trust policy is where the security lives.",
+   "tele": "B. Not at GitHub. GitHub states facts. The cloud provider decides, by comparing those facts with its trust policy, its own list of conditions. The OIDC reference: \"You must define at least one condition, so that untrusted repositories can't request access tokens for your cloud resources.\" The textbook: the trust policy is where the security lives.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 34,
+   "line": 105,
+   "t0": 432.1,
+   "h": "b9088027",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "GitHub's guide for one cloud gives a condition that requires the audience and the exact subject of one environment in one repository. The same guide also shows a wildcard form: the repository followed by a star. The textbook tells you how to read that one: every branch, every tag and every pull request workflow of the repository may assume the role. Prefer the exact form.",
+   "tele": "GitHub's guide for one cloud gives a condition that requires the audience and the exact subject of one environment in one repository. The same guide also shows a wildcard form: the repository followed by a star. The textbook tells you how to read that one: every branch, every tag and every pull request workflow of the repository may assume the role. Prefer the exact form.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 35,
+   "line": 107,
+   "t0": 454.5,
+   "h": "c7bbabec",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Older behavior: the subject contains only names, so a deleted and re-registered organization or repository name could mint the same subject. Current behavior: repositories created after the fifteenth of July 2026 use an immutable default subject format that includes both the owner ID and the repository ID.",
+   "tele": "Older behavior: the subject contains only names, so a deleted and re-registered organization or repository name could mint the same subject. Current behavior: repositories created after the fifteenth of July 2026 use an immutable default subject format that includes both the owner ID and the repository ID.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 36,
+   "line": 111,
+   "t0": 480.5,
+   "h": "8f44b16f",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Renames and transfers after that date switch as well, and existing repositories can opt in. Since: opt-in on the twenty-third of April 2026, default on the fifteenth of July 2026. Recommended: check which format your repository issues before writing the trust policy. A policy in the old format won't match a new repository.",
+   "tele": "Renames and transfers after that date switch as well, and existing repositories can opt in. Since: opt-in on the twenty-third of April 2026, default on the fifteenth of July 2026. Recommended: check which format your repository issues before writing the trust policy. A policy in the old format won't match a new repository.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 37,
+   "line": 111,
+   "t0": 499.3,
+   "h": "21711dcf",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Subject customization lets an organization or repository change which claims form the subject, for example to require the reusable workflow reference, so that only a particular reusable workflow can obtain the role.",
+   "tele": "Subject customization lets an organization or repository change which claims form the subject, for example to require the reusable workflow reference, so that only a particular reusable workflow can obtain the role.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 38,
+   "line": 113,
+   "t0": 520.5,
+   "h": "4ab295d3",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "What OIDC does not do. It removes the long-lived key. It doesn't make the job trustworthy. The textbook quotes a post-mortem, a team's published account of its incident: \"OIDC trusted-publisher binding has no per-publish review. Once configured, any code path in the workflow can mint a publish-capable token.\" So the rule has three parts. Grant id-token: write to one job. Bind the subject to an environment with protection rules. And let no untrusted code or cache into that job.",
+   "tele": "What OIDC does not do. It removes the long-lived key. It doesn't make the job trustworthy. The textbook quotes a post-mortem, a team's published account of its incident: \"OIDC trusted-publisher binding has no per-publish review. Once configured, any code path in the workflow can mint a publish-capable token.\" So the rule has three parts. Grant `id-token: write` to one job. Bind the subject to an environment with protection rules. And let no untrusted code or cache into that job.",
+   "words": 79,
+   "est": 31.6,
+   "slide": 39,
+   "line": 115,
+   "t0": 533.3,
+   "h": "c5ea0f2c",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Caches and artifacts. In one sentence: a cache is a shared, unsigned directory keyed by a string. Whoever can write an entry under the key your release job computes controls what that job restores.",
+   "tele": "Caches and artifacts. In one sentence: a cache is a shared, unsigned directory keyed by a string. Whoever can write an entry under the key your release job computes controls what that job restores.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 40,
+   "line": 117,
+   "t0": 564.9,
+   "h": "a5f5d4bf",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. The documentation: \"Anyone with read access can create a pull request on a repository and access the contents of a cache\", and \"cache contents are not signed or verified\". A run can restore caches from its own branch and from the default branch.",
+   "tele": "Precisely. The documentation: \"Anyone with read access can create a pull request on a repository and access the contents of a cache\", and \"cache contents are not signed or verified\". A run can restore caches from its own branch and from the default branch.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 41,
+   "line": 119,
+   "t0": 578.5,
+   "h": "7b192d9f",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A pull_request run saves to its own merge ref, which other branches can't restore. A privileged trigger runs in the default branch's context, and that was the opening. The post-mortem records: \"cache writes use a runner-internal token, not the workflow GITHUB_TOKEN… Setting permissions: contents: read does not block cache mutation.\"",
+   "tele": "A `pull_request` run saves to its own merge ref, which other branches can't restore. A privileged trigger runs in the default branch's context, and that was the opening. The post-mortem records: \"cache writes use a runner-internal token, not the workflow `GITHUB_TOKEN`… Setting `permissions: contents: read` does not block cache mutation.\"",
+   "words": 50,
+   "est": 20.0,
+   "slide": 42,
+   "line": 119,
+   "t0": 596.1,
+   "h": "dd5ddb57",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "That's the third sentence of the hook, answered. The read-only job token was never the token that writes the cache. Two platform changes followed.",
+   "tele": "That's the third sentence of the hook, answered. The read-only job token was never the token that writes the cache. Two platform changes followed.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 43,
+   "line": 121,
+   "t0": 616.1,
+   "h": "3e6c06a9",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The twenty-sixth of June 2026: only push, workflow_dispatch, repository_dispatch, delete, registry_package, page_build and schedule can create or overwrite caches in the default branch's scope. Other triggers that resolve to it get read-only access.",
+   "tele": "The twenty-sixth of June 2026: only `push`, `workflow_dispatch`, `repository_dispatch`, `delete`, `registry_package`, `page_build` and `schedule` can create or overwrite caches in the default branch's scope. Other triggers that resolve to it get read-only access.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 44,
+   "line": 123,
+   "t0": 625.7,
+   "h": "e1ef6bcf",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The tenth of September 2026: cache-mode, at workflow or job level, with the values read, write, write-only and none. The job value overrides the workflow value. And a warning from the changelog: explicitly declaring write or write-only on a low-trust trigger reintroduces the risk of cache poisoning.",
+   "tele": "The tenth of September 2026: `cache-mode`, at workflow or job level, with the values `read`, `write`, `write-only` and `none`. The job value overrides the workflow value. And a warning from the changelog: explicitly declaring `write` or `write-only` on a low-trust trigger reintroduces the risk of cache poisoning.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 45,
+   "line": 125,
+   "t0": 638.9,
+   "h": "4db1fa02",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Setup actions cache implicitly, so check them too. And artifacts, the files one job uploads for another to download, follow the same rule. The documentation: \"A workflow_run workflow should treat artifacts uploaded by other workflows as untrusted data, since their contents can come from a fork.\"",
+   "tele": "Setup actions cache implicitly, so check them too. And artifacts, the files one job uploads for another to download, follow the same rule. The documentation: \"A `workflow_run` workflow should treat artifacts uploaded by other workflows as untrusted data, since their contents can come from a fork.\"",
+   "words": 46,
+   "est": 18.4,
+   "slide": 46,
+   "line": 133,
+   "t0": 657.7,
+   "h": "4e73504b",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Self-hosted runners. In one sentence: a self-hosted runner is your machine, on your network, executing whatever the workflow says, and it keeps its state between jobs unless you make it ephemeral.",
+   "tele": "Self-hosted runners. In one sentence: a self-hosted runner is your machine, on your network, executing whatever the workflow says, and it keeps its state between jobs unless you make it ephemeral.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 47,
+   "line": 135,
+   "t0": 676.1,
+   "h": "68b42a46",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The documentation: \"Self-hosted runners should almost never be used for public repositories on GitHub, because any user can open pull requests against the repository and compromise the environment.\" Private repositories aren't exempt: anyone who can fork the repository and open a pull request, generally those with read access, can do the same. GitHub-hosted runners are \"ephemeral and clean isolated virtual machines\". Self-hosted ones \"can be persistently compromised by untrusted code in a workflow\".",
+   "tele": "The documentation: \"Self-hosted runners should almost never be used for public repositories on GitHub, because any user can open pull requests against the repository and compromise the environment.\" Private repositories aren't exempt: anyone who can fork the repository and open a pull request, generally those with read access, can do the same. GitHub-hosted runners are \"ephemeral and clean isolated virtual machines\". Self-hosted ones \"can be persistently compromised by untrusted code in a workflow\".",
+   "words": 73,
+   "est": 29.2,
+   "slide": 48,
+   "line": 137,
+   "t0": 688.5,
+   "h": "a58d3538",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The fork approval gate doesn't help once a contributor is past it. And on self-hosted runners, environments don't isolate secrets.",
+   "tele": "The fork approval gate doesn't help once a contributor is past it. And on self-hosted runners, environments don't isolate secrets.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 49,
+   "line": 139,
+   "t0": 717.7,
+   "h": "dfa3d493",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The documented controls. Ephemeral runners that take one job and are removed. Runner groups that restrict which repositories may use a runner. The organization setting that restricts or disables repository-level runners. And approval for all external contributors.",
+   "tele": "The documented controls. Ephemeral runners that take one job and are removed. Runner groups that restrict which repositories may use a runner. The organization setting that restricts or disables repository-level runners. And approval for all external contributors.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 50,
+   "line": 141,
+   "t0": 725.7,
+   "h": "11161570",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Environment protection. In one sentence: an environment puts a human decision, a branch condition, or both between a job and the secrets and cloud identity that belong to a deployment target.",
+   "tele": "Environment protection. In one sentence: an environment puts a human decision, a branch condition, or both between a job and the secrets and cloud identity that belong to a deployment target.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 51,
+   "line": 143,
+   "t0": 740.5,
+   "h": "7b7d06a4",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "You know the mechanics from video 149. For security review three details matter. Referencing a name that doesn't exist creates an environment with no rules: a typing error in the name silently removes the gate. Deployment branch rules are evaluated against the ref the run executes on: since the eighth of December 2025 that is the merge ref for pull_request events and the default branch for pull_request_target.",
+   "tele": "You know the mechanics from video 149. For security review three details matter. Referencing a name that doesn't exist creates an environment with no rules: a typing error in the name silently removes the gate. Deployment branch rules are evaluated against the ref the run executes on: since the eighth of December 2025 that is the merge ref for `pull_request` events and the default branch for `pull_request_target`.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 52,
+   "line": 145,
+   "t0": 752.9,
+   "h": "f980c490",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And required reviewers and wait timers are plan-gated, meaning they depend on your GitHub plan: on Free, Pro and Team they exist only for public repositories.",
+   "tele": "And required reviewers and wait timers are plan-gated, meaning they depend on your GitHub plan: on Free, Pro and Team they exist only for public repositories.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 53,
+   "line": 145,
+   "t0": 779.7,
+   "h": "fb34a0fc",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And the combination that makes the whole design hold: with OIDC, an environment name in the subject means the cloud role can be assumed only by a job that passed that environment's rules.",
+   "tele": "And the combination that makes the whole design hold: with OIDC, an environment name in the subject means the cloud role can be assumed only by a job that passed that environment's rules.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 54,
+   "line": 147,
+   "t0": 790.1,
+   "h": "763aa829",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 55,
+   "line": 149,
+   "t0": 803.3,
+   "h": "",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Analogy for OIDC, from the textbook. A notarized letter of introduction in place of a copied house key. The cloud reads the letter, which names the repository, the branch and the environment, and decides whether to open.",
+   "tele": "Analogy for OIDC, from the textbook. A notarized letter of introduction in place of a copied house key. The cloud reads the letter, which names the repository, the branch and the environment, and decides whether to open.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 56,
+   "line": 151,
+   "t0": 804.8,
+   "h": "4dbc2d1f",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks at one point: any code running in the job can ask the notary for the letter.",
+   "tele": "The analogy breaks at one point: any code running in the job can ask the notary for the letter.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 57,
+   "line": 153,
+   "t0": 819.6,
+   "h": "1bc92dc5",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Take that sentence seriously and the three topics of this video become one. A secret in the environment, an OIDC token on request, the job token: all of them are available to every piece of code that runs in the job. Masking doesn't change that. Short lifetimes don't change that. A read-only job token doesn't change that for the other two.",
+   "tele": "Take that sentence seriously and the three topics of this video become one. A secret in the environment, an OIDC token on request, the job token: all of them are available to every piece of code that runs in the job. Masking doesn't change that. Short lifetimes don't change that. A read-only job token doesn't change that for the other two.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 58,
+   "line": 155,
+   "t0": 827.2,
+   "h": "6f49f424",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "So there are only two real levers. What the job holds: as little as possible, in as few jobs as possible, behind a gate. And what code and input reach the job: no outsider's code, no cache it didn't build, no artifact it treats as anything but data.",
+   "tele": "So there are only two real levers. What the job holds: as little as possible, in as few jobs as possible, behind a gate. And what code and input reach the job: no outsider's code, no cache it didn't build, no artifact it treats as anything but data.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 59,
+   "line": 157,
+   "t0": 851.6,
+   "h": "2710a859",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "That's the question from video 156 again, now with a full answer to its third part: \"what can the job reach\" includes what the job can ask for.",
+   "tele": "That's the question from video 156 again, now with a full answer to its third part: \"what can the job reach\" includes what the job can ask for.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 60,
+   "line": 159,
+   "t0": 870.8,
+   "h": "a358d5e3",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 61,
+   "line": 161,
+   "t0": 882.0,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, on paper. Draw a job as a box with three steps: your script, a third-party action, and a dependency's install script. The job holds one secret in env. Mark every step that can read it, and say the number out loud.",
+   "tele": "Try it now, thirty seconds, on paper. Draw a job as a box with three steps: your script, a third-party action, and a dependency's install script. The job holds one secret in `env`. Mark every step that can read it, and say the number out loud.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 62,
+   "line": 163,
+   "t0": 883.5,
+   "h": "0905ad5b",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 62,
+   "line": 165,
+   "t0": 901.9,
+   "h": "",
+   "anim": {
+    "group": 51,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 65,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "All three. On the left, the mask and the leak are unrelated: the log shows stars, and the value left through step three. On the right, the only place where \"no\" can be said is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.",
+   "tele": "All three. On the left, the mask and the leak are unrelated: the log shows stars, and the value left through step three. On the right, the only place where \"no\" can be said is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 63,
+   "line": 189,
+   "t0": 906.4,
+   "h": "08797a4e",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 64,
+   "line": null,
+   "t0": 929.6,
+   "h": "",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 65,
+   "line": 193,
+   "t0": 934.6,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 1: the baseline.",
+   "tele": "Step 1: the baseline.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 66,
+   "line": 197,
+   "t0": 936.1,
+   "h": "5bceec52",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Two checks that a team could run in CI, its automated checks on every change. The first lists every uses line that isn't pinned to forty hexadecimal characters. The second counts the checkouts that don't leave the credential on disk. On an intact workflow 12, what does each print? Say it out loud.",
+   "tele": "Two checks that a team could run in CI, its automated checks on every change. The first lists every `uses` line that isn't pinned to forty hexadecimal characters. The second counts the checkouts that don't leave the credential on disk. On an intact workflow 12, what does each print? Say it out loud.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 67,
+   "line": 206,
+   "t0": 937.7,
+   "h": "4eacdf48",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 67,
+   "line": 208,
+   "t0": 958.9,
+   "h": "",
+   "anim": {
+    "group": 56,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A clean working tree. Six uses lines. The unpinned scan returns nothing, with exit status 1 from grep: every action is pinned. And four lines with persist-credentials: false.",
+   "tele": "A clean working tree. Six `uses` lines. The unpinned scan returns nothing, with exit status 1 from `grep`: every action is pinned. And four lines with `persist-credentials: false`.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 68,
+   "line": 222,
+   "t0": 963.4,
+   "h": "5b8c4c9a",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.839,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.26,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 2: a \"cleanup\" that many reviewers would approve.",
+   "tele": "Step 2: a \"cleanup\" that many reviewers would approve.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 69,
+   "line": 224,
+   "t0": 974.6,
+   "h": "41d6d489",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The comment in the transcript describes it the way its author would: readable version tags, less boilerplate. The sed command edits a file in the working tree. Git has recorded nothing yet.",
+   "tele": "The comment in the transcript describes it the way its author would: readable version tags, less boilerplate. The `sed` command edits a file in the working tree. Git has recorded nothing yet.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 70,
+   "line": 231,
+   "t0": 978.2,
+   "h": "d4f50a61",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three insertions, seven deletions. Imagine this diff in a pull request titled \"Tidy the CI file\". It is shorter. It is more readable. Nothing about it looks like a security change. Two controls are gone.",
+   "tele": "Three insertions, seven deletions. Imagine this diff in a pull request titled \"Tidy the CI file\". It is shorter. It is more readable. Nothing about it looks like a security change. Two controls are gone.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 71,
+   "line": 244,
+   "t0": 991.0,
+   "h": "30271783",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 3: which check notices.",
+   "tele": "Step 3: which check notices.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 72,
+   "line": 246,
+   "t0": 1005.0,
+   "h": "35112cce",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The unpinned scan now prints three lines, 36, 82 and 111, each a checkout by tag, with exit status 0: found. And the count of persist-credentials: false is zero. Both checks noticed. A reviewer reading the diff might not have.",
+   "tele": "The unpinned scan now prints three lines, 36, 82 and 111, each a checkout by tag, with exit status 0: found. And the count of `persist-credentials: false` is zero. Both checks noticed. A reviewer reading the diff might not have.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 73,
+   "line": 261,
+   "t0": 1007.0,
+   "h": "dcfaaace",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.553,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the limit of this demonstration, which the lab's objective states: you remove two controls and see which checks notice. These two can be found by pattern. Workflow 12 marks nine controls with comments. Ask yourself which of the others a grep could detect if removed, and which only a person would catch. Removing cache-mode: none from the deploy job? Removing the environment block? Changing the if that keeps pull requests out of the deploy job? That question is the lab.",
+   "tele": "Now the limit of this demonstration, which the lab's objective states: you remove two controls and see which checks notice. These two can be found by pattern. Workflow 12 marks nine controls with comments. Ask yourself which of the others a `grep` could detect if removed, and which only a person would catch. Removing `cache-mode: none` from the deploy job? Removing the `environment` block? Changing the `if` that keeps pull requests out of the deploy job? That question is the lab.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 74,
+   "line": 263,
+   "t0": 1023.0,
+   "h": "32631da8",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 4: recover.",
+   "tele": "Step 4: recover.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 75,
+   "line": 265,
+   "t0": 1055.4,
+   "h": "d23f2154",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git restore on a path is 🔴 DANGEROUS, so the five answers. What it changes: the file in the working tree, back to the version in the index. What it can destroy: uncommitted edits to that file that were never staged. How to preview: git diff for the path, which you saw as a stat. How to recover: none for content that was never staged. When it is appropriate: here, because the edit was the experiment, and discarding it is the goal.",
+   "tele": "`git restore` on a path is 🔴 DANGEROUS, so the five answers. What it changes: the file in the working tree, back to the version in the index. What it can destroy: uncommitted edits to that file that were never staged. How to preview: `git diff` for the path, which you saw as a stat. How to recover: none for content that was never staged. When it is appropriate: here, because the edit was the experiment, and discarding it is the goal.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 76,
+   "line": 271,
+   "t0": 1056.6,
+   "h": "6c344534",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 80,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Clean status, the scan is empty again, and the count is back to four.",
+   "tele": "Clean status, the scan is empty again, and the count is back to four.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 77,
+   "line": 284,
+   "t0": 1089.0,
+   "h": "9d7e8205",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.92,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One picture of what happened. The cleanup edited the file in the working tree only. Nothing was staged, and nothing was committed. So restore had one job: copy the version in the index back over the edit.",
+   "tele": "One picture of what happened. The cleanup edited the file in the working tree only. Nothing was staged, and nothing was committed. So restore had one job: copy the version in the index back over the edit.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 78,
+   "line": 288,
+   "t0": 1094.6,
+   "h": "1dc8ccf4",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.206,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.657,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "pose": "worried",
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read the deploy job with this video's five topics. Its if admits only a push to main: only trusted code reaches this job. It names an environment: the protection rules, and the environment's name in the OIDC subject. Its permissions are contents: read and id-token: write: the only job that may request an OIDC token.",
+   "tele": "Read the deploy job with this video's five topics. Its `if` admits only a push to `main`: only trusted code reaches this job. It names an environment: the protection rules, and the environment's name in the OIDC subject. Its `permissions` are `contents: read` and `id-token: write`: the only job that may request an OIDC token.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 79,
+   "line": 292,
+   "t0": 1109.4,
+   "h": "6b04e5a6",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "cache-mode: none: it neither restores nor saves a cache. And there is no stored cloud key anywhere in the file: the role is assumed with a short-lived token. Search the whole file for the secrets context. It doesn't occur.",
+   "tele": "`cache-mode: none`: it neither restores nor saves a cache. And there is no stored cloud key anywhere in the file: the role is assumed with a short-lived token. Search the whole file for the `secrets` context. It doesn't occur.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 80,
+   "line": 292,
+   "t0": 1131.4,
+   "h": "aac8fb95",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now Lab 29.2, Part B, on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.",
+   "tele": "Now Lab 29.2, Part B, on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 81,
+   "line": 294,
+   "t0": 1147.0,
+   "h": "e005b030",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Add the workflow through a pull request and look at the list of checks. Predict first which jobs run for a pull request and which are skipped, from their if conditions. The deploy job is skipped for two reasons at once. Name both. Then the lab has you make the title job fail on purpose by editing the title.",
+   "tele": "Add the workflow through a pull request and look at the list of checks. Predict first which jobs run for a pull request and which are skipped, from their `if` conditions. The deploy job is skipped for two reasons at once. Name both. Then the lab has you make the title job fail on purpose by editing the title.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 82,
+   "line": 296,
+   "t0": 1160.6,
+   "h": "65401b22",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Notice what the lab tells you: editing the title doesn't start a new run, because the trigger without types reacts to opened, synchronize and reopened. You push an empty commit to start one, read the failed job, restore the title, and push again.",
+   "tele": "Notice what the lab tells you: editing the title doesn't start a new run, because the trigger without `types` reacts to opened, synchronize and reopened. You push an empty commit to start one, read the failed job, restore the title, and push again.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 83,
+   "line": 296,
+   "t0": 1184.2,
+   "h": "bc783580",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 84,
+   "line": 298,
+   "t0": 1201.4,
+   "h": "",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 85,
+   "line": 300,
+   "t0": 1202.9,
+   "h": "76698d9b",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Putting a secret in workflow-level env. Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+   "tele": "Putting a secret in workflow-level `env`. Root cause: every step of every job, including third-party actions and dependencies' install scripts, then has it in its environment.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 86,
+   "line": 302,
+   "t0": 1204.9,
+   "h": "bb8ade89",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Treating log masking as protection. Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+   "tele": "Treating log masking as protection. Root cause: redaction matches known strings in log output; it does nothing about a process that sends the value elsewhere.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 87,
+   "line": 302,
+   "t0": 1215.3,
+   "h": "8e0a628a",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "A wildcard subject in the cloud's trust policy. Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+   "tele": "A wildcard subject in the cloud's trust policy. Root cause: it lets every branch, every tag and every pull request workflow of the repository assume the role; the trust policy is where the access decision is made.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 88,
+   "line": 302,
+   "t0": 1225.3,
+   "h": "7214bc10",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Letting a job with a publishing identity restore a cache. Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+   "tele": "Letting a job with a publishing identity restore a cache. Root cause: cache contents are not signed, and a less trusted run may have written the entry under the key the job computes.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 89,
+   "line": 302,
+   "t0": 1240.1,
+   "h": "39705562",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Believing permissions: contents: read protects the cache. Root cause: cache writes used a runner-internal token, not the job token.",
+   "tele": "Believing `permissions: contents: read` protects the cache. Root cause: cache writes used a runner-internal token, not the job token.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 90,
+   "line": 302,
+   "t0": 1253.3,
+   "h": "1e8b41b1",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 91,
+   "line": 308,
+   "t0": 1260.9,
+   "h": "",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. Picture a team that publishes an evaluation library to a package registry. Two years ago it stored a registry token as a repository secret. Last year it moved to trusted publishing with OIDC and deleted the stored token, and wrote in its security notes that publishing credentials can no longer leak.",
+   "tele": "Now, out of the lab. Picture a team that publishes an evaluation library to a package registry. Two years ago it stored a registry token as a repository secret. Last year it moved to trusted publishing with OIDC and deleted the stored token, and wrote in its security notes that publishing credentials can no longer leak.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 92,
+   "line": 310,
+   "t0": 1262.4,
+   "h": "eae1b6f2",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Review that with this video. The stored key is gone: good, nothing long-lived to steal. But which job has id-token: write? If it's set at workflow level, every job can request the token, including the test job that runs the dependencies' code.",
+   "tele": "Review that with this video. The stored key is gone: good, nothing long-lived to steal. But which job has `id-token: write`? If it's set at workflow level, every job can request the token, including the test job that runs the dependencies' code.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 93,
+   "line": 312,
+   "t0": 1284.8,
+   "h": "85270fab",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 97,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Is the publishing job behind an environment with rules, and is the environment's name in the subject the registry checks? Does the publishing job restore a cache, and which runs can write under that key? Does any step in it run code that didn't come from a reviewed commit on main?",
+   "tele": "Is the publishing job behind an environment with rules, and is the environment's name in the subject the registry checks? Does the publishing job restore a cache, and which runs can write under that key? Does any step in it run code that didn't come from a reviewed commit on `main`?",
+   "words": 51,
+   "est": 20.4,
+   "slide": 94,
+   "line": 312,
+   "t0": 1301.6,
+   "h": "14d946a4",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 98,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The textbook's summary of what OIDC changes fits on one line: it removes the long-lived key, and it doesn't make the job trustworthy. The team's notes should say which job can ask for the identity, what gates that job, and what is allowed into it.",
+   "tele": "The textbook's summary of what OIDC changes fits on one line: it removes the long-lived key, and it doesn't make the job trustworthy. The team's notes should say which job can ask for the identity, what gates that job, and what is allowed into it.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 95,
+   "line": 314,
+   "t0": 1322.0,
+   "h": "5f1fb648",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 99,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 96,
+   "line": 316,
+   "t0": 1340.0,
+   "h": "",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 100,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 29.2, \"Justify every control of workflow 12\", in lab-manual/m29-actions-security.md. Part A runs in labs/shell.",
+   "tele": "Your turn. Do Lab 29.2, \"Justify every control of workflow 12\", in `lab-manual/m29-actions-security.md`. Part A runs in `labs/shell`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 97,
+   "line": 318,
+   "t0": 1341.5,
+   "h": "3e709482",
+   "anim": {
+    "group": 77,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 101,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Write the table the lab asks for: control, line, threat, and what breaks without it. The file marks nine controls with comments. Find at least two more that have no comment. For each control, predict before you test whether a pattern scan would notice its removal.",
+   "tele": "Write the table the lab asks for: control, line, threat, and what breaks without it. The file marks nine controls with comments. Find at least two more that have no comment. For each control, predict before you test whether a pattern scan would notice its removal.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 98,
+   "line": 320,
+   "t0": 1348.7,
+   "h": "4aeedb84",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 102,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 29.6, \"Who can assume the role?\", in exercises/m26-m31-actions-security.md.",
+   "tele": "The challenge is Exercise 29.6, \"Who can assume the role?\", in `exercises/m26-m31-actions-security.md`.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 99,
+   "line": 322,
+   "t0": 1367.1,
+   "h": "2ac03006",
+   "anim": {
+    "group": 79,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 103,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 100,
+   "line": 324,
+   "t0": 1371.9,
+   "h": "",
+   "anim": {
+    "group": 80,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 104,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Read the question on screen. Say your answer out loud.",
+   "tele": "Read the question on screen. Say your answer out loud.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 101,
+   "line": 328,
+   "t0": 1373.4,
+   "h": "6dd0c8fd",
+   "anim": {
+    "group": 81,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 105,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 101,
+   "line": 330,
+   "t0": 1377.4,
+   "h": "",
+   "anim": {
+    "group": 81,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 106,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer is precise about the permission: what it enables and what it explicitly doesn't. It then follows the exchange: what the token states, who reads it, and what is compared with what. It names the claim that matters most and gives the difference between an exact and a wildcard condition in terms of who can assume the role.",
+   "tele": "A strong answer is precise about the permission: what it enables and what it explicitly doesn't. It then follows the exchange: what the token states, who reads it, and what is compared with what. It names the claim that matters most and gives the difference between an exact and a wildcard condition in terms of who can assume the role.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 101,
+   "line": 332,
+   "t0": 1381.9,
+   "h": "6044fb8b",
+   "anim": {
+    "group": 81,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 107,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "It ends with what federation doesn't solve. The follow-up is a trust policy that matches for older repositories and not for one created this summer. You heard the version note, so say what changed and how you would diagnose it.",
+   "tele": "It ends with what federation doesn't solve. The follow-up is a trust policy that matches for older repositories and not for one created this summer. You heard the version note, so say what changed and how you would diagnose it.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 101,
+   "line": 332,
+   "t0": 1405.9,
+   "h": "b1424442",
+   "anim": {
+    "group": 81,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 108,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 102,
+   "line": 334,
+   "t0": 1421.9,
+   "h": "",
+   "anim": {
+    "group": 82,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 109,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this.",
+   "tele": "Let's land this.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 103,
+   "line": 336,
+   "t0": 1423.4,
+   "h": "8e062241",
+   "anim": {
+    "group": 83,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 110,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 104,
+   "line": 338,
+   "t0": 1424.6,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 111,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+   "tele": "A secret is as exposed as the least trustworthy code in any job that receives it; write access to the repository is access to its secrets, except environment secrets behind required reviewers.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 105,
+   "line": 340,
+   "t0": 1427.4,
+   "h": "e3596d30",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 112,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+   "tele": "Masking edits log lines; the boundary is which code runs in the job and which secrets the job holds.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 106,
+   "line": 340,
+   "t0": 1440.2,
+   "h": "740e0f77",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 113,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "id-token: write only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+   "tele": "`id-token: write` only lets the job fetch an OIDC token; the cloud's trust policy makes the access decision, mostly on the subject.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 107,
+   "line": 340,
+   "t0": 1447.8,
+   "h": "865ab483",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 114,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses cache-mode: none and treats artifacts as data.",
+   "tele": "Caches are shared and unsigned, artifacts from other workflows can come from a fork; a job with an identity uses `cache-mode: none` and treats artifacts as data.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 108,
+   "line": 340,
+   "t0": 1456.6,
+   "h": "a993779a",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 115,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job.",
+   "tele": "A persistent self-hosted runner keeps what a job left, and an environment puts its gate in front of the job.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 109,
+   "line": 340,
+   "t0": 1467.4,
+   "h": "be00d3fc",
+   "anim": {
+    "group": 84,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 116,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 110,
+   "line": 346,
+   "t0": 1475.4,
+   "h": "",
+   "anim": {
+    "group": 85,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 117,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 21A.9 to 21A.13 of Chapter 21A.",
+   "tele": "Read sections 21A.9 to 21A.13 of Chapter 21A.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 111,
+   "line": 348,
+   "t0": 1476.9,
+   "h": "ee99dd89",
+   "anim": {
+    "group": 86,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 118,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you drew the real boundary behind three comfortable sentences, and watched two controls vanish in a tidy-looking diff. Run that demo yourself in the lab shell. Next time: static analysis of workflows, the platform changes of 2025 and 2026, and workflow 12. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you drew the real boundary behind three comfortable sentences, and watched two controls vanish in a tidy-looking diff. Run that demo yourself in the lab shell. Next time: static analysis of workflows, the platform changes of 2025 and 2026, and workflow 12. Until then, look at the state first and type second. See you in the next one.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 112,
+   "line": 350,
+   "t0": 1480.1,
+   "h": "c7df0731",
+   "anim": {
+    "group": 87,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1503.7,
+ "narration_words": 3635,
+ "warnings": [],
+ "anim_version": 3
+}

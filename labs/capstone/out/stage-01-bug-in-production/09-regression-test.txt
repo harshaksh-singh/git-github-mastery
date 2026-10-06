@@ -1,0 +1,25 @@
+# (edit tests/test_scoring.py: a test that fails on the faulty version)
+$ git diff
+diff --git a/tests/test_scoring.py b/tests/test_scoring.py
+index e12dc49..2035243 100644
+--- a/tests/test_scoring.py
++++ b/tests/test_scoring.py
+@@ -18,3 +18,6 @@ class ScoringTest(unittest.TestCase):
+ 
+     def test_blend_weights_the_embedding(self):
+         self.assertAlmostEqual(blend(0.0, 0.4), EMBED_WEIGHT * 0.4)
++
++    def test_keyword_score_never_exceeds_one(self):
++        self.assertEqual(keyword_score(12), 1.0)
+$ bash scripts/test.sh
+OK
+$ git commit -q -am 'Test that the keyword score never exceeds 1'
+# Does the new test catch the fault? Run it against the faulty file, then put the file back.
+$ git restore --source=v1.3.0 -- router/keywords.py
+$ bash scripts/test.sh
+FAIL: test_keyword_score_never_exceeds_one
+FAILED
+[exit status: 1]
+$ git restore --source=HEAD -- router/keywords.py
+$ git status -sb
+## fix/keyword-score-cap...origin/main [ahead 2]

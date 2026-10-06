@@ -1,0 +1,4656 @@
+{
+ "id": "V167",
+ "version": 22,
+ "title": "History rewriting as an operation, and its mechanics seen locally",
+ "part": 7,
+ "part_label": "SECURITY",
+ "part_name": "Security",
+ "palette": {
+  "accent": "#FF5C5C",
+  "accent2": "#FFB3B3",
+  "bg1": "#1A0F10",
+  "bg2": "#33191B"
+ },
+ "planned_minutes": 28,
+ "chapters": [
+  "ch21b-repository-security-incident-response.md"
+ ],
+ "script": "video/scripts/V167-history-rewriting-as-an-operation-and-its-mechanics-seen-locally.md",
+ "script_sha1": "f21580eb18daac830c4732504d485dc53804f995",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 4,
+   "line": 18
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 11,
+   "line": 32
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 19,
+   "line": 44
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 36,
+   "line": 115
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 41,
+   "line": 125
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 46,
+   "line": 153
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 78,
+   "line": 404
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 85,
+   "line": 414
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 89,
+   "line": 420
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 93,
+   "line": 428
+  },
+  {
+   "name": "RECAP",
+   "beat": 97,
+   "line": 436
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 104,
+   "line": 446
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "History rewriting as an operation, and its mechanics seen locally",
+   "part_name": "Security",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0014
+  },
+  {
+   "kind": "callout",
+   "direction": "The question, as a CTO asks it: \"You rewrote history to remove a customer data file and force-pushed. Where may the file still exist, and who controls each place?\"",
+   "label": "The question, as a CTO asks it",
+   "quotes": [
+    "You rewrote history to remove a customer data file and force-pushed. Where may the file still exist, and who controls each place?"
+   ],
+   "quoted": true,
+   "caption": "A team finds a file in the repository that should never have been there.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0024
+  },
+  {
+   "kind": "callout",
+   "direction": "The question, as a CTO asks it: \"You rewrote history to remove a customer data file and force-pushed. Where may the file still exist, and who controls each place?\"",
+   "label": "The question, as a CTO asks it",
+   "quotes": [
+    "You rewrote history to remove a customer data file and force-pushed. Where may the file still exist, and who controls each place?"
+   ],
+   "quoted": true,
+   "caption": "Today you see a whole-history rewrite the way an operator has to see it: as a change to every ref and to every commit ID after the first affected commit …",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0264
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 5,
+   "progress": 0.0443
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0454
+  },
+  {
+   "kind": "keypoint",
+   "body": "In video 166 you learned the six steps of a leak response, and why containment comes first: the credential is revoked at its issuer, the service that accepts it, before anything is done to the repository.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0633
+  },
+  {
+   "kind": "keypoint",
+   "body": "You already have the two facts that explain everything you're about to see.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0777
+  },
+  {
+   "kind": "keypoint",
+   "body": "So a commit whose parent changes is a different commit.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0904
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three things today. First, what the recommended tool, git-filter-repo, requires and records, as section 21B.16 gives it from the tool's manual and from GitHub's procedure.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.103
+  },
+  {
+   "kind": "scene",
+   "direction": "sandbox: steps=room,inside name=The_rewrite_lab inside=server.git:_the_bare_server,cleanup.git:_a_mirror_clone,a_dummy_secret title=Everything_today_is_Git,_in_the_lab",
+   "scene": "sandbox",
+   "params": {
+    "name": "The rewrite lab",
+    "inside": [
+     "server.git: the bare server",
+     "cleanup.git: a mirror clone",
+     "a dummy secret"
+    ],
+    "title": "Everything today is Git, in the lab"
+   },
+   "steps": [
+    "room",
+    "inside"
+   ],
+   "upto": 2,
+   "section": "INTRODUCTION",
+   "n": 11,
+   "progress": 0.1201
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1337
+  },
+  {
+   "kind": "keypoint",
+   "body": "Here's what you'll walk away with.",
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1347
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+    "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+    "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+    "Explain what happens to signatures and to open pull requests.",
+    "List the costs that decide against a rewrite."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1364
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+    "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+    "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+    "Explain what happens to signatures and to open pull requests.",
+    "List the costs that decide against a rewrite."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1377
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+    "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+    "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+    "Explain what happens to signatures and to open pull requests.",
+    "List the costs that decide against a rewrite."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1424
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+    "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+    "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+    "Explain what happens to signatures and to open pull requests.",
+    "List the costs that decide against a rewrite."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 17,
+   "progress": 0.1466
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+    "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+    "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+    "Explain what happens to signatures and to open pull requests.",
+    "List the costs that decide against a rewrite."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 18,
+   "progress": 0.1518
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+    "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+    "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+    "Explain what happens to signatures and to open pull requests.",
+    "List the costs that decide against a rewrite."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 19,
+   "progress": 0.1546
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1568
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Why it exists",
+   "body": "Some data stays harmful after its credential is rotated, or can't be rotated at all: personal data, customer records, proprietary model weights, a private key whose public half is pinned in devices …",
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1578
+  },
+  {
+   "kind": "keypoint",
+   "headline": "What it is, in one sentence",
+   "body": "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs, and the command is the smallest part of the work.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.1738
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "The recommended tool is git-filter-repo.",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.1857
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "One. It refuses to run outside a fresh clone unless forced, because the rewrite is irreversible: by default it ends with an immediate pruning of reflogs and old objects.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.1989
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "Two. The option <code>--sensitive-data-removal</code> exists since version 2.47.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2116
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "Three. It records its work in <code>.git/filter-repo/</code>: a file <code>commit-map</code> with the old and new ID of every commit, and the files <code>ref-map</code>, <code>changed-refs</code> and <code>first-changed-commits</code>.",
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.2182
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "Four. Commits get new IDs, so signatures on commits and tags can't remain valid and are removed.",
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.2254
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "Five. By default a full rewrite removes the <code>origin</code> remote, as a forcing function against pushing by reflex.",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.2359
+  },
+  {
+   "kind": "terminal",
+   "direction": "GitHub's documented sequence, as a slide. No output is shown, because the tool is not installed here and nothing in this course contacts GitHub.",
+   "mode": "cmd",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmt",
+     "s": "# 1. Install the tool (GitHub's page gives this command for macOS). You need version 2.47 or later."
+    },
+    {
+     "t": "cmd",
+     "s": "brew install git-filter-repo"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmt",
+     "s": "# 2. A fresh clone, never your working clone."
+    },
+    {
+     "t": "cmd",
+     "s": "git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY"
+    },
+    {
+     "t": "cmd",
+     "s": "cd YOUR-REPOSITORY"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmt",
+     "s": "# 3a. Remove a file from every commit ..."
+    },
+    {
+     "t": "cmd",
+     "s": "git-filter-repo --sensitive-data-removal --invert-paths --path PATH-TO-YOUR-FILE-WITH-SENSITIVE-DATA"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmt",
+     "s": "# 3b. ... or replace strings listed in a file (one expression per line; by default each is"
+    },
+    {
+     "t": "cmt",
+     "s": "#     literal text and is replaced by ***REMOVED***; \"regex:\" and \"glob:\" prefixes exist)."
+    },
+    {
+     "t": "cmd",
+     "s": "git-filter-repo --sensitive-data-removal --replace-text ../passwords.txt"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmt",
+     "s": "# 4. How many pull requests are affected? Support will ask."
+    },
+    {
+     "t": "cmd",
+     "s": "grep -c '^refs/pull/.*/head$' .git/filter-repo/changed-refs"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmt",
+     "s": "# 5. Force-push every ref."
+    },
+    {
+     "t": "cmd",
+     "s": "git push --force --mirror origin"
+    }
+   ],
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.2447
+  },
+  {
+   "kind": "keypoint",
+   "headline": "How: the recommended tool",
+   "body": "One statement here is marked unverified in the textbook, and I say it as the textbook does.",
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.2574
+  },
+  {
+   "kind": "keypoint",
+   "headline": "What makes it an operation",
+   "body": "Around those five commands stand six facts, each with a consequence.",
+   "section": "CONCEPT",
+   "n": 31,
+   "progress": 0.2764
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Fact",
+    "Consequence"
+   ],
+   "fs": 34,
+   "cols": [
+    46.03,
+    53.97
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "Other contributors must stop work during the cleanup",
+     "announce a freeze; work pushed during the rewrite is discarded or forces a restart"
+    ],
+    [
+     "All refs, tags included, must be force-pushed",
+     "rules that block force pushes and tag updates must be switched off temporarily, and back on afterwards"
+    ],
+    [
+     "Every descendant commit ID changes",
+     "review comments on open pull requests detach; diffs of closed ones break; every recorded ID is stale"
+    ],
+    [
+     "Signatures are removed, also on commits that predate the removed data",
+     "a \"require signed commits\" rule now rejects the rewritten history unless bypassed"
+    ],
+    [
+     "Orphaned LFS objects are not removed by the rewrite",
+     "they are purged separately"
+    ],
+    [
+     "Pull request refs, forks and other clones keep the old history",
+     "sections 21B.18 and 21B.19, the next video"
+    ]
+   ],
+   "section": "CONCEPT",
+   "n": 32,
+   "progress": 0.2808
+  },
+  {
+   "kind": "keypoint",
+   "headline": "When not",
+   "body": "Section 21B.22 lists five cases.",
+   "section": "CONCEPT",
+   "n": 33,
+   "progress": 0.3101
+  },
+  {
+   "kind": "keypoint",
+   "headline": "When not",
+   "body": "Older guides use <code>git filter-branch</code> or the BFG Repo-Cleaner.",
+   "section": "CONCEPT",
+   "n": 34,
+   "progress": 0.3316
+  },
+  {
+   "kind": "keypoint",
+   "headline": "When not",
+   "body": "It isn't the recommended tool.",
+   "section": "CONCEPT",
+   "n": 35,
+   "progress": 0.3476
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 36,
+   "progress": 0.3586
+  },
+  {
+   "kind": "keypoint",
+   "body": "A picture helps. The textbook's analogy is the recall of a printed book to remove one page.",
+   "section": "MENTAL MODEL",
+   "n": 37,
+   "progress": 0.3597
+  },
+  {
+   "kind": "keypoint",
+   "body": "Map it. The warehouse is the cleanup clone and the server.",
+   "section": "MENTAL MODEL",
+   "n": 38,
+   "progress": 0.3804
+  },
+  {
+   "kind": "keypoint",
+   "body": "Where the analogy breaks: a reprinted book has no memory of the old edition, and a Git repository does.",
+   "section": "MENTAL MODEL",
+   "n": 39,
+   "progress": 0.3955
+  },
+  {
+   "kind": "keypoint",
+   "body": "So the model to carry is this.",
+   "section": "MENTAL MODEL",
+   "n": 40,
+   "progress": 0.4085
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 41,
+   "progress": 0.4245
+  },
+  {
+   "kind": "diagram",
+   "direction": "Build the \"before\" line first, left to right: eight commits on `main`. Mark the fifth, where `.env` was added. Hang `v0.1.0` below the commit before it and `v0.2.0` above the commit after it. Branch `feature/streaming` off the sixth commit.",
+   "text": " before                                              v0.2.0\n                                                       |\n  dfd59fd--0c55276--6388058--987a49d--0805fd8--64b9b89--b509fe3--d4b8762   main\n                                |     (.env added)          \\\n                              v0.1.0                         7fae871       feature/streaming\n\n after                                               v0.2.0\n                                                       |\n  dfd59fd--0c55276--6388058--987a49d--0ac4257--66a99cc--51e2d95--c8ce738   main\n                                |     (no .env)             \\\n                              v0.1.0                         ba9f0e0       feature/streaming\n\n  shared, unchanged: dfd59fd .. 987a49d        replaced: everything from the first changed commit on",
+   "caption": "Read the two lines against each other.",
+   "section": "DIAGRAM",
+   "n": 42,
+   "progress": 0.4255
+  },
+  {
+   "kind": "diagram",
+   "direction": "Build the \"before\" line first, left to right: eight commits on `main`. Mark the fifth, where `.env` was added. Hang `v0.1.0` below the commit before it and `v0.2.0` above the commit after it. Branch `feature/streaming` off the sixth commit.",
+   "text": " before                                              v0.2.0\n                                                       |\n  dfd59fd--0c55276--6388058--987a49d--0805fd8--64b9b89--b509fe3--d4b8762   main\n                                |     (.env added)          \\\n                              v0.1.0                         7fae871       feature/streaming\n\n after                                               v0.2.0\n                                                       |\n  dfd59fd--0c55276--6388058--987a49d--0ac4257--66a99cc--51e2d95--c8ce738   main\n                                |     (no .env)             \\\n                              v0.1.0                         ba9f0e0       feature/streaming\n\n  shared, unchanged: dfd59fd .. 987a49d        replaced: everything from the first changed commit on",
+   "caption": "Quick quiz. The sixth, seventh and eighth commits got new IDs as well, although nobody edited the changes they make.",
+   "section": "DIAGRAM",
+   "n": 43,
+   "progress": 0.4352
+  },
+  {
+   "kind": "diagram",
+   "direction": "Build the \"before\" line first, left to right: eight commits on `main`. Mark the fifth, where `.env` was added. Hang `v0.1.0` below the commit before it and `v0.2.0` above the commit after it. Branch `feature/streaming` off the sixth commit.",
+   "text": " before                                              v0.2.0\n                                                       |\n  dfd59fd--0c55276--6388058--987a49d--0805fd8--64b9b89--b509fe3--d4b8762   main\n                                |     (.env added)          \\\n                              v0.1.0                         7fae871       feature/streaming\n\n after                                               v0.2.0\n                                                       |\n  dfd59fd--0c55276--6388058--987a49d--0ac4257--66a99cc--51e2d95--c8ce738   main\n                                |     (no .env)             \\\n                              v0.1.0                         ba9f0e0       feature/streaming\n\n  shared, unchanged: dfd59fd .. 987a49d        replaced: everything from the first changed commit on",
+   "caption": "B, the parent. Each commit records its parent's ID, and the parent was replaced.",
+   "section": "DIAGRAM",
+   "n": 44,
+   "progress": 0.4493
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.4645
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay with `labs/run ch21b/rewrite-mechanics`. The caption bar shows `labs/ch21b/rewrite-mechanics.sh`. The secret in this repository is a dummy string that says so in its own text. The IDs on screen equal the IDs in the book, because the replay runs on the fixed lab clock.",
+   "mode": "cmd",
+   "title": "labs/run ch21b/rewrite-mechanics",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch21b/rewrite-mechanics"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.4655
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 1: a fresh mirror clone",
+   "body": "🟢 SAFE: a clone creates a new repository.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.4711
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch21b/rewrite-mechanics",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone -q --mirror server.git cleanup.git"
+    },
+    {
+     "t": "cmd",
+     "s": "cd cleanup.git"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format=\"%(objectname:short) %(objecttype) %(refname)\""
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline main"
+    },
+    {
+     "t": "cmd",
+     "s": "first=$(git log --format=%h --diff-filter=A main -- .env); echo $first"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.4799
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/01-fresh-mirror-clone",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline main"
+    },
+    {
+     "t": "out",
+     "s": "d4b8762 Document setup in README"
+    },
+    {
+     "t": "out",
+     "s": "b509fe3 Add request timeout"
+    },
+    {
+     "t": "out",
+     "s": "64b9b89 Add retry with backoff"
+    },
+    {
+     "t": "out",
+     "s": "0805fd8 Add staging settings"
+    },
+    {
+     "t": "out",
+     "s": "987a49d Add evaluation harness"
+    },
+    {
+     "t": "out",
+     "s": "6388058 Add LLM client"
+    },
+    {
+     "t": "out",
+     "s": "0c55276 Add answer prompt template"
+    },
+    {
+     "t": "out",
+     "s": "dfd59fd Add BM25 retriever"
+    },
+    {
+     "t": "cmd",
+     "s": "first=$(git log --format=%h --diff-filter=A main -- .env); echo $first"
+    },
+    {
+     "t": "out",
+     "s": "0805fd8"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "caption": "Four refs: two branches and two tags.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.488
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/01-fresh-mirror-clone",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git clone -q --mirror server.git cleanup.git"
+    },
+    {
+     "t": "cmd",
+     "s": "cd cleanup.git"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format=\"%(objectname:short) %(objecttype) %(refname)\""
+    },
+    {
+     "t": "out",
+     "s": "7fae871 commit refs/heads/feature/streaming"
+    },
+    {
+     "t": "out",
+     "s": "d4b8762 commit refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "b4a2514 tag refs/tags/v0.1.0"
+    },
+    {
+     "t": "out",
+     "s": "c38ee42 tag refs/tags/v0.2.0"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "caption": "Try it now, for thirty seconds.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.502
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/01-fresh-mirror-clone",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline main"
+    },
+    {
+     "t": "out",
+     "s": "d4b8762 Document setup in README"
+    },
+    {
+     "t": "out",
+     "s": "b509fe3 Add request timeout"
+    },
+    {
+     "t": "out",
+     "s": "64b9b89 Add retry with backoff"
+    },
+    {
+     "t": "out",
+     "s": "0805fd8 Add staging settings"
+    },
+    {
+     "t": "out",
+     "s": "987a49d Add evaluation harness"
+    },
+    {
+     "t": "out",
+     "s": "6388058 Add LLM client"
+    },
+    {
+     "t": "out",
+     "s": "0c55276 Add answer prompt template"
+    },
+    {
+     "t": "out",
+     "s": "dfd59fd Add BM25 retriever"
+    },
+    {
+     "t": "cmd",
+     "s": "first=$(git log --format=%h --diff-filter=A main -- .env); echo $first"
+    },
+    {
+     "t": "out",
+     "s": "0805fd8"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "caption": "Each line you saw is a ref, and any ref that still points into old history keeps it alive.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.5156
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: the mistake first. Rewrite the branches and forget the tags",
+   "body": "🔴 DANGEROUS. Before running a history filter, the five answers.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.5261
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: the mistake first. Rewrite the branches and forget the tags",
+   "body": "How to preview: git-filter-repo has <code>--dry-run</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.5405
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch21b/rewrite-mechanics",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --index-filter 'git rm --cached --ignore-unmatch -q"
+    },
+    {
+     "t": "wrap",
+     "s": ".env' -- --branches > ../filter-1.log 2>&1",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -v 'seconds passed' ../filter-1.log"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l DUMMY-KEY $(git rev-list --branches) | wc -l"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l DUMMY-KEY $(git rev-list --all) | cut -c1-9,41-"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag --contains $first"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.5542
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/02-branches-only",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# First attempt: rewrite the branches and forget the tags."
+    },
+    {
+     "t": "cmd",
+     "s": "FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --index-filter 'git rm --cached --ignore-unmatch -q"
+    },
+    {
+     "t": "wrap",
+     "s": ".env' -- --branches > ../filter-1.log 2>&1",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -v 'seconds passed' ../filter-1.log"
+    },
+    {
+     "t": "out",
+     "s": "Ref 'refs/heads/feature/streaming' was rewritten"
+    },
+    {
+     "t": "out",
+     "s": "Ref 'refs/heads/main' was rewritten"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l DUMMY-KEY $(git rev-list --branches) | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "       0"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l DUMMY-KEY $(git rev-list --all) | cut -c1-9,41-"
+    },
+    {
+     "t": "out",
+     "s": "d4b876277:.env"
+    },
+    {
+     "t": "out",
+     "s": "7fae87198:.env"
+    },
+    {
+     "t": "out",
+     "s": "b509fe363:.env"
+    },
+    {
+     "t": "out",
+     "s": "64b9b890c:.env"
+    },
+    {
+     "t": "out",
+     "s": "0805fd8e8:.env"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag --contains $first"
+    },
+    {
+     "t": "out",
+     "s": "v0.2.0"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.5631
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 3: all refs, with tags following their commits",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.5858
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/03-all-refs",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Second attempt: every ref, and --tag-name-filter cat so that tags follow their commits."
+    },
+    {
+     "t": "cmd",
+     "s": "FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch"
+    },
+    {
+     "t": "wrap",
+     "s": "-q .env' --tag-name-filter cat -- --all > ../filter-2.log 2>&1",
+     "of": "cmd"
+    },
+    {
+     "t": "cmd",
+     "s": "grep -v 'seconds passed' ../filter-2.log"
+    },
+    {
+     "t": "out",
+     "s": "WARNING: Ref 'refs/heads/feature/streaming' is unchanged"
+    },
+    {
+     "t": "out",
+     "s": "WARNING: Ref 'refs/heads/main' is unchanged"
+    },
+    {
+     "t": "out",
+     "s": "WARNING: Ref 'refs/tags/v0.1.0' is unchanged"
+    },
+    {
+     "t": "out",
+     "s": "Ref 'refs/tags/v0.2.0' was rewritten"
+    },
+    {
+     "t": "out",
+     "s": "v0.1.0 -> v0.1.0 (987a49db5aa45d6cb1e4b10024438f21b8e28444 -> 987a49db5aa45d6cb1e4b10024438f21b8e28444)"
+    },
+    {
+     "t": "out",
+     "s": "v0.2.0 -> v0.2.0 (64b9b890cf46c6a921380d722eaf0b33d790bb9a -> 66a99cccb3cd6ac483eccafadf8c4804770799ea)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.5882
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 4: the map of old and new IDs",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.5971
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "title": "labs/run ch21b/rewrite-mechanics",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "paste ../before.txt ../after.txt | while read o n; do printf '%s  %s  %s\\n' $o $n \"$(git log -1"
+    },
+    {
+     "t": "wrap",
+     "s": "--format=%s $n)\"; done",
+     "of": "cmd"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.5996
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/04-new-ids",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# old ID, new ID, subject (newest first)"
+    },
+    {
+     "t": "cmd",
+     "s": "paste ../before.txt ../after.txt | while read o n; do printf '%s  %s  %s\\n' $o $n \"$(git log -1"
+    },
+    {
+     "t": "wrap",
+     "s": "--format=%s $n)\"; done",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "d4b8762  c8ce738  Document setup in README"
+    },
+    {
+     "t": "out",
+     "s": "b509fe3  51e2d95  Add request timeout"
+    },
+    {
+     "t": "out",
+     "s": "64b9b89  66a99cc  Add retry with backoff"
+    },
+    {
+     "t": "out",
+     "s": "0805fd8  0ac4257  Add staging settings"
+    },
+    {
+     "t": "out",
+     "s": "987a49d  987a49d  Add evaluation harness"
+    },
+    {
+     "t": "out",
+     "s": "6388058  6388058  Add LLM client"
+    },
+    {
+     "t": "out",
+     "s": "0c55276  0c55276  Add answer prompt template"
+    },
+    {
+     "t": "out",
+     "s": "dfd59fd  dfd59fd  Add BM25 retriever"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.6076
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 5: the old objects are still there",
+   "body": "A rewrite adds new objects and moves refs.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.6267
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/05-old-objects-remain",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format=\"%(objectname:short) %(refname)\" refs/original"
+    },
+    {
+     "t": "out",
+     "s": "64b9b89 refs/original/refs/tags/v0.2.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -t $first"
+    },
+    {
+     "t": "out",
+     "s": "commit"
+    },
+    {
+     "t": "cmd",
+     "s": "git show $first:.env"
+    },
+    {
+     "t": "out",
+     "s": "LLM_API_KEY=DUMMY-KEY-not-a-real-secret-12345"
+    },
+    {
+     "t": "out",
+     "s": "LLM_BASE_URL=https://llm.example.com"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.6325
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 6: pruning",
+   "body": "🔴 DANGEROUS. The five answers for <code>git reflog expire --expire=now --all</code> followed by <code>git gc --prune=now</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.6399
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/06-prune",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format=\"delete %(refname)\" refs/original | git update-ref --stdin"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog expire --expire=now --all"
+    },
+    {
+     "t": "cmd",
+     "s": "git gc -q --prune=now"
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -t $first"
+    },
+    {
+     "t": "out",
+     "s": "fatal: Not a valid object name 0805fd8"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l DUMMY-KEY $(git rev-list --all) | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "       0"
+    },
+    {
+     "t": "cmd",
+     "s": "git fsck --no-progress"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.6645
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 7: the forced push",
+   "body": "🔴 DANGEROUS. The five answers before the command is run.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.6788
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 7: the forced push",
+   "body": "That's the mechanical reason for the freeze.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.6965
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/07-force-push",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git push --force --mirror origin 2>&1"
+    },
+    {
+     "t": "out",
+     "s": "To $LAB/ch21b/rewrite-mechanics/server.git"
+    },
+    {
+     "t": "out",
+     "s": " + 7fae871...ba9f0e0 feature/streaming -> feature/streaming (forced update)"
+    },
+    {
+     "t": "out",
+     "s": " + d4b8762...c8ce738 main -> main (forced update)"
+    },
+    {
+     "t": "out",
+     "s": " + c38ee42...17124a2 v0.2.0 -> v0.2.0 (forced update)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.71
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 8: what the server holds now",
+   "body": "Here's the question from the opening.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 68,
+   "progress": 0.7158
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch21b/rewrite-mechanics/08-server-keeps-old-objects",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cd .."
+    },
+    {
+     "t": "cmd",
+     "s": "git -C server.git log --oneline -1 main"
+    },
+    {
+     "t": "out",
+     "s": "c8ce738 Document setup in README"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C server.git grep -l DUMMY-KEY $(git -C server.git rev-list --all) | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "       0"
+    },
+    {
+     "t": "out",
+     "s": "# No ref on the server reaches the old commits any more, and they are still there:"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C server.git cat-file -t $first"
+    },
+    {
+     "t": "out",
+     "s": "commit"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C server.git show $first:.env"
+    },
+    {
+     "t": "out",
+     "s": "LLM_API_KEY=DUMMY-KEY-not-a-real-secret-12345"
+    },
+    {
+     "t": "out",
+     "s": "LLM_BASE_URL=https://llm.example.com"
+    },
+    {
+     "t": "cmd",
+     "s": "git -C server.git fsck --no-progress --unreachable | grep commit"
+    },
+    {
+     "t": "out",
+     "s": "unreachable commit 0805fd8e82dfc4c6a50cb14514d431dbd43df4cd"
+    },
+    {
+     "t": "out",
+     "s": "unreachable commit b509fe3635defadb4fc29d14c01ca2953ca8cd27"
+    },
+    {
+     "t": "out",
+     "s": "unreachable commit d4b876277f85823455b617a02ea443e6e9afd070"
+    },
+    {
+     "t": "out",
+     "s": "unreachable commit 64b9b890cf46c6a921380d722eaf0b33d790bb9a"
+    },
+    {
+     "t": "out",
+     "s": "unreachable commit 7fae8719801ebfc91df813470f8a380ac13184fc"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 69,
+   "progress": 0.7274
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Operation",
+    "Working tree",
+    "Index",
+    "HEAD",
+    "Current branch ref",
+    "Other refs and files in <code>.git</code>",
+    "Remote",
+    "GitHub"
+   ],
+   "fs": 28,
+   "cols": [
+    19.44,
+    11.07,
+    9.55,
+    11.07,
+    11.07,
+    14.12,
+    12.6,
+    11.07
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "history rewrite in the cleanup clone",
+     "rewritten to the new tip (none in a mirror clone)",
+     "rewritten",
+     "unchanged (still names the branch)",
+     "moved to the new tip",
+     "every affected branch and tag moved; backup refs or <code>filter-repo/</code> metadata written; old objects kept until pruned",
+     "unchanged",
+     "unchanged"
+    ],
+    [
+     "<code>git reflog expire --expire=now --all</code> then <code>git gc --prune=now</code>",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "all reflog entries and all unreachable objects deleted",
+     "unchanged",
+     "unchanged"
+    ]
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.752
+  },
+  {
+   "kind": "table",
+   "header": [
+    "Operation",
+    "Working tree",
+    "Index",
+    "HEAD",
+    "Current branch ref",
+    "Other refs and files in <code>.git</code>",
+    "Remote",
+    "GitHub"
+   ],
+   "fs": 28,
+   "cols": [
+    19.44,
+    11.07,
+    9.55,
+    11.07,
+    11.07,
+    14.12,
+    12.6,
+    11.07
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>git push --force --mirror origin</code>",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "unchanged",
+     "every ref set to the local value; refs missing locally are <b>deleted</b>; old objects stay as unreachable",
+     "branch and tag refs move; pull request refs are refused; cached views and old objects stay until Support acts"
+    ]
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 71,
+   "progress": 0.7541
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 72,
+   "progress": 0.7626
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 73,
+   "progress": 0.7636
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Rewriting the branches and forgetting the tags.</b> Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+    "<b>Declaring the secret removed after the force push.</b> Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+    "<b>Rewriting in the working clone.</b> Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+    "<b>Taking the mirror clone before the freeze.</b> Root cause: <code>git push --force --mirror</code> deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+    "<b>Rewriting before revoking.</b> Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 74,
+   "progress": 0.765
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Rewriting the branches and forgetting the tags.</b> Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+    "<b>Declaring the secret removed after the force push.</b> Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+    "<b>Rewriting in the working clone.</b> Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+    "<b>Taking the mirror clone before the freeze.</b> Root cause: <code>git push --force --mirror</code> deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+    "<b>Rewriting before revoking.</b> Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 75,
+   "progress": 0.7747
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Rewriting the branches and forgetting the tags.</b> Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+    "<b>Declaring the secret removed after the force push.</b> Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+    "<b>Rewriting in the working clone.</b> Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+    "<b>Taking the mirror clone before the freeze.</b> Root cause: <code>git push --force --mirror</code> deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+    "<b>Rewriting before revoking.</b> Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 76,
+   "progress": 0.7843
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Rewriting the branches and forgetting the tags.</b> Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+    "<b>Declaring the secret removed after the force push.</b> Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+    "<b>Rewriting in the working clone.</b> Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+    "<b>Taking the mirror clone before the freeze.</b> Root cause: <code>git push --force --mirror</code> deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+    "<b>Rewriting before revoking.</b> Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 77,
+   "progress": 0.7907
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Rewriting the branches and forgetting the tags.</b> Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+    "<b>Declaring the secret removed after the force push.</b> Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+    "<b>Rewriting in the working clone.</b> Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+    "<b>Taking the mirror clone before the freeze.</b> Root cause: <code>git push --force --mirror</code> deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+    "<b>Rewriting before revoking.</b> Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 78,
+   "progress": 0.7995
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 79,
+   "progress": 0.8072
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. An ML platform team finds that a file with customer support transcripts was committed to the evaluation repository four months ago.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 80,
+   "progress": 0.8083
+  },
+  {
+   "kind": "keypoint",
+   "body": "Then comes the cost that is specific to an ML team.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 81,
+   "progress": 0.8394
+  },
+  {
+   "kind": "keypoint",
+   "body": "It stores git-filter-repo's <code>commit-map</code> file in the incident record, so that anyone who holds an old ID can translate it.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 82,
+   "progress": 0.8535
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 83,
+   "progress": 0.8654
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 31.1, \"The tabletop: a committed secret, from report to prevention\", in <code>lab-manual/m31-secret-leak-response.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 84,
+   "progress": 0.8664
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before you run the rewrite in the lab, write down three predictions: which refs will be reported as rewritten and which as unchanged, how many of the commits on <code>main</code> will have new IDs …",
+   "section": "PRACTICE EXERCISE",
+   "n": 85,
+   "progress": 0.8763
+  },
+  {
+   "kind": "keypoint",
+   "body": "When that is done, the challenge is Exercise 31.5, Level 4, \"How far did it get?\", in <code>exercises/m26-m31-actions-security.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 86,
+   "progress": 0.8968
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 87,
+   "progress": 0.9017
+  },
+  {
+   "kind": "callout",
+   "direction": "Q336: \"When is a history rewrite the wrong response to a leaked secret? What does it cost?\"",
+   "label": "Q336",
+   "quotes": [
+    "When is a history rewrite the wrong response to a leaked secret? What does it cost?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 88,
+   "progress": 0.9028
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 89,
+   "progress": 0.9339
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this. You should now be able to say these sentences, in your own words.",
+   "section": "RECAP",
+   "n": 90,
+   "progress": 0.935
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+    "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+    "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+    "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+    "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 91,
+   "progress": 0.9394
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+    "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+    "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+    "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+    "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 92,
+   "progress": 0.9468
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+    "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+    "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+    "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+    "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 93,
+   "progress": 0.9526
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+    "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+    "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+    "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+    "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 94,
+   "progress": 0.9581
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+    "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+    "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+    "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+    "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 95,
+   "progress": 0.9653
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 96,
+   "progress": 0.9722
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 21B.16 and 21B.17 of the textbook.",
+   "section": "HOMEWORK",
+   "n": 97,
+   "progress": 0.9732
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you followed a rewrite from the fresh clone to the forced push, and you saw what it leaves behind.",
+   "section": "HOMEWORK",
+   "n": 98,
+   "progress": 0.9785
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "A team finds a file in the repository that should never have been there. Somebody searches, finds a command that removes a file from every commit, runs it in the clone on their laptop, force-pushes main, and reports that the file is gone. Three things are wrong with that report. The release tag still points at the old commits. The server still holds every old object. And every colleague's clone still holds the complete old history, and can push it back with an ordinary push tomorrow morning.",
+   "tele": "A team finds a file in the repository that should never have been there. Somebody searches, finds a command that removes a file from every commit, runs it in the clone on their laptop, force-pushes `main`, and reports that the file is gone. Three things are wrong with that report. The release tag still points at the old commits. The server still holds every old object. And every colleague's clone still holds the complete old history, and can push it back with an ordinary push tomorrow morning.",
+   "words": 87,
+   "est": 34.8,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "1f3330b6",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Today you see a whole-history rewrite the way an operator has to see it: as a change to every ref and to every commit ID after the first affected commit, with a list of owners, an order and a verification. The command is the smallest part. Keep one question in mind. After that force-push, can the server still print the file? The terminal will answer.",
+   "tele": "Today you see a whole-history rewrite the way an operator has to see it: as a change to every ref and to every commit ID after the first affected commit, with a list of owners, an order and a verification. The command is the smallest part. Keep one question in mind. After that force-push, can the server still print the file? The terminal will answer.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 4,
+   "line": 16,
+   "t0": 38.3,
+   "h": "bfab4820",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 5,
+   "line": 18,
+   "t0": 64.3,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Four words first. A commit is one saved snapshot of the whole project. A repository is the store that holds the commits, and a clone is a copy of it on one machine. A ref is a name that holds the ID of a commit: every branch and every tag is a ref.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Four words first. A commit is one saved snapshot of the whole project. A repository is the store that holds the commits, and a clone is a copy of it on one machine. A ref is a name that holds the ID of a commit: every branch and every tag is a ref.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 6,
+   "line": 20,
+   "t0": 65.8,
+   "h": "c6b98b1e",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "In video 166 you learned the six steps of a leak response, and why containment comes first: the credential is revoked at its issuer, the service that accepts it, before anything is done to the repository. The third step, eradicate, said \"rewrite history only where warranted\". This video is about that clause.",
+   "tele": "In video 166 you learned the six steps of a leak response, and why containment comes first: the credential is revoked at its issuer, the service that accepts it, before anything is done to the repository. The third step, eradicate, said \"rewrite history only where warranted\". This video is about that clause.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 7,
+   "line": 22,
+   "t0": 91.8,
+   "h": "f54c260c",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "You already have the two facts that explain everything you're about to see. From video 52: a commit's ID is the hash of its content, a fingerprint computed from its bytes, and that content includes the ID of its parent, the commit it was built on.",
+   "tele": "You already have the two facts that explain everything you're about to see. From video 52: a commit's ID is the hash of its content, a fingerprint computed from its bytes, and that content includes the ID of its parent, the commit it was built on.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 8,
+   "line": 24,
+   "t0": 112.6,
+   "h": "c246f3c4",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "So a commit whose parent changes is a different commit. From video 79: a forced push moves refs on the remote, here the server, and deletes no objects. An object is one stored unit in Git, such as a commit or the content of a file.",
+   "tele": "So a commit whose parent changes is a different commit. From video 79: a forced push moves refs on the remote, here the server, and deletes no objects. An object is one stored unit in Git, such as a commit or the content of a file.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 9,
+   "line": 24,
+   "t0": 131.0,
+   "h": "0066ee50",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Three things today. First, what the recommended tool, git-filter-repo, requires and records, as section 21B.16 gives it from the tool's manual and from GitHub's procedure. Second, the mechanics, replayed locally with a command that ships with Git, so that you can watch the refs and the objects. Third, what the rewrite costs, because the costs decide whether you do it at all.",
+   "tele": "Three things today. First, what the recommended tool, git-filter-repo, requires and records, as section 21B.16 gives it from the tool's manual and from GitHub's procedure. Second, the mechanics, replayed locally with a command that ships with Git, so that you can watch the refs and the objects. Third, what the rewrite costs, because the costs decide whether you do it at all.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 10,
+   "line": 26,
+   "t0": 149.4,
+   "h": "0430584e",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "One layer note before we start. Everything in the terminal today is Git, on a local bare repository that plays the server. A bare repository holds history only, with no files to edit, as a server does. What GitHub does with a rewrite is the subject of video 168.",
+   "tele": "One layer note before we start. Everything in the terminal today is Git, on a local bare repository that plays the server. A bare repository holds history only, with no files to edit, as a server does. What GitHub does with a rewrite is the subject of video 168.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 11,
+   "line": 30,
+   "t0": 174.2,
+   "h": "40433a12",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 12,
+   "line": 32,
+   "t0": 193.8,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Here's what you'll walk away with.",
+   "tele": "Here's what you'll walk away with.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 13,
+   "line": 34,
+   "t0": 195.3,
+   "h": "1e7bc081",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 14,
+   "line": 36,
+   "t0": 197.7,
+   "h": "152923b5",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+   "tele": "Say what a whole-history rewrite replaces and why the command is the smallest part of the work.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 15,
+   "line": 38,
+   "t0": 199.7,
+   "h": "2f8dd4b5",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+   "tele": "State what git-filter-repo requires and records, as section 21B.16 gives it from the tool's manual.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 16,
+   "line": 38,
+   "t0": 206.5,
+   "h": "a040052f",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+   "tele": "Follow the mechanics locally: fresh mirror clone, all refs, new IDs, old objects that remain, pruning, the forced push.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 17,
+   "line": 38,
+   "t0": 212.5,
+   "h": "0d817551",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain what happens to signatures and to open pull requests.",
+   "tele": "Explain what happens to signatures and to open pull requests.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 18,
+   "line": 38,
+   "t0": 220.1,
+   "h": "b4ebd611",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "List the costs that decide against a rewrite.",
+   "tele": "List the costs that decide against a rewrite.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 19,
+   "line": 38,
+   "t0": 224.1,
+   "h": "c2794920",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 20,
+   "line": 44,
+   "t0": 227.3,
+   "h": "",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why it exists. Some data stays harmful after its credential is rotated, or can't be rotated at all: personal data, customer records, proprietary model weights, a private key whose public half is pinned in devices, a secret whose revocation takes weeks. For that data, and only for that data, you want the repository's history to stop containing it.",
+   "tele": "Why it exists. Some data stays harmful after its credential is rotated, or can't be rotated at all: personal data, customer records, proprietary model weights, a private key whose public half is pinned in devices, a secret whose revocation takes weeks. For that data, and only for that data, you want the repository's history to stop containing it.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 21,
+   "line": 46,
+   "t0": 228.8,
+   "h": "40ad3717",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "What it is, in one sentence. A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs, and the command is the smallest part of the work. Descendants are the commits built on top of it.",
+   "tele": "What it is, in one sentence. A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs, and the command is the smallest part of the work. Descendants are the commits built on top of it.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 22,
+   "line": 48,
+   "t0": 252.0,
+   "h": "8a694092",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "How: the recommended tool. The recommended tool is git-filter-repo. It's a separate program and it isn't part of Git. It isn't installed in the lab, and this course installs nothing. Section 21B.16 gives five facts about it from its manual and from GitHub's page on removing sensitive data.",
+   "tele": "How: the recommended tool. The recommended tool is git-filter-repo. It's a separate program and it isn't part of Git. It isn't installed in the lab, and this course installs nothing. Section 21B.16 gives five facts about it from its manual and from GitHub's page on removing sensitive data.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 23,
+   "line": 50,
+   "t0": 269.2,
+   "h": "292f0f70",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "One. It refuses to run outside a fresh clone unless forced, because the rewrite is irreversible: by default it ends with an immediate pruning of reflogs and old objects. A reflog is a clone's own list of where each ref has pointed, and pruning means deleting.",
+   "tele": "One. It refuses to run outside a fresh clone unless forced, because the rewrite is irreversible: by default it ends with an immediate pruning of reflogs and old objects. A reflog is a clone's own list of where each ref has pointed, and pruning means deleting.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 24,
+   "line": 54,
+   "t0": 288.4,
+   "h": "80508fd5",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two. The option --sensitive-data-removal exists since version 2.47. It fetches all refs first and gathers the extra information needed to clean up other copies.",
+   "tele": "Two. The option `--sensitive-data-removal` exists since version 2.47. It fetches all refs first and gathers the extra information needed to clean up other copies.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 25,
+   "line": 56,
+   "t0": 306.8,
+   "h": "5d9d7b8e",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three. It records its work in .git/filter-repo/: a file commit-map with the old and new ID of every commit, and the files ref-map, changed-refs and first-changed-commits.",
+   "tele": "Three. It records its work in `.git/filter-repo/`: a file `commit-map` with the old and new ID of every commit, and the files `ref-map`, `changed-refs` and `first-changed-commits`.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 26,
+   "line": 58,
+   "t0": 316.4,
+   "h": "a519c106",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Four. Commits get new IDs, so signatures on commits and tags can't remain valid and are removed. A signature is a cryptographic seal over the bytes of one commit or one annotated tag. Signed tags become annotated tags.",
+   "tele": "Four. Commits get new IDs, so signatures on commits and tags can't remain valid and are removed. A signature is a cryptographic seal over the bytes of one commit or one annotated tag. Signed tags become annotated tags.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 27,
+   "line": 60,
+   "t0": 326.8,
+   "h": "84a755e4",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Five. By default a full rewrite removes the origin remote, as a forcing function against pushing by reflex. origin is the name under which a clone remembers the repository it came from.",
+   "tele": "Five. By default a full rewrite removes the `origin` remote, as a forcing function against pushing by reflex. `origin` is the name under which a clone remembers the repository it came from.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 28,
+   "line": 62,
+   "t0": 342.0,
+   "h": "48ab524f",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Read the slide as five steps: install, fresh clone, filter by path or by text, count the affected pull requests, force-push every ref. Before the push, the manual's verification is git log --all --name-status -- <file> and git log -S\"<string>\" --all -p --. Both must print nothing.",
+   "tele": "Read the slide as five steps: install, fresh clone, filter by path or by text, count the affected pull requests, force-push every ref. Before the push, the manual's verification is `git log --all --name-status -- <file>` and `git log -S\"<string>\" --all -p --`. Both must print nothing.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 29,
+   "line": 88,
+   "t0": 354.8,
+   "h": "1e9597b4",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "One statement here is marked unverified in the textbook, and I say it as the textbook does. Whether git-filter-repo keeps the origin remote when --sensitive-data-removal is used wasn't tested for the research report of this course. GitHub's instructions push to origin afterwards, and the manual says a default full rewrite removes it. If the push fails for a missing remote, the manual's remedy is git remote add origin <url>.",
+   "tele": "One statement here is marked unverified in the textbook, and I say it as the textbook does. Whether git-filter-repo keeps the `origin` remote when `--sensitive-data-removal` is used wasn't tested for the research report of this course. GitHub's instructions push to `origin` afterwards, and the manual says a default full rewrite removes it. If the push fails for a missing remote, the manual's remedy is `git remote add origin <url>`.",
+   "words": 69,
+   "est": 27.6,
+   "slide": 30,
+   "line": 92,
+   "t0": 373.2,
+   "h": "599c72a0",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "What makes it an operation. Around those five commands stand six facts, each with a consequence.",
+   "tele": "What makes it an operation. Around those five commands stand six facts, each with a consequence.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 31,
+   "line": 94,
+   "t0": 400.8,
+   "h": "5c4ddf1b",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Stay on the third and fourth rows, because they answer two of today's objectives. A pull request is a GitHub object that proposes merging one branch into another. Its review comments are attached to commit IDs and lines, and the IDs no longer exist on the branch. So the comments detach, and the diffs of closed pull requests break.",
+   "tele": "Stay on the third and fourth rows, because they answer two of today's objectives. A pull request is a GitHub object that proposes merging one branch into another. Its review comments are attached to commit IDs and lines, and the IDs no longer exist on the branch. So the comments detach, and the diffs of closed pull requests break.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 32,
+   "line": 107,
+   "t0": 407.2,
+   "h": "c4db884a",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 6
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A signature covers the commit object, the object is replaced, so the signature can't be carried over. The textbook's row says signatures are removed also on commits that predate the removed data. A rule that requires signed commits therefore rejects the rewritten history unless it is bypassed.",
+   "tele": "A signature covers the commit object, the object is replaced, so the signature can't be carried over. The textbook's row says signatures are removed also on commits that predate the removed data. A rule that requires signed commits therefore rejects the rewritten history unless it is bypassed.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 32,
+   "line": 107,
+   "t0": 430.8,
+   "h": "b03420d8",
+   "anim": {
+    "group": 25,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When not. Section 21B.22 lists five cases. Don't rewrite for a credential that is revoked and whose provider logs show no use: record the decision and stop. Don't rewrite a public repository in the belief that it un-publishes anything. Don't rewrite before containment. Don't rewrite in your working clone, because the tool prunes reflogs and stashes, the work you set aside without committing. And don't have each colleague run the same command: identical commands can produce different IDs.",
+   "tele": "When not. Section 21B.22 lists five cases. Don't rewrite for a credential that is revoked and whose provider logs show no use: record the decision and stop. Don't rewrite a public repository in the belief that it un-publishes anything. Don't rewrite before containment. Don't rewrite in your working clone, because the tool prunes reflogs and stashes, the work you set aside without committing. And don't have each colleague run the same command: identical commands can produce different IDs.",
+   "words": 78,
+   "est": 31.2,
+   "slide": 33,
+   "line": 109,
+   "t0": 449.6,
+   "h": "60cd65d2",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Older guides use git filter-branch or the BFG Repo-Cleaner. Git's own manual says of git filter-branch that its \"use is not recommended\" and points to git-filter-repo. GitHub's current page documents git-filter-repo only. Keep that in mind for the demonstration, because the demonstration uses git filter-branch, for one reason only: it ships with Git, and the lab installs nothing.",
+   "tele": "Older guides use `git filter-branch` or the BFG Repo-Cleaner. Git's own manual says of `git filter-branch` that its \"use is not recommended\" and points to git-filter-repo. GitHub's current page documents git-filter-repo only. Keep that in mind for the demonstration, because the demonstration uses `git filter-branch`, for one reason only: it ships with Git, and the lab installs nothing.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 34,
+   "line": 113,
+   "t0": 480.8,
+   "h": "c7207926",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "It isn't the recommended tool. It's enough to show four mechanics that are the same whichever tool rewrites: descendants get new IDs, tags must be rewritten too, old objects remain until pruned, and the server keeps them after the push.",
+   "tele": "It isn't the recommended tool. It's enough to show four mechanics that are the same whichever tool rewrites: descendants get new IDs, tags must be rewritten too, old objects remain until pruned, and the server keeps them after the push.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 35,
+   "line": 113,
+   "t0": 504.0,
+   "h": "f9c6e30d",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 36,
+   "line": 115,
+   "t0": 520.0,
+   "h": "",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A picture helps. The textbook's analogy is the recall of a printed book to remove one page. You can reprint every copy in your warehouse. Each reader's copy stays as it was until that reader exchanges it. The page numbers after the removed page all change. Every citation by page number now points at the wrong place. And one reader who lends an old copy to the library puts the page back on the shelf.",
+   "tele": "A picture helps. The textbook's analogy is the recall of a printed book to remove one page. You can reprint every copy in your warehouse. Each reader's copy stays as it was until that reader exchanges it. The page numbers after the removed page all change. Every citation by page number now points at the wrong place. And one reader who lends an old copy to the library puts the page back on the shelf.",
+   "words": 75,
+   "est": 30.0,
+   "slide": 37,
+   "line": 117,
+   "t0": 521.5,
+   "h": "e01497c7",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Map it. The warehouse is the cleanup clone and the server. The readers' copies are clones and forks. The page numbers are commit IDs. The citations are everything that stored an ID: issue comments, release notes, experiment records, deployment manifests. The reader who lends the old copy is the stale clone of the next video.",
+   "tele": "Map it. The warehouse is the cleanup clone and the server. The readers' copies are clones and forks. The page numbers are commit IDs. The citations are everything that stored an ID: issue comments, release notes, experiment records, deployment manifests. The reader who lends the old copy is the stale clone of the next video.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 38,
+   "line": 119,
+   "t0": 551.5,
+   "h": "c20a8391",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Where the analogy breaks: a reprinted book has no memory of the old edition, and a Git repository does. After the rewrite the old objects are still in the object database, unreachable, until something prunes them. The warehouse still has the old copies in the back room.",
+   "tele": "Where the analogy breaks: a reprinted book has no memory of the old edition, and a Git repository does. After the rewrite the old objects are still in the object database, unreachable, until something prunes them. The warehouse still has the old copies in the back room.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 39,
+   "line": 121,
+   "t0": 573.5,
+   "h": "355fac3c",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "So the model to carry is this. A rewrite does three separate things, and only the first one is done by the filter: it writes new commits. Then refs are moved to them. Then, separately and deliberately, old objects are deleted. Each of the three happens per repository. Nothing you do in one repository deletes anything in another.",
+   "tele": "So the model to carry is this. A rewrite does three separate things, and only the first one is done by the filter: it writes new commits. Then refs are moved to them. Then, separately and deliberately, old objects are deleted. Each of the three happens per repository. Nothing you do in one repository deletes anything in another.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 40,
+   "line": 123,
+   "t0": 592.3,
+   "h": "ec752ac5",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 41,
+   "line": 125,
+   "t0": 615.5,
+   "h": "",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Read the two lines against each other. In the \"after\" line, the first four commits are the same objects: same IDs, drawn in the same place. From the fifth commit on, every ID is different.",
+   "tele": "Read the two lines against each other. In the \"after\" line, the first four commits are the same objects: same IDs, drawn in the same place. From the fifth commit on, every ID is different.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 42,
+   "line": 145,
+   "t0": 617.0,
+   "h": "a2988bba",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Quick quiz. The sixth, seventh and eighth commits got new IDs as well, although nobody edited the changes they make. Which field of a commit makes that unavoidable: A, the message, B, the parent, or C, the author? Your answer?",
+   "tele": "Quick quiz. The sixth, seventh and eighth commits got new IDs as well, although nobody edited the changes they make. Which field of a commit makes that unavoidable: A, the message, B, the parent, or C, the author? Your answer?",
+   "words": 40,
+   "est": 16.0,
+   "slide": 43,
+   "line": 147,
+   "t0": 631.0,
+   "h": "cc43cb45",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 44,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 43,
+   "line": 149,
+   "t0": 647.0,
+   "h": "",
+   "anim": {
+    "group": 35,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 45,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "B, the parent. Each commit records its parent's ID, and the parent was replaced. The last line of the diagram is the sentence to remember: shared and unchanged up to the commit before the leak, replaced from the first changed commit on. v0.1.0 stays where it was. v0.2.0 has to move, and so does feature/streaming.",
+   "tele": "B, the parent. Each commit records its parent's ID, and the parent was replaced. The last line of the diagram is the sentence to remember: shared and unchanged up to the commit before the leak, replaced from the first changed commit on. `v0.1.0` stays where it was. `v0.2.0` has to move, and so does `feature/streaming`.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 44,
+   "line": 151,
+   "t0": 651.5,
+   "h": "3c6d43da",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 45,
+   "line": 153,
+   "t0": 673.5,
+   "h": "",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Into the lab. The secret in this repository is a dummy string, and it says so in its own text.",
+   "tele": "Into the lab. The secret in this repository is a dummy string, and it says so in its own text.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 46,
+   "line": 157,
+   "t0": 675.0,
+   "h": "39340b68",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 1: a fresh mirror clone. 🟢 SAFE: a clone creates a new repository. A mirror clone has every ref of the server as a local ref, which is what a rewrite needs.",
+   "tele": "Step 1: a fresh mirror clone. 🟢 SAFE: a clone creates a new repository. A mirror clone has every ref of the server as a local ref, which is what a rewrite needs.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 47,
+   "line": 159,
+   "t0": 683.0,
+   "h": "f183da99",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Make your prediction. How many refs will the listing show, and of which kinds? Say it out loud.",
+   "tele": "Make your prediction. How many refs will the listing show, and of which kinds? Say it out loud.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 48,
+   "line": 169,
+   "t0": 695.8,
+   "h": "9c877208",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 48,
+   "line": 171,
+   "t0": 703.0,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Four refs: two branches and two tags. The tags are of type tag, so they're annotated tags, stored as objects of their own. Now the last line: the commit that added .env is 0805fd8, \"Add staging settings\". Everything from that commit on is affected. The four commits below it are not.",
+   "tele": "Four refs: two branches and two tags. The tags are of type `tag`, so they're annotated tags, stored as objects of their own. Now the last line: the commit that added `.env` is `0805fd8`, \"Add staging settings\". Everything from that commit on is affected. The four commits below it are not.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 49,
+   "line": 196,
+   "t0": 707.5,
+   "h": "60ed1938",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Try it now, for thirty seconds. In the lab shell, or in any repository you have, type git for-each-ref. It only reads. Each line is one ref and the object it points at. Count the tags. I'll wait.",
+   "tele": "Try it now, for thirty seconds. In the lab shell, or in any repository you have, type `git for-each-ref`. It only reads. Each line is one ref and the object it points at. Count the tags. I'll wait.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 50,
+   "line": 198,
+   "t0": 727.9,
+   "h": "889b3023",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.64,
+      "dissolve": true
+     },
+     {
+      "at": 0.437,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 50,
+   "line": 200,
+   "t0": 743.1,
+   "h": "",
+   "anim": {
+    "group": 41,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Each line you saw is a ref, and any ref that still points into old history keeps it alive. So a rewrite has to cover them all, tags included. Now watch what happens when the tags are forgotten.",
+   "tele": "Each line you saw is a ref, and any ref that still points into old history keeps it alive. So a rewrite has to cover them all, tags included. Now watch what happens when the tags are forgotten.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 51,
+   "line": 202,
+   "t0": 747.6,
+   "h": "ef478db8",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 2: the mistake first. Rewrite the branches and forget the tags. 🔴 DANGEROUS. Before running a history filter, the five answers. What it changes: every affected commit and all descendants, on every ref it is given. What it can destroy: signatures, and with a wrong path argument, files you meant to keep.",
+   "tele": "Step 2: the mistake first. Rewrite the branches and forget the tags. 🔴 DANGEROUS. Before running a history filter, the five answers. What it changes: every affected commit and all descendants, on every ref it is given. What it can destroy: signatures, and with a wrong path argument, files you meant to keep.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 52,
+   "line": 204,
+   "t0": 762.8,
+   "h": "a9c2a1bb",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "How to preview: git-filter-repo has --dry-run. And you run in a fresh clone. How to recover: the untouched server and other clones, until you push. When it is appropriate: for data that stays harmful after rotation. For an unpushed mistake on a private branch a rebase is the smaller tool.",
+   "tele": "How to preview: git-filter-repo has `--dry-run`. And you run in a fresh clone. How to recover: the untouched server and other clones, until you push. When it is appropriate: for data that stays harmful after rotation. For an unpushed mistake on a private branch a rebase is the smaller tool.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 53,
+   "line": 204,
+   "t0": 783.6,
+   "h": "e805443d",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Predict. After the branches are rewritten, does a scan over all refs still find the key? Yes or no, out loud.",
+   "tele": "Predict. After the branches are rewritten, does a scan over all refs still find the key? Yes or no, out loud.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 54,
+   "line": 214,
+   "t0": 803.6,
+   "h": "758cf8a2",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 54,
+   "line": 216,
+   "t0": 812.0,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Hold on the two counts. Over the branches: zero. Over all refs: five snapshots that contain the key. So the answer was yes. The last command says why: the tag v0.2.0 contains the first affected commit. The tag points at the old commit 64b9b89, and a tag keeps its commit and all of that commit's ancestors alive. Anyone who fetches the tag fetches the secret. One more detail from the textbook: --all also includes the backup refs that filter-branch wrote under refs/original/.",
+   "tele": "Hold on the two counts. Over the branches: zero. Over all refs: five snapshots that contain the key. So the answer was yes. The last command says why: the tag `v0.2.0` contains the first affected commit. The tag points at the old commit `64b9b89`, and a tag keeps its commit and all of that commit's ancestors alive. Anyone who fetches the tag fetches the secret. One more detail from the textbook: `--all` also includes the backup refs that `filter-branch` wrote under `refs/original/`.",
+   "words": 82,
+   "est": 32.8,
+   "slide": 55,
+   "line": 238,
+   "t0": 816.5,
+   "h": "d937f1ab",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.908,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 2.12,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 3: all refs, with tags following their commits.",
+   "tele": "Step 3: all refs, with tags following their commits.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 56,
+   "line": 240,
+   "t0": 849.3,
+   "h": "920fd0ae",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read three things. The branches are reported \"unchanged\" because the first run already rewrote them. v0.1.0 is unchanged because it points before the leak. v0.2.0 was rewritten and now points at 66a99cc.",
+   "tele": "Read three things. The branches are reported \"unchanged\" because the first run already rewrote them. `v0.1.0` is unchanged because it points before the leak. `v0.2.0` was rewritten and now points at `66a99cc`.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 57,
+   "line": 261,
+   "t0": 852.9,
+   "h": "372e0839",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 4: the map of old and new IDs.",
+   "tele": "Step 4: the map of old and new IDs.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 58,
+   "line": 263,
+   "t0": 865.7,
+   "h": "050ee8e3",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Predict again. Of the eight commits on main, how many have a new ID? Say it out loud.",
+   "tele": "Predict again. Of the eight commits on `main`, how many have a new ID? Say it out loud.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 59,
+   "line": 269,
+   "t0": 869.3,
+   "h": "2c1ea71b",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 59,
+   "line": 271,
+   "t0": 876.5,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Four. 0805fd8 became 0ac4257 because its tree changed. The three above it changed although their own content did not: each records its parent's ID, the parent changed, so the hash changed. The four commits below the leak are byte for byte the same objects. This table is what git-filter-repo writes to commit-map. In an incident, that file belongs in the incident record, so that old IDs can be translated.",
+   "tele": "Four. `0805fd8` became `0ac4257` because its tree changed. The three above it changed although their own content did not: each records its parent's ID, the parent changed, so the hash changed. The four commits below the leak are byte for byte the same objects. This table is what git-filter-repo writes to `commit-map`. In an incident, that file belongs in the incident record, so that old IDs can be translated.",
+   "words": 69,
+   "est": 27.6,
+   "slide": 60,
+   "line": 288,
+   "t0": 881.0,
+   "h": "2a9d3f8c",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 5: the old objects are still there. A rewrite adds new objects and moves refs. It deletes nothing by itself.",
+   "tele": "Step 5: the old objects are still there. A rewrite adds new objects and moves refs. It deletes nothing by itself.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 61,
+   "line": 290,
+   "t0": 908.6,
+   "h": "0f3c7167",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git cat-file -t answers commit: the object exists. git show prints the file with the key from it. In this clone, after a rewrite of all refs.",
+   "tele": "`git cat-file -t` answers `commit`: the object exists. `git show` prints the file with the key from it. In this clone, after a rewrite of all refs.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 62,
+   "line": 310,
+   "t0": 917.0,
+   "h": "0e836280",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.83,
+      "dissolve": true
+     },
+     {
+      "at": 0.374,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.73,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 6: pruning. 🔴 DANGEROUS. The five answers for git reflog expire --expire=now --all followed by git gc --prune=now. What it changes: all reflog entries and all unreachable objects are deleted. What it can destroy: every commit, stash and staged blob that only a reflog, or nothing at all, was keeping. Preview: git fsck --unreachable --no-reflogs lists what would go. Recovery: none locally. When appropriate: in a cleanup clone, and in a stale clone after its owner has saved their work. In your working clone it also discards every stash.",
+   "tele": "Step 6: pruning. 🔴 DANGEROUS. The five answers for `git reflog expire --expire=now --all` followed by `git gc --prune=now`. What it changes: all reflog entries and all unreachable objects are deleted. What it can destroy: every commit, stash and staged blob that only a reflog, or nothing at all, was keeping. Preview: `git fsck --unreachable --no-reflogs` lists what would go. Recovery: none locally. When appropriate: in a cleanup clone, and in a stale clone after its owner has saved their work. In your working clone it also discards every stash.",
+   "words": 89,
+   "est": 35.6,
+   "slide": 63,
+   "line": 312,
+   "t0": 927.8,
+   "h": "cf3cfb02",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three deliberate steps: delete the backup refs, expire the reflogs, prune. Now git cat-file -t fails with \"Not a valid object name\", the scan prints zero, and git fsck prints nothing. git-filter-repo performs this pruning for you at the end of its run, which is why it insists on a fresh clone.",
+   "tele": "Three deliberate steps: delete the backup refs, expire the reflogs, prune. Now `git cat-file -t` fails with \"Not a valid object name\", the scan prints zero, and `git fsck` prints nothing. git-filter-repo performs this pruning for you at the end of its run, which is why it insists on a fresh clone.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 64,
+   "line": 337,
+   "t0": 963.4,
+   "h": "c07e078c",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.86,
+      "dissolve": true
+     },
+     {
+      "at": 0.265,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.01,
+      "dissolve": false
+     },
+     {
+      "at": 0.54,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 7: the forced push. 🔴 DANGEROUS. The five answers before the command is run. What it changes: git push --force --mirror sets every ref on the remote to the local value and deletes those the clone lacks. What it can destroy: branches and tags that exist only on the remote. A branch that a colleague pushed after you cloned is removed by your push.",
+   "tele": "Step 7: the forced push. 🔴 DANGEROUS. The five answers before the command is run. What it changes: `git push --force --mirror` sets every ref on the remote to the local value and deletes those the clone lacks. What it can destroy: branches and tags that exist only on the remote. A branch that a colleague pushed after you cloned is removed by your push.",
+   "words": 64,
+   "est": 25.6,
+   "slide": 65,
+   "line": 339,
+   "t0": 984.2,
+   "h": "5a639839",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "That's the mechanical reason for the freeze. Preview: git push --dry-run --force --mirror origin. Recovery: another clone that still has the old refs. On GitHub, the instruments of Chapter 13. When appropriate: once, after a freeze, at the end of a verified rewrite. Every other force push uses --force-with-lease.",
+   "tele": "That's the mechanical reason for the freeze. Preview: `git push --dry-run --force --mirror origin`. Recovery: another clone that still has the old refs. On GitHub, the instruments of Chapter 13. When appropriate: once, after a freeze, at the end of a verified rewrite. Every other force push uses `--force-with-lease`.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 66,
+   "line": 339,
+   "t0": 1009.8,
+   "h": "f7511759",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three forced updates, each with a plus sign: two branches and the tag v0.2.0. v0.1.0 isn't listed, because it didn't change.",
+   "tele": "Three forced updates, each with a plus sign: two branches and the tag `v0.2.0`. `v0.1.0` isn't listed, because it didn't change.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 67,
+   "line": 355,
+   "t0": 1029.4,
+   "h": "0f1bc493",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 8: what the server holds now. Here's the question from the opening. Predict before running: after this push, can the server still print the key? Yes or no, out loud.",
+   "tele": "Step 8: what the server holds now. Here's the question from the opening. Predict before running: after this push, can the server still print the key? Yes or no, out loud.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 68,
+   "line": 357,
+   "t0": 1037.8,
+   "h": "677f3e6e",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 68,
+   "line": 359,
+   "t0": 1050.2,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "This is the output the whole video was built for, and it closes the question from the opening. No ref on the server reaches the secret. The scan over all refs is clean. And git show on the server still prints the key, from a commit that git fsck lists as unreachable, with four others. Unreachable means that no ref leads to it any more. A bare repository of your own can be pruned with git gc --prune=now. On GitHub you can't run that. Video 168 says who can.",
+   "tele": "This is the output the whole video was built for, and it closes the question from the opening. No ref on the server reaches the secret. The scan over all refs is clean. And `git show` on the server still prints the key, from a commit that `git fsck` lists as unreachable, with four others. Unreachable means that no ref leads to it any more. A bare repository of your own can be pruned with `git gc --prune=now`. On GitHub you can't run that. Video 168 says who can.",
+   "words": 89,
+   "est": 35.6,
+   "slide": 69,
+   "line": 392,
+   "t0": 1054.7,
+   "h": "4464bbb2",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.371,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 3.53,
+      "dissolve": false
+     },
+     {
+      "at": 0.513,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 70,
+   "line": null,
+   "t0": 1090.3,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read the last two columns of the first two rows: unchanged, unchanged. Nothing you did in the cleanup clone touched the remote until the push, and the push moved refs only.",
+   "tele": "Read the last two columns of the first two rows: unchanged, unchanged. Nothing you did in the cleanup clone touched the remote until the push, and the push moved refs only.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 71,
+   "line": 402,
+   "t0": 1093.3,
+   "h": "dfdbfa46",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 72,
+   "line": 404,
+   "t0": 1105.7,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 73,
+   "line": 406,
+   "t0": 1107.2,
+   "h": "76698d9b",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Rewriting the branches and forgetting the tags. Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+   "tele": "Rewriting the branches and forgetting the tags. Root cause: a tag is a ref, and any ref that still points into the old history keeps the old commits and all their ancestors reachable and fetchable.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 74,
+   "line": 408,
+   "t0": 1109.2,
+   "h": "25d77d97",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Declaring the secret removed after the force push. Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+   "tele": "Declaring the secret removed after the force push. Root cause: a force push moves refs; the old objects stay on the server as unreachable objects, and in every other clone and fork as ordinary history.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 75,
+   "line": 408,
+   "t0": 1123.2,
+   "h": "1eea1223",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Rewriting in the working clone. Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+   "tele": "Rewriting in the working clone. Root cause: the tool finishes by expiring reflogs and pruning, which destroys the local safety net, stashes included.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 76,
+   "line": 408,
+   "t0": 1137.2,
+   "h": "d781391b",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Taking the mirror clone before the freeze. Root cause: git push --force --mirror deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+   "tele": "Taking the mirror clone before the freeze. Root cause: `git push --force --mirror` deletes every remote ref that the cleanup clone does not have, so a branch pushed in between is removed.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 77,
+   "line": 408,
+   "t0": 1146.4,
+   "h": "4331b483",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Rewriting before revoking. Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working.",
+   "tele": "Rewriting before revoking. Root cause: the damage happens at the issuer, where the key is accepted, and no change to any repository makes a copied key stop working.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 78,
+   "line": 408,
+   "t0": 1159.2,
+   "h": "65769c08",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 79,
+   "line": 414,
+   "t0": 1170.4,
+   "h": "",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. An ML platform team finds that a file with customer support transcripts was committed to the evaluation repository four months ago. This isn't a credential. Nothing can be rotated, so the data stays harmful, and the textbook's criterion for a rewrite is met. The lead writes the plan before anyone types a command: a freeze from a stated time, the rules that block force pushes and tag updates switched off for the duration and an owner for switching them back on, a fresh clone on one machine, the verification commands, the count of affected pull requests for the Support request, and the instruction to colleagues about their clones.",
+   "tele": "Now, out of the lab. An ML platform team finds that a file with customer support transcripts was committed to the evaluation repository four months ago. This isn't a credential. Nothing can be rotated, so the data stays harmful, and the textbook's criterion for a rewrite is met. The lead writes the plan before anyone types a command: a freeze from a stated time, the rules that block force pushes and tag updates switched off for the duration and an owner for switching them back on, a fresh clone on one machine, the verification commands, the count of affected pull requests for the Support request, and the instruction to colleagues about their clones.",
+   "words": 113,
+   "est": 45.2,
+   "slide": 80,
+   "line": 416,
+   "t0": 1171.9,
+   "h": "2560b5d8",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Then comes the cost that is specific to an ML team. Every experiment record, model card and deployment manifest that stored a commit ID from the last four months now points at a commit that no longer exists on the remote. The team doesn't try to edit all of those records.",
+   "tele": "Then comes the cost that is specific to an ML team. Every experiment record, model card and deployment manifest that stored a commit ID from the last four months now points at a commit that no longer exists on the remote. The team doesn't try to edit all of those records.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 81,
+   "line": 418,
+   "t0": 1217.1,
+   "h": "cb743919",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "It stores git-filter-repo's commit-map file in the incident record, so that anyone who holds an old ID can translate it. And because the repository required signed commits, the lead plans the bypass for the rewritten history in advance, since the signatures are gone.",
+   "tele": "It stores git-filter-repo's `commit-map` file in the incident record, so that anyone who holds an old ID can translate it. And because the repository required signed commits, the lead plans the bypass for the rewritten history in advance, since the signatures are gone.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 82,
+   "line": 418,
+   "t0": 1237.5,
+   "h": "647871b3",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 83,
+   "line": 420,
+   "t0": 1254.7,
+   "h": "",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 31.1, \"The tabletop: a committed secret, from report to prevention\", in lab-manual/m31-secret-leak-response.md. It runs entirely in the lab shell, with a bare repository as the server, three clones and a dummy secret.",
+   "tele": "Your turn. Do Lab 31.1, \"The tabletop: a committed secret, from report to prevention\", in `lab-manual/m31-secret-leak-response.md`. It runs entirely in the lab shell, with a bare repository as the server, three clones and a dummy secret.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 84,
+   "line": 422,
+   "t0": 1256.2,
+   "h": "3a30158f",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before you run the rewrite in the lab, write down three predictions: which refs will be reported as rewritten and which as unchanged, how many of the commits on main will have new IDs, and what git show of the first affected commit will print on the server after the forced push. Then run it and compare. The lab's questions have no answers in the lab file. Attempt them before you open the answers.",
+   "tele": "Before you run the rewrite in the lab, write down three predictions: which refs will be reported as rewritten and which as unchanged, how many of the commits on `main` will have new IDs, and what `git show` of the first affected commit will print on the server after the forced push. Then run it and compare. The lab's questions have no answers in the lab file. Attempt them before you open the answers.",
+   "words": 74,
+   "est": 29.6,
+   "slide": 85,
+   "line": 424,
+   "t0": 1270.6,
+   "h": "4f72e3c1",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "When that is done, the challenge is Exercise 31.5, Level 4, \"How far did it get?\", in exercises/m26-m31-actions-security.md.",
+   "tele": "When that is done, the challenge is Exercise 31.5, Level 4, \"How far did it get?\", in `exercises/m26-m31-actions-security.md`.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 86,
+   "line": 426,
+   "t0": 1300.2,
+   "h": "3fabd5c9",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 87,
+   "line": 428,
+   "t0": 1307.4,
+   "h": "",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 88,
+   "line": 432,
+   "t0": 1308.9,
+   "h": "",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 95,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer it out loud before you open the answers file. A strong answer does four things. It starts with the layer where the damage happens, the issuer, and says what revocation achieves that no repository operation can. It gives the criterion for when a rewrite is warranted at all, with examples of data that can't be rotated.",
+   "tele": "Answer it out loud before you open the answers file. A strong answer does four things. It starts with the layer where the damage happens, the issuer, and says what revocation achieves that no repository operation can. It gives the criterion for when a rewrite is warranted at all, with examples of data that can't be rotated.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 88,
+   "line": 434,
+   "t0": 1310.9,
+   "h": "963c0dab",
+   "anim": {
+    "group": 75,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 96,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "It names the costs concretely: what happens to clones, to recorded commit IDs, to signatures, to open pull requests, and what the rewrite can't recall. And it ends with a decision that is written down with its reason. An answer that describes only the filter command has answered a different question.",
+   "tele": "It names the costs concretely: what happens to clones, to recorded commit IDs, to signatures, to open pull requests, and what the rewrite can't recall. And it ends with a decision that is written down with its reason. An answer that describes only the filter command has answered a different question.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 88,
+   "line": 434,
+   "t0": 1333.7,
+   "h": "540a5c7d",
+   "anim": {
+    "group": 75,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 97,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 89,
+   "line": 436,
+   "t0": 1354.1,
+   "h": "",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 98,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say these sentences, in your own words.",
+   "tele": "Let's land this. You should now be able to say these sentences, in your own words.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 90,
+   "line": 438,
+   "t0": 1355.6,
+   "h": "31ec19af",
+   "anim": {
+    "group": 77,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 99,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+   "tele": "A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs; the ancestors of the first affected commit are untouched.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 91,
+   "line": 440,
+   "t0": 1362.0,
+   "h": "650cdbac",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 100,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+   "tele": "git-filter-repo is a separate program; it wants a fresh clone, records a commit map, removes signatures, and prunes at the end.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 92,
+   "line": 440,
+   "t0": 1372.8,
+   "h": "e796a1db",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 101,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+   "tele": "All refs have to be rewritten and force-pushed, tags included, because any ref into the old history keeps it alive.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 93,
+   "line": 440,
+   "t0": 1381.2,
+   "h": "8999888a",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 102,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+   "tele": "A rewrite adds objects and moves refs; old objects remain until they are pruned, in every repository separately, and the server keeps them after the push.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 94,
+   "line": 440,
+   "t0": 1389.2,
+   "h": "b855c58f",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 103,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys.",
+   "tele": "A rewrite is for data that stays harmful after rotation; for a key that was revoked within the hour it costs more than it buys.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 95,
+   "line": 440,
+   "t0": 1399.6,
+   "h": "fbd06323",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 104,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 96,
+   "line": 446,
+   "t0": 1409.6,
+   "h": "",
+   "anim": {
+    "group": 79,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 105,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 21B.16 and 21B.17 of the textbook. Then do Exercise 31.4, Level 3, \"Review this runbook\", in exercises/m26-m31-actions-security.md.",
+   "tele": "Read sections 21B.16 and 21B.17 of the textbook. Then do Exercise 31.4, Level 3, \"Review this runbook\", in `exercises/m26-m31-actions-security.md`.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 97,
+   "line": 448,
+   "t0": 1411.1,
+   "h": "a6ffa6ac",
+   "anim": {
+    "group": 80,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 106,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you followed a rewrite from the fresh clone to the forced push, and you saw what it leaves behind. Run the lab once before you go on. Next time, a colleague who never read the freeze message pulls and pushes: the stale clone that pushes the secret back, the GitHub side of a rewrite, and the controls that limit blast radius. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you followed a rewrite from the fresh clone to the forced push, and you saw what it leaves behind. Run the lab once before you go on. Next time, a colleague who never read the freeze message pulls and pushes: the stale clone that pushes the secret back, the GitHub side of a rewrite, and the controls that limit blast radius. Until then, look at the state first and type second. See you in the next one.",
+   "words": 78,
+   "est": 31.2,
+   "slide": 98,
+   "line": 450,
+   "t0": 1418.7,
+   "h": "1020f3b6",
+   "anim": {
+    "group": 81,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1449.9,
+ "narration_words": 3491,
+ "warnings": [],
+ "anim_version": 3
+}

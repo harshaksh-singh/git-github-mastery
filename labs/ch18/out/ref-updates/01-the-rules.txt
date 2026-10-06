@@ -1,0 +1,28 @@
+$ cat rules/pre-receive
+#!/bin/sh
+# pre-receive: the server runs this before any ref moves.
+# Standard input has one line per proposed ref update: <old id> <new id> <ref name>
+zero=0000000000000000000000000000000000000000
+status=0
+while read old new ref; do
+  case "$ref" in
+    refs/heads/main)                      # target of the branch rules
+      if [ "$new" = "$zero" ]; then
+        echo "rule 'restrict deletions': $ref may not be deleted"; status=1; continue
+      fi
+      [ "$old" = "$zero" ] && continue    # creation: nothing to compare with
+      if ! git merge-base --is-ancestor "$old" "$new"; then
+        echo "rule 'block force pushes': the update would remove commits from $ref"; status=1
+      fi
+      if [ -n "$(git rev-list --merges "$old..$new")" ]; then
+        echo "rule 'require linear history': the update adds a merge commit to $ref"; status=1
+      fi ;;
+    refs/tags/v*)                         # target of the tag rules
+      if [ "$new" = "$zero" ]; then
+        echo "rule 'restrict deletions': $ref may not be deleted"; status=1
+      elif [ "$old" != "$zero" ]; then
+        echo "rule 'restrict updates': $ref already exists and may not move"; status=1
+      fi ;;
+  esac
+done
+exit $status

@@ -1,0 +1,72 @@
+# Workflow 10: matrix testing across operating systems and Python versions.
+#
+# Teaches: `strategy.matrix` with `exclude` and `include`; `fail-fast: false`; one experimental
+# combination that may fail without failing the run (`continue-on-error`); a single aggregate
+# job that is safe to use as a required status check.
+# Chapter 20A, sections 20A.10 and 20A.13. Lab 26.8.
+#
+# Needs uv.lock in the repository (created with `uv lock` in Lab 26.2).
+# Copy to .github/workflows/10-matrix.yml in the inventory-api practice repository.
+# Parse-checked and assembled from documented syntax; not executed on GitHub by the author.
+
+name: Matrix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: py${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+        python: ["3.11", "3.12", "3.13"]
+        experimental: [false]
+        exclude:
+          - os: macos-15
+            python: "3.11"
+        include:
+          - os: ubuntu-24.04
+            python: "3.14"
+            experimental: true
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and select the Python version
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install the project and the dev group from the lock file
+        run: uv sync --locked
+
+      - name: Run the tests
+        run: uv run pytest
+
+  # Require THIS job in a ruleset, not the matrix jobs: its name does not change when the
+  # matrix changes, and it fails when any non-experimental combination failed or was cancelled.
+  all-tests:
+    name: All matrix tests
+    if: ${{ always() }}
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the result of the matrix
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: |
+          echo "matrix result: $RESULT"
+          test "$RESULT" = "success"

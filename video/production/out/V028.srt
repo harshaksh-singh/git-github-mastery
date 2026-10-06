@@ -1,0 +1,1242 @@
+1
+00:00:04,500 --> 00:00:09,261
+Your CTO asks: "Half of the commits a
+contractor pushed to the company repository
+
+2
+00:00:09,301 --> 00:00:13,885
+carry her private email address. She says
+she set the work address months ago.
+
+3
+00:00:13,925 --> 00:00:14,714
+Who is right?"
+
+4
+00:00:15,054 --> 00:00:20,686
+Both. She did set the work address, in a
+separate file, with a rule that says: use
+
+5
+00:00:20,726 --> 00:00:26,150
+this file for repositories under ~/work.
+So where does the private address come
+
+6
+00:00:26,190 --> 00:00:28,225
+from? Say your guess out loud.
+
+7
+00:00:33,065 --> 00:00:37,549
+The rule has no trailing slash. So it
+never matched, and Git said nothing.
+
+8
+00:00:37,589 --> 00:00:42,561
+Configuration fails silently: a rule that
+does not apply produces no warning, only
+
+9
+00:00:42,601 --> 00:00:47,512
+commits with the wrong address. This video
+is about configuration that depends on
+
+10
+00:00:47,552 --> 00:00:52,647
+where you are, about settings you should
+choose on purpose, and about the tools that
+
+11
+00:00:52,687 --> 00:00:56,497
+make Git say what it is doing.
+Keep that missing slash in mind.
+
+12
+00:00:56,537 --> 00:00:57,353
+It comes back.
+
+13
+00:00:59,193 --> 00:01:02,798
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:02,838 --> 00:01:07,638
+Configuration is the set of settings that
+tell Git how to behave on your machine.
+
+15
+00:01:07,678 --> 00:01:12,180
+In the last video you learned where
+settings come from and which value wins.
+
+16
+00:01:12,220 --> 00:01:13,136
+Now we use that.
+
+17
+00:01:13,476 --> 00:01:18,639
+Four topics. Include files and conditional
+includes: two identities on one machine,
+
+18
+00:01:18,679 --> 00:01:23,842
+and the ways the rule silently does not
+apply. The settings to decide deliberately:
+
+19
+00:01:23,882 --> 00:01:28,982
+each one has a cost, and "I never set it"
+is also a decision, made by the default.
+
+20
+00:01:29,022 --> 00:01:34,060
+Aliases, your own short names for commands:
+what they expand to, and their traps.
+
+21
+00:01:34,100 --> 00:01:39,326
+And environment variables for diagnosis. At
+the end I'll show the course's reference
+
+22
+00:01:39,366 --> 00:01:42,773
+configuration, in which every
+line has a stated reason.
+
+23
+00:01:44,613 --> 00:01:46,192
+Here's what you'll walk away with.
+
+24
+00:01:46,532 --> 00:01:47,944
+After this video you can:
+
+25
+00:01:48,284 --> 00:01:52,953
+Configure two identities with includeIf,
+and prove which one a repository uses.
+
+26
+00:01:53,293 --> 00:01:56,751
+Give the reasons why a conditional
+include does not take effect.
+
+27
+00:01:57,091 --> 00:02:02,771
+Justify a pull, push, fetch, merge, rebase,
+diff and rerere setting by its downside.
+
+28
+00:02:03,112 --> 00:02:07,656
+Write an alias, including a shell alias
+with arguments, and trace what it runs.
+
+29
+00:02:07,996 --> 00:02:10,535
+Trace a Git command with
+environment variables.
+
+30
+00:02:12,375 --> 00:02:17,602
+Includes. In one sentence: include.path
+reads another file at the point where the
+
+31
+00:02:17,642 --> 00:02:22,999
+line stands, and includeIf.<condition>.path
+does so only when a condition about the
+
+32
+00:02:23,039 --> 00:02:24,754
+current repository is true.
+
+33
+00:02:25,094 --> 00:02:30,180
+The conditions in Git 2.55 are gitdir:
+and gitdir/i:, where the location of the
+
+34
+00:02:30,220 --> 00:02:34,657
+repository's .git directory matches
+a glob, a pattern with wildcards.
+
+35
+00:02:34,697 --> 00:02:39,977
+Then onbranch:, the branch that is checked
+out. And hasconfig:remote.*.url:, where
+
+36
+00:02:40,017 --> 00:02:45,362
+some remote of the repository has a matching
+URL. In a gitdir pattern, a leading ~/
+
+37
+00:02:45,402 --> 00:02:49,904
+is your home directory, and a trailing
+slash means "everything below".
+
+38
+00:02:50,244 --> 00:02:54,675
+Five ways the rule silently does not
+apply. The curriculum's objective and the
+
+39
+00:02:54,715 --> 00:02:59,261
+interview question count four. The textbook
+lists five, and I give you all five.
+
+40
+00:02:59,301 --> 00:03:02,929
+Each one produces commits with
+the wrong address and no message.
+
+41
+00:03:03,269 --> 00:03:09,254
+One, the trailing slash: gitdir:~/work
+matches only a repository whose .git
+
+42
+00:03:09,294 --> 00:03:11,423
+directory is ~/work itself.
+
+43
+00:03:11,763 --> 00:03:16,619
+Two, order: the include is read where it
+stands. If the [user] section comes after
+
+44
+00:03:16,659 --> 00:03:20,560
+it in the including file, the
+general value is read last and wins.
+
+45
+00:03:20,600 --> 00:03:23,485
+Keep conditional includes
+at the end of the file.
+
+46
+00:03:23,825 --> 00:03:27,902
+Three, not in a repository:
+gitdir needs a .git directory.
+
+47
+00:03:27,942 --> 00:03:30,103
+In ~/work itself there is none.
+
+48
+00:03:30,442 --> 00:03:35,062
+Four, a missing file: an include that names
+a file that does not exist is skipped
+
+49
+00:03:35,102 --> 00:03:36,040
+without an error.
+
+50
+00:03:36,380 --> 00:03:42,164
+Five, asking the wrong question: a scope
+option such as --global switches include
+
+51
+00:03:42,204 --> 00:03:47,268
+processing off, so the usual diagnostic
+lies unless you add --includes.
+
+52
+00:03:47,608 --> 00:03:52,644
+A team file, opted into. Git never reads
+configuration from the files it tracks.
+
+53
+00:03:52,684 --> 00:03:57,529
+If it did, cloning a repository would
+let its author set your pager, your SSH
+
+54
+00:03:57,569 --> 00:04:02,859
+command and your hooks. So a team that wants
+shared settings commits a file and asks
+
+55
+00:04:02,899 --> 00:04:07,871
+each member to include it once. Review
+changes to such a file like code: it can
+
+56
+00:04:07,911 --> 00:04:10,536
+define an alias that runs a shell command.
+
+57
+00:04:10,876 --> 00:04:15,731
+The settings to decide deliberately. The
+textbook lists twenty settings in a table
+
+58
+00:04:15,771 --> 00:04:20,208
+with six columns: what it does, why it
+matters, its downside, whether it is
+
+59
+00:04:20,248 --> 00:04:23,431
+optional, and whether it is
+personal or a team matter.
+
+60
+00:04:23,471 --> 00:04:28,206
+Read the downside column aloud for the
+seven kinds this video's objective names.
+
+61
+00:04:34,546 --> 00:04:40,254
+pull.rebase: how git pull integrates. With
+nothing set, a diverged pull is fatal.
+
+62
+00:04:40,294 --> 00:04:46,001
+Downside of true: it gives unpublished
+commits new IDs and flattens local merges.
+
+63
+00:04:46,041 --> 00:04:49,904
+pull.ff=only: pull refuses
+anything but a fast-forward.
+
+64
+00:04:49,944 --> 00:04:55,226
+In configuration it wins over pull.rebase,
+so a diverged pull needs a flag.
+
+65
+00:05:01,566 --> 00:05:06,829
+push.autoSetupRemote, which the textbook
+dates to Git 2.37: the first push of a
+
+66
+00:05:06,869 --> 00:05:12,199
+branch sets its upstream. Downside: a
+mistyped branch name is published at once.
+
+67
+00:05:12,239 --> 00:05:14,884
+push.default: leave the default, simple.
+
+68
+00:05:15,224 --> 00:05:19,511
+fetch.prune: fetch deletes remote-tracking
+branches whose branch is gone.
+
+69
+00:05:19,551 --> 00:05:23,422
+Downside: that ref may have been
+your last name for those commits.
+
+70
+00:05:23,762 --> 00:05:29,723
+merge.conflictStyle, with zdiff3 since
+Git 2.35: adds the common ancestor to a
+
+71
+00:05:29,763 --> 00:05:34,648
+conflict. Downside: longer conflict
+regions, and a third marker.
+
+72
+00:05:34,988 --> 00:05:39,501
+rebase.autoSquash: downside, a
+title that starts with fixup!
+
+73
+00:05:39,541 --> 00:05:44,738
+by accident is moved. rebase.autoStash:
+the final apply can conflict.
+
+74
+00:05:44,778 --> 00:05:49,596
+rebase.updateRefs, Git 2.38: it
+moves branches you did not name.
+
+75
+00:05:58,936 --> 00:06:03,585
+diff.algorithm: myers is the default, and
+histogram reads better when code moves.
+
+76
+00:06:03,625 --> 00:06:08,274
+Downside: your diff differs from a
+colleague's. The setting changes what you see,
+
+77
+00:06:08,314 --> 00:06:09,490
+never what is stored.
+
+78
+00:06:09,830 --> 00:06:13,905
+rerere.enabled: records conflict
+resolutions and replays them.
+
+79
+00:06:13,945 --> 00:06:16,892
+Downside: a wrong
+resolution is replayed too.
+
+80
+00:06:23,232 --> 00:06:28,315
+And one more with a sharp edge:
+help.autocorrect. immediate runs a guess.
+
+81
+00:06:28,355 --> 00:06:31,333
+Since Git 2.49 the value
+1 means immediate.
+
+82
+00:06:37,673 --> 00:06:42,694
+The textbook's rule for teams: split the
+few settings a team must agree on, such as
+
+83
+00:06:42,734 --> 00:06:47,268
+the default branch name, line-ending
+attributes, and whether signatures are
+
+84
+00:06:47,308 --> 00:06:50,500
+required, from everything
+else, which stays personal.
+
+85
+00:06:50,540 --> 00:06:52,390
+And put a comment on each line.
+
+86
+00:06:52,730 --> 00:06:57,729
+Aliases. In one sentence: an alias is a
+configuration value under alias.<name> that
+
+87
+00:06:57,769 --> 00:07:02,768
+Git substitutes for the name when it is the
+first word of a command line, appending
+
+88
+00:07:02,808 --> 00:07:04,104
+any further arguments.
+
+89
+00:07:04,444 --> 00:07:09,054
+If the value starts with !, it's handed
+to the shell and run from the top-level
+
+90
+00:07:09,094 --> 00:07:12,763
+directory of the repository.
+Otherwise it's a Git command line.
+
+91
+00:07:12,803 --> 00:07:17,708
+An alias can't replace an existing command.
+Defining one is git config set, which is
+
+92
+00:07:17,748 --> 00:07:18,297
+🟡 CAUTION.
+
+93
+00:07:18,637 --> 00:07:24,187
+Two traps, both about arguments. Arguments
+after the alias name are appended to the
+
+94
+00:07:24,227 --> 00:07:29,374
+expansion. And for a shell alias, Git
+runs sh -c with the alias and "$@": the
+
+95
+00:07:29,414 --> 00:07:32,944
+arguments are available as
+$1, and are also appended.
+
+96
+00:07:32,984 --> 00:07:36,514
+The manual's remedy is a
+function that consumes them.
+
+97
+00:07:36,854 --> 00:07:42,246
+Never use aliases in scripts, hooks or CI:
+they exist in your configuration only.
+
+98
+00:07:42,586 --> 00:07:46,729
+The textbook carries one caveat here
+that I repeat: the manual documents a
+
+99
+00:07:46,769 --> 00:07:50,913
+subsection form for alias names with
+unusual characters, and which release
+
+100
+00:07:50,953 --> 00:07:53,005
+introduced that form was not checked.
+
+101
+00:07:53,345 --> 00:07:58,065
+Environment variables for diagnosis.
+Configuration says what Git should do.
+
+102
+00:07:58,105 --> 00:08:00,984
+These variables make Git
+say what it is doing.
+
+103
+00:08:01,324 --> 00:08:07,270
+GIT_TRACE=1: alias expansion, and the
+built-in and external commands that are
+
+104
+00:08:07,310 --> 00:08:13,255
+started. GIT_TRACE_SETUP=1: the .git
+directory, the working tree, the current
+
+105
+00:08:13,295 --> 00:08:19,707
+directory and prefix Git settled on. Use
+it when Git picks up the wrong repository,
+
+106
+00:08:19,747 --> 00:08:25,071
+or none. GIT_TRACE_PACKET=1: the
+protocol conversation with a remote.
+
+107
+00:08:25,111 --> 00:08:31,445
+GIT_TRACE_CURL=1: the HTTP exchange.
+GIT_SSH_COMMAND: replaces the ssh program and
+
+108
+00:08:31,485 --> 00:08:37,197
+its options for this command.
+GIT_TRACE2_PERF=1: timings inside a command.
+
+109
+00:08:37,237 --> 00:08:43,493
+A value of 1, 2 or true writes to standard
+error, and an absolute path appends to
+
+110
+00:08:43,533 --> 00:08:44,271
+that file.
+
+111
+00:08:44,611 --> 00:08:48,647
+The HTTP variables need a server,
+so they are not run here.
+
+112
+00:08:48,687 --> 00:08:53,276
+The textbook's version note: older
+tutorials name GIT_CURL_VERBOSE.
+
+113
+00:08:53,316 --> 00:08:58,251
+The Git 2.55 manual documents
+GIT_TRACE_CURL. Since which release is not
+
+114
+00:08:58,291 --> 00:09:03,778
+established. Keep GIT_TRACE_REDACT at its
+default, so that Authorization headers
+
+115
+00:09:03,818 --> 00:09:07,026
+stay out of the output
+you paste into a ticket.
+
+116
+00:09:08,866 --> 00:09:13,697
+Two small pictures. For includes, the
+textbook's analogy: a footnote that says
+
+117
+00:09:13,737 --> 00:09:18,381
+"insert appendix D here, but only in
+the edition for the Bengaluru office".
+
+118
+00:09:18,421 --> 00:09:23,378
+The analogy breaks because order matters:
+text inserted early is overridden by a
+
+119
+00:09:23,418 --> 00:09:25,439
+later line of the including file.
+
+120
+00:09:25,779 --> 00:09:30,792
+For aliases: a speed-dial key. It breaks
+at the arguments: whatever you type after
+
+121
+00:09:30,832 --> 00:09:33,688
+the alias is added to the
+end of the expansion.
+
+122
+00:09:34,028 --> 00:09:37,672
+And one frame for the whole
+video: configuration is silent.
+
+123
+00:09:37,712 --> 00:09:42,542
+A rule that does not match, a key that
+is misspelled, an alias that expands to
+
+124
+00:09:42,582 --> 00:09:47,162
+something else: none of them prints a
+warning. So the skill is not writing
+
+125
+00:09:47,202 --> 00:09:52,219
+configuration. It's asking Git what it
+read, with --show-origin, and what it ran,
+
+126
+00:09:52,259 --> 00:09:53,156
+with GIT_TRACE.
+
+127
+00:09:54,996 --> 00:09:59,641
+Try it now. Thirty seconds, on paper.
+Write the gitdir condition for every
+
+128
+00:09:59,681 --> 00:10:03,630
+repository under a folder named
+clients in your home directory.
+
+129
+00:10:03,670 --> 00:10:06,542
+Mind the last character.
+Then say it out loud.
+
+130
+00:10:11,382 --> 00:10:16,752
+It's gitdir:~/clients/, with the trailing
+slash. You'll meet that exact rule in the
+
+131
+00:10:16,792 --> 00:10:18,903
+demo. Now the textbook's drawing.
+
+132
+00:10:19,243 --> 00:10:24,690
+On the left, the personal file: a [user]
+section first, and the conditional include
+
+133
+00:10:24,730 --> 00:10:30,176
+last. On the right, the work file with one
+line. The arrow is the include: the work
+
+134
+00:10:30,216 --> 00:10:34,142
+file is read at that point, and
+only if the condition holds.
+
+135
+00:10:34,182 --> 00:10:39,695
+Under the boxes, the two reading orders.
+Inside ~/work, two values are read, and the
+
+136
+00:10:39,735 --> 00:10:42,141
+later one wins. Elsewhere, one value.
+
+137
+00:10:43,981 --> 00:10:47,743
+Into the lab. In this demo the
+identity comes from configuration.
+
+138
+00:10:47,783 --> 00:10:52,656
+The lab library normally pins it through
+environment variables, which would hide the
+
+139
+00:10:52,696 --> 00:10:53,066
+effect.
+
+140
+00:10:53,406 --> 00:10:56,432
+Before: both repositories
+use the same address.
+
+141
+00:10:56,772 --> 00:11:02,789
+A second file with the work address, and
+one git config set --global 🟡 CAUTION for
+
+142
+00:11:02,829 --> 00:11:08,920
+the conditional include. Predict what git
+config get --all --show-origin user.email
+
+143
+00:11:08,960 --> 00:11:12,688
+prints inside the work
+repository. Say it out loud.
+
+144
+00:11:17,528 --> 00:11:21,940
+Two global values, and the second,
+from the included file, wins.
+
+145
+00:11:21,980 --> 00:11:24,653
+In ~/oss/evalkit, the file is not read.
+
+146
+00:11:24,993 --> 00:11:28,112
+The commits prove it: the new
+commit carries the work address.
+
+147
+00:11:28,452 --> 00:11:33,091
+Now the failures. For each one,
+predict the address before the output.
+
+148
+00:11:33,131 --> 00:11:37,436
+First, the same rule without its
+trailing slash. Say it out loud.
+
+149
+00:11:37,476 --> 00:11:38,105
+I'll wait.
+
+150
+00:11:42,945 --> 00:11:47,574
+No trailing slash: the personal address.
+This is the contractor, and the missing
+
+151
+00:11:47,614 --> 00:11:48,916
+slash you kept in mind.
+
+152
+00:11:49,256 --> 00:11:54,570
+Quick quiz. Next come the same two sections
+in the other order: the conditional
+
+153
+00:11:54,610 --> 00:12:00,060
+include first, and the [user] section after
+it. Inside the work repository, which
+
+154
+00:12:00,100 --> 00:12:04,059
+address wins? A, the work
+address. B, the personal address.
+
+155
+00:12:04,099 --> 00:12:04,872
+Your answer?
+
+156
+00:12:09,712 --> 00:12:14,184
+B. The same two sections in the other
+order: the general value is read last, and
+
+157
+00:12:14,224 --> 00:12:14,466
+wins.
+
+158
+00:12:14,806 --> 00:12:19,296
+In ~/work itself, which is not a
+repository, the rule does not apply.
+
+159
+00:12:19,336 --> 00:12:21,790
+In a new repository below it, it does.
+
+160
+00:12:22,130 --> 00:12:24,286
+A missing file is skipped
+without an error.
+
+161
+00:12:24,626 --> 00:12:30,738
+And the diagnostic that lies: git config
+get --global user.email prints the personal
+
+162
+00:12:30,778 --> 00:12:35,425
+address, because naming a scope
+switches include processing off.
+
+163
+00:12:35,465 --> 00:12:36,523
+Add --includes.
+
+164
+00:12:36,863 --> 00:12:41,204
+By remote, not by directory: the identity
+changes the moment the remote is added.
+
+165
+00:12:41,544 --> 00:12:45,674
+A team file, opted into with one
+include.path in .git/config.
+
+166
+00:12:45,714 --> 00:12:49,913
+A relative path is resolved
+against the file that contains it.
+
+167
+00:12:52,753 --> 00:12:57,340
+git var GIT_DEFAULT_BRANCH: main with
+the lab's global file, master with none.
+
+168
+00:12:57,680 --> 00:13:02,128
+help.autocorrect: immediate ran the
+guess. With a typo that resolves to a
+
+169
+00:13:02,168 --> 00:13:04,833
+destructive command, it
+would have run that.
+
+170
+00:13:13,173 --> 00:13:16,113
+A function was moved to the
+top of a file and edited.
+
+171
+00:13:16,153 --> 00:13:20,781
+Both diffs are correct. histogram reports
+one block added and one removed, which is
+
+172
+00:13:20,821 --> 00:13:21,568
+what happened.
+
+173
+00:13:27,408 --> 00:13:29,528
+Five aliases that earn their place.
+
+174
+00:13:29,868 --> 00:13:35,305
+st is status -sb. lg draws every ref as a
+graph: the fourth command of the diagnosis
+
+175
+00:13:35,345 --> 00:13:40,457
+ritual, in two letters. last shows the
+newest commit with the files it touched.
+
+176
+00:13:40,797 --> 00:13:45,112
+unstage is restore --staged --, 🟡
+CAUTION, as video 17 explained.
+
+177
+00:13:45,152 --> 00:13:48,396
+The trailing -- makes
+everything after it a path.
+
+178
+00:13:48,736 --> 00:13:54,990
+amend 🟡 CAUTION is commit --amend --no-edit.
+Everything video 21 said about amending
+
+179
+00:13:55,030 --> 00:13:56,938
+published commits applies.
+
+180
+00:13:57,278 --> 00:14:02,294
+GIT_TRACE=1 prints the expansion, and
+then the built-in command that runs.
+
+181
+00:14:02,634 --> 00:14:08,141
+Arguments are appended. That's convenient
+for lg -2, and a trap for an alias that
+
+182
+00:14:08,181 --> 00:14:09,237
+hard-codes HEAD.
+
+183
+00:14:09,577 --> 00:14:14,409
+A shell alias runs in the top-level
+directory, although you were in gateway/.
+
+184
+00:14:14,449 --> 00:14:17,256
+GIT_PREFIX holds the
+directory you came from.
+
+185
+00:14:17,596 --> 00:14:21,895
+Predict what git tracked HEAD does when
+the alias uses $1 in the middle of a
+
+186
+00:14:21,935 --> 00:14:22,409
+pipeline.
+
+187
+00:14:27,249 --> 00:14:31,593
+The argument is available as $1,
+and is also appended, here to head.
+
+188
+00:14:31,633 --> 00:14:36,493
+The trace shows the command line Git
+started. The function form consumes the
+
+189
+00:14:36,533 --> 00:14:37,138
+arguments.
+
+190
+00:14:37,478 --> 00:14:40,439
+alias.status is ignored:
+built-in commands win.
+
+191
+00:14:53,279 --> 00:14:57,872
+When Git "does not see" a repository,
+or sees a parent directory's repository
+
+192
+00:14:57,912 --> 00:15:00,278
+instead of yours, these lines say which.
+
+193
+00:15:04,818 --> 00:15:10,171
+GIT_SSH_COMMAND, shown without a network:
+a stand-in script named ssh prints its
+
+194
+00:15:10,211 --> 00:15:15,834
+arguments and exits. No connection is made.
+Git appended its own arguments to yours.
+
+195
+00:15:24,674 --> 00:15:29,893
+The course's reference configuration. Read
+the comments: every line has a reason.
+
+196
+00:15:29,933 --> 00:15:34,956
+Notice where the conditional include
+stands: last. And notice the alias pushf.
+
+197
+00:15:34,996 --> 00:15:40,409
+The textbook calls it the alias most worth
+having, because the safe form of a forced
+
+198
+00:15:40,449 --> 00:15:43,850
+push is long enough that
+people type --force instead.
+
+199
+00:15:43,890 --> 00:15:47,874
+Part 2 explains that command.
+Please don't use it before then.
+
+200
+00:15:49,714 --> 00:15:51,363
+Five mistakes to watch for.
+
+201
+00:15:51,703 --> 00:15:57,095
+An includeIf rule that never matches. Root
+cause: the gitdir pattern has no trailing
+
+202
+00:15:57,135 --> 00:16:01,233
+slash, so it matches only a .git
+directory at exactly that path.
+
+203
+00:16:01,573 --> 00:16:06,349
+The rule matches and the wrong value still
+wins. Root cause: the [user] section
+
+204
+00:16:06,389 --> 00:16:10,433
+stands after the include in the
+file, and the value read last wins.
+
+205
+00:16:10,773 --> 00:16:15,194
+git config get --global user.email
+shows the "wrong" address.
+
+206
+00:16:15,234 --> 00:16:21,192
+Root cause: naming a scope switches include
+processing off; add --includes, or ask
+
+207
+00:16:21,232 --> 00:16:23,971
+without a scope inside the repository.
+
+208
+00:16:24,311 --> 00:16:29,235
+A shell alias receives its argument twice.
+Root cause: Git runs the alias with "$@"
+
+209
+00:16:29,275 --> 00:16:33,182
+appended; wrap the body in a function
+that consumes the arguments.
+
+210
+00:16:33,522 --> 00:16:38,937
+A build script uses an alias and fails
+on CI. Root cause: aliases exist in your
+
+211
+00:16:38,977 --> 00:16:40,249
+configuration only.
+
+212
+00:16:42,089 --> 00:16:47,586
+Now, out of the lab, and back to the
+contractor, as the textbook resolves it.
+
+213
+00:16:47,626 --> 00:16:52,764
+She did set her work address, in
+~/.gitconfig-work, with an includeIf on
+
+214
+00:16:52,804 --> 00:16:57,798
+gitdir:~/work. The pattern has no
+trailing slash, so it never matched.
+
+215
+00:16:57,838 --> 00:17:03,695
+Diagnose with git config get --all
+--show-origin user.email inside the repository.
+
+216
+00:17:03,735 --> 00:17:09,376
+Fix the pattern. Then set user.useConfigOnly=true
+and remove the global default
+
+217
+00:17:09,416 --> 00:17:14,626
+address, so that a repository outside
+both directories refuses to commit.
+
+218
+00:17:14,666 --> 00:17:18,149
+And published commits keep
+the address they have.
+
+219
+00:17:18,489 --> 00:17:24,085
+A second one from the textbook. A platform
+team runs a script of git config set
+
+220
+00:17:24,125 --> 00:17:30,077
+--global lines on every laptop. Six months
+later nobody remembers why pull.rebase is
+
+221
+00:17:30,117 --> 00:17:35,927
+true. A comment on each line, and a split
+between team settings and personal ones,
+
+222
+00:17:35,967 --> 00:17:41,420
+prevent that. And the first reply to
+"Git does something strange on the build
+
+223
+00:17:41,460 --> 00:17:47,340
+machine" is two commands run there: git
+config list --show-scope --show-origin, and
+
+224
+00:17:47,380 --> 00:17:49,980
+the failing command with GIT_TRACE=1.
+
+225
+00:17:51,820 --> 00:17:56,071
+Your turn. Do Lab 5.2, "Two
+identities with includeIf", in
+
+226
+00:17:56,111 --> 00:18:00,361
+lab-manual/m05-configuration.md.
+The lab is a sealed room.
+
+227
+00:18:00,401 --> 00:18:06,132
+Its first step points the global
+configuration at a per-lab file inside it, so
+
+228
+00:18:06,172 --> 00:18:10,053
+nothing the lab sets reaches
+your real configuration.
+
+229
+00:18:10,093 --> 00:18:11,606
+Please don't skip it.
+
+230
+00:18:11,946 --> 00:18:17,134
+Before each git config get --show-origin
+user.email, predict the address and the
+
+231
+00:18:17,174 --> 00:18:22,428
+file it comes from. In the failure scenario,
+predict which of the five causes you
+
+232
+00:18:22,468 --> 00:18:23,735
+are about to create.
+
+233
+00:18:25,575 --> 00:18:30,924
+Q57: "Your includeIf rule for ~/work/
+exists, yet a work repository commits with
+
+234
+00:18:30,964 --> 00:18:36,380
+your personal address. Give four causes
+and the command that distinguishes them."
+
+235
+00:18:38,720 --> 00:18:43,388
+Answer out loud. A strong answer names
+causes that are different in kind: about the
+
+236
+00:18:43,428 --> 00:18:47,983
+pattern, about position in the file, about
+the file that is included, about where
+
+237
+00:18:48,023 --> 00:18:52,351
+the repository is, about how you asked.
+For each, say what the distinguishing
+
+238
+00:18:52,391 --> 00:18:56,378
+command would print. You know five.
+Give the four you can explain best.
+
+239
+00:18:58,218 --> 00:19:03,483
+Let's land this. You should now be able to
+say: includeIf reads another file when a
+
+240
+00:19:03,523 --> 00:19:08,723
+condition about the repository holds, and
+I keep it last in my global file so that
+
+241
+00:19:08,763 --> 00:19:14,027
+it wins. It fails silently when the gitdir
+pattern lacks its trailing slash, when a
+
+242
+00:19:14,067 --> 00:19:19,331
+later line overrides it, outside a repository,
+when the file is missing, and when I
+
+243
+00:19:19,371 --> 00:19:22,015
+ask with a scope option and no --includes.
+
+244
+00:19:22,355 --> 00:19:26,117
+Every setting I choose has
+a downside that I can name.
+
+245
+00:19:26,157 --> 00:19:31,748
+An alias is substituted by Git and gets
+my arguments appended, and a shell alias
+
+246
+00:19:31,788 --> 00:19:37,240
+runs from the top of the repository. And
+GIT_TRACE=1 shows what Git ran, while
+
+247
+00:19:37,280 --> 00:19:40,759
+GIT_TRACE_SETUP=1 shows
+which repository it found.
+
+248
+00:19:42,599 --> 00:19:47,345
+Read sections 14B.4 to
+14B.7 of Chapter 14B.
+
+249
+00:19:47,685 --> 00:19:53,996
+Do Lab 5.3, "Aliases", in
+lab-manual/m05-configuration.md, then fill in the
+
+250
+00:19:54,036 --> 00:20:00,854
+worksheet of Lab 5.4, "Your deliberate
+configuration (a worksheet)", and keep it;
+
+251
+00:20:00,894 --> 00:20:02,294
+V174 revisits it.
+
+252
+00:20:02,634 --> 00:20:10,199
+Challenge: Exercise 5.9, Level 4, "two work
+repositories, two wrong addresses", in
+
+253
+00:20:10,239 --> 00:20:13,260
+exercises/m01-m05-foundations.md.
+
+254
+00:20:13,600 --> 00:20:18,446
+That closes the last module of Part 1. Your
+Git now does what you decided, and you
+
+255
+00:20:18,486 --> 00:20:23,214
+can ask it what it read and what it ran.
+Fill in the worksheet while it's fresh.
+
+256
+00:20:23,254 --> 00:20:28,160
+Next time: the gate briefing for Fundamentals,
+and what the first gate asks of you.
+
+257
+00:20:28,200 --> 00:20:31,259
+Until then, look at the
+state first and type second.
+
+258
+00:20:31,299 --> 00:20:32,689
+See you in the next one.

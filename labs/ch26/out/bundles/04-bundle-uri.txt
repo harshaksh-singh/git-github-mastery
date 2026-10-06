@@ -1,0 +1,16 @@
+# A clone that takes the bulk from a bundle and only the rest from the server:
+$ GIT_TRACE_PACKET="$PWD/seeded.trace" git clone -q --bundle-uri="$PWD/orbit-full.bundle" "file://$PWD/server/orbit.git" seeded
+$ git -C seeded for-each-ref --format='%(refname)' | sed 's,^\(refs/[a-z]*\)/.*,\1,' | sort | uniq -c
+   7 refs/bundles
+   1 refs/heads
+   3 refs/remotes
+   6 refs/tags
+# The request to the server offers what the bundle brought:
+$ sed -n 's/.*packet: *clone> //p' seeded.trace | grep -c '^have'
+5
+$ sed -n 's/.*packet: *clone> //p' seeded.trace | grep -c '^want'
+3
+$ git -C seeded log --oneline -3
+6d3aa59 gateway: retry the upstream twice
+aa0428a gateway: lower the upstream timeout to 600 ms
+100bb99 schemas, gateway, ingest: add the tenant field in one change

@@ -1,0 +1,32 @@
+# TEACHING MATERIAL. DO NOT USE THIS WORKFLOW IN A REAL REPOSITORY.
+# It contains one deliberately planted security weakness for Lab 29.1 (Module 29).
+# Find it, name its class, and fix it. The analysis is in solutions/m29-vulnerable-workflows.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# What it does: when an issue is opened, adds the label "triage" and writes a line to the job summary.
+
+name: issue-triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  triage:
+    name: Label the new issue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Add the triage label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: gh issue edit "$ISSUE_NUMBER" --add-label triage
+
+      - name: Record the issue in the job summary
+        run: |
+          echo "Labelled issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}" >> "$GITHUB_STEP_SUMMARY"

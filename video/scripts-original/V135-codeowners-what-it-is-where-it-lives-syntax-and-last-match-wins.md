@@ -1,0 +1,319 @@
+# V135: CODEOWNERS: what it is, where it lives, syntax, and last match wins
+
+- **Part.** 5: GitHub
+- **Module.** 23
+- **Planned minutes.** 22
+- **Prerequisites.** V012, V134
+- **Textbook sections.** [Chapter 19](../../textbook/ch19-codeowners.md), sections 19.1 to 19.6
+- **Demo scripts.** `labs/ch18/codeowners-vs-gitignore.sh`, `labs/ch18/codeowners-base.sh` (snippet `which-file`), then a screen walkthrough of Lab 23.2 in [`lab-manual/m23-governance.md`](../../lab-manual/m23-governance.md)
+
+## HOOK
+
+**[ON SCREEN]** One line: "We have a CODEOWNERS file. How did a change to the deployment workflow merge without the platform team seeing it?"
+
+That is the question the chapter opens with, and the textbook gives six ordinary answers. No rule required the review. A later line in the file took the path away from the team. The team has no explicit write access, so its line was skipped. The pull request was a draft. The file that counted was the one on the base branch. Or the person who merged could bypass the rule.
+
+Each of the six is documented behavior. None is a bug. After this video you can explain the first three, and the next video covers the rest.
+
+## INTRODUCTION
+
+You already know the gitignore pattern language from the video on ignoring files, and from the last video you know how a ruleset blocks a merge. CODEOWNERS sits between the two. It borrows most of the gitignore pattern language, and it becomes binding only through a rule.
+
+One statement frames everything that follows, and the chapter makes it in its first lines: Git cannot evaluate a CODEOWNERS file. To Git it is an ordinary tracked file. Every statement about how GitHub matches patterns or requests reviews comes from GitHub's documentation. In the demonstration you will see Git's ignore matcher at work, and each time I will say whether GitHub is documented to agree with it or not. Where the two differ, the difference is the lesson.
+
+## LEARNING OBJECTIVES
+
+After this video you can:
+
+- say what a CODEOWNERS file does when no rule refers to it;
+- list the locations where the file is looked up and which one counts;
+- write patterns and predict the owner of a path under "last match wins";
+- name the gitignore features that do not work in CODEOWNERS;
+- explain why an owner needs write access.
+
+## CONCEPT
+
+**[ON SCREEN]** Lower third: GitHub.
+
+**In one sentence.** `CODEOWNERS` is a text file in the repository that maps path patterns to users and teams, which GitHub uses to request reviews automatically and, if a rule says so, to require them.
+
+**Precisely.** The documentation says: "Code owners are automatically requested for review when someone opens a pull request that modifies code that they own. Code owners are not automatically requested to review draft pull requests."
+
+There are three layers, and you should be able to name them. The file, its content and its history belong to Git: it is an ordinary tracked file. Reading the file, matching the changed paths and requesting reviewers is done by GitHub. Blocking the merge until an owner approves is also GitHub, and only through a ruleset or a classic rule.
+
+**Where it lives.** GitHub looks in `.github/`, then in the repository root, then in `docs/`. The documentation: "If `CODEOWNERS` files exist in more than one of those locations, GitHub will search for them in that order and use the first one it finds." Each file assigns the owners for a single branch, so `main` and `release/1.0` can have different owners. And the file must be under 3 MB in size; a larger one, in the documentation's words, "will not be loaded", which means no review requests at all.
+
+**Syntax.** Each line is a pattern followed by one or more owners. Comments start with a hash sign. Owners are written as `@username` or `@org/team-name`. An email address that belongs to a user's account also works "in most cases", but not for managed user accounts.
+
+Four rules of the syntax cause most of the surprises.
+
+First, several owners for one pattern go on one line. The documentation: "If the code owners are not on the same line, the pattern matches only the last mentioned code owner."
+
+Second, a pattern with no owner after it removes ownership. In the documented example, a line gives `/apps/` to one user and a later line names `/apps/github` with no owner; changes under that directory then "can be made with the approval of any user who has write access".
+
+Third, paths are case sensitive, "because GitHub uses a case sensitive file system", even when your Mac is not.
+
+Fourth, an invalid line is skipped, and the rest of the file still applies. So a typing error does not break the file. It silently removes one line.
+
+**Owners need write access.** The textbook calls this the rule that fails silently most often. The people you choose as code owners must have write permissions for the repository. When the owner is a team, the team must be visible and the team itself must have write permissions, "even if all the individual members of the team already have write permissions directly, through organization membership, or through another team membership". The consequence is stated plainly: "If you specify a user or team that doesn't exist or has insufficient access, a code owner will not be assigned." So a secret team cannot be an owner. And a team whose members can all push through the organization's base permission is not an owner until the team itself is granted write access.
+
+**Why the file only requests until a rule requires.** Without a rule, a code owner is a suggested reviewer whom the author may ignore. With the option "Require review from code owners" inside the pull request rule, "any pull request that modifies content with a code owner must be approved by that code owner before the pull request can be merged". Then comes the detail that weakens many designs: "if code has multiple owners, an approval from any of the code owners will be sufficient". Two teams on one line means either team, not both.
+
+A few more rows from the textbook's table. A changed path with no owner: the code-owner requirement asks nothing for that path. A draft: owners are not requested until it is marked ready. The owner is the author: authors cannot approve their own pull requests, so another owner of that path must. The textbook marks that last one as an inference from two documented rules, which Lab 23.2 lets you observe. It is a reason to list a team, not one person, as owner.
+
+## MENTAL MODEL
+
+**Analogy.** A building directory in the lobby tells a visitor whom to call. It locks no door. The lock is a separate device, a ruleset, that can be told to consult the directory.
+
+The analogy breaks in one place, and it is the important place: this directory is read top to bottom, and the last line that fits wins.
+
+The documentation says: "Order is important; the last matching pattern takes the most precedence." So the procedure for one path is: go through the file from the top, note every line whose pattern matches the path, and keep only the last one. The owners on that line are the owners. Owners from earlier matching lines are replaced, not added.
+
+The trap is a general line placed after a specific one. In the sample file of the chapter, the path `router/rules/eu.yaml` matches three lines: the star, `/router/`, and `*.yaml`. The last of the three is `*.yaml`, so the platform and SRE teams own that path, and the routing team is not asked. The rule of thumb from the textbook: put general patterns first and specific ones last, and remember that "specific" means "later in the file", not "longer".
+
+**How it differs from gitignore.** The patterns follow, in the documentation's words, "most of the same rules used in gitignore files". The documentation warns about three gitignore features that do not work: escaping a leading hash sign with a backslash, negating a pattern with an exclamation mark, and character ranges in square brackets. And there is a fourth difference that has no syntax of its own. Gitignore works on directories first: when a pattern matches a directory, Git excludes the whole directory and never looks at the files inside. CODEOWNERS assigns owners to files, one path at a time.
+
+## DIAGRAM
+
+**[DIAGRAM]** Put the sample file on the left with its line numbers, and the paths on the right. Draw one arrow at a time, and for each arrow first mark every line that matches, then keep the last.
+
+```text
+  .github/CODEOWNERS on main                          changed path
+  --------------------------------------------        -----------------------------
+   2  *                    @example-org/platform
+   5  /router/             @example-org/routing   <--- router/classify.py     (matches 2, 5)
+   6  /router/priority.py  @example-org/routing
+                           @example-org/on-call   <--- ?  router/priority.py
+   9  *.yaml               @example-org/platform
+                           @example-org/sre       <--- router/rules/eu.yaml   (matches 2, 5, 9)
+                                                  <--- ?  config/routing.yaml
+  12  docs/*               @example-org/docs      <--- docs/README.md         (matches 2, 12)
+                                                       ?  docs/runbooks/escalation.md
+                                                       ?  Docs/guide.md
+  15  /.github/            @example-org/repo-admins    ?  .github/workflows/ci.yaml
+```
+
+**[DIAGRAM]** Three arrows are drawn, because the textbook resolves those three paths in its text. The five question marks are yours: they are among the pattern exercises of section 19.16. For each, mark the matching lines and keep the last. Two of them depend on a rule you have heard in the last five minutes and will see in the terminal in the next five.
+
+**[ON SCREEN]** The root-cause box of section 19.5, one line at a time. Observed behavior: `git check-ignore` says `docs/*` matches `docs/build-app/troubleshooting.md`, and GitHub's CODEOWNERS documentation says it does not. Git state: none involved; this is pattern matching on path strings. Mechanism: gitignore patterns are applied to each directory on the way down; `docs/*` matches the directory `docs/build-app`, and everything below an excluded directory is excluded, while CODEOWNERS assigns owners to files, one path at a time. Root cause: two matchers with a shared pattern language and different jobs; one prunes directory walks, the other labels files. Why Git does this: skipping an ignored directory without reading it is what makes status fast. Correct fix: do not test CODEOWNERS with check-ignore; reason from the documented rules, then confirm on GitHub. Prevention: to own a whole subtree write the directory form, `/docs/`, not `docs/*`.
+
+## LIVE TERMINAL DEMO
+
+**[TERMINAL]** Replay with `labs/run ch18/codeowners-vs-gitignore`. Every command in this replay is `git check-ignore -v --no-index`, which is 🟢 SAFE: it changes nothing. Say this once, clearly: what you see is Git's matcher, not GitHub's. It answers a different question.
+
+**Step 1: last match wins, where the two agree.**
+
+```bash
+printf '*.py\n/router/*.py\n/router/priority.py\n' > .gitignore
+git check-ignore -v --no-index tests/test_classify.py router/classify.py router/priority.py
+```
+
+**[PAUSE]** Three patterns, three paths. `router/priority.py` matches all three patterns. Which line will be named for it?
+
+<!-- snippet: ch18/codeowners-vs-gitignore/01-last-match-wins -->
+```text
+# Three patterns in one gitignore-format file. check-ignore -v names the pattern that decides:
+$ printf '*.py\n/router/*.py\n/router/priority.py\n' > .gitignore
+$ git check-ignore -v --no-index tests/test_classify.py router/classify.py router/priority.py
+.gitignore:1:*.py	tests/test_classify.py
+.gitignore:2:/router/*.py	router/classify.py
+.gitignore:3:/router/priority.py	router/priority.py
+```
+<!-- /snippet -->
+
+The `-v` option prints the file, the line number and the pattern that decided. For `router/priority.py` it is line 3, the last of the three matches. Within one file, and as long as only files are involved, Git also lets the last matching pattern decide.
+
+**Step 2: anchoring.**
+
+```bash
+printf 'apps/\n/docs/\n**/logs\n' > .gitignore
+git check-ignore -v --no-index apps/a.py services/billing/apps/a.py docs/a.md guide/docs/a.md build/logs/x.log logs/x.log
+```
+
+**[PAUSE]** Six paths. One of them will not be listed. Which?
+
+<!-- snippet: ch18/codeowners-vs-gitignore/02-anchoring -->
+```text
+$ printf 'apps/\n/docs/\n**/logs\n' > .gitignore
+$ git check-ignore -v --no-index apps/a.py services/billing/apps/a.py docs/a.md guide/docs/a.md build/logs/x.log logs/x.log
+.gitignore:1:apps/	apps/a.py
+.gitignore:1:apps/	services/billing/apps/a.py
+.gitignore:2:/docs/	docs/a.md
+.gitignore:3:**/logs	build/logs/x.log
+.gitignore:3:**/logs	logs/x.log
+# guide/docs/a.md is not listed: /docs/ is anchored to the top level.
+```
+<!-- /snippet -->
+
+`apps/` without a leading slash matches an `apps` directory anywhere; that agrees with the documented CODEOWNERS meaning, "any file in an `apps` directory anywhere in your repository". `/docs/` with a leading slash is anchored to the top level, so `guide/docs/a.md` is missing from the output. And `**/logs` matches a `logs` directory at any depth.
+
+**Step 3: where the two part ways.**
+
+```bash
+printf '*\n*.py\n' > .gitignore
+git check-ignore -v --no-index setup.py tests/test_classify.py
+```
+
+**[PAUSE]** A catch-all first, then a more specific pattern. By "last match wins" you would expect line 2 for both paths. Predict.
+
+<!-- snippet: ch18/codeowners-vs-gitignore/03-directory-capture -->
+```text
+# Where the two part ways: a catch-all first line, then a more specific pattern.
+$ printf '*\n*.py\n' > .gitignore
+$ git check-ignore -v --no-index setup.py tests/test_classify.py
+.gitignore:2:*.py	setup.py
+.gitignore:1:*	tests/test_classify.py
+# Git stops at the directory tests/, which the first line already matches.
+# CODEOWNERS documentation: after "*", a later "*.js" line owns every JS file.
+```
+<!-- /snippet -->
+
+For `tests/test_classify.py` Git reports line 1. Git stopped at the directory `tests/`, which the first line already matches, and never looked at the file. CODEOWNERS is documented to behave differently: in GitHub's own example, a star followed by `*.js` gives every JavaScript file to the JavaScript owner.
+
+**Step 4: the same mechanism behind a documented example.**
+
+```bash
+printf 'docs/*\n' > .gitignore
+git check-ignore -v --no-index docs/getting-started.md docs/build-app/troubleshooting.md
+```
+
+<!-- snippet: ch18/codeowners-vs-gitignore/04-docs-star -->
+```text
+# The same mechanism behind a documented example: docs/* and nested files.
+$ printf 'docs/*\n' > .gitignore
+$ git check-ignore -v --no-index docs/getting-started.md docs/build-app/troubleshooting.md
+.gitignore:1:docs/*	docs/getting-started.md
+.gitignore:1:docs/*	docs/build-app/troubleshooting.md
+# Git ignores the nested file too, because docs/* matches the directory docs/build-app.
+# CODEOWNERS documentation: docs/* does not match docs/build-app/troubleshooting.md.
+```
+<!-- /snippet -->
+
+Git ignores the nested file too. The CODEOWNERS documentation says `docs/*` matches files directly in `docs/`, "but not further nested files". This is the root-cause box you saw a moment ago. If you had used this command as a CODEOWNERS tester, you would now believe the docs team owns a file that falls to the default owner.
+
+**Step 5: the three documented exceptions, which all work in Git.**
+
+```bash
+printf '*.yaml\n!config/routing.yaml\n' > .gitignore
+git check-ignore -v --no-index config/routing.yaml deploy/values.yaml
+```
+
+<!-- snippet: ch18/codeowners-vs-gitignore/05-negation -->
+```text
+# Documented as unsupported in CODEOWNERS: ! negation. In gitignore it works:
+$ printf '*.yaml\n!config/routing.yaml\n' > .gitignore
+$ git check-ignore -v --no-index config/routing.yaml deploy/values.yaml
+.gitignore:2:!config/routing.yaml	config/routing.yaml
+.gitignore:1:*.yaml	deploy/values.yaml
+```
+<!-- /snippet -->
+
+In gitignore the negation on line 2 decides for `config/routing.yaml`. In CODEOWNERS it is documented not to work.
+
+```bash
+printf 'shard-[0-3].yaml\n' > .gitignore
+git check-ignore -v --no-index shard-2.yaml shard-7.yaml
+```
+
+<!-- snippet: ch18/codeowners-vs-gitignore/06-range -->
+```text
+# Documented as unsupported in CODEOWNERS: [ ] character ranges. In gitignore they work:
+$ printf 'shard-[0-3].yaml\n' > .gitignore
+$ git check-ignore -v --no-index shard-2.yaml shard-7.yaml
+.gitignore:1:shard-[0-3].yaml	shard-2.yaml
+```
+<!-- /snippet -->
+
+The range matches `shard-2.yaml` and not `shard-7.yaml`. In CODEOWNERS ranges are documented not to work.
+
+<!-- snippet: ch18/codeowners-vs-gitignore/07-hash -->
+```text
+# Documented as unsupported in CODEOWNERS: a leading # escaped with a backslash.
+$ printf '\\#generated.md\n' > .gitignore
+$ cat .gitignore
+\#generated.md
+$ git check-ignore -v --no-index "#generated.md"
+.gitignore:1:\#generated.md	#generated.md
+```
+<!-- /snippet -->
+
+And the escaped hash sign: a pattern in Git, unsupported in CODEOWNERS. That is why a pattern that "works locally" can do nothing in CODEOWNERS.
+
+**Step 6: case.**
+
+<!-- snippet: ch18/codeowners-vs-gitignore/08-case -->
+```text
+# CODEOWNERS paths are always case sensitive. Git depends on core.ignoreCase, which git init
+# switches on when the file system ignores case, as the default macOS file system does:
+$ printf '/docs/\n' > .gitignore
+$ git -c core.ignoreCase=false check-ignore -v --no-index Docs/a.md
+[exit status: 1]
+$ git -c core.ignoreCase=true check-ignore -v --no-index Docs/a.md
+.gitignore:1:/docs/	Docs/a.md
+[exit status: 0]
+```
+<!-- /snippet -->
+
+Read the two exit statuses. With `core.ignoreCase` false, `Docs/a.md` does not match `/docs/`; with it true, it does. `git init` switches that setting on when the file system ignores case, as the default macOS file system does. GitHub never ignores case.
+
+**Step 7: which file counts.** Replay `labs/run ch18/codeowners-base` and stop after the first snippet.
+
+<!-- snippet: ch18/codeowners-base/01-which-file -->
+```text
+# The documented search order, applied to the base branch of the pull request:
+$ for p in .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS; do git cat-file -e origin/main:$p 2>/dev/null && echo "exists on main: $p"; done
+exists on main: .github/CODEOWNERS
+exists on main: docs/CODEOWNERS
+# The first one found is used. Its size in bytes (the documented limit is 3 MB):
+$ git cat-file -s origin/main:.github/CODEOWNERS
+531
+```
+<!-- /snippet -->
+
+The search order and the size are plain Git questions about the base branch. `git cat-file -e` tests whether an object exists; `git cat-file -s` prints its size. Two files exist on `main`. The one in `.github/` is used. The older `docs/CODEOWNERS` is dead text that will mislead whoever finds it. Delete it.
+
+**[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
+
+On your practice repository, following Lab 23.2. The interface changes; the lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. In this video only look: open the CODEOWNERS file in the browser after step 2 of the lab. The documentation says errors are highlighted on that page. Then browse to a file under `router/` and look for the indication of who owns it. The enforcement part of the lab belongs to the next video.
+
+## COMMON MISTAKES
+
+1. **Owners are requested and ignored.** Root cause: no rule requires code owner review, so the file only suggests reviewers.
+2. **The wrong team is requested.** Root cause: a general pattern stands after a specific one, and the last matching line replaces the earlier owners.
+3. **Nobody is requested for a team's line.** Root cause: the team has no explicit write access or is a secret team, so no code owner is assigned.
+4. **`docs/*` was meant as "everything under docs".** Root cause: that form covers files directly in the directory; nested files fall to the default owner. The directory form is `/docs/`.
+5. **Owners of one pattern were written on two lines.** Root cause: only the last line for a pattern counts.
+
+## PRODUCTION EXAMPLE
+
+An ML platform team keeps service code, model configuration and deployment values in one repository. The CODEOWNERS file gives `/router/` to the routing team. Months later someone adds a line near the end that gives `*.yaml` to the platform and SRE teams, "so that configuration always gets a second pair of eyes". From that merge on, a change to `router/rules/eu.yaml` requests platform and SRE and no longer requests the routing team, who are the people that understand the routing rules. Nothing fails. No error appears. The first sign is a routing change that reached production with an approval from someone who could not judge it.
+
+The diagnosis takes one minute if you read the file bottom-up for the path. The fix is to move the general line to the top. The prevention is a review habit for the file itself: for every new line, ask which existing owners lose which paths.
+
+## PRACTICE EXERCISE
+
+Do Exercise 23.5, "Eight paths, one CODEOWNERS file", in [`exercises/m19-m25-github.md`](../../exercises/m19-m25-github.md). Reason from the documented rules. Do not use `git check-ignore`; you have seen where it disagrees.
+
+Before you look anything up, predict for each of the eight paths the one line that decides and who is requested. Then list the faults in the file.
+
+The challenge is Exercise 23.7, "Protect a monorepo", in the same file.
+
+## INTERVIEW QUESTION
+
+**[ON SCREEN]** Q237: "Explain "last match wins" in CODEOWNERS with an example where a later, more general pattern takes a path away from a specific team."
+
+A strong answer states the rule in one sentence and attributes it to GitHub, not to Git. It gives a concrete file of three or four lines and one path, lists every line the path matches, and names the deciding line. It says that earlier owners are replaced, not added. It says what the symptom looks like in practice: no error, the wrong reviewers. And it ends with the ordering rule that prevents it, and how you would confirm what GitHub thinks.
+
+## RECAP
+
+You should now be able to say:
+
+- CODEOWNERS is a tracked file that GitHub reads to request reviews; only a rule makes those reviews required.
+- GitHub looks in `.github/`, the root and `docs/`, in that order, and uses the first file it finds.
+- For each changed path the last matching line decides and replaces earlier owners.
+- Negation, character ranges and the escaped hash sign do not work, `docs/*` covers one level, and paths are case sensitive.
+- An owner must have write access, and a team must be visible and hold write access as a team.
+
+## HOMEWORK
+
+Read sections 19.1 to 19.6 of [Chapter 19](../../textbook/ch19-codeowners.md). Do the pattern exercises of section 19.16.

@@ -1,0 +1,18 @@
+# The sample from the alert as a script. It lives outside the repository, so that no
+# checkout can change it. Exit status 0 means the message went to a human agent.
+# First prove the script on both ends: it must fail on v1.3.0 and pass on v1.2.0.
+$ cat ../repro.py
+import sys
+from router.classify import classify
+from router.keywords import keyword_score
+
+routed = classify([("billing_refund", keyword_score(12), 0.10)])
+print("routed to", routed)
+sys.exit(0 if routed == "human_agent" else 1)
+$ PYTHONPATH=. python3 -B ../repro.py
+routed to billing_refund
+[exit status: 1]
+$ git switch --quiet --detach v1.2.0
+$ PYTHONPATH=. python3 -B ../repro.py
+routed to human_agent
+[exit status: 0]

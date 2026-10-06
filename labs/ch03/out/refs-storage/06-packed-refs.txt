@@ -1,0 +1,22 @@
+$ git pack-refs --all
+$ cat .git/packed-refs
+# pack-refs with: peeled fully-peeled sorted 
+0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/heads/main
+0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/remotes/origin/main
+0c3d1b1c205d3248bab3061f235ef2309f653b49 refs/stash
+0b624edf4a556c702b6ed110ef2702570ced1558 refs/tags/v1.0.0
+^0c2cf4371cac2e5d412153dc58293c0cb484c4ba
+4f2cc0c5f842120f109977a97bc72acef5aa5ccd refs/tags/v1.0.0-rc1
+# The loose files are gone, except the symbolic ref, which cannot be packed:
+$ find .git/refs -type f | sort
+.git/refs/remotes/origin/HEAD
+# The next update writes a loose file again. It wins over the stale packed line:
+$ printf 'max_tokens = 256\n' >> config.toml
+$ git commit --quiet -am "Add token limit"
+$ find .git/refs -type f | sort
+.git/refs/heads/main
+.git/refs/remotes/origin/HEAD
+$ grep refs/heads/main .git/packed-refs
+0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/heads/main
+$ git rev-parse main
+a8eea183b656f17da1e2456a2e49995e8388fcb4

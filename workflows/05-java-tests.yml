@@ -1,0 +1,61 @@
+# Workflow 5: Java tests with Maven.
+#
+# Teaches: a path filter, so the workflow runs only when the Java module or this file changes;
+# `defaults.run.working-directory`; the Maven dependency cache built into actions/setup-java;
+# uploading test reports only when the job failed.
+# Chapter 20A, section 20A.13. Lab 26.5.
+#
+# Copy to .github/workflows/05-java-tests.yml in the inventory-api practice repository.
+# Parse-checked and assembled from documented syntax; not executed on GitHub by the author.
+# The Maven module itself was not built by the author either (no JDK while authoring).
+
+name: Java tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "java-service/**"
+      - ".github/workflows/05-java-tests.yml"
+  pull_request:
+    paths:
+      - "java-service/**"
+      - ".github/workflows/05-java-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  maven:
+    name: mvn verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Applies to `run` steps only. `uses` steps still resolve paths from the workspace root.
+    defaults:
+      run:
+        working-directory: java-service
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the JDK and the Maven cache
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: java-service/pom.xml
+
+      - name: Build and test
+        run: mvn -B verify
+
+      - name: Upload the test reports when the job failed
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: surefire-reports
+          path: java-service/target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,54 @@
+# Workflow 4: Python tests with uv and a dependency cache.
+#
+# Teaches: `uv sync --locked` and `uv run pytest`; the cache built into astral-sh/setup-uv,
+# keyed on uv.lock; reading a cache result from a step output; a concurrency group that
+# cancels superseded runs of the same ref.
+# Chapter 20A, sections 20A.11 and 20A.13. Lab 26.4.
+#
+# Needs uv.lock in the repository (created with `uv lock` in Lab 26.2).
+# Copy to .github/workflows/04-python-tests.yml in the inventory-api practice repository.
+# Parse-checked and assembled from documented syntax; not executed on GitHub by the author.
+
+name: Python tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv with its cache enabled
+        id: setup-uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Report the cache result
+        env:
+          CACHE_HIT: ${{ steps.setup-uv.outputs.cache-hit }}
+        run: echo "uv cache hit - $CACHE_HIT"
+
+      - name: Install the project and the dev group from the lock file
+        run: uv sync --locked
+
+      - name: Run the tests
+        run: uv run pytest

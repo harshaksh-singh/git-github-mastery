@@ -1,0 +1,32 @@
+$ git switch feature/batch-endpoint
+Switched to a new branch 'feature/batch-endpoint'
+branch 'feature/batch-endpoint' set up to track 'origin/feature/batch-endpoint'.
+$ git merge --no-edit origin/main
+Merge made by the 'ort' strategy.
+ router/classify.py     | 10 ++++++++--
+ tests/test_classify.py |  8 ++++++--
+ tests/test_tenant.py   |  2 +-
+ 3 files changed, 15 insertions(+), 5 deletions(-)
+$ bash scripts/test.sh
+ERROR: test_batch
+FAILED
+[exit status: 1]
+# (edit router/batch.py: ask classify.py for the fallback intent of the tenant)
+$ git diff
+diff --git a/router/batch.py b/router/batch.py
+index 4acfdab..2a721e7 100644
+--- a/router/batch.py
++++ b/router/batch.py
+@@ -1,9 +1,10 @@
+ """Classify a batch of messages in one call."""
+ 
+-from router.classify import FALLBACK, classify
++from router.classify import classify, fallback_for
+ 
+ 
+ def classify_batch(batch, tenant=None):
+     """batch: one candidate list per message. Returns the intents and how many fell back."""
++    fallback = fallback_for(tenant)
+     intents = [classify(candidates, tenant) for candidates in batch]
+-    return intents, sum(1 for intent in intents if intent == FALLBACK)
++    return intents, sum(1 for intent in intents if intent == fallback)

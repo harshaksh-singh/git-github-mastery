@@ -1,0 +1,966 @@
+1
+00:00:04,500 --> 00:00:09,534
+It's the end of an ordinary release week,
+and your CTO asks: "Both pull requests
+
+2
+00:00:09,574 --> 00:00:14,607
+were green. main is red. The two branches
+did not touch a single file in common.
+
+3
+00:00:14,647 --> 00:00:14,924
+How?"
+
+4
+00:00:15,264 --> 00:00:18,401
+And a second one: "We reverted
+the bad merge on Friday.
+
+5
+00:00:18,441 --> 00:00:22,847
+On Monday we merged the repaired branch,
+the merge was clean, and half of the
+
+6
+00:00:22,887 --> 00:00:24,984
+feature is missing. Where did it go?"
+
+7
+00:00:27,324 --> 00:00:30,482
+Neither needs a bug in Git. Each
+follows from what a merge is.
+
+8
+00:00:30,522 --> 00:00:34,814
+A merge is computed from exactly three
+snapshots: your commit, their commit, and one
+
+9
+00:00:34,854 --> 00:00:39,146
+common ancestor, called the merge base.
+Git's own FAQ says it plainly: "Git does not
+
+10
+00:00:39,186 --> 00:00:43,426
+consider the history or the individual
+commits that have happened on those branches
+
+11
+00:00:43,466 --> 00:00:43,838
+at all".
+
+12
+00:00:44,178 --> 00:00:50,065
+The textbook quotes a 2024 poll in which 61
+percent of roughly 1,480 respondents had
+
+13
+00:00:50,105 --> 00:00:55,145
+seen a production bug caused by a bad
+conflict resolution at least once.
+
+14
+00:00:55,185 --> 00:01:01,001
+It's a self-selected sample, so read it as
+direction, not as a population estimate.
+
+15
+00:01:01,041 --> 00:01:06,645
+Part 2 starts by getting the foundation
+right. Keep that Monday mystery in mind.
+
+16
+00:01:06,685 --> 00:01:07,633
+It comes back.
+
+17
+00:01:09,473 --> 00:01:13,986
+Welcome back to Git and GitHub Deep
+Mastery. Pull up a chair: this is Part 2,
+
+18
+00:01:14,026 --> 00:01:18,657
+integration and collaboration mechanics.
+Everything in this part, merge, fetch,
+
+19
+00:01:18,697 --> 00:01:23,506
+pull, push, rebase, cherry-pick, is explained
+from the commit graph you learned in
+
+20
+00:01:23,546 --> 00:01:28,059
+Part 1. As in Part 1, the commit IDs on
+screen equal the IDs in the textbook,
+
+21
+00:01:28,099 --> 00:01:30,424
+because the replays use the fixed clock.
+
+22
+00:01:30,764 --> 00:01:36,208
+The sample project for the merge videos is
+evalkit, a small evaluation harness for
+
+23
+00:01:36,248 --> 00:01:41,625
+LLM outputs. Eval dot yaml, in the config
+directory, holds the run configuration.
+
+24
+00:01:41,665 --> 00:01:45,905
+Judge dot txt, in prompts, holds
+the prompt for the judge model.
+
+25
+00:01:45,945 --> 00:01:49,918
+And metrics dot py, in evalkit,
+holds the scoring functions.
+
+26
+00:01:49,958 --> 00:01:53,195
+You work on main. Asha and
+Ravi work on branches.
+
+27
+00:01:53,535 --> 00:01:58,318
+Two things today: the merge base, as
+the third input of every merge, and the
+
+28
+00:01:58,358 --> 00:02:02,443
+simplest merge there is, the
+fast-forward, which creates nothing.
+
+29
+00:02:02,483 --> 00:02:07,648
+Before every git merge in this video I'll
+ask you the same question: fast-forward,
+
+30
+00:02:07,688 --> 00:02:10,821
+true merge, or nothing?
+You answer from the graph.
+
+31
+00:02:12,661 --> 00:02:14,239
+Here's what you'll walk away with.
+
+32
+00:02:14,579 --> 00:02:15,991
+After this video you can:
+
+33
+00:02:16,331 --> 00:02:18,617
+Find the merge base of two commits, and
+explain why it is the third input of a
+
+34
+00:02:18,657 --> 00:02:18,795
+merge.
+
+35
+00:02:19,135 --> 00:02:22,151
+Predict from the graph whether
+git merge will fast-forward.
+
+36
+00:02:22,491 --> 00:02:25,387
+List what a fast-forward changes in
+.git, and what it does not create.
+
+37
+00:02:25,727 --> 00:02:28,239
+Explain "Already up to
+date" from ancestry.
+
+38
+00:02:30,079 --> 00:02:34,569
+The merge base. In one sentence: the merge
+base of two commits is their best common
+
+39
+00:02:34,609 --> 00:02:39,044
+ancestor. That's the most recent commit
+that both histories contain, and the third
+
+40
+00:02:39,084 --> 00:02:40,190
+input of every merge.
+
+41
+00:02:40,530 --> 00:02:45,835
+Precisely. A common ancestor of commits A
+and B is a commit reachable from both by
+
+42
+00:02:45,875 --> 00:02:51,245
+following parents. The manual defines the
+rest: "One common ancestor is better than
+
+43
+00:02:51,285 --> 00:02:55,613
+another common ancestor if the
+latter is an ancestor of the former.
+
+44
+00:02:55,653 --> 00:03:00,828
+A common ancestor that does not have any
+better common ancestor is a best common
+
+45
+00:03:00,868 --> 00:03:06,238
+ancestor, i.e. a merge base". Two branches
+have diverged when each contains commits
+
+46
+00:03:06,278 --> 00:03:07,607
+that the other lacks.
+
+47
+00:03:07,947 --> 00:03:11,670
+Why is it an input? Without it,
+you can't tell what each side did.
+
+48
+00:03:11,710 --> 00:03:16,401
+If a line is present on one side and absent
+on the other, was it added by the first
+
+49
+00:03:16,441 --> 00:03:20,106
+or deleted by the second? Only the
+common starting point decides.
+
+50
+00:03:20,446 --> 00:03:23,219
+Four commands answer every
+question about divergence.
+
+51
+00:03:23,259 --> 00:03:24,546
+You met them in video 25.
+
+52
+00:03:24,886 --> 00:03:29,832
+Which commit is the merge
+base? git merge-base A B.
+
+53
+00:03:29,872 --> 00:03:37,459
+Is A an ancestor of B? Add --is-ancestor:
+exit status 0 means yes, 1 means no.
+
+54
+00:03:37,499 --> 00:03:43,130
+How many commits does each side
+have that the other lacks?
+
+55
+00:03:43,170 --> 00:03:49,192
+git rev-list with --left-right,
+--count, and A, three dots, B.
+
+56
+00:03:49,232 --> 00:03:57,014
+Which commits are they? git log with
+--oneline, --left-right, and the same three
+
+57
+00:03:57,054 --> 00:03:57,503
+dots.
+
+58
+00:03:57,843 --> 00:04:02,701
+Inside .git. Nothing is stored. The merge
+base is computed from the parent lines of
+
+59
+00:04:02,741 --> 00:04:07,422
+commit objects, every time a command needs
+it. No file says where a branch "came
+
+60
+00:04:07,462 --> 00:04:07,776
+from".
+
+61
+00:04:08,116 --> 00:04:13,266
+Fast-forward. In one sentence: when your
+current commit is an ancestor of the commit
+
+62
+00:04:13,306 --> 00:04:18,394
+you merge, there's nothing to combine. So
+Git moves your branch ref to that commit,
+
+63
+00:04:18,434 --> 00:04:20,000
+and creates no new object.
+
+64
+00:04:20,340 --> 00:04:23,511
+Precisely: the condition is git
+merge-base --is-ancestor HEAD <other>.
+
+65
+00:04:23,551 --> 00:04:27,181
+Put differently, the merge base is your
+own tip. Fast-forwarding is the default.
+
+66
+00:04:27,521 --> 00:04:32,076
+"Already up to date." The opposite
+case has its own message.
+
+67
+00:04:32,116 --> 00:04:38,432
+If the other commit is already an ancestor
+of HEAD, the merge prints "Already up to
+
+68
+00:04:38,472 --> 00:04:44,711
+date." and moves nothing. Hold on to that
+message. It comes back at the end of the
+
+69
+00:04:44,751 --> 00:04:45,094
+demo.
+
+70
+00:04:45,434 --> 00:04:49,049
+So there are three cases, and
+ancestry decides between them.
+
+71
+00:04:49,089 --> 00:04:53,983
+HEAD is an ancestor of the other: fast-forward.
+The other is an ancestor of HEAD:
+
+72
+00:04:54,023 --> 00:04:59,040
+nothing to do. Neither: the branches have
+diverged, and you get a true merge, which
+
+73
+00:04:59,080 --> 00:05:00,684
+the next video takes apart.
+
+74
+00:05:01,024 --> 00:05:06,245
+What a fast-forward changes in .git. The
+file refs/heads/main is rewritten with the
+
+75
+00:05:06,285 --> 00:05:11,505
+new commit ID. ORIG_HEAD receives the old
+one. The reflogs of HEAD and of main each
+
+76
+00:05:11,545 --> 00:05:16,575
+gain one line. The index and the working
+tree are updated as by a branch switch.
+
+77
+00:05:16,615 --> 00:05:18,794
+The object database doesn't change.
+
+78
+00:05:19,134 --> 00:05:25,634
+One detail the textbook's authors found
+while testing: every git merge call rewrites
+
+79
+00:05:25,674 --> 00:05:31,707
+ORIG_HEAD with the tip it started from,
+even a call that prints "Already up to
+
+80
+00:05:31,747 --> 00:05:37,936
+date." or refuses. So as an undo pointer
+it's valid only until the next attempt.
+
+81
+00:05:37,976 --> 00:05:40,505
+The reflog is the durable record.
+
+82
+00:05:40,845 --> 00:05:45,390
+Risk labels. git merge that fast-forwards
+or makes a true merge is 🟡 CAUTION: it
+
+83
+00:05:45,430 --> 00:05:49,344
+moves the current branch and rewrites
+the index and the working tree.
+
+84
+00:05:49,384 --> 00:05:52,610
+A git merge that answers
+"Already up to date." is 🟢 SAFE.
+
+85
+00:05:55,950 --> 00:06:01,469
+When a fast-forward is not what you
+want. The risk is the missing trace.
+
+86
+00:06:01,509 --> 00:06:07,722
+If somebody fast-forwards an unfinished
+branch into main, the history looks as if
+
+87
+00:06:07,762 --> 00:06:13,897
+the work-in-progress commits had been made
+on main directly, and no merge commit
+
+88
+00:06:13,937 --> 00:06:19,147
+exists to revert. Nobody wants to
+discover that on a Friday evening.
+
+89
+00:06:19,187 --> 00:06:22,003
+A later video shows how to forbid it.
+
+90
+00:06:23,843 --> 00:06:29,511
+A picture helps. The textbook's analogy for
+the merge base: two editors photocopy a
+
+91
+00:06:29,551 --> 00:06:33,500
+manuscript on Monday, and mark
+up their copies separately.
+
+92
+00:06:33,540 --> 00:06:38,727
+On Friday you can combine their work
+only if you still have the Monday copy.
+
+93
+00:06:38,767 --> 00:06:44,504
+Without it, you can't tell a sentence that
+one editor added from a sentence that the
+
+94
+00:06:44,544 --> 00:06:47,874
+other deleted. The merge
+base is the Monday copy.
+
+95
+00:06:48,214 --> 00:06:52,821
+It breaks in two places. Git finds the
+Monday copy by walking parent links, not by
+
+96
+00:06:52,861 --> 00:06:56,674
+date. And a tangled history can have
+two equally good Monday copies.
+
+97
+00:06:56,714 --> 00:06:57,921
+That's the next video.
+
+98
+00:06:58,261 --> 00:07:02,062
+And for the fast-forward: a bookmark in
+a manuscript that somebody else kept
+
+99
+00:07:02,102 --> 00:07:06,258
+writing. You move the bookmark to the last
+page. It breaks on one point: nothing in
+
+100
+00:07:06,298 --> 00:07:10,505
+the book records that the bookmark moved,
+or that the new pages were ever a separate
+
+101
+00:07:10,545 --> 00:07:12,375
+branch. Only your local reflog knows.
+
+102
+00:07:14,215 --> 00:07:15,453
+Now with real commits.
+
+103
+00:07:15,793 --> 00:07:20,629
+Two branches from one commit. main
+has one commit of its own, c089834.
+
+104
+00:07:20,669 --> 00:07:26,272
+feature/rationale has two. The commit under
+the arrow, 6ae3c51, is reachable from
+
+105
+00:07:26,312 --> 00:07:30,521
+both tips and is the most recent
+such commit: the merge base.
+
+106
+00:07:30,561 --> 00:07:31,635
+The Monday copy.
+
+107
+00:07:31,975 --> 00:07:37,906
+Before: main points at the older commit,
+and the feature branch is one commit
+
+108
+00:07:37,946 --> 00:07:44,341
+further along the same line. After: the
+label main has moved one step to the right.
+
+109
+00:07:44,381 --> 00:07:49,536
+Count the commits in both halves:
+two and two. Nothing was created.
+
+110
+00:07:49,576 --> 00:07:50,466
+A ref moved.
+
+111
+00:07:52,306 --> 00:07:55,326
+main has one commit of its own,
+and feature/rationale has two.
+
+112
+00:07:55,366 --> 00:07:59,273
+From the graph, name the merge base and
+the two counts before the commands print
+
+113
+00:07:59,313 --> 00:07:59,520
+them.
+
+114
+00:08:04,360 --> 00:08:09,142
+The two counts read "one commit only on
+the left side, two only on the right".
+
+115
+00:08:09,182 --> 00:08:14,273
+In the --left-right log, the less-than sign
+marks commits reachable only from main,
+
+116
+00:08:14,313 --> 00:08:18,663
+and the greater-than sign marks commits
+reachable only from the branch.
+
+117
+00:08:19,003 --> 00:08:23,255
+Three dots mean something different to
+git diff, and the difference matters for
+
+118
+00:08:23,295 --> 00:08:27,818
+reviews. With three dots, git diff compares
+the merge base with the branch tip: what
+
+119
+00:08:27,858 --> 00:08:30,643
+the branch did, and nothing
+that main did meanwhile.
+
+120
+00:08:30,683 --> 00:08:34,990
+With two dots it compares the two tips,
+so the temperature change that main made
+
+121
+00:08:35,030 --> 00:08:37,108
+appears as if the branch had undone it.
+
+122
+00:08:39,948 --> 00:08:44,444
+Two commits in a line. main is on
+the older one. --is-ancestor main
+
+123
+00:08:44,484 --> 00:08:48,776
+feature/batch-size exits with 0.
+The repository has two commits.
+
+124
+00:08:49,116 --> 00:08:52,988
+Fast-forward, true merge, or
+nothing? Say it out loud.
+
+125
+00:08:53,028 --> 00:08:53,712
+I'll wait.
+
+126
+00:08:58,552 --> 00:09:04,843
+git merge 🟡 CAUTION.
+
+127
+00:09:05,183 --> 00:09:12,510
+Fast-forward. "Updating 6ae3c51..23db174"
+names the old and the new position of
+
+128
+00:09:12,550 --> 00:09:20,156
+main. There are still two commits. The
+reflog entry says merge feature/batch-size:
+
+129
+00:09:20,196 --> 00:09:27,617
+Fast-forward, and ORIG_HEAD holds 6ae3c51,
+the commit to return to if this was a
+
+130
+00:09:27,657 --> 00:09:28,363
+mistake.
+
+131
+00:09:28,703 --> 00:09:33,223
+Round two. Now main and a new
+branch each gain one commit.
+
+132
+00:09:33,563 --> 00:09:38,279
+Neither tip is an ancestor of the
+other. The merge base is 23db174.
+
+133
+00:09:38,319 --> 00:09:40,906
+Fast-forward, true merge, or nothing?
+
+134
+00:09:45,746 --> 00:09:52,280
+A true merge. "Auto-merging config/eval.yaml"
+reports a content merge: both sides
+
+135
+00:09:52,320 --> 00:09:57,718
+changed that file, differently.
+"Merge made by the 'ort' strategy."
+
+136
+00:09:57,758 --> 00:10:03,156
+names the algorithm. The repository
+went from four commits to five.
+
+137
+00:10:03,496 --> 00:10:09,071
+The new commit has two parents. The
+first parent is where you were, 017bef5.
+
+138
+00:10:09,111 --> 00:10:14,982
+The second is what you merged, 67feed7.
+The merged file carries temperature: 0.0
+
+139
+00:10:15,022 --> 00:10:20,376
+from your side and timeout_s: 60 from
+theirs. How did Git arrive at that?
+
+140
+00:10:20,416 --> 00:10:22,002
+That's the next video.
+
+141
+00:10:22,342 --> 00:10:26,569
+Last round. You merge feature/timeout
+again, and then feature/batch-size.
+
+142
+00:10:26,609 --> 00:10:28,731
+Fast-forward, true merge, or nothing?
+
+143
+00:10:33,571 --> 00:10:41,930
+Nothing, twice: "Already up to date."
+Both branch tips are ancestors of HEAD.
+
+144
+00:10:41,970 --> 00:10:50,437
+That message is 🟢 SAFE: no ref moves.
+Now, the message you were holding on to.
+
+145
+00:10:50,477 --> 00:10:59,162
+It says the other commit is reachable from
+yours. It does not say that the other
+
+146
+00:10:59,202 --> 00:11:07,997
+branch's changes are present in your files.
+That difference is the thread back to
+
+147
+00:11:08,037 --> 00:11:14,759
+the Monday mystery, and the
+challenge exercise is built on it.
+
+148
+00:11:16,599 --> 00:11:18,247
+Five mistakes to watch for.
+
+149
+00:11:18,587 --> 00:11:24,527
+Expecting a merge commit after "Fast-forward".
+Root cause: the current tip was an
+
+150
+00:11:24,567 --> 00:11:30,654
+ancestor of the other commit, so there was
+nothing to combine; one ref moved and no
+
+151
+00:11:30,694 --> 00:11:32,057
+object was written.
+
+152
+00:11:32,397 --> 00:11:35,900
+Reading "Already up to date."
+as "the change is in my files".
+
+153
+00:11:35,940 --> 00:11:40,779
+Root cause: the message is a statement about
+ancestry: the other commit is reachable
+
+154
+00:11:40,819 --> 00:11:41,360
+from HEAD.
+
+155
+00:11:41,700 --> 00:11:46,232
+Using two dots in git diff to review a
+branch. Root cause: two dots compare the
+
+156
+00:11:46,272 --> 00:11:50,861
+tips, so everything main did since the
+fork appears reversed; three dots compare
+
+157
+00:11:50,901 --> 00:11:52,019
+from the merge base.
+
+158
+00:11:52,359 --> 00:11:57,598
+Relying on ORIG_HEAD after a second merge
+attempt. Root cause: every git merge call
+
+159
+00:11:57,638 --> 00:12:02,814
+rewrites ORIG_HEAD with the tip it started
+from; the reflog is the durable record.
+
+160
+00:12:03,154 --> 00:12:06,343
+Fast-forwarding an unfinished branch into
+main. Root cause: the default allows it,
+
+161
+00:12:06,383 --> 00:12:07,919
+and it leaves no merge commit to revert.
+
+162
+00:12:09,759 --> 00:12:14,131
+Now, out of the lab. The textbook draws
+two production consequences from the merge
+
+163
+00:12:14,171 --> 00:12:14,400
+base.
+
+164
+00:12:14,740 --> 00:12:18,023
+First, the three-dot diff is
+what a pull request page shows.
+
+165
+00:12:18,063 --> 00:12:22,620
+That's why a pull request doesn't list
+changes that landed on the base branch after
+
+166
+00:12:22,660 --> 00:12:25,556
+you forked. It's GitHub's
+use of the same merge base.
+
+167
+00:12:25,896 --> 00:12:29,213
+Second, the age of the merge
+base predicts merge pain.
+
+168
+00:12:29,253 --> 00:12:34,186
+A branch on an evaluation team that forked
+three weeks ago is combined against a
+
+169
+00:12:34,226 --> 00:12:38,972
+three-week-old snapshot, and everything
+both sides did since then is in play.
+
+170
+00:12:39,012 --> 00:12:43,945
+So for a branch that must live long,
+merging main into it at intervals moves the
+
+171
+00:12:43,985 --> 00:12:46,805
+merge base forward and
+keeps each merge small.
+
+172
+00:12:47,144 --> 00:12:50,394
+And the fast-forward in daily life? It's
+what git pull does on a branch where you
+
+173
+00:12:50,434 --> 00:12:51,531
+have no commits of your own.
+
+174
+00:12:53,371 --> 00:13:00,034
+Your turn. Do Lab 6.1, "Predict
+fast-forward or three-way", in
+
+175
+00:13:00,074 --> 00:13:02,629
+lab-manual/m06-merge.md.
+
+176
+00:13:02,969 --> 00:13:11,136
+For each merge in the lab, write down before
+you run it: fast-forward, true merge,
+
+177
+00:13:11,176 --> 00:13:18,441
+or nothing. The merge base. And how
+many commits the repository will have
+
+178
+00:13:18,481 --> 00:13:21,744
+afterwards. Then check all three.
+
+179
+00:13:23,584 --> 00:13:28,903
+Q123: "git merge feature printed "Fast-forward".
+What changed in .git, and what did
+
+180
+00:13:28,943 --> 00:13:29,226
+not?"
+
+181
+00:13:31,566 --> 00:13:36,472
+Answer out loud. A strong answer goes
+through the dot git folder systematically:
+
+182
+00:13:36,512 --> 00:13:40,924
+refs, the special ref that records
+the old tip, reflogs, index, objects.
+
+183
+00:13:40,964 --> 00:13:45,932
+It says what is absent from the list and
+why. And it says what that absence means
+
+184
+00:13:45,972 --> 00:13:50,631
+for someone who later wants to undo the
+merge, or see in the history that it
+
+185
+00:13:50,671 --> 00:13:51,188
+happened.
+
+186
+00:13:53,028 --> 00:13:57,614
+Let's land this. You should now be able
+to say: the merge base is the best common
+
+187
+00:13:57,654 --> 00:14:00,985
+ancestor of two commits and the
+third input of every merge.
+
+188
+00:14:01,025 --> 00:14:05,669
+It's computed from parent links, not stored.
+If my tip is an ancestor of the other
+
+189
+00:14:05,709 --> 00:14:10,238
+commit, git merge fast-forwards: the branch
+ref moves, ORIG_HEAD and the reflogs
+
+190
+00:14:10,278 --> 00:14:12,295
+record it, and no object is created.
+
+191
+00:14:12,635 --> 00:14:14,879
+If the other commit is an ancestor of
+mine, Git says "Already up to date."
+
+192
+00:14:14,919 --> 00:14:17,225
+and moves nothing. If neither is an
+ancestor of the other, the branches have
+
+193
+00:14:17,265 --> 00:14:19,016
+diverged, and the merge creates
+a commit with two parents.
+
+194
+00:14:20,856 --> 00:14:24,551
+Read sections 8.1 to 8.3 of Chapter 8.
+
+195
+00:14:24,891 --> 00:14:30,803
+Do Exercise 6.1, Level 1, "a
+fast-forward, then a merge commit", in
+
+196
+00:14:30,843 --> 00:14:33,734
+exercises/m06-m10-integration.md.
+
+197
+00:14:34,074 --> 00:14:36,460
+Challenge: Exercise 6.7, Level 3, "Already
+up to date, and the change is not there",
+
+198
+00:14:36,500 --> 00:14:36,951
+in the same file.
+
+199
+00:14:37,291 --> 00:14:42,078
+Today you predicted every merge from
+the graph, before Git answered.
+
+200
+00:14:42,118 --> 00:14:45,911
+If the merge base still feels
+slippery, that's normal.
+
+201
+00:14:45,951 --> 00:14:51,093
+Next time we take the true merge apart:
+three inputs, one rule table, and
+
+202
+00:14:51,133 --> 00:14:56,417
+criss-cross histories. Until then, look
+at the state first and type second.
+
+203
+00:14:56,457 --> 00:14:58,120
+See you in the next one.

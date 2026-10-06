@@ -1,0 +1,18 @@
+#!/bin/sh
+# smudge: repository -> working tree. Replace a pointer by the bytes it names.
+store="$(git rev-parse --show-toplevel)/../ptr-store"
+tmp="$(git rev-parse --git-dir)/ptr-smudge.$$"
+cat > "$tmp"
+sum=$(sed -n '1s/^ptr-v1 sha256:\([0-9a-f]*\) size:.*/\1/p' "$tmp")
+if [ -z "$sum" ]; then
+  cat "$tmp"                      # not a pointer: pass it through unchanged
+  rm -f "$tmp"
+  exit 0
+fi
+rm -f "$tmp"
+if [ -f "$store/$sum" ]; then
+  cat "$store/$sum"
+else
+  echo "ptr-smudge: $1: content $sum is not in the store" >&2
+  exit 1
+fi

@@ -1,0 +1,18 @@
+# Failure scenario: a maintenance process was killed and left its lock file behind.
+$ : > .git/objects/maintenance.lock
+$ printf 'epochs: 20\nlearning_rate: 0.0003\nbatch_size: 32\n' > pipelines/training/config.yaml && git commit -q -am 'training: train for 20 epochs'
+$ git count-objects -v | grep -e "^count" -e in-pack -e "^packs"
+count: 5
+in-pack: 522
+packs: 2
+# Maintenance reports success:
+$ git maintenance run
+[exit status: 0]
+# and has done nothing:
+$ git count-objects -v | grep -e "^count" -e in-pack -e "^packs"
+count: 5
+in-pack: 522
+packs: 2
+$ GIT_TRACE="$PWD/../trace-3.log" git maintenance run
+$ grep -c 'run_command' ../trace-3.log
+0

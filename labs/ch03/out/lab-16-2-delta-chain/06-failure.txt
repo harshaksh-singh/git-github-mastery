@@ -1,0 +1,24 @@
+# Failure scenario: one damaged byte inside the base object of the chain.
+$ chmod u+w .git/objects/pack/pack-*.pack
+$ python3 -c "import sys; f = open(sys.argv[1], 'r+b'); f.seek(1000); b = f.read(1); f.seek(1000); f.write(bytes([b[0] ^ 255])); f.close()" .git/objects/pack/pack-*.pack
+$ git verify-pack .git/objects/pack/pack-*.idx
+error: inflate: data stream error (invalid code -- missing end-of-block)
+fatal: pack has bad object at offset 961: inflate returned -3
+[exit status: 1]
+# Every version of the file depends on that base, so every version is unreadable:
+$ git cat-file -p 0928d48c > /dev/null
+error: inflate: data stream error (invalid code -- missing end-of-block)
+error: failed to read delta base object a4e58256c921e15fecaaaf744fbdb04b37907a40 at offset 961 from .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack
+error: failed to read delta base object 739088cda5ca15c1fd59dc40238f8852f7f677de at offset 2610 from .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack
+error: failed to read delta base object d77675f2a7b00158d41dc879b35011a742015f48 at offset 2770 from .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack
+error: failed to read delta base object d900a91b8bd7c1bafc34c1c8baef1c92f5af3832 at offset 2925 from .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack
+error: failed to read delta base object 782b8e9b7662fd152695234c4ba08fde34c18f73 at offset 3084 from .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack
+fatal: packed object 0928d48c558a6457e11c9fa47f347fb2a190259f (stored in .git/objects/pack/pack-8027c3005e9ed6293511e1bef76969aa63a131bc.pack) is corrupt
+$ git fsck 2>&1 | grep -c "cannot unpack"
+6
+# Commits and trees are other objects in the pack. They still read, and status notices nothing:
+$ git log --oneline -2
+14fbba9 Relax case 150 to two sentences
+d076308 Relax case 120 to two sentences
+$ git status --short
+[exit status: 0]

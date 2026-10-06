@@ -1,0 +1,52 @@
+# TEACHING MATERIAL for Exercise 28.3 (Module 28). This workflow has three planted flaws in
+# how it reports a required check. The analysis is in solutions/exercises-m26-m31.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# Intended behavior: one stable required check, "all-checks", that is green only when the
+# unit tests and the linter passed. A ruleset on main requires "all-checks" and nothing else.
+
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  lint:
+    name: lint
+    needs: unit-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --locked
+      - run: uv run ruff check .
+        continue-on-error: true
+
+  all-checks:
+    name: all-checks
+    if: ${{ always() }}
+    needs: [unit-tests, lint]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Report
+        run: echo "All checks finished." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Start an interactive lab shell for hand-typed labs.
+#   labs/shell            opens your shell in ~/git-mastery-labs/hands-on
+#   labs/shell m06        opens it in ~/git-mastery-labs/hands-on/m06 (created if missing)
+#   labs/shell /abs/path  opens it in that directory (used for generated exercises and incidents)
+# Inside this shell Git uses an isolated configuration ($GIT_MASTERY_LABS/hands-on/home/.gitconfig).
+# Your real ~/.gitconfig is never read or written, so "git config --global" is safe to experiment with.
+# The clock is real in this shell, so your commit IDs will differ from the book. Module 3 explains why.
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+. "$ROOT/labs/lib/lab-env.sh"
+_lab_env
+BASE="$LAB_ROOT/hands-on"
+mkdir -p "$BASE/home/.config"
+export GIT_CONFIG_GLOBAL="$BASE/home/.gitconfig"
+export XDG_CONFIG_HOME="$BASE/home/.config"
+if [ ! -f "$GIT_CONFIG_GLOBAL" ]; then
+  printf '[user]\n\tname = Lab User\n\temail = you@example.com\n[init]\n\tdefaultBranch = main\n' > "$GIT_CONFIG_GLOBAL"
+fi
+# Setup scripts create commits with the fixed lab date; keep their reflog entries from aging out.
+git config --file "$GIT_CONFIG_GLOBAL" gc.reflogExpire never
+git config --file "$GIT_CONFIG_GLOBAL" gc.reflogExpireUnreachable never
+unset GIT_EDITOR GIT_PAGER PAGER GIT_TERMINAL_PROMPT GIT_AUTHOR_DATE GIT_COMMITTER_DATE
+export GIT_CEILING_DIRECTORIES="$LAB_ROOT:$LAB_ROOT_REAL"
+case "${1:-}" in
+  /*) WORK="$1" ;;                 # an absolute path, for example an incident or exercise sandbox
+  *)  WORK="$BASE/${1:-}" ;;
+esac
+mkdir -p "$WORK"; cd "$WORK"
+echo "Lab shell. Git configuration is isolated in $GIT_CONFIG_GLOBAL"
+echo "Working directory: $(pwd).  Type 'exit' to leave."
+export GIT_MASTERY_LAB_SHELL=1
+exec "${SHELL:-/bin/bash}" -i

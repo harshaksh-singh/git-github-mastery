@@ -1,0 +1,62 @@
+# TEACHING MATERIAL for Exercise 26.3 (Module 26). This workflow has six planted flaws.
+# None is a security weakness; each makes the workflow do something other than what its
+# author meant. The analysis is in solutions/exercises-m26-m31.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# Intended behavior: test on three Python versions, compute a version string in the build
+# job, and print it in a report job, but only for pushes.
+
+name: Test and report
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python: [3.9, 3.10, 3.11]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install and test
+        run: >
+          uv sync --locked
+          uv run pytest | tee test-log.txt
+
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compute the version
+        run: |
+          echo "commit=$GITHUB_SHA" > "$GITHUB_OUTPUT"
+          echo "version=0.4.${GITHUB_RUN_NUMBER}" > "$GITHUB_OUTPUT"
+
+  report:
+    name: Report
+    needs: build
+    if: ${{ github.event_name == 'push' }} && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Print the version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: echo "Built version $VERSION" >> "$GITHUB_STEP_SUMMARY"

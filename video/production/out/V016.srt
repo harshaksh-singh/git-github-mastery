@@ -1,0 +1,1009 @@
+1
+00:00:04,500 --> 00:00:08,884
+It's the end of a debugging session. One
+file holds three edits: a tuning change you
+
+2
+00:00:08,924 --> 00:00:12,835
+were trying, the bug fix you found, and
+a debug print you forgot to remove.
+
+3
+00:00:12,875 --> 00:00:17,259
+The fix has to go out now, on its own, so
+that it can be reviewed and, if necessary,
+
+4
+00:00:17,299 --> 00:00:18,313
+reverted on its own.
+
+5
+00:00:18,653 --> 00:00:23,294
+You can do that. Git lets you stage one of
+the three edits, which means marking it
+
+6
+00:00:23,334 --> 00:00:27,975
+for the next commit, and commit it. And
+the commit you make will contain a version
+
+7
+00:00:28,015 --> 00:00:32,428
+of the file that has never existed on
+your disk, and that nobody has ever run.
+
+8
+00:00:34,768 --> 00:00:40,621
+That's the trade at the centre of this
+video. Partial staging gives you clean
+
+9
+00:00:40,661 --> 00:00:45,519
+commits from a messy working tree,
+the folder of files you edit.
+
+10
+00:00:45,559 --> 00:00:50,034
+The price is a snapshot in the
+index that was never tested.
+
+11
+00:00:50,074 --> 00:00:54,933
+You'll learn the technique, and
+the check that removes the risk.
+
+12
+00:00:54,973 --> 00:00:59,525
+And that file nobody has ever
+run? You'll meet it by its ID.
+
+13
+00:01:01,365 --> 00:01:04,986
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:05,026 --> 00:01:09,849
+Three topics today, all consequences of
+the last video's one idea: the index is a
+
+15
+00:01:09,889 --> 00:01:13,330
+full snapshot that sits between
+HEAD and the working tree.
+
+16
+00:01:13,370 --> 00:01:18,133
+The index is Git's proposal for the next
+commit, and HEAD is the last commit you
+
+17
+00:01:18,173 --> 00:01:18,433
+made.
+
+18
+00:01:18,773 --> 00:01:22,629
+First: three places for a version of a file
+give three pairwise comparisons, and git
+
+19
+00:01:22,669 --> 00:01:25,273
+diff performs a different one
+depending on its arguments.
+
+20
+00:01:25,313 --> 00:01:29,076
+Second: git add -p, which stages part of
+a file. Third: git add -N, intent to add,
+
+21
+00:01:29,116 --> 00:01:32,786
+which makes a new file visible to the
+commands that would otherwise overlook it.
+
+22
+00:01:34,626 --> 00:01:36,205
+Here's what you'll walk away with.
+
+23
+00:01:36,545 --> 00:01:37,957
+After this video you can:
+
+24
+00:01:38,297 --> 00:01:48,548
+Say which two trees each of git diff, git
+diff --cached and git diff HEAD compares.
+
+25
+00:01:48,888 --> 00:01:51,863
+Stage part of a file with git add -p,
+including a hunk that cannot be split.
+
+26
+00:01:52,203 --> 00:01:56,107
+Explain the risk of a partially staged
+commit, and the check that removes it.
+
+27
+00:01:56,447 --> 00:02:06,060
+Make an untracked file visible
+to git diff with git add -N.
+
+28
+00:02:07,900 --> 00:02:08,521
+Three diffs.
+
+29
+00:02:08,861 --> 00:02:14,809
+git diff compares the index with the working
+tree. It answers: what could I still
+
+30
+00:02:14,849 --> 00:02:15,252
+stage?
+
+31
+00:02:15,592 --> 00:02:19,085
+git diff --cached, synonym --staged,
+compares HEAD with the index.
+
+32
+00:02:19,125 --> 00:02:21,494
+It answers: what will
+the next commit change?
+
+33
+00:02:21,834 --> 00:02:29,262
+git diff HEAD compares HEAD with the working
+tree. It answers: what changed since
+
+34
+00:02:29,302 --> 00:02:32,120
+the last commit, staged or not?
+
+35
+00:02:32,460 --> 00:02:39,047
+Quick quiz, with the picture. You've
+edited the file and not staged it.
+
+36
+00:02:39,087 --> 00:02:45,300
+Which diff is empty: git diff, git
+diff --cached, or git diff HEAD?
+
+37
+00:02:45,340 --> 00:02:46,794
+Say your answer.
+
+38
+00:02:51,634 --> 00:03:00,684
+git diff --cached. It compares HEAD with
+the index, and those two boxes still agree.
+
+39
+00:03:01,024 --> 00:03:13,672
+Now you stage the edit. This time the empty
+one is git diff, because the index and
+
+40
+00:03:13,712 --> 00:03:18,159
+the working tree agree again.
+
+41
+00:03:18,499 --> 00:03:26,349
+Two of them can cancel out. If the working
+tree equals HEAD and the index differs
+
+42
+00:03:26,389 --> 00:03:34,238
+from both, git diff HEAD is empty, while
+each of the other two shows a change, in
+
+43
+00:03:34,278 --> 00:03:42,420
+opposite directions. So an empty git diff
+HEAD proves nothing about the next commit.
+
+44
+00:03:42,460 --> 00:03:48,167
+And none of the three shows a
+file that has no index entry.
+
+45
+00:03:48,507 --> 00:03:55,510
+The rule for practice: make git diff
+--cached the last command before git commit.
+
+46
+00:03:55,550 --> 00:03:59,598
+It's the review of what
+you're about to record.
+
+47
+00:03:59,938 --> 00:04:04,185
+Partial staging. In one sentence: git add
+-p walks through the difference between
+
+48
+00:04:04,225 --> 00:04:08,419
+the index and the working tree one hunk
+at a time, and stages only the hunks you
+
+49
+00:04:08,459 --> 00:04:12,707
+accept, so one edited file can feed several
+commits and leave a remainder that is
+
+50
+00:04:12,747 --> 00:04:14,295
+never committed. It is 🟢 SAFE.
+
+51
+00:04:14,634 --> 00:04:18,404
+A hunk is a block of changed lines
+with its context, as in git diff.
+
+52
+00:04:18,444 --> 00:04:21,485
+Git asks about each hunk, and
+you answer with a letter.
+
+53
+00:04:21,825 --> 00:04:25,384
+y and n: stage this hunk, or
+leave it. s: split the hunk.
+
+54
+00:04:25,424 --> 00:04:29,551
+It's offered only when unchanged
+lines separate the changes in it.
+
+55
+00:04:29,591 --> 00:04:33,465
+e: open the hunk in your editor,
+and stage the edited version.
+
+56
+00:04:33,505 --> 00:04:37,758
+a and d: stage, or leave, this hunk
+and all later hunks of the file.
+
+57
+00:04:37,798 --> 00:04:42,682
+q: stop. Hunks already accepted are
+staged. The remaining letters move between
+
+58
+00:04:42,722 --> 00:04:46,218
+hunks, search, print the hunk
+again, and print the help.
+
+59
+00:04:46,558 --> 00:04:51,799
+The same selector runs in the other
+direction in git restore -p, git restore
+
+60
+00:04:51,839 --> 00:04:53,814
+--staged -p and git reset -p.
+
+61
+00:04:54,154 --> 00:04:57,261
+Inside .git. One new blob
+and one changed index entry.
+
+62
+00:04:57,301 --> 00:05:00,233
+A blob is the object that
+holds one file's content.
+
+63
+00:05:00,273 --> 00:05:04,780
+This one is HEAD's version plus the hunks
+you accepted: content that has never
+
+64
+00:05:04,820 --> 00:05:05,829
+existed as a file.
+
+65
+00:05:06,169 --> 00:05:11,355
+The risk, and the check. After a partial
+add, three versions of the file exist.
+
+66
+00:05:11,395 --> 00:05:16,845
+HEAD has none of your edits. The working
+tree has all of them, and is what you ran.
+
+67
+00:05:16,885 --> 00:05:22,138
+The index has the accepted hunks alone,
+and that version has never run anywhere.
+
+68
+00:05:22,178 --> 00:05:27,298
+Before you commit it, copy the staged
+snapshot out of the index and test that.
+
+69
+00:05:27,338 --> 00:05:32,722
+git checkout-index --all --prefix=<dir>/
+🟢 SAFE writes every index entry as a file
+
+70
+00:05:32,762 --> 00:05:36,493
+below the directory you name.
+The trailing slash matters.
+
+71
+00:05:36,833 --> 00:05:40,629
+Editing a hunk. When changed lines touch
+each other, they form one hunk, and s is
+
+72
+00:05:40,669 --> 00:05:44,419
+not offered. The answer e opens the hunk
+as a patch, a text of added and removed
+
+73
+00:05:44,459 --> 00:05:47,355
+lines. Deleting a + line keeps
+that addition out of the index.
+
+74
+00:05:47,695 --> 00:05:53,571
+Replacing the - of a removed line
+with a space keeps that removal out.
+
+75
+00:05:53,611 --> 00:05:59,403
+Git then recounts the hunk header
+and applies the patch to the index.
+
+76
+00:05:59,443 --> 00:06:06,502
+The textbook's section on dangerous edge
+cases has a warning in its heading that you
+
+77
+00:06:06,542 --> 00:06:12,164
+should remember: a hunk edit can
+stage content that exists nowhere.
+
+78
+00:06:12,504 --> 00:06:17,864
+Intent to add. In one sentence: git add
+-N <path> gives a new file an index entry
+
+79
+00:06:17,904 --> 00:06:23,064
+without staging its content, so that
+commands which compare the index with the
+
+80
+00:06:23,104 --> 00:06:26,597
+working tree stop overlooking
+the file. It is 🟢 SAFE.
+
+81
+00:06:26,637 --> 00:06:31,130
+The manual: "Record only the fact
+that the path will be added later.
+
+82
+00:06:31,170 --> 00:06:35,263
+An entry for the path is placed
+in the index with no content".
+
+83
+00:06:35,603 --> 00:06:42,911
+Why is it needed? A new file is invisible
+to git diff, because there's no entry to
+
+84
+00:06:42,951 --> 00:06:50,349
+compare it with. The hunk selector reads
+the same comparison as git diff, so it has
+
+85
+00:06:50,389 --> 00:06:53,843
+the same blind spot, and the same cure.
+
+86
+00:06:54,183 --> 00:06:57,911
+Inside .git, the entry carries
+an intent-to-add flag.
+
+87
+00:06:57,951 --> 00:07:03,528
+Index format version 2 has no room for
+it, so Git writes the index as version 3
+
+88
+00:07:03,568 --> 00:07:08,505
+while such an entry exists, and as
+version 2 again after the real add.
+
+89
+00:07:08,845 --> 00:07:14,612
+When not to. Partial staging is the wrong
+tool when you can't test the result and
+
+90
+00:07:14,652 --> 00:07:19,918
+have no CI behind you, no server that
+tests every commit: the commit is by
+
+91
+00:07:19,958 --> 00:07:25,725
+construction untested. And e is the wrong
+tool when s would do, because an edited
+
+92
+00:07:25,765 --> 00:07:31,533
+hunk is the one place where you can stage
+lines that are in neither HEAD nor your
+
+93
+00:07:31,573 --> 00:07:31,892
+file.
+
+94
+00:07:33,732 --> 00:07:37,872
+The textbook's analogy for git add -p:
+marking, on a manuscript full of your own
+
+95
+00:07:37,912 --> 00:07:42,261
+edits, the blocks that go to the printer
+today. It breaks where it matters most: the
+
+96
+00:07:42,301 --> 00:07:46,441
+printer receives a page that never lay on
+your desk in that form, and nobody has
+
+97
+00:07:46,481 --> 00:07:47,800
+read that page as a whole.
+
+98
+00:07:48,140 --> 00:07:54,313
+For the three diffs, picture a triangle.
+Three corners: HEAD, index, working tree.
+
+99
+00:07:54,353 --> 00:08:00,450
+Three sides: three diffs. If you know two
+sides, you don't automatically know the
+
+100
+00:08:00,490 --> 00:08:03,330
+third, because two changes can cancel.
+
+101
+00:08:05,170 --> 00:08:08,132
+Now the same three
+corners, with real values.
+
+102
+00:08:08,472 --> 00:08:12,385
+Three boxes with the blob ID
+of each version above it.
+
+103
+00:08:12,425 --> 00:08:17,584
+TOP_K was changed and staged, so it
+differs between HEAD and the index.
+
+104
+00:08:17,624 --> 00:08:23,221
+MIN_SCORE was changed and not staged,
+so it differs between the index and the
+
+105
+00:08:23,261 --> 00:08:28,053
+working tree. The short arrows are
+git diff --cached and git diff.
+
+106
+00:08:28,093 --> 00:08:32,520
+The long arrow underneath is git
+diff HEAD, which spans both.
+
+107
+00:08:36,860 --> 00:08:42,123
+The state: MM. Before each of the next three
+snippets, say which lines the diff will
+
+108
+00:08:42,163 --> 00:08:45,216
+show. Start with plain git
+diff. Say it out loud.
+
+109
+00:09:02,256 --> 00:09:10,373
+Read the index line of each diff:
+399da0e..5853020, then bd144df..399da0e, then
+
+110
+00:09:10,413 --> 00:09:18,014
+bd144df..5853020. bd144df is the blob
+in HEAD. 399da0e is the staged blob.
+
+111
+00:09:18,054 --> 00:09:24,003
+5853020 is the ID that the
+working-tree content would get.
+
+112
+00:09:24,043 --> 00:09:29,475
+No object with that ID exists
+until you add the file.
+
+113
+00:09:29,515 --> 00:09:33,502
+Each command compares two of the three.
+
+114
+00:09:33,842 --> 00:09:38,438
+Now the script puts HEAD's content
+back into the working tree only.
+
+115
+00:09:38,478 --> 00:09:42,105
+Predict the output of git
+diff HEAD. Say it out loud.
+
+116
+00:09:42,145 --> 00:09:42,797
+I'll wait.
+
+117
+00:09:47,637 --> 00:09:52,068
+Nothing. git diff HEAD is empty,
+because the files on disk equal HEAD.
+
+118
+00:09:52,108 --> 00:09:57,371
+The other two comparisons each show one
+changed line, in opposite directions, and a
+
+119
+00:09:57,411 --> 00:09:59,734
+commit made now would set TOP_K to 8.
+
+120
+00:10:00,074 --> 00:10:05,250
+The file from the hook, with its
+three edits. A tuning change, TOP_K.
+
+121
+00:10:05,290 --> 00:10:09,633
+A bug fix, the guard for a zero
+vector. And a debug print.
+
+122
+00:10:20,973 --> 00:10:25,422
+Answering ? prints what each letter does,
+and q leaves without staging anything.
+
+123
+00:10:25,462 --> 00:10:28,733
+Now the real pass. The fix must
+become a commit of its own.
+
+124
+00:10:28,773 --> 00:10:33,278
+Try it now, on paper, thirty seconds: write
+the letters you would answer, hunk by
+
+125
+00:10:33,318 --> 00:10:35,410
+hunk. Pause me, and write your answer.
+
+126
+00:10:46,250 --> 00:10:51,416
+Git first offered two hunks, because the
+TOP_K line and the guard were close enough
+
+127
+00:10:51,456 --> 00:10:56,623
+to share context. s split the first one:
+the counter went from one of two to one of
+
+128
+00:10:56,663 --> 00:11:01,390
+three. The answers were no, yes, no. If
+you forgot the split, that's normal.
+
+129
+00:11:01,430 --> 00:11:03,648
+Almost everyone does the first time.
+
+130
+00:11:03,988 --> 00:11:09,176
+MM, and git diff --cached shows the
+guard alone. The staged blob is a7cba42.
+
+131
+00:11:09,216 --> 00:11:12,822
+HEAD's blob is 177cb37, with
+none of the three edits.
+
+132
+00:11:12,862 --> 00:11:18,256
+The working tree would be e548d1b, with
+all three. The middle one has never run
+
+133
+00:11:18,296 --> 00:11:22,727
+anywhere. That's the file from the
+hook, and now you know its ID.
+
+134
+00:11:23,067 --> 00:11:27,280
+This is the point of the whole
+segment. git checkout-index --all
+
+135
+00:11:27,320 --> 00:11:32,131
+--prefix=../staged-snapshot/ 🟢 SAFE
+exports the staged snapshot as files.
+
+136
+00:11:32,171 --> 00:11:36,583
+The diff confirms that the export
+lacks the two lines you left out.
+
+137
+00:11:36,623 --> 00:11:41,965
+Run your tests in that directory. Then
+you've tested what you're about to commit,
+
+138
+00:11:42,005 --> 00:11:44,623
+and not what happens to be on your disk.
+
+139
+00:11:47,963 --> 00:11:53,794
+Commit the fix, then a second pass:
+yes to TOP_K, no to the debug print.
+
+140
+00:11:53,834 --> 00:11:59,909
+Two commits, each doing one thing, and
+a remainder that is never committed.
+
+141
+00:12:05,749 --> 00:12:09,539
+Here the changed lines touch each other,
+so the prompt offers no s, and typing it
+
+142
+00:12:09,579 --> 00:12:10,485
+anyway doesn't help.
+
+143
+00:12:16,825 --> 00:12:21,669
+The answer e opens the hunk as a patch,
+with Git's own instructions below it.
+
+144
+00:12:21,709 --> 00:12:24,713
+In the editor, the line
++debug: true is deleted.
+
+145
+00:12:28,053 --> 00:12:33,005
+Staged: the two settings.
+Not staged: the debug line.
+
+146
+00:12:33,345 --> 00:12:44,018
+A new file exists. Predict
+what git diff shows for it.
+
+147
+00:12:44,058 --> 00:12:48,184
+Make your prediction.
+
+148
+00:12:48,524 --> 00:12:51,302
+Nothing: there's no index
+entry to compare it with.
+
+149
+00:12:51,642 --> 00:12:56,959
+After git add -N 🟢 SAFE, status lists the
+path as a new file under "Changes not
+
+150
+00:12:56,999 --> 00:13:01,977
+staged for commit", and its entry holds
+e69de29, the ID of the empty blob.
+
+151
+00:13:02,317 --> 00:13:05,855
+git diff shows the whole file as an addition,
+git diff --cached shows nothing, and
+
+152
+00:13:05,895 --> 00:13:07,513
+git commit refuses: nothing is staged.
+
+153
+00:13:07,853 --> 00:13:12,536
+And the index version: 3 while the
+intent-to-add entry exists, 2 again after the
+
+154
+00:13:12,576 --> 00:13:13,068
+real add.
+
+155
+00:13:14,908 --> 00:13:16,556
+Five mistakes to watch for.
+
+156
+00:13:16,896 --> 00:13:21,132
+Reading an empty git diff HEAD as
+"the next commit changes nothing".
+
+157
+00:13:21,172 --> 00:13:26,352
+Root cause: two differences cancelled; the
+working tree equals HEAD while the index
+
+158
+00:13:26,392 --> 00:13:27,484
+differs from both.
+
+159
+00:13:27,824 --> 00:13:30,490
+Committing a partially staged
+file without testing it.
+
+160
+00:13:30,530 --> 00:13:34,548
+Root cause: the tests ran against the
+working tree, and the index holds a version
+
+161
+00:13:34,588 --> 00:13:36,001
+that never existed as a file.
+
+162
+00:13:36,341 --> 00:13:41,880
+Looking for s on a hunk that cannot be split.
+Root cause: split is offered only when
+
+163
+00:13:41,920 --> 00:13:46,994
+unchanged lines separate the changes;
+touching lines are one hunk and need e.
+
+164
+00:13:47,334 --> 00:13:51,879
+A new file is missing from the commit
+although the diff "looked complete".
+
+165
+00:13:51,919 --> 00:13:56,898
+Root cause: an untracked file has no index
+entry, so no diff shows it; git add -N
+
+166
+00:13:56,938 --> 00:13:58,075
+when you create it.
+
+167
+00:13:58,415 --> 00:14:02,068
+Trusting an edited hunk without
+reading git diff --cached.
+
+168
+00:14:02,108 --> 00:14:07,288
+Root cause: a hunk edit can stage content
+that exists nowhere, neither in HEAD nor
+
+169
+00:14:07,328 --> 00:14:08,052
+in the file.
+
+170
+00:14:09,892 --> 00:14:15,169
+Now, out of the lab. The textbook's classic
+"works on my machine" commit lacks a new
+
+171
+00:14:15,209 --> 00:14:18,714
+file. The code runs locally
+because the file is on disk.
+
+172
+00:14:18,754 --> 00:14:23,714
+git diff looked complete. git commit -a
+skipped the file, for a reason the next
+
+173
+00:14:23,754 --> 00:14:26,943
+video explains. And CI fails
+with a missing module.
+
+174
+00:14:26,983 --> 00:14:32,196
+git add -N when you create a file puts it
+into every later git diff, git add -p and
+
+175
+00:14:32,236 --> 00:14:33,083
+git commit -a.
+
+176
+00:14:33,423 --> 00:14:38,110
+And the reason partial staging is worth its
+price: a commit that does one thing can
+
+177
+00:14:38,150 --> 00:14:41,585
+be reviewed, reverted, cherry-picked
+and bisected on its own.
+
+178
+00:14:41,625 --> 00:14:46,085
+Later parts of the course teach each of
+those. Debugging sessions don't produce
+
+179
+00:14:46,125 --> 00:14:50,472
+changes in that shape. Partial staging
+sorts one messy working tree into such
+
+180
+00:14:50,512 --> 00:14:54,060
+commits. CI is the backstop, and
+the export is the local check.
+
+181
+00:14:55,900 --> 00:14:59,766
+Your turn. Do Lab 2.2,
+"Partial staging", in
+
+182
+00:14:59,806 --> 00:15:03,494
+lab-manual/m02-working-tree-index-head.md.
+
+183
+00:15:03,834 --> 00:15:07,120
+Before each pass of git add -p, write down
+the answers you intend to give, hunk by
+
+184
+00:15:07,160 --> 00:15:10,445
+hunk. Before each commit, predict the output
+of git diff --cached and of git diff,
+
+185
+00:15:10,485 --> 00:15:11,053
+and check both.
+
+186
+00:15:12,893 --> 00:15:18,049
+Q51: "You staged half of a file with git
+add -p, using e where s was not offered.
+
+187
+00:15:18,089 --> 00:15:23,310
+Why is that commit riskier than a normal
+one, what can e get wrong, and how do you
+
+188
+00:15:23,350 --> 00:15:25,555
+test what you are about to commit?"
+
+189
+00:15:27,895 --> 00:15:32,508
+Answer out loud. A strong answer counts
+the versions of the file that exist after
+
+190
+00:15:32,548 --> 00:15:37,046
+the partial add and says which one was
+run. It explains what an edited hunk can
+
+191
+00:15:37,086 --> 00:15:41,699
+produce that a split can't. And it ends
+with a concrete procedure for testing the
+
+192
+00:15:41,739 --> 00:15:44,284
+staged snapshot, with
+the backstop behind it.
+
+193
+00:15:46,124 --> 00:15:50,924
+Let's land this. You should now be able to
+say, in your own words: git diff compares
+
+194
+00:15:50,964 --> 00:15:55,764
+the index with the working tree, git diff
+--cached compares HEAD with the index, and
+
+195
+00:15:55,804 --> 00:16:00,028
+git diff HEAD compares HEAD with the
+working tree. Two of them can cancel.
+
+196
+00:16:00,368 --> 00:16:10,775
+git add -p stages chosen hunks. I split with
+s when there's context between changes,
+
+197
+00:16:10,815 --> 00:16:20,600
+and edit with e when there isn't. A
+partially staged commit records a tree that
+
+198
+00:16:20,640 --> 00:16:30,674
+never existed in my working tree, so I
+export it with git checkout-index and test
+
+199
+00:16:30,714 --> 00:16:40,747
+that. And git add -N gives a new file an
+entry with no content, so that diffs and
+
+200
+00:16:40,787 --> 00:16:44,354
+the hunk selector can see it.
+
+201
+00:16:46,194 --> 00:16:49,980
+Read sections 5.4 to 5.6 of Chapter 5.
+
+202
+00:16:50,320 --> 00:16:56,370
+Do Exercise 2.3, Level 1, "three
+diffs, three comparisons", in
+
+203
+00:16:56,410 --> 00:16:59,611
+exercises/m01-m05-foundations.md.
+
+204
+00:16:59,951 --> 00:17:05,228
+Challenge: Exercise 2.8, Level 3, "the
+commit that took more than was staged", in
+
+205
+00:17:05,268 --> 00:17:06,147
+the same file.
+
+206
+00:17:06,487 --> 00:17:12,826
+Today you sorted one messy file into
+clean commits, and you know how to test a
+
+207
+00:17:12,866 --> 00:17:19,286
+snapshot that never existed on disk. Do
+the partial staging lab before the next
+
+208
+00:17:19,326 --> 00:17:26,155
+video. Next time: staging deletions and
+renames, the scope of git add, and unstaging
+
+209
+00:17:26,195 --> 00:17:31,389
+three ways. Until then, look at
+the state first and type second.
+
+210
+00:17:31,429 --> 00:17:33,351
+See you in the next one.

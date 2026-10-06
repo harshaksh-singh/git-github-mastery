@@ -1,0 +1,46 @@
+# Case 1 of Gate 7, variant B. Constructed for the gate: this workflow is teaching material and
+# contains faults on purpose. Do not copy it.
+name: pr
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make lint
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Unit tests
+        continue-on-error: true
+        run: make test
+      - name: Build the report
+        run: make report > report.html
+
+  publish-report:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Upload to the report server
+        env:
+          REPORT_TOKEN: ${{ secrets.REPORT_TOKEN }}
+        run: |
+          curl --fail -H "Authorization: Bearer $REPORT_TOKEN" -T report.html https://reports.example.com/upload
+
+  all-green:
+    needs: [lint, test]
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "all required jobs passed"

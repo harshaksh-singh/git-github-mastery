@@ -1,0 +1,23 @@
+# Failure scenario: a merge is resolved, and then MERGE_HEAD is deleted by hand.
+$ git merge feature/timeouts > /dev/null
+$ printf 'retry_limit = 3\ntimeout_s = 60\n' > config.toml
+$ git add config.toml
+$ git status | grep merg
+All conflicts fixed but you are still merging.
+  (use "git commit" to conclude merge)
+$ rm .git/MERGE_HEAD
+# Git no longer knows that a merge is in progress. The same question now finds nothing:
+$ git status | grep merg
+$ git merge --continue
+fatal: There is no merge in progress (MERGE_HEAD missing).
+[exit status: 128]
+$ git commit --quiet -m "Merge branch 'feature/timeouts'"
+$ git log --graph --oneline --all
+* 3764eae Merge branch 'feature/timeouts'
+* 740729a Add logging configuration
+* 98932fb Raise timeout to 45 seconds
+| * 0cab12e Double the timeout
+|/  
+* ed95c38 Add service configuration
+$ git branch --no-merged main
+  feature/timeouts

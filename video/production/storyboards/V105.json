@@ -1,0 +1,7397 @@
+{
+ "id": "V105",
+ "version": 22,
+ "title": "Refs in depth: loose refs, packed-refs, symbolic refs, root refs, and reflog storage",
+ "part": 4,
+ "part_label": "INTERNALS",
+ "part_name": "Git internals",
+ "palette": {
+  "accent": "#BC8CFF",
+  "accent2": "#E2CCFF",
+  "bg1": "#15111F",
+  "bg2": "#261D3A"
+ },
+ "planned_minutes": 24,
+ "chapters": [
+  "ch03-git-internals.md"
+ ],
+ "script": "video/scripts/V105-refs-in-depth-loose-refs-packed-refs-symbolic-refs-root-refs-and-reflog-storage.md",
+ "script_sha1": "f9987da904edc4b64a36506afade60353d7e4c58",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 10,
+   "line": 34
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 17,
+   "line": 44
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 34,
+   "line": 96
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 38,
+   "line": 112
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 41,
+   "line": 143
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 81,
+   "line": 646
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 88,
+   "line": 656
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 91,
+   "line": 670
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 94,
+   "line": 676
+  },
+  {
+   "name": "RECAP",
+   "beat": 97,
+   "line": 684
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 105,
+   "line": 698
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Refs in depth: loose refs, packed-refs, symbolic refs, root refs, and reflog storage",
+   "part_name": "Git internals",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0018
+  },
+  {
+   "kind": "callout",
+   "direction": "`cat: .git/refs/heads/main: No such file or directory`",
+   "code": [
+    "cat: .git/refs/heads/main: No such file or directory"
+   ],
+   "quoted": false,
+   "caption": "The release script stamps every build with a commit ID.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0031
+  },
+  {
+   "kind": "callout",
+   "direction": "`cat: .git/refs/heads/main: No such file or directory`",
+   "code": [
+    "cat: .git/refs/heads/main: No such file or directory"
+   ],
+   "quoted": false,
+   "caption": "Your CTO asks: is the repository damaged?",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0167
+  },
+  {
+   "kind": "callout",
+   "direction": "`cat: .git/refs/heads/main: No such file or directory`",
+   "code": [
+    "cat: .git/refs/heads/main: No such file or directory"
+   ],
+   "quoted": false,
+   "caption": "It isn't. The branch exists and Git resolves it.",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0192
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.045
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "b602c1f",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "4f2cc0c",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "62001eb",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "0c2cf43",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "4f2cc0c",
+       "62001eb"
+      ]
+     },
+     {
+      "id": "a8eea18",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "0c2cf43"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "b602c1f",
+       "4f2cc0c",
+       "62001eb",
+       "0c2cf43"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c",
+       "experiment": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "experiment": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "a8eea18"
+      ],
+      "refs": {
+       "main": "a8eea18",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "tags": [
+     "v1.0.0-rc1"
+    ],
+    "kinds": {
+     "v1.0.0#0b624ed": "atag"
+    },
+    "settle": "on",
+    "title": "Refs: names that point at commits",
+    "id": "refs"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "state-4",
+    "state-5",
+    "state-6"
+   ],
+   "upto": 2,
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0463
+  },
+  {
+   "kind": "keypoint",
+   "body": "Three replays from <code>labs/ch03</code>: <code>refs-storage.sh</code>, <code>root-refs.sh</code>, and the replay of Lab 17.3 up to its checkpoint.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0792
+  },
+  {
+   "kind": "keypoint",
+   "body": "The labels, from the chapter's command safety table.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.0849
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1046
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why a branch may have no file under <code>refs/heads/</code> and still exist.",
+    "Create, update, verify and delete refs with plumbing, with a reflog message.",
+    "Name the root refs and the pseudorefs and say which command writes each.",
+    "Say which of them protect objects from garbage collection.",
+    "Say where reflogs are stored and when a ref has none."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1059
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why a branch may have no file under <code>refs/heads/</code> and still exist.",
+    "Create, update, verify and delete refs with plumbing, with a reflog message.",
+    "Name the root refs and the pseudorefs and say which command writes each.",
+    "Say which of them protect objects from garbage collection.",
+    "Say where reflogs are stored and when a ref has none."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1077
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why a branch may have no file under <code>refs/heads/</code> and still exist.",
+    "Create, update, verify and delete refs with plumbing, with a reflog message.",
+    "Name the root refs and the pseudorefs and say which command writes each.",
+    "Say which of them protect objects from garbage collection.",
+    "Say where reflogs are stored and when a ref has none."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1124
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why a branch may have no file under <code>refs/heads/</code> and still exist.",
+    "Create, update, verify and delete refs with plumbing, with a reflog message.",
+    "Name the root refs and the pseudorefs and say which command writes each.",
+    "Say which of them protect objects from garbage collection.",
+    "Say where reflogs are stored and when a ref has none."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1167
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why a branch may have no file under <code>refs/heads/</code> and still exist.",
+    "Create, update, verify and delete refs with plumbing, with a reflog message.",
+    "Name the root refs and the pseudorefs and say which command writes each.",
+    "Say which of them protect objects from garbage collection.",
+    "Say where reflogs are stored and when a ref has none."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1213
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Explain why a branch may have no file under <code>refs/heads/</code> and still exist.",
+    "Create, update, verify and delete refs with plumbing, with a reflog message.",
+    "Name the root refs and the pseudorefs and say which command writes each.",
+    "Say which of them protect objects from garbage collection.",
+    "Say where reflogs are stored and when a ref has none."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1245
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1285
+  },
+  {
+   "kind": "keypoint",
+   "body": "In one sentence: a ref is a name that holds an object ID or the name of another ref, and in the default <code>files</code> format a ref is a small file under <code>refs/</code>, a line in <code>packed-refs</code>, or both.",
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1298
+  },
+  {
+   "kind": "keypoint",
+   "body": "The glossary's definition: \"a name that points to an object name or another ref (the latter is called a symbolic ref)\".",
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1438
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 1215,
+    "section": "3.9",
+    "kind": "table",
+    "score": 2,
+    "candidates": 2
+   },
+   "direction": "The namespace table of section 3.9.",
+   "header": [
+    "Namespace",
+    "Names",
+    "Moved by"
+   ],
+   "fs": 36,
+   "cols": [
+    39.29,
+    34.03,
+    26.68
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>refs/heads/&lt;name&gt;</code>",
+     "a local branch",
+     "<code>git commit</code>, <code>git merge</code>, <code>git reset</code>, <code>git rebase</code>, <code>git branch -f</code>"
+    ],
+    [
+     "<code>refs/tags/&lt;name&gt;</code>",
+     "a tag, pointing at a commit or at a tag object",
+     "<code>git tag</code>; meant to stay put"
+    ],
+    [
+     "<code>refs/remotes/&lt;remote&gt;/&lt;name&gt;</code>",
+     "a remote-tracking branch: the last known position of a branch in that remote",
+     "<code>git fetch</code>, <code>git push</code>"
+    ],
+    [
+     "<code>refs/stash</code>",
+     "the newest stash entry; older entries live in its reflog",
+     "<code>git stash</code>"
+    ],
+    [
+     "<code>refs/bisect/</code>, <code>refs/notes/</code>, <code>refs/replace/</code>, others",
+     "refs owned by a tool",
+     "that tool"
+    ]
+   ],
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1559
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=.git/HEAD:a_symbolic_ref|*.git/refs/heads/main:a_loose_ref|.git/packed-refs:many_refs,_sorted rows=1:A:ref:_refs/heads/main|1:B:0c2cf43...|2:B:after_packing:_no_file@dim|2:C:0c2cf43..._refs/heads/main|3:B:after_a_commit:_a8eea18@hl arrows=1:A1>B|2:B1>C1:packed title=Where_the_value_of_main_is_kept say_1=A_loose_ref_is_a_file_that_holds_the_ID say_2=After_packing,_main_is_a_line_in_packed-refs say_3=The_loose_file_is_back_and_wins._The_packed_line_is_stale id=where at_1=12",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      ".git/HEAD",
+      "a symbolic ref"
+     ],
+     [
+      "*.git/refs/heads/main",
+      "a loose ref"
+     ],
+     [
+      ".git/packed-refs",
+      "many refs, sorted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "ref: refs/heads/main"
+     ],
+     [
+      1,
+      "B",
+      "0c2cf43..."
+     ],
+     [
+      2,
+      "B",
+      "after packing: no file",
+      "dim"
+     ],
+     [
+      2,
+      "C",
+      "0c2cf43... refs/heads/main"
+     ],
+     [
+      3,
+      "B",
+      "after a commit: a8eea18",
+      "hl"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B",
+      ""
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "packed"
+     ]
+    ],
+    "title": "Where the value of main is kept",
+    "say": {
+     "1": "A loose ref is a file that holds the ID",
+     "2": "After packing, main is a line in packed-refs",
+     "3": "The loose file is back and wins. The packed line is stale"
+    },
+    "id": "where",
+    "at": {
+     "1": 0.12
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1849
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=.git/HEAD:a_symbolic_ref|*.git/refs/heads/main:a_loose_ref|.git/packed-refs:many_refs,_sorted rows=1:A:ref:_refs/heads/main|1:B:0c2cf43...|2:B:after_packing:_no_file@dim|2:C:0c2cf43..._refs/heads/main|3:B:after_a_commit:_a8eea18@hl arrows=1:A1>B|2:B1>C1:packed title=Where_the_value_of_main_is_kept say_1=A_loose_ref_is_a_file_that_holds_the_ID say_2=After_packing,_main_is_a_line_in_packed-refs say_3=The_loose_file_is_back_and_wins._The_packed_line_is_stale id=where at_1=12",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      ".git/HEAD",
+      "a symbolic ref"
+     ],
+     [
+      "*.git/refs/heads/main",
+      "a loose ref"
+     ],
+     [
+      ".git/packed-refs",
+      "many refs, sorted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "ref: refs/heads/main"
+     ],
+     [
+      1,
+      "B",
+      "0c2cf43..."
+     ],
+     [
+      2,
+      "B",
+      "after packing: no file",
+      "dim"
+     ],
+     [
+      2,
+      "C",
+      "0c2cf43... refs/heads/main"
+     ],
+     [
+      3,
+      "B",
+      "after a commit: a8eea18",
+      "hl"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B",
+      ""
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "packed"
+     ]
+    ],
+    "title": "Where the value of main is kept",
+    "say": {
+     "1": "A loose ref is a file that holds the ID",
+     "2": "After packing, main is a line in packed-refs",
+     "3": "The loose file is back and wins. The packed line is stale"
+    },
+    "id": "where",
+    "at": {
+     "1": 0.12
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2046
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: cards=git_for-each-ref:lists_and_formats|git_show-ref:lists_and_verifies|git_update-ref:writes_or_deletes_one_ref|git_symbolic-ref:reads_and_writes_symbolic_refs|git_pack-refs:moves_loose_refs_into_packed-refs title=The_plumbing_works_the_same_in_every_format id=plumbing",
+   "scene": "cards",
+   "params": {
+    "cards": [
+     [
+      "git for-each-ref",
+      "lists and formats"
+     ],
+     [
+      "git show-ref",
+      "lists and verifies"
+     ],
+     [
+      "git update-ref",
+      "writes or deletes one ref"
+     ],
+     [
+      "git symbolic-ref",
+      "reads and writes symbolic refs"
+     ],
+     [
+      "git pack-refs",
+      "moves loose refs into packed-refs"
+     ]
+    ],
+    "title": "The plumbing works the same in every format",
+    "id": "plumbing"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2257
+  },
+  {
+   "kind": "keypoint",
+   "body": "Second topic: root refs. In one sentence: a few refs live directly in the repository directory, with names in capital letters that end in <code>_HEAD</code>.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2439
+  },
+  {
+   "kind": "keypoint",
+   "body": "The glossary says a pseudoref has \"different semantics than normal refs\", can be read by normal Git commands, and cannot be written by commands like <code>git update-ref</code>.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2593
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=kind,names,for_Git rows=root_ref:HEAD,_ORIG__HEAD_and_the_other_names_in_capitals:stored_like_any_other_ref|pseudoref:FETCH__HEAD_and_MERGE__HEAD_only:git_update-ref_cannot_write_it title=Since_Git_2.46 mono=off id=kinds",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "kind",
+     "names",
+     "for Git"
+    ],
+    "rows": [
+     [
+      "root ref",
+      "HEAD, ORIG_HEAD and the other names in capitals",
+      "stored like any other ref"
+     ],
+     [
+      "pseudoref",
+      "FETCH_HEAD and MERGE_HEAD only",
+      "git update-ref cannot write it"
+     ]
+    ],
+    "title": "Since Git 2.46",
+    "mono": "off",
+    "id": "kinds"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.2775
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 1399,
+    "section": "3.10",
+    "kind": "table",
+    "score": 9,
+    "candidates": 1
+   },
+   "direction": "The table of section 3.10: name, written by, holds, gone when.",
+   "header": [
+    "Name",
+    "Written by",
+    "Holds",
+    "Gone when"
+   ],
+   "fs": 32,
+   "cols": [
+    22.68,
+    31.04,
+    24.54,
+    21.75
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>HEAD</code>",
+     "<code>git init</code>, <code>git switch</code>, <code>git checkout</code>",
+     "the current branch, or a commit ID when detached",
+     "never"
+    ],
+    [
+     "<code>ORIG_HEAD</code>",
+     "<code>git merge</code>, <code>git rebase</code>, <code>git reset</code>, <code>git am</code>; on Git 2.55 also <code>git stash push</code>",
+     "where <code>HEAD</code> was before",
+     "overwritten by the next such command"
+    ],
+    [
+     "<code>FETCH_HEAD</code>",
+     "<code>git fetch</code>, <code>git pull</code>",
+     "one line per fetched ref: ID, a <code>not-for-merge</code> marker, origin",
+     "overwritten by the next fetch"
+    ]
+   ],
+   "hl": 0,
+   "page": [
+    1,
+    2
+   ],
+   "caption": "<code>HEAD</code> is written by <code>git init</code>, <code>git switch</code> and <code>git checkout</code>, and is never gone.",
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.304
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 1399,
+    "section": "3.10",
+    "kind": "table",
+    "score": 9,
+    "candidates": 1
+   },
+   "direction": "The table of section 3.10: name, written by, holds, gone when.",
+   "header": [
+    "Name",
+    "Written by",
+    "Holds",
+    "Gone when"
+   ],
+   "fs": 32,
+   "cols": [
+    22.68,
+    31.04,
+    24.54,
+    21.75
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>HEAD</code>",
+     "<code>git init</code>, <code>git switch</code>, <code>git checkout</code>",
+     "the current branch, or a commit ID when detached",
+     "never"
+    ],
+    [
+     "<code>ORIG_HEAD</code>",
+     "<code>git merge</code>, <code>git rebase</code>, <code>git reset</code>, <code>git am</code>; on Git 2.55 also <code>git stash push</code>",
+     "where <code>HEAD</code> was before",
+     "overwritten by the next such command"
+    ],
+    [
+     "<code>FETCH_HEAD</code>",
+     "<code>git fetch</code>, <code>git pull</code>",
+     "one line per fetched ref: ID, a <code>not-for-merge</code> marker, origin",
+     "overwritten by the next fetch"
+    ]
+   ],
+   "hl": 2,
+   "page": [
+    1,
+    2
+   ],
+   "caption": "<code>FETCH_HEAD</code> is written by fetch and pull.",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.3208
+  },
+  {
+   "kind": "table",
+   "source": {
+    "file": "textbook/ch03-git-internals.md",
+    "line": 1399,
+    "section": "3.10",
+    "kind": "table",
+    "score": 9,
+    "candidates": 1
+   },
+   "direction": "The table of section 3.10: name, written by, holds, gone when.",
+   "header": [
+    "Name",
+    "Written by",
+    "Holds",
+    "Gone when"
+   ],
+   "fs": 32,
+   "cols": [
+    22.68,
+    31.04,
+    24.54,
+    21.75
+   ],
+   "mono": false,
+   "rows": [
+    [
+     "<code>MERGE_HEAD</code>",
+     "a <code>git merge</code> that stops",
+     "the commit or commits being merged",
+     "the merge is committed or aborted"
+    ],
+    [
+     "<code>CHERRY_PICK_HEAD</code>, <code>REVERT_HEAD</code>",
+     "a cherry-pick or revert that stops or runs with <code>--no-commit</code>",
+     "the commit being applied",
+     "committed, skipped or aborted"
+    ],
+    [
+     "<code>REBASE_HEAD</code>",
+     "a rebase that stops",
+     "the commit at which it stopped",
+     "continued past it, or aborted"
+    ],
+    [
+     "<code>BISECT_HEAD</code>",
+     "<code>git bisect --no-checkout</code>",
+     "the commit to test",
+     "<code>git bisect reset</code>"
+    ],
+    [
+     "<code>AUTO_MERGE</code>",
+     "the <code>ort</code> merge machinery when it leaves conflicts, and on Git 2.55 also a clean <code>git stash pop</code>",
+     "a tree: what was written to the working tree",
+     "the next commit"
+    ]
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "caption": "<code>REBASE_HEAD</code> is written by a rebase that stops.",
+   "section": "CONCEPT",
+   "n": 29,
+   "progress": 0.3351
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=Which_names_keep_an_object_alive? cards=refs/|HEAD|the_reflogs|the_index|FETCH__HEAD|ORIG__HEAD|AUTO__MERGE marks=1:ok,2:ok,3:ok,4:ok,5:bad,6:bad,7:bad title=Starting_points_for_reachability id=alive",
+   "scene": "cards",
+   "params": {
+    "question": "Which names keep an object alive?",
+    "cards": [
+     [
+      "refs/",
+      ""
+     ],
+     [
+      "HEAD",
+      ""
+     ],
+     [
+      "the reflogs",
+      ""
+     ],
+     [
+      "the index",
+      ""
+     ],
+     [
+      "FETCH_HEAD",
+      ""
+     ],
+     [
+      "ORIG_HEAD",
+      ""
+     ],
+     [
+      "AUTO_MERGE",
+      ""
+     ]
+    ],
+    "marks": [
+     [
+      "1",
+      "ok"
+     ],
+     [
+      "2",
+      "ok"
+     ],
+     [
+      "3",
+      "ok"
+     ],
+     [
+      "4",
+      "ok"
+     ],
+     [
+      "5",
+      "bad"
+     ],
+     [
+      "6",
+      "bad"
+     ],
+     [
+      "7",
+      "bad"
+     ]
+    ],
+    "title": "Starting points for reachability",
+    "id": "alive"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "marks"
+   ],
+   "upto": 8,
+   "section": "CONCEPT",
+   "n": 30,
+   "progress": 0.3501
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=ref,reflog_under_the_default_setting rows=HEAD:yes|a_branch:yes,_deleted_with_the_branch|a_remote-tracking_branch:yes|notes:yes|a_tag:no|any_ref_in_a_bare_repository:no marks=1.2:ok,2.2:ok,3.2:ok,4.2:ok,5.2:bad,6.2:bad title=Who_gets_a_reflog mono=off id=logs",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "ref",
+     "reflog under the default setting"
+    ],
+    "rows": [
+     [
+      "HEAD",
+      "yes"
+     ],
+     [
+      "a branch",
+      "yes, deleted with the branch"
+     ],
+     [
+      "a remote-tracking branch",
+      "yes"
+     ],
+     [
+      "notes",
+      "yes"
+     ],
+     [
+      "a tag",
+      "no"
+     ],
+     [
+      "any ref in a bare repository",
+      "no"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "ok",
+     "3.2": "ok",
+     "4.2": "ok",
+     "5.2": "bad",
+     "6.2": "bad"
+    },
+    "title": "Who gets a reflog",
+    "mono": "off",
+    "id": "logs"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ],
+   "upto": 6,
+   "section": "CONCEPT",
+   "n": 31,
+   "progress": 0.3712
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=ref,reflog_under_the_default_setting rows=HEAD:yes|a_branch:yes,_deleted_with_the_branch|a_remote-tracking_branch:yes|notes:yes|a_tag:no|any_ref_in_a_bare_repository:no marks=1.2:ok,2.2:ok,3.2:ok,4.2:ok,5.2:bad,6.2:bad title=Who_gets_a_reflog mono=off id=logs",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "ref",
+     "reflog under the default setting"
+    ],
+    "rows": [
+     [
+      "HEAD",
+      "yes"
+     ],
+     [
+      "a branch",
+      "yes, deleted with the branch"
+     ],
+     [
+      "a remote-tracking branch",
+      "yes"
+     ],
+     [
+      "notes",
+      "yes"
+     ],
+     [
+      "a tag",
+      "no"
+     ],
+     [
+      "any ref in a bare repository",
+      "no"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "ok",
+     "3.2": "ok",
+     "4.2": "ok",
+     "5.2": "bad",
+     "6.2": "bad"
+    },
+    "title": "Who gets a reflog",
+    "mono": "off",
+    "id": "logs"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ],
+   "upto": 7,
+   "section": "CONCEPT",
+   "n": 32,
+   "progress": 0.3905
+  },
+  {
+   "kind": "keypoint",
+   "body": "When should you not use the plumbing?",
+   "section": "CONCEPT",
+   "n": 33,
+   "progress": 0.4055
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 34,
+   "progress": 0.4206
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "b602c1f",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "4f2cc0c",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "62001eb",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "0c2cf43",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "4f2cc0c",
+       "62001eb"
+      ]
+     },
+     {
+      "id": "a8eea18",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "0c2cf43"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "b602c1f",
+       "4f2cc0c",
+       "62001eb",
+       "0c2cf43"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c",
+       "experiment": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "experiment": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "a8eea18"
+      ],
+      "refs": {
+       "main": "a8eea18",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "tags": [
+     "v1.0.0-rc1"
+    ],
+    "kinds": {
+     "v1.0.0#0b624ed": "atag"
+    },
+    "settle": "on",
+    "title": "Refs: names that point at commits",
+    "id": "refs"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "state-4",
+    "state-5",
+    "state-6"
+   ],
+   "base": 2,
+   "upto": 2,
+   "section": "MENTAL MODEL",
+   "n": 35,
+   "progress": 0.4219
+  },
+  {
+   "kind": "keypoint",
+   "body": "The analogy breaks at demolition.",
+   "section": "MENTAL MODEL",
+   "n": 36,
+   "progress": 0.4344
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=.git/HEAD:a_symbolic_ref|*.git/refs/heads/main:a_loose_ref|.git/packed-refs:many_refs,_sorted rows=1:A:ref:_refs/heads/main|1:B:0c2cf43...|2:B:after_packing:_no_file@dim|2:C:0c2cf43..._refs/heads/main|3:B:after_a_commit:_a8eea18@hl arrows=1:A1>B|2:B1>C1:packed title=Where_the_value_of_main_is_kept say_1=A_loose_ref_is_a_file_that_holds_the_ID say_2=After_packing,_main_is_a_line_in_packed-refs say_3=The_loose_file_is_back_and_wins._The_packed_line_is_stale id=where at_1=12",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      ".git/HEAD",
+      "a symbolic ref"
+     ],
+     [
+      "*.git/refs/heads/main",
+      "a loose ref"
+     ],
+     [
+      ".git/packed-refs",
+      "many refs, sorted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "ref: refs/heads/main"
+     ],
+     [
+      1,
+      "B",
+      "0c2cf43..."
+     ],
+     [
+      2,
+      "B",
+      "after packing: no file",
+      "dim"
+     ],
+     [
+      2,
+      "C",
+      "0c2cf43... refs/heads/main"
+     ],
+     [
+      3,
+      "B",
+      "after a commit: a8eea18",
+      "hl"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B",
+      ""
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "packed"
+     ]
+    ],
+    "title": "Where the value of main is kept",
+    "say": {
+     "1": "A loose ref is a file that holds the ID",
+     "2": "After packing, main is a line in packed-refs",
+     "3": "The loose file is back and wins. The packed line is stale"
+    },
+    "id": "where",
+    "at": {
+     "1": 0.12
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "upto": 3,
+   "says": [
+    "More than one cupboard: ask the keeper, the plumbing"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 37,
+   "progress": 0.4426
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 38,
+   "progress": 0.458
+  },
+  {
+   "kind": "scene",
+   "direction": "decide: nodes=q1:loose_file_.git/refs/heads/main_exists?|a:use_its_content|q2:a_line_for_refs/heads/main_in_packed-refs?|b:use_that_line|c:not_found edges=q1>a:yes|q1>q2:no|q2>b:yes|q2>c:no title=Resolve_refs/heads/main_(files_format) id=lookup",
+   "scene": "decide",
+   "params": {
+    "nodes": [
+     [
+      "q1",
+      "loose file .git/refs/heads/main exists?"
+     ],
+     [
+      "a",
+      "use its content"
+     ],
+     [
+      "q2",
+      "a line for refs/heads/main in packed-refs?"
+     ],
+     [
+      "b",
+      "use that line"
+     ],
+     [
+      "c",
+      "not found"
+     ]
+    ],
+    "edges": [
+     [
+      "q1",
+      "a",
+      "yes"
+     ],
+     [
+      "q1",
+      "q2",
+      "no"
+     ],
+     [
+      "q2",
+      "b",
+      "yes"
+     ],
+     [
+      "q2",
+      "c",
+      "no"
+     ]
+    ],
+    "title": "Resolve refs/heads/main (files format)",
+    "id": "lookup",
+    "cols": [
+     [
+      "q1"
+     ],
+     [
+      "a",
+      "q2"
+     ],
+     [
+      "b",
+      "c"
+     ]
+    ]
+   },
+   "steps": [
+    "level-1",
+    "level-2",
+    "level-3"
+   ],
+   "upto": 3,
+   "section": "DIAGRAM",
+   "n": 39,
+   "progress": 0.4594
+  },
+  {
+   "kind": "diagram",
+   "direction": "Then one reflog line, field by field, from section 3.11.",
+   "text": " b602c1fa... 62001eb8... Asha Rao <asha@example.com> 1788756480 +0530 <TAB> commit: Add batch size setting\n old value   new value   committer                   seconds    zone        message",
+   "section": "DIAGRAM",
+   "n": 40,
+   "progress": 0.4787
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.4855
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/refs-storage"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.4868
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/01-loose-refs",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "find .git/refs -type f | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/stash"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/tags/v1.0.0"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/tags/v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/tags/v1.0.0"
+    },
+    {
+     "t": "out",
+     "s": "0b624edf4a556c702b6ed110ef2702570ced1558"
+    },
+    {
+     "t": "out",
+     "s": "# Two symbolic refs. They hold a ref name, not an object ID:"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/remotes/origin/main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.4918
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/02-list",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git for-each-ref"
+    },
+    {
+     "t": "out",
+     "s": "62001eb879c6506f6d3c8e625dfadfa5029367b7 commit refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba commit refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba commit refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba commit refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": "0c3d1b1c205d3248bab3061f235ef2309f653b49 commit refs/stash"
+    },
+    {
+     "t": "out",
+     "s": "0b624edf4a556c702b6ed110ef2702570ced1558 tag    refs/tags/v1.0.0"
+    },
+    {
+     "t": "out",
+     "s": "4f2cc0c5f842120f109977a97bc72acef5aa5ccd commit refs/tags/v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --format='%(refname:short) -> %(objectname:short) %(upstream:short)' refs/heads"
+    },
+    {
+     "t": "out",
+     "s": "feature/batching -> 62001eb"
+    },
+    {
+     "t": "out",
+     "s": "main -> 0c2cf43 origin/main"
+    },
+    {
+     "t": "out",
+     "s": "# show-ref can peel annotated tags (the ^{} lines) and test for existence:"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.4983
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/02-list",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git show-ref --tags --dereference"
+    },
+    {
+     "t": "out",
+     "s": "0b624edf4a556c702b6ed110ef2702570ced1558 refs/tags/v1.0.0"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/tags/v1.0.0^{}"
+    },
+    {
+     "t": "out",
+     "s": "4f2cc0c5f842120f109977a97bc72acef5aa5ccd refs/tags/v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "git show-ref --verify refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/heads/main"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    },
+    {
+     "t": "cmd",
+     "s": "git show-ref --exists refs/heads/no-such-branch"
+    },
+    {
+     "t": "out",
+     "s": "error: reference does not exist"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 2]"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.523
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "b602c1f",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "4f2cc0c",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "62001eb",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "0c2cf43",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "4f2cc0c",
+       "62001eb"
+      ]
+     },
+     {
+      "id": "a8eea18",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "0c2cf43"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "b602c1f",
+       "4f2cc0c",
+       "62001eb",
+       "0c2cf43"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c",
+       "experiment": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "experiment": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "a8eea18"
+      ],
+      "refs": {
+       "main": "a8eea18",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "tags": [
+     "v1.0.0-rc1"
+    ],
+    "kinds": {
+     "v1.0.0#0b624ed": "atag"
+    },
+    "settle": "on",
+    "title": "Refs: names that point at commits",
+    "id": "refs"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "state-4",
+    "state-5",
+    "state-6"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.538
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "b602c1f",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "4f2cc0c",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "62001eb",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "0c2cf43",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "4f2cc0c",
+       "62001eb"
+      ]
+     },
+     {
+      "id": "a8eea18",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "0c2cf43"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "b602c1f",
+       "4f2cc0c",
+       "62001eb",
+       "0c2cf43"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c",
+       "experiment": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "experiment": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "a8eea18"
+      ],
+      "refs": {
+       "main": "a8eea18",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "tags": [
+     "v1.0.0-rc1"
+    ],
+    "kinds": {
+     "v1.0.0#0b624ed": "atag"
+    },
+    "settle": "on",
+    "title": "Refs: names that point at commits",
+    "id": "refs"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "state-4",
+    "state-5",
+    "state-6"
+   ],
+   "base": 2,
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.5441
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git update-ref -m \"experiment: start at the release candidate\" refs/heads/experiment v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch --list --verbose experiment"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/experiment main b602c1fa61adb577fc9ca3113292b7cf734e856a"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/experiment main v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog show experiment"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.5488
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/03-update-ref",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A branch is a ref, so plumbing can create one: name, new value, reflog message."
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref -m \"experiment: start at the release candidate\" refs/heads/experiment v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch --list --verbose experiment"
+    },
+    {
+     "t": "out",
+     "s": "  experiment 4f2cc0c Add readiness handler"
+    },
+    {
+     "t": "out",
+     "s": "# With a third argument the update happens only if the ref still has that old value."
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/experiment main b602c1fa61adb577fc9ca3113292b7cf734e856a"
+    },
+    {
+     "t": "out",
+     "s": "fatal: update_ref failed for ref 'refs/heads/experiment': cannot lock ref 'refs/heads/experiment': is at"
+    },
+    {
+     "t": "wrap",
+     "s": "4f2cc0c5f842120f109977a97bc72acef5aa5ccd but expected b602c1fa61adb577fc9ca3113292b7cf734e856a",
+     "of": "out"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/experiment main v1.0.0-rc1"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "caption": "It's refused: \"is at <code>4f2cc0c</code>... but expected <code>b602c1f</code>...\".",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.5646
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/03-update-ref",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reflog show experiment"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf43 experiment@{0}:"
+    },
+    {
+     "t": "out",
+     "s": "4f2cc0c experiment@{1}: experiment: start at the release candidate"
+    },
+    {
+     "t": "out",
+     "s": "# Two refusals: an object that does not exist, and a branch that would not name a commit."
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/broken 1234567890123456789012345678901234567890"
+    },
+    {
+     "t": "out",
+     "s": "fatal: update_ref failed for ref 'refs/heads/broken': trying to write ref 'refs/heads/broken' with"
+    },
+    {
+     "t": "wrap",
+     "s": "nonexistent object 1234567890123456789012345678901234567890",
+     "of": "out"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref refs/heads/broken HEAD:config.toml"
+    },
+    {
+     "t": "out",
+     "s": "fatal: update_ref failed for ref 'refs/heads/broken': trying to write non-commit object"
+    },
+    {
+     "t": "wrap",
+     "s": "60a72d9888260645df622ecd424e474d09d40560 to branch 'refs/heads/broken'",
+     "of": "out"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref -d refs/heads/experiment"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "caption": "The last line is the 🔴 command, <code>git update-ref -d</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.5857
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "b602c1f",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "4f2cc0c",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "62001eb",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "0c2cf43",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "4f2cc0c",
+       "62001eb"
+      ]
+     },
+     {
+      "id": "a8eea18",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "0c2cf43"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "b602c1f",
+       "4f2cc0c",
+       "62001eb",
+       "0c2cf43"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c",
+       "experiment": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "experiment": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "a8eea18"
+      ],
+      "refs": {
+       "main": "a8eea18",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "tags": [
+     "v1.0.0-rc1"
+    ],
+    "kinds": {
+     "v1.0.0#0b624ed": "atag"
+    },
+    "settle": "on",
+    "title": "Refs: names that point at commits",
+    "id": "refs"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "state-4",
+    "state-5",
+    "state-6"
+   ],
+   "base": 4,
+   "upto": 5,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6107
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/04-symbolic-ref",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref --short HEAD"
+    },
+    {
+     "t": "out",
+     "s": "main"
+    },
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": "# Any ref can be symbolic. This one makes \"latest\" another name for main:"
+    },
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref refs/heads/latest refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/refs/heads/latest"
+    },
+    {
+     "t": "out",
+     "s": "ref: refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse latest main"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6157
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/04-symbolic-ref",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref --delete refs/heads/latest"
+    },
+    {
+     "t": "out",
+     "s": "# Detached HEAD: the file holds an object ID, so there is no symbolic ref to read."
+    },
+    {
+     "t": "cmd",
+     "s": "git switch --quiet --detach v1.0.0-rc1"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "4f2cc0c5f842120f109977a97bc72acef5aa5ccd"
+    },
+    {
+     "t": "cmd",
+     "s": "git symbolic-ref HEAD"
+    },
+    {
+     "t": "out",
+     "s": "fatal: ref HEAD is not a symbolic ref"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch --quiet main"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6265
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "find .git/logs -type f | sort"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/logs/refs/heads/feature/batching"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog show feature/batching"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog exists refs/tags/v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch -d feature/batching"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/logs -type f | sort"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6275
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/05-reflog-files",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "find .git/logs -type f | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/stash"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/logs/refs/heads/feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "0000000000000000000000000000000000000000 b602c1fa61adb577fc9ca3113292b7cf734e856a Lab User"
+    },
+    {
+     "t": "wrap",
+     "s": "<you@example.com> 1788756420 +0530   branch: Created from HEAD",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "b602c1fa61adb577fc9ca3113292b7cf734e856a 62001eb879c6506f6d3c8e625dfadfa5029367b7 Asha Rao"
+    },
+    {
+     "t": "wrap",
+     "s": "<asha@example.com> 1788756480 +0530  commit: Add batch size setting",
+     "of": "out"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.6387
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/05-reflog-files",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reflog show feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "62001eb feature/batching@{0}: commit: Add batch size setting"
+    },
+    {
+     "t": "out",
+     "s": "b602c1f feature/batching@{1}: branch: Created from HEAD"
+    },
+    {
+     "t": "out",
+     "s": "# Tags get no reflog by default. A deleted branch loses its reflog with it:"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog exists refs/tags/v1.0.0"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git branch -d feature/batching"
+    },
+    {
+     "t": "out",
+     "s": "Deleted branch feature/batching (was 62001eb)."
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/logs -type f | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/logs/refs/stash"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.6473
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git pack-refs --all"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/packed-refs"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/refs -type f | sort"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'max_tokens = 256\\n' >> config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -am \"Add token limit\""
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/refs -type f | sort"
+    },
+    {
+     "t": "cmd",
+     "s": "grep refs/heads/main .git/packed-refs"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse main"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.6498
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/06-packed-refs",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git pack-refs --all"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/packed-refs"
+    },
+    {
+     "t": "out",
+     "s": "# pack-refs with: peeled fully-peeled sorted"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": "0c3d1b1c205d3248bab3061f235ef2309f653b49 refs/stash"
+    },
+    {
+     "t": "out",
+     "s": "0b624edf4a556c702b6ed110ef2702570ced1558 refs/tags/v1.0.0"
+    },
+    {
+     "t": "out",
+     "s": "^0c2cf4371cac2e5d412153dc58293c0cb484c4ba"
+    },
+    {
+     "t": "out",
+     "s": "4f2cc0c5f842120f109977a97bc72acef5aa5ccd refs/tags/v1.0.0-rc1"
+    },
+    {
+     "t": "out",
+     "s": "# The loose files are gone, except the symbolic ref, which cannot be packed:"
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/refs -type f | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "# The next update writes a loose file again. It wins over the stale packed line:"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.661
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/refs-storage/06-packed-refs",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "printf 'max_tokens = 256\\n' >> config.toml"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit --quiet -am \"Add token limit\""
+    },
+    {
+     "t": "cmd",
+     "s": "find .git/refs -type f | sort"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": ".git/refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "grep refs/heads/main .git/packed-refs"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba refs/heads/main"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse main"
+    },
+    {
+     "t": "out",
+     "s": "a8eea183b656f17da1e2456a2e49995e8388fcb4"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.6637
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=.git/HEAD:a_symbolic_ref|*.git/refs/heads/main:a_loose_ref|.git/packed-refs:many_refs,_sorted rows=1:A:ref:_refs/heads/main|1:B:0c2cf43...|2:B:after_packing:_no_file@dim|2:C:0c2cf43..._refs/heads/main|3:B:after_a_commit:_a8eea18@hl arrows=1:A1>B|2:B1>C1:packed title=Where_the_value_of_main_is_kept say_1=A_loose_ref_is_a_file_that_holds_the_ID say_2=After_packing,_main_is_a_line_in_packed-refs say_3=The_loose_file_is_back_and_wins._The_packed_line_is_stale id=where at_1=12",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      ".git/HEAD",
+      "a symbolic ref"
+     ],
+     [
+      "*.git/refs/heads/main",
+      "a loose ref"
+     ],
+     [
+      ".git/packed-refs",
+      "many refs, sorted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "ref: refs/heads/main"
+     ],
+     [
+      1,
+      "B",
+      "0c2cf43..."
+     ],
+     [
+      2,
+      "B",
+      "after packing: no file",
+      "dim"
+     ],
+     [
+      2,
+      "C",
+      "0c2cf43... refs/heads/main"
+     ],
+     [
+      3,
+      "B",
+      "after a commit: a8eea18",
+      "hl"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B",
+      ""
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "packed"
+     ]
+    ],
+    "title": "Where the value of main is kept",
+    "say": {
+     "1": "A loose ref is a file that holds the ID",
+     "2": "After packing, main is a line in packed-refs",
+     "3": "The loose file is back and wins. The packed line is stale"
+    },
+    "id": "where",
+    "at": {
+     "1": 0.12
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 3,
+   "says_before": [
+    "More than one cupboard: ask the keeper, the plumbing"
+   ],
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 60,
+   "progress": 0.6858
+  },
+  {
+   "kind": "diagram",
+   "direction": "The root-cause box of section 3.9.",
+   "text": "Observed behavior : a release script runs \"cat .git/refs/heads/main\" and finds no file; a variant greps\n                    packed-refs and stamps the build with last week's commit\nGit state         : main was packed by git gc (or arrived packed from git clone), then moved on\nMechanism         : lookup reads the loose file first and packed-refs second; maintenance moves loose\n                    refs into packed-refs; a later update writes a new loose file and leaves the old line\nRoot cause        : the scripts read one of several storage locations instead of asking Git\nWhy Git does this : one file per ref wastes space and is slow with thousands of refs\nCorrect fix       : git rev-parse --verify refs/heads/main\nPrevention        : never read .git/refs or packed-refs from a script; use rev-parse, for-each-ref,\n                    update-ref and symbolic-ref, which also work with reftable",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 61,
+   "progress": 0.6926
+  },
+  {
+   "kind": "terminal",
+   "direction": "Root refs.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/root-refs"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 62,
+   "progress": 0.6993
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/root-refs/01-fetch-head",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git fetch origin"
+    },
+    {
+     "t": "out",
+     "s": "# One line per fetched branch: object ID, a marker for \"git pull\", and where it came from."
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba                branch 'main' of ../server"
+    },
+    {
+     "t": "out",
+     "s": "62001eb879c6506f6d3c8e625dfadfa5029367b7        not-for-merge   branch 'feature/batching' of ../server"
+    },
+    {
+     "t": "out",
+     "s": "# Used as a revision, FETCH_HEAD means its first line:"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 63,
+   "progress": 0.7016
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/root-refs/02-merge-head",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A merge of two branches at once, stopped before the commit is made:"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge --no-commit topic/metrics topic/tracing"
+    },
+    {
+     "t": "out",
+     "s": "Fast-forwarding to: topic/metrics"
+    },
+    {
+     "t": "out",
+     "s": "Trying simple merge with topic/tracing"
+    },
+    {
+     "t": "out",
+     "s": "Automatic merge went well; stopped before committing as requested"
+    },
+    {
+     "t": "out",
+     "s": "# MERGE_HEAD holds one line per branch being merged. ORIG_HEAD holds where main was:"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/MERGE_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "228726e45b0adbf88785b4d004845222a7d5e973"
+    },
+    {
+     "t": "out",
+     "s": "67b8eefa35c8ad680fc5cb88ec2d028ba2c09cc6"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 64,
+   "progress": 0.7109
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/root-refs/02-merge-head",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "logs"
+    },
+    {
+     "t": "out",
+     "s": "MERGE_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "MERGE_MODE"
+    },
+    {
+     "t": "out",
+     "s": "MERGE_MSG"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 65,
+   "progress": 0.7194
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/root-refs/03-root-refs",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The refs outside refs/, as Git lists them. The two pseudorefs are not in the list:"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --include-root-refs | grep -v refs/"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba commit HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0c2cf4371cac2e5d412153dc58293c0cb484c4ba commit ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "# A root ref is an ordinary ref, so update-ref writes it. A pseudoref is refused:"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref ORIG_HEAD HEAD~1"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 0]"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref MERGE_HEAD HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "fatal: update_ref failed for ref 'MERGE_HEAD': refusing to update pseudoref 'MERGE_HEAD'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog exists ORIG_HEAD; echo \"exit status: $?\""
+    },
+    {
+     "t": "out",
+     "s": "exit status: 1"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge --abort"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 66,
+   "progress": 0.7221
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git fetch ../teammate fix/timeout"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1 FETCH_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git fsck"
+    },
+    {
+     "t": "cmd",
+     "s": "git gc --quiet --prune=now"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/FETCH_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1 FETCH_HEAD"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 67,
+   "progress": 0.7443
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/root-refs/04-not-a-starting-point",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A branch of a teammate, fetched by path without a destination ref. It lands in FETCH_HEAD only:"
+    },
+    {
+     "t": "cmd",
+     "s": "git fetch ../teammate fix/timeout"
+    },
+    {
+     "t": "out",
+     "s": "From ../teammate"
+    },
+    {
+     "t": "out",
+     "s": " * branch            fix/timeout -> FETCH_HEAD"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1 FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "25623b2 Lower the timeout to 20 seconds"
+    },
+    {
+     "t": "out",
+     "s": "# No ref under refs/ and no reflog entry names that commit, so fsck reports it."
+    },
+    {
+     "t": "out",
+     "s": "# (The dangling tree is the result of the two-branch merge that was aborted above.)"
+    },
+    {
+     "t": "cmd",
+     "s": "git fsck"
+    },
+    {
+     "t": "out",
+     "s": "dangling commit 25623b2b4f51bc94cebfa8e80099a56f6b754270"
+    },
+    {
+     "t": "out",
+     "s": "dangling tree 7396eea3ac2000acc286f477277694a681054728"
+    },
+    {
+     "t": "out",
+     "s": "# A garbage collection without a grace period deletes it. The name stays behind and names nothing:"
+    },
+    {
+     "t": "cmd",
+     "s": "git gc --quiet --prune=now"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "25623b2b4f51bc94cebfa8e80099a56f6b754270                branch 'fix/timeout' of ../teammate"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -1 FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "fatal: bad object FETCH_HEAD"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 68,
+   "progress": 0.7569
+  },
+  {
+   "kind": "terminal",
+   "direction": "Lab 17.3, up to the checkpoint.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch03/lab-17-3-special-refs-tour"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 69,
+   "progress": 0.7734
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-3-special-refs-tour/04-root-refs",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Root refs are listed. The two pseudorefs, FETCH_HEAD and MERGE_HEAD, are not:"
+    },
+    {
+     "t": "cmd",
+     "s": "git for-each-ref --include-root-refs"
+    },
+    {
+     "t": "out",
+     "s": "e998f4a6456530454a3965aa39ae3817c10a9abd tree   AUTO_MERGE"
+    },
+    {
+     "t": "out",
+     "s": "740729a560918e0aa319995c3593b861891232bb commit HEAD"
+    },
+    {
+     "t": "out",
+     "s": "740729a560918e0aa319995c3593b861891232bb commit ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0cab12efae273ef530412d8a4be1e79e5b73a2ba commit refs/heads/feature/timeouts"
+    },
+    {
+     "t": "out",
+     "s": "740729a560918e0aa319995c3593b861891232bb commit refs/heads/main"
+    },
+    {
+     "t": "out",
+     "s": "ed95c389d59e4eb36fc24a0bf54973ff5eab05b4 commit refs/remotes/origin/HEAD"
+    },
+    {
+     "t": "out",
+     "s": "ed95c389d59e4eb36fc24a0bf54973ff5eab05b4 commit refs/remotes/origin/main"
+    },
+    {
+     "t": "out",
+     "s": "# Pseudorefs can be read like refs, but update-ref refuses to write them:"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse MERGE_HEAD FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "0cab12efae273ef530412d8a4be1e79e5b73a2ba"
+    },
+    {
+     "t": "out",
+     "s": "ed95c389d59e4eb36fc24a0bf54973ff5eab05b4"
+    },
+    {
+     "t": "cmd",
+     "s": "git update-ref MERGE_HEAD HEAD"
+    },
+    {
+     "t": "out",
+     "s": "fatal: update_ref failed for ref 'MERGE_HEAD': refusing to update pseudoref 'MERGE_HEAD'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 70,
+   "progress": 0.7756
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-3-special-refs-tour/04-root-refs",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git update-ref FETCH_HEAD HEAD"
+    },
+    {
+     "t": "out",
+     "s": "fatal: update_ref failed for ref 'FETCH_HEAD': refusing to update pseudoref 'FETCH_HEAD'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git merge --abort"
+    },
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "logs"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 71,
+   "progress": 0.7792
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch03/lab-17-3-special-refs-tour/10-checkpoint",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# No operation is in progress. Three leftovers remain: FETCH_HEAD, ORIG_HEAD, and AUTO_MERGE,"
+    },
+    {
+     "t": "out",
+     "s": "# the tree that \"git stash pop\" merged. None of them describes unfinished work."
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short --branch"
+    },
+    {
+     "t": "out",
+     "s": "## main...origin/main [ahead 2]"
+    },
+    {
+     "t": "cmd",
+     "s": "git stash list"
+    },
+    {
+     "t": "cmd",
+     "s": "ls -A .git"
+    },
+    {
+     "t": "out",
+     "s": "AUTO_MERGE"
+    },
+    {
+     "t": "out",
+     "s": "COMMIT_EDITMSG"
+    },
+    {
+     "t": "out",
+     "s": "config"
+    },
+    {
+     "t": "out",
+     "s": "description"
+    },
+    {
+     "t": "out",
+     "s": "FETCH_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "HEAD"
+    },
+    {
+     "t": "out",
+     "s": "hooks"
+    },
+    {
+     "t": "out",
+     "s": "index"
+    },
+    {
+     "t": "out",
+     "s": "info"
+    },
+    {
+     "t": "out",
+     "s": "logs"
+    },
+    {
+     "t": "out",
+     "s": "objects"
+    },
+    {
+     "t": "out",
+     "s": "ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "refs"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 72,
+   "progress": 0.7827
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 73,
+   "progress": 0.8017
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 74,
+   "progress": 0.803
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/refs/heads/&lt;branch&gt;</code> in a script. Root cause: the ref may be a line in <code>packed-refs</code>, so the script reads one of several storage locations instead of asking Git.",
+    "Grepping <code>packed-refs</code> for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+    "Relying on <code>FETCH_HEAD</code> or <code>ORIG_HEAD</code> to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+    "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with <code>git rev-parse --verify --quiet MERGE_HEAD</code>.",
+    "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 75,
+   "progress": 0.8048
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/refs/heads/&lt;branch&gt;</code> in a script. Root cause: the ref may be a line in <code>packed-refs</code>, so the script reads one of several storage locations instead of asking Git.",
+    "Grepping <code>packed-refs</code> for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+    "Relying on <code>FETCH_HEAD</code> or <code>ORIG_HEAD</code> to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+    "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with <code>git rev-parse --verify --quiet MERGE_HEAD</code>.",
+    "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 76,
+   "progress": 0.8148
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/refs/heads/&lt;branch&gt;</code> in a script. Root cause: the ref may be a line in <code>packed-refs</code>, so the script reads one of several storage locations instead of asking Git.",
+    "Grepping <code>packed-refs</code> for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+    "Relying on <code>FETCH_HEAD</code> or <code>ORIG_HEAD</code> to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+    "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with <code>git rev-parse --verify --quiet MERGE_HEAD</code>.",
+    "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 77,
+   "progress": 0.822
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/refs/heads/&lt;branch&gt;</code> in a script. Root cause: the ref may be a line in <code>packed-refs</code>, so the script reads one of several storage locations instead of asking Git.",
+    "Grepping <code>packed-refs</code> for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+    "Relying on <code>FETCH_HEAD</code> or <code>ORIG_HEAD</code> to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+    "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with <code>git rev-parse --verify --quiet MERGE_HEAD</code>.",
+    "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 78,
+   "progress": 0.8306
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Reading <code>.git/refs/heads/&lt;branch&gt;</code> in a script. Root cause: the ref may be a line in <code>packed-refs</code>, so the script reads one of several storage locations instead of asking Git.",
+    "Grepping <code>packed-refs</code> for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+    "Relying on <code>FETCH_HEAD</code> or <code>ORIG_HEAD</code> to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+    "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with <code>git rev-parse --verify --quiet MERGE_HEAD</code>.",
+    "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 79,
+   "progress": 0.8413
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 80,
+   "progress": 0.8467
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: boxes=.git/HEAD:a_symbolic_ref|*.git/refs/heads/main:a_loose_ref|.git/packed-refs:many_refs,_sorted rows=1:A:ref:_refs/heads/main|1:B:0c2cf43...|2:B:after_packing:_no_file@dim|2:C:0c2cf43..._refs/heads/main|3:B:after_a_commit:_a8eea18@hl arrows=1:A1>B|2:B1>C1:packed title=Where_the_value_of_main_is_kept say_1=A_loose_ref_is_a_file_that_holds_the_ID say_2=After_packing,_main_is_a_line_in_packed-refs say_3=The_loose_file_is_back_and_wins._The_packed_line_is_stale id=where at_1=12",
+   "scene": "stores",
+   "params": {
+    "boxes": [
+     [
+      ".git/HEAD",
+      "a symbolic ref"
+     ],
+     [
+      "*.git/refs/heads/main",
+      "a loose ref"
+     ],
+     [
+      ".git/packed-refs",
+      "many refs, sorted"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "ref: refs/heads/main"
+     ],
+     [
+      1,
+      "B",
+      "0c2cf43..."
+     ],
+     [
+      2,
+      "B",
+      "after packing: no file",
+      "dim"
+     ],
+     [
+      2,
+      "C",
+      "0c2cf43... refs/heads/main"
+     ],
+     [
+      3,
+      "B",
+      "after a commit: a8eea18",
+      "hl"
+     ]
+    ],
+    "arrows": [
+     [
+      1,
+      "A1",
+      "B",
+      ""
+     ],
+     [
+      2,
+      "B1",
+      "C1",
+      "packed"
+     ]
+    ],
+    "title": "Where the value of main is kept",
+    "say": {
+     "1": "A loose ref is a file that holds the ID",
+     "2": "After packing, main is a line in packed-refs",
+     "3": "The loose file is back and wins. The packed line is stale"
+    },
+    "id": "where",
+    "at": {
+     "1": 0.12
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 4,
+   "upto": 4,
+   "says": [
+    "A script that walks .git/refs/heads sees only the loose files"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 81,
+   "progress": 0.848
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=ref,reflog_under_the_default_setting rows=HEAD:yes|a_branch:yes,_deleted_with_the_branch|a_remote-tracking_branch:yes|notes:yes|a_tag:no|any_ref_in_a_bare_repository:no marks=1.2:ok,2.2:ok,3.2:ok,4.2:ok,5.2:bad,6.2:bad title=Who_gets_a_reflog mono=off id=logs",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "ref",
+     "reflog under the default setting"
+    ],
+    "rows": [
+     [
+      "HEAD",
+      "yes"
+     ],
+     [
+      "a branch",
+      "yes, deleted with the branch"
+     ],
+     [
+      "a remote-tracking branch",
+      "yes"
+     ],
+     [
+      "notes",
+      "yes"
+     ],
+     [
+      "a tag",
+      "no"
+     ],
+     [
+      "any ref in a bare repository",
+      "no"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "ok",
+     "3.2": "ok",
+     "4.2": "ok",
+     "5.2": "bad",
+     "6.2": "bad"
+    },
+    "title": "Who gets a reflog",
+    "mono": "off",
+    "id": "logs"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+   ],
+   "base": 7,
+   "upto": 7,
+   "says": [
+    "A reflog is local, and a deleted branch loses its own"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 82,
+   "progress": 0.872
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 83,
+   "progress": 0.887
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 17.3, \"A tour of every special ref and file\", in <code>lab-manual/m17-index-refs-gitdir.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 84,
+   "progress": 0.8883
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 17.7, \"A branch that Git ignores\", in <code>exercises/m16-m18-internals.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 85,
+   "progress": 0.9055
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 86,
+   "progress": 0.9098
+  },
+  {
+   "kind": "keypoint",
+   "body": "Question 81 of the CTO question bank:",
+   "section": "INTERVIEW QUESTION",
+   "n": 87,
+   "progress": 0.9111
+  },
+  {
+   "kind": "callout",
+   "quotes": [
+    "\"A release script reads <code>.git/refs/heads/main</code> and checks that the content is forty hexadecimal digits. It has worked for years and now fails in two repositories with two different errors. Explain both root causes at the storage level, and state the rule that prevents this class of failure.\""
+   ],
+   "quoted": false,
+   "section": "INTERVIEW QUESTION",
+   "n": 88,
+   "progress": 0.9136
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 89,
+   "progress": 0.9362
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "b602c1f",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "4f2cc0c",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "62001eb",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "b602c1f"
+      ]
+     },
+     {
+      "id": "0c2cf43",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "4f2cc0c",
+       "62001eb"
+      ]
+     },
+     {
+      "id": "a8eea18",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "0c2cf43"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "b602c1f",
+       "4f2cc0c",
+       "62001eb",
+       "0c2cf43"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c",
+       "experiment": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "experiment": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "feature/batching": "62001eb",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "0c2cf43",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     },
+     {
+      "add": [
+       "a8eea18"
+      ],
+      "refs": {
+       "main": "a8eea18",
+       "origin/main": "0c2cf43",
+       "v1.0.0#0b624ed": "0c2cf43",
+       "v1.0.0-rc1": "4f2cc0c"
+      },
+      "head": "main",
+      "notes": []
+     }
+    ],
+    "tags": [
+     "v1.0.0-rc1"
+    ],
+    "kinds": {
+     "v1.0.0#0b624ed": "atag"
+    },
+    "settle": "on",
+    "title": "Refs: names that point at commits",
+    "id": "refs"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2",
+    "state-3",
+    "state-4",
+    "state-5",
+    "state-6"
+   ],
+   "base": 5,
+   "upto": 7,
+   "section": "RECAP",
+   "n": 90,
+   "progress": 0.9375
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A ref is a loose file, a line in <code>packed-refs</code>, or both; the loose file is read first.",
+    "Plumbing reads and writes refs in every format: <code>for-each-ref</code>, <code>show-ref</code>, <code>update-ref</code>, <code>symbolic-ref</code>.",
+    "Since Git 2.46, only <code>FETCH_HEAD</code> and <code>MERGE_HEAD</code> are pseudorefs; <code>ORIG_HEAD</code> and its relatives are root refs.",
+    "Apart from HEAD, none of them keeps an object alive.",
+    "Reflogs are files under <code>logs/</code>; tags have none by default, and a deleted branch loses its own."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 91,
+   "progress": 0.9439
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A ref is a loose file, a line in <code>packed-refs</code>, or both; the loose file is read first.",
+    "Plumbing reads and writes refs in every format: <code>for-each-ref</code>, <code>show-ref</code>, <code>update-ref</code>, <code>symbolic-ref</code>.",
+    "Since Git 2.46, only <code>FETCH_HEAD</code> and <code>MERGE_HEAD</code> are pseudorefs; <code>ORIG_HEAD</code> and its relatives are root refs.",
+    "Apart from HEAD, none of them keeps an object alive.",
+    "Reflogs are files under <code>logs/</code>; tags have none by default, and a deleted branch loses its own."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 92,
+   "progress": 0.9464
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A ref is a loose file, a line in <code>packed-refs</code>, or both; the loose file is read first.",
+    "Plumbing reads and writes refs in every format: <code>for-each-ref</code>, <code>show-ref</code>, <code>update-ref</code>, <code>symbolic-ref</code>.",
+    "Since Git 2.46, only <code>FETCH_HEAD</code> and <code>MERGE_HEAD</code> are pseudorefs; <code>ORIG_HEAD</code> and its relatives are root refs.",
+    "Apart from HEAD, none of them keeps an object alive.",
+    "Reflogs are files under <code>logs/</code>; tags have none by default, and a deleted branch loses its own."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 93,
+   "progress": 0.9529
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A ref is a loose file, a line in <code>packed-refs</code>, or both; the loose file is read first.",
+    "Plumbing reads and writes refs in every format: <code>for-each-ref</code>, <code>show-ref</code>, <code>update-ref</code>, <code>symbolic-ref</code>.",
+    "Since Git 2.46, only <code>FETCH_HEAD</code> and <code>MERGE_HEAD</code> are pseudorefs; <code>ORIG_HEAD</code> and its relatives are root refs.",
+    "Apart from HEAD, none of them keeps an object alive.",
+    "Reflogs are files under <code>logs/</code>; tags have none by default, and a deleted branch loses its own."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 94,
+   "progress": 0.9572
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A ref is a loose file, a line in <code>packed-refs</code>, or both; the loose file is read first.",
+    "Plumbing reads and writes refs in every format: <code>for-each-ref</code>, <code>show-ref</code>, <code>update-ref</code>, <code>symbolic-ref</code>.",
+    "Since Git 2.46, only <code>FETCH_HEAD</code> and <code>MERGE_HEAD</code> are pseudorefs; <code>ORIG_HEAD</code> and its relatives are root refs.",
+    "Apart from HEAD, none of them keeps an object alive.",
+    "Reflogs are files under <code>logs/</code>; tags have none by default, and a deleted branch loses its own."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 95,
+   "progress": 0.9629
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A ref is a loose file, a line in <code>packed-refs</code>, or both; the loose file is read first.",
+    "Plumbing reads and writes refs in every format: <code>for-each-ref</code>, <code>show-ref</code>, <code>update-ref</code>, <code>symbolic-ref</code>.",
+    "Since Git 2.46, only <code>FETCH_HEAD</code> and <code>MERGE_HEAD</code> are pseudorefs; <code>ORIG_HEAD</code> and its relatives are root refs.",
+    "Apart from HEAD, none of them keeps an object alive.",
+    "Reflogs are files under <code>logs/</code>; tags have none by default, and a deleted branch loses its own."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 96,
+   "progress": 0.9665
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 97,
+   "progress": 0.9726
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 3.9 to 3.11 of Chapter 3. Do Exercise 17.2, \"Loose refs and packed refs\", and Exercise 17.3, \"Refs by plumbing\", in <code>exercises/m16-m18-internals.md</code>.",
+   "section": "HOMEWORK",
+   "n": 98,
+   "progress": 0.9739
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you found every place a ref can live, and you learned to ask Git instead of reading files.",
+   "section": "HOMEWORK",
+   "n": 99,
+   "progress": 0.9825
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The release script stamps every build with a commit ID. It gets that ID by reading the file .git/refs/heads/main. It has done so for years. On the new build image that file doesn't exist, and the release stops.",
+   "tele": "The release script stamps every build with a commit ID. It gets that ID by reading the file `.git/refs/heads/main`. It has done so for years. On the new build image that file doesn't exist, and the release stops.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "431fc94a",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Your CTO asks: is the repository damaged?",
+   "tele": "Your CTO asks: is the repository damaged?",
+   "words": 7,
+   "est": 2.8,
+   "slide": 4,
+   "line": 16,
+   "t0": 18.7,
+   "h": "016fa065",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "It isn't. The branch exists and Git resolves it. The ref is stored somewhere else, and the script should have asked Git. A ref is a name that holds an object ID, and a branch is one kind of ref. This video shows every place a ref can be stored in the default format, and why no script should read any of them. Keep that missing file in mind. It comes back.",
+   "tele": "It isn't. The branch exists and Git resolves it. The ref is stored somewhere else, and the script should have asked Git. A ref is a name that holds an object ID, and a branch is one kind of ref. This video shows every place a ref can be stored in the default format, and why no script should read any of them. Keep that missing file in mind. It comes back.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 5,
+   "line": 18,
+   "t0": 21.5,
+   "h": "d3b91a8f",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 50.3,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You've used refs since the first part of this course: a branch is a ref, a tag is a ref, HEAD is a ref. Now we look at how they are stored.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You've used refs since the first part of this course: a branch is a ref, a tag is a ref, HEAD is a ref. Now we look at how they are stored.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 7,
+   "line": 26,
+   "t0": 51.8,
+   "h": "a18dc7d7",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.587,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Three sections of Chapter 3. First, refs under refs/ as loose files and as lines of packed-refs. Second, the refs that live outside refs/, called root refs, and the two pseudorefs. Third, where reflogs are kept. A reflog is the journal of the values a ref has had.",
+   "tele": "Three sections of Chapter 3. First, refs under `refs/` as loose files and as lines of `packed-refs`. Second, the refs that live outside `refs/`, called root refs, and the two pseudorefs. Third, where reflogs are kept. A reflog is the journal of the values a ref has had.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 7,
+   "line": 26,
+   "t0": 69.4,
+   "h": "ae997d9e",
+   "anim": {
+    "group": 4,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Three replays from labs/ch03: refs-storage.sh, root-refs.sh, and the replay of Lab 17.3 up to its checkpoint.",
+   "tele": "Three replays from `labs/ch03`: `refs-storage.sh`, `root-refs.sh`, and the replay of Lab 17.3 up to its checkpoint.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 8,
+   "line": 30,
+   "t0": 88.6,
+   "h": "ad09dcf9",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The labels, from the chapter's command safety table. git for-each-ref and git show-ref are 🟢 SAFE. git pack-refs --all is 🟢: it changes the storage of refs, not their content. git update-ref with a new value is 🟡 CAUTION, and so is git symbolic-ref. git update-ref -d is 🔴 DANGEROUS, and I'll answer the five questions when it appears.",
+   "tele": "The labels, from the chapter's command safety table. `git for-each-ref` and `git show-ref` are 🟢 SAFE. `git pack-refs --all` is 🟢: it changes the storage of refs, not their content. `git update-ref` with a new value is 🟡 CAUTION, and so is `git symbolic-ref`. `git update-ref -d` is 🔴 DANGEROUS, and I'll answer the five questions when it appears.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 9,
+   "line": 32,
+   "t0": 95.0,
+   "h": "6d2a17ab",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 10,
+   "line": 34,
+   "t0": 117.0,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 11,
+   "line": 36,
+   "t0": 118.5,
+   "h": "152923b5",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain why a branch may have no file under refs/heads/ and still exist.",
+   "tele": "Explain why a branch may have no file under `refs/heads/` and still exist.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 12,
+   "line": 38,
+   "t0": 120.5,
+   "h": "fdffad36",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Create, update, verify and delete refs with plumbing, with a reflog message.",
+   "tele": "Create, update, verify and delete refs with plumbing, with a reflog message.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 13,
+   "line": 38,
+   "t0": 125.7,
+   "h": "cb263eff",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Name the root refs and the pseudorefs and say which command writes each.",
+   "tele": "Name the root refs and the pseudorefs and say which command writes each.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 14,
+   "line": 38,
+   "t0": 130.5,
+   "h": "c3aaad87",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say which of them protect objects from garbage collection.",
+   "tele": "Say which of them protect objects from garbage collection.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 15,
+   "line": 38,
+   "t0": 135.7,
+   "h": "b03298ae",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say where reflogs are stored and when a ref has none.",
+   "tele": "Say where reflogs are stored and when a ref has none.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 16,
+   "line": 38,
+   "t0": 139.3,
+   "h": "cb2c16d7",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 17,
+   "line": 44,
+   "t0": 143.7,
+   "h": "",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: a ref is a name that holds an object ID or the name of another ref, and in the default files format a ref is a small file under refs/, a line in packed-refs, or both.",
+   "tele": "In one sentence: a ref is a name that holds an object ID or the name of another ref, and in the default `files` format a ref is a small file under `refs/`, a line in `packed-refs`, or both.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 18,
+   "line": 46,
+   "t0": 145.2,
+   "h": "41d97321",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The glossary's definition: \"a name that points to an object name or another ref (the latter is called a symbolic ref)\". Names either start with refs/ or sit in the root of the hierarchy.",
+   "tele": "The glossary's definition: \"a name that points to an object name or another ref (the latter is called a symbolic ref)\". Names either start with `refs/` or sit in the root of the hierarchy.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 19,
+   "line": 48,
+   "t0": 160.8,
+   "h": "9805242c",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Under refs/: refs/heads/<name> is a local branch, moved by commit, merge, reset, rebase and git branch -f. refs/tags/<name> is a tag, pointing at a commit or at a tag object, meant to stay put. refs/remotes/<remote>/<name> is a remote-tracking branch, the last known position of a branch in that remote, moved by fetch and push. refs/stash is the newest stash entry, work you set aside, and older entries live in its reflog. And tools own namespaces such as refs/bisect/, refs/notes/ and refs/replace/.",
+   "tele": "Under `refs/`: `refs/heads/<name>` is a local branch, moved by commit, merge, reset, rebase and `git branch -f`. `refs/tags/<name>` is a tag, pointing at a commit or at a tag object, meant to stay put. `refs/remotes/<remote>/<name>` is a remote-tracking branch, the last known position of a branch in that remote, moved by fetch and push. `refs/stash` is the newest stash entry, work you set aside, and older entries live in its reflog. And tools own namespaces such as `refs/bisect/`, `refs/notes/` and `refs/replace/`.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 20,
+   "line": 52,
+   "t0": 174.4,
+   "h": "58b917b6",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 5
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "How they're stored in the files format. A loose ref is a file holding the ID and a newline. A symbolic ref is a file holding ref: and a name. packed-refs is one sorted text file with many refs. Why three forms? One file per ref wastes space and is slow with thousands of refs.",
+   "tele": "How they're stored in the `files` format. A loose ref is a file holding the ID and a newline. A symbolic ref is a file holding `ref:` and a name. `packed-refs` is one sorted text file with many refs. Why three forms? One file per ref wastes space and is slow with thousands of refs.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 21,
+   "line": 58,
+   "t0": 206.8,
+   "h": "81710c37",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The lookup rule is the heart of this video. Lookup reads the loose file first and packed-refs second. And, quoting the manual of git pack-refs: \"subsequent updates to branches always create new files under $GIT_DIR/refs\". So after packing, a branch that moves gets a loose file again, and the old line in packed-refs stays, stale. The loose file wins.",
+   "tele": "The lookup rule is the heart of this video. Lookup reads the loose file first and `packed-refs` second. And, quoting the manual of `git pack-refs`: \"subsequent updates to branches always create new files under `$GIT_DIR/refs`\". So after packing, a branch that moves gets a loose file again, and the old line in `packed-refs` stays, stale. The loose file wins.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 22,
+   "line": 62,
+   "t0": 228.8,
+   "h": "729d7384",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The plumbing works the same in every format. git for-each-ref lists and formats. git show-ref lists and verifies. git update-ref writes or deletes one ref with an optional check of its old value. git symbolic-ref reads and writes symbolic refs. git pack-refs moves loose refs into packed-refs without changing a value.",
+   "tele": "The plumbing works the same in every format. `git for-each-ref` lists and formats. `git show-ref` lists and verifies. `git update-ref` writes or deletes one ref with an optional check of its old value. `git symbolic-ref` reads and writes symbolic refs. `git pack-refs` moves loose refs into `packed-refs` without changing a value.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 23,
+   "line": 66,
+   "t0": 252.4,
+   "h": "2f585729",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.205,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.615,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Second topic: root refs. In one sentence: a few refs live directly in the repository directory, with names in capital letters that end in _HEAD. Two of them, FETCH_HEAD and MERGE_HEAD, aren't refs at all in the strict sense and are called pseudorefs.",
+   "tele": "Second topic: root refs. In one sentence: a few refs live directly in the repository directory, with names in capital letters that end in `_HEAD`. Two of them, `FETCH_HEAD` and `MERGE_HEAD`, aren't refs at all in the strict sense and are called pseudorefs.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 24,
+   "line": 70,
+   "t0": 272.8,
+   "h": "2f0e4c1e",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The glossary says a pseudoref has \"different semantics than normal refs\", can be read by normal Git commands, and cannot be written by commands like git update-ref. It lists two. FETCH_HEAD \"may refer to multiple object IDs\", each annotated with its source. MERGE_HEAD \"contains all commit IDs which are being merged\".",
+   "tele": "The glossary says a pseudoref has \"different semantics than normal refs\", can be read by normal Git commands, and cannot be written by commands like `git update-ref`. It lists two. `FETCH_HEAD` \"may refer to multiple object IDs\", each annotated with its source. `MERGE_HEAD` \"contains all commit IDs which are being merged\".",
+   "words": 51,
+   "est": 20.4,
+   "slide": 25,
+   "line": 72,
+   "t0": 290.0,
+   "h": "a011d09a",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A version note you need when you read older material. Before Git 2.46 the glossary called every special file under .git a pseudoref. Since Git 2.46, \"pseudoref\" means FETCH_HEAD and MERGE_HEAD only. The others are root refs, stored by the ref backend like any other ref. Say \"root ref\" for ORIG_HEAD and its relatives, and notice that older tutorials, and the description of --include-root-refs in the git for-each-ref manual, still use the old wording.",
+   "tele": "A version note you need when you read older material. Before Git 2.46 the glossary called every special file under `.git` a pseudoref. Since Git 2.46, \"pseudoref\" means `FETCH_HEAD` and `MERGE_HEAD` only. The others are root refs, stored by the ref backend like any other ref. Say \"root ref\" for `ORIG_HEAD` and its relatives, and notice that older tutorials, and the description of `--include-root-refs` in the `git for-each-ref` manual, still use the old wording.",
+   "words": 74,
+   "est": 29.6,
+   "slide": 26,
+   "line": 76,
+   "t0": 310.4,
+   "h": "567187d3",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "HEAD is written by git init, git switch and git checkout, and is never gone. ORIG_HEAD is written by merge, rebase, reset and git am, and on Git 2.55 also by git stash push. It holds where HEAD was before, until the next such command overwrites it.",
+   "tele": "`HEAD` is written by `git init`, `git switch` and `git checkout`, and is never gone. `ORIG_HEAD` is written by merge, rebase, reset and `git am`, and on Git 2.55 also by `git stash push`. It holds where HEAD was before, until the next such command overwrites it.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 27,
+   "line": 80,
+   "t0": 340.0,
+   "h": "1f8ec259",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "FETCH_HEAD is written by fetch and pull. MERGE_HEAD is written by a merge that stops, and goes when the merge is committed or aborted. CHERRY_PICK_HEAD and REVERT_HEAD are written by a cherry-pick or revert that stops or runs with --no-commit.",
+   "tele": "`FETCH_HEAD` is written by fetch and pull. `MERGE_HEAD` is written by a merge that stops, and goes when the merge is committed or aborted. `CHERRY_PICK_HEAD` and `REVERT_HEAD` are written by a cherry-pick or revert that stops or runs with `--no-commit`.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 28,
+   "line": 80,
+   "t0": 358.8,
+   "h": "b1ebe084",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": {
+       "shown": 1
+      },
+      "to": {
+       "shown": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "REBASE_HEAD is written by a rebase that stops. BISECT_HEAD is written by git bisect --no-checkout. AUTO_MERGE is written by the ort merge machinery when it leaves conflicts, and on Git 2.55 also by a clean git stash pop. It holds a tree.",
+   "tele": "`REBASE_HEAD` is written by a rebase that stops. `BISECT_HEAD` is written by `git bisect --no-checkout`. `AUTO_MERGE` is written by the `ort` merge machinery when it leaves conflicts, and on Git 2.55 also by a clean `git stash pop`. It holds a tree.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 29,
+   "line": 80,
+   "t0": 374.8,
+   "h": "c1757f01",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 5
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The property that matters in an incident: these names, HEAD excepted, aren't starting points for reachability. An object is reachable when a starting point leads to it, and garbage collection deletes what nothing reaches. The starting points are refs/, HEAD, the reflogs and the index. So FETCH_HEAD, ORIG_HEAD and AUTO_MERGE protect nothing from garbage collection beyond the grace period.",
+   "tele": "The property that matters in an incident: these names, HEAD excepted, aren't starting points for reachability. An object is reachable when a starting point leads to it, and garbage collection deletes what nothing reaches. The starting points are `refs/`, HEAD, the reflogs and the index. So `FETCH_HEAD`, `ORIG_HEAD` and `AUTO_MERGE` protect nothing from garbage collection beyond the grace period.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 30,
+   "line": 86,
+   "t0": 391.6,
+   "h": "e659cd0c",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.117,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.234,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.351,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.469,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.586,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     },
+     {
+      "at": 0.703,
+      "fx": "scene",
+      "from": 6,
+      "to": 7,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 7,
+      "to": 8,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Third topic: reflogs. In one sentence: a reflog is an append-only record of the values a ref has had, one file per ref under logs/ in the files format, written whenever the ref moves. core.logAllRefUpdates is true in a repository with a working tree, which creates logs for HEAD, branches, remote-tracking branches and notes.",
+   "tele": "Third topic: reflogs. In one sentence: a reflog is an append-only record of the values a ref has had, one file per ref under `logs/` in the `files` format, written whenever the ref moves. `core.logAllRefUpdates` is `true` in a repository with a working tree, which creates logs for HEAD, branches, remote-tracking branches and notes.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 31,
+   "line": 90,
+   "t0": 415.2,
+   "h": "677532e7",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.164,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.328,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.492,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.656,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The value always extends this to every ref under refs/. A bare repository, one without a working tree, has it off and keeps no reflogs by default. Tags get no reflog under the default setting, and deleting a branch deletes its log.",
+   "tele": "The value `always` extends this to every ref under `refs/`. A bare repository, one without a working tree, has it off and keeps no reflogs by default. Tags get no reflog under the default setting, and deleting a branch deletes its log.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 32,
+   "line": 90,
+   "t0": 436.8,
+   "h": "c8a39af8",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 6,
+      "to": 7,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When should you not use the plumbing? git update-ref on the checked-out branch and git symbolic-ref HEAD move the branch and leave the index and the working tree behind. Treat them as repairs. Use git switch and git reset for daily work.",
+   "tele": "When should you not use the plumbing? `git update-ref` on the checked-out branch and `git symbolic-ref HEAD` move the branch and leave the index and the working tree behind. Treat them as repairs. Use `git switch` and `git reset` for daily work.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 33,
+   "line": 94,
+   "t0": 453.6,
+   "h": "f43cb9a9",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 34,
+   "line": 96,
+   "t0": 470.4,
+   "h": "",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook's analogy is signposts. Each carries a name and points at one house, an object. A few point at another signpost: those are symbolic refs. Moving a signpost is cheap and changes no house.",
+   "tele": "The textbook's analogy is signposts. Each carries a name and points at one house, an object. A few point at another signpost: those are symbolic refs. Moving a signpost is cheap and changes no house.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 35,
+   "line": 100,
+   "t0": 471.9,
+   "h": "cc347c1a",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks at demolition. In Git, a house that no signpost leads to is eventually torn down. That was the previous video.",
+   "tele": "The analogy breaks at demolition. In Git, a house that no signpost leads to is eventually torn down. That was the previous video.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 36,
+   "line": 104,
+   "t0": 485.9,
+   "h": "4ddf41b4",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Add one thing to the picture for this video: the signposts are kept in more than one cupboard. You don't open the cupboards yourself. You ask the keeper, which is the plumbing, Git's low-level commands, and the keeper knows which cupboard is current.",
+   "tele": "Add one thing to the picture for this video: the signposts are kept in more than one cupboard. You don't open the cupboards yourself. You ask the keeper, which is the plumbing, Git's low-level commands, and the keeper knows which cupboard is current.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 37,
+   "line": 110,
+   "t0": 495.1,
+   "h": "4185b241",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "More than one cupboard: ask the keeper, the plumbing"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 38,
+   "line": 112,
+   "t0": 512.3,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Loose file first. If there is one, it's the answer, whatever packed-refs says. Only if there is none does Git read the line in packed-refs. A script that reads only the file fails when the ref is packed. A script that reads only packed-refs gets a stale value when the ref has moved since.",
+   "tele": "Loose file first. If there is one, it's the answer, whatever `packed-refs` says. Only if there is none does Git read the line in `packed-refs`. A script that reads only the file fails when the ref is packed. A script that reads only `packed-refs` gets a stale value when the ref has moved since.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 39,
+   "line": 132,
+   "t0": 513.8,
+   "h": "4ae27eff",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "The old value, the new value, the committer's identity and time, a tab, and a message naming the command.",
+   "tele": "The old value, the new value, the committer's identity and time, a tab, and a message naming the command.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 40,
+   "line": 141,
+   "t0": 535.4,
+   "h": "2e0d645d",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 41,
+   "line": 143,
+   "t0": 543.0,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The inference-service repository again, now with a remote, a stash entry and two tags.",
+   "tele": "The inference-service repository again, now with a remote, a stash entry and two tags.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 42,
+   "line": 151,
+   "t0": 544.5,
+   "h": "cbda3e4b",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.92,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Seven files. Five hold an object ID. Two hold ref: and a name: those are the symbolic refs.",
+   "tele": "Seven files. Five hold an object ID. Two hold `ref:` and a name: those are the symbolic refs.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 43,
+   "line": 183,
+   "t0": 550.1,
+   "h": "5f6a73fa",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "for-each-ref prints ID, type and full name by default, and --format chooses any field. show-ref --dereference adds a ^{} line with the commit an annotated tag peels to. --verify takes a full name. --exists answers by exit status.",
+   "tele": "`for-each-ref` prints ID, type and full name by default, and `--format` chooses any field. `show-ref --dereference` adds a `^{}` line with the commit an annotated tag peels to. `--verify` takes a full name. `--exists` answers by exit status.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 44,
+   "line": 220,
+   "t0": 557.3,
+   "h": "4299b595",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.62,
+      "dissolve": true
+     },
+     {
+      "at": 0.253,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, in a repository in the lab shell: run git for-each-ref and count the lines. I'll wait.",
+   "tele": "Try it now, thirty seconds, in a repository in the lab shell: run `git for-each-ref` and count the lines. I'll wait.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 44,
+   "line": 222,
+   "t0": 572.1,
+   "h": "0109f493",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 44,
+   "line": 224,
+   "t0": 580.5,
+   "h": "",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Each line is one ref: an ID, a type and a full name. Your branches are the lines under refs/heads/.",
+   "tele": "Each line is one ref: an ID, a type and a full name. Your branches are the lines under `refs/heads/`.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 45,
+   "line": 226,
+   "t0": 585.0,
+   "h": "83c30150",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 4.82,
+      "dissolve": true
+     },
+     {
+      "at": 0.861,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 1.2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now 🟡: git update-ref. It changes one ref and its reflog. Preview with git rev-parse on the ref. Recover with the ref's reflog.",
+   "tele": "Now 🟡: `git update-ref`. It changes one ref and its reflog. Preview with `git rev-parse` on the ref. Recover with the ref's reflog.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 45,
+   "line": 228,
+   "t0": 593.0,
+   "h": "cb1b6817",
+   "anim": {
+    "group": 34,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On the graph, that's a new name. The demo creates the ref experiment at the release candidate.",
+   "tele": "On the graph, that's a new name. The demo creates the ref `experiment` at the release candidate.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 46,
+   "line": 232,
+   "t0": 601.8,
+   "h": "954cd55d",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Then it moves the name to the commit of main. No commit changes.",
+   "tele": "Then it moves the name to the commit of `main`. No commit changes.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 47,
+   "line": 236,
+   "t0": 608.6,
+   "h": "a142dc46",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The third command has a third argument: an expected old value. The branch is at the release candidate, and the command expects the root commit. What happens? Say it out loud. I'll wait.",
+   "tele": "The third command has a third argument: an expected old value. The branch is at the release candidate, and the command expects the root commit. What happens? Say it out loud. I'll wait.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 48,
+   "line": 246,
+   "t0": 613.8,
+   "h": "9e0f503c",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 48,
+   "line": 248,
+   "t0": 627.0,
+   "h": "",
+   "anim": {
+    "group": 36,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It's refused: \"is at 4f2cc0c... but expected b602c1f...\". With a third argument, update-ref is a compare-and-swap. The update happens only if the ref still has the expected old value, which keeps concurrent writers from overwriting each other. It's the idea behind git push --force-with-lease. Two more refusals follow: an ID that names no object, and a non-commit under refs/heads/.",
+   "tele": "It's refused: \"is at `4f2cc0c`... but expected `b602c1f`...\". With a third argument, `update-ref` is a compare-and-swap. The update happens only if the ref still has the expected old value, which keeps concurrent writers from overwriting each other. It's the idea behind `git push --force-with-lease`. Two more refusals follow: an ID that names no object, and a non-commit under `refs/heads/`.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 49,
+   "line": 276,
+   "t0": 631.5,
+   "h": "59c30b8f",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.57,
+      "dissolve": true
+     },
+     {
+      "at": 0.216,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     },
+     {
+      "at": 0.964,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The last line is the 🔴 command, git update-ref -d. The five answers. It deletes the ref and its reflog, with no merge check. It destroys the safety net for that ref. Preview: git rev-parse on the ref, and note the ID. Recover: git update-ref with that ID, which the reflog of HEAD or git fsck find. Appropriate: for a ref you created with plumbing and have just inspected, as here.",
+   "tele": "The last line is the 🔴 command, `git update-ref -d`. The five answers. It deletes the ref and its reflog, with no merge check. It destroys the safety net for that ref. Preview: `git rev-parse` on the ref, and note the ID. Recover: `git update-ref` with that ID, which the reflog of HEAD or `git fsck` find. Appropriate: for a ref you created with plumbing and have just inspected, as here.",
+   "words": 70,
+   "est": 28.0,
+   "slide": 50,
+   "line": 278,
+   "t0": 655.1,
+   "h": "5ca213d1",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.594,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On the graph the name is gone, and every commit is where it was.",
+   "tele": "On the graph the name is gone, and every commit is where it was.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 51,
+   "line": 282,
+   "t0": 683.1,
+   "h": "d67993ba",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A symbolic ref is a name for a name. With HEAD detached, the file holds an object ID, and git symbolic-ref HEAD fails: \"ref HEAD is not a symbolic ref\".",
+   "tele": "A symbolic ref is a name for a name. With HEAD detached, the file holds an object ID, and `git symbolic-ref HEAD` fails: \"ref HEAD is not a symbolic ref\".",
+   "words": 30,
+   "est": 12.0,
+   "slide": 52,
+   "line": 326,
+   "t0": 688.7,
+   "h": "c9557a05",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Reflog storage.",
+   "tele": "Reflog storage.",
+   "words": 2,
+   "est": 1.2,
+   "slide": 53,
+   "line": 328,
+   "t0": 700.7,
+   "h": "c8671ef7",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A quick quiz. After the branch is deleted, is its log file still there, or gone with it? Your answer?",
+   "tele": "A quick quiz. After the branch is deleted, is its log file still there, or gone with it? Your answer?",
+   "words": 20,
+   "est": 8.0,
+   "slide": 54,
+   "line": 339,
+   "t0": 701.9,
+   "h": "5de2e87f",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 54,
+   "line": 341,
+   "t0": 709.9,
+   "h": "",
+   "anim": {
+    "group": 42,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It's gone. A deleted branch loses its reflog with it. Tags have none. refs/stash has a log, and that log is the stash list.",
+   "tele": "It's gone. A deleted branch loses its reflog with it. Tags have none. `refs/stash` has a log, and that log is the stash list.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 55,
+   "line": 372,
+   "t0": 714.4,
+   "h": "1a0a55cc",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the hook, and that missing file.",
+   "tele": "Now the hook, and that missing file.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 56,
+   "line": 374,
+   "t0": 724.0,
+   "h": "816a7915",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.96,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After the commit: where is main stored, and what does the line in packed-refs say? Make your prediction. I'll wait.",
+   "tele": "After the commit: where is `main` stored, and what does the line in `packed-refs` say? Make your prediction. I'll wait.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 57,
+   "line": 387,
+   "t0": 726.8,
+   "h": "a7fd26ec",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.571,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 8
+      },
+      "budget": 2.4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 57,
+   "line": 389,
+   "t0": 734.8,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 58,
+   "line": null,
+   "t0": 739.3,
+   "h": "",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "After packing, the only file left is the symbolic ref, which can't be packed. The header lists the traits of the file. An annotated tag is followed by a ^ line with the commit it points at. After the commit, the loose file is back and wins: git rev-parse main prints the new ID, while the packed-refs line still shows the old one.",
+   "tele": "After packing, the only file left is the symbolic ref, which can't be packed. The header lists the traits of the file. An annotated tag is followed by a `^` line with the commit it points at. After the commit, the loose file is back and wins: `git rev-parse main` prints the new ID, while the `packed-refs` line still shows the old one.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 59,
+   "line": 418,
+   "t0": 742.3,
+   "h": "96f2baf7",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.872,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 2.22,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "In the picture, main has moved to a8eea18. The stale line still says 0c2cf43, and the loose file wins.",
+   "tele": "In the picture, `main` has moved to `a8eea18`. The stale line still says `0c2cf43`, and the loose file wins.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 60,
+   "line": 422,
+   "t0": 767.1,
+   "h": "e99527ae",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 7.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 7.5,
+   "slide": 61,
+   "line": null,
+   "t0": 774.7,
+   "h": "",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 62,
+   "line": null,
+   "t0": 782.2,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One line per fetched branch: an ID, a marker for git pull, and where it came from. Used as a revision, FETCH_HEAD means its first line.",
+   "tele": "One line per fetched branch: an ID, a marker for `git pull`, and where it came from. Used as a revision, `FETCH_HEAD` means its first line.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 63,
+   "line": 466,
+   "t0": 784.7,
+   "h": "94fb6faa",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.755,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 1.78,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "MERGE_HEAD holds two lines, one per branch being merged. That is the \"different semantics\": a list of IDs where a ref holds exactly one.",
+   "tele": "`MERGE_HEAD` holds two lines, one per branch being merged. That is the \"different semantics\": a list of IDs where a ref holds exactly one.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 64,
+   "line": 506,
+   "t0": 795.1,
+   "h": "f4471196",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 65,
+   "line": null,
+   "t0": 804.7,
+   "h": "",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "HEAD and ORIG_HEAD are listed. The two pseudorefs aren't. ORIG_HEAD accepts an update like any ref, and has no reflog. MERGE_HEAD is refused.",
+   "tele": "HEAD and `ORIG_HEAD` are listed. The two pseudorefs aren't. `ORIG_HEAD` accepts an update like any ref, and has no reflog. `MERGE_HEAD` is refused.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 66,
+   "line": 534,
+   "t0": 807.7,
+   "h": "c035c442",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.061,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.99,
+      "dissolve": false
+     },
+     {
+      "at": 0.837,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 1.2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the incident property. This step ends with git gc --prune=now, 🔴: it removes every unreachable object at once. Preview with git fsck --unreachable and git prune -n. Recover only from another clone or a backup. It's never routine maintenance.",
+   "tele": "Now the incident property. This step ends with `git gc --prune=now`, 🔴: it removes every unreachable object at once. Preview with `git fsck --unreachable` and `git prune -n`. Recover only from another clone or a backup. It's never routine maintenance.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 66,
+   "line": 536,
+   "t0": 816.9,
+   "h": "51112652",
+   "anim": {
+    "group": 54,
+    "cues": [],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 74,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A quick quiz. A teammate's commit is named by FETCH_HEAD and by nothing else. Does it survive the collection: yes or no? Your answer?",
+   "tele": "A quick quiz. A teammate's commit is named by `FETCH_HEAD` and by nothing else. Does it survive the collection: yes or no? Your answer?",
+   "words": 24,
+   "est": 9.6,
+   "slide": 67,
+   "line": 547,
+   "t0": 832.5,
+   "h": "b17b88df",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 2.29,
+      "dissolve": true
+     },
+     {
+      "at": 0.341,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 4.43,
+      "dissolve": false
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 75,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 67,
+   "line": 549,
+   "t0": 842.1,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 76,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It doesn't. The name stays behind and names nothing: \"bad object FETCH_HEAD\". If you said yes, that's the trap: the name looks like a ref. Give such a commit a ref before you rely on it: git fetch <url> <branch>:refs/heads/review/<name>, or git switch -c review/<name> FETCH_HEAD.",
+   "tele": "It doesn't. The name stays behind and names nothing: \"bad object FETCH_HEAD\". If you said yes, that's the trap: the name looks like a ref. Give such a commit a ref before you rely on it: `git fetch <url> <branch>:refs/heads/review/<name>`, or `git switch -c review/<name> FETCH_HEAD`.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 68,
+   "line": 574,
+   "t0": 846.6,
+   "h": "8d6c105f",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 69,
+   "line": null,
+   "t0": 865.0,
+   "h": "",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 70,
+   "line": null,
+   "t0": 867.5,
+   "h": "",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.0,
+   "slide": 71,
+   "line": null,
+   "t0": 871.5,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The lab visits every special name through a fetch, a reset, a merge, a cherry-pick, a revert, a rebase, a bisect and a stash. At the checkpoint no operation is in progress and three leftovers remain: FETCH_HEAD, ORIG_HEAD and AUTO_MERGE. None of them describes unfinished work. The failure and the recovery are yours.",
+   "tele": "The lab visits every special name through a fetch, a reset, a merge, a cherry-pick, a revert, a rebase, a bisect and a stash. At the checkpoint no operation is in progress and three leftovers remain: `FETCH_HEAD`, `ORIG_HEAD` and `AUTO_MERGE`. None of them describes unfinished work. The failure and the recovery are yours.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 72,
+   "line": 644,
+   "t0": 875.5,
+   "h": "d64ca9aa",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 73,
+   "line": 646,
+   "t0": 896.7,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 74,
+   "line": 648,
+   "t0": 898.2,
+   "h": "76698d9b",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Reading .git/refs/heads/<branch> in a script. Root cause: the ref may be a line in packed-refs, so the script reads one of several storage locations instead of asking Git.",
+   "tele": "Reading `.git/refs/heads/<branch>` in a script. Root cause: the ref may be a line in `packed-refs`, so the script reads one of several storage locations instead of asking Git.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 75,
+   "line": 650,
+   "t0": 900.2,
+   "h": "13041693",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Grepping packed-refs for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+   "tele": "Grepping `packed-refs` for a branch. Root cause: a later update writes a loose file and leaves the old line stale.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 76,
+   "line": 650,
+   "t0": 911.4,
+   "h": "a38e3184",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Relying on FETCH_HEAD or ORIG_HEAD to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+   "tele": "Relying on `FETCH_HEAD` or `ORIG_HEAD` to keep a commit. Root cause: apart from HEAD, root refs and pseudorefs are not starting points for reachability.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 77,
+   "line": 650,
+   "t0": 919.4,
+   "h": "046878ab",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 86,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with git rev-parse --verify --quiet MERGE_HEAD.",
+   "tele": "Testing for a file to ask \"is a merge in progress?\". Root cause: root refs are not files in every format; resolve the name with `git rev-parse --verify --quiet MERGE_HEAD`.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 78,
+   "line": 650,
+   "t0": 929.0,
+   "h": "d027b4a6",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log.",
+   "tele": "Expecting a deleted branch's reflog to remain. Root cause: deleting a branch deletes its log.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 79,
+   "line": 650,
+   "t0": 941.0,
+   "h": "c4fdbe8e",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 80,
+   "line": 656,
+   "t0": 947.0,
+   "h": "",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 89,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. Picture a platform team that lists stale branches for a weekly clean-up report. Their first script walked .git/refs/heads and missed most branches on the build server, where refs are packed. The replacement is one command: git for-each-ref --sort=-committerdate --format='%(committerdate:short) %(refname:short)' refs/heads, which lists branches by age and needs no parsing. git branch --format and git tag --format accept the same language.",
+   "tele": "Now, out of the lab. Picture a platform team that lists stale branches for a weekly clean-up report. Their first script walked `.git/refs/heads` and missed most branches on the build server, where refs are packed. The replacement is one command: `git for-each-ref --sort=-committerdate --format='%(committerdate:short) %(refname:short)' refs/heads`, which lists branches by age and needs no parsing. `git branch --format` and `git tag --format` accept the same language.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 81,
+   "line": 662,
+   "t0": 948.5,
+   "h": "587beb16",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 4,
+      "to": 4,
+      "says": [
+       "A script that walks .git/refs/heads sees only the loose files"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 90,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Two more habits from the same team. Before a risky rewrite, git reflog show <branch> is the cheapest insurance, and deleting a branch cancels its policy. And the reflog is local: it isn't pushed, and a clone starts with an empty one.",
+   "tele": "Two more habits from the same team. Before a risky rewrite, `git reflog show <branch>` is the cheapest insurance, and deleting a branch cancels its policy. And the reflog is local: it isn't pushed, and a clone starts with an empty one.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 82,
+   "line": 668,
+   "t0": 975.3,
+   "h": "8daad518",
+   "anim": {
+    "group": 66,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 7,
+      "to": 7,
+      "says": [
+       "A reflog is local, and a deleted branch loses its own"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 91,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 83,
+   "line": 670,
+   "t0": 992.1,
+   "h": "",
+   "anim": {
+    "group": 67,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 17.3, \"A tour of every special ref and file\", in lab-manual/m17-index-refs-gitdir.md. Before each operation, predict which special name it will write, what the name will hold, and when it will disappear. Check with ls -A .git and with the plumbing, not with your memory.",
+   "tele": "Your turn. Do Lab 17.3, \"A tour of every special ref and file\", in `lab-manual/m17-index-refs-gitdir.md`. Before each operation, predict which special name it will write, what the name will hold, and when it will disappear. Check with `ls -A .git` and with the plumbing, not with your memory.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 84,
+   "line": 672,
+   "t0": 993.6,
+   "h": "2aad5456",
+   "anim": {
+    "group": 68,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 17.7, \"A branch that Git ignores\", in exercises/m16-m18-internals.md.",
+   "tele": "The challenge is Exercise 17.7, \"A branch that Git ignores\", in `exercises/m16-m18-internals.md`.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 85,
+   "line": 674,
+   "t0": 1012.8,
+   "h": "cb2ee78c",
+   "anim": {
+    "group": 69,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 86,
+   "line": 676,
+   "t0": 1017.6,
+   "h": "",
+   "anim": {
+    "group": 70,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Question 81 of the CTO question bank:",
+   "tele": "Question 81 of the CTO question bank:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 87,
+   "line": 678,
+   "t0": 1019.1,
+   "h": "12189147",
+   "anim": {
+    "group": 71,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 96,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer treats the two failures separately and names, for each, where the ref's value is and what the file the script reads contains or doesn't contain. Part of this answer needs the two storage formats of the video after next, so come back to it then. It closes with one rule, stated as a rule, and the commands that implement it.",
+   "tele": "A strong answer treats the two failures separately and names, for each, where the ref's value is and what the file the script reads contains or doesn't contain. Part of this answer needs the two storage formats of the video after next, so come back to it then. It closes with one rule, stated as a rule, and the commands that implement it.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 88,
+   "line": 682,
+   "t0": 1021.9,
+   "h": "287baab4",
+   "anim": {
+    "group": 72,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 97,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 89,
+   "line": 684,
+   "t0": 1047.1,
+   "h": "",
+   "anim": {
+    "group": 73,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 98,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. A ref is a name, where it's kept is Git's business, and you ask Git.",
+   "tele": "Let's land this. A ref is a name, where it's kept is Git's business, and you ask Git.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 90,
+   "line": 688,
+   "t0": 1048.6,
+   "h": "2f0deec8",
+   "anim": {
+    "group": 74,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 6,
+      "to": 7,
+      "dissolve": false
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 99,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 91,
+   "line": 690,
+   "t0": 1055.8,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 100,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A ref is a loose file, a line in packed-refs, or both; the loose file is read first.",
+   "tele": "A ref is a loose file, a line in `packed-refs`, or both; the loose file is read first.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 92,
+   "line": 692,
+   "t0": 1058.6,
+   "h": "65ea60a9",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 101,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Plumbing reads and writes refs in every format: for-each-ref, show-ref, update-ref, symbolic-ref.",
+   "tele": "Plumbing reads and writes refs in every format: `for-each-ref`, `show-ref`, `update-ref`, `symbolic-ref`.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 93,
+   "line": 692,
+   "t0": 1065.8,
+   "h": "4aebc650",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 102,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Since Git 2.46, only FETCH_HEAD and MERGE_HEAD are pseudorefs; ORIG_HEAD and its relatives are root refs.",
+   "tele": "Since Git 2.46, only `FETCH_HEAD` and `MERGE_HEAD` are pseudorefs; `ORIG_HEAD` and its relatives are root refs.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 94,
+   "line": 692,
+   "t0": 1070.6,
+   "h": "a3046362",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 103,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Apart from HEAD, none of them keeps an object alive.",
+   "tele": "Apart from HEAD, none of them keeps an object alive.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 95,
+   "line": 692,
+   "t0": 1077.0,
+   "h": "8fee5548",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 104,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Reflogs are files under logs/; tags have none by default, and a deleted branch loses its own.",
+   "tele": "Reflogs are files under `logs/`; tags have none by default, and a deleted branch loses its own.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 96,
+   "line": 692,
+   "t0": 1081.0,
+   "h": "1a225f72",
+   "anim": {
+    "group": 75,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 105,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 97,
+   "line": 698,
+   "t0": 1087.8,
+   "h": "",
+   "anim": {
+    "group": 76,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 106,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 3.9 to 3.11 of Chapter 3. Do Exercise 17.2, \"Loose refs and packed refs\", and Exercise 17.3, \"Refs by plumbing\", in exercises/m16-m18-internals.md.",
+   "tele": "Read sections 3.9 to 3.11 of Chapter 3. Do Exercise 17.2, \"Loose refs and packed refs\", and Exercise 17.3, \"Refs by plumbing\", in `exercises/m16-m18-internals.md`.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 98,
+   "line": 700,
+   "t0": 1089.3,
+   "h": "fe05d74e",
+   "anim": {
+    "group": 77,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 107,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you found every place a ref can live, and you learned to ask Git instead of reading files. Do the lab before the next video: the index file as a data structure. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you found every place a ref can live, and you learned to ask Git instead of reading files. Do the lab before the next video: the index file as a data structure. Until then, look at the state first and type second. See you in the next one.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 99,
+   "line": 702,
+   "t0": 1098.9,
+   "h": "b49d9dd8",
+   "anim": {
+    "group": 78,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1118.5,
+ "narration_words": 2619,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Run one demo on your machine and print its full transcript.
+#   labs/run ch08/conflict-basic
+# The sandbox is created under $GIT_MASTERY_LABS (default: ~/git-mastery-labs). The book's stored
+# snippets are not touched. Your output should match the book exactly, because the lab environment
+# pins the identity and the clock.
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+[ $# -eq 1 ] || { echo "usage: labs/run <dir>/<demo>      e.g. labs/run ch08/conflict-basic"; exit 2; }
+s="$ROOT/labs/$1.sh"
+[ -f "$s" ] || { echo "no such demo: $1"; exit 1; }
+. "$ROOT/labs/lib/lab-env.sh"
+_lab_env
+OUT="$LAB_ROOT/.run-out.$$"
+rm -rf "$OUT"; mkdir -p "$OUT"
+trap 'rm -rf "$OUT"' EXIT
+LAB_OUT_ROOT="$OUT" bash "$s" > /dev/null
+d="$(dirname "$1")"; demo="$(basename "$1")"
+for f in "$OUT/$d/out/$demo"/*.txt; do
+  [ -f "$f" ] || continue
+  printf '\n===== %s =====\n' "$(basename "$f" .txt)"
+  cat "$f"
+done
+printf '\nSandbox left in place for inspection: %s\n' "$LAB_ROOT/$d/$demo"

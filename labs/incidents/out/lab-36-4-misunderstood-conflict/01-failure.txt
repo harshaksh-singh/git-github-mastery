@@ -1,0 +1,30 @@
+$ cd you
+# The tempting move: revert the pull request merge that "lost" the fix.
+$ git revert --no-edit -m 1 fb67f49
+[main a9477c9] Revert "Merge pull request #17 from feature/per-tenant-limits"
+ Date: Mon Sep 7 10:32:00 2026 +0530
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+ delete mode 100644 limiter/tenants.py
+$ git show --stat --format=%s HEAD
+Revert "Merge pull request #17 from feature/per-tenant-limits"
+
+ limiter/bucket.py  | 6 +++---
+ limiter/tenants.py | 4 ----
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+$ ls limiter
+bucket.py
+metrics.py
+$ cat limiter/bucket.py
+RATE = 50
+BURST = 200
+
+
+def allow(key, now):
+    bucket = buckets.get(key)
+    refill(bucket, now, RATE)
+    return bucket.take(1)
+
+
+def refill(bucket, now, rate):
+    bucket.tokens = min(BURST, bucket.tokens + (now - bucket.ts) * rate)
+    bucket.ts = now

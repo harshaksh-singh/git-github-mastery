@@ -1,0 +1,47 @@
+# Broken workflow 1 of 6 (Lab 28.1): stamp the build with a version.
+#
+# Intended behavior: on every push to main, derive the version from the most recent release tag
+# with "git describe", write it into the job summary, and build the distribution.
+# The repository has annotated tags v1.0.0 and later; the newest is an ancestor of main.
+#
+# Observed: read the lab. Diagnose before you change anything.
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Version stamp
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  stamp:
+    name: Stamp and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Derive the version from the latest tag
+        id: version
+        shell: bash
+        run: |
+          version="$(git describe --tags --match 'v*')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: uv build
+
+      - name: Report
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: echo "Built inventory-api $VERSION" >> "$GITHUB_STEP_SUMMARY"

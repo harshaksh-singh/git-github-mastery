@@ -1,0 +1,18 @@
+#!/bin/sh
+# commit-msg <file>: <file> holds the proposed commit message. A non-zero exit refuses the commit.
+# Rule: the subject looks like "type(scope): summary" and is at most 72 characters long.
+subject=$(sed -n '1p' "$1")
+# Subjects that Git writes itself are not ours to police.
+case "$subject" in
+  "Merge "*|"Revert \""*|"Reapply \""*|"fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+esac
+pattern='^(feat|fix|docs|test|refactor|chore)(\([a-z0-9-]+\))?: .+'
+if ! printf '%s\n' "$subject" | grep -Eq "$pattern"; then
+  echo "commit-msg: the subject must look like 'fix(scorer): handle empty labels'" >&2
+  echo "commit-msg: got: $subject" >&2
+  exit 1
+fi
+if [ "${#subject}" -gt 72 ]; then
+  echo "commit-msg: the subject has ${#subject} characters, the limit is 72" >&2
+  exit 1
+fi

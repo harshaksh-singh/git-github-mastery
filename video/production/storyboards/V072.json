@@ -1,0 +1,5471 @@
+{
+ "id": "V072",
+ "version": 22,
+ "title": "git bisect run, the exit-code protocol, custom terms, replay, --first-parent, and the pitfalls",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 22,
+ "chapters": [
+  "ch14a-history-investigation.md"
+ ],
+ "script": "video/scripts/V072-git-bisect-run-the-exit-code-protocol-custom-terms-replay-first-parent-and-the-pitfalls.md",
+ "script_sha1": "44efa768acff34d84f07fefaa6d03211c60dfa20",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 4,
+   "line": 18
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 6,
+   "line": 22
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 12,
+   "line": 32
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 26,
+   "line": 76
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 30,
+   "line": 92
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 33,
+   "line": 123
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 59,
+   "line": 537
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 66,
+   "line": 547
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 70,
+   "line": 559
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 74,
+   "line": 567
+  },
+  {
+   "name": "RECAP",
+   "beat": 79,
+   "line": 581
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 86,
+   "line": 591
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "git bisect run, the exit-code protocol, custom terms, replay, --first-parent, and the pitfalls",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0022
+  },
+  {
+   "kind": "callout",
+   "direction": "\"Bisect names a commit that cannot be the cause.\"",
+   "quotes": [
+    "Bisect names a commit that cannot be the cause."
+   ],
+   "quoted": true,
+   "caption": "An engineer automates a bisection overnight.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0038
+  },
+  {
+   "kind": "callout",
+   "direction": "\"Bisect names a commit that cannot be the cause.\"",
+   "quotes": [
+    "Bisect names a commit that cannot be the cause."
+   ],
+   "quoted": true,
+   "caption": "The search wasn't broken. The test was.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0257
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 5,
+   "progress": 0.0638
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0655
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 7,
+   "progress": 0.1009
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "write a test script whose exit status follows the bisect protocol;",
+    "automate a bisection with <code>git bisect run</code>;",
+    "use custom terms for a search that is not about good and bad;",
+    "save and replay a bisect log;",
+    "explain what it means when bisect names a merge commit, and when <code>--first-parent</code> helps."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 8,
+   "progress": 0.1026
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "write a test script whose exit status follows the bisect protocol;",
+    "automate a bisection with <code>git bisect run</code>;",
+    "use custom terms for a search that is not about good and bad;",
+    "save and replay a bisect log;",
+    "explain what it means when bisect names a merge commit, and when <code>--first-parent</code> helps."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.1074
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "write a test script whose exit status follows the bisect protocol;",
+    "automate a bisection with <code>git bisect run</code>;",
+    "use custom terms for a search that is not about good and bad;",
+    "save and replay a bisect log;",
+    "explain what it means when bisect names a merge commit, and when <code>--first-parent</code> helps."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.1105
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "write a test script whose exit status follows the bisect protocol;",
+    "automate a bisection with <code>git bisect run</code>;",
+    "use custom terms for a search that is not about good and bad;",
+    "save and replay a bisect log;",
+    "explain what it means when bisect names a merge commit, and when <code>--first-parent</code> helps."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1161
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "write a test script whose exit status follows the bisect protocol;",
+    "automate a bisection with <code>git bisect run</code>;",
+    "use custom terms for a search that is not about good and bad;",
+    "save and replay a bisect log;",
+    "explain what it means when bisect names a merge commit, and when <code>--first-parent</code> helps."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1188
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 13,
+   "progress": 0.1249
+  },
+  {
+   "kind": "keypoint",
+   "body": "🟡 CAUTION: <code>git bisect run &lt;cmd&gt;</code> runs a command at every step and takes the verdict from its exit status.",
+   "section": "CONCEPT",
+   "n": 14,
+   "progress": 0.1265
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=exit_status_of_the_command,what_git_bisect_run_records rows=0:good_(the_OLD_state,_whatever_it_is_called)|1_to_127,_except_125:bad_(the_NEW_state)|125:skip:_this_commit_cannot_be_tested|anything_else_(128_and_above):no_verdict:_the_bisection_is_aborted marks=1.2:ok,2.2:bad,3.2:wait,4.2:dim title=The_exit-status_protocol id=codes",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "exit status of the command",
+     "what git bisect run records"
+    ],
+    "rows": [
+     [
+      "0",
+      "good (the OLD state, whatever it is called)"
+     ],
+     [
+      "1 to 127, except 125",
+      "bad (the NEW state)"
+     ],
+     [
+      "125",
+      "skip: this commit cannot be tested"
+     ],
+     [
+      "anything else (128 and above)",
+      "no verdict: the bisection is aborted"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "bad",
+     "3.2": "wait",
+     "4.2": "dim"
+    },
+    "title": "The exit-status protocol",
+    "id": "codes"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 15,
+   "progress": 0.1467
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, on paper. Thirty seconds: the runner crashes at one commit.",
+   "section": "CONCEPT",
+   "n": 16,
+   "progress": 0.166
+  },
+  {
+   "kind": "keypoint",
+   "body": "It should return 125. The overnight script returned 1, and 1 means bad.",
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.184
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=exit_status_of_the_command,what_git_bisect_run_records rows=0:good_(the_OLD_state,_whatever_it_is_called)|1_to_127,_except_125:bad_(the_NEW_state)|125:skip:_this_commit_cannot_be_tested|anything_else_(128_and_above):no_verdict:_the_bisection_is_aborted marks=1.2:ok,2.2:bad,3.2:wait,4.2:dim title=The_exit-status_protocol id=codes",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "exit status of the command",
+     "what git bisect run records"
+    ],
+    "rows": [
+     [
+      "0",
+      "good (the OLD state, whatever it is called)"
+     ],
+     [
+      "1 to 127, except 125",
+      "bad (the NEW state)"
+     ],
+     [
+      "125",
+      "skip: this commit cannot be tested"
+     ],
+     [
+      "anything else (128 and above)",
+      "no verdict: the bisection is aborted"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "bad",
+     "3.2": "wait",
+     "4.2": "dim"
+    },
+    "title": "The exit-status protocol",
+    "id": "codes"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1897
+  },
+  {
+   "kind": "keypoint",
+   "body": "Where the script lives matters.",
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.2081
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Terms",
+   "body": "\"Good\" and \"bad\" are awkward when you're looking for an improvement.",
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.2304
+  },
+  {
+   "kind": "scene",
+   "direction": "gates: packet=one_wrong_verdict gates=save:done:-:git_bisect_log_>_file|edit:done:-:cut_the_wrong_line_and_all_after_it|reset:done:-:git_bisect_reset|replay:done:-:git_bisect_replay result=continue,_not_start_over title=Repairing_a_session id=fix",
+   "scene": "gates",
+   "params": {
+    "packet": "one wrong verdict",
+    "gates": [
+     [
+      "save",
+      "-",
+      "done",
+      "git bisect log > file"
+     ],
+     [
+      "edit",
+      "-",
+      "done",
+      "cut the wrong line and all after it"
+     ],
+     [
+      "reset",
+      "-",
+      "done",
+      "git bisect reset"
+     ],
+     [
+      "replay",
+      "-",
+      "done",
+      "git bisect replay"
+     ]
+    ],
+    "result": "continue, not start over",
+    "title": "Repairing a session",
+    "id": "fix"
+   },
+   "steps": [
+    "setup",
+    "1",
+    "2",
+    "3",
+    "4",
+    "result"
+   ],
+   "upto": 6,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.2541
+  },
+  {
+   "kind": "keypoint",
+   "headline": "More controls",
+   "body": "Paths after two dashes restrict the search to commits that touch those paths: fewer steps when you know the area.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2812
+  },
+  {
+   "kind": "keypoint",
+   "headline": "More controls",
+   "body": "That form is 🟢 SAFE. <code>git bisect skip</code> accepts a revision or a range, to mark commits untestable in advance.",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.3071
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; title:A_merge_in_the_range => + dim:B,C; first_bad:M; cmd:git_bisect_start_--first-parent; say:The_search_never_visits_B_and_C:_their_fault_is_attributed_to_M; name:fp => A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; good:B,C,E; first_bad:M; cmd:git_bisect_run_<cmd>; say:Both_parents_good,_the_combination_bad; title:The_first_bad_commit_is_a_merge; name:both id=merge",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "A",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "D",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "A"
+      ]
+     },
+     {
+      "id": "E",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "B",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "C",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "B"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "E",
+       "C"
+      ]
+     },
+     {
+      "id": "F",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "M"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "A",
+       "D",
+       "E",
+       "B",
+       "C",
+       "M",
+       "F"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "dim": [],
+      "marks": {},
+      "title": "A merge in the range"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [
+       "B",
+       "C"
+      ],
+      "marks": {
+       "M": "first_bad"
+      },
+      "caption": "The search never visits B and C: their fault is attributed to M",
+      "cmd": "git bisect start --first-parent",
+      "name": "fp"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {
+       "B": "good",
+       "C": "good",
+       "E": "good",
+       "M": "first_bad"
+      },
+      "caption": "Both parents good, the combination bad",
+      "cmd": "git bisect run <cmd>",
+      "title": "The first bad commit is a merge",
+      "name": "both"
+     }
+    ],
+    "settle": "on",
+    "id": "merge"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "fp",
+    "both"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.3255
+  },
+  {
+   "kind": "keypoint",
+   "headline": "More controls",
+   "body": "When not to bisect at all, from section 14A.26.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.3478
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 26,
+   "progress": 0.3776
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=The_clerk_holds_up_a_card cards=green:before|red:after|a_third_card:this_page_is_torn,_I_cannot_read_it marks=3:ring id=clerk",
+   "scene": "cards",
+   "params": {
+    "question": "The clerk holds up a card",
+    "cards": [
+     [
+      "green",
+      "before"
+     ],
+     [
+      "red",
+      "after"
+     ],
+     [
+      "a third card",
+      "this page is torn, I cannot read it"
+     ]
+    ],
+    "marks": [
+     [
+      "3",
+      "ring"
+     ]
+    ],
+    "id": "clerk"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "marks"
+   ],
+   "upto": 3,
+   "section": "MENTAL MODEL",
+   "n": 27,
+   "progress": 0.3792
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=The_clerk_holds_up_a_card cards=green:before|red:after|a_third_card:this_page_is_torn,_I_cannot_read_it marks=3:ring id=clerk",
+   "scene": "cards",
+   "params": {
+    "question": "The clerk holds up a card",
+    "cards": [
+     [
+      "green",
+      "before"
+     ],
+     [
+      "red",
+      "after"
+     ],
+     [
+      "a third card",
+      "this page is torn, I cannot read it"
+     ]
+    ],
+    "marks": [
+     [
+      "3",
+      "ring"
+     ]
+    ],
+    "id": "clerk"
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "marks"
+   ],
+   "upto": 4,
+   "section": "MENTAL MODEL",
+   "n": 28,
+   "progress": 0.3998
+  },
+  {
+   "kind": "keypoint",
+   "body": "Where the model breaks: the clerk is your program running inside old checkouts of your own project.",
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.4068
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 30,
+   "progress": 0.4278
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=exit_status_of_the_command,what_git_bisect_run_records rows=0:good_(the_OLD_state,_whatever_it_is_called)|1_to_127,_except_125:bad_(the_NEW_state)|125:skip:_this_commit_cannot_be_tested|anything_else_(128_and_above):no_verdict:_the_bisection_is_aborted marks=1.2:ok,2.2:bad,3.2:wait,4.2:dim title=The_exit-status_protocol id=codes",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "exit status of the command",
+     "what git bisect run records"
+    ],
+    "rows": [
+     [
+      "0",
+      "good (the OLD state, whatever it is called)"
+     ],
+     [
+      "1 to 127, except 125",
+      "bad (the NEW state)"
+     ],
+     [
+      "125",
+      "skip: this commit cannot be tested"
+     ],
+     [
+      "anything else (128 and above)",
+      "no verdict: the bisection is aborted"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "bad",
+     "3.2": "wait",
+     "4.2": "dim"
+    },
+    "title": "The exit-status protocol",
+    "id": "codes"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "DIAGRAM",
+   "n": 31,
+   "progress": 0.4294
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; title:A_merge_in_the_range => + dim:B,C; first_bad:M; cmd:git_bisect_start_--first-parent; say:The_search_never_visits_B_and_C:_their_fault_is_attributed_to_M; name:fp => A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; good:B,C,E; first_bad:M; cmd:git_bisect_run_<cmd>; say:Both_parents_good,_the_combination_bad; title:The_first_bad_commit_is_a_merge; name:both id=merge",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "A",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "D",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "A"
+      ]
+     },
+     {
+      "id": "E",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "B",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "C",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "B"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "E",
+       "C"
+      ]
+     },
+     {
+      "id": "F",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "M"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "A",
+       "D",
+       "E",
+       "B",
+       "C",
+       "M",
+       "F"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "dim": [],
+      "marks": {},
+      "title": "A merge in the range"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [
+       "B",
+       "C"
+      ],
+      "marks": {
+       "M": "first_bad"
+      },
+      "caption": "The search never visits B and C: their fault is attributed to M",
+      "cmd": "git bisect start --first-parent",
+      "name": "fp"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {
+       "B": "good",
+       "C": "good",
+       "E": "good",
+       "M": "first_bad"
+      },
+      "caption": "Both parents good, the combination bad",
+      "cmd": "git bisect run <cmd>",
+      "title": "The first bad commit is a merge",
+      "name": "both"
+     }
+    ],
+    "settle": "on",
+    "id": "merge"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "fp",
+    "both"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "DIAGRAM",
+   "n": 32,
+   "progress": 0.4465
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 33,
+   "progress": 0.4562
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/01-script",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cat ../check-em.sh"
+    },
+    {
+     "t": "out",
+     "s": "#!/bin/sh"
+    },
+    {
+     "t": "out",
+     "s": "# Exit 0 if this commit scores the smoke set correctly, 1 if it does not,"
+    },
+    {
+     "t": "out",
+     "s": "# 125 if the runner cannot produce a score line at all (untestable: skip)."
+    },
+    {
+     "t": "out",
+     "s": "out=$(python3 -B -m scorekit.runner data/smoke.jsonl 2>/dev/null)"
+    },
+    {
+     "t": "out",
+     "s": "case \"$out\" in"
+    },
+    {
+     "t": "out",
+     "s": "  *exact_match=0.800*) exit 0 ;;"
+    },
+    {
+     "t": "out",
+     "s": "  *exact_match=*)      exit 1 ;;"
+    },
+    {
+     "t": "out",
+     "s": "  *)                   exit 125 ;;"
+    },
+    {
+     "t": "out",
+     "s": "esac"
+    },
+    {
+     "t": "cmd",
+     "s": "../check-em.sh; echo \"exit status on main: $?\""
+    },
+    {
+     "t": "out",
+     "s": "exit status on main: 1"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 34,
+   "progress": 0.4578
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/02-run",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect start main v0.1.0"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 9 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect run ../check-em.sh"
+    },
+    {
+     "t": "out",
+     "s": "running '../check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 9 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[d9d075d63dcc94ce04c8e404e06b5cc3173180c2] Remove the experimental BLEU scorer"
+    },
+    {
+     "t": "out",
+     "s": "running '../check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 8 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[72134f33df03602df3b2fa85f5b7dfb0aa08c190] Document the runner's exit status"
+    },
+    {
+     "t": "out",
+     "s": "running '../check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 3 revisions left to test after this (roughly 2 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[9c8df98229e009115b3044edb1181d11075ecbbb] Reformat sources: four-space indent, double quotes"
+    },
+    {
+     "t": "out",
+     "s": "running '../check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 2 revisions left to test after this (roughly 1 step)"
+    },
+    {
+     "t": "out",
+     "s": "[be9ad1b4894348317c1e7ccb8276b8ad4760fb89] Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": "running '../check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 0 revisions left to test after this (roughly 0 steps)"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 35,
+   "progress": 0.4881
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/02-run",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "git bisect run ../check-em.sh"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "[d926d3c5a77b586297eb25335c33fed4aee6f053] Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": "running '../check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5a77b586297eb25335c33fed4aee6f053 is the first 'bad' commit"
+    },
+    {
+     "t": "out",
+     "s": "commit d926d3c5a77b586297eb25335c33fed4aee6f053"
+    },
+    {
+     "t": "out",
+     "s": "Author: Ravi Menon <ravi@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "Date:   Thu Sep 10 13:36:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    str.translate built a table lookup per call. One compiled pattern is faster on the nightly set."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": " scorekit/text.py | 6 +++---"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 3 insertions(+), 3 deletions(-)"
+    },
+    {
+     "t": "out",
+     "s": "bisect found first 'bad' commit"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.4914
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/03-log",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect log"
+    },
+    {
+     "t": "out",
+     "s": "# bad: [e376e5b709142415a87d49ca10af71977aaeabdc] Mention the nightly run in the README"
+    },
+    {
+     "t": "out",
+     "s": "# good: [682bc717015f0ab43b873d1df1ac9da0ba01c393] Add config module with the pass mark"
+    },
+    {
+     "t": "out",
+     "s": "git bisect start 'main' 'v0.1.0'"
+    },
+    {
+     "t": "out",
+     "s": "# skip: [074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "out",
+     "s": "git bisect skip 074d49249bcd54bc33537fe26519dd38e3c3ba85"
+    },
+    {
+     "t": "out",
+     "s": "# bad: [d9d075d63dcc94ce04c8e404e06b5cc3173180c2] Remove the experimental BLEU scorer"
+    },
+    {
+     "t": "out",
+     "s": "git bisect bad d9d075d63dcc94ce04c8e404e06b5cc3173180c2"
+    },
+    {
+     "t": "out",
+     "s": "# good: [72134f33df03602df3b2fa85f5b7dfb0aa08c190] Document the runner's exit status"
+    },
+    {
+     "t": "out",
+     "s": "git bisect good 72134f33df03602df3b2fa85f5b7dfb0aa08c190"
+    },
+    {
+     "t": "out",
+     "s": "# bad: [9c8df98229e009115b3044edb1181d11075ecbbb] Reformat sources: four-space indent, double quotes"
+    },
+    {
+     "t": "out",
+     "s": "git bisect bad 9c8df98229e009115b3044edb1181d11075ecbbb"
+    },
+    {
+     "t": "out",
+     "s": "# good: [be9ad1b4894348317c1e7ccb8276b8ad4760fb89] Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": "git bisect good be9ad1b4894348317c1e7ccb8276b8ad4760fb89"
+    },
+    {
+     "t": "out",
+     "s": "# bad: [d926d3c5a77b586297eb25335c33fed4aee6f053] Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": "git bisect bad d926d3c5a77b586297eb25335c33fed4aee6f053"
+    },
+    {
+     "t": "out",
+     "s": "# first 'bad' commit: [d926d3c5a77b586297eb25335c33fed4aee6f053] Speed up normalize with a precompiled"
+    },
+    {
+     "t": "wrap",
+     "s": "pattern",
+     "of": "out"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Previous HEAD position was d926d3c Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.5006
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/04-one-liner",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The same test without a script file. The exit status of grep is the verdict; a crash would count as"
+    },
+    {
+     "t": "wrap",
+     "s": "bad.",
+     "of": "out"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect start main v0.2.0~4"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 4 revisions left to test after this (roughly 2 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[c0c9a304c3598a2f53abb36a10d5abe10e723be4] Add nightly evaluation set"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect run sh -c 'python3 -B -m scorekit.runner data/smoke.jsonl 2>/dev/null | grep -q"
+    },
+    {
+     "t": "wrap",
+     "s": "exact_match=0.800'",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'python3 -B -m scorekit.runner data/smoke.jsonl 2>/dev/null | grep -q"
+    },
+    {
+     "t": "wrap",
+     "s": "exact_match=0.800'",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 1 revision left to test after this (roughly 1 step)"
+    },
+    {
+     "t": "out",
+     "s": "[9c8df98229e009115b3044edb1181d11075ecbbb] Reformat sources: four-space indent, double quotes"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'python3 -B -m scorekit.runner data/smoke.jsonl 2>/dev/null | grep -q"
+    },
+    {
+     "t": "wrap",
+     "s": "exact_match=0.800'",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 0 revisions left to test after this (roughly 0 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[d926d3c5a77b586297eb25335c33fed4aee6f053] Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'python3 -B -m scorekit.runner data/smoke.jsonl 2>/dev/null | grep -q"
+    },
+    {
+     "t": "wrap",
+     "s": "exact_match=0.800'",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "d926d3c5a77b586297eb25335c33fed4aee6f053 is the first 'bad' commit"
+    }
+   ],
+   "page": [
+    1,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.5155
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/04-one-liner",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "ctx",
+     "s": "git bisect run sh -c 'python3 -B -m scorekit.runner data/smoke.jsonl 2>/dev/null | grep -q"
+    },
+    {
+     "t": "ctx2",
+     "s": "…"
+    },
+    {
+     "t": "out",
+     "s": "commit d926d3c5a77b586297eb25335c33fed4aee6f053"
+    },
+    {
+     "t": "out",
+     "s": "Author: Ravi Menon <ravi@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "Date:   Thu Sep 10 13:36:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    str.translate built a table lookup per call. One compiled pattern is faster on the nightly set."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": " scorekit/text.py | 6 +++---"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 3 insertions(+), 3 deletions(-)"
+    },
+    {
+     "t": "out",
+     "s": "bisect found first 'bad' commit"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Previous HEAD position was d926d3c Speed up normalize with a precompiled pattern"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    }
+   ],
+   "page": [
+    2,
+    2
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.5308
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/05-bad-exit-code",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect start main v0.1.0"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 9 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect run sh -c 'exit 200'"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'exit 200'"
+    },
+    {
+     "t": "out",
+     "s": "error: bisect run failed: exit code 200 from 'sh' '-c' 'exit 200' is < 0 or >= 128"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 56]"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Previous HEAD position was 074d492 Send warnings to stderr"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.5484
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/06-missing-script",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect start main v0.1.0"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 9 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect run ./check-em.sh"
+    },
+    {
+     "t": "out",
+     "s": "running './check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "'./check-em.sh': ./check-em.sh: No such file or directory"
+    },
+    {
+     "t": "out",
+     "s": "[682bc717015f0ab43b873d1df1ac9da0ba01c393] Add config module with the pass mark"
+    },
+    {
+     "t": "out",
+     "s": "running './check-em.sh'"
+    },
+    {
+     "t": "out",
+     "s": "'./check-em.sh': ./check-em.sh: No such file or directory"
+    },
+    {
+     "t": "out",
+     "s": "error: bogus exit code 127 for 'good' revision"
+    },
+    {
+     "t": "out",
+     "s": "[074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Previous HEAD position was 074d492 Send warnings to stderr"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5629
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-run/07-dirty-tree",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# An uncommitted edit in scorekit/config.py, a file that differs between the commits to visit:"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect start main v0.1.0"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 9 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "error: Your local changes to the following files would be overwritten by checkout:"
+    },
+    {
+     "t": "out",
+     "s": "        scorekit/config.py"
+    },
+    {
+     "t": "out",
+     "s": "Please commit your changes or stash them before you switch branches."
+    },
+    {
+     "t": "out",
+     "s": "Aborting"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5857
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/01-terms",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Since which commit does the runner work again without --limit? 8dc82cb is known to crash."
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect start --term-old broken --term-new fixed"
+    },
+    {
+     "t": "out",
+     "s": "status: waiting for both 'broken' and 'fixed' commits"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect fixed main"
+    },
+    {
+     "t": "out",
+     "s": "status: waiting for 'broken' commit(s), 'fixed' commit known"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect broken 8dc82cb"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 5 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[78232321c82cb23d6fb732e4c8ee614c6f005919] Add ROUGE-L metric"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect terms"
+    },
+    {
+     "t": "out",
+     "s": "Your current terms are 'broken' for the old state"
+    },
+    {
+     "t": "out",
+     "s": "and 'fixed' for the new state."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5957
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8dc82cb-074d492-be9ad1b-d926d3c-9c8df98-7823232-...more-e376e5b main; HEAD=main; title:Since_which_commit_does_the_runner_work_again? => + mark:broken:8dc82cb; mark:fixed:e376e5b; HEAD=7823232; test:7823232; cmd:git_bisect_start_--term-old_broken_--term-new_fixed; say:Old_state:_broken._New_state:_fixed; name:start => + mark:fixed:7823232,be9ad1b; mark:broken:074d492; mark:first_fixed:be9ad1b; HEAD=074d492; cmd:git_bisect_replay_../bisect.log; say:be9ad1b_is_the_first_fixed_commit; name:found id=terms",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8dc82cb",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "074d492",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8dc82cb"
+      ]
+     },
+     {
+      "id": "be9ad1b",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "074d492"
+      ]
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "be9ad1b"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     },
+     {
+      "id": "7823232",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "9c8df98"
+      ]
+     },
+     {
+      "id": "...more",
+      "col": 6,
+      "row": 0,
+      "parents": [
+       "7823232"
+      ],
+      "kind": "elision",
+      "text": "more"
+     },
+     {
+      "id": "e376e5b",
+      "col": 7,
+      "row": 0,
+      "parents": [
+       "...more"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8dc82cb",
+       "074d492",
+       "be9ad1b",
+       "d926d3c",
+       "9c8df98",
+       "7823232",
+       "...more",
+       "e376e5b"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Since which commit does the runner work again?"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "e376e5b"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "e376e5b"
+      },
+      "head": "7823232",
+      "notes": [],
+      "marks": {
+       "8dc82cb": "broken",
+       "e376e5b": "fixed",
+       "7823232": "test"
+      },
+      "caption": "Old state: broken. New state: fixed",
+      "cmd": "git bisect start --term-old broken --term-new fixed",
+      "name": "start"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "e376e5b"
+      },
+      "head": "074d492",
+      "notes": [],
+      "marks": {
+       "8dc82cb": "broken",
+       "e376e5b": "fixed",
+       "7823232": "fixed",
+       "be9ad1b": "first fixed",
+       "074d492": "broken"
+      },
+      "caption": "be9ad1b is the first fixed commit",
+      "cmd": "git bisect replay ../bisect.log",
+      "name": "found"
+     }
+    ],
+    "settle": "on",
+    "id": "terms"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "start",
+    "found"
+   ],
+   "upto": 3,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.6021
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/02-run",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# For bisect run, exit status 0 means the OLD state. grep exits 0 when it finds the crash."
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect run sh -c 'python3 -B -m scorekit.runner data/smoke.jsonl 2>&1 | grep -q KeyError'"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'python3 -B -m scorekit.runner data/smoke.jsonl 2>&1 | grep -q KeyError'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 2 revisions left to test after this (roughly 1 step)"
+    },
+    {
+     "t": "out",
+     "s": "[be9ad1b4894348317c1e7ccb8276b8ad4760fb89] Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'python3 -B -m scorekit.runner data/smoke.jsonl 2>&1 | grep -q KeyError'"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 0 revisions left to test after this (roughly 0 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "out",
+     "s": "running 'sh' '-c' 'python3 -B -m scorekit.runner data/smoke.jsonl 2>&1 | grep -q KeyError'"
+    },
+    {
+     "t": "out",
+     "s": "be9ad1b4894348317c1e7ccb8276b8ad4760fb89 is the first 'fixed' commit"
+    },
+    {
+     "t": "out",
+     "s": "commit be9ad1b4894348317c1e7ccb8276b8ad4760fb89"
+    },
+    {
+     "t": "out",
+     "s": "Author: Lab User <you@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "Date:   Thu Sep 10 12:31:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Without the option the runner stopped with KeyError: '--limit'."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": " scorekit/runner.py | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "out",
+     "s": "bisect found first 'fixed' commit"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.6165
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/03-save-log",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect log > ../bisect.log"
+    },
+    {
+     "t": "cmd",
+     "s": "cat ../bisect.log"
+    },
+    {
+     "t": "out",
+     "s": "git bisect start '--term-old' 'broken' '--term-new' 'fixed'"
+    },
+    {
+     "t": "out",
+     "s": "# status: waiting for both 'broken' and 'fixed' commits"
+    },
+    {
+     "t": "out",
+     "s": "# fixed: [e376e5b709142415a87d49ca10af71977aaeabdc] Mention the nightly run in the README"
+    },
+    {
+     "t": "out",
+     "s": "git bisect fixed e376e5b709142415a87d49ca10af71977aaeabdc"
+    },
+    {
+     "t": "out",
+     "s": "# status: waiting for 'broken' commit(s), 'fixed' commit known"
+    },
+    {
+     "t": "out",
+     "s": "# broken: [8dc82cb2ce1f427dc306bce35c21a41f2e796b8d] Add --limit option to the runner"
+    },
+    {
+     "t": "out",
+     "s": "git bisect broken 8dc82cb2ce1f427dc306bce35c21a41f2e796b8d"
+    },
+    {
+     "t": "out",
+     "s": "# fixed: [78232321c82cb23d6fb732e4c8ee614c6f005919] Add ROUGE-L metric"
+    },
+    {
+     "t": "out",
+     "s": "git bisect fixed 78232321c82cb23d6fb732e4c8ee614c6f005919"
+    },
+    {
+     "t": "out",
+     "s": "# fixed: [be9ad1b4894348317c1e7ccb8276b8ad4760fb89] Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": "git bisect fixed be9ad1b4894348317c1e7ccb8276b8ad4760fb89"
+    },
+    {
+     "t": "out",
+     "s": "# broken: [074d49249bcd54bc33537fe26519dd38e3c3ba85] Send warnings to stderr"
+    },
+    {
+     "t": "out",
+     "s": "git bisect broken 074d49249bcd54bc33537fe26519dd38e3c3ba85"
+    },
+    {
+     "t": "out",
+     "s": "# first 'fixed' commit: [be9ad1b4894348317c1e7ccb8276b8ad4760fb89] Fix crash when --limit is not given"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Previous HEAD position was 074d492 Send warnings to stderr"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.6222
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/04-replay",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect replay ../bisect.log"
+    },
+    {
+     "t": "out",
+     "s": "status: waiting for both 'broken' and 'fixed' commits"
+    },
+    {
+     "t": "out",
+     "s": "be9ad1b4894348317c1e7ccb8276b8ad4760fb89 is the first 'fixed' commit"
+    },
+    {
+     "t": "out",
+     "s": "commit be9ad1b4894348317c1e7ccb8276b8ad4760fb89"
+    },
+    {
+     "t": "out",
+     "s": "Author: Lab User <you@example.com>"
+    },
+    {
+     "t": "out",
+     "s": "Date:   Thu Sep 10 12:31:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "    Without the option the runner stopped with KeyError: '--limit'."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": " scorekit/runner.py | 2 +-"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Already on 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.6308
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8dc82cb-074d492-be9ad1b-d926d3c-9c8df98-7823232-...more-e376e5b main; HEAD=main; title:Since_which_commit_does_the_runner_work_again? => + mark:broken:8dc82cb; mark:fixed:e376e5b; HEAD=7823232; test:7823232; cmd:git_bisect_start_--term-old_broken_--term-new_fixed; say:Old_state:_broken._New_state:_fixed; name:start => + mark:fixed:7823232,be9ad1b; mark:broken:074d492; mark:first_fixed:be9ad1b; HEAD=074d492; cmd:git_bisect_replay_../bisect.log; say:be9ad1b_is_the_first_fixed_commit; name:found id=terms",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8dc82cb",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "074d492",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8dc82cb"
+      ]
+     },
+     {
+      "id": "be9ad1b",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "074d492"
+      ]
+     },
+     {
+      "id": "d926d3c",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "be9ad1b"
+      ]
+     },
+     {
+      "id": "9c8df98",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "d926d3c"
+      ]
+     },
+     {
+      "id": "7823232",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "9c8df98"
+      ]
+     },
+     {
+      "id": "...more",
+      "col": 6,
+      "row": 0,
+      "parents": [
+       "7823232"
+      ],
+      "kind": "elision",
+      "text": "more"
+     },
+     {
+      "id": "e376e5b",
+      "col": 7,
+      "row": 0,
+      "parents": [
+       "...more"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8dc82cb",
+       "074d492",
+       "be9ad1b",
+       "d926d3c",
+       "9c8df98",
+       "7823232",
+       "...more",
+       "e376e5b"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "title": "Since which commit does the runner work again?"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "e376e5b"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "e376e5b"
+      },
+      "head": "7823232",
+      "notes": [],
+      "marks": {
+       "8dc82cb": "broken",
+       "e376e5b": "fixed",
+       "7823232": "test"
+      },
+      "caption": "Old state: broken. New state: fixed",
+      "cmd": "git bisect start --term-old broken --term-new fixed",
+      "name": "start"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "e376e5b"
+      },
+      "head": "074d492",
+      "notes": [],
+      "marks": {
+       "8dc82cb": "broken",
+       "e376e5b": "fixed",
+       "7823232": "fixed",
+       "be9ad1b": "first fixed",
+       "074d492": "broken"
+      },
+      "caption": "be9ad1b is the first fixed commit",
+      "cmd": "git bisect replay ../bisect.log",
+      "name": "found"
+     }
+    ],
+    "settle": "on",
+    "id": "terms"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "start",
+    "found"
+   ],
+   "base": 3,
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.6382
+  },
+  {
+   "kind": "keypoint",
+   "body": "Within one session the vocabulary is fixed.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6505
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/05-good-bad-mixed",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect start --term-old broken --term-new fixed"
+    },
+    {
+     "t": "out",
+     "s": "status: waiting for both 'broken' and 'fixed' commits"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect bad main 2>&1 | head -n 2"
+    },
+    {
+     "t": "out",
+     "s": "error: Invalid command: you're currently in a fixed/broken bisect"
+    },
+    {
+     "t": "out",
+     "s": "fatal: unknown command: 'bad'"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Already on 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6535
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/06-first-parent",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rev-list --count v0.1.0..main"
+    },
+    {
+     "t": "out",
+     "s": "20"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-list --count --first-parent v0.1.0..main"
+    },
+    {
+     "t": "out",
+     "s": "18"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect start --first-parent main v0.1.0"
+    },
+    {
+     "t": "out",
+     "s": "Bisecting: 8 revisions left to test after this (roughly 3 steps)"
+    },
+    {
+     "t": "out",
+     "s": "[be9ad1b4894348317c1e7ccb8276b8ad4760fb89] Fix crash when --limit is not given"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    },
+    {
+     "t": "out",
+     "s": "Previous HEAD position was be9ad1b Fix crash when --limit is not given"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6562
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14a/bisect-terms/07-wrong-way-round",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git bisect start v0.1.0 main"
+    },
+    {
+     "t": "out",
+     "s": "Some 'good' revs are not ancestors of the 'bad' rev."
+    },
+    {
+     "t": "out",
+     "s": "git bisect cannot work properly in this case."
+    },
+    {
+     "t": "out",
+     "s": "Maybe you mistook 'good' and 'bad' revs?"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git bisect reset"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6715
+  },
+  {
+   "kind": "callout",
+   "source": {
+    "file": "textbook/ch14a-history-investigation.md",
+    "line": 2879,
+    "section": "14A.22",
+    "kind": "box",
+    "score": 28,
+    "candidates": 2
+   },
+   "direction": "The version note of section 14A.22. On Git 2.55 a finished bisection leaves you on the last tested commit until you run `git bisect reset`. Git 2.56 teaches `git bisect` an option `--reset-when-found`, which runs the reset automatically; that was not run here, and the textbook says its exact usage was not checked against the 2.56 manual. On 2.55, end every `git bisect run` in a script with an explicit `git bisect reset`.",
+   "label": "Version note",
+   "quotes": [
+    "Older behavior: a finished bisection leaves you on the last tested commit until you run <code>git bisect reset</code>. Current behavior on Git 2.55: unchanged, as shown above. Since: Git 2.56 teaches <code>git bisect</code> an option <code>--reset-when-found[=&lt;where&gt;]</code>, which runs the reset automatically, to the original state or to the culprit (RelNotes 2.56.0); not run here, and its exact usage was not checked against the 2.56 manual. Recommended: on 2.55, end every <code>git bisect run</code> in a script with an explicit <code>git bisect reset</code>."
+   ],
+   "quoted": false,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6798
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 54,
+   "progress": 0.6853
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 55,
+   "progress": 0.6869
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A two-outcome test.</b> Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+    "<b>A test script tracked in the repository.</b> Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+    "<b>A flaky or environment-dependent test.</b> Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+    "<b>Custom terms with the exit statuses reversed.</b> Root cause: for <code>git bisect run</code> the mapping is positional; 0 is the old state whatever word you chose.",
+    "<b>Bisecting in a shallow clone.</b> Root cause: bisect can only visit commits that exist locally, and in a clone made with <code>--depth</code>, as CI checkouts often are, the good commit may not be present at all."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 56,
+   "progress": 0.6891
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A two-outcome test.</b> Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+    "<b>A test script tracked in the repository.</b> Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+    "<b>A flaky or environment-dependent test.</b> Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+    "<b>Custom terms with the exit statuses reversed.</b> Root cause: for <code>git bisect run</code> the mapping is positional; 0 is the old state whatever word you chose.",
+    "<b>Bisecting in a shallow clone.</b> Root cause: bisect can only visit commits that exist locally, and in a clone made with <code>--depth</code>, as CI checkouts often are, the good commit may not be present at all."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 57,
+   "progress": 0.7009
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A two-outcome test.</b> Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+    "<b>A test script tracked in the repository.</b> Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+    "<b>A flaky or environment-dependent test.</b> Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+    "<b>Custom terms with the exit statuses reversed.</b> Root cause: for <code>git bisect run</code> the mapping is positional; 0 is the old state whatever word you chose.",
+    "<b>Bisecting in a shallow clone.</b> Root cause: bisect can only visit commits that exist locally, and in a clone made with <code>--depth</code>, as CI checkouts often are, the good commit may not be present at all."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 58,
+   "progress": 0.7119
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A two-outcome test.</b> Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+    "<b>A test script tracked in the repository.</b> Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+    "<b>A flaky or environment-dependent test.</b> Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+    "<b>Custom terms with the exit statuses reversed.</b> Root cause: for <code>git bisect run</code> the mapping is positional; 0 is the old state whatever word you chose.",
+    "<b>Bisecting in a shallow clone.</b> Root cause: bisect can only visit commits that exist locally, and in a clone made with <code>--depth</code>, as CI checkouts often are, the good commit may not be present at all."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 59,
+   "progress": 0.7311
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>A two-outcome test.</b> Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+    "<b>A test script tracked in the repository.</b> Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+    "<b>A flaky or environment-dependent test.</b> Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+    "<b>Custom terms with the exit statuses reversed.</b> Root cause: for <code>git bisect run</code> the mapping is positional; 0 is the old state whatever word you chose.",
+    "<b>Bisecting in a shallow clone.</b> Root cause: bisect can only visit commits that exist locally, and in a clone made with <code>--depth</code>, as CI checkouts often are, the good commit may not be present at all."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 60,
+   "progress": 0.7425
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 61,
+   "progress": 0.7583
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. A team evaluating an LLM application sees answer quality on a regression set drop after a week of merges.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 62,
+   "progress": 0.7599
+  },
+  {
+   "kind": "keypoint",
+   "body": "They apply the three rules of section 14A.21.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 63,
+   "progress": 0.7766
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; title:A_merge_in_the_range => + dim:B,C; first_bad:M; cmd:git_bisect_start_--first-parent; say:The_search_never_visits_B_and_C:_their_fault_is_attributed_to_M; name:fp => A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; good:B,C,E; first_bad:M; cmd:git_bisect_run_<cmd>; say:Both_parents_good,_the_combination_bad; title:The_first_bad_commit_is_a_merge; name:both id=merge",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "A",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "D",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "A"
+      ]
+     },
+     {
+      "id": "E",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "B",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "C",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "B"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "E",
+       "C"
+      ]
+     },
+     {
+      "id": "F",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "M"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "A",
+       "D",
+       "E",
+       "B",
+       "C",
+       "M",
+       "F"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "dim": [],
+      "marks": {},
+      "title": "A merge in the range"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [
+       "B",
+       "C"
+      ],
+      "marks": {
+       "M": "first_bad"
+      },
+      "caption": "The search never visits B and C: their fault is attributed to M",
+      "cmd": "git bisect start --first-parent",
+      "name": "fp"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {
+       "B": "good",
+       "C": "good",
+       "E": "good",
+       "M": "first_bad"
+      },
+      "caption": "Both parents good, the combination bad",
+      "cmd": "git bisect run <cmd>",
+      "title": "The first bad commit is a merge",
+      "name": "both"
+     }
+    ],
+    "settle": "on",
+    "id": "merge"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "fp",
+    "both"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 64,
+   "progress": 0.8116
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 65,
+   "progress": 0.8405
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 11.5, \"An automated <code>git bisect run</code>\", in <code>lab-manual/m11-history-forensics.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 66,
+   "progress": 0.8421
+  },
+  {
+   "kind": "keypoint",
+   "body": "The lab runs the two-outcome test first.",
+   "section": "PRACTICE EXERCISE",
+   "n": 67,
+   "progress": 0.8474
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 11.11, Level 5, \"Retrieval quality dropped on Friday\", in <code>exercises/m11-m15-investigation-recovery.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 68,
+   "progress": 0.864
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 69,
+   "progress": 0.8702
+  },
+  {
+   "kind": "callout",
+   "direction": "Q410: \"Bisect reports a merge commit as the first bad commit, and both parents are good. What does that tell you, and what do you look at next?\"",
+   "label": "Q410",
+   "quotes": [
+    "Bisect reports a merge commit as the first bad commit, and both parents are good. What does that tell you, and what do you look at next?"
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 70,
+   "progress": 0.8718
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; title:A_merge_in_the_range => + dim:B,C; first_bad:M; cmd:git_bisect_start_--first-parent; say:The_search_never_visits_B_and_C:_their_fault_is_attributed_to_M; name:fp => A-D-E-M-F main; ^D-B-C feature; C-M; HEAD=main; good:B,C,E; first_bad:M; cmd:git_bisect_run_<cmd>; say:Both_parents_good,_the_combination_bad; title:The_first_bad_commit_is_a_merge; name:both id=merge",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "A",
+      "col": 0,
+      "row": 1,
+      "parents": []
+     },
+     {
+      "id": "D",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "A"
+      ]
+     },
+     {
+      "id": "E",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "B",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "D"
+      ]
+     },
+     {
+      "id": "C",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "B"
+      ]
+     },
+     {
+      "id": "M",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "E",
+       "C"
+      ]
+     },
+     {
+      "id": "F",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "M"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "A",
+       "D",
+       "E",
+       "B",
+       "C",
+       "M",
+       "F"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "dim": [],
+      "marks": {},
+      "title": "A merge in the range"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [
+       "B",
+       "C"
+      ],
+      "marks": {
+       "M": "first_bad"
+      },
+      "caption": "The search never visits B and C: their fault is attributed to M",
+      "cmd": "git bisect start --first-parent",
+      "name": "fp"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "F",
+       "feature": "C"
+      },
+      "head": "main",
+      "notes": [],
+      "dim": [],
+      "marks": {
+       "B": "good",
+       "C": "good",
+       "E": "good",
+       "M": "first_bad"
+      },
+      "caption": "Both parents good, the combination bad",
+      "cmd": "git bisect run <cmd>",
+      "title": "The first bad commit is a merge",
+      "name": "both"
+     }
+    ],
+    "settle": "on",
+    "id": "merge"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "fp",
+    "both"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "INTERVIEW QUESTION",
+   "n": 71,
+   "progress": 0.8789
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 72,
+   "progress": 0.9236
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "<code>git bisect run</code> reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+    "The test script lives outside the tree being tested and must be deterministic.",
+    "Custom terms rename the subcommands; they do not change which exit status means old.",
+    "<code>git bisect log</code> is a replayable record: I can save it, edit it and replay it.",
+    "A merge named as the culprit, with both parents good, means the fault is in the combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 73,
+   "progress": 0.9252
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "<code>git bisect run</code> reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+    "The test script lives outside the tree being tested and must be deterministic.",
+    "Custom terms rename the subcommands; they do not change which exit status means old.",
+    "<code>git bisect log</code> is a replayable record: I can save it, edit it and replay it.",
+    "A merge named as the culprit, with both parents good, means the fault is in the combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 74,
+   "progress": 0.9296
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "<code>git bisect run</code> reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+    "The test script lives outside the tree being tested and must be deterministic.",
+    "Custom terms rename the subcommands; they do not change which exit status means old.",
+    "<code>git bisect log</code> is a replayable record: I can save it, edit it and replay it.",
+    "A merge named as the culprit, with both parents good, means the fault is in the combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 75,
+   "progress": 0.9414
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "<code>git bisect run</code> reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+    "The test script lives outside the tree being tested and must be deterministic.",
+    "Custom terms rename the subcommands; they do not change which exit status means old.",
+    "<code>git bisect log</code> is a replayable record: I can save it, edit it and replay it.",
+    "A merge named as the culprit, with both parents good, means the fault is in the combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 76,
+   "progress": 0.9471
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "<code>git bisect run</code> reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+    "The test script lives outside the tree being tested and must be deterministic.",
+    "Custom terms rename the subcommands; they do not change which exit status means old.",
+    "<code>git bisect log</code> is a replayable record: I can save it, edit it and replay it.",
+    "A merge named as the culprit, with both parents good, means the fault is in the combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 77,
+   "progress": 0.9533
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "<code>git bisect run</code> reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+    "The test script lives outside the tree being tested and must be deterministic.",
+    "Custom terms rename the subcommands; they do not change which exit status means old.",
+    "<code>git bisect log</code> is a replayable record: I can save it, edit it and replay it.",
+    "A merge named as the culprit, with both parents good, means the fault is in the combination."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9603
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 79,
+   "progress": 0.9677
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 14A.21, 14A.22 and 14A.25 to 14A.27 of Chapter 14A.",
+   "section": "HOMEWORK",
+   "n": 80,
+   "progress": 0.9693
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=exit_status_of_the_command,what_git_bisect_run_records rows=0:good_(the_OLD_state,_whatever_it_is_called)|1_to_127,_except_125:bad_(the_NEW_state)|125:skip:_this_commit_cannot_be_tested|anything_else_(128_and_above):no_verdict:_the_bisection_is_aborted marks=1.2:ok,2.2:bad,3.2:wait,4.2:dim title=The_exit-status_protocol id=codes",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "exit status of the command",
+     "what git bisect run records"
+    ],
+    "rows": [
+     [
+      "0",
+      "good (the OLD state, whatever it is called)"
+     ],
+     [
+      "1 to 127, except 125",
+      "bad (the NEW state)"
+     ],
+     [
+      "125",
+      "skip: this commit cannot be tested"
+     ],
+     [
+      "anything else (128 and above)",
+      "no verdict: the bisection is aborted"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.2": "bad",
+     "3.2": "wait",
+     "4.2": "dim"
+    },
+    "title": "The exit-status protocol",
+    "id": "codes"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "HOMEWORK",
+   "n": 81,
+   "progress": 0.9768
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "An engineer automates a bisection overnight. A bisection is Git's binary search over commits, the saved snapshots of a project. In the morning the tool reports a first bad commit, with full confidence and a full commit ID. The commit adds a command-line option. It doesn't touch scoring at all.",
+   "tele": "An engineer automates a bisection overnight. A bisection is Git's binary search over commits, the saved snapshots of a project. In the morning the tool reports a first bad commit, with full confidence and a full commit ID. The commit adds a command-line option. It doesn't touch scoring at all.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "29e7d3dd",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The search wasn't broken. The test was. The script returned the runner's own exit status, the number a program hands back when it ends: 0 when the score passed, 1 when it didn't. A crash also exits with 1. So the first commit that crashed for an unrelated reason was recorded as bad, Git searched among its ancestors, and it reported the commit that introduced the crash. The textbook's words for that answer are: precise, reproducible and wrong. Keep that innocent commit in mind. It comes back.",
+   "tele": "The search wasn't broken. The test was. The script returned the runner's own exit status, the number a program hands back when it ends: 0 when the score passed, 1 when it didn't. A crash also exits with 1. So the first commit that crashed for an unrelated reason was recorded as bad, Git searched among its ancestors, and it reported the commit that introduced the crash. The textbook's words for that answer are: precise, reproducible and wrong. Keep that innocent commit in mind. It comes back.",
+   "words": 87,
+   "est": 34.8,
+   "slide": 4,
+   "line": 16,
+   "t0": 23.5,
+   "h": "bb431360",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 5,
+   "line": 18,
+   "t0": 58.3,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In the previous video you bisected by hand and gave five verdicts and one skip. Answering by hand is error-prone and doesn't scale past a handful of steps. Today the verdicts come from a program, and the contract between Git and that program is three numbers. You'll also search for a fix instead of a bug, save and replay a session, and go through the pitfalls one by one.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In the previous video you bisected by hand and gave five verdicts and one skip. Answering by hand is error-prone and doesn't scale past a handful of steps. Today the verdicts come from a program, and the contract between Git and that program is three numbers. You'll also search for a fix instead of a bug, save and replay a session, and go through the pitfalls one by one.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 6,
+   "line": 20,
+   "t0": 59.8,
+   "h": "84adc3c6",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 7,
+   "line": 22,
+   "t0": 92.2,
+   "h": "",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "write a test script whose exit status follows the bisect protocol;",
+   "tele": "write a test script whose exit status follows the bisect protocol;",
+   "words": 11,
+   "est": 4.4,
+   "slide": 8,
+   "line": 26,
+   "t0": 93.7,
+   "h": "f76fb743",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "automate a bisection with git bisect run;",
+   "tele": "automate a bisection with `git bisect run`;",
+   "words": 7,
+   "est": 2.8,
+   "slide": 9,
+   "line": 26,
+   "t0": 98.1,
+   "h": "d9b6d058",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "use custom terms for a search that is not about good and bad;",
+   "tele": "use custom terms for a search that is not about good and bad;",
+   "words": 13,
+   "est": 5.2,
+   "slide": 10,
+   "line": 26,
+   "t0": 100.9,
+   "h": "97aa7706",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "save and replay a bisect log;",
+   "tele": "save and replay a bisect log;",
+   "words": 6,
+   "est": 2.4,
+   "slide": 11,
+   "line": 26,
+   "t0": 106.1,
+   "h": "d864b34a",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain what it means when bisect names a merge commit, and when --first-parent helps.",
+   "tele": "explain what it means when bisect names a merge commit, and when `--first-parent` helps.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 12,
+   "line": 26,
+   "t0": 108.5,
+   "h": "ba4e8078",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 13,
+   "line": 32,
+   "t0": 114.1,
+   "h": "",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "🟡 CAUTION: git bisect run <cmd> runs a command at every step and takes the verdict from its exit status. It carries the same label as the manual subcommands: it detaches HEAD, which leaves you on no branch, checks out other commits, and writes the bisect state.",
+   "tele": "🟡 CAUTION: `git bisect run <cmd>` runs a command at every step and takes the verdict from its exit status. It carries the same label as the manual subcommands: it detaches HEAD, which leaves you on no branch, checks out other commits, and writes the bisect state.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 14,
+   "line": 34,
+   "t0": 115.6,
+   "h": "16a187cf",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The protocol has four rows. Exit status 0 means good, or old. Exit status 1 to 127, except 125, means bad, or new. Exit status 125 means this commit can't be tested: skip it. Anything else, such as 128 and above, aborts the bisection.",
+   "tele": "The protocol has four rows. Exit status 0 means good, or old. Exit status 1 to 127, except 125, means bad, or new. Exit status 125 means this commit can't be tested: skip it. Anything else, such as 128 and above, aborts the bisection.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 15,
+   "line": 38,
+   "t0": 134.0,
+   "h": "4a9ef199",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.316,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.342,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.581,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Try it now, on paper. Thirty seconds: the runner crashes at one commit. Which exit status should your script return, and which did the overnight script return? Say your answer.",
+   "tele": "Try it now, on paper. Thirty seconds: the runner crashes at one commit. Which exit status should your script return, and which did the overnight script return? Say your answer.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 16,
+   "line": 42,
+   "t0": 151.6,
+   "h": "03970bfc",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 16,
+   "line": 44,
+   "t0": 163.6,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "It should return 125. The overnight script returned 1, and 1 means bad.",
+   "tele": "It should return 125. The overnight script returned 1, and 1 means bad.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 17,
+   "line": 46,
+   "t0": 168.1,
+   "h": "b73428d9",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why three outcomes and not two? Because the question has three answers. A test for bisect must distinguish \"has the property\", \"does not have it\" and \"cannot tell\". That's the lesson of the opening, and it's the reason the number 125 exists.",
+   "tele": "Why three outcomes and not two? Because the question has three answers. A test for bisect must distinguish \"has the property\", \"does not have it\" and \"cannot tell\". That's the lesson of the opening, and it's the reason the number 125 exists.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 18,
+   "line": 50,
+   "t0": 173.3,
+   "h": "c4c75187",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Where the script lives matters. The manual advises keeping the test outside the repository, \"to prevent interactions between the bisect, make and test processes and the scripts\". A tracked script, one stored in the repository, would be replaced by each commit's own version of it, or be absent in older commits.",
+   "tele": "Where the script lives matters. The manual advises keeping the test outside the repository, \"to prevent interactions between the bisect, make and test processes and the scripts\". A tracked script, one stored in the repository, would be replaced by each commit's own version of it, or be absent in older commits.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 19,
+   "line": 54,
+   "t0": 190.1,
+   "h": "609b2246",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Terms. \"Good\" and \"bad\" are awkward when you're looking for an improvement. old and new are built-in alternatives, and --term-old and --term-new let you choose your own words. The subcommands are then named after your words. For git bisect run the mapping stays positional: exit status 0 means the old state, whatever it's called.",
+   "tele": "Terms. \"Good\" and \"bad\" are awkward when you're looking for an improvement. `old` and `new` are built-in alternatives, and `--term-old` and `--term-new` let you choose your own words. The subcommands are then named after your words. For `git bisect run` the mapping stays positional: exit status 0 means the old state, whatever it's called.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 20,
+   "line": 56,
+   "t0": 210.5,
+   "h": "5df0160d",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Log and replay. The output of git bisect log is replayable. Save it, and a session can be repeated, handed to a colleague, or repaired. If you gave a wrong verdict: save the log, delete the wrong line and everything after it, run git bisect reset, and replay the edited file. You continue from the last correct verdict instead of starting over.",
+   "tele": "Log and replay. The output of `git bisect log` is replayable. Save it, and a session can be repeated, handed to a colleague, or repaired. If you gave a wrong verdict: save the log, delete the wrong line and everything after it, run `git bisect reset`, and replay the edited file. You continue from the last correct verdict instead of starting over.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 21,
+   "line": 60,
+   "t0": 232.1,
+   "h": "8781d8e1",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.164,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.328,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.492,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.656,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "More controls. Paths after two dashes restrict the search to commits that touch those paths: fewer steps when you know the area. --first-parent follows only first parents, so a regression that arrived through a merge is attributed to the merge commit. --no-checkout doesn't touch the working tree and sets a ref named BISECT_HEAD for tests that read objects directly.",
+   "tele": "More controls. Paths after two dashes restrict the search to commits that touch those paths: fewer steps when you know the area. `--first-parent` follows only first parents, so a regression that arrived through a merge is attributed to the merge commit. `--no-checkout` doesn't touch the working tree and sets a ref named `BISECT_HEAD` for tests that read objects directly.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 22,
+   "line": 64,
+   "t0": 256.9,
+   "h": "1b84d092",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "That form is 🟢 SAFE. git bisect skip accepts a revision or a range, to mark commits untestable in advance. git bisect visualize shows the remaining candidates. And git bisect reset <commit> ends the session on that commit instead of the starting branch.",
+   "tele": "That form is 🟢 SAFE. `git bisect skip` accepts a revision or a range, to mark commits untestable in advance. `git bisect visualize` shows the remaining candidates. And `git bisect reset <commit>` ends the session on that commit instead of the starting branch.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 23,
+   "line": 64,
+   "t0": 280.5,
+   "h": "82a5a02d",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When to use --first-parent: when the commits inside merged branches aren't required to work on their own. On screen, a feature branch, B and C, merged into main by the merge commit M. With --first-parent the search never visits B and C, so a fault they carry is attributed to M.",
+   "tele": "When to use `--first-parent`: when the commits inside merged branches aren't required to work on their own. On screen, a feature branch, `B` and `C`, merged into `main` by the merge commit `M`. With `--first-parent` the search never visits `B` and `C`, so a fault they carry is attributed to `M`.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 24,
+   "line": 70,
+   "t0": 297.3,
+   "h": "faab7301",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.199,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When not to bisect at all, from section 14A.26. Don't bisect what you can read. Don't bisect before you have checked that the known-good commit is still good in today's environment. And one warning that belongs to security: git bisect run executes whatever the old commits contain, build scripts and test harnesses included. On an untrusted repository that is arbitrary code execution, so do it in a sandbox.",
+   "tele": "When not to bisect at all, from section 14A.26. Don't bisect what you can read. Don't bisect before you have checked that the known-good commit is still good in today's environment. And one warning that belongs to security: `git bisect run` executes whatever the old commits contain, build scripts and test harnesses included. On an untrusted repository that is arbitrary code execution, so do it in a sandbox.",
+   "words": 68,
+   "est": 27.2,
+   "slide": 25,
+   "line": 74,
+   "t0": 317.7,
+   "h": "6da2f8a4",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 26,
+   "line": 76,
+   "t0": 344.9,
+   "h": "",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Keep the dictionary from the last video, and add a clerk. You no longer look at the page yourself. A clerk looks and holds up a card: green for \"before\", red for \"after\", and a third card that says \"this page is torn, I cannot read it\".",
+   "tele": "Keep the dictionary from the last video, and add a clerk. You no longer look at the page yourself. A clerk looks and holds up a card: green for \"before\", red for \"after\", and a third card that says \"this page is torn, I cannot read it\".",
+   "words": 47,
+   "est": 18.8,
+   "slide": 27,
+   "line": 82,
+   "t0": 346.4,
+   "h": "e7b34011",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A clerk with only two cards has to lie about torn pages. That's the two-outcome test.",
+   "tele": "A clerk with only two cards has to lie about torn pages. That's the two-outcome test.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 28,
+   "line": 86,
+   "t0": 365.2,
+   "h": "1dd9f5fe",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Where the model breaks: the clerk is your program running inside old checkouts of your own project. It's affected by what is installed, cached and compiled around the tracked files. The textbook's sentence is: a commit is only its tracked files. The environment around them is your responsibility.",
+   "tele": "Where the model breaks: the clerk is your program running inside old checkouts of your own project. It's affected by what is installed, cached and compiled around the tracked files. The textbook's sentence is: a commit is only its tracked files. The environment around them is your responsibility.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 29,
+   "line": 90,
+   "t0": 371.6,
+   "h": "669c0528",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 30,
+   "line": 92,
+   "t0": 390.8,
+   "h": "",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Row one and row two are the two halves of the search. Row three is the torn page. Row four is the safety net: a status that no ordinary test returns stops the run instead of producing a verdict.",
+   "tele": "Row one and row two are the two halves of the search. Row three is the torn page. Row four is the safety net: a status that no ordinary test returns stops the run instead of producing a verdict.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 31,
+   "line": 107,
+   "t0": 392.3,
+   "h": "88dc61a4",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "When bisect names M and both C and E are good, neither side introduced the fault. The fault is in the combination.",
+   "tele": "When bisect names `M` and both `C` and `E` are good, neither side introduced the fault. The fault is in the combination.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 32,
+   "line": 121,
+   "t0": 407.9,
+   "h": "23986a74",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     },
+     {
+      "at": 0.2,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 33,
+   "line": 123,
+   "t0": 416.7,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Exit 0 if the score line shows exact_match=0.800. Exit 1 if there is a score line with another value. Exit 125 if the runner can't produce a score line at all. Notice the path: one directory above the repository. The whole search is now two commands. Predict which commit it will name. Say it out loud. I'll wait.",
+   "tele": "Exit 0 if the score line shows `exact_match=0.800`. Exit 1 if there is a score line with another value. Exit 125 if the runner can't produce a score line at all. Notice the path: one directory above the repository. The whole search is now two commands. Predict which commit it will name. Say it out loud. I'll wait.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 34,
+   "line": 148,
+   "t0": 418.2,
+   "h": "dcf144f7",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 34,
+   "line": 150,
+   "t0": 441.4,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 36,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "page",
+   "hold": 3.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 3.0,
+   "slide": 35,
+   "line": null,
+   "t0": 445.9,
+   "h": "",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "d926d3c again. The same sequence of commits as your manual session, without a human verdict. Now check what the 125 did.",
+   "tele": "`d926d3c` again. The same sequence of commits as your manual session, without a human verdict. Now check what the 125 did.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 36,
+   "line": 194,
+   "t0": 448.9,
+   "h": "6bf0941f",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The line for 074d492 says skip. The crash was recorded as \"no verdict\", not as bad. That's the overnight mistake from the opening, avoided.",
+   "tele": "The line for `074d492` says skip. The crash was recorded as \"no verdict\", not as bad. That's the overnight mistake from the opening, avoided.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 37,
+   "line": 225,
+   "t0": 457.3,
+   "h": "e844f76a",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The same test fits on one line, with a weakness.",
+   "tele": "The same test fits on one line, with a weakness.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 37,
+   "line": 227,
+   "t0": 466.9,
+   "h": "e68e5273",
+   "anim": {
+    "group": 30,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The exit status of grep is the verdict. It works here because the range was chosen to contain no crashing commit. A crash would count as bad. Use the one-liner only when you know that.",
+   "tele": "The exit status of `grep` is the verdict. It works here because the range was chosen to contain no crashing commit. A crash would count as bad. Use the one-liner only when you know that.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 38,
+   "line": 267,
+   "t0": 470.9,
+   "h": "eb878b48",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now two failures. Quick quiz, three options. Is an exit status of 200 recorded as bad, recorded as a skip, or does the run stop? Say it out loud.",
+   "tele": "Now two failures. Quick quiz, three options. Is an exit status of 200 recorded as bad, recorded as a skip, or does the run stop? Say it out loud.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 39,
+   "line": 269,
+   "t0": 484.9,
+   "h": "a41059b3",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 39,
+   "line": 271,
+   "t0": 496.5,
+   "h": "",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It stops. \"bisect run failed\": the code is outside the protocol and the run stops. And a mistyped path. Shells return 127 for \"command not found\", which the protocol would read as bad.",
+   "tele": "It stops. \"bisect run failed\": the code is outside the protocol and the run stops. And a mistyped path. Shells return 127 for \"command not found\", which the protocol would read as bad.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 40,
+   "line": 294,
+   "t0": 501.0,
+   "h": "4c514e49",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Git 2.55 doesn't take 126 or 127 at face value on the first step. It runs the command on the known good commit as well, and stops when it gets the same code there: \"bogus exit code 127 for 'good' revision\".",
+   "tele": "Git 2.55 doesn't take 126 or 127 at face value on the first step. It runs the command on the known good commit as well, and stops when it gets the same code there: \"bogus exit code 127 for 'good' revision\".",
+   "words": 41,
+   "est": 16.4,
+   "slide": 41,
+   "line": 321,
+   "t0": 514.2,
+   "h": "054c4bbd",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One more failure from the same script: a dirty working tree.",
+   "tele": "One more failure from the same script: a dirty working tree.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 41,
+   "line": 323,
+   "t0": 530.6,
+   "h": "5cda08c5",
+   "anim": {
+    "group": 34,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "An uncommitted edit in a file that differs between the commits to visit, and the checkout is refused. Start from a clean tree.",
+   "tele": "An uncommitted edit in a file that differs between the commits to visit, and the checkout is refused. Start from a clean tree.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 42,
+   "line": 344,
+   "t0": 535.0,
+   "h": "46d4d0c5",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.8,
+   "slide": 43,
+   "line": null,
+   "t0": 544.2,
+   "h": "",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.06,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The subcommands are broken and fixed now. For the run, think positionally: exit 0 must mean the old state, which here is \"broken\". grep -q KeyError exits 0 when it finds the crash.",
+   "tele": "The subcommands are `broken` and `fixed` now. For the run, think positionally: exit 0 must mean the old state, which here is \"broken\". `grep -q KeyError` exits 0 when it finds the crash.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 44,
+   "line": 375,
+   "t0": 550.0,
+   "h": "0a77fdf2",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.41,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "\"be9ad1b4894348317c1e7ccb8276b8ad4760fb89 is the first 'fixed' commit\". Save the session before you end it.",
+   "tele": "\"`be9ad1b4894348317c1e7ccb8276b8ad4760fb89` is the first 'fixed' commit\". Save the session before you end it.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 45,
+   "line": 407,
+   "t0": 563.2,
+   "h": "e1f55440",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 7.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 7.8,
+   "slide": 46,
+   "line": null,
+   "t0": 568.4,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 6.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 6.8,
+   "slide": 47,
+   "line": null,
+   "t0": 576.2,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.76,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The replay reaches the same commit without running one test. This file is what you hand to a colleague, and what you edit when one verdict was wrong.",
+   "tele": "The replay reaches the same commit without running one test. This file is what you hand to a colleague, and what you edit when one verdict was wrong.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 48,
+   "line": 465,
+   "t0": 583.0,
+   "h": "c36a8a60",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Within one session the vocabulary is fixed.",
+   "tele": "Within one session the vocabulary is fixed.",
+   "words": 7,
+   "est": 2.8,
+   "slide": 49,
+   "line": 469,
+   "t0": 594.2,
+   "h": "0131deea",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now --first-parent. Predict the candidate count.",
+   "tele": "Now `--first-parent`. Predict the candidate count.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 50,
+   "line": 489,
+   "t0": 597.0,
+   "h": "cf7d7539",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 1.68,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Eighteen candidates instead of twenty, and a different first commit to test, be9ad1b. --first-parent changes the candidate set, and with it the path of the search.",
+   "tele": "Eighteen candidates instead of twenty, and a different first commit to test, `be9ad1b`. `--first-parent` changes the candidate set, and with it the path of the search.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 51,
+   "line": 513,
+   "t0": 599.4,
+   "h": "b6eb2f59",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.84,
+      "dissolve": true
+     },
+     {
+      "at": 0.527,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.44,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "And the start that is the wrong way round.",
+   "tele": "And the start that is the wrong way round.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 51,
+   "line": 515,
+   "t0": 609.8,
+   "h": "546e1aa3",
+   "anim": {
+    "group": 44,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Git checks that every good commit is an ancestor of the bad one, and says so when it's not.",
+   "tele": "Git checks that every good commit is an ancestor of the bad one, and says so when it's not.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 52,
+   "line": 533,
+   "t0": 613.4,
+   "h": "2fad9918",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.0,
+   "slide": 53,
+   "line": null,
+   "t0": 621.0,
+   "h": "",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 54,
+   "line": 537,
+   "t0": 626.0,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 55,
+   "line": 539,
+   "t0": 627.5,
+   "h": "76698d9b",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "A two-outcome test. Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+   "tele": "A two-outcome test. Root cause: a crash and a wrong result both exit non-zero, so an untestable commit is recorded as bad; exit 125 for \"cannot tell\".",
+   "words": 27,
+   "est": 10.8,
+   "slide": 56,
+   "line": 541,
+   "t0": 629.5,
+   "h": "a111d82e",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "A test script tracked in the repository. Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+   "tele": "A test script tracked in the repository. Root cause: each checkout replaces it with that commit's version, or removes it in commits that predate it.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 57,
+   "line": 541,
+   "t0": 640.3,
+   "h": "6fb9fdc1",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "A flaky or environment-dependent test. Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+   "tele": "A flaky or environment-dependent test. Root cause: bisect accepts every verdict as fact and converges on an innocent commit without complaint; fix seeds, pin the data, compare against a threshold with a margin, and rebuild what is derived from the sources at every step.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 58,
+   "line": 541,
+   "t0": 650.3,
+   "h": "d8df4a65",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Custom terms with the exit statuses reversed. Root cause: for git bisect run the mapping is positional; 0 is the old state whatever word you chose.",
+   "tele": "Custom terms with the exit statuses reversed. Root cause: for `git bisect run` the mapping is positional; 0 is the old state whatever word you chose.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 59,
+   "line": 541,
+   "t0": 667.9,
+   "h": "837bc90f",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Bisecting in a shallow clone. Root cause: bisect can only visit commits that exist locally, and in a clone made with --depth, as CI checkouts often are, the good commit may not be present at all.",
+   "tele": "Bisecting in a shallow clone. Root cause: bisect can only visit commits that exist locally, and in a clone made with `--depth`, as CI checkouts often are, the good commit may not be present at all.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 60,
+   "line": 541,
+   "t0": 678.3,
+   "h": "ec288914",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 61,
+   "line": 547,
+   "t0": 692.7,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A team evaluating an LLM application sees answer quality on a regression set drop after a week of merges. The evaluation takes twenty minutes and its score varies slightly from run to run.",
+   "tele": "Now, out of the lab. A team evaluating an LLM application sees answer quality on a regression set drop after a week of merges. The evaluation takes twenty minutes and its score varies slightly from run to run.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 62,
+   "line": 549,
+   "t0": 694.2,
+   "h": "0965269d",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "They apply the three rules of section 14A.21. They make the test as small as the symptom allows: twelve prompts that separated last week's build from today's, not the full suite. They make it deterministic: fixed seeds, pinned data, and a threshold with a margin between the good score and the bad one. And they rebuild what is derived from the sources at every step: installed packages, compiled extensions, caches. The script exits 125 when the package can't be installed.",
+   "tele": "They apply the three rules of section 14A.21. They make the test as small as the symptom allows: twelve prompts that separated last week's build from today's, not the full suite. They make it deterministic: fixed seeds, pinned data, and a threshold with a margin between the good score and the bad one. And they rebuild what is derived from the sources at every step: installed packages, compiled extensions, caches. The script exits 125 when the package can't be installed.",
+   "words": 80,
+   "est": 32.0,
+   "slide": 63,
+   "line": 551,
+   "t0": 709.4,
+   "h": "afe807c1",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Bisect names a merge commit. Both parents pass. On the picture, that's M, with its parents E and C. So nothing on either side is wrong by itself: one side renamed a prompt template field and the other added a caller of the old name. The merge was textually clean and semantically wrong. They look at the combined result of the merge, not at either branch.",
+   "tele": "Bisect names a merge commit. Both parents pass. On the picture, that's `M`, with its parents `E` and `C`. So nothing on either side is wrong by itself: one side renamed a prompt template field and the other added a caller of the old name. The merge was textually clean and semantically wrong. They look at the combined result of the merge, not at either branch.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 64,
+   "line": 555,
+   "t0": 741.4,
+   "h": "127c3b5f",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 65,
+   "line": 559,
+   "t0": 767.8,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 11.5, \"An automated git bisect run\", in lab-manual/m11-history-forensics.md.",
+   "tele": "Your turn. Do Lab 11.5, \"An automated `git bisect run`\", in `lab-manual/m11-history-forensics.md`.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 66,
+   "line": 561,
+   "t0": 769.3,
+   "h": "2c69cdd0",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The lab runs the two-outcome test first. Before you run it, predict which commit it will name and why that commit is wrong. Then write the three-outcome script and predict which line of git bisect log will change.",
+   "tele": "The lab runs the two-outcome test first. Before you run it, predict which commit it will name and why that commit is wrong. Then write the three-outcome script and predict which line of `git bisect log` will change.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 67,
+   "line": 563,
+   "t0": 774.1,
+   "h": "1a72a8c2",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 11.11, Level 5, \"Retrieval quality dropped on Friday\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "The challenge is Exercise 11.11, Level 5, \"Retrieval quality dropped on Friday\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 68,
+   "line": 565,
+   "t0": 789.3,
+   "h": "f3c5304d",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 69,
+   "line": 567,
+   "t0": 794.9,
+   "h": "",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Pause and answer out loud.",
+   "tele": "Pause and answer out loud.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 70,
+   "line": 571,
+   "t0": 796.4,
+   "h": "062dffe0",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 76,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 70,
+   "line": 573,
+   "t0": 798.4,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 77,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer doesn't treat the result as a tool failure. It says what the result means about where the fault is, using the vocabulary of the merge videos: textually clean, semantically wrong. It says what to examine next and how, in terms of the merge's result against each parent.",
+   "tele": "A strong answer doesn't treat the result as a tool failure. It says what the result means about where the fault is, using the vocabulary of the merge videos: textually clean, semantically wrong. It says what to examine next and how, in terms of the merge's result against each parent.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 71,
+   "line": 577,
+   "t0": 802.9,
+   "h": "e719107b",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "It separates this case from the one where --first-parent was used on purpose, in which a merge is the expected answer and stands for a whole branch. And it includes the check that applies to every surprising bisect result: confirm the verdicts at the reported commit and at its parents by hand.",
+   "tele": "It separates this case from the one where `--first-parent` was used on purpose, in which a merge is the expected answer and stands for a whole branch. And it includes the check that applies to every surprising bisect result: confirm the verdicts at the reported commit and at its parents by hand.",
+   "words": 52,
+   "est": 20.8,
+   "slide": 71,
+   "line": 577,
+   "t0": 822.9,
+   "h": "3794688d",
+   "anim": {
+    "group": 60,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 72,
+   "line": 581,
+   "t0": 843.7,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 80,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 73,
+   "line": 583,
+   "t0": 845.2,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 81,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git bisect run reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+   "tele": "`git bisect run` reads the exit status: 0 is the old state, 1 to 127 except 125 is the new state, 125 is skip, anything else aborts.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 74,
+   "line": 585,
+   "t0": 849.2,
+   "h": "2acc39fe",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 82,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The test script lives outside the tree being tested and must be deterministic.",
+   "tele": "The test script lives outside the tree being tested and must be deterministic.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 75,
+   "line": 585,
+   "t0": 860.0,
+   "h": "61ae3de2",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 83,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Custom terms rename the subcommands; they do not change which exit status means old.",
+   "tele": "Custom terms rename the subcommands; they do not change which exit status means old.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 76,
+   "line": 585,
+   "t0": 865.2,
+   "h": "de703a3f",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 84,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git bisect log is a replayable record: I can save it, edit it and replay it.",
+   "tele": "`git bisect log` is a replayable record: I can save it, edit it and replay it.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 77,
+   "line": 585,
+   "t0": 870.8,
+   "h": "cde3d933",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A merge named as the culprit, with both parents good, means the fault is in the combination.",
+   "tele": "A merge named as the culprit, with both parents good, means the fault is in the combination.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 78,
+   "line": 585,
+   "t0": 877.2,
+   "h": "4744a660",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 79,
+   "line": 591,
+   "t0": 884.0,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 87,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 14A.21, 14A.22 and 14A.25 to 14A.27 of Chapter 14A. Then do the Practice section, 14A.29.",
+   "tele": "Read sections 14A.21, 14A.22 and 14A.25 to 14A.27 of Chapter 14A. Then do the Practice section, 14A.29.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 80,
+   "line": 593,
+   "t0": 885.5,
+   "h": "a01cccd0",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 88,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you handed the verdicts to a script, and you know the three numbers that keep it honest. Write the three-outcome script in the lab before the next video. Next time: what Git keeps, and the reflog. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you handed the verdicts to a script, and you know the three numbers that keep it honest. Write the three-outcome script in the lab before the next video. Next time: what Git keeps, and the reflog. Until then, look at the state first and type second. See you in the next one.",
+   "words": 53,
+   "est": 21.2,
+   "slide": 81,
+   "line": 597,
+   "t0": 892.3,
+   "h": "6369d337",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 913.5,
+ "narration_words": 2114,
+ "warnings": [],
+ "anim_version": 3
+}

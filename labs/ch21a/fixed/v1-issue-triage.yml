@@ -1,0 +1,33 @@
+# Reference fix for Lab 29.1 (see solutions/m29-vulnerable-workflows.md).
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# What it does: when an issue is opened, adds the label "triage" and writes a line to the job summary.
+
+name: issue-triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  triage:
+    name: Label the new issue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Add the triage label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: gh issue edit "$ISSUE_NUMBER" --add-label triage
+
+      - name: Record the issue in the job summary
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          echo "Labelled issue #$ISSUE_NUMBER: $ISSUE_TITLE" >> "$GITHUB_STEP_SUMMARY"

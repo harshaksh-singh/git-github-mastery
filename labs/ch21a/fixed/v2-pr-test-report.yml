@@ -1,0 +1,42 @@
+# Reference fix for Lab 29.1 (see solutions/m29-vulnerable-workflows.md).
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# What it does: runs the test suite for a pull request and writes the result to the job summary,
+# including on pull requests that come from forks.
+
+name: pr-test-report
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install the locked dependencies
+        run: uv sync --locked
+
+      - name: Test
+        id: test
+        run: uv run pytest
+
+      - name: Write the result to the job summary
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.test.outcome }}
+        run: |
+          echo "Test result: $OUTCOME" >> "$GITHUB_STEP_SUMMARY"

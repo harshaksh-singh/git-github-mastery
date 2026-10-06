@@ -1,0 +1,1060 @@
+1
+00:00:04,500 --> 00:00:09,078
+An engineer pushes a commit, which
+sends it to the team's shared server.
+
+2
+00:00:09,118 --> 00:00:14,208
+Then they notice a typo in the message,
+fix it with git commit --amend, and push
+
+3
+00:00:14,248 --> 00:00:19,467
+again. The push is rejected. Git prints a
+hint: use git pull before pushing again.
+
+4
+00:00:19,807 --> 00:00:23,818
+They pull, which fetches the
+server's commits and merges them in.
+
+5
+00:00:23,858 --> 00:00:28,741
+Now the history has the old commit, the
+new commit, and a merge of the two: two
+
+6
+00:00:28,781 --> 00:00:32,481
+versions of one change, joined
+together, on a shared branch.
+
+7
+00:00:32,521 --> 00:00:35,098
+Was pulling the right move? Say yes or no.
+
+8
+00:00:37,438 --> 00:00:42,028
+No. The hint was the wrong advice for this
+situation, and following it made things
+
+9
+00:00:42,068 --> 00:00:45,754
+worse. To see why, you need one
+fact: amend doesn't edit a commit.
+
+10
+00:00:45,794 --> 00:00:50,270
+It creates a sibling, and moves your branch
+to it. Today is about that fact, and
+
+11
+00:00:50,310 --> 00:00:54,279
+about what makes a commit good enough
+that you rarely need to amend it.
+
+12
+00:00:54,319 --> 00:00:57,666
+And you'll leave with the two
+right moves for that engineer.
+
+13
+00:00:59,506 --> 00:01:03,310
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:03,350 --> 00:01:07,470
+This video closes the block on
+commits with five practical topics.
+
+15
+00:01:07,810 --> 00:01:12,051
+git commit --amend: what it creates,
+and where the old commit goes.
+
+16
+00:01:12,091 --> 00:01:17,162
+Empty commits. Trailers: structured lines
+at the end of a message that tools can
+
+17
+00:01:17,202 --> 00:01:20,549
+parse. How Git reads a
+message, and how to write one.
+
+18
+00:01:20,589 --> 00:01:24,383
+And atomic commits: commits that
+can be reverted one by one.
+
+19
+00:01:24,423 --> 00:01:29,750
+At the end, a short look at where a signature
+is stored, as a preview of the part on
+
+20
+00:01:29,790 --> 00:01:30,325
+security.
+
+21
+00:01:32,165 --> 00:01:33,743
+Here's what you'll walk away with.
+
+22
+00:01:34,083 --> 00:01:35,496
+After this video you can:
+
+23
+00:01:35,836 --> 00:01:40,656
+Show that git commit --amend creates
+a new commit, and find the old one.
+
+24
+00:01:40,996 --> 00:01:44,320
+Predict what happens when an amended
+commit had already been pushed.
+
+25
+00:01:44,660 --> 00:01:47,453
+Write trailers that Git
+recognizes, and query them.
+
+26
+00:01:47,793 --> 00:01:52,558
+Split work into atomic commits, and justify
+the split by what a revert would do.
+
+27
+00:01:52,898 --> 00:01:55,605
+Say where a signature is
+stored in a commit object.
+
+28
+00:01:57,445 --> 00:02:02,609
+Amend. In one sentence: git commit --amend
+writes a new commit that takes the place
+
+29
+00:02:02,649 --> 00:02:07,374
+of the current one: same parent, new
+tree and message as you choose, new ID.
+
+30
+00:02:07,414 --> 00:02:08,377
+It is 🟡 CAUTION.
+
+31
+00:02:08,717 --> 00:02:14,100
+Quick quiz, three options. What happens to
+the old commit: is it edited, deleted, or
+
+32
+00:02:14,140 --> 00:02:16,359
+left where it was? Say your answer.
+
+33
+00:02:21,199 --> 00:02:25,805
+Left where it was. The manual's description
+is "Replace the tip of the current
+
+34
+00:02:25,845 --> 00:02:30,452
+branch by creating a new commit", and
+"The new commit has the same parents and
+
+35
+00:02:30,492 --> 00:02:34,919
+author as the current one". The old
+commit is neither modified nor deleted.
+
+36
+00:02:34,959 --> 00:02:39,386
+The branch stops pointing at it, and
+only reflog entries still refer to it.
+
+37
+00:02:39,426 --> 00:02:43,198
+The reflog is Git's local journal
+of where a branch has pointed.
+
+38
+00:02:43,538 --> 00:02:48,836
+How long the old commit survives. By default,
+a reflog entry that is not reachable
+
+39
+00:02:48,876 --> 00:02:53,587
+from the current tip expires after 30
+days, and any other entry after 90.
+
+40
+00:02:53,627 --> 00:02:59,054
+An object that no ref and no reflog entry
+refers to is pruned by maintenance once it
+
+41
+00:02:59,094 --> 00:03:03,936
+is more than two weeks old. A ref is a
+name for a commit, such as a branch.
+
+42
+00:03:03,976 --> 00:03:09,273
+The lab configuration sets the two reflog
+values to never, so replays don't depend
+
+43
+00:03:09,313 --> 00:03:10,315
+on the calendar.
+
+44
+00:03:10,655 --> 00:03:16,053
+When to amend, and when not. Amend freely
+while a commit exists only in your
+
+45
+00:03:16,093 --> 00:03:21,634
+repository. --no-edit keeps the message,
+--only leaves staged changes out, and
+
+46
+00:03:21,674 --> 00:03:27,502
+--reset-author repairs a wrong identity.
+Remember that everything staged goes into
+
+47
+00:03:27,542 --> 00:03:29,720
+an amend unless you say --only.
+
+48
+00:03:30,060 --> 00:03:34,759
+Don't amend what others may have: on a
+shared branch an amend produces a divergence
+
+49
+00:03:34,799 --> 00:03:39,384
+for every colleague. And an amend doesn't
+delete anything: a secret committed and
+
+50
+00:03:39,424 --> 00:03:44,066
+then amended away is still in the old
+commit, in your reflog, and on the server if
+
+51
+00:03:44,106 --> 00:03:45,950
+it was pushed. Rotate the secret.
+
+52
+00:03:46,290 --> 00:03:51,438
+Empty commits. An empty commit has the same
+tree as its parent: a point in history
+
+53
+00:03:51,478 --> 00:03:55,550
+with a message and no change.
+Without --allow-empty, Git refuses.
+
+54
+00:03:55,590 --> 00:04:00,801
+The manual says the option "is primarily
+for use by foreign SCM interface scripts".
+
+55
+00:04:00,841 --> 00:04:05,609
+Teams use it to start a push-triggered
+pipeline, an automated build, without
+
+56
+00:04:05,649 --> 00:04:10,607
+touching a file. Two cautions from the
+textbook. A pipeline filtered by changed
+
+57
+00:04:10,647 --> 00:04:14,656
+paths has no path to match, so an
+empty commit may not start it.
+
+58
+00:04:14,696 --> 00:04:18,515
+And the commit stays in history.
+Empty commits are permanent.
+
+59
+00:04:18,855 --> 00:04:23,893
+Trailers. In one sentence: a trailer is a
+Key: value line in the last paragraph of a
+
+60
+00:04:23,933 --> 00:04:28,851
+commit message: ordinary text, placed where
+Git and other tools can find and parse
+
+61
+00:04:28,891 --> 00:04:33,747
+it. git commit -s adds a Signed-off-by
+trailer with the committer's identity, and
+
+62
+00:04:33,787 --> 00:04:38,765
+--trailer adds any other. The trailers are
+part of the message, so they are part of
+
+63
+00:04:38,805 --> 00:04:40,700
+the commit object and of its ID.
+
+64
+00:04:41,040 --> 00:04:45,822
+The rules. Git recognises a trailer block
+only at the end of the message, after an
+
+65
+00:04:45,862 --> 00:04:50,703
+empty line. Every line of the block must
+be a trailer, unless at least a quarter of
+
+66
+00:04:50,743 --> 00:04:55,113
+the lines are, and one of them has a
+key that Git generates itself, such as
+
+67
+00:04:55,153 --> 00:04:58,289
+Signed-off-by, or a key
+defined in your configuration.
+
+68
+00:04:58,629 --> 00:05:03,432
+What they mean. Signed-off-by: a statement
+defined by the project, commonly the
+
+69
+00:05:03,472 --> 00:05:07,969
+Developer Certificate of Origin. It's
+text, not a cryptographic signature.
+
+70
+00:05:08,009 --> 00:05:12,261
+Co-authored-by: credit for a further
+author. Git only stores the line.
+
+71
+00:05:12,301 --> 00:05:16,859
+Others such as Reviewed-by, Refs and
+Fixes mean whatever your team defines.
+
+72
+00:05:17,199 --> 00:05:23,035
+Version notes from the textbook. git
+commit --trailer exists since Git 2.32.
+
+73
+00:05:23,075 --> 00:05:29,298
+git shortlog --group=trailer:<key> since
+Git 2.29. And up to Git 2.55 the trailer
+
+74
+00:05:29,338 --> 00:05:33,937
+parser can take a line that
+begins with a URL for a trailer.
+
+75
+00:05:33,977 --> 00:05:39,813
+Git 2.56 no longer does. That last one
+is "added in Git 2.56, not run here".
+
+76
+00:05:40,153 --> 00:05:45,155
+How Git reads a message. Two rules matter.
+First, the title is the text up to the
+
+77
+00:05:45,195 --> 00:05:50,384
+first empty line, not the first line. Without
+the empty line, your body becomes part
+
+78
+00:05:50,424 --> 00:05:55,365
+of the title. Second, when a message passes
+through the editor, lines that begin
+
+79
+00:05:55,405 --> 00:05:59,287
+with # are comments and are
+removed. Don't start a line with #.
+
+80
+00:05:59,627 --> 00:06:00,980
+Craft, with the reasons.
+
+81
+00:06:01,320 --> 00:06:06,773
+A title of about 50 characters without a
+full stop: because, in the manual's words,
+
+82
+00:06:06,813 --> 00:06:11,934
+"that title is used throughout Git":
+one-line logs, shortlog, branch listings,
+
+83
+00:06:11,974 --> 00:06:16,831
+reflogs, mail subjects and patch file
+names. An empty line, then the body.
+
+84
+00:06:17,171 --> 00:06:22,029
+Imperative mood, "Retry judge calls", not
+"Retried": the Git project asks for it,
+
+85
+00:06:22,069 --> 00:06:26,987
+"as if you are giving orders to the codebase".
+The body states the problem and why
+
+86
+00:06:27,027 --> 00:06:31,401
+this solution: the diff shows what
+changed, and nothing else records why.
+
+87
+00:06:31,441 --> 00:06:34,908
+Lines of at most about 72
+characters: Git doesn't re-wrap.
+
+88
+00:06:34,948 --> 00:06:37,267
+And machine-readable facts as trailers.
+
+89
+00:06:37,607 --> 00:06:41,871
+Team conventions such as Conventional
+Commits add a pattern to the title.
+
+90
+00:06:41,911 --> 00:06:46,528
+They're agreements on top of Git, enforced
+by hooks or CI if at all, meaning by
+
+91
+00:06:46,568 --> 00:06:49,240
+scripts on your machine
+or checks on a server.
+
+92
+00:06:49,580 --> 00:06:54,240
+Atomic commits. An atomic commit contains
+one logical change, complete enough that
+
+93
+00:06:54,280 --> 00:06:58,596
+the project still builds and passes its
+tests. The Git project's rule: "Make
+
+94
+00:06:58,636 --> 00:07:03,411
+separate commits for logically separate
+changes". The test of a good split is what a
+
+95
+00:07:03,451 --> 00:07:07,824
+revert would do. git revert is 🟡 CAUTION:
+it adds one commit that applies the
+
+96
+00:07:07,864 --> 00:07:12,524
+inverse change. In the picture from today's
+demo, that's the third commit, undoing
+
+97
+00:07:12,564 --> 00:07:13,154
+the second.
+
+98
+00:07:13,494 --> 00:07:18,423
+Signatures. A signed commit carries its
+signature inside the commit object, in a
+
+99
+00:07:18,463 --> 00:07:21,963
+gpgsig header between the
+committer line and the message.
+
+100
+00:07:22,003 --> 00:07:27,118
+Because it's inside the object, it's covered
+by the commit ID, and signing a commit
+
+101
+00:07:27,158 --> 00:07:31,963
+that already exists means writing a new
+commit. Don't confuse the two options:
+
+102
+00:07:32,003 --> 00:07:36,310
+capital -S signs with a key, and
+small -s adds the Signed-off-by text.
+
+103
+00:07:38,150 --> 00:07:42,545
+For amend, forget the word "edit".
+Picture a fork with two short prongs.
+
+104
+00:07:42,585 --> 00:07:46,980
+Both prongs grow from the same parent.
+One is the commit you made first.
+
+105
+00:07:47,020 --> 00:07:52,031
+The other is the commit amend made. The
+branch label is moved from the first prong
+
+106
+00:07:52,071 --> 00:07:54,064
+to the second. Nothing is erased.
+
+107
+00:07:54,404 --> 00:07:58,571
+Now read the hook with that picture.
+The server holds the first prong.
+
+108
+00:07:58,611 --> 00:08:03,438
+You hold the second. Your branch is one
+commit ahead and one commit behind at the
+
+109
+00:08:03,478 --> 00:08:07,705
+same time. A pull merges the prongs.
+That's why the hint is wrong here.
+
+110
+00:08:08,045 --> 00:08:11,449
+The model's limit: the first
+prong is not permanent.
+
+111
+00:08:11,489 --> 00:08:16,947
+It's kept by reflog entries, and those
+expire. So "nothing is erased" is true today
+
+112
+00:08:16,987 --> 00:08:18,338
+and has a time limit.
+
+113
+00:08:20,178 --> 00:08:26,340
+One parent, d4c9fab. Two children. The
+upper one, 831f9ff, has the typo, and is
+
+114
+00:08:26,380 --> 00:08:31,129
+reachable only from the reflog
+entries HEAD@{1} and main@{1}.
+
+115
+00:08:31,169 --> 00:08:37,723
+The lower one, 8f6fa22, carries the branch
+label. No arrow leads from one sibling to
+
+116
+00:08:37,763 --> 00:08:42,355
+the other: the new commit doesn't
+know the old one existed.
+
+117
+00:08:46,695 --> 00:08:50,681
+A commit with a typo in its
+message, and a forgotten test file.
+
+118
+00:08:50,721 --> 00:08:55,856
+git commit --amend 🟡 CAUTION. Predict:
+after the amend, how many commits does git
+
+119
+00:08:55,896 --> 00:08:59,306
+log show, two or three, and
+what is the ID of the tip?
+
+120
+00:08:59,346 --> 00:09:00,329
+Say it out loud.
+
+121
+00:09:05,169 --> 00:09:09,899
+Still two commits. The log shows
+8f6fa22 where 831f9ff was.
+
+122
+00:09:09,939 --> 00:09:16,044
+The Date: line in the summary is the
+author date, carried over by the amend.
+
+123
+00:09:16,084 --> 00:09:20,005
+Where is 831f9ff now? Say
+it out loud. I'll wait.
+
+124
+00:09:24,845 --> 00:09:30,161
+In the reflog, one entry down. git cat-file
+-p 'HEAD@{1}' prints the old object:
+
+125
+00:09:30,201 --> 00:09:35,516
+same parent, same author line, and a
+different tree, committer time and message.
+
+126
+00:09:35,556 --> 00:09:37,659
+Two commits that share a parent.
+
+127
+00:09:37,999 --> 00:09:43,169
+No branch contains the old commit,
+and git log --all doesn't list it.
+
+128
+00:09:43,209 --> 00:09:49,285
+git fsck --no-reflogs reports it as dangling:
+only the reflog still refers to it.
+
+129
+00:09:49,625 --> 00:09:53,783
+Give it a name with git branch 🟢 SAFE,
+and it's an ordinary commit again.
+
+130
+00:09:53,823 --> 00:09:55,451
+The graph now shows the fork.
+
+131
+00:09:55,791 --> 00:10:00,751
+The commit has been pushed. Then it's
+amended. Predict what git status -sb says
+
+132
+00:10:00,791 --> 00:10:05,941
+about main and origin/main, the label for
+where the server's branch was last seen.
+
+133
+00:10:06,281 --> 00:10:11,247
+[ahead 1, behind 1] is the diagnosis:
+your branch has the new commit, and the
+
+134
+00:10:11,287 --> 00:10:12,873
+upstream has the old one.
+
+135
+00:10:13,213 --> 00:10:18,037
+git push 🟡 CAUTION is rejected as a
+non-fast-forward, and the hint says to pull.
+
+136
+00:10:18,077 --> 00:10:21,990
+Don't follow the hint: it would
+merge two versions of one commit.
+
+137
+00:10:22,030 --> 00:10:25,578
+Here are the two right moves I
+promised, from the textbook.
+
+138
+00:10:25,618 --> 00:10:30,626
+If others may have the published commit,
+return to it with git reset --soft '@{u}',
+
+139
+00:10:30,666 --> 00:10:34,031
+which is 🟡 CAUTION, and fix
+the mistake in a new commit.
+
+140
+00:10:34,071 --> 00:10:38,409
+If the branch is yours alone, replace
+the published commit deliberately.
+
+141
+00:10:38,449 --> 00:10:39,930
+That's a topic of Part 2.
+
+142
+00:10:42,770 --> 00:10:45,706
+Without the option, Git
+refuses with exit status 1.
+
+143
+00:10:45,746 --> 00:10:49,266
+With it, the new commit and its
+parent have the same tree ID.
+
+144
+00:10:52,106 --> 00:10:56,902
+-s and two --trailer options. Three
+trailers at the end of the message.
+
+145
+00:10:57,242 --> 00:11:02,213
+Three ways to read them back, and one to
+count by them: git interpret-trailers
+
+146
+00:11:02,253 --> 00:11:07,479
+--parse, the %(trailers) format with a key,
+and git shortlog grouped by a trailer.
+
+147
+00:11:07,819 --> 00:11:11,965
+Now the rules, as five cases.
+Try it on paper, thirty seconds.
+
+148
+00:11:12,005 --> 00:11:16,961
+One: the trailer alone, after an empty
+line. Two: no empty line before it.
+
+149
+00:11:17,001 --> 00:11:22,631
+Three: a sentence in the same block. Four:
+that sentence again, with Refs configured
+
+150
+00:11:22,671 --> 00:11:27,964
+as a key. Five: more text after the block.
+For each, will Git find the trailer?
+
+151
+00:11:28,004 --> 00:11:30,125
+Pause me, and write your answer.
+
+152
+00:11:34,965 --> 00:11:39,135
+In order: recognised. No empty
+line before it: not recognised.
+
+153
+00:11:39,175 --> 00:11:44,840
+A sentence inside the block: not recognised.
+The same with Refs configured as a key:
+
+154
+00:11:44,880 --> 00:11:49,323
+recognised. Text after the block:
+not recognised. Two out of five.
+
+155
+00:11:49,363 --> 00:11:52,651
+If you got case four wrong,
+almost everyone does.
+
+156
+00:11:55,491 --> 00:11:59,048
+A message that states the problem and
+why this solution, with trailers.
+
+157
+00:11:59,388 --> 00:12:02,643
+The title appears wherever Git
+needs one line for a commit.
+
+158
+00:12:02,683 --> 00:12:07,055
+Compare it with the title of the commit
+above it, "fix stuff", in each of these
+
+159
+00:12:07,095 --> 00:12:07,557
+listings.
+
+160
+00:12:07,897 --> 00:12:10,263
+And in a mail subject
+and a patch file name.
+
+161
+00:12:13,103 --> 00:12:18,021
+Two unrelated edits in the working tree, a
+bug fix and a dependency bump, committed
+
+162
+00:12:18,061 --> 00:12:21,546
+separately. Then the new
+dependency breaks the nightly run.
+
+163
+00:12:21,586 --> 00:12:25,548
+git revert 🟡 CAUTION. Predict what
+is left after reverting the tip.
+
+164
+00:12:25,888 --> 00:12:29,872
+The dependency bump was undone, and the
+bug fix stayed, because they were two
+
+165
+00:12:29,912 --> 00:12:30,290
+commits.
+
+166
+00:12:33,130 --> 00:12:37,925
+The gpgsig header sits between the committer
+line and the message, and continuation
+
+167
+00:12:37,965 --> 00:12:42,760
+lines begin with a space. It's inside the
+object. Keys, verification and trust come
+
+168
+00:12:42,800 --> 00:12:43,925
+later in the course.
+
+169
+00:12:45,765 --> 00:12:47,413
+Five mistakes to watch for.
+
+170
+00:12:47,753 --> 00:12:52,161
+git push rejected after an amend, then
+a pull. Root cause: the amend created a
+
+171
+00:12:52,201 --> 00:12:56,496
+sibling of the published commit; the
+pull merges two versions of one commit.
+
+172
+00:12:56,836 --> 00:13:02,603
+An amend swallowed unrelated staged changes.
+Root cause: everything staged goes into
+
+173
+00:13:02,643 --> 00:13:06,957
+an amend unless you say --only;
+run git status before amending.
+
+174
+00:13:07,297 --> 00:13:11,912
+A line of the message is missing. Root
+cause: the line began with # and the message
+
+175
+00:13:11,952 --> 00:13:14,997
+went through the editor, where
+such lines are comments.
+
+176
+00:13:15,337 --> 00:13:20,853
+git log --oneline shows a very long title.
+Root cause: there is no empty line after
+
+177
+00:13:20,893 --> 00:13:25,472
+the first line, and the title is the
+text up to the first empty line.
+
+178
+00:13:25,812 --> 00:13:31,333
+A trailer is not found by tooling. Root
+cause: it is not in the last paragraph, or a
+
+179
+00:13:31,373 --> 00:13:35,835
+sentence shares its block; add
+trailers with --trailer, not by hand.
+
+180
+00:13:37,675 --> 00:13:41,817
+Now, out of the lab. An evaluation
+team puts the ticket number and the
+
+181
+00:13:41,857 --> 00:13:46,538
+evaluation-run ID of each change into
+trailers. The textbook's reason: a ticket
+
+182
+00:13:46,578 --> 00:13:51,258
+number or a run ID in a trailer travels
+with the commit into every clone, and a
+
+183
+00:13:51,298 --> 00:13:56,038
+pull-request label doesn't. A year later,
+"which commits belong to this ticket?"
+
+184
+00:13:56,078 --> 00:13:59,624
+is one git log format away, on
+any machine, with no network.
+
+185
+00:13:59,964 --> 00:14:04,714
+And the atomic split pays off on the night
+the new tokenizer release breaks the
+
+186
+00:14:04,754 --> 00:14:08,534
+nightly run: one revert undoes
+the bump and leaves the bug fix.
+
+187
+00:14:08,574 --> 00:14:13,507
+The same separation lets you cherry-pick
+the fix to a release branch, and lets git
+
+188
+00:14:13,547 --> 00:14:18,237
+bisect stop on a commit small enough to
+read. Both tools have their own videos
+
+189
+00:14:18,277 --> 00:14:18,601
+later.
+
+190
+00:14:20,441 --> 00:14:25,845
+Your turn. Do Lab 3.1, "Amend a
+commit and find the old one", in
+
+191
+00:14:25,885 --> 00:14:28,056
+lab-manual/m03-commits.md.
+
+192
+00:14:28,396 --> 00:14:33,670
+Before the amend, write down the ID of
+the tip and predict three things: whether
+
+193
+00:14:33,710 --> 00:14:38,585
+that ID will still be printed by git
+log, by git reflog, and by git branch
+
+194
+00:14:38,625 --> 00:14:40,445
+--contains. Then check each.
+
+195
+00:14:42,285 --> 00:14:48,099
+Q33: "After git commit --amend, where is
+the old commit, how long does it stay, and
+
+196
+00:14:48,139 --> 00:14:49,792
+how do you get it back?"
+
+197
+00:14:52,132 --> 00:14:56,919
+Answer out loud. A strong answer says what
+still refers to the old commit and what
+
+198
+00:14:56,959 --> 00:15:01,569
+no longer does, gives the default retention
+periods and what removes the object
+
+199
+00:15:01,609 --> 00:15:06,455
+afterwards, and names the one-line recovery.
+Add what changes if the old commit had
+
+200
+00:15:06,495 --> 00:15:07,161
+been pushed.
+
+201
+00:15:09,001 --> 00:15:13,980
+Let's land this. You should now be able
+to say, in your own words: git commit
+
+202
+00:15:14,020 --> 00:15:19,324
+--amend creates a new commit with the same
+parent. The old one stays in the object
+
+203
+00:15:19,364 --> 00:15:23,691
+database, reachable only from the
+reflog, until its entries expire.
+
+204
+00:15:23,731 --> 00:15:28,905
+If the old commit was pushed, my branch
+is one ahead and one behind, and I don't
+
+205
+00:15:28,945 --> 00:15:30,013
+pull to fix that.
+
+206
+00:15:30,353 --> 00:15:35,280
+A trailer is a Key: value line in the last
+paragraph of the message, and Git parses
+
+207
+00:15:35,320 --> 00:15:40,008
+it only if the block follows the rules.
+The title is everything up to the first
+
+208
+00:15:40,048 --> 00:15:45,035
+empty line, and tools use it everywhere. An
+atomic commit is one logical change that
+
+209
+00:15:45,075 --> 00:15:49,642
+can be reverted alone. A signature lives
+in a gpgsig header inside the commit
+
+210
+00:15:49,682 --> 00:15:50,061
+object.
+
+211
+00:15:51,901 --> 00:15:59,700
+Read sections 6.7 to 6.15 of Chapter 6, and
+do the Practice section 6.17, including
+
+212
+00:15:59,740 --> 00:16:04,422
+Lab 3.3, "Trailers", in
+lab-manual/m03-commits.md.
+
+213
+00:16:04,762 --> 00:16:11,875
+Challenge: Exercise 3.9, Level 4, "a commit
+made on the meeting-room laptop", in
+
+214
+00:16:11,915 --> 00:16:14,825
+exercises/m01-m05-foundations.md.
+
+215
+00:16:15,165 --> 00:16:20,274
+Today you saw that an amend makes a sibling,
+and that finishes the block on commits.
+
+216
+00:16:20,314 --> 00:16:24,749
+Do the amend lab before the next video,
+and find the old commit yourself.
+
+217
+00:16:24,789 --> 00:16:29,836
+Next time: a branch is a ref, HEAD is a
+symbolic ref, and what a commit does to the
+
+218
+00:16:29,876 --> 00:16:34,004
+current branch. Until then, look at
+the state first and type second.
+
+219
+00:16:34,044 --> 00:16:35,475
+See you in the next one.

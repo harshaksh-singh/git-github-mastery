@@ -1,0 +1,56 @@
+# TEACHING MATERIAL. DO NOT USE THIS WORKFLOW IN A REAL REPOSITORY.
+# It contains five deliberately planted security weaknesses for Exercise 29.3 (Module 29).
+# Find them, name their class, and fix them. The analysis is in solutions/exercises-m26-m31.md.
+# Assembled from documented syntax and parse-checked with PyYAML; never executed on GitHub.
+#
+# What it does: when a tag v* is pushed, tests the project, publishes the package with a
+# cloud identity obtained through OIDC, and calls a shared notification workflow.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  publish:
+    name: Publish
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv build
+      - name: Assume the publishing role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.PUBLISH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Publish (simulated)
+        run: bash scripts/deploy.sh production
+
+  notify:
+    name: Notify
+    needs: publish
+    uses: YOUR-ORG/shared-workflows/.github/workflows/notify.yml@main
+    secrets: inherit

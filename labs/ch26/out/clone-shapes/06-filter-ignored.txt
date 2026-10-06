@@ -1,0 +1,24 @@
+# A path instead of a URL: the local transport copies files and ignores the filter.
+$ git clone --filter=blob:none server/orbit.git by-path
+Cloning into 'by-path'...
+warning: --filter is ignored in local clones; use file:// instead.
+done.
+$ git -C by-path cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c
+ 122 blob
+  96 commit
+   5 tag
+ 284 tree
+# A server that does not allow filters (uploadpack.allowFilter is false unless set):
+$ git -C server/orbit.git config set uploadpack.allowFilter false
+$ git clone --filter=blob:none "file://$PWD/server/orbit.git" refused
+Cloning into 'refused'...
+warning: filtering not recognized by server, ignoring
+$ git -C refused cat-file --batch-all-objects --batch-check='%(objecttype)' 2>/dev/null | sort | uniq -c
+ 122 blob
+  96 commit
+   5 tag
+ 284 tree
+# Both clones are complete, and both are nevertheless configured as partial clones:
+$ git -C refused config get remote.origin.partialclonefilter
+blob:none
+$ git -C server/orbit.git config set uploadpack.allowFilter true

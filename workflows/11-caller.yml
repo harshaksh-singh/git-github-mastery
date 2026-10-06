@@ -1,0 +1,48 @@
+# Workflow 11, part 2: the caller of workflows/11-reusable-workflow.yml.
+#
+# What it teaches (Chapter 20B, section 20B.6):
+#   * jobs.<job_id>.uses calls a whole workflow as one job; such a job has no steps and no runs-on
+#   * with passes inputs, secrets passes named secrets, needs.<job>.outputs reads the outputs
+#   * the caller's permissions are the ceiling for the called workflow
+#
+# Both files go into .github/workflows/ of the same repository. "./.github/workflows/..." means
+# "the same repository, at the commit this workflow is running on". Since 30 July 2026 the
+# documentation recommends the form "$/.github/workflows/..." on github.com for the same purpose
+# (it needs runner 2.336.0 or later and does not exist on GitHub Enterprise Server).
+#
+# Runs on: every push to main, and on demand.
+#
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Deploy with a reusable workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    name: Staging
+    uses: ./.github/workflows/11-reusable-workflow.yml
+    with:
+      environment: staging
+    secrets:
+      # A repository secret. An environment secret cannot be passed from here, because this
+      # job has no environment: the called job reads its own environment's secrets.
+      deploy-token: ${{ secrets.SHARED_DEPLOY_TOKEN }}
+
+  report:
+    name: Report
+    needs: staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Show the output of the called workflow
+        shell: bash
+        env:
+          REVISION: ${{ needs.staging.outputs.revision }}
+        run: echo "Staging now runs revision $REVISION" >> "$GITHUB_STEP_SUMMARY"

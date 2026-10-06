@@ -1,0 +1,35 @@
+$ git diff router/classify.py
+diff --cc router/classify.py
+index 4bb5074,eae5037..0000000
+--- a/router/classify.py
++++ b/router/classify.py
+@@@ -3,14 -3,22 +3,20 @@@
+  from router.scoring import blend
+  
+  THRESHOLD = 0.55
+ -DEFAULT_FALLBACK = "human_agent"
+ -TENANT_FALLBACK = {"acme-retail": "store_support"}
+ +FALLBACK = "human_agent"
+  
+  
+ -def fallback_for(tenant=None):
+ -    """The intent a message gets when no candidate is good enough."""
+ -    return TENANT_FALLBACK.get(tenant, DEFAULT_FALLBACK)
+ -
+ -
+ -def classify(candidates, tenant=None):
+ +def classify(candidates):
+      """candidates: (intent, keyword_score, embed_score) tuples. Returns the intent to route to."""
+ -    best, best_score = fallback_for(tenant), THRESHOLD
+ +    best, best_score = FALLBACK, THRESHOLD
+      for intent, kw, emb in candidates:
+++<<<<<<< HEAD
+ +        score = blend(kw, emb)
+++=======
++         if emb is None:
++             emb = 0.0  # the embedding service timed out: decide on the keywords alone
++         score = blend(kw, emb, tenant)
+++>>>>>>> b360489 (Treat a missing embedding score as 0 (#24))
+          if score > best_score:
+              best, best_score = intent, score
+      return best

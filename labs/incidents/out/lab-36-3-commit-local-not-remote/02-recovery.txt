@@ -1,0 +1,52 @@
+# The removed commit is still in the clone of the person who made it.
+$ cd you
+$ git fetch
+From ../server
+ + ebd3afc...f3bb790 main       -> origin/main  (forced update)
+$ git status -sb
+## main...origin/main [ahead 1, behind 1]
+$ git log --format='%h %an: %s' origin/main..main
+ebd3afc Lab User: Show p95 latency on the dashboard
+# A second trap. "git pull --rebase" looks like the way to put my commit on top:
+$ git pull --rebase
+Successfully rebased and updated refs/heads/main.
+$ git log --oneline -3
+f3bb790 Guard against NaN in score aggregation
+133c159 Add accuracy panel
+6e16f60 Add score aggregation
+# My commit is gone from main. The rebase judged it to be part of the old upstream history
+# (it is in the reflog of origin/main), so it did not replay it. ORIG_HEAD still names it:
+$ git log --oneline -1 ORIG_HEAD
+ebd3afc Show p95 latency on the dashboard
+$ git cherry-pick ORIG_HEAD
+[main 1c90db3] Show p95 latency on the dashboard
+ Date: Mon Sep 7 10:19:00 2026 +0530
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+$ git push
+To ../server.git
+   f3bb790..1c90db3  main -> main
+$ cd ../ravi
+$ git fetch upstream
+From ../server
+   f3bb790..1c90db3  main       -> upstream/main
+$ git branch --set-upstream-to=upstream/main main
+branch 'main' set up to track 'upstream/main'.
+$ git pull --ff-only
+Updating f3bb790..1c90db3
+Fast-forward
+ dashboard/panels.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+$ git config set remote.pushDefault upstream
+$ cd ..
+$ incidents/10-commit-local-not-remote/check.sh
+Checking incident 10-commit-local-not-remote
+  ok    main of the team repository has "Add score aggregation" exactly once
+  ok    main of the team repository has "Add accuracy panel" exactly once
+  ok    main of the team repository has "Show p95 latency on the dashboard" exactly once
+  ok    main of the team repository has "Guard against NaN in score aggregation" exactly once
+  ok    dashboard/aggregate.py on main filters NaN
+  ok    dashboard/panels.py on main still shows p95 latency
+  ok    in ravi/, main follows upstream/main (the team repository)
+  ok    main in ravi/ equals main of the team repository
+PASS: the recovery of incident 10-commit-local-not-remote is complete.
+[exit status: 0]

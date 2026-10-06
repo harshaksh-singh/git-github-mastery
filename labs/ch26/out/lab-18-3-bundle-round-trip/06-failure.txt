@@ -1,0 +1,17 @@
+# Failure scenario: two more updates are cut, and only the second one reaches the site.
+$ printf 'BATCH_SIZE = 1000\n' > services/ingest/settings.py && git commit -q -am 'ingest: raise the batch size to 1000'
+$ git bundle create ../transfer/orbit-update-2.bundle lastbundle/site-b..main && git tag -f lastbundle/site-b main
+Updated tag 'lastbundle/site-b' (was 65a5f46)
+$ printf 'epochs: 20\nlearning_rate: 0.0003\nbatch_size: 32\n' > pipelines/training/config.yaml && git commit -q -am 'training: train for 20 epochs'
+$ git bundle create ../transfer/orbit-update-3.bundle lastbundle/site-b..main && git tag -f lastbundle/site-b main
+Updated tag 'lastbundle/site-b' (was ed94f2a)
+$ rm ../transfer/orbit-update-2.bundle
+$ cd ../site-b
+$ git bundle verify ../transfer/orbit-update-3.bundle
+error: Repository lacks these prerequisite commits:
+error: ed94f2a3aae3d3dc02355dce0cccc35bd4136dd7 
+[exit status: 1]
+$ git fetch ../transfer/orbit-update-3.bundle 'refs/heads/*:refs/remotes/origin/*'
+error: Repository lacks these prerequisite commits:
+error: ed94f2a3aae3d3dc02355dce0cccc35bd4136dd7 
+[exit status: 1]

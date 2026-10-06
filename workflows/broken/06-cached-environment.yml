@@ -1,0 +1,48 @@
+# Broken workflow 6 of 6 (Lab 28.1): tests with a cached virtual environment.
+#
+# Intended behavior: keep the project's virtual environment (.venv) in the Actions cache so that
+# most runs skip the installation, and reinstall whenever the dependencies change.
+# setup-uv's own cache is switched off, so that this file shows the whole mechanism.
+#
+# Observed: read the lab. Diagnose before you change anything.
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Cached environment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+          enable-cache: false
+
+      - name: Restore the virtual environment
+        id: venv
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .venv
+          key: ${{ runner.os }}-inventory-api-venv
+
+      - name: Install the locked dependencies
+        if: steps.venv.outputs.cache-hit != 'true'
+        run: uv sync --locked
+
+      - name: Run the tests
+        run: uv run --no-sync pytest

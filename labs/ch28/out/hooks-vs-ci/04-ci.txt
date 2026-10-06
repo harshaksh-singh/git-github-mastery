@@ -1,0 +1,33 @@
+# CI checks out each pushed branch and runs the same script over the range it adds:
+$ cat ci/check.sh
+#!/bin/sh
+# Everything CI runs, runnable locally: sh ci/check.sh <base>
+# <base> is the commit the branch started from (default: origin/main).
+status=0
+# 1. Every file version the branch adds, including ones a later commit removed again.
+python3 tools/checks.py --range "${1:-origin/main}..HEAD" || status=1
+# 2. The whole snapshot that would be merged.
+python3 tools/checks.py --tree HEAD || status=1
+if python3 -m unittest discover -s tests > /dev/null 2>&1; then echo "tests: ok"; else echo "tests: FAILED"; status=1; fi
+exit $status
+$ sh ci/check.sh origin/main
+27e79a4 evals/dump.json: larger than 500000 bytes (900011)
+checks: 1 file version(s) examined, 1 problem(s)
+HEAD evals/dump.json: larger than 500000 bytes (900011)
+checks: 25 file version(s) examined, 1 problem(s)
+tests: ok
+[exit status: 1]
+$ git switch -q feature/deploy-script
+$ sh ci/check.sh origin/main
+8ca3417 deploy/id_deploy: contains a private key
+checks: 1 file version(s) examined, 1 problem(s)
+HEAD deploy/id_deploy: contains a private key
+checks: 25 file version(s) examined, 1 problem(s)
+tests: ok
+[exit status: 1]
+$ git switch -q main
+$ sh ci/check.sh origin/main~3
+checks: 11 file version(s) examined, 0 problem(s)
+checks: 24 file version(s) examined, 0 problem(s)
+tests: ok
+[exit status: 0]

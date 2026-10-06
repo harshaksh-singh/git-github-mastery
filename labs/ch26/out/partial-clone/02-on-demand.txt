@@ -1,0 +1,17 @@
+# A command that needs an old version of a file fetches it, without being asked:
+$ GIT_TRACE=1 git show HEAD~20:services/ranker/features.py 2>&1 >/dev/null | sed -n 's/.*trace: run_command: git //p' | grep -v -e '^pack-objects' -e '^index-pack' -e '^maintenance'
+-c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recurse-submodules=no --filter=blob:none --stdin
+$ ls .git/objects/pack/*.pack | wc -l
+       3
+# Commands that only read commits and trees fetch nothing:
+$ git log --oneline -- services/ranker | wc -l
+      13
+$ git diff --name-status HEAD~10 HEAD -- services | wc -l
+       5
+$ ls .git/objects/pack/*.pack | wc -l
+       3
+# Counting changed lines needs file contents. Git asks for all of them in one request:
+$ GIT_TRACE=1 git diff --stat HEAD~10 HEAD -- services 2>&1 | grep -c 'run_command: git .*fetch'
+1
+$ ls .git/objects/pack/*.pack | wc -l
+       4

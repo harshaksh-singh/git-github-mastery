@@ -1,0 +1,107 @@
+# Workflow 9: environments. Staging first, then production behind an approval.
+#
+# What it teaches (Chapter 20B, sections 20B.2 to 20B.5):
+#   * two environments with different protection: staging deploys at once, production waits
+#     for a required reviewer and accepts only the main branch (both configured in the
+#     repository settings, not in this file)
+#   * promotion: the same build artifact goes to staging and then to production
+#   * environment-scoped secrets and variables with the same names and different values
+#   * a concurrency group per environment
+#
+# Runs on: every push to main, and on demand.
+# Checks out: the pushed commit, or the tip of the branch chosen for a manual run.
+#
+# Plan gate: on GitHub Free, Pro and Team, required reviewers and wait timers work only in
+# public repositories. The practice repository YOUR-ORG/inventory-api is public, so the gate works there.
+#
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Deploy through environments
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - run: uv sync --locked
+      - run: uv run pytest
+      - run: uv build
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: inventory-api-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: staging
+      cancel-in-progress: false
+    environment:
+      name: staging
+      url: ${{ vars.DEPLOY_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: inventory-api-dist
+          path: dist/
+      - name: Deploy
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: bash scripts/deploy.sh staging
+
+  deploy-production:
+    name: Deploy to production
+    # Runs only after staging succeeded. The job is created at once, but it is not sent to a
+    # runner, and cannot read the production secrets, until the environment's rules pass.
+    needs: deploy-staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: ${{ vars.DEPLOY_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: inventory-api-dist
+          path: dist/
+      - name: Deploy
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: bash scripts/deploy.sh production
+      - name: Record the deployment in the job summary
+        shell: bash
+        run: echo "Deployed \`$GITHUB_SHA\` to production" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,105 @@
+# Workflow 8: deploy to staging.
+#
+# What it teaches (Chapter 20B, sections 20B.2, 20B.3 and 20B.5):
+#   * build once, then deploy the artifact that was built, in a second job
+#   * a job that references an environment: its variables, its secrets, its deployment record
+#   * a concurrency group that serialises deployments instead of cancelling them
+#
+# Runs on: every push to main, and on demand.
+# Checks out: the pushed commit (GITHUB_SHA is the new tip of main).
+#
+# Before the first run, create the environment "staging" in the repository settings and give it
+# the variable STAGING_URL and the secret DEPLOY_TOKEN (Lab 27.3). The deployment itself is
+# simulated by scripts/deploy.sh, which prints what it would deploy and where.
+#
+# Parse-checked and assembled from documented syntax. Not executed on GitHub by the author.
+
+name: Deploy to staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment to staging at a time. A newer run waits for the running one; it is not
+# allowed to cancel a deployment half-way.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install the locked dependencies
+        run: uv sync --locked
+
+      - name: Run the tests
+        run: uv run pytest
+
+      - name: Build the distribution
+        run: uv build
+
+      - name: Keep the build for the deploy job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: inventory-api-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      # The deploy script lives in the repository; the thing being deployed comes from the build job.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch the build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: inventory-api-dist
+          path: dist/
+
+      - name: Show what is about to be deployed
+        run: |
+          ls dist/
+          echo "commit: $GITHUB_SHA"
+
+      - name: Deploy
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: bash scripts/deploy.sh staging
+
+      - name: Record the deployment in the job summary
+        shell: bash
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+        run: |
+          {
+            echo "### Deployed to staging"
+            echo ""
+            echo "- commit: \`$GITHUB_SHA\`"
+            echo "- url: $STAGING_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

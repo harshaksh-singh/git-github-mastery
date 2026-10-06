@@ -1,0 +1,6554 @@
+{
+ "id": "V052",
+ "version": 22,
+ "title": "What a rebase is, and why every rebased commit has a new ID",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 18,
+ "chapters": [
+  "ch09-rebase.md"
+ ],
+ "script": "video/scripts/V052-what-a-rebase-is-and-why-every-rebased-commit-has-a-new-id.md",
+ "script_sha1": "0623538f0521eb58c8a608b81d01430ecfdf603a",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 8,
+   "line": 26
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 13,
+   "line": 42
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 19,
+   "line": 53
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 32,
+   "line": 97
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 36,
+   "line": 113
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 39,
+   "line": 141
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 63,
+   "line": 388
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 70,
+   "line": 400
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 74,
+   "line": 418
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 81,
+   "line": 430
+  },
+  {
+   "name": "RECAP",
+   "beat": 85,
+   "line": 440
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 91,
+   "line": 462
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "What a rebase is, and why every rebased commit has a new ID",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0019
+  },
+  {
+   "kind": "keypoint",
+   "body": "Four questions a CTO can ask, calmly, after a week in which someone rebased.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0034
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"Asha pushed a commit to the feature branch on Tuesday. On Wednesday it was gone from GitHub, and after her next pull it was gone from her laptop as well. Nobody deleted anything. Where is it?\"",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0089
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"The pull request had three commits before the review and three commits after it, with the same titles. The reviewer approved the first version. What exactly is different in the second one?\"",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0229
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"Why does the history of the ingest branch contain every commit twice?\"",
+   "section": "HOOK",
+   "n": 6,
+   "progress": 0.0353
+  },
+  {
+   "kind": "keypoint",
+   "body": "\"A developer says the rebase finished without an error and one of his commits is not in the branch any more. Is that possible?\"",
+   "section": "HOOK",
+   "n": 7,
+   "progress": 0.04
+  },
+  {
+   "kind": "keypoint",
+   "body": "The fourth answer is \"yes\". Hold on to that one.",
+   "section": "HOOK",
+   "n": 8,
+   "progress": 0.0494
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.063
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.0645
+  },
+  {
+   "kind": "scene",
+   "direction": "remotes: [your clone] A-B-C feature; HEAD=none || [the server] A-B-C feature; HEAD=none || [another clone] A-B-C feature; HEAD=none => + A-M-B′-C′ feature; reflog:B,C; cmd:git_rebase; say:Two_histories,_side_by_side,_for_a_while; name:other-clones || || title=A_rebase_writes_new_commits_and_moves_a_ref",
+   "scene": "graph",
+   "params": {
+    "panels": [
+     {
+      "name": "your clone",
+      "commits": [
+       {
+        "id": "A",
+        "col": 0,
+        "row": 0,
+        "parents": []
+       },
+       {
+        "id": "B",
+        "col": 1,
+        "row": 0,
+        "parents": [
+         "A"
+        ]
+       },
+       {
+        "id": "C",
+        "col": 2,
+        "row": 0,
+        "parents": [
+         "B"
+        ]
+       },
+       {
+        "id": "M",
+        "col": 1,
+        "row": 1,
+        "parents": [
+         "A"
+        ]
+       },
+       {
+        "id": "B′",
+        "col": 2,
+        "row": 1,
+        "parents": [
+         "M"
+        ]
+       },
+       {
+        "id": "C′",
+        "col": 3,
+        "row": 1,
+        "parents": [
+         "B′"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "the server",
+      "commits": [
+       {
+        "id": "A",
+        "col": 0,
+        "row": 0,
+        "parents": []
+       },
+       {
+        "id": "B",
+        "col": 1,
+        "row": 0,
+        "parents": [
+         "A"
+        ]
+       },
+       {
+        "id": "C",
+        "col": 2,
+        "row": 0,
+        "parents": [
+         "B"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "another clone",
+      "commits": [
+       {
+        "id": "A",
+        "col": 0,
+        "row": 0,
+        "parents": []
+       },
+       {
+        "id": "B",
+        "col": 1,
+        "row": 0,
+        "parents": [
+         "A"
+        ]
+       },
+       {
+        "id": "C",
+        "col": 2,
+        "row": 0,
+        "parents": [
+         "B"
+        ]
+       }
+      ]
+     }
+    ],
+    "states": [
+     {
+      "p": [
+       {
+        "add": [
+         "A",
+         "B",
+         "C"
+        ],
+        "refs": {},
+        "head": null,
+        "notes": [],
+        "reflog": []
+       },
+       {
+        "add": [
+         "A",
+         "B",
+         "C"
+        ],
+        "refs": {},
+        "head": null,
+        "notes": []
+       },
+       {
+        "add": [
+         "A",
+         "B",
+         "C"
+        ],
+        "refs": {},
+        "head": null,
+        "notes": []
+       }
+      ]
+     },
+     {
+      "p": [
+       {
+        "add": [],
+        "refs": {
+         "feature": "C"
+        },
+        "head": null,
+        "notes": [],
+        "reflog": []
+       },
+       {
+        "add": [],
+        "refs": {
+         "feature": "C"
+        },
+        "head": null,
+        "notes": []
+       },
+       {
+        "add": [],
+        "refs": {
+         "feature": "C"
+        },
+        "head": null,
+        "notes": []
+       }
+      ]
+     },
+     {
+      "p": [
+       {
+        "add": [
+         "M",
+         "B′",
+         "C′"
+        ],
+        "refs": {
+         "feature": "C′"
+        },
+        "head": null,
+        "notes": [],
+        "reflog": [
+         "B",
+         "C"
+        ]
+       },
+       {
+        "add": [],
+        "refs": {
+         "feature": "C"
+        },
+        "head": null,
+        "notes": []
+       },
+       {
+        "add": [],
+        "refs": {
+         "feature": "C"
+        },
+        "head": null,
+        "notes": []
+       }
+      ],
+      "caption": "Two histories, side by side, for a while",
+      "cmd": "git rebase",
+      "name": "other-clones"
+     }
+    ],
+    "settle": "on",
+    "title": "A rebase writes new commits and moves a ref",
+    "boxes": "repos"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "other-clones"
+   ],
+   "upto": 3,
+   "section": "INTRODUCTION",
+   "n": 11,
+   "progress": 0.0898
+  },
+  {
+   "kind": "keypoint",
+   "body": "So this first video does two things and nothing more.",
+   "section": "INTRODUCTION",
+   "n": 12,
+   "progress": 0.1108
+  },
+  {
+   "kind": "keypoint",
+   "body": "The project in this module is <code>ragkit</code>, a small retrieval-augmented answering service.",
+   "section": "INTRODUCTION",
+   "n": 13,
+   "progress": 0.1365
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1412
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Describe a rebase as copying commits onto a new base and moving the branch.",
+    "Explain from the commit object why each copy has a new ID even with an identical diff.",
+    "Show where the original commits are after the rebase.",
+    "Perform a rebase by hand with <code>git switch --detach</code>, <code>git cherry-pick</code> and a branch move."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1426
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Describe a rebase as copying commits onto a new base and moving the branch.",
+    "Explain from the commit object why each copy has a new ID even with an identical diff.",
+    "Show where the original commits are after the rebase.",
+    "Perform a rebase by hand with <code>git switch --detach</code>, <code>git cherry-pick</code> and a branch move."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1446
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Describe a rebase as copying commits onto a new base and moving the branch.",
+    "Explain from the commit object why each copy has a new ID even with an identical diff.",
+    "Show where the original commits are after the rebase.",
+    "Perform a rebase by hand with <code>git switch --detach</code>, <code>git cherry-pick</code> and a branch move."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 17,
+   "progress": 0.15
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Describe a rebase as copying commits onto a new base and moving the branch.",
+    "Explain from the commit object why each copy has a new ID even with an identical diff.",
+    "Show where the original commits are after the rebase.",
+    "Perform a rebase by hand with <code>git switch --detach</code>, <code>git cherry-pick</code> and a branch move."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 18,
+   "progress": 0.1567
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Describe a rebase as copying commits onto a new base and moving the branch.",
+    "Explain from the commit object why each copy has a new ID even with an identical diff.",
+    "Show where the original commits are after the rebase.",
+    "Perform a rebase by hand with <code>git switch --detach</code>, <code>git cherry-pick</code> and a branch move."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 19,
+   "progress": 0.1602
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.166
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1675
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "base": 2,
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.206
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2271
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "base": 2,
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2356
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "base": 2,
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2633
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "base": 2,
+   "upto": 5,
+   "says": [
+    "A new parent means a new ID, for this commit and for every commit after it"
+   ],
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.317
+  },
+  {
+   "kind": "keypoint",
+   "body": "When not to rebase? The textbook calls it the most important judgment in the chapter.",
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.3482
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 28,
+   "progress": 0.3646
+  },
+  {
+   "kind": "callout",
+   "direction": "\"Rebase copies.\"",
+   "quotes": [
+    "Rebase copies."
+   ],
+   "quoted": true,
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.366
+  },
+  {
+   "kind": "scene",
+   "direction": "rebase: amendments onto contract common=v4 main_only=v6 feature_only=A1,A2,A3 cmd=off title=Three_amendments,_redone_against_version_6 say_setup=Three_amendments,_written_against_version_4 say_lift=Each_amendment_is_taken_in_turn say_copy=and_redone_against_version_6 say_ghost=The_originals_are_not_shredded:_they_stay_in_the_drawer say_move=Rebase_copies._Then_it_moves_one_label. id=contract",
+   "scene": "rebase",
+   "params": {
+    "common": [
+     "v4"
+    ],
+    "main_only": [
+     "v6"
+    ],
+    "feature_only": [
+     "A1",
+     "A2",
+     "A3"
+    ],
+    "cmd": "off",
+    "title": "Three amendments, redone against version 6",
+    "say": {
+     "setup": "Three amendments, written against version 4",
+     "lift": "Each amendment is taken in turn",
+     "copy": "and redone against version 6",
+     "ghost": "The originals are not shredded: they stay in the drawer",
+     "move": "Rebase copies. Then it moves one label."
+    },
+    "id": "contract",
+    "branch": "amendments",
+    "onto": "contract"
+   },
+   "steps": [
+    "setup",
+    "lift",
+    "copy",
+    "ghost",
+    "move"
+   ],
+   "upto": 4,
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.3851
+  },
+  {
+   "kind": "scene",
+   "direction": "rebase: amendments onto contract common=v4 main_only=v6 feature_only=A1,A2,A3 cmd=off title=Three_amendments,_redone_against_version_6 say_setup=Three_amendments,_written_against_version_4 say_lift=Each_amendment_is_taken_in_turn say_copy=and_redone_against_version_6 say_ghost=The_originals_are_not_shredded:_they_stay_in_the_drawer say_move=Rebase_copies._Then_it_moves_one_label. id=contract",
+   "scene": "rebase",
+   "params": {
+    "common": [
+     "v4"
+    ],
+    "main_only": [
+     "v6"
+    ],
+    "feature_only": [
+     "A1",
+     "A2",
+     "A3"
+    ],
+    "cmd": "off",
+    "title": "Three amendments, redone against version 6",
+    "say": {
+     "setup": "Three amendments, written against version 4",
+     "lift": "Each amendment is taken in turn",
+     "copy": "and redone against version 6",
+     "ghost": "The originals are not shredded: they stay in the drawer",
+     "move": "Rebase copies. Then it moves one label."
+    },
+    "id": "contract",
+    "branch": "amendments",
+    "onto": "contract"
+   },
+   "steps": [
+    "setup",
+    "lift",
+    "copy",
+    "ghost",
+    "move"
+   ],
+   "upto": 5,
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.4081
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 32,
+   "progress": 0.4202
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => 82f1fbb-742ab58-ade2990-976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD feat/rerank@{1}; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876 title=Before_and_after_git_rebase_main id=ba",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876",
+       "feat/rerank@{1}": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Before and after git rebase main",
+    "id": "ba"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 2,
+   "section": "DIAGRAM",
+   "n": 33,
+   "progress": 0.4216
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => 82f1fbb-742ab58-ade2990-976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD feat/rerank@{1}; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876 title=Before_and_after_git_rebase_main id=ba",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876",
+       "feat/rerank@{1}": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Before and after git rebase main",
+    "id": "ba"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.4302
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 35,
+   "progress": 0.4423
+  },
+  {
+   "kind": "terminal",
+   "direction": "`labs/run ch09/rebase-basic`. `feat/rerank` was cut from the first commit of `main`; since then `main` gained two commits.",
+   "mode": "cmd",
+   "title": "labs/run ch09/rebase-basic",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch09/rebase-basic"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.4437
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/01-before",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* 82f1fbb (HEAD -> main) Upgrade model to small-v2"
+    },
+    {
+     "t": "out",
+     "s": "* 589d18b Add README"
+    },
+    {
+     "t": "out",
+     "s": "| * bd62876 (feat/rerank) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "| * af65a92 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "| * 5ee19f0 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 8afc6bd Add retriever and model config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.4449
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/02-rebase",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git switch feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'feat/rerank'"
+    },
+    {
+     "t": "cmd",
+     "s": "git rebase main"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (1/3)"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (2/3)"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (3/3)"
+    },
+    {
+     "t": "out",
+     "s": "Successfully rebased and updated refs/heads/feat/rerank."
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.461
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/03-after",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* 976a161 (HEAD -> feat/rerank) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "* ade2990 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "* 742ab58 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "* 82f1fbb (main) Upgrade model to small-v2"
+    },
+    {
+     "t": "out",
+     "s": "* 589d18b Add README"
+    },
+    {
+     "t": "out",
+     "s": "* 8afc6bd Add retriever and model config"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline main..ORIG_HEAD"
+    },
+    {
+     "t": "out",
+     "s": "bd62876 Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "af65a92 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "5ee19f0 Add reranker skeleton"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.4703
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 2: the objects",
+   "body": "Put the first commit of the branch before and after side by side.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.4859
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/04-objects",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The first commit of the branch, before the rebase (reachable through ORIG_HEAD) ..."
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -p ORIG_HEAD~2"
+    },
+    {
+     "t": "out",
+     "s": "tree bff5bbd64dc61559cfed48b794c4ac66aa8fd087"
+    },
+    {
+     "t": "out",
+     "s": "parent 8afc6bd28c2572af09f1b6c37d733535230e526f"
+    },
+    {
+     "t": "out",
+     "s": "author Lab User <you@example.com> 1788755580 +0530"
+    },
+    {
+     "t": "out",
+     "s": "committer Lab User <you@example.com> 1788755580 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "# ... and its replacement after the rebase."
+    },
+    {
+     "t": "cmd",
+     "s": "git cat-file -p HEAD~2"
+    },
+    {
+     "t": "out",
+     "s": "tree 8cc3ecec7607fe1db26fe237762047f282c08338"
+    },
+    {
+     "t": "out",
+     "s": "parent 82f1fbb78c09021e2e673bf06e3c77fc58f14a50"
+    },
+    {
+     "t": "out",
+     "s": "author Lab User <you@example.com> 1788755580 +0530"
+    },
+    {
+     "t": "out",
+     "s": "committer Lab User <you@example.com> 1788756000 +0530"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "Add reranker skeleton"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5074
+  },
+  {
+   "kind": "table",
+   "direction": "The field table of section 9.3, with the differing rows highlighted.",
+   "header": [
+    "Field",
+    "Before",
+    "After",
+    "Why"
+   ],
+   "fs": 32,
+   "cols": [
+    12.69,
+    23.17,
+    22.12,
+    42.02
+   ],
+   "mono": true,
+   "rows": [
+    [
+     "tree",
+     "bff5bbd...",
+     "8cc3ece...",
+     "The new snapshot also contains the README and the model upgrade from main"
+    ],
+    [
+     "parent",
+     "8afc6bd...",
+     "82f1fbb...",
+     "That is the point of the operation"
+    ],
+    [
+     "author",
+     "Lab User, 1788755580",
+     "identical",
+     "Rebase keeps who wrote the change and when"
+    ],
+    [
+     "committer",
+     "Lab User, 1788755580",
+     "Lab User, 1788756000",
+     "The committer is whoever created this object, at the time it was created"
+    ],
+    [
+     "message",
+     "identical",
+     "identical",
+     "Unless you reword it"
+    ]
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5142
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 3: what did not change",
+   "body": "A patch ID is a hash of a commit's diff with line numbers ignored.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5364
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/05-patch-id",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git show ORIG_HEAD~2 | git patch-id --stable"
+    },
+    {
+     "t": "out",
+     "s": "cf1c4fb899863a713cf682e6a8101ba01f834cb4 5ee19f03aa988c15717abc4b6c14104fc8d23a97"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD~2 | git patch-id --stable"
+    },
+    {
+     "t": "out",
+     "s": "cf1c4fb899863a713cf682e6a8101ba01f834cb4 742ab5805e0a3077be749e44fb92159e284ee0ad"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5442
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 4: the reflogs",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.5699
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/06-reflog",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git reflog -6"
+    },
+    {
+     "t": "out",
+     "s": "976a161 HEAD@{0}: rebase (finish): returning to refs/heads/feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "976a161 HEAD@{1}: rebase (pick): Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "ade2990 HEAD@{2}: rebase (pick): Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "742ab58 HEAD@{3}: rebase (pick): Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "82f1fbb HEAD@{4}: rebase (start): checkout main"
+    },
+    {
+     "t": "out",
+     "s": "bd62876 HEAD@{5}: checkout: moving from main to feat/rerank"
+    },
+    {
+     "t": "cmd",
+     "s": "git reflog show feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "976a161 feat/rerank@{0}: rebase (finish): refs/heads/feat/rerank onto"
+    },
+    {
+     "t": "wrap",
+     "s": "82f1fbb78c09021e2e673bf06e3c77fc58f14a50",
+     "of": "out"
+    },
+    {
+     "t": "out",
+     "s": "bd62876 feat/rerank@{1}: commit: Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "af65a92 feat/rerank@{2}: commit: Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "5ee19f0 feat/rerank@{3}: commit: Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "8afc6bd feat/rerank@{4}: branch: Created from HEAD"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.5715
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 5: nothing to do",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.5902
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-basic/07-nothing-to-do",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git rebase main"
+    },
+    {
+     "t": "out",
+     "s": "Current branch feat/rerank is up to date."
+    },
+    {
+     "t": "cmd",
+     "s": "git switch main"
+    },
+    {
+     "t": "out",
+     "s": "Switched to branch 'main'"
+    },
+    {
+     "t": "cmd",
+     "s": "git rebase feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "Successfully rebased and updated refs/heads/main."
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* 976a161 (HEAD -> main, feat/rerank) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "* ade2990 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "* 742ab58 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "* 82f1fbb Upgrade model to small-v2"
+    },
+    {
+     "t": "out",
+     "s": "* 589d18b Add README"
+    },
+    {
+     "t": "out",
+     "s": "* 8afc6bd Add retriever and model config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.5921
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 6: the same rebase by hand",
+   "body": "<code>labs/run ch09/rebase-by-hand</code>.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6057
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-by-hand/01-detach-and-replay",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git switch --detach main"
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at 82f1fbb Upgrade model to small-v2"
+    },
+    {
+     "t": "cmd",
+     "s": "git cherry-pick main..feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "[detached HEAD 0dea106] Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": " Date: Mon Sep 7 10:03:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 2 insertions(+)"
+    },
+    {
+     "t": "out",
+     "s": " create mode 100644 app/rerank.py"
+    },
+    {
+     "t": "out",
+     "s": "[detached HEAD 20d0897] Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": " Date: Mon Sep 7 10:04:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "out",
+     "s": "Auto-merging config/model.yaml"
+    },
+    {
+     "t": "out",
+     "s": "[detached HEAD 4caa98e] Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": " Date: Mon Sep 7 10:05:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+)"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6131
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-by-hand/02-before-the-branch-moves",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* 4caa98e (HEAD) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "* 20d0897 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "* 0dea106 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "* 82f1fbb (main) Upgrade model to small-v2"
+    },
+    {
+     "t": "out",
+     "s": "* 589d18b Add README"
+    },
+    {
+     "t": "out",
+     "s": "| * bd62876 (feat/rerank) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "| * af65a92 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "| * 5ee19f0 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* 8afc6bd Add retriever and model config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6315
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-589d18b-82f1fbb-0dea106-20d0897-4caa98e; 82f1fbb main; 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; HEAD=4caa98e; say:Three_new_commits,_and_only_HEAD_reaches_them => + 4caa98e feat/rerank; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; cmd:git_switch_-C_feat/rerank; say:The_branch_is_reset_to_HEAD; name:resets title=The_same_rebase_by_hand id=hand",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "0dea106",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "20d0897",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "0dea106"
+      ]
+     },
+     {
+      "id": "4caa98e",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "20d0897"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "af65a92"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "589d18b",
+       "82f1fbb",
+       "0dea106",
+       "20d0897",
+       "4caa98e",
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": [],
+      "caption": "Three new commits, and only HEAD reaches them"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "82f1fbb",
+       "feat/rerank": "bd62876"
+      },
+      "head": "4caa98e",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "82f1fbb",
+       "feat/rerank": "4caa98e"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "caption": "The branch is reset to HEAD",
+      "cmd": "git switch -C feat/rerank",
+      "name": "resets"
+     }
+    ],
+    "settle": "on",
+    "title": "The same rebase by hand",
+    "id": "hand"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "resets"
+   ],
+   "upto": 2,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6372
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-by-hand/03-move-the-branch",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git switch -C feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "Switched to and reset branch 'feat/rerank'"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --graph --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* 4caa98e (HEAD -> feat/rerank) Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "* 20d0897 Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "* 0dea106 Add reranker skeleton"
+    },
+    {
+     "t": "out",
+     "s": "* 82f1fbb (main) Upgrade model to small-v2"
+    },
+    {
+     "t": "out",
+     "s": "* 589d18b Add README"
+    },
+    {
+     "t": "out",
+     "s": "* 8afc6bd Add retriever and model config"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.65
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Step 7: compare with the real thing",
+   "body": "The demo keeps the hand-made result under a tag, puts the branch back with <code>git reset --hard</code> 🔴 on a clean tree, with the old tip taken from the reflog, and lets <code>git rebase</code> do the job.",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6633
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch09/rebase-by-hand/04-compare-with-rebase",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Keep the hand-made result under a tag, put the branch back, and let \"git rebase\" do the job."
+    },
+    {
+     "t": "cmd",
+     "s": "git tag by-hand"
+    },
+    {
+     "t": "cmd",
+     "s": "git reset --hard \"feat/rerank@{1}\""
+    },
+    {
+     "t": "out",
+     "s": "HEAD is now at bd62876 Enable reranking in config"
+    },
+    {
+     "t": "cmd",
+     "s": "git rebase main"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (1/3)"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (2/3)"
+    },
+    {
+     "t": "out",
+     "s": "Rebasing (3/3)"
+    },
+    {
+     "t": "out",
+     "s": "Successfully rebased and updated refs/heads/feat/rerank."
+    },
+    {
+     "t": "cmd",
+     "s": "git log --format=\"%h tree %t  %s\" main..by-hand"
+    },
+    {
+     "t": "out",
+     "s": "4caa98e tree 273096f  Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "20d0897 tree 9b070ab  Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "0dea106 tree 8cc3ece  Add reranker skeleton"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --format=\"%h tree %t  %s\" main..feat/rerank"
+    },
+    {
+     "t": "out",
+     "s": "a4cc3fb tree 273096f  Enable reranking in config"
+    },
+    {
+     "t": "out",
+     "s": "a9cc881 tree 9b070ab  Call reranker from retriever"
+    },
+    {
+     "t": "out",
+     "s": "2efc812 tree 8cc3ece  Add reranker skeleton"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.68
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 56,
+   "progress": 0.705
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 57,
+   "progress": 0.7064
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Saying \"rebase moved my commits\" and then looking for the old IDs on the branch.</b> Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+    "<b>Expecting the same ID because the diff is identical.</b> Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+    "<b>Believing the originals are deleted.</b> Root cause: nothing was removed from the object database; <code>ORIG_HEAD</code> and the branch's reflog still name the old tip.",
+    "<b>Thinking the branch \"remembers\" where it started.</b> Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+    "<b>Rebasing and assuming everything that recorded an old ID still points at your work.</b> Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 38,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 58,
+   "progress": 0.7084
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Saying \"rebase moved my commits\" and then looking for the old IDs on the branch.</b> Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+    "<b>Expecting the same ID because the diff is identical.</b> Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+    "<b>Believing the originals are deleted.</b> Root cause: nothing was removed from the object database; <code>ORIG_HEAD</code> and the branch's reflog still name the old tip.",
+    "<b>Thinking the branch \"remembers\" where it started.</b> Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+    "<b>Rebasing and assuming everything that recorded an old ID still points at your work.</b> Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 38,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 59,
+   "progress": 0.7204
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Saying \"rebase moved my commits\" and then looking for the old IDs on the branch.</b> Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+    "<b>Expecting the same ID because the diff is identical.</b> Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+    "<b>Believing the originals are deleted.</b> Root cause: nothing was removed from the object database; <code>ORIG_HEAD</code> and the branch's reflog still name the old tip.",
+    "<b>Thinking the branch \"remembers\" where it started.</b> Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+    "<b>Rebasing and assuming everything that recorded an old ID still points at your work.</b> Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 38,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 60,
+   "progress": 0.7329
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Saying \"rebase moved my commits\" and then looking for the old IDs on the branch.</b> Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+    "<b>Expecting the same ID because the diff is identical.</b> Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+    "<b>Believing the originals are deleted.</b> Root cause: nothing was removed from the object database; <code>ORIG_HEAD</code> and the branch's reflog still name the old tip.",
+    "<b>Thinking the branch \"remembers\" where it started.</b> Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+    "<b>Rebasing and assuming everything that recorded an old ID still points at your work.</b> Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 38,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 61,
+   "progress": 0.7423
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Saying \"rebase moved my commits\" and then looking for the old IDs on the branch.</b> Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+    "<b>Expecting the same ID because the diff is identical.</b> Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+    "<b>Believing the originals are deleted.</b> Root cause: nothing was removed from the object database; <code>ORIG_HEAD</code> and the branch's reflog still name the old tip.",
+    "<b>Thinking the branch \"remembers\" where it started.</b> Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+    "<b>Rebasing and assuming everything that recorded an old ID still points at your work.</b> Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 38,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 62,
+   "progress": 0.7532
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 63,
+   "progress": 0.7676
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => 82f1fbb-742ab58-ade2990-976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD feat/rerank@{1}; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876 title=Before_and_after_git_rebase_main id=ba",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876",
+       "feat/rerank@{1}": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Before and after git rebase main",
+    "id": "ba"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "upto": 3,
+   "says": [
+    "The model card cites a commit that is on no branch"
+   ],
+   "section": "PRODUCTION EXAMPLE",
+   "n": 64,
+   "progress": 0.769
+  },
+  {
+   "kind": "scene",
+   "direction": "cards: question=Before_you_rebase:_what_has_already_recorded_these_IDs? cards=a_review_comment_anchored_to_a_commit|a_CI_status|a_deployment_record|the_ID_in_run_metadata id=recorded at_1=36 at_2=48 at_3=55 at_4=62",
+   "scene": "cards",
+   "params": {
+    "question": "Before you rebase: what has already recorded these IDs?",
+    "cards": [
+     [
+      "a review comment anchored to a commit",
+      ""
+     ],
+     [
+      "a CI status",
+      ""
+     ],
+     [
+      "a deployment record",
+      ""
+     ],
+     [
+      "the ID in run metadata",
+      ""
+     ]
+    ],
+    "id": "recorded",
+    "at": {
+     "1": 0.36,
+     "2": 0.48,
+     "3": 0.55,
+     "4": 0.62
+    }
+   },
+   "steps": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 65,
+   "progress": 0.7947
+  },
+  {
+   "kind": "keypoint",
+   "body": "The \"Rebase and merge\" button performs this operation on GitHub's servers.",
+   "badge": "GitHub",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 66,
+   "progress": 0.8173
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 67,
+   "progress": 0.8391
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Exercise 9.1, Level 1, \"a plain rebase, before and after\", in <code>exercises/m06-m10-integration.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 68,
+   "progress": 0.8406
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict in writing before the rebase:",
+   "items": [
+    "Which commits will be replayed? Write the command whose output is that list.",
+    "After the rebase, which names will still reach the original commits?",
+    "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "PRACTICE EXERCISE",
+   "n": 69,
+   "progress": 0.8464
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict in writing before the rebase:",
+   "items": [
+    "Which commits will be replayed? Write the command whose output is that list.",
+    "After the rebase, which names will still reach the original commits?",
+    "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "PRACTICE EXERCISE",
+   "n": 70,
+   "progress": 0.8488
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict in writing before the rebase:",
+   "items": [
+    "Which commits will be replayed? Write the command whose output is that list.",
+    "After the rebase, which names will still reach the original commits?",
+    "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "PRACTICE EXERCISE",
+   "n": 71,
+   "progress": 0.8538
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict in writing before the rebase:",
+   "items": [
+    "Which commits will be replayed? Write the command whose output is that list.",
+    "After the rebase, which names will still reach the original commits?",
+    "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "PRACTICE EXERCISE",
+   "n": 72,
+   "progress": 0.8581
+  },
+  {
+   "kind": "bullets",
+   "lead": "Predict in writing before the rebase:",
+   "items": [
+    "Which commits will be replayed? Write the command whose output is that list.",
+    "After the rebase, which names will still reach the original commits?",
+    "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?"
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "section": "PRACTICE EXERCISE",
+   "n": 73,
+   "progress": 0.8659
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 74,
+   "progress": 0.8757
+  },
+  {
+   "kind": "callout",
+   "label": "Q143",
+   "quotes": [
+    "Why does a rebase change commit hashes: why does every rebased commit have a new ID even when its diff is identical? Which fields of the commit object changed, and which did not?"
+   ],
+   "quoted": true,
+   "caption": "Q143: \"Why does a rebase change commit hashes: why does every rebased commit have a new ID even when its diff is identical? Which fields of the commit object changed …",
+   "section": "INTERVIEW QUESTION",
+   "n": 75,
+   "progress": 0.8771
+  },
+  {
+   "kind": "callout",
+   "label": "Q143",
+   "quotes": [
+    "Why does a rebase change commit hashes: why does every rebased commit have a new ID even when its diff is identical? Which fields of the commit object changed, and which did not?"
+   ],
+   "quoted": true,
+   "caption": "Answer out loud first. A strong answer starts from what a commit ID is computed from, and goes through the fields one by one, saying for each whether it changes and why.",
+   "section": "INTERVIEW QUESTION",
+   "n": 76,
+   "progress": 0.8923
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 77,
+   "progress": 0.927
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "upto": 1,
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9284
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => bd62876 feat/rerank; 82f1fbb main; HEAD=82f1fbb; name:detach => 82f1fbb-742ab58-ade2990-976a161; bd62876 feat/rerank; 82f1fbb main; HEAD=976a161; name:replay => 976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; name:moves title=git_rebase_main,_step_by_step id=four",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "82f1fbb",
+      "notes": [],
+      "reflog": [],
+      "name": "detach"
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "976a161",
+      "notes": [],
+      "reflog": [],
+      "name": "replay"
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "name": "moves"
+     }
+    ],
+    "settle": "on",
+    "title": "git rebase main, step by step",
+    "id": "four"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "detach",
+    "replay",
+    "moves"
+   ],
+   "upto": 5,
+   "section": "RECAP",
+   "n": 79,
+   "progress": 0.9323
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: columns=field,before,after rows=tree:bff5bbd:8cc3ece|parent:8afc6bd:82f1fbb|author:Lab_User,_1788755580:identical|committer:Lab_User,_1788755580:Lab_User,_1788756000|message:identical:identical marks=1.3:hl,2.3:hl,4.3:hl,3.3:dim,5.3:dim title=The_first_commit_of_the_branch,_before_and_after id=fields",
+   "scene": "walk",
+   "params": {
+    "columns": [
+     "field",
+     "before",
+     "after"
+    ],
+    "rows": [
+     [
+      "tree",
+      "bff5bbd",
+      "8cc3ece"
+     ],
+     [
+      "parent",
+      "8afc6bd",
+      "82f1fbb"
+     ],
+     [
+      "author",
+      "Lab User, 1788755580",
+      "identical"
+     ],
+     [
+      "committer",
+      "Lab User, 1788755580",
+      "Lab User, 1788756000"
+     ],
+     [
+      "message",
+      "identical",
+      "identical"
+     ]
+    ],
+    "marks": {
+     "1.3": "hl",
+     "2.3": "hl",
+     "4.3": "hl",
+     "3.3": "dim",
+     "5.3": "dim"
+    },
+    "title": "The first commit of the branch, before and after",
+    "id": "fields"
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "upto": 6,
+   "section": "RECAP",
+   "n": 80,
+   "progress": 0.9448
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 8afc6bd-589d18b-82f1fbb main; HEAD=feat/rerank => 82f1fbb-742ab58-ade2990-976a161 feat/rerank; 82f1fbb main; bd62876 ORIG_HEAD feat/rerank@{1}; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876 title=Before_and_after_git_rebase_main id=ba",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "af65a92"
+      ]
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "742ab58",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "ade2990",
+      "col": 4,
+      "row": 1,
+      "parents": [
+       "742ab58"
+      ]
+     },
+     {
+      "id": "976a161",
+      "col": 5,
+      "row": 1,
+      "parents": [
+       "ade2990"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "5ee19f0",
+       "af65a92",
+       "bd62876",
+       "589d18b",
+       "82f1fbb"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "feat/rerank": "bd62876",
+       "main": "82f1fbb"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [
+       "742ab58",
+       "ade2990",
+       "976a161"
+      ],
+      "refs": {
+       "feat/rerank": "976a161",
+       "main": "82f1fbb",
+       "ORIG_HEAD": "bd62876",
+       "feat/rerank@{1}": "bd62876"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ]
+     }
+    ],
+    "settle": "on",
+    "title": "Before and after git rebase main",
+    "id": "ba"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "says_before": [
+    "The model card cites a commit that is on no branch"
+   ],
+   "upto": 3,
+   "says": [
+    "The model card cites a commit that is on no branch"
+   ],
+   "section": "RECAP",
+   "n": 81,
+   "progress": 0.9588
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: 8afc6bd-589d18b-82f1fbb-0dea106-20d0897-4caa98e; 82f1fbb main; 8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; HEAD=4caa98e; say:Three_new_commits,_and_only_HEAD_reaches_them => + 4caa98e feat/rerank; HEAD=feat/rerank; reflog:5ee19f0,af65a92,bd62876; cmd:git_switch_-C_feat/rerank; say:The_branch_is_reset_to_HEAD; name:resets title=The_same_rebase_by_hand id=hand",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "8afc6bd",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "589d18b",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "82f1fbb",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "589d18b"
+      ]
+     },
+     {
+      "id": "0dea106",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "82f1fbb"
+      ]
+     },
+     {
+      "id": "20d0897",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "0dea106"
+      ]
+     },
+     {
+      "id": "4caa98e",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "20d0897"
+      ]
+     },
+     {
+      "id": "5ee19f0",
+      "col": 1,
+      "row": 1,
+      "parents": [
+       "8afc6bd"
+      ]
+     },
+     {
+      "id": "af65a92",
+      "col": 2,
+      "row": 1,
+      "parents": [
+       "5ee19f0"
+      ]
+     },
+     {
+      "id": "bd62876",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "af65a92"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "8afc6bd",
+       "589d18b",
+       "82f1fbb",
+       "0dea106",
+       "20d0897",
+       "4caa98e",
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "reflog": [],
+      "caption": "Three new commits, and only HEAD reaches them"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "82f1fbb",
+       "feat/rerank": "bd62876"
+      },
+      "head": "4caa98e",
+      "notes": [],
+      "reflog": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "82f1fbb",
+       "feat/rerank": "4caa98e"
+      },
+      "head": "feat/rerank",
+      "notes": [],
+      "reflog": [
+       "5ee19f0",
+       "af65a92",
+       "bd62876"
+      ],
+      "caption": "The branch is reset to HEAD",
+      "cmd": "git switch -C feat/rerank",
+      "name": "resets"
+     }
+    ],
+    "settle": "on",
+    "title": "The same rebase by hand",
+    "id": "hand"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "resets"
+   ],
+   "base": 2,
+   "upto": 3,
+   "section": "RECAP",
+   "n": 82,
+   "progress": 0.9643
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 83,
+   "progress": 0.9721
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 9.1 to 9.3 of Chapter 9.",
+   "section": "HOMEWORK",
+   "n": 84,
+   "progress": 0.9735
+  },
+  {
+   "kind": "keypoint",
+   "body": "You rebuilt a rebase by hand today, so there's no magic left in it: it copies, and then it moves one ref.",
+   "section": "HOMEWORK",
+   "n": 85,
+   "progress": 0.9766
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Four questions a CTO can ask, calmly, after a week in which someone rebased.",
+   "tele": "Four questions a CTO can ask, calmly, after a week in which someone rebased.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "7e776123",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"Asha pushed a commit to the feature branch on Tuesday. On Wednesday it was gone from GitHub, and after her next pull it was gone from her laptop as well. Nobody deleted anything. Where is it?\"",
+   "tele": "\"Asha pushed a commit to the feature branch on Tuesday. On Wednesday it was gone from GitHub, and after her next pull it was gone from her laptop as well. Nobody deleted anything. Where is it?\"",
+   "words": 36,
+   "est": 14.4,
+   "slide": 4,
+   "line": 16,
+   "t0": 9.1,
+   "h": "cb8ccfa2",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"The pull request had three commits before the review and three commits after it, with the same titles. The reviewer approved the first version. What exactly is different in the second one?\"",
+   "tele": "\"The pull request had three commits before the review and three commits after it, with the same titles. The reviewer approved the first version. What exactly is different in the second one?\"",
+   "words": 32,
+   "est": 12.8,
+   "slide": 5,
+   "line": 18,
+   "t0": 23.5,
+   "h": "d53bd79a",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"Why does the history of the ingest branch contain every commit twice?\"",
+   "tele": "\"Why does the history of the ingest branch contain every commit twice?\"",
+   "words": 12,
+   "est": 4.8,
+   "slide": 6,
+   "line": 20,
+   "t0": 36.3,
+   "h": "a429fcdc",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "\"A developer says the rebase finished without an error and one of his commits is not in the branch any more. Is that possible?\"",
+   "tele": "\"A developer says the rebase finished without an error and one of his commits is not in the branch any more. Is that possible?\"",
+   "words": 24,
+   "est": 9.6,
+   "slide": 7,
+   "line": 22,
+   "t0": 41.1,
+   "h": "59d22f35",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The fourth answer is \"yes\". Hold on to that one. You'll see how it can happen before this video ends. And all four answers start from one fact, which is the subject of this video.",
+   "tele": "The fourth answer is \"yes\". Hold on to that one. You'll see how it can happen before this video ends. And all four answers start from one fact, which is the subject of this video.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 8,
+   "line": 24,
+   "t0": 50.7,
+   "h": "4ba0031f",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 26,
+   "t0": 64.7,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair: a new module starts here. And here's that fact, in the textbook's words: a rebase doesn't move or change commits. It writes new commits and then moves a ref. A commit is one saved snapshot of the project, and a ref is a name, such as a branch, that holds a commit ID.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair: a new module starts here. And here's that fact, in the textbook's words: a rebase doesn't move or change commits. It writes new commits and then moves a ref. A commit is one saved snapshot of the project, and a ref is a name, such as a branch, that holds a commit ID.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 10,
+   "line": 28,
+   "t0": 66.2,
+   "h": "79b75cd5",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The old commits are still in the object database. Other clones still have them. The server still has them, until someone pushes over them. Every surprise in the rebase module is a consequence of two histories existing side by side for a while: the one you rewrote, and the one everybody else still holds.",
+   "tele": "The old commits are still in the object database. Other clones still have them. The server still has them, until someone pushes over them. Every surprise in the rebase module is a consequence of two histories existing side by side for a while: the one you rewrote, and the one everybody else still holds.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 11,
+   "line": 34,
+   "t0": 92.2,
+   "h": "67e31764",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.082,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.164,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "So this first video does two things and nothing more. It shows you a plain rebase, before and after, and then rebuilds that rebase by hand from three simpler commands, so that there's no magic left in it. And it opens an original commit and its copy side by side, field by field, so that you can say exactly why the copy has a new ID.",
+   "tele": "So this first video does two things and nothing more. It shows you a plain rebase, before and after, and then rebuilds that rebase by hand from three simpler commands, so that there's no magic left in it. And it opens an original commit and its copy side by side, field by field, so that you can say exactly why the copy has a new ID.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 12,
+   "line": 38,
+   "t0": 113.8,
+   "h": "d5dfe6ff",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "The project in this module is ragkit, a small retrieval-augmented answering service.",
+   "tele": "The project in this module is `ragkit`, a small retrieval-augmented answering service.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 13,
+   "line": 40,
+   "t0": 140.2,
+   "h": "90acbe39",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 14,
+   "line": 42,
+   "t0": 145.0,
+   "h": "",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 15,
+   "line": 46,
+   "t0": 146.5,
+   "h": "152923b5",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Describe a rebase as copying commits onto a new base and moving the branch.",
+   "tele": "Describe a rebase as copying commits onto a new base and moving the branch.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 16,
+   "line": 48,
+   "t0": 148.5,
+   "h": "33eebc73",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain from the commit object why each copy has a new ID even with an identical diff.",
+   "tele": "Explain from the commit object why each copy has a new ID even with an identical diff.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 17,
+   "line": 48,
+   "t0": 154.1,
+   "h": "e8492816",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Show where the original commits are after the rebase.",
+   "tele": "Show where the original commits are after the rebase.",
+   "words": 9,
+   "est": 3.6,
+   "slide": 18,
+   "line": 48,
+   "t0": 160.9,
+   "h": "f5541de0",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Perform a rebase by hand with git switch --detach, git cherry-pick and a branch move.",
+   "tele": "Perform a rebase by hand with `git switch --detach`, `git cherry-pick` and a branch move.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 19,
+   "line": 48,
+   "t0": 164.5,
+   "h": "037a80e4",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 20,
+   "line": 53,
+   "t0": 170.5,
+   "h": "",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "In one sentence: git rebase <upstream> 🟡 CAUTION takes the commits that your branch has and <upstream> doesn't have, creates a copy of each one on top of <upstream>, in order, and then points your branch at the last copy.",
+   "tele": "In one sentence: `git rebase <upstream>` 🟡 CAUTION takes the commits that your branch has and `<upstream>` doesn't have, creates a copy of each one on top of `<upstream>`, in order, and then points your branch at the last copy.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 21,
+   "line": 59,
+   "t0": 172.0,
+   "h": "b41048f3",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.339,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why would you want that? There are two everyday uses. One is bringing a feature branch up to date before review, so that the reviewer and CI, the automated checks, see your change on top of today's main. The other is tidying your own commits before anyone else reads them.",
+   "tele": "Why would you want that? There are two everyday uses. One is bringing a feature branch up to date before review, so that the reviewer and CI, the automated checks, see your change on top of today's `main`. The other is tidying your own commits before anyone else reads them.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 21,
+   "line": 61,
+   "t0": 187.6,
+   "h": "91986338",
+   "anim": {
+    "group": 16,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. The manual describes git rebase <upstream> as four steps.",
+   "tele": "Precisely. The manual describes `git rebase <upstream>` as four steps.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 21,
+   "line": 63,
+   "t0": 207.6,
+   "h": "36d6d702",
+   "anim": {
+    "group": 16,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "One. Make the list of commits to replay: everything reachable from the current branch and not from <upstream>, the same set that git log <upstream>..HEAD prints, minus commits whose change is already in <upstream>, and minus merge commits. Both exceptions get their own videos. On screen, the list is the three commits of feat/rerank.",
+   "tele": "One. Make the list of commits to replay: everything reachable from the current branch and not from `<upstream>`, the same set that `git log <upstream>..HEAD` prints, minus commits whose change is already in `<upstream>`, and minus merge commits. Both exceptions get their own videos. On screen, the list is the three commits of `feat/rerank`.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 22,
+   "line": 69,
+   "t0": 211.6,
+   "h": "88d53abd",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two. Detach HEAD at <upstream>. Detached means that HEAD names a commit directly, here the tip of main, and not a branch.",
+   "tele": "Two. Detach HEAD at `<upstream>`. Detached means that HEAD names a commit directly, here the tip of `main`, and not a branch.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 23,
+   "line": 73,
+   "t0": 233.2,
+   "h": "0f58ed9c",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three. Replay the commits one by one, oldest first. Each replay is a cherry-pick: one commit's change, applied on top of HEAD as a new commit. Inside, it's a three-way merge whose base is the parent of the original commit, whose \"ours\" side is HEAD, and whose \"theirs\" side is the original commit. The result is committed with the original author, author date and message, and with you, now, as committer.",
+   "tele": "Three. Replay the commits one by one, oldest first. Each replay is a cherry-pick: one commit's change, applied on top of HEAD as a new commit. Inside, it's a three-way merge whose base is the parent of the original commit, whose \"ours\" side is HEAD, and whose \"theirs\" side is the original commit. The result is committed with the original author, author date and message, and with you, now, as committer.",
+   "words": 71,
+   "est": 28.4,
+   "slide": 24,
+   "line": 77,
+   "t0": 242.0,
+   "h": "1821c0d6",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Four. Move the branch ref to the last new commit, and attach HEAD to the branch again.",
+   "tele": "Four. Move the branch ref to the last new commit, and attach HEAD to the branch again.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 25,
+   "line": 81,
+   "t0": 270.4,
+   "h": "d711886e",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Two words in that description deserve attention. \"Reachable\": Git has no notion of a parent branch, so the set of commits is computed from the graph, not from where you believe the branch started. And \"copy\": a commit object is never modified. The copies are new objects with new commit IDs.",
+   "tele": "Two words in that description deserve attention. \"Reachable\": Git has no notion of a parent branch, so the set of commits is computed from the graph, not from where you believe the branch started. And \"copy\": a commit object is never modified. The copies are new objects with new commit IDs.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 25,
+   "line": 83,
+   "t0": 277.2,
+   "h": "6d83a0d6",
+   "anim": {
+    "group": 17,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Inside .git: new commit objects, and new tree objects wherever the combined content differs from anything stored before. Blobs, the stored file contents, are reused when file content is unchanged. One branch ref is rewritten, once, at the end. HEAD is detached while the rebase runs. ORIG_HEAD records the old tip. The reflogs of HEAD and of the branch, Git's local lists of where each has been, record every step.",
+   "tele": "Inside `.git`: new commit objects, and new tree objects wherever the combined content differs from anything stored before. Blobs, the stored file contents, are reused when file content is unchanged. One branch ref is rewritten, once, at the end. HEAD is detached while the rebase runs. `ORIG_HEAD` records the old tip. The reflogs of HEAD and of the branch, Git's local lists of where each has been, record every step.",
+   "words": 70,
+   "est": 28.0,
+   "slide": 25,
+   "line": 85,
+   "t0": 297.6,
+   "h": "f73bbbd6",
+   "anim": {
+    "group": 17,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now the ID. In one sentence: a commit ID is a hash of the commit object, the commit object names its parent and its tree, and a replayed commit has a different parent and usually a different tree, so it can't have the same ID.",
+   "tele": "Now the ID. In one sentence: a commit ID is a hash of the commit object, the commit object names its parent and its tree, and a replayed commit has a different parent and usually a different tree, so it can't have the same ID.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 26,
+   "line": 89,
+   "t0": 325.6,
+   "h": "8dcef04c",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 5,
+      "to": 5,
+      "says": [
+       "A new parent means a new ID, for this commit and for every commit after it"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "And because each commit names its parent by ID, a new ID for one commit forces a new ID for every commit after it. IDs change from the first rewritten commit onward, never before it.",
+   "tele": "And because each commit names its parent by ID, a new ID for one commit forces a new ID for every commit after it. IDs change from the first rewritten commit onward, never before it.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 26,
+   "line": 91,
+   "t0": 343.6,
+   "h": "a4edfd49",
+   "anim": {
+    "group": 17,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When not to rebase? The textbook calls it the most important judgment in the chapter. Both everyday uses are safe on a branch that only you use, and both become a team incident on a branch that others have based work on.",
+   "tele": "When not to rebase? The textbook calls it the most important judgment in the chapter. Both everyday uses are safe on a branch that only you use, and both become a team incident on a branch that others have based work on.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 27,
+   "line": 95,
+   "t0": 357.6,
+   "h": "4cbacf7e",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 28,
+   "line": 97,
+   "t0": 374.4,
+   "h": "",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "A picture helps. The textbook's analogy: you wrote three amendments to version 4 of a contract. Meanwhile the other party issued version 6. Rebasing is redoing your three amendments, one after the other, against version 6, so that the file reads as if you had started from version 6.",
+   "tele": "A picture helps. The textbook's analogy: you wrote three amendments to version 4 of a contract. Meanwhile the other party issued version 6. Rebasing is redoing your three amendments, one after the other, against version 6, so that the file reads as if you had started from version 6.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 29,
+   "line": 101,
+   "t0": 375.9,
+   "h": "fe1a0b3a",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "It breaks in two places, and both are the lesson. First, the three amendments you wrote against version 4 aren't shredded. They stay in the drawer, the object database, reachable through the reflog. Second, nobody retypes anything. Each amendment is carried over by a three-way merge that Git computes, and that merge can stop and ask you to decide.",
+   "tele": "It breaks in two places, and both are the lesson. First, the three amendments you wrote against version 4 aren't shredded. They stay in the drawer, the object database, reachable through the reflog. Second, nobody retypes anything. Each amendment is carried over by a three-way merge that Git computes, and that merge can stop and ask you to decide.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 30,
+   "line": 107,
+   "t0": 395.5,
+   "h": "bb0959be",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.273,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.547,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "From today, stop saying \"rebase moves my commits\". Say \"rebase copies\". The word \"moves\" hides the originals, and the originals are where every one of the CTO's four questions gets answered.",
+   "tele": "From today, stop saying \"rebase moves my commits\". Say \"rebase copies\". The word \"moves\" hides the originals, and the originals are where every one of the CTO's four questions gets answered.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 31,
+   "line": 111,
+   "t0": 419.1,
+   "h": "08e6a517",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     },
+     {
+      "at": 0.168,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 32,
+   "line": 113,
+   "t0": 431.5,
+   "h": "",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "First the before picture, with the real IDs. feat/rerank has three commits of its own, cut from 8afc6bd. main has gained two.",
+   "tele": "First the before picture, with the real IDs. `feat/rerank` has three commits of its own, cut from `8afc6bd`. `main` has gained two.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 33,
+   "line": 135,
+   "t0": 433.0,
+   "h": "9d7f1d37",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "After the rebase, nothing was erased. Six commits where there were three. The upper three have no branch, and two names still reach them: ORIG_HEAD and the reflog entry feat/rerank@{1}.",
+   "tele": "After the rebase, nothing was erased. Six commits where there were three. The upper three have no branch, and two names still reach them: `ORIG_HEAD` and the reflog entry `feat/rerank@{1}`.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 34,
+   "line": 139,
+   "t0": 441.8,
+   "h": "4adeac38",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 35,
+   "line": 141,
+   "t0": 454.2,
+   "h": "",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 1: before.",
+   "tele": "Step 1: before.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 36,
+   "line": 145,
+   "t0": 455.7,
+   "h": "d4deaf26",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three commits on the branch: 5ee19f0, af65a92, bd62876. Predict: after git rebase main, how many of these three IDs appear in the branch's log? Say it out loud. I'll wait.",
+   "tele": "Three commits on the branch: `5ee19f0`, `af65a92`, `bd62876`. Predict: after `git rebase main`, how many of these three IDs appear in the branch's log? Say it out loud. I'll wait.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 37,
+   "line": 160,
+   "t0": 456.9,
+   "h": "eeca51a7",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 37,
+   "line": 162,
+   "t0": 468.9,
+   "h": "",
+   "anim": {
+    "group": 26,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Rebasing (1/3) is a progress line. In a terminal the three lines overwrite each other. The last line names the one ref that moved.",
+   "tele": "`Rebasing (1/3)` is a progress line. In a terminal the three lines overwrite each other. The last line names the one ref that moved.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 38,
+   "line": 176,
+   "t0": 473.4,
+   "h": "e50b0fd7",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "None of them. The branch now holds 742ab58, ade2990 and 976a161, on top of 82f1fbb. Same three subjects, three new IDs. And the second command shows that the three original commits still exist: ORIG_HEAD points at the old tip bd62876.",
+   "tele": "None of them. The branch now holds `742ab58`, `ade2990` and `976a161`, on top of `82f1fbb`. Same three subjects, three new IDs. And the second command shows that the three original commits still exist: `ORIG_HEAD` points at the old tip `bd62876`.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 39,
+   "line": 194,
+   "t0": 483.0,
+   "h": "08b28158",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.821,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 2: the objects. Put the first commit of the branch before and after side by side. Quick quiz before you look. Which field of the commit object must differ in the copy? A, the author. B, the parent. C, the message. Your answer?",
+   "tele": "Step 2: the objects. Put the first commit of the branch before and after side by side. Quick quiz before you look. Which field of the commit object must differ in the copy? A, the author. B, the parent. C, the message. Your answer?",
+   "words": 44,
+   "est": 17.6,
+   "slide": 40,
+   "line": 196,
+   "t0": 499.0,
+   "h": "4a54ce5c",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 40,
+   "line": 198,
+   "t0": 516.6,
+   "h": "",
+   "anim": {
+    "group": 29,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 7.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 7.0,
+   "slide": 41,
+   "line": null,
+   "t0": 521.1,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.9,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "B, the parent, and it's not alone. Three of the five inputs to the hash changed: tree, parent, committer. A copy would get a new ID even with the same parent and tree, because the committer date moves. That's why Git doesn't copy commits that would come out identical. It fast-forwards over them unless you pass --no-ff.",
+   "tele": "B, the parent, and it's not alone. Three of the five inputs to the hash changed: tree, parent, committer. A copy would get a new ID even with the same parent and tree, because the committer date moves. That's why Git doesn't copy commits that would come out identical. It fast-forwards over them unless you pass `--no-ff`.",
+   "words": 57,
+   "est": 22.8,
+   "slide": 42,
+   "line": 235,
+   "t0": 528.1,
+   "h": "368d6bca",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "table",
+      "from": null,
+      "to": {
+       "shown": 5
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 3: what did not change. A patch ID is a hash of a commit's diff with line numbers ignored.",
+   "tele": "Step 3: what did not change. A patch ID is a hash of a commit's diff with line numbers ignored.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 43,
+   "line": 237,
+   "t0": 550.9,
+   "h": "1223ff1d",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Same patch ID in the first column, different commit IDs in the second. Git uses this equivalence to recognise \"the same change under another ID\". You'll meet it again when a rebase drops a commit on purpose. And that's how the CTO's fourth question can be a yes: step one leaves out a commit whose change is already in the upstream, and no error is printed.",
+   "tele": "Same patch ID in the first column, different commit IDs in the second. Git uses this equivalence to recognise \"the same change under another ID\". You'll meet it again when a rebase drops a commit on purpose. And that's how the CTO's fourth question can be a yes: step one leaves out a commit whose change is already in the upstream, and no error is printed.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 44,
+   "line": 248,
+   "t0": 558.9,
+   "h": "e43c9768",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 4: the reflogs.",
+   "tele": "Step 4: the reflogs.",
+   "words": 4,
+   "est": 1.6,
+   "slide": 45,
+   "line": 250,
+   "t0": 585.3,
+   "h": "d6799bda",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Read the HEAD reflog from the bottom. Start, which is a checkout of main. Three picks. Finish, returning to the branch. That's the four steps of the manual, recorded. The branch's own reflog has one line for the whole rebase, and feat/rerank@{1} is the old tip, bd62876.",
+   "tele": "Read the HEAD reflog from the bottom. Start, which is a checkout of `main`. Three picks. Finish, returning to the branch. That's the four steps of the manual, recorded. The branch's own reflog has one line for the whole rebase, and `feat/rerank@{1}` is the old tip, `bd62876`.",
+   "words": 48,
+   "est": 19.2,
+   "slide": 46,
+   "line": 270,
+   "t0": 586.9,
+   "h": "c29406ab",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 5: nothing to do.",
+   "tele": "Step 5: nothing to do.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 47,
+   "line": 272,
+   "t0": 606.1,
+   "h": "b16d61f0",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Rebase again, and the branch \"is up to date\". And rebasing main onto the feature branch copies nothing: main has no commits that the branch lacks, so it's moved forward to the same commit, 976a161.",
+   "tele": "Rebase again, and the branch \"is up to date\". And rebasing `main` onto the feature branch copies nothing: `main` has no commits that the branch lacks, so it's moved forward to the same commit, `976a161`.",
+   "words": 35,
+   "est": 14.0,
+   "slide": 48,
+   "line": 292,
+   "t0": 608.1,
+   "h": "f5754c10",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 6: the same rebase by hand. labs/run ch09/rebase-by-hand. Detach, cherry-pick the range, move the branch. git cherry-pick 🟡 CAUTION.",
+   "tele": "Step 6: the same rebase by hand. `labs/run ch09/rebase-by-hand`. Detach, cherry-pick the range, move the branch. `git cherry-pick` 🟡 CAUTION.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 49,
+   "line": 294,
+   "t0": 622.1,
+   "h": "414d82c0",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Three new commits on a detached HEAD. Try it now, thirty seconds, on paper: draw the graph as it is at this moment, and put the label feat/rerank where it points. Then say it out loud.",
+   "tele": "Three new commits on a detached HEAD. Try it now, thirty seconds, on paper: draw the graph as it is at this moment, and put the label `feat/rerank` where it points. Then say it out loud.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 50,
+   "line": 320,
+   "t0": 629.7,
+   "h": "bd1432d9",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.72,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.82,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 50,
+   "line": 322,
+   "t0": 644.1,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.8,
+   "slide": 51,
+   "line": null,
+   "t0": 648.6,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 4.06,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Still at the old commits. The three new commits belong to no branch, and only HEAD reaches them. This is the state a real rebase is in for most of its running time.",
+   "tele": "Still at the old commits. The three new commits belong to no branch, and only HEAD reaches them. This is the state a real rebase is in for most of its running time.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 52,
+   "line": 344,
+   "t0": 654.4,
+   "h": "1fb59e73",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.372,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git switch -C <branch> 🟡, git checkout -B in the manual and in older scripts, creates the branch at HEAD or, if it exists, resets it to HEAD. That's the whole trick of step 4.",
+   "tele": "`git switch -C <branch>` 🟡, `git checkout -B` in the manual and in older scripts, creates the branch at HEAD or, if it exists, resets it to HEAD. That's the whole trick of step 4.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 53,
+   "line": 360,
+   "t0": 667.6,
+   "h": "0586e6d8",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Step 7: compare with the real thing. The demo keeps the hand-made result under a tag, puts the branch back with git reset --hard 🔴 on a clean tree, with the old tip taken from the reflog, and lets git rebase do the job.",
+   "tele": "Step 7: compare with the real thing. The demo keeps the hand-made result under a tag, puts the branch back with `git reset --hard` 🔴 on a clean tree, with the old tip taken from the reflog, and lets `git rebase` do the job.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 54,
+   "line": 362,
+   "t0": 681.2,
+   "h": "894d6e1f",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Commit for commit, the trees are identical: 273096f, 9b070ab, 8cc3ece in both lists. git rebase and three hand-typed cherry-picks built the same snapshots. The commit IDs differ only because the real rebase ran a few lab minutes later, so its committer dates differ. A commit ID doesn't record which command made the commit. It's a function of content: tree, parents, author, committer, dates, message.",
+   "tele": "Commit for commit, the trees are identical: `273096f`, `9b070ab`, `8cc3ece` in both lists. `git rebase` and three hand-typed cherry-picks built the same snapshots. The commit IDs differ only because the real rebase ran a few lab minutes later, so its committer dates differ. A commit ID doesn't record which command made the commit. It's a function of content: tree, parents, author, committer, dates, message.",
+   "words": 64,
+   "est": 25.6,
+   "slide": 55,
+   "line": 386,
+   "t0": 698.4,
+   "h": "efad02ef",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.98,
+      "dissolve": true
+     },
+     {
+      "at": 0.222,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 56,
+   "line": 388,
+   "t0": 724.0,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 57,
+   "line": 390,
+   "t0": 725.5,
+   "h": "76698d9b",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Saying \"rebase moved my commits\" and then looking for the old IDs on the branch. Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+   "tele": "Saying \"rebase moved my commits\" and then looking for the old IDs on the branch. Root cause: a commit object is never modified; rebase wrote new objects and moved one ref.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 58,
+   "line": 394,
+   "t0": 727.5,
+   "h": "e3e259e0",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting the same ID because the diff is identical. Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+   "tele": "Expecting the same ID because the diff is identical. Root cause: the ID hashes the commit object, whose parent, committer and usually tree changed; the patch ID is what stayed the same.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 59,
+   "line": 394,
+   "t0": 739.9,
+   "h": "31f53ec5",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Believing the originals are deleted. Root cause: nothing was removed from the object database; ORIG_HEAD and the branch's reflog still name the old tip.",
+   "tele": "Believing the originals are deleted. Root cause: nothing was removed from the object database; `ORIG_HEAD` and the branch's reflog still name the old tip.",
+   "words": 24,
+   "est": 9.6,
+   "slide": 60,
+   "line": 394,
+   "t0": 752.7,
+   "h": "8341f9a0",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Thinking the branch \"remembers\" where it started. Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+   "tele": "Thinking the branch \"remembers\" where it started. Root cause: Git has no notion of a parent branch; the commits to replay are computed by reachability from the graph.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 61,
+   "line": 394,
+   "t0": 762.3,
+   "h": "1cbb8e5d",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Rebasing and assuming everything that recorded an old ID still points at your work. Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch.",
+   "tele": "Rebasing and assuming everything that recorded an old ID still points at your work. Root cause: review comments, CI statuses, deployment records and tags refer to commit IDs, and those commits are no longer on the branch.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 62,
+   "line": 394,
+   "t0": 773.5,
+   "h": "231ff548",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 63,
+   "line": 400,
+   "t0": 788.3,
+   "h": "",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A training job writes the commit ID of the code it ran into its run metadata. Two days later the engineer rebases the experiment branch, to bring it up to date before review. The model card now cites a commit that isn't on any branch. The commit still exists for a while, but nobody looking at the branch will find it.",
+   "tele": "Now, out of the lab. A training job writes the commit ID of the code it ran into its run metadata. Two days later the engineer rebases the experiment branch, to bring it up to date before review. The model card now cites a commit that isn't on any branch. The commit still exists for a while, but nobody looking at the branch will find it.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 64,
+   "line": 406,
+   "t0": 789.8,
+   "h": "9ff5e8d6",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The model card cites a commit that is on no branch"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The textbook's rule: before you rebase, ask what has already recorded these IDs. A review comment anchored to a commit, a CI status, a deployment record, the ID in run metadata. Tags don't follow a rebase. And signatures are part of the commit object: a replayed commit is a new object, signed only if you sign it now.",
+   "tele": "The textbook's rule: before you rebase, ask what has already recorded these IDs. A review comment anchored to a commit, a CI status, a deployment record, the ID in run metadata. Tags don't follow a rebase. And signatures are part of the commit object: a replayed commit is a new object, signed only if you sign it now.",
+   "words": 58,
+   "est": 23.2,
+   "slide": 65,
+   "line": 412,
+   "t0": 816.2,
+   "h": "aa87d1bd",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 0,
+      "dissolve": true
+     },
+     {
+      "at": 0.36,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": false
+     },
+     {
+      "at": 0.48,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.55,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.62,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The \"Rebase and merge\" button performs this operation on GitHub's servers. According to the documentation, the commits that land on the base branch always have new commit IDs and an updated committer, and they're unsigned, because GitHub can't sign on your behalf. This is described from the documentation, and Chapter 17 covers the three merge buttons.",
+   "tele": "The \"Rebase and merge\" button performs this operation on GitHub's servers. According to the documentation, the commits that land on the base branch always have new commit IDs and an updated committer, and they're unsigned, because GitHub can't sign on your behalf. This is described from the documentation, and Chapter 17 covers the three merge buttons.",
+   "words": 56,
+   "est": 22.4,
+   "slide": 66,
+   "line": 416,
+   "t0": 839.4,
+   "h": "c8b093e8",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 67,
+   "line": 418,
+   "t0": 861.8,
+   "h": "",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Exercise 9.1, Level 1, \"a plain rebase, before and after\", in exercises/m06-m10-integration.md.",
+   "tele": "Your turn. Do Exercise 9.1, Level 1, \"a plain rebase, before and after\", in `exercises/m06-m10-integration.md`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 68,
+   "line": 420,
+   "t0": 863.3,
+   "h": "0884b7ca",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Predict in writing before the rebase:",
+   "tele": "Predict in writing before the rebase:",
+   "words": 6,
+   "est": 2.4,
+   "slide": 69,
+   "line": 422,
+   "t0": 869.3,
+   "h": "89873e56",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Which commits will be replayed? Write the command whose output is that list.",
+   "tele": "Which commits will be replayed? Write the command whose output is that list.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 70,
+   "line": 424,
+   "t0": 871.7,
+   "h": "c135fa68",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "After the rebase, which names will still reach the original commits?",
+   "tele": "After the rebase, which names will still reach the original commits?",
+   "words": 11,
+   "est": 4.4,
+   "slide": 71,
+   "line": 424,
+   "t0": 876.9,
+   "h": "f8a0f092",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 79,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?",
+   "tele": "For the first replayed commit: which fields of the commit object will differ from the original, and which will not?",
+   "words": 20,
+   "est": 8.0,
+   "slide": 72,
+   "line": 424,
+   "t0": 881.3,
+   "h": "420099fe",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 80,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Then verify each prediction with a command. The challenge is Exercise 9.4, Level 2, \"the old commits and the new ones\", in the same file.",
+   "tele": "Then verify each prediction with a command. The challenge is Exercise 9.4, Level 2, \"the old commits and the new ones\", in the same file.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 73,
+   "line": 428,
+   "t0": 889.3,
+   "h": "29ed2ca9",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 3,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 74,
+   "line": 430,
+   "t0": 899.3,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Q143: \"Why does a rebase change commit hashes: why does every rebased commit have a new ID even when its diff is identical? Which fields of the commit object changed, and which did not?\"",
+   "tele": "Q143: \"Why does a rebase change commit hashes: why does every rebased commit have a new ID even when its diff is identical? Which fields of the commit object changed, and which did not?\"",
+   "words": 34,
+   "est": 13.6,
+   "slide": 75,
+   "line": 434,
+   "t0": 900.8,
+   "h": "65547bb8",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 83,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 75,
+   "line": 436,
+   "t0": 914.4,
+   "h": "",
+   "anim": {
+    "group": 56,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 84,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud first. A strong answer starts from what a commit ID is computed from, and goes through the fields one by one, saying for each whether it changes and why. It explains why the change propagates to every later commit and never to an earlier one. It names the thing that does stay equal between an original and its copy, and what Git uses it for. If you can add what follows for anything that has stored the old IDs, you have connected the mechanism to practice.",
+   "tele": "Answer out loud first. A strong answer starts from what a commit ID is computed from, and goes through the fields one by one, saying for each whether it changes and why. It explains why the change propagates to every later commit and never to an earlier one. It names the thing that does stay equal between an original and its copy, and what Git uses it for. If you can add what follows for anything that has stored the old IDs, you have connected the mechanism to practice.",
+   "words": 89,
+   "est": 35.6,
+   "slide": 76,
+   "line": 438,
+   "t0": 916.4,
+   "h": "16574350",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 77,
+   "line": 440,
+   "t0": 952.0,
+   "h": "",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 78,
+   "line": 444,
+   "t0": 953.5,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A rebase lists the commits my branch has and the upstream lacks, detaches HEAD at the upstream, replays each commit as a cherry-pick, and then moves the branch to the last copy.",
+   "tele": "A rebase lists the commits my branch has and the upstream lacks, detaches HEAD at the upstream, replays each commit as a cherry-pick, and then moves the branch to the last copy.",
+   "words": 32,
+   "est": 12.8,
+   "slide": 79,
+   "line": 446,
+   "t0": 957.5,
+   "h": "72e9eb1c",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.169,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.367,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.542,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.808,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The copies are new objects: parent, committer and usually tree differ, so the ID differs, and every later commit changes with it. Author, author date and message are kept, and the patch ID is the same.",
+   "tele": "The copies are new objects: parent, committer and usually tree differ, so the ID differs, and every later commit changes with it. Author, author date and message are kept, and the patch ID is the same.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 80,
+   "line": 452,
+   "t0": 970.3,
+   "h": "1776cabe",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.164,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.328,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.492,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.656,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The originals are still in the object database, reachable through ORIG_HEAD and the reflog.",
+   "tele": "The originals are still in the object database, reachable through `ORIG_HEAD` and the reflog.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 81,
+   "line": 456,
+   "t0": 984.7,
+   "h": "357c5f18",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 90,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "I can do the same by hand with a detached HEAD, git cherry-pick of the range, and git switch -C.",
+   "tele": "I can do the same by hand with a detached HEAD, `git cherry-pick` of the range, and `git switch -C`.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 82,
+   "line": 460,
+   "t0": 990.3,
+   "h": "978b385a",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 91,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 83,
+   "line": 462,
+   "t0": 998.3,
+   "h": "",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 9.1 to 9.3 of Chapter 9.",
+   "tele": "Read sections 9.1 to 9.3 of Chapter 9.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 84,
+   "line": 464,
+   "t0": 999.8,
+   "h": "fb281442",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "You rebuilt a rebase by hand today, so there's no magic left in it: it copies, and then it moves one ref. Do the exercise, and write your predictions first. Next time: what rebase does internally, the state directory, HEAD and the special refs. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "You rebuilt a rebase by hand today, so there's no magic left in it: it copies, and then it moves one ref. Do the exercise, and write your predictions first. Next time: what rebase does internally, the state directory, HEAD and the special refs. Until then, look at the state first and type second. See you in the next one.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 85,
+   "line": 466,
+   "t0": 1003.0,
+   "h": "9e74dd1f",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1027.0,
+ "narration_words": 2443,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

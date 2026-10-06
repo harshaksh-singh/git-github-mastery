@@ -1,0 +1,63 @@
+# Workflow 2: linting and format checking with ruff, installed through uv.
+#
+# Teaches: a lock-file-driven install (`uv sync --locked`); two checks that both report even
+# when the first fails (`if: ${{ !cancelled() }}`); a job summary through GITHUB_STEP_SUMMARY.
+# Chapter 20A, section 20A.13. Lab 26.2.
+#
+# Needs uv.lock in the repository (created with `uv lock` in Lab 26.2).
+# Copy to .github/workflows/02-lint.yml in the inventory-api practice repository.
+# Parse-checked and assembled from documented syntax; not executed on GitHub by the author.
+
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    name: ruff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install the project and the dev group from the lock file
+        run: uv sync --locked
+
+      - name: Lint
+        id: lint
+        run: uv run ruff check .
+
+      # Runs even when the lint step failed, so one push reports both problems.
+      - name: Check formatting
+        id: format
+        if: ${{ !cancelled() }}
+        run: uv run ruff format --check .
+
+      - name: Write the job summary
+        if: ${{ !cancelled() }}
+        env:
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          FORMAT_OUTCOME: ${{ steps.format.outcome }}
+        run: |
+          {
+            echo "### ruff"
+            echo ""
+            echo "| Check | Outcome |"
+            echo "|---|---|"
+            echo "| ruff check | $LINT_OUTCOME |"
+            echo "| ruff format --check | $FORMAT_OUTCOME |"
+          } >> "$GITHUB_STEP_SUMMARY"

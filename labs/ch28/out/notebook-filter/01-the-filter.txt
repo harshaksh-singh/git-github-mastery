@@ -1,0 +1,23 @@
+$ sed -n '10,31p' tools/nbstrip.py
+DROP_CELL_METADATA = ("collapsed", "scrolled", "execution")
+
+
+def strip(nb):
+    """Remove everything that running the notebook adds. Returns the same object."""
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") == "code":
+            cell["outputs"] = []
+            cell["execution_count"] = None
+        for key in DROP_CELL_METADATA:
+            cell.get("metadata", {}).pop(key, None)
+    nb.get("metadata", {}).pop("widgets", None)
+    return nb
+
+
+def dump(nb):
+    # The layout Jupyter itself writes: one-space indent, keys in file order, final newline.
+    return json.dumps(nb, indent=1, ensure_ascii=False) + "\n"
+
+
+def main(argv):
+    if argv[:1] == ["--verify"]:

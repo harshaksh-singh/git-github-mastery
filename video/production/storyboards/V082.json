@@ -1,0 +1,6749 @@
+{
+ "id": "V082",
+ "version": 22,
+ "title": "git describe, Semantic Versioning, and release branches on the Git side",
+ "part": 3,
+ "part_label": "RECOVERY",
+ "part_name": "Investigation, recovery and power tools",
+ "palette": {
+  "accent": "#58A6FF",
+  "accent2": "#B6DBFF",
+  "bg1": "#0D1420",
+  "bg2": "#182739"
+ },
+ "planned_minutes": 22,
+ "chapters": [
+  "ch14b-config-tags-signing.md"
+ ],
+ "script": "video/scripts/V082-git-describe-semantic-versioning-and-release-branches-on-the-git-side.md",
+ "script_sha1": "36edb0c0ea2967150fcae71a95f552344f49aefa",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 8,
+   "line": 26
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 14,
+   "line": 36
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 29,
+   "line": 92
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 34,
+   "line": 116
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 39,
+   "line": 152
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 64,
+   "line": 516
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 71,
+   "line": 526
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 75,
+   "line": 534
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 79,
+   "line": 542
+  },
+  {
+   "name": "RECAP",
+   "beat": 84,
+   "line": 556
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 91,
+   "line": 566
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "git describe, Semantic Versioning, and release branches on the Git side",
+   "part_name": "Investigation, recovery and power tools",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.002
+  },
+  {
+   "kind": "callout",
+   "direction": "On the laptop: `v1.0.0-2-g72212ba`. In CI: `fatal: No names found, cannot describe anything.`",
+   "label": "On the laptop",
+   "code": [
+    "v1.0.0-2-g72212ba",
+    "fatal: No names found, cannot describe anything."
+   ],
+   "quoted": false,
+   "caption": "The service prints its version at start-up.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0035
+  },
+  {
+   "kind": "callout",
+   "direction": "On the laptop: `v1.0.0-2-g72212ba`. In CI: `fatal: No names found, cannot describe anything.`",
+   "label": "On the laptop",
+   "code": [
+    "v1.0.0-2-g72212ba",
+    "fatal: No names found, cannot describe anything."
+   ],
+   "quoted": false,
+   "caption": "Nothing is wrong with the repository on the server.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.025
+  },
+  {
+   "kind": "callout",
+   "direction": "On the laptop: `v1.0.0-2-g72212ba`. In CI: `fatal: No names found, cannot describe anything.`",
+   "label": "On the laptop",
+   "code": [
+    "v1.0.0-2-g72212ba",
+    "fatal: No names found, cannot describe anything."
+   ],
+   "quoted": false,
+   "caption": "A second question follows it into the incident channel: \"Version 1.2.1 has been released. Why does <code>main</code> still call itself 1.2.0-plus-three?\"",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0397
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0521
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0536
+  },
+  {
+   "kind": "keypoint",
+   "body": "All three meet in one production question: which releases contain this fix?",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0862
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 9,
+   "progress": 0.091
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "read every part of a <code>git describe</code> string;",
+    "explain why describe fails or prints a different answer in a shallow clone;",
+    "state the Semantic Versioning rules the section gives;",
+    "cut a release branch from a tag, backport a fix, and tag a patch release;",
+    "answer \"which releases contain this fix\" with tags."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 10,
+   "progress": 0.0925
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "read every part of a <code>git describe</code> string;",
+    "explain why describe fails or prints a different answer in a shallow clone;",
+    "state the Semantic Versioning rules the section gives;",
+    "cut a release branch from a tag, backport a fix, and tag a patch release;",
+    "answer \"which releases contain this fix\" with tags."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.0957
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "read every part of a <code>git describe</code> string;",
+    "explain why describe fails or prints a different answer in a shallow clone;",
+    "state the Semantic Versioning rules the section gives;",
+    "cut a release branch from a tag, backport a fix, and tag a patch release;",
+    "answer \"which releases contain this fix\" with tags."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.1009
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "read every part of a <code>git describe</code> string;",
+    "explain why describe fails or prints a different answer in a shallow clone;",
+    "state the Semantic Versioning rules the section gives;",
+    "cut a release branch from a tag, backport a fix, and tag a patch release;",
+    "answer \"which releases contain this fix\" with tags."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1041
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "read every part of a <code>git describe</code> string;",
+    "explain why describe fails or prints a different answer in a shallow clone;",
+    "state the Semantic Versioning rules the section gives;",
+    "cut a release branch from a tag, backport a fix, and tag a patch release;",
+    "answer \"which releases contain this fix\" with tags."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.11
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 15,
+   "progress": 0.1132
+  },
+  {
+   "kind": "keypoint",
+   "headline": "<code>git describe</code>",
+   "body": "In one sentence: 🟢 SAFE, <code>git describe</code> names a commit by the nearest annotated tag in its history, the number of commits since that tag, and the commit's abbreviated ID.",
+   "section": "CONCEPT",
+   "n": 16,
+   "progress": 0.1147
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=desc title=A_tag,_a_count,_an_ID 37da450-516c4c3-eb112a5 main atag:v1.0.0; HEAD=main; cmd:git_describe; say:On_the_tagged_commit,_the_output_is_the_tag_name:_v1.0.0 => 37da450-516c4c3-eb112a5-f37f723-c053f0d main; eb112a5 atag:v1.0.0; HEAD=main; range:f37f723,c053f0d:2_commits_since_the_tag; cmd:git_describe; say:v1.0.0-2-gc053f0d",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "f37f723",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "c053f0d",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "f37f723"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "sets": {},
+      "caption": "On the tagged commit, the output is the tag name: v1.0.0"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "eb112a5",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {},
+      "cmd": "git describe"
+     },
+     {
+      "add": [
+       "f37f723",
+       "c053f0d"
+      ],
+      "refs": {
+       "main": "c053f0d",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {
+       "range": {
+        "ids": [
+         "f37f723",
+         "c053f0d"
+        ],
+        "label": "2 commits since the tag"
+       }
+      },
+      "caption": "v1.0.0-2-gc053f0d",
+      "cmd": "git describe"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "A tag, a count, an ID",
+    "id": "desc"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1342
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=desc title=A_tag,_a_count,_an_ID 37da450-516c4c3-eb112a5 main atag:v1.0.0; HEAD=main; cmd:git_describe; say:On_the_tagged_commit,_the_output_is_the_tag_name:_v1.0.0 => 37da450-516c4c3-eb112a5-f37f723-c053f0d main; eb112a5 atag:v1.0.0; HEAD=main; range:f37f723,c053f0d:2_commits_since_the_tag; cmd:git_describe; say:v1.0.0-2-gc053f0d",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "f37f723",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "c053f0d",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "f37f723"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "sets": {},
+      "caption": "On the tagged commit, the output is the tag name: v1.0.0"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "eb112a5",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {},
+      "cmd": "git describe"
+     },
+     {
+      "add": [
+       "f37f723",
+       "c053f0d"
+      ],
+      "refs": {
+       "main": "c053f0d",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {
+       "range": {
+        "ids": [
+         "f37f723",
+         "c053f0d"
+        ],
+        "label": "2 commits since the tag"
+       }
+      },
+      "caption": "v1.0.0-2-gc053f0d",
+      "cmd": "git describe"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "A tag, a count, an ID",
+    "id": "desc"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1398
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=desc title=A_tag,_a_count,_an_ID 37da450-516c4c3-eb112a5 main atag:v1.0.0; HEAD=main; cmd:git_describe; say:On_the_tagged_commit,_the_output_is_the_tag_name:_v1.0.0 => 37da450-516c4c3-eb112a5-f37f723-c053f0d main; eb112a5 atag:v1.0.0; HEAD=main; range:f37f723,c053f0d:2_commits_since_the_tag; cmd:git_describe; say:v1.0.0-2-gc053f0d",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "f37f723",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "c053f0d",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "f37f723"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "sets": {},
+      "caption": "On the tagged commit, the output is the tag name: v1.0.0"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "eb112a5",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {},
+      "cmd": "git describe"
+     },
+     {
+      "add": [
+       "f37f723",
+       "c053f0d"
+      ],
+      "refs": {
+       "main": "c053f0d",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {
+       "range": {
+        "ids": [
+         "f37f723",
+         "c053f0d"
+        ],
+        "label": "2 commits since the tag"
+       }
+      },
+      "caption": "v1.0.0-2-gc053f0d",
+      "cmd": "git describe"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "A tag, a count, an ID",
+    "id": "desc"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "upto": 3,
+   "says": [
+    "The_whole_string_is_also_a_valid_revision"
+   ],
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1617
+  },
+  {
+   "kind": "keypoint",
+   "headline": "<code>git describe</code>",
+   "body": "Options you'll use. <code>--dirty</code> appends a mark when tracked files differ from HEAD, so a build from a modified working tree can't pass as a release.",
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1701
+  },
+  {
+   "kind": "scene",
+   "direction": "shallow: id=shallow title=What_a_shallow_clone_lacks ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; say:A_full_clone:_v1.0.0-2-g72212ba => ...older-*1-*2-72212ba main; HEAD=main; absent:...older,*1,*2; cmd:git_clone_--depth_1; say:Depth_1:_one_commit_and_no_tags; name:depth => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; absent:...older,*2; cmd:git_fetch_--depth_1_origin_tag_v1.0.0; say:The_tag_is_here,_the_commit_between_is_not:_nothing_to_count; name:tagonly => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; cmd:git_fetch_--unshallow; say:Full_history_again:_v1.0.0-2-g72212ba; name:unshallow",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "...older",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "elision",
+      "text": "older"
+     },
+     {
+      "id": "*1",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "...older"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*2",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "*1"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "72212ba",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "*2"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "...older",
+       "*1",
+       "*2",
+       "72212ba"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "caption": "A full clone: v1.0.0-2-g72212ba"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*1",
+       "*2"
+      ],
+      "caption": "Depth 1: one commit and no tags",
+      "cmd": "git clone --depth 1",
+      "name": "depth"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*2"
+      ],
+      "caption": "The tag is here, the commit between is not: nothing to count",
+      "cmd": "git fetch --depth 1 origin tag v1.0.0",
+      "name": "tagonly"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "caption": "Full history again: v1.0.0-2-g72212ba",
+      "cmd": "git fetch --unshallow",
+      "name": "unshallow"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "What a shallow clone lacks",
+    "id": "shallow"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "depth",
+    "tagonly",
+    "unshallow"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.2039
+  },
+  {
+   "kind": "keypoint",
+   "headline": "Semantic Versioning 2.0.0",
+   "body": "Git attaches no meaning to a tag name.",
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2306
+  },
+  {
+   "kind": "bullets",
+   "source": {
+    "file": "textbook/ch14b-config-tags-signing.md",
+    "line": 1851,
+    "section": "14B.13",
+    "kind": "list",
+    "score": 0,
+    "candidates": 1
+   },
+   "direction": "The rules as section 14B.13 gives them.",
+   "ordered": false,
+   "fs": 34,
+   "items": [
+    "A version is <code>MAJOR.MINOR.PATCH</code>. Incompatible API changes raise MAJOR; backward-compatible additions raise MINOR; backward-compatible fixes raise PATCH.",
+    "A released version is immutable: its contents \"MUST NOT be modified\". Any change is a new version. This is the same rule as section 14B.11, stated for packages.",
+    "<code>0.y.z</code> is initial development, where anything may change.",
+    "A pre-release is marked by a hyphen and dot-separated identifiers (<code>1.3.0-rc.1</code>) and has <i>lower</i> precedence than the release (<code>1.3.0-rc.1 &lt; 1.3.0</code>). Numeric identifiers compare as numbers, so <code>rc.2 &lt; rc.11</code>.",
+    "Build metadata follows a plus sign (<code>1.3.0+build.7</code>) and is ignored when versions are compared.",
+    "The specification's FAQ says that <code>v1.2.3</code> is not itself a semantic version; the <code>v</code> prefix is a common way to mark a tag as a version. The version is <code>1.2.3</code>."
+   ],
+   "start": 1,
+   "shown": 6,
+   "current": 0,
+   "caption": "A version is MAJOR, MINOR, PATCH.",
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2374
+  },
+  {
+   "kind": "bullets",
+   "source": {
+    "file": "textbook/ch14b-config-tags-signing.md",
+    "line": 1851,
+    "section": "14B.13",
+    "kind": "list",
+    "score": 0,
+    "candidates": 1
+   },
+   "direction": "The rules as section 14B.13 gives them.",
+   "ordered": false,
+   "fs": 34,
+   "items": [
+    "A version is <code>MAJOR.MINOR.PATCH</code>. Incompatible API changes raise MAJOR; backward-compatible additions raise MINOR; backward-compatible fixes raise PATCH.",
+    "A released version is immutable: its contents \"MUST NOT be modified\". Any change is a new version. This is the same rule as section 14B.11, stated for packages.",
+    "<code>0.y.z</code> is initial development, where anything may change.",
+    "A pre-release is marked by a hyphen and dot-separated identifiers (<code>1.3.0-rc.1</code>) and has <i>lower</i> precedence than the release (<code>1.3.0-rc.1 &lt; 1.3.0</code>). Numeric identifiers compare as numbers, so <code>rc.2 &lt; rc.11</code>.",
+    "Build metadata follows a plus sign (<code>1.3.0+build.7</code>) and is ignored when versions are compared.",
+    "The specification's FAQ says that <code>v1.2.3</code> is not itself a semantic version; the <code>v</code> prefix is a common way to mark a tag as a version. The version is <code>1.2.3</code>."
+   ],
+   "start": 1,
+   "shown": 6,
+   "caption": "Zero-dot versions are initial development, where anything may change.",
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2557
+  },
+  {
+   "kind": "bullets",
+   "source": {
+    "file": "textbook/ch14b-config-tags-signing.md",
+    "line": 1851,
+    "section": "14B.13",
+    "kind": "list",
+    "score": 0,
+    "candidates": 1
+   },
+   "direction": "The rules as section 14B.13 gives them.",
+   "ordered": false,
+   "fs": 34,
+   "items": [
+    "A version is <code>MAJOR.MINOR.PATCH</code>. Incompatible API changes raise MAJOR; backward-compatible additions raise MINOR; backward-compatible fixes raise PATCH.",
+    "A released version is immutable: its contents \"MUST NOT be modified\". Any change is a new version. This is the same rule as section 14B.11, stated for packages.",
+    "<code>0.y.z</code> is initial development, where anything may change.",
+    "A pre-release is marked by a hyphen and dot-separated identifiers (<code>1.3.0-rc.1</code>) and has <i>lower</i> precedence than the release (<code>1.3.0-rc.1 &lt; 1.3.0</code>). Numeric identifiers compare as numbers, so <code>rc.2 &lt; rc.11</code>.",
+    "Build metadata follows a plus sign (<code>1.3.0+build.7</code>) and is ignored when versions are compared.",
+    "The specification's FAQ says that <code>v1.2.3</code> is not itself a semantic version; the <code>v</code> prefix is a common way to mark a tag as a version. The version is <code>1.2.3</code>."
+   ],
+   "start": 1,
+   "shown": 6,
+   "caption": "Three consequences for Git. The pre-release rule is why you needed <code>versionsort.suffix</code> when listing tags.",
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.286
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.3162
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.3286
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.3628
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.3832
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=desc title=A_tag,_a_count,_an_ID 37da450-516c4c3-eb112a5 main atag:v1.0.0; HEAD=main; cmd:git_describe; say:On_the_tagged_commit,_the_output_is_the_tag_name:_v1.0.0 => 37da450-516c4c3-eb112a5-f37f723-c053f0d main; eb112a5 atag:v1.0.0; HEAD=main; range:f37f723,c053f0d:2_commits_since_the_tag; cmd:git_describe; say:v1.0.0-2-gc053f0d",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "f37f723",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "c053f0d",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "f37f723"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "sets": {},
+      "caption": "On the tagged commit, the output is the tag name: v1.0.0"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "eb112a5",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {},
+      "cmd": "git describe"
+     },
+     {
+      "add": [
+       "f37f723",
+       "c053f0d"
+      ],
+      "refs": {
+       "main": "c053f0d",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {
+       "range": {
+        "ids": [
+         "f37f723",
+         "c053f0d"
+        ],
+        "label": "2 commits since the tag"
+       }
+      },
+      "caption": "v1.0.0-2-gc053f0d",
+      "cmd": "git describe"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "A tag, a count, an ID",
+    "id": "desc"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "says_before": [
+    "The_whole_string_is_also_a_valid_revision"
+   ],
+   "upto": 3,
+   "says": [
+    "The_whole_string_is_also_a_valid_revision",
+    "From_the_signpost_v1.0.0,_two_commits_forward,_to_c053f0d"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.3846
+  },
+  {
+   "kind": "scene",
+   "direction": "shallow: id=shallow title=What_a_shallow_clone_lacks ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; say:A_full_clone:_v1.0.0-2-g72212ba => ...older-*1-*2-72212ba main; HEAD=main; absent:...older,*1,*2; cmd:git_clone_--depth_1; say:Depth_1:_one_commit_and_no_tags; name:depth => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; absent:...older,*2; cmd:git_fetch_--depth_1_origin_tag_v1.0.0; say:The_tag_is_here,_the_commit_between_is_not:_nothing_to_count; name:tagonly => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; cmd:git_fetch_--unshallow; say:Full_history_again:_v1.0.0-2-g72212ba; name:unshallow",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "...older",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "elision",
+      "text": "older"
+     },
+     {
+      "id": "*1",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "...older"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*2",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "*1"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "72212ba",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "*2"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "...older",
+       "*1",
+       "*2",
+       "72212ba"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "caption": "A full clone: v1.0.0-2-g72212ba"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*1",
+       "*2"
+      ],
+      "caption": "Depth 1: one commit and no tags",
+      "cmd": "git clone --depth 1",
+      "name": "depth"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*2"
+      ],
+      "caption": "The tag is here, the commit between is not: nothing to count",
+      "cmd": "git fetch --depth 1 origin tag v1.0.0",
+      "name": "tagonly"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "caption": "Full history again: v1.0.0-2-g72212ba",
+      "cmd": "git fetch --unshallow",
+      "name": "unshallow"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "What a shallow clone lacks",
+    "id": "shallow"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "depth",
+    "tagonly",
+    "unshallow"
+   ],
+   "base": 3,
+   "upto": 3,
+   "says": [
+    "A_shallow_clone:_no_signpost_in_view,_no_road_walked"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.4062
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "base": 5,
+   "upto": 5,
+   "says": [
+    "A_signpost_on_a_side_road:_v1.2.1_is_invisible_from_main"
+   ],
+   "section": "MENTAL MODEL",
+   "n": 32,
+   "progress": 0.4233
+  },
+  {
+   "kind": "keypoint",
+   "body": "Where the model breaks: \"nearest\" isn't about dates.",
+   "section": "MENTAL MODEL",
+   "n": 33,
+   "progress": 0.4348
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.4432
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, on paper. Pause me for thirty seconds.",
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.4447
+  },
+  {
+   "kind": "diagram",
+   "direction": "A describe string split into its three parts, with an arrow from each to the graph. Use the IDs of the transcript.",
+   "text": "            v1.0.0  -  2  -  g c053f0d\n              |        |        |\n              |        |        +--> the abbreviated ID of the described commit (\"g\" for git)\n              |        +-----------> commits between the tag and that commit\n              +--------------------> the nearest annotated tag in its history\n\n  37da450---516c4c3---eb112a5---f37f723---c053f0d      main  (HEAD)\n                      (tag: v1.0.0)   1        2",
+   "section": "DIAGRAM",
+   "n": 36,
+   "progress": 0.4623
+  },
+  {
+   "kind": "diagram",
+   "direction": "The root-cause box of section 14B.12, shown when the demonstration reaches the shallow clone.",
+   "text": "Observed behavior : the build in CI gets a fallback version or fails; locally the version is v1.0.0-2-g72212ba.\nGit state         : the CI checkout is shallow (one commit) and has no refs/tags/.\nMechanism         : git describe needs a tagged ancestor and the commits between it and HEAD.\nRoot cause        : the checkout step fetched one commit; tools that derive versions from tags\n                    (git describe, setuptools-scm and similar) fall back or fail.\nWhy Git does this : a shallow clone is a deliberate trade of history for speed.\nCorrect fix       : fetch full history and tags in jobs that compute a version.\nPrevention        : make the release job fail when git describe --exact-match fails.",
+   "section": "DIAGRAM",
+   "n": 37,
+   "progress": 0.4687
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.4794
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe/01-no-tags",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "fatal: No names found, cannot describe anything."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --always"
+    },
+    {
+     "t": "out",
+     "s": "eb112a5"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag staging-ok"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "fatal: No annotated tags can describe 'eb112a5c44b0b2092c4ef2cae6e75b16da000f73'."
+    },
+    {
+     "t": "out",
+     "s": "However, there were unannotated tags: try --tags."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --tags"
+    },
+    {
+     "t": "out",
+     "s": "staging-ok"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.4809
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe/02-on-the-tag",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git tag -a v1.0.0 -m \"inference-gateway 1.0.0\""
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --long"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-0-geb112a5"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.4913
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe/03-after-the-tag",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --decorate"
+    },
+    {
+     "t": "out",
+     "s": "c053f0d (HEAD -> main) Add token check"
+    },
+    {
+     "t": "out",
+     "s": "f37f723 Add health endpoint"
+    },
+    {
+     "t": "out",
+     "s": "eb112a5 (tag: v1.0.0, tag: staging-ok) Add rate limits"
+    },
+    {
+     "t": "out",
+     "s": "516c4c3 Add model router"
+    },
+    {
+     "t": "out",
+     "s": "37da450 Add README"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-gc053f0d"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --short HEAD"
+    },
+    {
+     "t": "out",
+     "s": "c053f0d"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-list --count v1.0.0..HEAD"
+    },
+    {
+     "t": "out",
+     "s": "2"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline \"$(git describe)\" -1"
+    },
+    {
+     "t": "out",
+     "s": "c053f0d Add token check"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5081
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe/04-options",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git describe --abbrev=0"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --abbrev=12"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-gc053f0d37c02"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe HEAD~1"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-1-gf37f723"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --exact-match"
+    },
+    {
+     "t": "out",
+     "s": "fatal: no tag exactly matches 'c053f0d37c02869f5920caf5d1f46b9fa6270dbc'"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --exact-match HEAD~2"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.5181
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe/05-dirty",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "printf 'def check(token):\\n    return token == \"letmein\"\\n' > gateway/auth.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --dirty"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-gc053f0d-dirty"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --dirty=+local"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-gc053f0d+local"
+    },
+    {
+     "t": "cmd",
+     "s": "git restore gateway/auth.py"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --dirty"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-gc053f0d"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.526
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe/06-which-tags",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git tag -a v1.1.0-rc.1 -m \"Release candidate\" HEAD~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag deployed-staging"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "v1.1.0-rc.1-1-gc053f0d"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --exclude '*-rc.*'"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-gc053f0d"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --tags"
+    },
+    {
+     "t": "out",
+     "s": "deployed-staging"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --tags --match 'v[0-9]*'"
+    },
+    {
+     "t": "out",
+     "s": "v1.1.0-rc.1-1-gc053f0d"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5567
+  },
+  {
+   "kind": "terminal",
+   "direction": "Replay `labs/run ch14b/describe-shallow`. In a full clone:",
+   "mode": "out",
+   "title": "ch14b/describe-shallow/01-full-clone",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-g72212ba"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.5754
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe-shallow/02-shallow",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "cd ../.."
+    },
+    {
+     "t": "cmd",
+     "s": "git clone -q --depth 1 \"file://$PWD/server/inference-gateway.git\" ci/inference-gateway"
+    },
+    {
+     "t": "cmd",
+     "s": "cd ci/inference-gateway"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --is-shallow-repository"
+    },
+    {
+     "t": "out",
+     "s": "true"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline"
+    },
+    {
+     "t": "out",
+     "s": "72212ba Add token check"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "fatal: No names found, cannot describe anything."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe --always"
+    },
+    {
+     "t": "out",
+     "s": "72212ba"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.5822
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe-shallow/03-tags-without-history",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git fetch -q --depth 1 origin tag v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "fatal: No tags can describe '72212bae7bd9bd85bd7300a9a92d9f8d50f89807'."
+    },
+    {
+     "t": "out",
+     "s": "Try --always, or create some tags."
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.6002
+  },
+  {
+   "kind": "scene",
+   "direction": "shallow: id=shallow title=What_a_shallow_clone_lacks ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; say:A_full_clone:_v1.0.0-2-g72212ba => ...older-*1-*2-72212ba main; HEAD=main; absent:...older,*1,*2; cmd:git_clone_--depth_1; say:Depth_1:_one_commit_and_no_tags; name:depth => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; absent:...older,*2; cmd:git_fetch_--depth_1_origin_tag_v1.0.0; say:The_tag_is_here,_the_commit_between_is_not:_nothing_to_count; name:tagonly => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; cmd:git_fetch_--unshallow; say:Full_history_again:_v1.0.0-2-g72212ba; name:unshallow",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "...older",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "elision",
+      "text": "older"
+     },
+     {
+      "id": "*1",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "...older"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*2",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "*1"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "72212ba",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "*2"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "...older",
+       "*1",
+       "*2",
+       "72212ba"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "caption": "A full clone: v1.0.0-2-g72212ba"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*1",
+       "*2"
+      ],
+      "caption": "Depth 1: one commit and no tags",
+      "cmd": "git clone --depth 1",
+      "name": "depth"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*2"
+      ],
+      "caption": "The tag is here, the commit between is not: nothing to count",
+      "cmd": "git fetch --depth 1 origin tag v1.0.0",
+      "name": "tagonly"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "caption": "Full history again: v1.0.0-2-g72212ba",
+      "cmd": "git fetch --unshallow",
+      "name": "unshallow"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "What a shallow clone lacks",
+    "id": "shallow"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "depth",
+    "tagonly",
+    "unshallow"
+   ],
+   "base": 3,
+   "says_before": [
+    "A_shallow_clone:_no_signpost_in_view,_no_road_walked"
+   ],
+   "upto": 4,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.605
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/describe-shallow/04-unshallow",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git fetch --unshallow"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse --is-shallow-repository"
+    },
+    {
+     "t": "out",
+     "s": "false"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe"
+    },
+    {
+     "t": "out",
+     "s": "v1.0.0-2-g72212ba"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6217
+  },
+  {
+   "kind": "scene",
+   "direction": "shallow: id=shallow title=What_a_shallow_clone_lacks ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; say:A_full_clone:_v1.0.0-2-g72212ba => ...older-*1-*2-72212ba main; HEAD=main; absent:...older,*1,*2; cmd:git_clone_--depth_1; say:Depth_1:_one_commit_and_no_tags; name:depth => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; absent:...older,*2; cmd:git_fetch_--depth_1_origin_tag_v1.0.0; say:The_tag_is_here,_the_commit_between_is_not:_nothing_to_count; name:tagonly => ...older-*1-*2-72212ba main; *1 atag:v1.0.0; HEAD=main; cmd:git_fetch_--unshallow; say:Full_history_again:_v1.0.0-2-g72212ba; name:unshallow",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "...older",
+      "col": 0,
+      "row": 0,
+      "parents": [],
+      "kind": "elision",
+      "text": "older"
+     },
+     {
+      "id": "*1",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "...older"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "*2",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "*1"
+      ],
+      "kind": "anon",
+      "text": ""
+     },
+     {
+      "id": "72212ba",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "*2"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "...older",
+       "*1",
+       "*2",
+       "72212ba"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "absent": [],
+      "caption": "A full clone: v1.0.0-2-g72212ba"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": []
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*1",
+       "*2"
+      ],
+      "caption": "Depth 1: one commit and no tags",
+      "cmd": "git clone --depth 1",
+      "name": "depth"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [
+       "...older",
+       "*2"
+      ],
+      "caption": "The tag is here, the commit between is not: nothing to count",
+      "cmd": "git fetch --depth 1 origin tag v1.0.0",
+      "name": "tagonly"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "72212ba",
+       "v1.0.0": "*1"
+      },
+      "head": "main",
+      "notes": [],
+      "absent": [],
+      "caption": "Full history again: v1.0.0-2-g72212ba",
+      "cmd": "git fetch --unshallow",
+      "name": "unshallow"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "What a shallow clone lacks",
+    "id": "shallow"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "depth",
+    "tagonly",
+    "unshallow"
+   ],
+   "base": 4,
+   "upto": 5,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6259
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/release-branch/01-branch-from-tag",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline --decorate"
+    },
+    {
+     "t": "out",
+     "s": "8ed5c59 (HEAD -> main) Add batch endpoint"
+    },
+    {
+     "t": "out",
+     "s": "362b359 Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": "27d1fb6 Add streaming responses"
+    },
+    {
+     "t": "out",
+     "s": "eb112a5 (tag: v1.2.0) Add rate limits"
+    },
+    {
+     "t": "out",
+     "s": "516c4c3 Add model router"
+    },
+    {
+     "t": "out",
+     "s": "37da450 Add README"
+    },
+    {
+     "t": "cmd",
+     "s": "git switch -c release/1.2 v1.2.0"
+    },
+    {
+     "t": "out",
+     "s": "Switched to a new branch 'release/1.2'"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6299
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/release-branch/02-backport",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git cherry-pick -x main~1"
+    },
+    {
+     "t": "out",
+     "s": "[release/1.2 c40960e] Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": " Date: Mon Sep 7 10:08:00 2026 +0530"
+    },
+    {
+     "t": "out",
+     "s": " 1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+     "t": "cmd",
+     "s": "git log -1 --format=%B"
+    },
+    {
+     "t": "out",
+     "s": "Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "(cherry picked from commit 362b3592d29ea9c07389c0782fd46c24269b6a3f)"
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "cmd",
+     "s": "git tag -a v1.2.1 -m \"inference-gateway 1.2.1: fix max_tokens limit\""
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.6418
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/release-branch/03-two-lines",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --graph --oneline --decorate --all"
+    },
+    {
+     "t": "out",
+     "s": "* c40960e (HEAD -> release/1.2, tag: v1.2.1) Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": "| * 8ed5c59 (main) Add batch endpoint"
+    },
+    {
+     "t": "out",
+     "s": "| * 362b359 Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": "| * 27d1fb6 Add streaming responses"
+    },
+    {
+     "t": "out",
+     "s": "|/"
+    },
+    {
+     "t": "out",
+     "s": "* eb112a5 (tag: v1.2.0) Add rate limits"
+    },
+    {
+     "t": "out",
+     "s": "* 516c4c3 Add model router"
+    },
+    {
+     "t": "out",
+     "s": "* 37da450 Add README"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe release/1.2"
+    },
+    {
+     "t": "out",
+     "s": "v1.2.1"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe main"
+    },
+    {
+     "t": "out",
+     "s": "v1.2.0-3-g8ed5c59"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6578
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "base": 5,
+   "says_before": [
+    "A_signpost_on_a_side_road:_v1.2.1_is_invisible_from_main"
+   ],
+   "upto": 6,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.6639
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/release-branch/04-what-contains-the-fix",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git tag --contains main~1"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag --contains release/1.2"
+    },
+    {
+     "t": "out",
+     "s": "v1.2.1"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag --merged main"
+    },
+    {
+     "t": "out",
+     "s": "v1.2.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git cherry -v release/1.2 main"
+    },
+    {
+     "t": "out",
+     "s": "+ 27d1fb6a67cdb41e87d5771c3e10310823ee0dcb Add streaming responses"
+    },
+    {
+     "t": "out",
+     "s": "- 362b3592d29ea9c07389c0782fd46c24269b6a3f Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": "+ 8ed5c59df2f47f80f396b5ba11769efbe1d6491e Add batch endpoint"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.6791
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "base": 6,
+   "upto": 6,
+   "says": [
+    "git_cherry_compares_patches:_362b359_has_an_equivalent,_c40960e"
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.6843
+  },
+  {
+   "kind": "keypoint",
+   "body": "When 1.3.0 is cut from <code>main</code>:",
+   "section": "LIVE TERMINAL DEMO",
+   "n": 57,
+   "progress": 0.7046
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch14b/release-branch/05-next-minor",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git switch -q main"
+    },
+    {
+     "t": "cmd",
+     "s": "git tag -a v1.3.0 -m \"inference-gateway 1.3.0\""
+    },
+    {
+     "t": "cmd",
+     "s": "git tag --sort=version:refname"
+    },
+    {
+     "t": "out",
+     "s": "v1.2.0"
+    },
+    {
+     "t": "out",
+     "s": "v1.2.1"
+    },
+    {
+     "t": "out",
+     "s": "v1.3.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git describe main"
+    },
+    {
+     "t": "out",
+     "s": "v1.3.0"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline v1.2.1..v1.3.0"
+    },
+    {
+     "t": "out",
+     "s": "8ed5c59 Add batch endpoint"
+    },
+    {
+     "t": "out",
+     "s": "362b359 Fix max_tokens limit"
+    },
+    {
+     "t": "out",
+     "s": "27d1fb6 Add streaming responses"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline --cherry-pick --right-only v1.2.1...v1.3.0"
+    },
+    {
+     "t": "out",
+     "s": "8ed5c59 Add batch endpoint"
+    },
+    {
+     "t": "out",
+     "s": "27d1fb6 Add streaming responses"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 58,
+   "progress": 0.707
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=rel title=A_release_branch_starts_at_a_tag 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; HEAD=main => + eb112a5 release/1.2; HEAD=release/1.2; cmd:git_switch_-c_release/1.2_v1.2.0; name:branch => + eb112a5-c40960e release/1.2 atag:v1.2.1; cmd:git_cherry-pick_-x_main~1; name:backport => + same:362b359; same:c40960e; cmd:git_cherry_-v_release/1.2_main; say:One_fix,_two_commits,_two_IDs; name:copies => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; HEAD=release/1.2; same:362b359; same:c40960e; range:27d1fb6,362b359,8ed5c59:v1.2.0..main; cmd:git_describe_main; say:v1.2.0-3-g8ed5c59:_v1.2.1_is_not_an_ancestor_of_main; name:three => 37da450-516c4c3-eb112a5-27d1fb6-362b359-8ed5c59 main; eb112a5 atag:v1.2.0; eb112a5-c40960e release/1.2 atag:v1.2.1; 8ed5c59 atag:v1.3.0; HEAD=main; cmd:git_describe_main; say:Now_main_describes_itself_as_v1.3.0; name:minor",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "27d1fb6",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "362b359",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "27d1fb6"
+      ]
+     },
+     {
+      "id": "8ed5c59",
+      "col": 5,
+      "row": 0,
+      "parents": [
+       "362b359"
+      ]
+     },
+     {
+      "id": "c40960e",
+      "col": 3,
+      "row": 1,
+      "parents": [
+       "eb112a5"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5",
+       "27d1fb6",
+       "362b359",
+       "8ed5c59"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {}
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "eb112a5"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git switch -c release/1.2 v1.2.0",
+      "name": "branch"
+     },
+     {
+      "add": [
+       "c40960e"
+      ],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "cmd": "git cherry-pick -x main~1",
+      "name": "backport"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {},
+      "caption": "One fix, two commits, two IDs",
+      "cmd": "git cherry -v release/1.2 main",
+      "name": "copies"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e"
+      },
+      "head": "release/1.2",
+      "notes": [],
+      "marks": {
+       "362b359": "same",
+       "c40960e": "same"
+      },
+      "sets": {
+       "range": {
+        "ids": [
+         "27d1fb6",
+         "362b359",
+         "8ed5c59"
+        ],
+        "label": "v1.2.0..main"
+       }
+      },
+      "caption": "v1.2.0-3-g8ed5c59: v1.2.1 is not an ancestor of main",
+      "cmd": "git describe main",
+      "name": "three"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "8ed5c59",
+       "v1.2.0": "eb112a5",
+       "release/1.2": "c40960e",
+       "v1.2.1": "c40960e",
+       "v1.3.0": "8ed5c59"
+      },
+      "head": "main",
+      "notes": [],
+      "marks": {},
+      "sets": {},
+      "caption": "Now main describes itself as v1.3.0",
+      "cmd": "git describe main",
+      "name": "minor"
+     }
+    ],
+    "kinds": {
+     "v1.2.0": "atag",
+     "v1.2.1": "atag",
+     "v1.3.0": "atag"
+    },
+    "settle": "on",
+    "title": "A release branch starts at a tag",
+    "id": "rel"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "branch",
+    "backport",
+    "copies",
+    "three",
+    "minor"
+   ],
+   "base": 6,
+   "says_before": [
+    "git_cherry_compares_patches:_362b359_has_an_equivalent,_c40960e"
+   ],
+   "upto": 7,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 59,
+   "progress": 0.7137
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 60,
+   "progress": 0.7253
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 61,
+   "progress": 0.7268
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Computing a version in a shallow CI checkout.</b> Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+    "<b>Fetching only the tag to \"fix\" the shallow build.</b> Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+    "<b>Tagging releases with lightweight tags and wondering why describe ignores them.</b> Root cause: describe uses annotated tags unless <code>--tags</code> is given.",
+    "<b>Looking for the fix's commit ID on the release branch.</b> Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+    "<b>Publishing a describe string as a semantic version.</b> Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 62,
+   "progress": 0.7288
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Computing a version in a shallow CI checkout.</b> Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+    "<b>Fetching only the tag to \"fix\" the shallow build.</b> Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+    "<b>Tagging releases with lightweight tags and wondering why describe ignores them.</b> Root cause: describe uses annotated tags unless <code>--tags</code> is given.",
+    "<b>Looking for the fix's commit ID on the release branch.</b> Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+    "<b>Publishing a describe string as a semantic version.</b> Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 63,
+   "progress": 0.7399
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Computing a version in a shallow CI checkout.</b> Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+    "<b>Fetching only the tag to \"fix\" the shallow build.</b> Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+    "<b>Tagging releases with lightweight tags and wondering why describe ignores them.</b> Root cause: describe uses annotated tags unless <code>--tags</code> is given.",
+    "<b>Looking for the fix's commit ID on the release branch.</b> Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+    "<b>Publishing a describe string as a semantic version.</b> Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 64,
+   "progress": 0.7519
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Computing a version in a shallow CI checkout.</b> Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+    "<b>Fetching only the tag to \"fix\" the shallow build.</b> Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+    "<b>Tagging releases with lightweight tags and wondering why describe ignores them.</b> Root cause: describe uses annotated tags unless <code>--tags</code> is given.",
+    "<b>Looking for the fix's commit ID on the release branch.</b> Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+    "<b>Publishing a describe string as a semantic version.</b> Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 65,
+   "progress": 0.7602
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "<b>Computing a version in a shallow CI checkout.</b> Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+    "<b>Fetching only the tag to \"fix\" the shallow build.</b> Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+    "<b>Tagging releases with lightweight tags and wondering why describe ignores them.</b> Root cause: describe uses annotated tags unless <code>--tags</code> is given.",
+    "<b>Looking for the fix's commit ID on the release branch.</b> Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+    "<b>Publishing a describe string as a semantic version.</b> Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 66,
+   "progress": 0.7718
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 67,
+   "progress": 0.7809
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. A model-serving team runs <code>1.2.x</code> for a regulated customer and <code>1.3.x</code> for everyone else.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 68,
+   "progress": 0.7824
+  },
+  {
+   "kind": "keypoint",
+   "body": "The engineer doesn't search the release branch for the fix's commit ID, where it will never be.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 69,
+   "progress": 0.7948
+  },
+  {
+   "kind": "keypoint",
+   "body": "The same team's release job computes its version with full history and fails when <code>git describe --exact-match</code> fails, so an untagged commit can't be published as a release.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 70,
+   "progress": 0.827
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 71,
+   "progress": 0.8382
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Lab 13.3, \"Describe and versions\", in <code>lab-manual/m13-tags-versions.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 72,
+   "progress": 0.8397
+  },
+  {
+   "kind": "keypoint",
+   "body": "Before every <code>git describe</code> in the lab, write the exact string you expect, all three parts, or the error.",
+   "section": "PRACTICE EXERCISE",
+   "n": 73,
+   "progress": 0.8437
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 13.6, Level 2, draw the graph, \"A patch release from a release branch\", in <code>exercises/m11-m15-investigation-recovery.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 74,
+   "progress": 0.858
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 75,
+   "progress": 0.8656
+  },
+  {
+   "kind": "callout",
+   "direction": "Q102: \"`git describe` prints `v1.0.0-2-gc053f0d` on a laptop and fails in CI. Explain every part of the string and the failure.\"",
+   "label": "Q102",
+   "quotes": [
+    "<code>git describe</code> prints <code>v1.0.0-2-gc053f0d</code> on a laptop and fails in CI. Explain every part of the string and the failure."
+   ],
+   "quoted": true,
+   "section": "INTERVIEW QUESTION",
+   "n": 76,
+   "progress": 0.8671
+  },
+  {
+   "kind": "scene",
+   "direction": "graph: id=desc title=A_tag,_a_count,_an_ID 37da450-516c4c3-eb112a5 main atag:v1.0.0; HEAD=main; cmd:git_describe; say:On_the_tagged_commit,_the_output_is_the_tag_name:_v1.0.0 => 37da450-516c4c3-eb112a5-f37f723-c053f0d main; eb112a5 atag:v1.0.0; HEAD=main; range:f37f723,c053f0d:2_commits_since_the_tag; cmd:git_describe; say:v1.0.0-2-gc053f0d",
+   "scene": "graph",
+   "params": {
+    "commits": [
+     {
+      "id": "37da450",
+      "col": 0,
+      "row": 0,
+      "parents": []
+     },
+     {
+      "id": "516c4c3",
+      "col": 1,
+      "row": 0,
+      "parents": [
+       "37da450"
+      ]
+     },
+     {
+      "id": "eb112a5",
+      "col": 2,
+      "row": 0,
+      "parents": [
+       "516c4c3"
+      ]
+     },
+     {
+      "id": "f37f723",
+      "col": 3,
+      "row": 0,
+      "parents": [
+       "eb112a5"
+      ]
+     },
+     {
+      "id": "c053f0d",
+      "col": 4,
+      "row": 0,
+      "parents": [
+       "f37f723"
+      ]
+     }
+    ],
+    "states": [
+     {
+      "add": [
+       "37da450",
+       "516c4c3",
+       "eb112a5"
+      ],
+      "refs": {},
+      "head": null,
+      "notes": [],
+      "sets": {},
+      "caption": "On the tagged commit, the output is the tag name: v1.0.0"
+     },
+     {
+      "add": [],
+      "refs": {
+       "main": "eb112a5",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {},
+      "cmd": "git describe"
+     },
+     {
+      "add": [
+       "f37f723",
+       "c053f0d"
+      ],
+      "refs": {
+       "main": "c053f0d",
+       "v1.0.0": "eb112a5"
+      },
+      "head": "main",
+      "notes": [],
+      "sets": {
+       "range": {
+        "ids": [
+         "f37f723",
+         "c053f0d"
+        ],
+        "label": "2 commits since the tag"
+       }
+      },
+      "caption": "v1.0.0-2-gc053f0d",
+      "cmd": "git describe"
+     }
+    ],
+    "kinds": {
+     "v1.0.0": "atag"
+    },
+    "settle": "on",
+    "title": "A tag, a count, an ID",
+    "id": "desc"
+   },
+   "steps": [
+    "grow",
+    "state-1",
+    "state-2"
+   ],
+   "base": 3,
+   "says_before": [
+    "The_whole_string_is_also_a_valid_revision",
+    "From_the_signpost_v1.0.0,_two_commits_forward,_to_c053f0d"
+   ],
+   "upto": 3,
+   "says": [
+    "The_whole_string_is_also_a_valid_revision",
+    "From_the_signpost_v1.0.0,_two_commits_forward,_to_c053f0d",
+    "The_nearest_annotated_tag,_the_commits_since,_g_and_the_abbreviated_ID"
+   ],
+   "section": "INTERVIEW QUESTION",
+   "n": 77,
+   "progress": 0.8735
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9154
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+    "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+    "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+    "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+    "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the <code>-x</code> trailer, not by the commit ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 79,
+   "progress": 0.9169
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+    "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+    "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+    "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+    "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the <code>-x</code> trailer, not by the commit ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 80,
+   "progress": 0.9208
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+    "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+    "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+    "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+    "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the <code>-x</code> trailer, not by the commit ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 81,
+   "progress": 0.9308
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+    "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+    "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+    "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+    "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the <code>-x</code> trailer, not by the commit ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 82,
+   "progress": 0.9388
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+    "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+    "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+    "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+    "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the <code>-x</code> trailer, not by the commit ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 83,
+   "progress": 0.9467
+  },
+  {
+   "kind": "bullets",
+   "lead": "Let's land this. You should now be able to say:",
+   "items": [
+    "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+    "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+    "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+    "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+    "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the <code>-x</code> trailer, not by the commit ID."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 84,
+   "progress": 0.9539
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 85,
+   "progress": 0.9631
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 14B.12 to 14B.14 of Chapter 14B.",
+   "section": "HOMEWORK",
+   "n": 86,
+   "progress": 0.9646
+  },
+  {
+   "kind": "keypoint",
+   "body": "Today you read a version string back into the graph, and you found which releases contain a fix.",
+   "section": "HOMEWORK",
+   "n": 87,
+   "progress": 0.9757
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "The service prints its version at start-up. The build derives that version from Git. On every developer machine the build produces a version string that makes sense. In CI, the automated build pipeline, it's the same commit and the same build script, and the version is either a bare fallback or the job fails.",
+   "tele": "The service prints its version at start-up. The build derives that version from Git. On every developer machine the build produces a version string that makes sense. In CI, the automated build pipeline, it's the same commit and the same build script, and the version is either a bare fallback or the job fails.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "695348f5",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Nothing is wrong with the repository on the server. Nothing is wrong with the build script. The CI checkout has one commit and no tags, and a version computed from history can't be computed without the history.",
+   "tele": "Nothing is wrong with the repository on the server. Nothing is wrong with the build script. The CI checkout has one commit and no tags, and a version computed from history can't be computed without the history.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 4,
+   "line": 16,
+   "t0": 25.1,
+   "h": "8420866a",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "A second question follows it into the incident channel: \"Version 1.2.1 has been released. Why does main still call itself 1.2.0-plus-three?\" Keep that one in mind. It has a tidy answer.",
+   "tele": "A second question follows it into the incident channel: \"Version 1.2.1 has been released. Why does `main` still call itself 1.2.0-plus-three?\" Keep that one in mind. It has a tidy answer.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 5,
+   "line": 18,
+   "t0": 39.9,
+   "h": "4508d1d8",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 52.3,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You now know what a tag is, a ref that isn't expected to move, and why a published one doesn't move. Today you put tags to work in three ways. git describe turns history into a version string. Semantic Versioning is the convention most projects put on tag names. Git itself attaches no meaning to them. And a release branch is how an old version receives fixes without receiving features.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You now know what a tag is, a ref that isn't expected to move, and why a published one doesn't move. Today you put tags to work in three ways. `git describe` turns history into a version string. Semantic Versioning is the convention most projects put on tag names. Git itself attaches no meaning to them. And a release branch is how an old version receives fixes without receiving features.",
+   "words": 82,
+   "est": 32.8,
+   "slide": 7,
+   "line": 22,
+   "t0": 53.8,
+   "h": "67f748a0",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "All three meet in one production question: which releases contain this fix?",
+   "tele": "All three meet in one production question: which releases contain this fix?",
+   "words": 12,
+   "est": 4.8,
+   "slide": 8,
+   "line": 24,
+   "t0": 86.6,
+   "h": "8fdc4672",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 8,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 9,
+   "line": 26,
+   "t0": 91.4,
+   "h": "",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "read every part of a git describe string;",
+   "tele": "read every part of a `git describe` string;",
+   "words": 8,
+   "est": 3.2,
+   "slide": 10,
+   "line": 30,
+   "t0": 92.9,
+   "h": "31afd4f4",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "explain why describe fails or prints a different answer in a shallow clone;",
+   "tele": "explain why describe fails or prints a different answer in a shallow clone;",
+   "words": 13,
+   "est": 5.2,
+   "slide": 11,
+   "line": 30,
+   "t0": 96.1,
+   "h": "f7a1f9fa",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "state the Semantic Versioning rules the section gives;",
+   "tele": "state the Semantic Versioning rules the section gives;",
+   "words": 8,
+   "est": 3.2,
+   "slide": 12,
+   "line": 30,
+   "t0": 101.3,
+   "h": "c2fdfdae",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "cut a release branch from a tag, backport a fix, and tag a patch release;",
+   "tele": "cut a release branch from a tag, backport a fix, and tag a patch release;",
+   "words": 15,
+   "est": 6.0,
+   "slide": 13,
+   "line": 30,
+   "t0": 104.5,
+   "h": "5f385be8",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "answer \"which releases contain this fix\" with tags.",
+   "tele": "answer \"which releases contain this fix\" with tags.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 14,
+   "line": 30,
+   "t0": 110.5,
+   "h": "06c26453",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 15,
+   "line": 36,
+   "t0": 113.7,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "git describe. In one sentence: 🟢 SAFE, git describe names a commit by the nearest annotated tag in its history, the number of commits since that tag, and the commit's abbreviated ID. An annotated tag is the kind with its own tag object: a tagger, a date and a message.",
+   "tele": "`git describe`. In one sentence: 🟢 SAFE, `git describe` names a commit by the nearest annotated tag in its history, the number of commits since that tag, and the commit's abbreviated ID. An annotated tag is the kind with its own tag object: a tagger, a date and a message.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 16,
+   "line": 38,
+   "t0": 115.2,
+   "h": "002395d9",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Precisely. If a tag points at the commit, the output is the tag name.",
+   "tele": "Precisely. If a tag points at the commit, the output is the tag name.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 17,
+   "line": 44,
+   "t0": 134.8,
+   "h": "3dbb93da",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.29,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Otherwise Git walks back through history, finds tagged ancestors, picks the one with the fewest commits between it and the commit, and prints tag, hyphen, count, hyphen, the letter g, and the abbreviated ID. The g stands for \"git\". On screen that's v1.0.0, two commits, and c053f0d. Lightweight tags are ignored unless you pass --tags.",
+   "tele": "Otherwise Git walks back through history, finds tagged ancestors, picks the one with the fewest commits between it and the commit, and prints tag, hyphen, count, hyphen, the letter g, and the abbreviated ID. The g stands for \"git\". On screen that's `v1.0.0`, two commits, and `c053f0d`. Lightweight tags are ignored unless you pass `--tags`.",
+   "words": 55,
+   "est": 22.0,
+   "slide": 18,
+   "line": 48,
+   "t0": 140.4,
+   "h": "cbda8448",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The whole string is also a valid revision. A version printed by a running service can be pasted into git show.",
+   "tele": "The whole string is also a valid revision. A version printed by a running service can be pasted into `git show`.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 19,
+   "line": 52,
+   "t0": 162.4,
+   "h": "3a8080c9",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_whole_string_is_also_a_valid_revision"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Options you'll use. --dirty appends a mark when tracked files differ from HEAD, so a build from a modified working tree can't pass as a release. --match and --exclude take globs and decide which tags may be used. --abbrev=0 prints only the nearest tag. --long always prints the full form. --exact-match fails unless the commit itself is tagged. --first-parent ignores tags that arrived through merged branches. --always falls back to the abbreviated ID. And --contains asks the other direction: which tag comes after this commit.",
+   "tele": "Options you'll use. `--dirty` appends a mark when tracked files differ from HEAD, so a build from a modified working tree can't pass as a release. `--match` and `--exclude` take globs and decide which tags may be used. `--abbrev=0` prints only the nearest tag. `--long` always prints the full form. `--exact-match` fails unless the commit itself is tagged. `--first-parent` ignores tags that arrived through merged branches. `--always` falls back to the abbreviated ID. And `--contains` asks the other direction: which tag comes after this commit.",
+   "words": 85,
+   "est": 34.0,
+   "slide": 20,
+   "line": 56,
+   "t0": 170.8,
+   "h": "3fc28baa",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "It fails in three ways. No tags at all. Only lightweight tags. And a shallow clone, a clone that was given only the newest part of the history. The third is the common one in CI. A depth-1 clone has one commit and no tags. Fetching the tag isn't enough, because the commits between the tag and the tip are still missing, and Git can't count them.",
+   "tele": "It fails in three ways. No tags at all. Only lightweight tags. And a shallow clone, a clone that was given only the newest part of the history. The third is the common one in CI. A depth-1 clone has one commit and no tags. Fetching the tag isn't enough, because the commits between the tag and the tip are still missing, and Git can't count them.",
+   "words": 67,
+   "est": 26.8,
+   "slide": 21,
+   "line": 62,
+   "t0": 204.8,
+   "h": "5cf221d0",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.262,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.523,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Semantic Versioning 2.0.0. Git attaches no meaning to a tag name. This is the convention on top.",
+   "tele": "Semantic Versioning 2.0.0. Git attaches no meaning to a tag name. This is the convention on top.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 22,
+   "line": 64,
+   "t0": 231.6,
+   "h": "2b0037d9",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A version is MAJOR, MINOR, PATCH. Incompatible API changes raise MAJOR. Backward-compatible additions raise MINOR. Backward-compatible fixes raise PATCH. A released version is immutable: its contents \"MUST NOT be modified\". Any change is a new version. That's the rule of the previous video, stated for packages.",
+   "tele": "A version is MAJOR, MINOR, PATCH. Incompatible API changes raise MAJOR. Backward-compatible additions raise MINOR. Backward-compatible fixes raise PATCH. A released version is immutable: its contents \"MUST NOT be modified\". Any change is a new version. That's the rule of the previous video, stated for packages.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 23,
+   "line": 68,
+   "t0": 238.4,
+   "h": "51ff8b0b",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 6,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Zero-dot versions are initial development, where anything may change. A pre-release is marked by a hyphen and dot-separated identifiers, and has lower precedence than the release. Numeric identifiers compare as numbers, so rc.2 is before rc.11. Build metadata follows a plus sign and is ignored when versions are compared. And the specification's FAQ says that v1.2.3 is not itself a semantic version. The v prefix is a common way to mark a tag as a version.",
+   "tele": "Zero-dot versions are initial development, where anything may change. A pre-release is marked by a hyphen and dot-separated identifiers, and has lower precedence than the release. Numeric identifiers compare as numbers, so `rc.2` is before `rc.11`. Build metadata follows a plus sign and is ignored when versions are compared. And the specification's FAQ says that `v1.2.3` is not itself a semantic version. The `v` prefix is a common way to mark a tag as a version.",
+   "words": 76,
+   "est": 30.4,
+   "slide": 24,
+   "line": 70,
+   "t0": 256.8,
+   "h": "a17d8c08",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 6,
+       "current": 0
+      },
+      "to": {
+       "shown": 6,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Three consequences for Git. The pre-release rule is why you needed versionsort.suffix when listing tags. The output of git describe is not a valid semantic version of a later build, because by the pre-release rule it would sort before the release it names. Tools that publish packages translate it into their ecosystem's format. And SemVer describes a public API. For a service that nobody links against, a date-based scheme carries the same information with less ceremony.",
+   "tele": "Three consequences for Git. The pre-release rule is why you needed `versionsort.suffix` when listing tags. The output of `git describe` is not a valid semantic version of a later build, because by the pre-release rule it would sort before the release it names. Tools that publish packages translate it into their ecosystem's format. And SemVer describes a public API. For a service that nobody links against, a date-based scheme carries the same information with less ceremony.",
+   "words": 76,
+   "est": 30.4,
+   "slide": 25,
+   "line": 72,
+   "t0": 287.2,
+   "h": "ab679564",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Release branches, on the Git side. When more than one version is in use, a tag isn't enough: the old version needs fixes that must not bring new features with them.",
+   "tele": "Release branches, on the Git side. When more than one version is in use, a tag isn't enough: the old version needs fixes that must not bring new features with them.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 26,
+   "line": 78,
+   "t0": 317.6,
+   "h": "fa8e3a80",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.049,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "A release branch is an ordinary branch that starts at the release tag. Fixes arrive on it, and each patch release is a tag on it.",
+   "tele": "A release branch is an ordinary branch that starts at the release tag. Fixes arrive on it, and each patch release is a tag on it.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 27,
+   "line": 82,
+   "t0": 330.0,
+   "h": "a6b1d1a9",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 2,
+      "dissolve": true
+     },
+     {
+      "at": 0.078,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "There are two conventions for the direction of a fix. The Git project fixes on the oldest maintained branch and merges upward. Trunk-based practice fixes on the main line and cherry-picks to the release branch, which is what the demonstration does. A cherry-pick copies one commit's change as a new commit. The team-workflows part of the course discusses the choice.",
+   "tele": "There are two conventions for the direction of a fix. The Git project fixes on the oldest maintained branch and merges upward. Trunk-based practice fixes on the main line and cherry-picks to the release branch, which is what the demonstration does. A cherry-pick copies one commit's change as a new commit. The team-workflows part of the course discusses the choice.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 27,
+   "line": 84,
+   "t0": 340.4,
+   "h": "c03624c6",
+   "anim": {
+    "group": 15,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The failure mode to expect: after a backport by cherry-pick, the fix exists as two commits with two IDs. On screen, 362b359 on main and its copy c40960e on the release branch. No tag on the release branch contains the original commit. Questions about content need the tools that compare patches.",
+   "tele": "The failure mode to expect: after a backport by cherry-pick, the fix exists as two commits with two IDs. On screen, `362b359` on `main` and its copy `c40960e` on the release branch. No tag on the release branch contains the original commit. Questions about content need the tools that compare patches.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 28,
+   "line": 88,
+   "t0": 364.4,
+   "h": "ac1ba2e0",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 29,
+   "line": 92,
+   "t0": 384.8,
+   "h": "",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Read a describe string as a set of directions. \"From the signpost named v1.0.0, walk two commits forward, and you should be standing at the commit whose ID begins c053f0d.\" The signpost is an annotated tag. The distance is a count along history. The last part confirms that you arrived at the right place.",
+   "tele": "Read a describe string as a set of directions. \"From the signpost named `v1.0.0`, walk two commits forward, and you should be standing at the commit whose ID begins `c053f0d`.\" The signpost is an annotated tag. The distance is a count along history. The last part confirms that you arrived at the right place.",
+   "words": 54,
+   "est": 21.6,
+   "slide": 30,
+   "line": 98,
+   "t0": 386.3,
+   "h": "7ba936c8",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_whole_string_is_also_a_valid_revision",
+       "From_the_signpost_v1.0.0,_two_commits_forward,_to_c053f0d"
+      ],
+      "says_from": 1,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The directions can only be written by someone who can see the signpost and the road between it and where they stand. A shallow clone is a traveller who was dropped at the destination by helicopter: no signpost in view, no road walked.",
+   "tele": "The directions can only be written by someone who can see the signpost and the road between it and where they stand. A shallow clone is a traveller who was dropped at the destination by helicopter: no signpost in view, no road walked.",
+   "words": 43,
+   "est": 17.2,
+   "slide": 31,
+   "line": 104,
+   "t0": 407.9,
+   "h": "c4852df4",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "A_shallow_clone:_no_signpost_in_view,_no_road_walked"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "And describe only ever looks backward. A signpost on a side road that you didn't come along, such as a tag on a release branch, is invisible from main.",
+   "tele": "And describe only ever looks backward. A signpost on a side road that you didn't come along, such as a tag on a release branch, is invisible from `main`.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 32,
+   "line": 110,
+   "t0": 425.1,
+   "h": "6cbb1ec2",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 5,
+      "to": 5,
+      "says": [
+       "A_signpost_on_a_side_road:_v1.2.1_is_invisible_from_main"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Where the model breaks: \"nearest\" isn't about dates. It is the tagged ancestor with the fewest commits between it and you.",
+   "tele": "Where the model breaks: \"nearest\" isn't about dates. It is the tagged ancestor with the fewest commits between it and you.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 33,
+   "line": 114,
+   "t0": 436.7,
+   "h": "d766326e",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 34,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 34,
+   "line": 116,
+   "t0": 445.1,
+   "h": "",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Try it now, on paper. Pause me for thirty seconds. Draw five commits in a row, put an annotated tag on the third, and write your answer: the describe string for the fifth.",
+   "tele": "Try it now, on paper. Pause me for thirty seconds. Draw five commits in a row, put an annotated tag on the third, and write your answer: the describe string for the fifth.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 35,
+   "line": 118,
+   "t0": 446.6,
+   "h": "12c7f246",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 35,
+   "line": 120,
+   "t0": 459.8,
+   "h": "",
+   "anim": {
+    "group": 22,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Count the two commits after the tag on the graph: f37f723 is one, c053f0d is two.",
+   "tele": "Count the two commits after the tag on the graph: `f37f723` is one, `c053f0d` is two.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 36,
+   "line": 135,
+   "t0": 464.3,
+   "h": "4997b44f",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Here is the failure from the opening as a root-cause box. Read the mechanism line: describe needs a tagged ancestor and the commits between it and HEAD.",
+   "tele": "Here is the failure from the opening as a root-cause box. Read the mechanism line: describe needs a tagged ancestor and the commits between it and HEAD.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 37,
+   "line": 150,
+   "t0": 470.7,
+   "h": "aaccd013",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 38,
+   "line": 152,
+   "t0": 481.5,
+   "h": "",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "\"No names found\". Then, with a lightweight tag: \"No annotated tags can describe\", and a pointer to --tags. Now an annotated tag on the current commit.",
+   "tele": "\"No names found\". Then, with a lightweight tag: \"No annotated tags can describe\", and a pointer to `--tags`. Now an annotated tag on the current commit.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 39,
+   "line": 181,
+   "t0": 483.0,
+   "h": "35b80311",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 4.74,
+      "dissolve": true
+     },
+     {
+      "at": 0.651,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 2.54,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "On the tag, the output is the tag name. --long shows the full form with a count of zero. Two commits later, predict the string. Say it out loud. I'll wait.",
+   "tele": "On the tag, the output is the tag name. `--long` shows the full form with a count of zero. Two commits later, predict the string. Say it out loud. I'll wait.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 40,
+   "line": 193,
+   "t0": 493.4,
+   "h": "41bb2d32",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.21,
+      "dissolve": true
+     },
+     {
+      "at": 0.255,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 40,
+   "line": 195,
+   "t0": 505.8,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "v1.0.0-2-gc053f0d. The count is the size of the range from the tag to HEAD, and the last part is the abbreviated ID after the g.",
+   "tele": "`v1.0.0-2-gc053f0d`. The count is the size of the range from the tag to HEAD, and the last part is the abbreviated ID after the g.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 41,
+   "line": 223,
+   "t0": 510.3,
+   "h": "ddde50ef",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "--exact-match fails on an untagged commit with exit status 128. Keep that: it's the check a release job should make.",
+   "tele": "`--exact-match` fails on an untagged commit with exit status 128. Keep that: it's the check a release job should make.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 42,
+   "line": 249,
+   "t0": 520.3,
+   "h": "7accb189",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A modified tracked file adds \"-dirty\". After the file is restored, the mark is gone. git restore on a path is 🔴 DANGEROUS in general, because it overwrites the working-tree file and uncommitted edits to it can't be recovered. Here the script discards an edit it made itself. Twig looks worried, and with a red label on screen, fairly so.",
+   "tele": "A modified tracked file adds \"-dirty\". After the file is restored, the mark is gone. `git restore` on a path is 🔴 DANGEROUS in general, because it overwrites the working-tree file and uncommitted edits to it can't be recovered. Here the script discards an edit it made itself. Twig looks worried, and with a red label on screen, fairly so.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 43,
+   "line": 271,
+   "t0": 528.3,
+   "h": "d2a41c31",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.14,
+      "dissolve": true
+     },
+     {
+      "at": 0.251,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Which tags may be used? Add a release candidate one commit back and a lightweight tag on HEAD.",
+   "tele": "Which tags may be used? Add a release candidate one commit back and a lightweight tag on HEAD.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 43,
+   "line": 273,
+   "t0": 551.9,
+   "h": "4ba51405",
+   "anim": {
+    "group": 30,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The nearest annotated tag is now the release candidate. --exclude skips it. --tags admits the lightweight tag, and --match restricts to version-shaped names. Decide these options once, in the build script, and write them down: two builds with different options print different versions for the same commit.",
+   "tele": "The nearest annotated tag is now the release candidate. `--exclude` skips it. `--tags` admits the lightweight tag, and `--match` restricts to version-shaped names. Decide these options once, in the build script, and write them down: two builds with different options print different versions for the same commit.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 44,
+   "line": 299,
+   "t0": 559.1,
+   "h": "0cf0615f",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.36,
+      "dissolve": true
+     },
+     {
+      "at": 0.179,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 1.2,
+      "dissolve": false
+     },
+     {
+      "at": 0.25,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.73,
+      "dissolve": false
+     },
+     {
+      "at": 0.381,
+      "fx": "terminal",
+      "from": {
+       "blocks": 5
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the CI checkout: a clone with --depth 1. Predict what git tag and git describe print.",
+   "tele": "Now the CI checkout: a clone with `--depth 1`. Predict what `git tag` and `git describe` print.",
+   "words": 17,
+   "est": 6.8,
+   "slide": 45,
+   "line": 310,
+   "t0": 577.9,
+   "h": "79b0003f",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 4.76,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "One commit, no tags, \"No names found\". The tempting fix is to fetch the tag. Quick quiz, two options. One: with the tag fetched, describe works. Two: it still fails. Say it out loud.",
+   "tele": "One commit, no tags, \"No names found\". The tempting fix is to fetch the tag. Quick quiz, two options. One: with the tag fetched, describe works. Two: it still fails. Say it out loud.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 46,
+   "line": 339,
+   "t0": 584.7,
+   "h": "381db738",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 8
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 46,
+   "line": 341,
+   "t0": 598.3,
+   "h": "",
+   "anim": {
+    "group": 33,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.8,
+   "slide": 47,
+   "line": null,
+   "t0": 602.8,
+   "h": "",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.36,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Option two. The tag is there, and describe still fails: \"No tags can describe\". The commits between the tag and the tip are missing, so the tag isn't a known ancestor and nothing can be counted. Almost everyone tries this fix first.",
+   "tele": "Option two. The tag is there, and describe still fails: \"No tags can describe\". The commits between the tag and the tip are missing, so the tag isn't a known ancestor and nothing can be counted. Almost everyone tries this fix first.",
+   "words": 42,
+   "est": 16.8,
+   "slide": 48,
+   "line": 363,
+   "t0": 607.6,
+   "h": "16660ee0",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 4.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.2,
+   "slide": 49,
+   "line": null,
+   "t0": 624.4,
+   "h": "",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.94,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "With full history, the same string as on the laptop.",
+   "tele": "With full history, the same string as on the laptop.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 50,
+   "line": 383,
+   "t0": 628.6,
+   "h": "e6120e8e",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "🟡 CAUTION: git cherry-pick makes a new commit on the current branch. The fix was made on main first. Copy it with -x, which records the source commit in the message.",
+   "tele": "🟡 CAUTION: `git cherry-pick` makes a new commit on the current branch. The fix was made on `main` first. Copy it with `-x`, which records the source commit in the message.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 51,
+   "line": 408,
+   "t0": 632.6,
+   "h": "e2c11866",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The new commit is c40960e, and its message ends with \"cherry picked from commit\" and the full ID of the original. Now both lines. Predict what git describe main prints, given that 1.2.1 has been released. Say it out loud.",
+   "tele": "The new commit is `c40960e`, and its message ends with \"cherry picked from commit\" and the full ID of the original. Now both lines. Predict what `git describe main` prints, given that 1.2.1 has been released. Say it out loud.",
+   "words": 40,
+   "est": 16.0,
+   "slide": 52,
+   "line": 431,
+   "t0": 644.6,
+   "h": "25689d32",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 6.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 6.2,
+   "slide": 53,
+   "line": null,
+   "t0": 660.6,
+   "h": "",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 4.34,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "main describes itself from v1.2.0, three commits on. v1.2.1 isn't an ancestor of main, and describe only looks backward along history. That's the second question from the opening, answered. Now the incident question: which releases contain the fix?",
+   "tele": "`main` describes itself from `v1.2.0`, three commits on. `v1.2.1` isn't an ancestor of `main`, and describe only looks backward along history. That's the second question from the opening, answered. Now the incident question: which releases contain the fix?",
+   "words": 38,
+   "est": 15.2,
+   "slide": 54,
+   "line": 459,
+   "t0": 666.8,
+   "h": "169a862b",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     },
+     {
+      "at": 0.137,
+      "fx": "scene",
+      "from": 5,
+      "to": 6,
+      "dissolve": false
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.2,
+   "slide": 55,
+   "line": null,
+   "t0": 682.0,
+   "h": "",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "No tag contains the original fix commit 362b359: the first command prints nothing. The release has the copy. git cherry compares patches, not IDs, and its minus line says that the fix on main has an equivalent on the release branch. The plus lines are what the release branch doesn't have.",
+   "tele": "No tag contains the original fix commit `362b359`: the first command prints nothing. The release has the copy. `git cherry` compares patches, not IDs, and its minus line says that the fix on `main` has an equivalent on the release branch. The plus lines are what the release branch doesn't have.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 56,
+   "line": 486,
+   "t0": 687.2,
+   "h": "1d53dad3",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 6,
+      "to": 6,
+      "says": [
+       "git_cherry_compares_patches:_362b359_has_an_equivalent,_c40960e"
+      ],
+      "says_from": 0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "When 1.3.0 is cut from main:",
+   "tele": "When 1.3.0 is cut from `main`:",
+   "words": 6,
+   "est": 2.4,
+   "slide": 57,
+   "line": 490,
+   "t0": 707.6,
+   "h": "bb179ddb",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 6.8,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 6.8,
+   "slide": 58,
+   "line": null,
+   "t0": 710.0,
+   "h": "",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 4.76,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "main now describes itself as v1.3.0, and the range from v1.2.1 to v1.3.0 lists three commits, including the original of the fix that 1.2.1 already has as a copy.",
+   "tele": "`main` now describes itself as `v1.3.0`, and the range from `v1.2.1` to `v1.3.0` lists three commits, including the original of the fix that 1.2.1 already has as a copy.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 59,
+   "line": 514,
+   "t0": 716.8,
+   "h": "6080edcc",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 6,
+      "to": 7,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 60,
+   "line": 516,
+   "t0": 728.4,
+   "h": "",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 61,
+   "line": 518,
+   "t0": 729.9,
+   "h": "76698d9b",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 66,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Computing a version in a shallow CI checkout. Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+   "tele": "Computing a version in a shallow CI checkout. Root cause: describe needs a tagged ancestor and every commit between it and HEAD, and a depth-1 clone has neither.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 62,
+   "line": 520,
+   "t0": 731.9,
+   "h": "61d65b59",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Fetching only the tag to \"fix\" the shallow build. Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+   "tele": "Fetching only the tag to \"fix\" the shallow build. Root cause: the commits between the tag and the tip are still missing, so the tag is not connected to HEAD.",
+   "words": 30,
+   "est": 12.0,
+   "slide": 63,
+   "line": 520,
+   "t0": 743.1,
+   "h": "22a1fb79",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Tagging releases with lightweight tags and wondering why describe ignores them. Root cause: describe uses annotated tags unless --tags is given.",
+   "tele": "Tagging releases with lightweight tags and wondering why describe ignores them. Root cause: describe uses annotated tags unless `--tags` is given.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 64,
+   "line": 520,
+   "t0": 755.1,
+   "h": "04d8a965",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Looking for the fix's commit ID on the release branch. Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+   "tele": "Looking for the fix's commit ID on the release branch. Root cause: a cherry-pick creates a new commit with a new ID; containment by ID does not see copies.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 65,
+   "line": 520,
+   "t0": 763.5,
+   "h": "5642cf76",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Publishing a describe string as a semantic version. Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names.",
+   "tele": "Publishing a describe string as a semantic version. Root cause: by the pre-release rule a hyphenated suffix sorts before the release it names.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 66,
+   "line": 520,
+   "t0": 775.1,
+   "h": "45390a9d",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 67,
+   "line": 526,
+   "t0": 784.3,
+   "h": "",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A model-serving team runs 1.2.x for a regulated customer and 1.3.x for everyone else. The customer's auditor asks: is the token-limit fix in what we run?",
+   "tele": "Now, out of the lab. A model-serving team runs `1.2.x` for a regulated customer and `1.3.x` for everyone else. The customer's auditor asks: is the token-limit fix in what we run?",
+   "words": 31,
+   "est": 12.4,
+   "slide": 68,
+   "line": 528,
+   "t0": 785.8,
+   "h": "af77a9ba",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 73,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The engineer doesn't search the release branch for the fix's commit ID, where it will never be. She runs git cherry -v release/1.2 main and reads the minus line for the fix, and she shows the trailer that -x wrote on the release-branch commit, which names the original. Then git tag --contains on the release-branch commit names the patch release. The answer to the auditor has three parts: the original commit, the backported commit, and the tag that contains the backport.",
+   "tele": "The engineer doesn't search the release branch for the fix's commit ID, where it will never be. She runs `git cherry -v release/1.2 main` and reads the minus line for the fix, and she shows the trailer that `-x` wrote on the release-branch commit, which names the original. Then `git tag --contains` on the release-branch commit names the patch release. The answer to the auditor has three parts: the original commit, the backported commit, and the tag that contains the backport.",
+   "words": 81,
+   "est": 32.4,
+   "slide": 69,
+   "line": 530,
+   "t0": 798.2,
+   "h": "1e9ffdd0",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The same team's release job computes its version with full history and fails when git describe --exact-match fails, so an untagged commit can't be published as a release.",
+   "tele": "The same team's release job computes its version with full history and fails when `git describe --exact-match` fails, so an untagged commit can't be published as a release.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 70,
+   "line": 532,
+   "t0": 830.6,
+   "h": "8adc75e5",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 71,
+   "line": 534,
+   "t0": 841.8,
+   "h": "",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Lab 13.3, \"Describe and versions\", in lab-manual/m13-tags-versions.md.",
+   "tele": "Your turn. Do Lab 13.3, \"Describe and versions\", in `lab-manual/m13-tags-versions.md`.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 72,
+   "line": 536,
+   "t0": 843.3,
+   "h": "940a209e",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Before every git describe in the lab, write the exact string you expect, all three parts, or the error. In the shallow part, predict the output after each of the three fetches before you run it.",
+   "tele": "Before every `git describe` in the lab, write the exact string you expect, all three parts, or the error. In the shallow part, predict the output after each of the three fetches before you run it.",
+   "words": 36,
+   "est": 14.4,
+   "slide": 73,
+   "line": 538,
+   "t0": 847.3,
+   "h": "dd0f039e",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 13.6, Level 2, draw the graph, \"A patch release from a release branch\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "The challenge is Exercise 13.6, Level 2, draw the graph, \"A patch release from a release branch\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 74,
+   "line": 540,
+   "t0": 861.7,
+   "h": "214073c8",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 75,
+   "line": 542,
+   "t0": 869.3,
+   "h": "",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud. I'll wait.",
+   "tele": "Answer out loud. I'll wait.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 76,
+   "line": 546,
+   "t0": 870.8,
+   "h": "4d52017d",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 81,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 76,
+   "line": 548,
+   "t0": 872.8,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 82,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "A strong answer takes the string apart in order and says where each part comes from in the graph, including what the single letter means and which kind of tag qualifies. It then states what describe needs in order to produce that string, and from that derives the CI failure as a property of the checkout, not of the tool.",
+   "tele": "A strong answer takes the string apart in order and says where each part comes from in the graph, including what the single letter means and which kind of tag qualifies. It then states what describe needs in order to produce that string, and from that derives the CI failure as a property of the checkout, not of the tool.",
+   "words": 60,
+   "est": 24.0,
+   "slide": 77,
+   "line": 554,
+   "t0": 877.3,
+   "h": "a07afb30",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "scene",
+      "from": 3,
+      "to": 3,
+      "says": [
+       "The_whole_string_is_also_a_valid_revision",
+       "From_the_signpost_v1.0.0,_two_commits_forward,_to_c053f0d",
+       "The_nearest_annotated_tag,_the_commits_since,_g_and_the_abbreviated_ID"
+      ],
+      "says_from": 2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "It explains why fetching the tag alone doesn't help. It names the layer the default belongs to. And it offers a fix and a guard: what the job should fetch, and which check makes a release job fail loudly instead of publishing a fallback version.",
+   "tele": "It explains why fetching the tag alone doesn't help. It names the layer the default belongs to. And it offers a fix and a guard: what the job should fetch, and which check makes a release job fail loudly instead of publishing a fallback version.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 77,
+   "line": 554,
+   "t0": 901.3,
+   "h": "1ad77a31",
+   "anim": {
+    "group": 60,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 84,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 78,
+   "line": 556,
+   "t0": 919.3,
+   "h": "",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this. You should now be able to say:",
+   "tele": "Let's land this. You should now be able to say:",
+   "words": 10,
+   "est": 4.0,
+   "slide": 79,
+   "line": 558,
+   "t0": 920.8,
+   "h": "eef0ed2c",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+   "tele": "A describe string is the nearest annotated tag, the number of commits since, and \"g\" plus the abbreviated ID; it is itself a valid revision.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 80,
+   "line": 560,
+   "t0": 924.8,
+   "h": "6e7c3623",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+   "tele": "Describe needs the tag and the history between the tag and the commit, so it fails in a shallow clone.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 81,
+   "line": 560,
+   "t0": 934.8,
+   "h": "13d6dddd",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+   "tele": "Semantic Versioning gives meaning to MAJOR, MINOR and PATCH, makes a released version immutable, and sorts pre-releases before the release.",
+   "words": 20,
+   "est": 8.0,
+   "slide": 82,
+   "line": 560,
+   "t0": 942.8,
+   "h": "95bae932",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+   "tele": "A release branch starts at a tag and receives fixes; each patch release is a tag on it.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 83,
+   "line": 560,
+   "t0": 950.8,
+   "h": "c38cb851",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 90,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the -x trailer, not by the commit ID.",
+   "tele": "After a backport, \"which releases contain this fix\" is answered by patch comparison and by the `-x` trailer, not by the commit ID.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 84,
+   "line": 560,
+   "t0": 958.0,
+   "h": "ddae60cb",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 91,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 85,
+   "line": 566,
+   "t0": 967.2,
+   "h": "",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 92,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 14B.12 to 14B.14 of Chapter 14B. Do Exercise 13.4, Level 2, \"What git describe prints\", and Exercise 13.8, Level 3, \"One name, two refs\", in exercises/m11-m15-investigation-recovery.md.",
+   "tele": "Read sections 14B.12 to 14B.14 of Chapter 14B. Do Exercise 13.4, Level 2, \"What `git describe` prints\", and Exercise 13.8, Level 3, \"One name, two refs\", in `exercises/m11-m15-investigation-recovery.md`.",
+   "words": 28,
+   "est": 11.2,
+   "slide": 86,
+   "line": 568,
+   "t0": 968.7,
+   "h": "efcd0d7a",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 93,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you read a version string back into the graph, and you found which releases contain a fix. Before the next video, run git describe in the lab, and predict the string first. Next time: linked worktrees, what is shared, and one branch per worktree. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you read a version string back into the graph, and you found which releases contain a fix. Before the next video, run `git describe` in the lab, and predict the string first. Next time: linked worktrees, what is shared, and one branch per worktree. Until then, look at the state first and type second. See you in the next one.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 87,
+   "line": 570,
+   "t0": 979.9,
+   "h": "baf7642b",
+   "anim": {
+    "group": 65,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 1004.3,
+ "narration_words": 2344,
+ "warnings": [],
+ "anim_version": 3
+}

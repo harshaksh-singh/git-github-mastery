@@ -1,0 +1,995 @@
+1
+00:00:04,500 --> 00:00:09,638
+Friday evening again. The pipeline, the
+team's automated build and test run, is red.
+
+2
+00:00:09,678 --> 00:00:14,816
+The engineer on call says "the fix is
+committed", and can show the commit on screen.
+
+3
+00:00:14,856 --> 00:00:17,652
+And the pipeline fails
+again on the same line.
+
+4
+00:00:17,992 --> 00:00:22,623
+In video 1 the CTO asked three questions.
+What exactly is in the commit that the
+
+5
+00:00:22,663 --> 00:00:25,834
+pipeline built? Where does
+that commit exist right now?
+
+6
+00:00:25,874 --> 00:00:30,680
+And what is the smallest change that makes
+the main branch correct, and how will we
+
+7
+00:00:30,720 --> 00:00:31,848
+know that it worked?
+
+8
+00:00:34,188 --> 00:00:38,866
+In the last video you collected the evidence.
+Now you answer all three questions, in
+
+9
+00:00:38,906 --> 00:00:40,494
+order, without guessing once.
+
+10
+00:00:42,334 --> 00:00:46,147
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:46,187 --> 00:00:50,442
+This video is one complete investigation,
+from report to prevention.
+
+12
+00:00:50,482 --> 00:00:54,610
+You have the framework from video
+4 and the evidence from video 5.
+
+13
+00:00:54,650 --> 00:00:59,726
+We continue with the remaining steps:
+understand the state, form hypotheses, test
+
+14
+00:00:59,766 --> 00:01:04,778
+them, name the root cause, select the
+lowest-risk fix, execute, verify, prevent.
+
+15
+00:01:05,118 --> 00:01:10,016
+Then, because first days go wrong in a
+small number of known ways, we look at the
+
+16
+00:01:10,056 --> 00:01:14,953
+pitfalls that the textbook collects in
+section 1.13, and read what Git prints for
+
+17
+00:01:14,993 --> 00:01:19,525
+each. Most of those messages name the
+cause, if you read them word by word.
+
+18
+00:01:21,365 --> 00:01:22,943
+Here's what you'll walk away with.
+
+19
+00:01:23,283 --> 00:01:24,695
+After this video you can:
+
+20
+00:01:25,035 --> 00:01:29,387
+Apply the framework to the report "the fix
+is committed" and find where it is not.
+
+21
+00:01:29,727 --> 00:01:32,393
+List the places where "committed"
+can be true or false.
+
+22
+00:01:32,733 --> 00:01:35,657
+Recognize four first-day
+pitfalls from their output.
+
+23
+00:01:35,997 --> 00:01:38,474
+Decide when a guided
+method is the wrong tool.
+
+24
+00:01:40,314 --> 00:01:45,321
+Understand state. The outputs of git
+rev-parse, git show and git diff from the last
+
+25
+00:01:45,361 --> 00:01:50,004
+video give the content of two files in
+each place. The places, once more: the
+
+26
+00:01:50,044 --> 00:01:54,929
+working tree is the files on disk, the
+index is what the next commit will record,
+
+27
+00:01:54,969 --> 00:01:57,544
+and the last commit is
+the latest snapshot.
+
+28
+00:01:57,884 --> 00:02:04,865
+configs/eval.yaml: in the last commit,
+f29df3b, which is also on the server, it says
+
+29
+00:02:04,905 --> 00:02:10,633
+timeout_s: 120. The index has the
+same, and so does the working tree.
+
+30
+00:02:10,673 --> 00:02:15,230
+eval/runner.py: in the last
+commit, MAX_TIMEOUT_S = 60.
+
+31
+00:02:15,270 --> 00:02:18,824
+In the index, 60. In
+the working tree, 120.
+
+32
+00:02:19,164 --> 00:02:23,950
+Say that in one sentence: the fix has two
+halves, the commit holds one of them, and
+
+33
+00:02:23,990 --> 00:02:28,658
+the other exists only on the laptop's disk.
+On screen, that's the edit sitting in
+
+34
+00:02:28,698 --> 00:02:29,995
+the working tree alone.
+
+35
+00:02:30,335 --> 00:02:34,975
+Form hypotheses. Four mechanisms could
+produce the symptom, and for each there is
+
+36
+00:02:35,015 --> 00:02:36,766
+evidence that would confirm it.
+
+37
+00:02:37,106 --> 00:02:43,023
+H1: the change to runner.py was never
+saved. Then the working tree would show 60.
+
+38
+00:02:43,363 --> 00:02:47,433
+H2: it was saved and never
+staged, so no commit contains it.
+
+39
+00:02:47,473 --> 00:02:51,954
+Then the commit would show 60, and
+git diff would show the change.
+
+40
+00:02:52,294 --> 00:02:57,294
+H3: it was committed on another branch.
+Then another commit would touch runner.py.
+
+41
+00:02:57,634 --> 00:03:01,819
+H4: it was committed and not pushed,
+so CI built an older commit.
+
+42
+00:03:01,859 --> 00:03:04,354
+Then HEAD and origin/main would differ.
+
+43
+00:03:04,694 --> 00:03:10,329
+Quick quiz, and the picture helps. Last
+video's evidence already rejects one of
+
+44
+00:03:10,369 --> 00:03:15,358
+these two. Option one: H3, another
+branch. Option two: H4, not pushed.
+
+45
+00:03:15,398 --> 00:03:16,507
+Say it out loud.
+
+46
+00:03:21,347 --> 00:03:26,398
+H4. In the picture, main and origin/main
+sit on the same commit, so nothing is
+
+47
+00:03:26,438 --> 00:03:31,881
+waiting to be pushed. H3 is still open:
+feature/cache exists, and we haven't checked
+
+48
+00:03:31,921 --> 00:03:32,926
+what it touched.
+
+49
+00:03:33,266 --> 00:03:37,939
+Notice that these four are the places where
+"committed" can be false: not saved, not
+
+50
+00:03:37,979 --> 00:03:42,034
+staged, on another branch, not pushed.
+Each has its own checking command.
+
+51
+00:03:42,374 --> 00:03:47,445
+Select the lowest-risk fix. Once the root
+cause is named, there are two candidate
+
+52
+00:03:47,485 --> 00:03:50,853
+fixes. Option one: a new
+commit with the missing file.
+
+53
+00:03:50,893 --> 00:03:55,522
+Its risk is 🟢: it adds a commit, and
+anyone who already fetched f29df3b is
+
+54
+00:03:55,562 --> 00:04:00,822
+unaffected. Option two: amend f29df3b and
+force-push, which means replace the commit
+
+55
+00:04:00,862 --> 00:04:05,933
+and overwrite the server's copy. That is
+🟡, then 🔴: it replaces a commit that the
+
+56
+00:04:05,973 --> 00:04:11,107
+server and possibly colleagues already
+have. The textbook's verdict on the second:
+
+57
+00:04:11,147 --> 00:04:15,460
+rejected, because a tidier log is
+not worth rewriting shared history.
+
+58
+00:04:15,800 --> 00:04:20,715
+Execute, with a preview. git push carries
+the label 🟡 CAUTION, because it changes
+
+59
+00:04:20,755 --> 00:04:25,057
+shared state: it moves a branch on
+the remote and copies objects to it.
+
+60
+00:04:25,097 --> 00:04:30,195
+The preview is git push --dry-run. And the
+recovery line of the command-safety table
+
+61
+00:04:30,235 --> 00:04:35,272
+is worth hearing once: a push can't be taken
+back quietly once others have fetched.
+
+62
+00:04:35,312 --> 00:04:37,229
+You publish a correcting commit.
+
+63
+00:04:37,569 --> 00:04:42,185
+When not to use it. Section 1.14 lists
+where Git alone is the wrong tool.
+
+64
+00:04:42,225 --> 00:04:47,480
+Large binary data such as datasets, model
+weights and media: every version of every
+
+65
+00:04:47,520 --> 00:04:52,710
+file stays in the history and travels to
+every clone, so keep a pointer in Git and
+
+66
+00:04:52,750 --> 00:04:53,922
+the data elsewhere.
+
+67
+00:04:54,262 --> 00:04:57,558
+Secrets: a committed and pushed
+secret is in every clone.
+
+68
+00:04:57,598 --> 00:05:02,357
+Deleting the file in a later commit doesn't
+remove it from history, and the remedy
+
+69
+00:05:02,397 --> 00:05:06,921
+starts with rotating the secret. Generated
+files such as build output, virtual
+
+70
+00:05:06,961 --> 00:05:09,086
+environments and caches: ignore them.
+
+71
+00:05:09,426 --> 00:05:13,551
+And where the method is not enough:
+the ten commands describe one clone.
+
+72
+00:05:13,591 --> 00:05:18,352
+They say nothing certain about the server
+until you fetch, and nothing at all about
+
+73
+00:05:18,392 --> 00:05:22,112
+GitHub objects such as pull requests,
+rulesets and check results.
+
+74
+00:05:23,952 --> 00:05:28,545
+Hold "committed" as a chain of four links:
+saved, staged, committed on the branch
+
+75
+00:05:28,585 --> 00:05:31,919
+you think, pushed. A change
+ships only if every link holds.
+
+76
+00:05:31,959 --> 00:05:36,667
+The report "the fix is committed" asserts
+the third link and says nothing about the
+
+77
+00:05:36,707 --> 00:05:37,067
+others.
+
+78
+00:05:37,407 --> 00:05:42,362
+The chain breaks as a model at its last
+link. "Pushed" is true as far as your clone
+
+79
+00:05:42,402 --> 00:05:46,574
+knows. Your clone's knowledge of the
+server is the cached origin/main.
+
+80
+00:05:46,614 --> 00:05:51,568
+And beyond the server there is the platform:
+whether the pipeline ran, and on which
+
+81
+00:05:51,608 --> 00:05:54,758
+commit, is a GitHub fact
+that no local command shows.
+
+82
+00:05:56,598 --> 00:06:01,168
+On the left, your clone: two commits
+on main, one on feature/cache.
+
+83
+00:06:01,208 --> 00:06:06,536
+Under the graph, the two lines that
+matter: the index has 60 in runner.py, the
+
+84
+00:06:06,576 --> 00:06:12,316
+working tree has 120. On the right, the
+server has the same two commits on main, and
+
+85
+00:06:12,356 --> 00:06:17,546
+CI builds f29df3b, where the constant
+is 60. The push arrow carried commits.
+
+86
+00:06:17,586 --> 00:06:21,675
+It didn't carry the working
+tree, because a push never does.
+
+87
+00:06:31,715 --> 00:06:36,537
+Test the hypotheses. Three read-only
+commands separate the four hypotheses.
+
+88
+00:06:36,577 --> 00:06:40,557
+Predict the output of each before
+it appears. Say it out loud.
+
+89
+00:06:40,597 --> 00:06:41,205
+I'll wait.
+
+90
+00:06:46,045 --> 00:06:53,122
+git log --all -- <path> lists the commits
+on any branch that changed the path.
+
+91
+00:06:53,162 --> 00:06:59,417
+Only 25fbbb0 does. So H3, "committed
+on another branch", is rejected.
+
+92
+00:06:59,457 --> 00:07:06,717
+git show HEAD:eval/runner.py prints the
+file as the last commit recorded it: 60.
+
+93
+00:07:06,757 --> 00:07:13,834
+The plain grep reads the working tree:
+120. So H1, "never saved", is rejected,
+
+94
+00:07:13,874 --> 00:07:20,951
+because the working tree shows 120. H4,
+"not pushed", was rejected in the last
+
+95
+00:07:20,991 --> 00:07:28,524
+video: HEAD and origin/main have the same
+ID. H2 is confirmed: saved, never staged,
+
+96
+00:07:28,564 --> 00:07:29,710
+in no commit.
+
+97
+00:07:30,050 --> 00:07:34,557
+Try it now, on paper. Thirty seconds:
+write the root cause in one sentence.
+
+98
+00:07:34,597 --> 00:07:36,861
+Then compare your answer with the box.
+
+99
+00:07:41,701 --> 00:07:46,395
+Root cause: the second file was never
+added to the index, so it's in no commit.
+
+100
+00:07:46,435 --> 00:07:51,129
+And the layer is Git. GitHub and Actions
+did their job: the pipeline tested the
+
+101
+00:07:51,169 --> 00:07:52,327
+commit it was given.
+
+102
+00:07:52,667 --> 00:07:58,039
+Execute. git add and git commit are 🟢 SAFE.
+git push is 🟡 CAUTION, so it's previewed
+
+103
+00:07:58,079 --> 00:08:01,775
+with --dry-run first. Predict
+what the dry run will print.
+
+104
+00:08:02,115 --> 00:08:08,167
+git diff --cached now shows exactly what
+the commit will record: one file, one line
+
+105
+00:08:08,207 --> 00:08:14,259
+each way. The commit is 230ef10. The dry
+run and the real push print the same line:
+
+106
+00:08:14,299 --> 00:08:20,277
+f29df3b..230ef10 main -> main means the
+server's main moved from the old commit to
+
+107
+00:08:20,317 --> 00:08:21,158
+the new one.
+
+108
+00:08:21,498 --> 00:08:24,415
+Verify. Repeat the commands
+that showed the problem.
+
+109
+00:08:24,455 --> 00:08:27,827
+The evidence must have changed
+for the reason you predicted.
+
+110
+00:08:28,167 --> 00:08:31,835
+Nothing tracked is modified.
+The new commit is on top.
+
+111
+00:08:31,875 --> 00:08:36,574
+HEAD and origin/main agree. And the
+committed file has the new value.
+
+112
+00:08:36,614 --> 00:08:42,205
+On GitHub, the pipeline run for 230ef10
+must pass. That part can't be shown from a
+
+113
+00:08:42,245 --> 00:08:43,167
+local sandbox.
+
+114
+00:08:43,507 --> 00:08:49,634
+Here's the history now. 230ef10 is on top,
+and the names main, origin/main and HEAD
+
+115
+00:08:49,674 --> 00:08:50,674
+all sit on it.
+
+116
+00:08:51,014 --> 00:08:55,708
+Prevent. Before every commit, read both
+lists in git status, and read git diff
+
+117
+00:08:55,748 --> 00:08:58,864
+--cached as the text of what
+you're about to record.
+
+118
+00:08:58,904 --> 00:09:03,902
+git commit -a would have included the second
+file, because it stages every modified
+
+119
+00:09:03,942 --> 00:09:08,940
+tracked file first. For the same reason it
+also includes changes you didn't mean to
+
+120
+00:09:08,980 --> 00:09:11,671
+commit, so it's not a
+substitute for looking.
+
+121
+00:09:12,011 --> 00:09:15,275
+So, the CTO's three questions.
+What was in the commit?
+
+122
+00:09:15,315 --> 00:09:20,231
+One half of the fix. Where is the whole
+fix now? In 230ef10, on your clone and on
+
+123
+00:09:20,271 --> 00:09:25,126
+the server. And how do we know? The commands
+that showed the problem now show it
+
+124
+00:09:25,166 --> 00:09:25,432
+gone.
+
+125
+00:09:25,772 --> 00:09:30,868
+Now the first-day pitfalls. You saw one
+of them, "nothing staged", in video 4.
+
+126
+00:09:30,908 --> 00:09:34,291
+Here are the others. Read
+each message word by word.
+
+127
+00:09:34,631 --> 00:09:36,638
+The first branch is not called main.
+
+128
+00:09:36,978 --> 00:09:46,165
+With no configuration at all, Git 2.55
+names the first branch master and prints a
+
+129
+00:09:46,205 --> 00:09:55,619
+hint. The hint says where the name comes
+from, that it will change to "main" in Git
+
+130
+00:09:55,659 --> 00:10:05,187
+3.0, and how to set it. The lab configuration
+sets init.defaultBranch=main, which is
+
+131
+00:10:05,227 --> 00:10:14,414
+why every other transcript says main. git
+branch -m main is 🟡 CAUTION: it renames
+
+132
+00:10:14,454 --> 00:10:23,982
+the current branch. Here the branch is
+unborn, and the last line shows that only the
+
+133
+00:10:24,022 --> 00:10:26,374
+text in HEAD changed.
+
+134
+00:10:26,714 --> 00:10:28,540
+Git says there is no repository.
+
+135
+00:10:28,880 --> 00:10:32,535
+Read the parenthesis: "or any
+of the parent directories".
+
+136
+00:10:32,575 --> 00:10:37,980
+Git searched the current directory and its
+parents for a dot git directory and found
+
+137
+00:10:38,020 --> 00:10:39,406
+none. Exit status 128.
+
+138
+00:10:39,746 --> 00:10:41,748
+A repository inside a repository.
+
+139
+00:10:42,088 --> 00:10:45,798
+vendor/tokenizer has its own .git
+directory. Git doesn't add its files.
+
+140
+00:10:45,838 --> 00:10:50,075
+It records one entry with mode 160000, a
+gitlink: the ID of a commit in the inner
+
+141
+00:10:50,115 --> 00:10:54,406
+repository. The warning says what follows:
+clones of the outer repository will not
+
+142
+00:10:54,446 --> 00:10:58,789
+contain the contents of the embedded
+repository. This happens when you run git init
+
+143
+00:10:58,829 --> 00:11:02,696
+or git clone inside an existing working
+tree. And the hint offers an undo.
+
+144
+00:11:02,736 --> 00:11:05,073
+Predict: will the command
+from the hint work?
+
+145
+00:11:09,913 --> 00:11:15,125
+It's refused. git rm --cached and git
+restore --staged are both 🟡 CAUTION: they
+
+146
+00:11:15,165 --> 00:11:18,849
+change or remove an index
+entry, and files on disk stay.
+
+147
+00:11:18,889 --> 00:11:23,038
+The textbook's root-cause box
+gives the reason for the refusal.
+
+148
+00:11:23,078 --> 00:11:28,290
+git rm refuses to drop an index entry
+that matches neither HEAD nor the working
+
+149
+00:11:28,330 --> 00:11:28,623
+tree.
+
+150
+00:11:28,963 --> 00:11:34,175
+That test protects staged content that
+exists nowhere else, and a freshly added
+
+151
+00:11:34,215 --> 00:11:39,761
+embedded repository fails both halves of
+it. The correct fix is git restore --staged
+
+152
+00:11:39,801 --> 00:11:43,218
+vendor/tokenizer, which
+resets only the index entry.
+
+153
+00:11:43,258 --> 00:11:47,008
+Before the first commit there
+is no HEAD to restore from.
+
+154
+00:11:47,348 --> 00:11:53,024
+There, git rm --cached -f works, and
+--cached guarantees that the working tree is
+
+155
+00:11:53,064 --> 00:11:58,670
+not touched. The textbook notes that this
+mechanism was read from the Git 2.55.0
+
+156
+00:11:58,710 --> 00:12:04,527
+source. After unstaging, decide what the
+inner repository is: a separate project to
+
+157
+00:12:04,567 --> 00:12:08,409
+ignore, or a dependency to
+add properly as a submodule.
+
+158
+00:12:10,249 --> 00:12:11,897
+Five mistakes to watch for.
+
+159
+00:12:12,237 --> 00:12:16,656
+A commit that lacks a file. Root cause: git
+commit records the index; two files were
+
+160
+00:12:16,696 --> 00:12:18,036
+edited and one was staged.
+
+161
+00:12:18,376 --> 00:12:21,422
+Fixing a pushed commit by
+amending and force-pushing.
+
+162
+00:12:21,462 --> 00:12:26,315
+Root cause: a wish for a tidier log; the
+amend replaces a commit that the server and
+
+163
+00:12:26,355 --> 00:12:28,237
+possibly colleagues already have.
+
+164
+00:12:28,577 --> 00:12:33,740
+"not a git repository". Root cause: Git
+searched the current directory and its
+
+165
+00:12:33,780 --> 00:12:39,144
+parents for .git and found none; pwd and
+git rev-parse --show-toplevel show where
+
+166
+00:12:39,184 --> 00:12:39,678
+you are.
+
+167
+00:12:40,018 --> 00:12:45,546
+"adding embedded git repository". Root
+cause: git init or git clone was run inside
+
+168
+00:12:45,586 --> 00:12:50,571
+an existing working tree; run git
+rev-parse --show-toplevel before either.
+
+169
+00:12:50,911 --> 00:12:53,700
+Trusting the local test over
+the test on the commit.
+
+170
+00:12:53,740 --> 00:12:58,053
+Root cause: the local test reads the
+working tree, and CI checks out the commit.
+
+171
+00:12:59,893 --> 00:13:04,641
+Now, out of the lab. The case you've worked
+through is the production example, and
+
+172
+00:13:04,681 --> 00:13:09,429
+the textbook draws one more lesson from
+it. The symptom "the fix did not ship" was
+
+173
+00:13:09,469 --> 00:13:13,925
+reported against the pipeline, so the
+first suspicion fell on GitHub Actions.
+
+174
+00:13:13,965 --> 00:13:18,655
+The root cause was in Git, on one laptop,
+in the gap between the working tree and
+
+175
+00:13:18,695 --> 00:13:19,239
+the index.
+
+176
+00:13:19,579 --> 00:13:24,323
+The pipeline had done what it was built to
+do. For an evaluation team this matters
+
+177
+00:13:24,363 --> 00:13:28,698
+twice: a score computed from a working
+tree with uncommitted edits can't be
+
+178
+00:13:28,738 --> 00:13:33,599
+reproduced from the commit ID in the report.
+Trust the test that runs on the commit.
+
+179
+00:13:35,439 --> 00:13:42,607
+Your turn. Do Exercise 1.9, Level 4,
+"git log says there are no commits", in
+
+180
+00:13:42,647 --> 00:13:45,737
+exercises/m01-m05-foundations.md.
+
+181
+00:13:46,077 --> 00:13:50,898
+Before you run anything in the generated
+sandbox, write the symptom in one sentence
+
+182
+00:13:50,938 --> 00:13:55,407
+without interpretation, and list at least
+three hypotheses with the read-only
+
+183
+00:13:55,447 --> 00:13:58,980
+command that would separate them.
+Only then start the ritual.
+
+184
+00:14:00,820 --> 00:14:05,224
+Q11: "A colleague says "the fix is committed".
+List the distinct places where that
+
+185
+00:14:05,264 --> 00:14:08,801
+statement can be true or false,
+and the command that checks each."
+
+186
+00:14:11,141 --> 00:14:15,830
+Answer out loud. A strong answer walks the
+path of a change from the editor to the
+
+187
+00:14:15,870 --> 00:14:20,558
+machine that builds it, names each place
+the change can be missing, and pairs each
+
+188
+00:14:20,598 --> 00:14:25,286
+place with one read-only command. It
+distinguishes what your clone knows from what
+
+189
+00:14:25,326 --> 00:14:30,130
+the server holds now. Don't open the answers
+file until you've named every place you
+
+190
+00:14:30,170 --> 00:14:30,880
+can think of.
+
+191
+00:14:32,720 --> 00:14:37,660
+Let's land this. You should now be able
+to say: "committed" can be false in four
+
+192
+00:14:37,700 --> 00:14:41,458
+places: not saved, not staged,
+on another branch, not pushed.
+
+193
+00:14:41,498 --> 00:14:46,501
+I separate those with git diff, git show
+HEAD:<path>, git log --all -- <path> and
+
+194
+00:14:46,541 --> 00:14:48,431
+git rev-parse HEAD origin/main.
+
+195
+00:14:48,771 --> 00:14:53,778
+When the faulty commit is already shared,
+I add a commit and don't rewrite.
+
+196
+00:14:53,818 --> 00:14:59,363
+I preview a push with --dry-run, and I
+verify by repeating the commands that showed
+
+197
+00:14:59,403 --> 00:15:04,814
+the problem. And when Git prints a message,
+I read it word by word, including the
+
+198
+00:15:04,854 --> 00:15:08,314
+hints, without assuming that
+a hint is always right.
+
+199
+00:15:10,154 --> 00:15:14,170
+Read sections 1.12 to 1.15 of Chapter 1.
+
+200
+00:15:14,510 --> 00:15:17,140
+Do the Practice section 1.17.
+
+201
+00:15:17,480 --> 00:15:24,444
+Challenge: Exercise 1.8, Level 3, "the
+object that no history shows", in
+
+202
+00:15:24,484 --> 00:15:27,655
+exercises/m01-m05-foundations.md.
+
+203
+00:15:27,995 --> 00:15:33,478
+That was a complete investigation, from a
+red pipeline to a prevention rule, and you
+
+204
+00:15:33,518 --> 00:15:37,292
+never had to guess. Do the
+exercise before the next video.
+
+205
+00:15:37,332 --> 00:15:41,961
+Next time, Part 1 begins: snapshots,
+not diffs, and content addressing.
+
+206
+00:15:42,001 --> 00:15:45,380
+Until then, look at the
+state first and type second.
+
+207
+00:15:45,420 --> 00:15:46,958
+See you in the next one.

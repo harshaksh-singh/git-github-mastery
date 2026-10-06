@@ -1,0 +1,919 @@
+1
+00:00:04,500 --> 00:00:08,510
+A release script at your company builds
+a commit without a working tree.
+
+2
+00:00:08,550 --> 00:00:12,785
+It writes the objects, it prints a commit
+ID, and it exits with status zero.
+
+3
+00:00:12,825 --> 00:00:17,397
+Then the next step runs git log, and Git
+says the branch does not have any commits
+
+4
+00:00:17,437 --> 00:00:17,622
+yet.
+
+5
+00:00:17,962 --> 00:00:21,917
+The commit exists. You can print it
+by its ID. And no history shows it.
+
+6
+00:00:24,257 --> 00:00:28,150
+To explain that, you have to stop
+thinking of git commit as one act.
+
+7
+00:00:28,190 --> 00:00:32,835
+It is five moves. When a Git command
+surprises you, the useful question is always
+
+8
+00:00:32,875 --> 00:00:36,595
+the same: which objects did it
+write, and which refs did it move?
+
+9
+00:00:36,635 --> 00:00:41,454
+Today you make a commit with your own hands,
+one move at a time, and you see exactly
+
+10
+00:00:41,494 --> 00:00:43,652
+which move was missing in that script.
+
+11
+00:00:45,492 --> 00:00:49,797
+In the last video you saw three kinds
+of object: blob, tree and commit.
+
+12
+00:00:49,837 --> 00:00:53,959
+There is a fourth, the tag object,
+and this video opens one of each.
+
+13
+00:00:54,299 --> 00:00:58,151
+Then we put the porcelain away. git
+add and git commit are porcelain.
+
+14
+00:00:58,191 --> 00:01:01,931
+Five plumbing commands do the same
+work in separate, visible steps.
+
+15
+00:01:01,971 --> 00:01:06,670
+We will build a commit from nothing: no file
+in the working tree, no git add, no git
+
+16
+00:01:06,710 --> 00:01:11,127
+commit. After each step I will ask you
+which object or file is about to appear.
+
+17
+00:01:12,967 --> 00:01:14,525
+After this video you can:
+
+18
+00:01:14,865 --> 00:01:19,009
+Name the four object types, and say what
+each contains and what it points at.
+
+19
+00:01:19,349 --> 00:01:23,229
+Read a tree entry: mode,
+type, object ID, name.
+
+20
+00:01:23,569 --> 00:01:26,900
+Build a commit with plumbing only,
+without git add or git commit.
+
+21
+00:01:27,240 --> 00:01:31,400
+Explain which step of the hand-built commit
+corresponds to which porcelain command.
+
+22
+00:01:33,240 --> 00:01:34,593
+The four object types.
+
+23
+00:01:34,933 --> 00:01:38,313
+A blob holds the bytes of one
+file. It refers to nothing.
+
+24
+00:01:38,353 --> 00:01:39,813
+It is written by git add.
+
+25
+00:01:40,153 --> 00:01:44,661
+A tree holds one directory: for each
+entry, a mode, a name and an object ID.
+
+26
+00:01:44,701 --> 00:01:49,629
+It refers to blobs and to other trees. It
+is written by git commit, from the index.
+
+27
+00:01:49,969 --> 00:01:54,728
+A commit holds one tree ID, the parent
+commit IDs, an author, a committer and a
+
+28
+00:01:54,768 --> 00:01:59,587
+message. It refers to its tree and its
+parents. It is written by git commit, git
+
+29
+00:01:59,627 --> 00:02:01,652
+merge, git cherry-pick and others.
+
+30
+00:02:01,992 --> 00:02:07,442
+A tag object holds the ID and type of another
+object, a tag name, the tagger, and a
+
+31
+00:02:07,482 --> 00:02:12,073
+message. It refers, usually, to a
+commit. It is written by git tag -a.
+
+32
+00:02:12,413 --> 00:02:15,411
+Names live in trees. A blob
+is content without a name.
+
+33
+00:02:15,451 --> 00:02:18,505
+The name of a file is stored
+in the tree that lists it.
+
+34
+00:02:18,545 --> 00:02:23,062
+This is why, in the last video, two files
+with different names and the same bytes
+
+35
+00:02:23,102 --> 00:02:23,850
+were one blob.
+
+36
+00:02:24,190 --> 00:02:28,594
+Reading a tree entry. Four fields:
+mode, type, object ID, name.
+
+37
+00:02:28,634 --> 00:02:31,204
+The mode tells you the kind of entry.
+
+38
+00:02:31,544 --> 00:02:36,055
+100644 is a regular file.
+100755 is an executable file.
+
+39
+00:02:36,095 --> 00:02:42,427
+120000 is a symbolic link. 040000 is a
+directory: the entry points at a tree.
+
+40
+00:02:42,467 --> 00:02:49,129
+160000 is a gitlink: a commit of another
+repository, which you met in V006 as the
+
+41
+00:02:49,169 --> 00:02:55,666
+embedded repository. Executable or not
+is the only permission that Git records.
+
+42
+00:02:55,706 --> 00:02:59,638
+It stores no owner and no
+other permission bits.
+
+43
+00:02:59,978 --> 00:03:04,885
+The tag object, and the tag without one.
+An annotated tag is a ref that points at a
+
+44
+00:03:04,925 --> 00:03:09,772
+tag object, and the tag object names a
+commit. A lightweight tag has no object: it
+
+45
+00:03:09,812 --> 00:03:14,242
+is a ref that points at the commit
+directly. A later chapter develops tags.
+
+46
+00:03:14,582 --> 00:03:15,908
+A commit in five moves.
+
+47
+00:03:16,248 --> 00:03:19,524
+Step 1: git hash-object -w
+stores content as a blob.
+
+48
+00:03:19,564 --> 00:03:22,967
+🟢 SAFE. The porcelain that
+does it for you is git add.
+
+49
+00:03:23,307 --> 00:03:28,667
+Step 2: git update-index --add --cacheinfo,
+with a mode, an ID and a path, records
+
+50
+00:03:28,707 --> 00:03:34,199
+in the index that this path has this content.
+🟡 CAUTION: it changes one index entry.
+
+51
+00:03:34,239 --> 00:03:37,886
+The porcelain is again git
+add. So git add is two moves.
+
+52
+00:03:38,226 --> 00:03:41,778
+Step 3: git write-tree writes
+the index as tree objects.
+
+53
+00:03:41,818 --> 00:03:44,086
+🟢 SAFE. The porcelain is git commit.
+
+54
+00:03:44,426 --> 00:03:49,407
+Step 4: git commit-tree, with a tree,
+optionally -p and a parent, and -m with a
+
+55
+00:03:49,447 --> 00:03:53,792
+message, writes a commit object. 🟢
+SAFE. The porcelain is git commit.
+
+56
+00:03:54,132 --> 00:03:59,016
+Step 5: git update-ref refs/heads/<branch>
+<commit> points the branch at the commit.
+
+57
+00:03:59,056 --> 00:04:03,412
+🟡 CAUTION: it moves one ref, and nothing
+else. The porcelain is git commit.
+
+58
+00:04:03,452 --> 00:04:05,112
+So git commit is three moves.
+
+59
+00:04:05,452 --> 00:04:10,535
+Steps 1, 3 and 4 only add objects. No ref
+and no index entry changes, and garbage
+
+60
+00:04:10,575 --> 00:04:15,469
+collection removes objects that nothing
+refers to. That is why they are green.
+
+61
+00:04:15,809 --> 00:04:19,360
+What porcelain adds. git commit
+does more than steps 3 to 5.
+
+62
+00:04:19,400 --> 00:04:23,191
+It refuses to record nothing, as
+you saw in V004. It runs hooks.
+
+63
+00:04:23,231 --> 00:04:28,159
+And it writes a reason into the reflogs.
+git update-ref writes reflog lines for the
+
+64
+00:04:28,199 --> 00:04:31,630
+branch and for HEAD without a
+message, unless you pass -m.
+
+65
+00:04:31,970 --> 00:04:35,620
+When to use plumbing, and when
+not. For daily work, do not.
+
+66
+00:04:35,660 --> 00:04:40,747
+git add, git commit, git switch and git
+branch make the same objects and refs, and
+
+67
+00:04:40,787 --> 00:04:45,812
+add checks. The read-only plumbing, git
+cat-file, git ls-tree, git rev-parse, git
+
+68
+00:04:45,852 --> 00:04:51,003
+for-each-ref and git merge-base, is always
+appropriate, and settles arguments about
+
+69
+00:04:51,043 --> 00:04:51,878
+state fastest.
+
+70
+00:04:52,218 --> 00:04:56,320
+And know the limits of the writing
+plumbing: git update-ref verifies little.
+
+71
+00:04:56,360 --> 00:05:00,517
+It refuses a blob as the value of a
+branch and a stale expected value, but it
+
+72
+00:05:00,557 --> 00:05:04,932
+accepts any existing commit, and it never
+looks at the index or the working tree.
+
+73
+00:05:05,272 --> 00:05:09,914
+Recovery. The plumbing is worth knowing
+because recovery uses the same tools.
+
+74
+00:05:09,954 --> 00:05:14,110
+A commit found by git fsck or in a
+reflog is reattached with one ref.
+
+75
+00:05:15,950 --> 00:05:19,057
+Think of the objects as
+documents in a filing system.
+
+76
+00:05:19,097 --> 00:05:23,806
+A blob is a page with no title. A tree is
+a table of contents: titles, and where
+
+77
+00:05:23,846 --> 00:05:28,556
+each page or sub-table is filed. A commit
+is a cover sheet: "the project is this
+
+78
+00:05:28,596 --> 00:05:33,366
+table of contents; it follows that earlier
+cover sheet; signed by this author and
+
+79
+00:05:33,406 --> 00:05:38,175
+this committer, with this note". A tag
+object is a labelled note that points at a
+
+80
+00:05:38,215 --> 00:05:38,887
+cover sheet.
+
+81
+00:05:39,227 --> 00:05:43,622
+The model breaks at one point that matters:
+in a filing system you could pull a page
+
+82
+00:05:43,662 --> 00:05:47,741
+and correct it. Here you cannot. Every
+one of these documents is filed under a
+
+83
+00:05:47,781 --> 00:05:51,965
+number computed from its content, so a
+corrected page is a different page with a
+
+84
+00:05:52,005 --> 00:05:56,400
+different number, and every table of contents
+and cover sheet that should include it
+
+85
+00:05:56,440 --> 00:05:57,508
+must be written anew.
+
+86
+00:05:57,848 --> 00:06:02,061
+For the five moves: git add is "file the
+page and enter it in the draft table of
+
+87
+00:06:02,101 --> 00:06:06,473
+contents". git commit is "write out the
+tables, write the cover sheet, and move the
+
+88
+00:06:06,513 --> 00:06:07,005
+bookmark".
+
+89
+00:06:08,845 --> 00:06:12,214
+All eight objects, and the
+two names that lead to them.
+
+90
+00:06:12,254 --> 00:06:16,429
+The branch main points at the commit.
+The commit points at one tree.
+
+91
+00:06:16,469 --> 00:06:20,892
+The tree has three entries: a blob
+and two more trees, each with a blob.
+
+92
+00:06:20,932 --> 00:06:26,036
+And from the top left, the ref v0.1.0 points
+at the tag object, which points at the
+
+93
+00:06:26,076 --> 00:06:26,780
+same commit.
+
+94
+00:06:33,620 --> 00:06:37,783
+A repository called ranker, with
+one commit and one annotated tag.
+
+95
+00:06:37,823 --> 00:06:39,057
+First the inventory.
+
+96
+00:06:39,397 --> 00:06:44,414
+Eight objects: three blobs, three
+trees, one commit, one tag object.
+
+97
+00:06:44,454 --> 00:06:45,901
+We open one of each.
+
+98
+00:06:46,241 --> 00:06:51,057
+A commit. This one has no parent
+line, so it is a root commit.
+
+99
+00:06:51,097 --> 00:06:57,088
+The number after the email address,
+followed by +0530, is a time in Git's raw
+
+100
+00:06:57,128 --> 00:07:02,336
+format: seconds since 1 January
+1970 UTC, then the offset from UTC.
+
+101
+00:07:02,676 --> 00:07:09,455
+Trees. git cat-file -p prints one level
+of a tree. git ls-tree -r walks down and
+
+102
+00:07:09,495 --> 00:07:16,444
+prints every file with its full path. Read
+one entry in four fields: 100755, blob,
+
+103
+00:07:16,484 --> 00:07:22,837
+the ID beginning aa1a031, scripts/test.sh.
+Mode 100755: an executable file.
+
+104
+00:07:23,177 --> 00:07:28,870
+A blob: two lines of Python and nothing
+else. The name rerank.py is not in it.
+
+105
+00:07:28,910 --> 00:07:31,296
+It is stored in the tree 95722c3.
+
+106
+00:07:31,636 --> 00:07:38,388
+And the tag object, 0f7f193. It names the
+commit e375b7b and its type, repeats the
+
+107
+00:07:38,428 --> 00:07:41,867
+tag name, and adds a tagger and a message.
+
+108
+00:07:42,207 --> 00:07:46,785
+A repository with no working-tree file at
+all. The content arrives through a pipe.
+
+109
+00:07:47,125 --> 00:07:52,745
+Step 1. git hash-object -w 🟢 SAFE. Predict:
+after this command, what exists under
+
+110
+00:07:52,785 --> 00:07:55,400
+.git/objects, and does an index exist?
+
+111
+00:07:55,740 --> 00:08:00,497
+One object exists, the blob
+a7f6bbc. There is no index yet.
+
+112
+00:08:00,837 --> 00:08:04,012
+Step 2. git update-index
+--add --cacheinfo 🟡 CAUTION.
+
+113
+00:08:04,052 --> 00:08:07,288
+--cacheinfo takes a mode, a
+full object ID and a path.
+
+114
+00:08:07,328 --> 00:08:10,564
+--add permits a path that
+the index does not have yet.
+
+115
+00:08:10,604 --> 00:08:15,478
+Predict what git status will say about a
+path that is in the index, in no commit,
+
+116
+00:08:15,518 --> 00:08:16,449
+and not on disk.
+
+117
+00:08:18,789 --> 00:08:22,698
+git status reports the path twice,
+and both lines are correct.
+
+118
+00:08:22,738 --> 00:08:26,583
+"new file" compares the index
+with HEAD, which has no commit.
+
+119
+00:08:26,623 --> 00:08:31,806
+"deleted" compares the working tree with
+the index, which lists a file that is not
+
+120
+00:08:31,846 --> 00:08:36,264
+on disk. Two comparisons, two answers.
+Remember this picture for V010.
+
+121
+00:08:36,604 --> 00:08:42,091
+Step 3. git write-tree 🟢 SAFE. The index
+holds one path, prompts/system.txt.
+
+122
+00:08:42,131 --> 00:08:44,345
+Predict: how many tree objects?
+
+123
+00:08:44,685 --> 00:08:50,759
+Two. The index is a flat list of full
+paths; trees are nested, one object per
+
+124
+00:08:50,799 --> 00:08:57,111
+directory. So git write-tree wrote 5445e77
+for the top directory and 4015b7b for
+
+125
+00:08:57,151 --> 00:08:57,826
+prompts/.
+
+126
+00:08:58,166 --> 00:09:03,283
+Step 4. git commit-tree 🟢 SAFE. Predict:
+after this, will git log show the commit?
+
+127
+00:09:05,623 --> 00:09:10,780
+git commit-tree wrote the commit cc0ef15,
+with the author and the committer taken
+
+128
+00:09:10,820 --> 00:09:14,629
+from the environment, as git
+commit does. And git log fails.
+
+129
+00:09:14,669 --> 00:09:18,607
+HEAD names the branch main, and
+no ref refs/heads/main exists.
+
+130
+00:09:18,647 --> 00:09:23,804
+git fsck, which checks the object database,
+calls the commit dangling: it exists,
+
+131
+00:09:23,844 --> 00:09:25,408
+and nothing refers to it.
+
+132
+00:09:25,748 --> 00:09:29,271
+That is the release script from
+the hook. It stopped after step 4.
+
+133
+00:09:29,611 --> 00:09:33,578
+Step 5. git update-ref 🟡 CAUTION,
+with the full name refs/heads/main.
+
+134
+00:09:33,918 --> 00:09:38,090
+One ref makes the difference: git
+log works and git fsck is silent.
+
+135
+00:09:38,130 --> 00:09:43,370
+And git status --short prints D prompts/system.txt:
+the commit and the index contain
+
+136
+00:09:43,410 --> 00:09:48,335
+the file, the working tree does not. The
+commit exists, and the working tree is
+
+137
+00:09:48,375 --> 00:09:49,089
+still empty.
+
+138
+00:09:49,430 --> 00:09:54,119
+The last step fills the working tree, and
+it uses a command with a red label, so the
+
+139
+00:09:54,159 --> 00:09:57,553
+five questions come first. git
+restore <path> is 🔴 DANGEROUS.
+
+140
+00:09:57,593 --> 00:10:01,776
+What it changes: it overwrites the file
+in the working tree from the index.
+
+141
+00:10:01,816 --> 00:10:04,704
+What it can destroy:
+uncommitted edits in that file.
+
+142
+00:10:05,044 --> 00:10:08,857
+How to preview: git diff -- <path>
+shows what would be overwritten.
+
+143
+00:10:08,897 --> 00:10:12,941
+How to recover: there is no recovery
+for content that was never staged.
+
+144
+00:10:12,981 --> 00:10:17,600
+When it is appropriate: when you have
+looked at that diff and want to discard it.
+
+145
+00:10:17,640 --> 00:10:20,476
+Here, nothing can be lost,
+because no file exists.
+
+146
+00:10:20,816 --> 00:10:23,610
+The file is on disk, and
+the working tree is clean.
+
+147
+00:10:32,950 --> 00:10:36,023
+A commit made with git
+commit-tree is not in git log.
+
+148
+00:10:36,063 --> 00:10:40,723
+Root cause: the commit object exists and
+no ref points at it; git fsck reports a
+
+149
+00:10:40,763 --> 00:10:44,423
+dangling commit, and one git
+update-ref or git branch fixes it.
+
+150
+00:10:44,763 --> 00:10:49,284
+Looking for the file name inside the blob.
+Root cause: a blob is content without a
+
+151
+00:10:49,324 --> 00:10:51,787
+name; names and modes
+are stored in the tree.
+
+152
+00:10:52,127 --> 00:10:56,828
+After git update-ref moved the current
+branch, git status shows changes that nobody
+
+153
+00:10:56,868 --> 00:11:01,399
+made. Root cause: the ref moved and the
+index and working tree did not; move the
+
+154
+00:11:01,439 --> 00:11:04,541
+current branch with porcelain,
+which updates all three.
+
+155
+00:11:04,881 --> 00:11:09,523
+Giving git update-ref a short name. Root
+cause: plumbing takes the name literally;
+
+156
+00:11:09,563 --> 00:11:13,805
+write the full name beginning with
+refs/. The next video shows what happens
+
+157
+00:11:13,845 --> 00:11:14,376
+otherwise.
+
+158
+00:11:14,716 --> 00:11:19,498
+Assuming Git records file permissions and
+owners. Root cause: executable or not is
+
+159
+00:11:19,538 --> 00:11:21,674
+the only permission that Git records.
+
+160
+00:11:23,514 --> 00:11:28,415
+A data-platform team has a job that publishes
+generated configuration as commits, on
+
+161
+00:11:28,455 --> 00:11:33,003
+a server with no checkout. It uses exactly
+the moves you saw: store the blobs,
+
+162
+00:11:33,043 --> 00:11:37,944
+register them in an index, write the tree,
+write the commit with the previous commit
+
+163
+00:11:37,984 --> 00:11:40,003
+as its parent, and move the branch.
+
+164
+00:11:40,343 --> 00:11:44,540
+The textbook's advice for such scripts is
+in its table of what can go wrong: create
+
+165
+00:11:44,580 --> 00:11:48,573
+the commit and move the ref together. A
+script that creates the commit and then
+
+166
+00:11:48,613 --> 00:11:52,401
+fails before moving the ref leaves a
+dangling commit that no history shows.
+
+167
+00:11:52,741 --> 00:11:57,399
+One more production point from the textbook:
+author and committer are text supplied
+
+168
+00:11:57,439 --> 00:12:00,512
+by whoever creates the commit.
+Git does not check them.
+
+169
+00:12:00,552 --> 00:12:04,418
+A signature makes authorship verifiable,
+and later chapters cover it.
+
+170
+00:12:06,258 --> 00:12:11,817
+Do Lab 1.1, "Build a commit by hand",
+in lab-manual/m01-what-git-is.md.
+
+171
+00:12:12,157 --> 00:12:16,604
+Before each of the five steps, write down
+which object or file will appear and what
+
+172
+00:12:16,644 --> 00:12:21,090
+git status and git log will say afterwards.
+The step where your prediction fails is
+
+173
+00:12:21,130 --> 00:12:22,117
+the step to repeat.
+
+174
+00:12:23,957 --> 00:12:27,840
+Q66: "What are a blob, a
+tree and a commit object?"
+
+175
+00:12:28,180 --> 00:12:32,696
+Answer aloud. The question sounds elementary
+and is used to find out whether you
+
+176
+00:12:32,736 --> 00:12:37,025
+know the model or only the words. A
+strong answer says for each type what it
+
+177
+00:12:37,065 --> 00:12:41,126
+contains, what it refers to and, as
+important, what it does not contain.
+
+178
+00:12:41,166 --> 00:12:45,342
+Then it connects them: how you get from
+a commit to the bytes of one file.
+
+179
+00:12:45,382 --> 00:12:47,734
+Offer the fourth type without being asked.
+
+180
+00:12:49,574 --> 00:12:53,265
+You should now be able to say:
+Git has four object types.
+
+181
+00:12:53,305 --> 00:12:58,699
+A blob is file content with no name. A tree
+is one directory: modes, names and IDs.
+
+182
+00:12:58,739 --> 00:13:03,412
+A commit is one tree, its parents, an
+author, a committer and a message.
+
+183
+00:13:03,752 --> 00:13:08,222
+A tag object names another object. git add
+is two moves: store the blob and record
+
+184
+00:13:08,262 --> 00:13:12,678
+it in the index. git commit is three: write
+the trees, write the commit, move the
+
+185
+00:13:12,718 --> 00:13:17,079
+ref. A commit that no ref points at exists
+and is dangling, and one ref makes it
+
+186
+00:13:17,119 --> 00:13:17,629
+reachable.
+
+187
+00:13:19,469 --> 00:13:22,907
+Read sections 2.5 and 2.6 of Chapter 2.
+
+188
+00:13:23,247 --> 00:13:27,957
+Repeat Lab 1.1, "Build a commit by
+hand", a second time from memory, with a
+
+189
+00:13:27,997 --> 00:13:29,983
+different file name and message.
+
+190
+00:13:30,323 --> 00:13:36,619
+Challenge: Exercise 1.8, Level 3, "the
+object that no history shows", in
+
+191
+00:13:36,659 --> 00:13:39,523
+exercises/m01-m05-foundations.md.

@@ -1,0 +1,5145 @@
+{
+ "id": "V112",
+ "version": 22,
+ "title": "Living in a sparse checkout, and the sparse index",
+ "part": 4,
+ "part_label": "INTERNALS",
+ "part_name": "Git internals",
+ "palette": {
+  "accent": "#BC8CFF",
+  "accent2": "#E2CCFF",
+  "bg1": "#15111F",
+  "bg2": "#261D3A"
+ },
+ "planned_minutes": 20,
+ "chapters": [
+  "ch24-monorepos.md"
+ ],
+ "script": "video/scripts/V112-living-in-a-sparse-checkout-and-the-sparse-index.md",
+ "script_sha1": "62ef97f229392c3e39e41d59f364fb6c343f32e8",
+ "sections": [
+  {
+   "name": "HOOK",
+   "beat": 1,
+   "line": 10
+  },
+  {
+   "name": "INTRODUCTION",
+   "beat": 5,
+   "line": 20
+  },
+  {
+   "name": "LEARNING OBJECTIVES",
+   "beat": 10,
+   "line": 30
+  },
+  {
+   "name": "CONCEPT",
+   "beat": 16,
+   "line": 39
+  },
+  {
+   "name": "MENTAL MODEL",
+   "beat": 28,
+   "line": 91
+  },
+  {
+   "name": "DIAGRAM",
+   "beat": 35,
+   "line": 113
+  },
+  {
+   "name": "LIVE TERMINAL DEMO",
+   "beat": 39,
+   "line": 157
+  },
+  {
+   "name": "COMMON MISTAKES",
+   "beat": 68,
+   "line": 514
+  },
+  {
+   "name": "PRODUCTION EXAMPLE",
+   "beat": 75,
+   "line": 524
+  },
+  {
+   "name": "PRACTICE EXERCISE",
+   "beat": 78,
+   "line": 530
+  },
+  {
+   "name": "INTERVIEW QUESTION",
+   "beat": 81,
+   "line": 536
+  },
+  {
+   "name": "RECAP",
+   "beat": 85,
+   "line": 548
+  },
+  {
+   "name": "HOMEWORK",
+   "beat": 93,
+   "line": 560
+  }
+ ],
+ "slides": [
+  {
+   "kind": "title",
+   "title": "Living in a sparse checkout, and the sparse index",
+   "part_name": "Git internals",
+   "section": "TITLE",
+   "n": 1,
+   "progress": 0.0
+  },
+  {
+   "kind": "section",
+   "name": "HOOK",
+   "index": 1,
+   "count": 13,
+   "section": "HOOK",
+   "n": 2,
+   "progress": 0.0021
+  },
+  {
+   "kind": "callout",
+   "direction": "`git grep -l tenant` — no output, exit status 1.",
+   "code": [
+    "git grep -l tenant"
+   ],
+   "quoted": false,
+   "caption": "An engineer is asked which files use the <code>tenant</code> field before a schema change.",
+   "section": "HOOK",
+   "n": 3,
+   "progress": 0.0037
+  },
+  {
+   "kind": "callout",
+   "direction": "`git grep -l tenant` — no output, exit status 1.",
+   "code": [
+    "git grep -l tenant"
+   ],
+   "quoted": false,
+   "caption": "Her repository wasn't damaged, and her command wasn't wrong.",
+   "section": "HOOK",
+   "n": 4,
+   "progress": 0.0201
+  },
+  {
+   "kind": "callout",
+   "direction": "`git grep -l tenant` — no output, exit status 1.",
+   "code": [
+    "git grep -l tenant"
+   ],
+   "quoted": false,
+   "caption": "Later the same week she narrows her cone, the set of directories she chose, and loses a downloaded evaluation set that took an hour to fetch.",
+   "section": "HOOK",
+   "n": 5,
+   "progress": 0.0344
+  },
+  {
+   "kind": "section",
+   "name": "INTRODUCTION",
+   "index": 2,
+   "count": 13,
+   "section": "INTRODUCTION",
+   "n": 6,
+   "progress": 0.0559
+  },
+  {
+   "kind": "keypoint",
+   "body": "Welcome back to Git and GitHub Deep Mastery.",
+   "section": "INTRODUCTION",
+   "n": 7,
+   "progress": 0.0575
+  },
+  {
+   "kind": "keypoint",
+   "body": "In the last video you set a cone.",
+   "section": "INTRODUCTION",
+   "n": 8,
+   "progress": 0.0831
+  },
+  {
+   "kind": "keypoint",
+   "body": "Two replays: <code>labs/ch24/sparse-behaviour.sh</code> and <code>labs/ch24/sparse-index.sh</code>.",
+   "section": "INTRODUCTION",
+   "n": 9,
+   "progress": 0.108
+  },
+  {
+   "kind": "keypoint",
+   "body": "Labels. <code>git grep</code> is 🟢 SAFE.",
+   "section": "INTRODUCTION",
+   "n": 10,
+   "progress": 0.1101
+  },
+  {
+   "kind": "section",
+   "name": "LEARNING OBJECTIVES",
+   "index": 3,
+   "count": 13,
+   "section": "LEARNING OBJECTIVES",
+   "n": 11,
+   "progress": 0.1215
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict what search, status and add do for paths outside the cone.",
+    "Explain what happens to untracked and ignored files when a cone is narrowed.",
+    "Clean leftovers after narrowing a cone, with a dry run first.",
+    "Say what the sparse index changes, why only in cone mode, and what makes a command expand it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "LEARNING OBJECTIVES",
+   "n": 12,
+   "progress": 0.123
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict what search, status and add do for paths outside the cone.",
+    "Explain what happens to untracked and ignored files when a cone is narrowed.",
+    "Clean leftovers after narrowing a cone, with a dry run first.",
+    "Say what the sparse index changes, why only in cone mode, and what makes a command expand it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "LEARNING OBJECTIVES",
+   "n": 13,
+   "progress": 0.1251
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict what search, status and add do for paths outside the cone.",
+    "Explain what happens to untracked and ignored files when a cone is narrowed.",
+    "Clean leftovers after narrowing a cone, with a dry run first.",
+    "Say what the sparse index changes, why only in cone mode, and what makes a command expand it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "LEARNING OBJECTIVES",
+   "n": 14,
+   "progress": 0.1302
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict what search, status and add do for paths outside the cone.",
+    "Explain what happens to untracked and ignored files when a cone is narrowed.",
+    "Clean leftovers after narrowing a cone, with a dry run first.",
+    "Say what the sparse index changes, why only in cone mode, and what makes a command expand it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "LEARNING OBJECTIVES",
+   "n": 15,
+   "progress": 0.1357
+  },
+  {
+   "kind": "bullets",
+   "lead": "After this video you can:",
+   "items": [
+    "Predict what search, status and add do for paths outside the cone.",
+    "Explain what happens to untracked and ignored files when a cone is narrowed.",
+    "Clean leftovers after narrowing a cone, with a dry run first.",
+    "Say what the sparse index changes, why only in cone mode, and what makes a command expand it."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "LEARNING OBJECTIVES",
+   "n": 16,
+   "progress": 0.1403
+  },
+  {
+   "kind": "section",
+   "name": "CONCEPT",
+   "index": 4,
+   "count": 13,
+   "section": "CONCEPT",
+   "n": 17,
+   "progress": 0.1479
+  },
+  {
+   "kind": "keypoint",
+   "body": "Start from the rule and derive the behaviour.",
+   "section": "CONCEPT",
+   "n": 18,
+   "progress": 0.1495
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=places boxes=HEAD_and_history:every_path|index:every_path|*working_tree:only_the_cone rows=1:A:git_log|1:A:git_show|2:C:git_grep:_no_match@bad|3:B:git_grep_--cached@ok|4:C:git_status mono=on title=Which_place_does_the_command_read? at_1=3 at_2=45 at_3=85",
+   "scene": "stores",
+   "params": {
+    "id": "places",
+    "boxes": [
+     [
+      "HEAD and history",
+      "every path"
+     ],
+     [
+      "index",
+      "every path"
+     ],
+     [
+      "*working tree",
+      "only the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "git log"
+     ],
+     [
+      1,
+      "A",
+      "git show"
+     ],
+     [
+      2,
+      "C",
+      "git grep: no match",
+      "bad"
+     ],
+     [
+      3,
+      "B",
+      "git grep --cached",
+      "ok"
+     ],
+     [
+      4,
+      "C",
+      "git status"
+     ]
+    ],
+    "mono": "on",
+    "title": "Which place does the command read?",
+    "at": {
+     "1": 0.03,
+     "2": 0.45,
+     "3": 0.85
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 19,
+   "progress": 0.1528
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=places boxes=HEAD_and_history:every_path|index:every_path|*working_tree:only_the_cone rows=1:A:git_log|1:A:git_show|2:C:git_grep:_no_match@bad|3:B:git_grep_--cached@ok|4:C:git_status mono=on title=Which_place_does_the_command_read? at_1=3 at_2=45 at_3=85",
+   "scene": "stores",
+   "params": {
+    "id": "places",
+    "boxes": [
+     [
+      "HEAD and history",
+      "every path"
+     ],
+     [
+      "index",
+      "every path"
+     ],
+     [
+      "*working tree",
+      "only the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "git log"
+     ],
+     [
+      1,
+      "A",
+      "git show"
+     ],
+     [
+      2,
+      "C",
+      "git grep: no match",
+      "bad"
+     ],
+     [
+      3,
+      "B",
+      "git grep --cached",
+      "ok"
+     ],
+     [
+      4,
+      "C",
+      "git status"
+     ]
+    ],
+    "mono": "on",
+    "title": "Which place does the command read?",
+    "at": {
+     "1": 0.03,
+     "2": 0.45,
+     "3": 0.85
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 20,
+   "progress": 0.1865
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=outside columns=step,on_disk,index_entry rows=a_new_file_outside_the_cone:yes:none|git_add:yes:refused,_exit_status_1|git_add_--sparse:yes:staged|git_sparse-checkout_reapply:removed:skip-worktree marks=2.3:bad,3.3:ok,4.2:hl title=A_file_outside_the_cone at_1=12 at_2=30 at_3=45 at_4=58",
+   "scene": "walk",
+   "params": {
+    "id": "outside",
+    "columns": [
+     "step",
+     "on disk",
+     "index entry"
+    ],
+    "rows": [
+     [
+      "a new file outside the cone",
+      "yes",
+      "none"
+     ],
+     [
+      "git add",
+      "yes",
+      "refused, exit status 1"
+     ],
+     [
+      "git add --sparse",
+      "yes",
+      "staged"
+     ],
+     [
+      "git sparse-checkout reapply",
+      "removed",
+      "skip-worktree"
+     ]
+    ],
+    "marks": {
+     "2.3": "bad",
+     "3.3": "ok",
+     "4.2": "hl"
+    },
+    "title": "A file outside the cone",
+    "at": {
+     "1": 0.12,
+     "2": 0.3,
+     "3": 0.45,
+     "4": 0.58
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 21,
+   "progress": 0.1996
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=narrow columns=kind_of_file,when_the_cone_narrows,warning rows=tracked:removed_from_disk,_still_in_the_index_and_in_history:-|untracked:kept,_with_its_directory:yes|ignored:its_directory_is_deleted:none marks=1.2:ok,2.3:ok,3.2:bad,3.3:bad mono=off title=Narrowing_a_cone twig_3=worried",
+   "scene": "walk",
+   "params": {
+    "id": "narrow",
+    "columns": [
+     "kind of file",
+     "when the cone narrows",
+     "warning"
+    ],
+    "rows": [
+     [
+      "tracked",
+      "removed from disk, still in the index and in history",
+      "-"
+     ],
+     [
+      "untracked",
+      "kept, with its directory",
+      "yes"
+     ],
+     [
+      "ignored",
+      "its directory is deleted",
+      "none"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.3": "ok",
+     "3.2": "bad",
+     "3.3": "bad"
+    },
+    "mono": "off",
+    "title": "Narrowing a cone",
+    "twig": {
+     "3": "worried"
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 2,
+   "section": "CONCEPT",
+   "n": 22,
+   "progress": 0.2374
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=narrow columns=kind_of_file,when_the_cone_narrows,warning rows=tracked:removed_from_disk,_still_in_the_index_and_in_history:-|untracked:kept,_with_its_directory:yes|ignored:its_directory_is_deleted:none marks=1.2:ok,2.3:ok,3.2:bad,3.3:bad mono=off title=Narrowing_a_cone twig_3=worried",
+   "scene": "walk",
+   "params": {
+    "id": "narrow",
+    "columns": [
+     "kind of file",
+     "when the cone narrows",
+     "warning"
+    ],
+    "rows": [
+     [
+      "tracked",
+      "removed from disk, still in the index and in history",
+      "-"
+     ],
+     [
+      "untracked",
+      "kept, with its directory",
+      "yes"
+     ],
+     [
+      "ignored",
+      "its directory is deleted",
+      "none"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.3": "ok",
+     "3.2": "bad",
+     "3.3": "bad"
+    },
+    "mono": "off",
+    "title": "Narrowing a cone",
+    "twig": {
+     "3": "worried"
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 23,
+   "progress": 0.2463
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=narrow columns=kind_of_file,when_the_cone_narrows,warning rows=tracked:removed_from_disk,_still_in_the_index_and_in_history:-|untracked:kept,_with_its_directory:yes|ignored:its_directory_is_deleted:none marks=1.2:ok,2.3:ok,3.2:bad,3.3:bad mono=off title=Narrowing_a_cone twig_3=worried",
+   "scene": "walk",
+   "params": {
+    "id": "narrow",
+    "columns": [
+     "kind of file",
+     "when the cone narrows",
+     "warning"
+    ],
+    "rows": [
+     [
+      "tracked",
+      "removed from disk, still in the index and in history",
+      "-"
+     ],
+     [
+      "untracked",
+      "kept, with its directory",
+      "yes"
+     ],
+     [
+      "ignored",
+      "its directory is deleted",
+      "none"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.3": "ok",
+     "3.2": "bad",
+     "3.3": "bad"
+    },
+    "mono": "off",
+    "title": "Narrowing a cone",
+    "twig": {
+     "3": "worried"
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 24,
+   "progress": 0.2619
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=sparse boxes=ordinary_index:33_entries|*sparse_index:14_entries rows=1:A:S_docs/architecture.md|1:A:S_docs/runbooks/..._(3)|2:B:040000_docs/@hl|3:A:H_services/ranker/..._(4)|3:B:100644_services/ranker/..._(4)|4:B:a_path_inside_docs/:_expand_first@bad arrows=2:A1>B1:one_tree_entry mono=on title=One_entry_for_a_whole_directory at_1=40 at_2=60",
+   "scene": "stores",
+   "params": {
+    "id": "sparse",
+    "boxes": [
+     [
+      "ordinary index",
+      "33 entries"
+     ],
+     [
+      "*sparse index",
+      "14 entries"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "S docs/architecture.md"
+     ],
+     [
+      1,
+      "A",
+      "S docs/runbooks/... (3)"
+     ],
+     [
+      2,
+      "B",
+      "040000 docs/",
+      "hl"
+     ],
+     [
+      3,
+      "A",
+      "H services/ranker/... (4)"
+     ],
+     [
+      3,
+      "B",
+      "100644 services/ranker/... (4)"
+     ],
+     [
+      4,
+      "B",
+      "a path inside docs/: expand first",
+      "bad"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "one tree entry"
+     ]
+    ],
+    "mono": "on",
+    "title": "One entry for a whole directory",
+    "at": {
+     "1": 0.4,
+     "2": 0.6
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 3,
+   "section": "CONCEPT",
+   "n": 25,
+   "progress": 0.2918
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=sparse boxes=ordinary_index:33_entries|*sparse_index:14_entries rows=1:A:S_docs/architecture.md|1:A:S_docs/runbooks/..._(3)|2:B:040000_docs/@hl|3:A:H_services/ranker/..._(4)|3:B:100644_services/ranker/..._(4)|4:B:a_path_inside_docs/:_expand_first@bad arrows=2:A1>B1:one_tree_entry mono=on title=One_entry_for_a_whole_directory at_1=40 at_2=60",
+   "scene": "stores",
+   "params": {
+    "id": "sparse",
+    "boxes": [
+     [
+      "ordinary index",
+      "33 entries"
+     ],
+     [
+      "*sparse index",
+      "14 entries"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "S docs/architecture.md"
+     ],
+     [
+      1,
+      "A",
+      "S docs/runbooks/... (3)"
+     ],
+     [
+      2,
+      "B",
+      "040000 docs/",
+      "hl"
+     ],
+     [
+      3,
+      "A",
+      "H services/ranker/... (4)"
+     ],
+     [
+      3,
+      "B",
+      "100644 services/ranker/... (4)"
+     ],
+     [
+      4,
+      "B",
+      "a path inside docs/: expand first",
+      "bad"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "one tree entry"
+     ]
+    ],
+    "mono": "on",
+    "title": "One entry for a whole directory",
+    "at": {
+     "1": 0.4,
+     "2": 0.6
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 4,
+   "section": "CONCEPT",
+   "n": 26,
+   "progress": 0.3191
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=sparse boxes=ordinary_index:33_entries|*sparse_index:14_entries rows=1:A:S_docs/architecture.md|1:A:S_docs/runbooks/..._(3)|2:B:040000_docs/@hl|3:A:H_services/ranker/..._(4)|3:B:100644_services/ranker/..._(4)|4:B:a_path_inside_docs/:_expand_first@bad arrows=2:A1>B1:one_tree_entry mono=on title=One_entry_for_a_whole_directory at_1=40 at_2=60",
+   "scene": "stores",
+   "params": {
+    "id": "sparse",
+    "boxes": [
+     [
+      "ordinary index",
+      "33 entries"
+     ],
+     [
+      "*sparse index",
+      "14 entries"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "S docs/architecture.md"
+     ],
+     [
+      1,
+      "A",
+      "S docs/runbooks/... (3)"
+     ],
+     [
+      2,
+      "B",
+      "040000 docs/",
+      "hl"
+     ],
+     [
+      3,
+      "A",
+      "H services/ranker/... (4)"
+     ],
+     [
+      3,
+      "B",
+      "100644 services/ranker/... (4)"
+     ],
+     [
+      4,
+      "B",
+      "a path inside docs/: expand first",
+      "bad"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "one tree entry"
+     ]
+    ],
+    "mono": "on",
+    "title": "One entry for a whole directory",
+    "at": {
+     "1": 0.4,
+     "2": 0.6
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "upto": 5,
+   "section": "CONCEPT",
+   "n": 27,
+   "progress": 0.3494
+  },
+  {
+   "kind": "keypoint",
+   "body": "When should you use the sparse index?",
+   "section": "CONCEPT",
+   "n": 28,
+   "progress": 0.36
+  },
+  {
+   "kind": "section",
+   "name": "MENTAL MODEL",
+   "index": 5,
+   "count": 13,
+   "section": "MENTAL MODEL",
+   "n": 29,
+   "progress": 0.3865
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=sparse boxes=ordinary_index:33_entries|*sparse_index:14_entries rows=1:A:S_docs/architecture.md|1:A:S_docs/runbooks/..._(3)|2:B:040000_docs/@hl|3:A:H_services/ranker/..._(4)|3:B:100644_services/ranker/..._(4)|4:B:a_path_inside_docs/:_expand_first@bad arrows=2:A1>B1:one_tree_entry mono=on title=One_entry_for_a_whole_directory at_1=40 at_2=60",
+   "scene": "stores",
+   "params": {
+    "id": "sparse",
+    "boxes": [
+     [
+      "ordinary index",
+      "33 entries"
+     ],
+     [
+      "*sparse index",
+      "14 entries"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "S docs/architecture.md"
+     ],
+     [
+      1,
+      "A",
+      "S docs/runbooks/... (3)"
+     ],
+     [
+      2,
+      "B",
+      "040000 docs/",
+      "hl"
+     ],
+     [
+      3,
+      "A",
+      "H services/ranker/... (4)"
+     ],
+     [
+      3,
+      "B",
+      "100644 services/ranker/... (4)"
+     ],
+     [
+      4,
+      "B",
+      "a path inside docs/: expand first",
+      "bad"
+     ]
+    ],
+    "arrows": [
+     [
+      2,
+      "A1",
+      "B1",
+      "one tree entry"
+     ]
+    ],
+    "mono": "on",
+    "title": "One entry for a whole directory",
+    "at": {
+     "1": 0.4,
+     "2": 0.6
+    }
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "MENTAL MODEL",
+   "n": 30,
+   "progress": 0.3881
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=places boxes=HEAD_and_history:every_path|index:every_path|*working_tree:only_the_cone rows=1:A:git_log|1:A:git_show|2:C:git_grep:_no_match@bad|3:B:git_grep_--cached@ok|4:C:git_status mono=on title=Which_place_does_the_command_read? at_1=3 at_2=45 at_3=85",
+   "scene": "stores",
+   "params": {
+    "id": "places",
+    "boxes": [
+     [
+      "HEAD and history",
+      "every path"
+     ],
+     [
+      "index",
+      "every path"
+     ],
+     [
+      "*working tree",
+      "only the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "git log"
+     ],
+     [
+      1,
+      "A",
+      "git show"
+     ],
+     [
+      2,
+      "C",
+      "git grep: no match",
+      "bad"
+     ],
+     [
+      3,
+      "B",
+      "git grep --cached",
+      "ok"
+     ],
+     [
+      4,
+      "C",
+      "git status"
+     ]
+    ],
+    "mono": "on",
+    "title": "Which place does the command read?",
+    "at": {
+     "1": 0.03,
+     "2": 0.45,
+     "3": 0.85
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "MENTAL MODEL",
+   "n": 31,
+   "progress": 0.4188
+  },
+  {
+   "kind": "keypoint",
+   "body": "Try it now, thirty seconds, on paper.",
+   "section": "MENTAL MODEL",
+   "n": 32,
+   "progress": 0.4373
+  },
+  {
+   "kind": "section",
+   "name": "DIAGRAM",
+   "index": 6,
+   "count": 13,
+   "section": "DIAGRAM",
+   "n": 33,
+   "progress": 0.4644
+  },
+  {
+   "kind": "diagram",
+   "direction": "The same index twice: full, then sparse.",
+   "text": "   ordinary index in a sparse checkout            sparse index (index.sparse = true)\n   33 entries                                     14 entries\n\n   S  .github/CODEOWNERS                          040000  .github/              one tree entry\n   H  .gitignore                                  100644  .gitignore\n   H  README.md                                   100644  README.md\n   S  docs/architecture.md        \\\n   S  docs/runbooks/...  (3)      /               040000  docs/                 one tree entry\n   S  libs/schemas/...   (7)      \\\n   S  libs/tokenizer/... (2)      /               040000  libs/                 one tree entry\n   S  pipelines/...      (4)                      040000  pipelines/            one tree entry\n   H  pyproject.toml                              100644  pyproject.toml\n   S  services/gateway/... (4)                    040000  services/gateway/     one tree entry\n   S  services/ingest/...  (3)                    040000  services/ingest/      one tree entry\n   H  services/ranker/...  (4)                    100644  services/ranker/...   4 file entries\n   S  tools/ci/...       (1)                      040000  tools/                one tree entry",
+   "section": "DIAGRAM",
+   "n": 34,
+   "progress": 0.466
+  },
+  {
+   "kind": "diagram",
+   "direction": "The root-cause box of section 24.5.",
+   "text": "Observed behavior : a search or a file-listing script reports that most of the repository is gone,\n                    in one engineer's clone only.\nGit state         : core.sparseCheckout=true in .git/config.worktree; most index entries carry the\n                    skip-worktree bit; \"git status\" prints \"You are in a sparse checkout\".\nMechanism         : commands that read the working tree see the cone; commands that read the index\n                    or commits see everything.\nRoot cause        : a working-tree question was asked where a repository question was meant.\nWhy Git does this : the purpose of the feature is that the files are not on disk.\nCorrect fix       : ask Git: \"git grep --cached\", \"git ls-files\", \"git ls-tree -r HEAD\".\nPrevention        : scripts that must see all files read from Git, not from the directory listing.",
+   "section": "DIAGRAM",
+   "n": 35,
+   "progress": 0.4975
+  },
+  {
+   "kind": "section",
+   "name": "LIVE TERMINAL DEMO",
+   "index": 7,
+   "count": 13,
+   "section": "LIVE TERMINAL DEMO",
+   "n": 36,
+   "progress": 0.5064
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch24/sparse-behaviour"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 37,
+   "progress": 0.5079
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git log --oneline -2 -- services/gateway"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:services/gateway/config.yaml"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l tenant"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l --cached tenant"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 38,
+   "progress": 0.5105
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/01-reads",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# History and objects are complete. Only the working tree is narrow:"
+    },
+    {
+     "t": "cmd",
+     "s": "git log --oneline -2 -- services/gateway"
+    },
+    {
+     "t": "out",
+     "s": "100bb99 schemas, gateway, ingest: add the tenant field in one change"
+    },
+    {
+     "t": "out",
+     "s": "cb65af7 gateway: add search route 12"
+    },
+    {
+     "t": "cmd",
+     "s": "git show HEAD:services/gateway/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "timeout_ms: 800"
+    },
+    {
+     "t": "out",
+     "s": "upstream: ranker"
+    },
+    {
+     "t": "out",
+     "s": "# A search of the working tree sees only what is checked out; --cached searches the index:"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l tenant"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git grep -l --cached tenant"
+    },
+    {
+     "t": "out",
+     "s": "libs/schemas/events.py"
+    },
+    {
+     "t": "out",
+     "s": "services/gateway/app.py"
+    },
+    {
+     "t": "out",
+     "s": "services/ingest/worker.py"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 39,
+   "progress": 0.5245
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/02-status-work",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The work of one status, counted (Chapter 26, section 26.2 explains the pipeline):"
+    },
+    {
+     "t": "cmd",
+     "s": "GIT_TRACE2_PERF=1 git status 2>&1 >/dev/null | awk -F'|' '$4 ~ /data/ {gsub(/[ .]/, \"\", $NF); gsub(/ /,"
+    },
+    {
+     "t": "wrap",
+     "s": "\"\", $(NF-1)); print $(NF-1), $NF}' | grep -e read/cache_nr -e sum_lstat -e visited",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "index read/cache_nr:33"
+    },
+    {
+     "t": "out",
+     "s": "index refresh/sum_lstat:9"
+    },
+    {
+     "t": "out",
+     "s": "read_directo directories-visited:6"
+    },
+    {
+     "t": "out",
+     "s": "read_directo paths-visited:15"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 40,
+   "progress": 0.5358
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "mkdir -p services/gateway"
+    },
+    {
+     "t": "cmd",
+     "s": "printf '# Gateway notes\\n\\nRoutes are versioned under /v1.\\n' > services/gateway/NOTES.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git add services/gateway/NOTES.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 41,
+   "progress": 0.5548
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/03-add-outside",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A new file in a directory outside the cone:"
+    },
+    {
+     "t": "cmd",
+     "s": "mkdir -p services/gateway"
+    },
+    {
+     "t": "cmd",
+     "s": "printf '# Gateway notes\\n\\nRoutes are versioned under /v1.\\n' > services/gateway/NOTES.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git add services/gateway/NOTES.md"
+    },
+    {
+     "t": "out",
+     "s": "The following paths and/or pathspecs matched paths that exist"
+    },
+    {
+     "t": "out",
+     "s": "outside of your sparse-checkout definition, so will not be"
+    },
+    {
+     "t": "out",
+     "s": "updated in the index:"
+    },
+    {
+     "t": "out",
+     "s": "services/gateway/NOTES.md"
+    },
+    {
+     "t": "out",
+     "s": "hint: If you intend to update such entries, try one of the following:"
+    },
+    {
+     "t": "out",
+     "s": "hint: * Use the --sparse option."
+    },
+    {
+     "t": "out",
+     "s": "hint: * Disable or modify the sparsity rules."
+    },
+    {
+     "t": "out",
+     "s": "hint: Disable this message with \"git config set advice.updateSparsePath false\""
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "out",
+     "s": "?? services/gateway/NOTES.md"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 42,
+   "progress": 0.57
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/04-add-sparse",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git add --sparse services/gateway/NOTES.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git commit -q -m 'gateway: add notes on route versioning'"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files -t services/gateway"
+    },
+    {
+     "t": "out",
+     "s": "H services/gateway/NOTES.md"
+    },
+    {
+     "t": "out",
+     "s": "S services/gateway/app.py"
+    },
+    {
+     "t": "out",
+     "s": "S services/gateway/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "S services/gateway/routes.py"
+    },
+    {
+     "t": "out",
+     "s": "S services/gateway/tests/test_routes.py"
+    },
+    {
+     "t": "out",
+     "s": "# The file is committed and still on disk although its directory is outside the cone:"
+    },
+    {
+     "t": "cmd",
+     "s": "ls services/gateway"
+    },
+    {
+     "t": "out",
+     "s": "NOTES.md"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout reapply"
+    },
+    {
+     "t": "cmd",
+     "s": "ls services"
+    },
+    {
+     "t": "out",
+     "s": "ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files -t services/gateway/NOTES.md"
+    },
+    {
+     "t": "out",
+     "s": "S services/gateway/NOTES.md"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 43,
+   "progress": 0.5806
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/05-untracked-blocks",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Widen the cone, leave an untracked file behind, and narrow it again:"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout add pipelines/eval"
+    },
+    {
+     "t": "cmd",
+     "s": "printf 'recall@10 = 0.83\\n' > pipelines/eval/results.tmp"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set services/ranker libs/tokenizer"
+    },
+    {
+     "t": "out",
+     "s": "warning: directory 'pipelines/' contains untracked files, but is not in the sparse-checkout cone"
+    },
+    {
+     "t": "cmd",
+     "s": "find pipelines -type f"
+    },
+    {
+     "t": "out",
+     "s": "pipelines/eval/results.tmp"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short"
+    },
+    {
+     "t": "out",
+     "s": "?? pipelines/eval/results.tmp"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 44,
+   "progress": 0.5949
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/06-clean",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# Preview first: the cleanup removes the whole directory, the untracked file included."
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout clean --dry-run"
+    },
+    {
+     "t": "out",
+     "s": "Would remove pipelines/"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout clean"
+    },
+    {
+     "t": "out",
+     "s": "fatal: for safety, refusing to clean without one of --force or --dry-run"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 128]"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout clean -f"
+    },
+    {
+     "t": "out",
+     "s": "Removing pipelines/"
+    },
+    {
+     "t": "cmd",
+     "s": "ls pipelines"
+    },
+    {
+     "t": "out",
+     "s": "ls: pipelines: No such file or directory"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 45,
+   "progress": 0.6269
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout add pipelines/eval"
+    },
+    {
+     "t": "cmd",
+     "s": "mkdir pipelines/eval/build && printf 'cached features\\n' > pipelines/eval/build/features.bin"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short --ignored"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set services/ranker libs/tokenizer"
+    },
+    {
+     "t": "cmd",
+     "s": "ls pipelines"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 46,
+   "progress": 0.6446
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-behaviour/07-ignored-lost",
+   "fs": 28,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The same sequence with a file that .gitignore covers (build/ is ignored in this repository):"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout add pipelines/eval"
+    },
+    {
+     "t": "cmd",
+     "s": "mkdir pipelines/eval/build && printf 'cached features\\n' > pipelines/eval/build/features.bin"
+    },
+    {
+     "t": "cmd",
+     "s": "git status --short --ignored"
+    },
+    {
+     "t": "out",
+     "s": "!! pipelines/eval/build/"
+    },
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set services/ranker libs/tokenizer"
+    },
+    {
+     "t": "cmd",
+     "s": "ls pipelines"
+    },
+    {
+     "t": "out",
+     "s": "ls: pipelines: No such file or directory"
+    },
+    {
+     "t": "exit",
+     "s": "[exit status: 1]"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 47,
+   "progress": 0.659
+  },
+  {
+   "kind": "terminal",
+   "direction": "The sparse index.",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "labs/run ch24/sparse-index"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 48,
+   "progress": 0.6657
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/01-full-index",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A sparse checkout with an ordinary index: 33 entries for 7 files on disk."
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "      33"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files -t | cut -c1 | sort | uniq -c"
+    },
+    {
+     "t": "out",
+     "s": "   7 H"
+    },
+    {
+     "t": "out",
+     "s": "  26 S"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 49,
+   "progress": 0.6684
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/02-enable",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set --sparse-index services/ranker"
+    },
+    {
+     "t": "cmd",
+     "s": "cat .git/config.worktree"
+    },
+    {
+     "t": "out",
+     "s": "[core]"
+    },
+    {
+     "t": "out",
+     "s": "        sparseCheckout = true"
+    },
+    {
+     "t": "out",
+     "s": "        sparseCheckoutCone = true"
+    },
+    {
+     "t": "out",
+     "s": "[index]"
+    },
+    {
+     "t": "out",
+     "s": "        sparse = true"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "      14"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 50,
+   "progress": 0.6742
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/03-entries",
+   "fs": 30,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A whole directory outside the cone is now a single entry that names a tree object:"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse --stage"
+    },
+    {
+     "t": "out",
+     "s": "040000 a3f81eb96031c5886197d2da2d1aeb5d17e4c646 0       .github/"
+    },
+    {
+     "t": "out",
+     "s": "100644 982c4febe4ff8d8dd6daee80ed5d8a282f228d44 0       .gitignore"
+    },
+    {
+     "t": "out",
+     "s": "100644 b47224884eaf3c9f9ac2bfbb32638072b748d8b7 0       README.md"
+    },
+    {
+     "t": "out",
+     "s": "040000 1e616b23f37f85ce3b07a9157ade65588054b583 0       docs/"
+    },
+    {
+     "t": "out",
+     "s": "040000 ac165d9f7472f790a4477c93edf90960e84774a7 0       libs/"
+    },
+    {
+     "t": "out",
+     "s": "040000 01bedcc4c53928618088e5c7bf68ca94f1757667 0       pipelines/"
+    },
+    {
+     "t": "out",
+     "s": "100644 897065b8f51bfbd091c267898cef63ea44564ee3 0       pyproject.toml"
+    },
+    {
+     "t": "out",
+     "s": "040000 74cd101987d4a8b085ecf364708437364befbf28 0       services/gateway/"
+    },
+    {
+     "t": "out",
+     "s": "040000 710e8eb227d465fde35a63d622e4040521e6f339 0       services/ingest/"
+    },
+    {
+     "t": "out",
+     "s": "100644 b89d0b7fac309a1df9cf9c4c1e57cc77e37ba8f6 0       services/ranker/config.yaml"
+    },
+    {
+     "t": "out",
+     "s": "100644 2e52099a797292009b44e5b9d721e5b37aeb7197 0       services/ranker/features.py"
+    },
+    {
+     "t": "out",
+     "s": "100644 fa20c90bd0927af350059ca40e00a7d2e390193b 0       services/ranker/model.py"
+    },
+    {
+     "t": "out",
+     "s": "100644 dd50a7eb0825765c50f09d9d205ff43c89f15916 0       services/ranker/tests/test_model.py"
+    },
+    {
+     "t": "out",
+     "s": "040000 c2505f39bb5212640238d272ed2c9f50aec4e0d1 0       tools/"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 51,
+   "progress": 0.6797
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/04-same-tree",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# The entry for docs/ holds exactly the ID of the docs tree in HEAD:"
+    },
+    {
+     "t": "cmd",
+     "s": "git rev-parse HEAD:docs"
+    },
+    {
+     "t": "out",
+     "s": "1e616b23f37f85ce3b07a9157ade65588054b583"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse --stage docs/"
+    },
+    {
+     "t": "out",
+     "s": "040000 1e616b23f37f85ce3b07a9157ade65588054b583 0       docs/"
+    },
+    {
+     "t": "cmd",
+     "s": "git status"
+    },
+    {
+     "t": "out",
+     "s": "On branch main"
+    },
+    {
+     "t": "out",
+     "s": "Your branch is up to date with 'origin/main'."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "You are in a sparse checkout."
+    },
+    {
+     "t": "out",
+     "s": ""
+    },
+    {
+     "t": "out",
+     "s": "nothing to commit, working tree clean"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 52,
+   "progress": 0.686
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/05-counted",
+   "fs": 26,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "GIT_TRACE2_PERF=1 git status 2>&1 >/dev/null | awk -F'|' '$4 ~ /data/ {gsub(/[ .]/, \"\", $NF); gsub(/ /,"
+    },
+    {
+     "t": "wrap",
+     "s": "\"\", $(NF-1)); print $(NF-1), $NF}' | grep -e read/cache_nr -e sum_lstat",
+     "of": "cmd"
+    },
+    {
+     "t": "out",
+     "s": "index read/cache_nr:14"
+    },
+    {
+     "t": "out",
+     "s": "index refresh/sum_lstat:7"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 53,
+   "progress": 0.6974
+  },
+  {
+   "kind": "terminal",
+   "mode": "cmd",
+   "fs": 34,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git ls-files | wc -l"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse | wc -l"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 54,
+   "progress": 0.7185
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/06-expand",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "out",
+     "s": "# A command that asks for every path expands the index in memory, and says so:"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "hint: The sparse index is expanding to a full index, a slow operation."
+    },
+    {
+     "t": "out",
+     "s": "hint: Your working directory likely has contents that are outside of"
+    },
+    {
+     "t": "out",
+     "s": "hint: your sparse-checkout patterns. Use 'git sparse-checkout list' to"
+    },
+    {
+     "t": "out",
+     "s": "hint: see your sparse-checkout definition and compare it to your working"
+    },
+    {
+     "t": "out",
+     "s": "hint: directory contents. Cleaning up any merge conflicts or staged"
+    },
+    {
+     "t": "out",
+     "s": "hint: changes before running 'git sparse-checkout clean' or 'git"
+    },
+    {
+     "t": "out",
+     "s": "hint: sparse-checkout reapply' may assist in this cleanup."
+    },
+    {
+     "t": "out",
+     "s": "hint: Disable this message with \"git config set advice.sparseIndexExpanded false\""
+    },
+    {
+     "t": "out",
+     "s": "      33"
+    },
+    {
+     "t": "out",
+     "s": "# The file on disk stays sparse:"
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "      14"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 55,
+   "progress": 0.7312
+  },
+  {
+   "kind": "terminal",
+   "mode": "out",
+   "title": "ch24/sparse-index/07-back",
+   "fs": 32,
+   "lines": [
+    {
+     "t": "cmd",
+     "s": "git sparse-checkout set --no-sparse-index services/ranker"
+    },
+    {
+     "t": "out",
+     "s": "hint: The sparse index is expanding to a full index, a slow operation."
+    },
+    {
+     "t": "out",
+     "s": "hint: Your working directory likely has contents that are outside of"
+    },
+    {
+     "t": "out",
+     "s": "hint: your sparse-checkout patterns. Use 'git sparse-checkout list' to"
+    },
+    {
+     "t": "out",
+     "s": "hint: see your sparse-checkout definition and compare it to your working"
+    },
+    {
+     "t": "out",
+     "s": "hint: directory contents. Cleaning up any merge conflicts or staged"
+    },
+    {
+     "t": "out",
+     "s": "hint: changes before running 'git sparse-checkout clean' or 'git"
+    },
+    {
+     "t": "out",
+     "s": "hint: sparse-checkout reapply' may assist in this cleanup."
+    },
+    {
+     "t": "out",
+     "s": "hint: Disable this message with \"git config set advice.sparseIndexExpanded false\""
+    },
+    {
+     "t": "cmd",
+     "s": "git ls-files --sparse | wc -l"
+    },
+    {
+     "t": "out",
+     "s": "      33"
+    },
+    {
+     "t": "cmd",
+     "s": "git config get index.sparse"
+    },
+    {
+     "t": "out",
+     "s": "false"
+    }
+   ],
+   "section": "LIVE TERMINAL DEMO",
+   "n": 56,
+   "progress": 0.7434
+  },
+  {
+   "kind": "section",
+   "name": "COMMON MISTAKES",
+   "index": 8,
+   "count": 13,
+   "section": "COMMON MISTAKES",
+   "n": 57,
+   "progress": 0.7468
+  },
+  {
+   "kind": "keypoint",
+   "body": "Five mistakes to watch for.",
+   "section": "COMMON MISTAKES",
+   "n": 58,
+   "progress": 0.7483
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Searching a sparse checkout with plain <code>git grep</code> or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; <code>git grep --cached</code> and <code>git ls-files</code> read the index.",
+    "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+    "Running <code>git sparse-checkout clean -f</code> without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+    "Expecting <code>git add</code> to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless <code>--sparse</code> is given.",
+    "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 1,
+   "fs": 42,
+   "current": 0,
+   "section": "COMMON MISTAKES",
+   "n": 59,
+   "progress": 0.7504
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Searching a sparse checkout with plain <code>git grep</code> or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; <code>git grep --cached</code> and <code>git ls-files</code> read the index.",
+    "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+    "Running <code>git sparse-checkout clean -f</code> without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+    "Expecting <code>git add</code> to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless <code>--sparse</code> is given.",
+    "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 2,
+   "fs": 42,
+   "current": 1,
+   "section": "COMMON MISTAKES",
+   "n": 60,
+   "progress": 0.7664
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Searching a sparse checkout with plain <code>git grep</code> or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; <code>git grep --cached</code> and <code>git ls-files</code> read the index.",
+    "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+    "Running <code>git sparse-checkout clean -f</code> without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+    "Expecting <code>git add</code> to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless <code>--sparse</code> is given.",
+    "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 3,
+   "fs": 42,
+   "current": 2,
+   "section": "COMMON MISTAKES",
+   "n": 61,
+   "progress": 0.7803
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Searching a sparse checkout with plain <code>git grep</code> or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; <code>git grep --cached</code> and <code>git ls-files</code> read the index.",
+    "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+    "Running <code>git sparse-checkout clean -f</code> without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+    "Expecting <code>git add</code> to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless <code>--sparse</code> is given.",
+    "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 4,
+   "fs": 42,
+   "current": 3,
+   "section": "COMMON MISTAKES",
+   "n": 62,
+   "progress": 0.79
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Searching a sparse checkout with plain <code>git grep</code> or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; <code>git grep --cached</code> and <code>git ls-files</code> read the index.",
+    "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+    "Running <code>git sparse-checkout clean -f</code> without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+    "Expecting <code>git add</code> to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless <code>--sparse</code> is given.",
+    "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call."
+   ],
+   "ordered": true,
+   "start": 1,
+   "shown": 5,
+   "fs": 42,
+   "current": 4,
+   "section": "COMMON MISTAKES",
+   "n": 63,
+   "progress": 0.8014
+  },
+  {
+   "kind": "section",
+   "name": "PRODUCTION EXAMPLE",
+   "index": 9,
+   "count": 13,
+   "section": "PRODUCTION EXAMPLE",
+   "n": 64,
+   "progress": 0.8119
+  },
+  {
+   "kind": "keypoint",
+   "body": "Now, out of the lab. A search team's pre-merge script lists Python files with <code>find</code> and checks that each has a test.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 65,
+   "progress": 0.8135
+  },
+  {
+   "kind": "keypoint",
+   "body": "The same team adopts a rule for narrowing a cone: run <code>git status --short --ignored</code> first, and move away any ignored file that cannot be regenerated, such as a local <code>.env</code> or a downloaded evaluation set.",
+   "section": "PRODUCTION EXAMPLE",
+   "n": 66,
+   "progress": 0.8468
+  },
+  {
+   "kind": "section",
+   "name": "PRACTICE EXERCISE",
+   "index": 10,
+   "count": 13,
+   "section": "PRACTICE EXERCISE",
+   "n": 67,
+   "progress": 0.8657
+  },
+  {
+   "kind": "keypoint",
+   "body": "Your turn. Do Exercise 18.8, \"A file that is not on disk\", in <code>exercises/m16-m18-internals.md</code>.",
+   "section": "PRACTICE EXERCISE",
+   "n": 68,
+   "progress": 0.8673
+  },
+  {
+   "kind": "keypoint",
+   "body": "The challenge is Exercise 18.9, \"The clone that believes it is up to date\", in the same file.",
+   "section": "PRACTICE EXERCISE",
+   "n": 69,
+   "progress": 0.8879
+  },
+  {
+   "kind": "section",
+   "name": "INTERVIEW QUESTION",
+   "index": 11,
+   "count": 13,
+   "section": "INTERVIEW QUESTION",
+   "n": 70,
+   "progress": 0.8955
+  },
+  {
+   "kind": "keypoint",
+   "body": "Question 431 of the CTO question bank:",
+   "section": "INTERVIEW QUESTION",
+   "n": 71,
+   "progress": 0.8971
+  },
+  {
+   "kind": "callout",
+   "quotes": [
+    "\"What happens to untracked and to ignored files when a cone is narrowed?\""
+   ],
+   "quoted": false,
+   "section": "INTERVIEW QUESTION",
+   "n": 72,
+   "progress": 0.9
+  },
+  {
+   "kind": "scene",
+   "direction": "walk: id=narrow columns=kind_of_file,when_the_cone_narrows,warning rows=tracked:removed_from_disk,_still_in_the_index_and_in_history:-|untracked:kept,_with_its_directory:yes|ignored:its_directory_is_deleted:none marks=1.2:ok,2.3:ok,3.2:bad,3.3:bad mono=off title=Narrowing_a_cone twig_3=worried",
+   "scene": "walk",
+   "params": {
+    "id": "narrow",
+    "columns": [
+     "kind of file",
+     "when the cone narrows",
+     "warning"
+    ],
+    "rows": [
+     [
+      "tracked",
+      "removed from disk, still in the index and in history",
+      "-"
+     ],
+     [
+      "untracked",
+      "kept, with its directory",
+      "yes"
+     ],
+     [
+      "ignored",
+      "its directory is deleted",
+      "none"
+     ]
+    ],
+    "marks": {
+     "1.2": "ok",
+     "2.3": "ok",
+     "3.2": "bad",
+     "3.3": "bad"
+    },
+    "mono": "off",
+    "title": "Narrowing a cone",
+    "twig": {
+     "3": "worried"
+    }
+   },
+   "steps": [
+    "header",
+    "1",
+    "2",
+    "3"
+   ],
+   "base": 4,
+   "upto": 4,
+   "section": "INTERVIEW QUESTION",
+   "n": 73,
+   "progress": 0.9021
+  },
+  {
+   "kind": "section",
+   "name": "RECAP",
+   "index": 12,
+   "count": 13,
+   "section": "RECAP",
+   "n": 74,
+   "progress": 0.9282
+  },
+  {
+   "kind": "keypoint",
+   "body": "Let's land this.",
+   "section": "RECAP",
+   "n": 75,
+   "progress": 0.9298
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+    "Working-tree commands see the cone; index and history commands see everything; <code>git grep</code> needs <code>--cached</code>.",
+    "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+    "<code>git sparse-checkout clean</code> removes leftovers and cannot be undone; run it with <code>--dry-run</code> first.",
+    "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 0,
+   "fs": 46,
+   "section": "RECAP",
+   "n": 76,
+   "progress": 0.9311
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+    "Working-tree commands see the cone; index and history commands see everything; <code>git grep</code> needs <code>--cached</code>.",
+    "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+    "<code>git sparse-checkout clean</code> removes leftovers and cannot be undone; run it with <code>--dry-run</code> first.",
+    "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 1,
+   "fs": 46,
+   "current": 0,
+   "section": "RECAP",
+   "n": 77,
+   "progress": 0.934
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+    "Working-tree commands see the cone; index and history commands see everything; <code>git grep</code> needs <code>--cached</code>.",
+    "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+    "<code>git sparse-checkout clean</code> removes leftovers and cannot be undone; run it with <code>--dry-run</code> first.",
+    "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 2,
+   "fs": 46,
+   "current": 1,
+   "section": "RECAP",
+   "n": 78,
+   "progress": 0.9433
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+    "Working-tree commands see the cone; index and history commands see everything; <code>git grep</code> needs <code>--cached</code>.",
+    "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+    "<code>git sparse-checkout clean</code> removes leftovers and cannot be undone; run it with <code>--dry-run</code> first.",
+    "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 3,
+   "fs": 46,
+   "current": 2,
+   "section": "RECAP",
+   "n": 79,
+   "progress": 0.9496
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+    "Working-tree commands see the cone; index and history commands see everything; <code>git grep</code> needs <code>--cached</code>.",
+    "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+    "<code>git sparse-checkout clean</code> removes leftovers and cannot be undone; run it with <code>--dry-run</code> first.",
+    "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 4,
+   "fs": 46,
+   "current": 3,
+   "section": "RECAP",
+   "n": 80,
+   "progress": 0.9576
+  },
+  {
+   "kind": "bullets",
+   "lead": "You should now be able to say:",
+   "items": [
+    "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+    "Working-tree commands see the cone; index and history commands see everything; <code>git grep</code> needs <code>--cached</code>.",
+    "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+    "<code>git sparse-checkout clean</code> removes leftovers and cannot be undone; run it with <code>--dry-run</code> first.",
+    "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside."
+   ],
+   "ordered": false,
+   "start": 1,
+   "shown": 5,
+   "fs": 46,
+   "current": 4,
+   "section": "RECAP",
+   "n": 81,
+   "progress": 0.9635
+  },
+  {
+   "kind": "section",
+   "name": "HOMEWORK",
+   "index": 13,
+   "count": 13,
+   "section": "HOMEWORK",
+   "n": 82,
+   "progress": 0.974
+  },
+  {
+   "kind": "keypoint",
+   "body": "Read sections 24.5 and 24.6 of Chapter 24.",
+   "section": "HOMEWORK",
+   "n": 83,
+   "progress": 0.9756
+  },
+  {
+   "kind": "scene",
+   "direction": "stores: id=places boxes=HEAD_and_history:every_path|index:every_path|*working_tree:only_the_cone rows=1:A:git_log|1:A:git_show|2:C:git_grep:_no_match@bad|3:B:git_grep_--cached@ok|4:C:git_status mono=on title=Which_place_does_the_command_read? at_1=3 at_2=45 at_3=85",
+   "scene": "stores",
+   "params": {
+    "id": "places",
+    "boxes": [
+     [
+      "HEAD and history",
+      "every path"
+     ],
+     [
+      "index",
+      "every path"
+     ],
+     [
+      "*working tree",
+      "only the cone"
+     ]
+    ],
+    "rows": [
+     [
+      1,
+      "A",
+      "git log"
+     ],
+     [
+      1,
+      "A",
+      "git show"
+     ],
+     [
+      2,
+      "C",
+      "git grep: no match",
+      "bad"
+     ],
+     [
+      3,
+      "B",
+      "git grep --cached",
+      "ok"
+     ],
+     [
+      4,
+      "C",
+      "git status"
+     ]
+    ],
+    "mono": "on",
+    "title": "Which place does the command read?",
+    "at": {
+     "1": 0.03,
+     "2": 0.45,
+     "3": 0.85
+    },
+    "arrows": []
+   },
+   "steps": [
+    "boxes",
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "base": 5,
+   "upto": 5,
+   "section": "HOMEWORK",
+   "n": 84,
+   "progress": 0.9789
+  }
+ ],
+ "beats": [
+  {
+   "i": 0,
+   "section": "TITLE",
+   "type": "hold",
+   "why": "title",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 1,
+   "line": null,
+   "t0": 0.0,
+   "h": "",
+   "anim": {
+    "group": 0,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "title",
+      "dissolve": false
+     }
+    ],
+    "pose": "hidden"
+   }
+  },
+  {
+   "i": 1,
+   "section": "HOOK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 2,
+   "line": 10,
+   "t0": 2.0,
+   "h": "",
+   "anim": {
+    "group": 1,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 2,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "An engineer is asked which files use the tenant field before a schema change. She runs git grep in her clone, gets no match, and reports that nothing uses it. Three files use it. The change breaks two services.",
+   "tele": "An engineer is asked which files use the `tenant` field before a schema change. She runs `git grep` in her clone, gets no match, and reports that nothing uses it. Three files use it. The change breaks two services.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 3,
+   "line": 14,
+   "t0": 3.5,
+   "h": "7b410ccc",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "surprised"
+   }
+  },
+  {
+   "i": 3,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Her repository wasn't damaged, and her command wasn't wrong. Her clone was a sparse checkout, a working tree that holds only chosen directories. She asked a working-tree question where a repository question was meant.",
+   "tele": "Her repository wasn't damaged, and her command wasn't wrong. Her clone was a sparse checkout, a working tree that holds only chosen directories. She asked a working-tree question where a repository question was meant.",
+   "words": 34,
+   "est": 13.6,
+   "slide": 4,
+   "line": 16,
+   "t0": 19.1,
+   "h": "f999c65f",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 4,
+   "section": "HOOK",
+   "type": "narration",
+   "text": "Later the same week she narrows her cone, the set of directories she chose, and loses a downloaded evaluation set that took an hour to fetch. Git printed nothing and exited with status 0. Both events follow from one rule, and that rule comes first. Hold on to that silent exit.",
+   "tele": "Later the same week she narrows her cone, the set of directories she chose, and loses a downloaded evaluation set that took an hour to fetch. Git printed nothing and exited with status 0. Both events follow from one rule, and that rule comes first. Hold on to that silent exit.",
+   "words": 51,
+   "est": 20.4,
+   "slide": 5,
+   "line": 18,
+   "t0": 32.7,
+   "h": "3bd3134c",
+   "anim": {
+    "group": 2,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": null,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 5,
+   "section": "INTRODUCTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 6,
+   "line": 20,
+   "t0": 53.1,
+   "h": "",
+   "anim": {
+    "group": 3,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 6,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Here's the rule, from section 24.5: a path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk. The index is Git's record of every tracked path, and the skip-worktree bit is a flag on one of its entries.",
+   "tele": "Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Here's the rule, from section 24.5: a path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk. The index is Git's record of every tracked path, and the skip-worktree bit is a flag on one of its entries.",
+   "words": 61,
+   "est": 24.4,
+   "slide": 7,
+   "line": 22,
+   "t0": 54.6,
+   "h": "9ecd2aa3",
+   "anim": {
+    "group": 4,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 7,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "In the last video you set a cone. Now you live in one. You'll see which commands see the cone and which see everything, what git add does outside the cone, and what happens to untracked and ignored files when the cone gets narrower. Then the sparse index: a way to make the index itself shrink with the cone.",
+   "tele": "In the last video you set a cone. Now you live in one. You'll see which commands see the cone and which see everything, what `git add` does outside the cone, and what happens to untracked and ignored files when the cone gets narrower. Then the sparse index: a way to make the index itself shrink with the cone.",
+   "words": 59,
+   "est": 23.6,
+   "slide": 8,
+   "line": 24,
+   "t0": 79.0,
+   "h": "c2492770",
+   "anim": {
+    "group": 5,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 8,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Two replays: labs/ch24/sparse-behaviour.sh and labs/ch24/sparse-index.sh.",
+   "tele": "Two replays: `labs/ch24/sparse-behaviour.sh` and `labs/ch24/sparse-index.sh`.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 9,
+   "line": 26,
+   "t0": 102.6,
+   "h": "c0cfaa2a",
+   "anim": {
+    "group": 6,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 9,
+   "section": "INTRODUCTION",
+   "type": "narration",
+   "text": "Labels. git grep is 🟢 SAFE. git sparse-checkout reapply and set --sparse-index are 🟡 CAUTION. git sparse-checkout clean is 🔴 DANGEROUS, and it gets its five answers before it runs.",
+   "tele": "Labels. `git grep` is 🟢 SAFE. `git sparse-checkout reapply` and `set --sparse-index` are 🟡 CAUTION. `git sparse-checkout clean` is 🔴 DANGEROUS, and it gets its five answers before it runs.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 10,
+   "line": 28,
+   "t0": 104.6,
+   "h": "3dd8b38c",
+   "anim": {
+    "group": 7,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 10,
+   "section": "LEARNING OBJECTIVES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 11,
+   "line": 30,
+   "t0": 115.4,
+   "h": "",
+   "anim": {
+    "group": 8,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 11,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "After this video you can:",
+   "tele": "After this video you can:",
+   "words": 5,
+   "est": 2.0,
+   "slide": 12,
+   "line": 32,
+   "t0": 116.9,
+   "h": "152923b5",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 12,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Predict what search, status and add do for paths outside the cone.",
+   "tele": "Predict what search, status and add do for paths outside the cone.",
+   "words": 12,
+   "est": 4.8,
+   "slide": 13,
+   "line": 34,
+   "t0": 118.9,
+   "h": "4c4311c7",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 13,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Explain what happens to untracked and ignored files when a cone is narrowed.",
+   "tele": "Explain what happens to untracked and ignored files when a cone is narrowed.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 14,
+   "line": 34,
+   "t0": 123.7,
+   "h": "b9c1cdfc",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 14,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Clean leftovers after narrowing a cone, with a dry run first.",
+   "tele": "Clean leftovers after narrowing a cone, with a dry run first.",
+   "words": 11,
+   "est": 4.4,
+   "slide": 15,
+   "line": 34,
+   "t0": 128.9,
+   "h": "9ab28d7d",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 15,
+   "section": "LEARNING OBJECTIVES",
+   "type": "narration",
+   "text": "Say what the sparse index changes, why only in cone mode, and what makes a command expand it.",
+   "tele": "Say what the sparse index changes, why only in cone mode, and what makes a command expand it.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 16,
+   "line": 34,
+   "t0": 133.3,
+   "h": "893686f1",
+   "anim": {
+    "group": 9,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 16,
+   "section": "CONCEPT",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 17,
+   "line": 39,
+   "t0": 140.5,
+   "h": "",
+   "anim": {
+    "group": 10,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 17,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Start from the rule and derive the behaviour.",
+   "tele": "Start from the rule and derive the behaviour.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 18,
+   "line": 41,
+   "t0": 142.0,
+   "h": "5f1028a5",
+   "anim": {
+    "group": 11,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 18,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Commands that read commits, trees and blobs see the whole repository: git log on a path outside the cone, git show of a file outside the cone. Commands that read the working tree, the files on your disk, see only the cone. git grep without options searches the working tree. It finds nothing in files that aren't there, and exits with \"no match\". That's a wrong answer without a warning. git grep --cached searches the index, which has every path.",
+   "tele": "Commands that read commits, trees and blobs see the whole repository: `git log` on a path outside the cone, `git show` of a file outside the cone. Commands that read the working tree, the files on your disk, see only the cone. `git grep` without options searches the working tree. It finds nothing in files that aren't there, and exits with \"no match\". That's a wrong answer without a warning. `git grep --cached` searches the index, which has every path.",
+   "words": 80,
+   "est": 32.0,
+   "slide": 19,
+   "line": 47,
+   "t0": 145.2,
+   "h": "f33ef552",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.03,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.85,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 19,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Why accept that? Because the cone pays off in work per command. git status asks the file system only about files inside the cone and walks only the directories that exist.",
+   "tele": "Why accept that? Because the cone pays off in work per command. `git status` asks the file system only about files inside the cone and walks only the directories that exist.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 20,
+   "line": 51,
+   "t0": 177.2,
+   "h": "14b5540a",
+   "anim": {
+    "group": 12,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 20,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now files outside the cone. A working tree gets them in two everyday ways. The first: you or a tool create one. git add then refuses with exit status 1 and names the ways forward. With git add --sparse the file is staged, and it stays on disk until git sparse-checkout reapply removes it. The second way, in the manual's description of reapply: a merge or rebase may \"materialize paths to do their work (e.g. in order to show you a conflict)\". The same reapply cleans up after the resolution.",
+   "tele": "Now files outside the cone. A working tree gets them in two everyday ways. The first: you or a tool create one. `git add` then refuses with exit status 1 and names the ways forward. With `git add --sparse` the file is staged, and it stays on disk until `git sparse-checkout reapply` removes it. The second way, in the manual's description of `reapply`: a merge or rebase may \"materialize paths to do their work (e.g. in order to show you a conflict)\". The same `reapply` cleans up after the resolution.",
+   "words": 90,
+   "est": 36.0,
+   "slide": 21,
+   "line": 57,
+   "t0": 189.6,
+   "h": "266e5d72",
+   "anim": {
+    "group": 13,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.12,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.3,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     },
+     {
+      "at": 0.45,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": false
+     },
+     {
+      "at": 0.58,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 21,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Then narrowing. Narrowing a cone removes tracked files. That's safe: they're in the index and in history. What about the rest?",
+   "tele": "Then narrowing. Narrowing a cone removes tracked files. That's safe: they're in the index and in history. What about the rest?",
+   "words": 21,
+   "est": 8.4,
+   "slide": 22,
+   "line": 63,
+   "t0": 225.6,
+   "h": "425f7269",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.82,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 22,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Untracked files have no index entry and match no ignore pattern. Git keeps such a file and its directory, and warns. Removing such directories is the job of git sparse-checkout clean, which needs Git 2.52 or later.",
+   "tele": "Untracked files have no index entry and match no ignore pattern. Git keeps such a file and its directory, and warns. Removing such directories is the job of `git sparse-checkout clean`, which needs Git 2.52 or later.",
+   "words": 37,
+   "est": 14.8,
+   "slide": 23,
+   "line": 67,
+   "t0": 234.0,
+   "h": "21a7986a",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 23,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Ignored files, the ones an ignore pattern matches, get no warning. The manual states the rule: if everything untracked in a directory outside the cone is ignored, \"then the directory will be deleted\". For a build cache that's a convenience. For an ignored file you can't regenerate, such as a local .env or a downloaded evaluation set, narrowing the cone is a 🔴 operation whose only preview is git status --short --ignored.",
+   "tele": "Ignored files, the ones an ignore pattern matches, get no warning. The manual states the rule: if everything untracked in a directory outside the cone is ignored, \"then the directory will be deleted\". For a build cache that's a convenience. For an ignored file you can't regenerate, such as a local `.env` or a downloaded evaluation set, narrowing the cone is a 🔴 operation whose only preview is `git status --short --ignored`.",
+   "words": 71,
+   "est": 28.4,
+   "slide": 24,
+   "line": 71,
+   "t0": 248.8,
+   "h": "6215ff0e",
+   "anim": {
+    "group": 14,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "pose": "worried",
+      "dissolve": true
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 24,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now the sparse index. The problem it solves: after everything above, each command still reads, and often rewrites, an index proportional to the whole repository. In one sentence: a sparse index replaces all entries of a directory outside the cone by one entry that names the directory's tree, so the index shrinks with the cone. A tree is the object that holds one directory listing.",
+   "tele": "Now the sparse index. The problem it solves: after everything above, each command still reads, and often rewrites, an index proportional to the whole repository. In one sentence: a sparse index replaces all entries of a directory outside the cone by one entry that names the directory's tree, so the index shrinks with the cone. A tree is the object that holds one directory listing.",
+   "words": 65,
+   "est": 26.0,
+   "slide": 25,
+   "line": 77,
+   "t0": 277.2,
+   "h": "30c2299f",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 0,
+      "to": 1,
+      "dissolve": true
+     },
+     {
+      "at": 0.4,
+      "fx": "scene",
+      "from": 1,
+      "to": 2,
+      "dissolve": false
+     },
+     {
+      "at": 0.6,
+      "fx": "scene",
+      "from": 2,
+      "to": 3,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 25,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "Now precisely. With index.sparse=true, written by git sparse-checkout set --sparse-index, the index may hold sparse directory entries: mode 040000, a tree ID, the skip-worktree bit, and a path ending in a slash. It needs cone mode, because only cone mode guarantees that a whole directory is either in or out. The manual marks it separately: \"This feature is still experimental\", and it warns that external tools may not understand such an index.",
+   "tele": "Now precisely. With `index.sparse=true`, written by `git sparse-checkout set --sparse-index`, the index may hold sparse directory entries: mode `040000`, a tree ID, the skip-worktree bit, and a path ending in a slash. It needs cone mode, because only cone mode guarantees that a whole directory is either in or out. The manual marks it separately: \"This feature is still experimental\", and it warns that external tools may not understand such an index.",
+   "words": 72,
+   "est": 28.8,
+   "slide": 26,
+   "line": 81,
+   "t0": 303.2,
+   "h": "7e325234",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 3,
+      "to": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 26,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "The cost: a command that needs paths inside a collapsed directory expands the index in memory first, and Git itself calls that \"a slow operation\".",
+   "tele": "The cost: a command that needs paths inside a collapsed directory expands the index in memory first, and Git itself calls that \"a slow operation\".",
+   "words": 25,
+   "est": 10.0,
+   "slide": 27,
+   "line": 85,
+   "t0": 332.0,
+   "h": "78f1d7a0",
+   "anim": {
+    "group": 15,
+    "cues": [
+     {
+      "at": 0.0,
+      "fx": "scene",
+      "from": 4,
+      "to": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 27,
+   "section": "CONCEPT",
+   "type": "narration",
+   "text": "When should you use the sparse index? When the index itself is the bottleneck, which means hundreds of thousands of tracked files, and when the tools that share the working tree cope with it: the editor integration, the prompt, the hook framework, an older Git. When not? When a tool runs an expanding command on every prompt or save. That cancels the benefit.",
+   "tele": "When should you use the sparse index? When the index itself is the bottleneck, which means hundreds of thousands of tracked files, and when the tools that share the working tree cope with it: the editor integration, the prompt, the hook framework, an older Git. When not? When a tool runs an expanding command on every prompt or save. That cancels the benefit.",
+   "words": 63,
+   "est": 25.2,
+   "slide": 28,
+   "line": 89,
+   "t0": 342.0,
+   "h": "698e7b27",
+   "anim": {
+    "group": 16,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 28,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 29,
+   "line": 91,
+   "t0": 367.2,
+   "h": "",
+   "anim": {
+    "group": 17,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 29,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The textbook's analogy for the sparse index: a table of contents that lists every section of the chapters you read and one line for each other chapter. Whoever needs a section of a collapsed chapter must expand the line first, and the expansion is the slow part.",
+   "tele": "The textbook's analogy for the sparse index: a table of contents that lists every section of the chapters you read and one line for each other chapter. Whoever needs a section of a collapsed chapter must expand the line first, and the expansion is the slow part.",
+   "words": 47,
+   "est": 18.8,
+   "slide": 30,
+   "line": 95,
+   "t0": 368.7,
+   "h": "433db038",
+   "anim": {
+    "group": 18,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 30,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "The analogy breaks at who decides. A reader chooses to expand. Git expands whenever a command asks for a path that the collapsed entry cannot answer.",
+   "tele": "The analogy breaks at who decides. A reader chooses to expand. Git expands whenever a command asks for a path that the collapsed entry cannot answer.",
+   "words": 26,
+   "est": 10.4,
+   "slide": 30,
+   "line": 97,
+   "t0": 387.5,
+   "h": "365d196d",
+   "anim": {
+    "group": 18,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 31,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "For the first half of the video, keep the question you learned to ask in the last video: which of the three places does this command read? HEAD and history, the index, or the disk. If it reads the disk, it sees the cone.",
+   "tele": "For the first half of the video, keep the question you learned to ask in the last video: which of the three places does this command read? HEAD and history, the index, or the disk. If it reads the disk, it sees the cone.",
+   "words": 44,
+   "est": 17.6,
+   "slide": 31,
+   "line": 101,
+   "t0": 397.9,
+   "h": "43141dc2",
+   "anim": {
+    "group": 19,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 32,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "Try it now, thirty seconds, on paper. Write those three places down. Next to each, put the one that reads it: git log, git grep, or git grep --cached. I'll wait.",
+   "tele": "Try it now, thirty seconds, on paper. Write those three places down. Next to each, put the one that reads it: `git log`, `git grep`, or `git grep --cached`. I'll wait.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 32,
+   "line": 105,
+   "t0": 415.5,
+   "h": "70d5193d",
+   "anim": {
+    "group": 20,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 33,
+   "section": "MENTAL MODEL",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 32,
+   "line": 107,
+   "t0": 427.9,
+   "h": "",
+   "anim": {
+    "group": 20,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 34,
+   "section": "MENTAL MODEL",
+   "type": "narration",
+   "text": "git log reads history. git grep --cached reads the index. Plain git grep reads the disk, so it sees only the cone.",
+   "tele": "`git log` reads history. `git grep --cached` reads the index. Plain `git grep` reads the disk, so it sees only the cone.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 31,
+   "line": 111,
+   "t0": 432.4,
+   "h": "f5202207",
+   "anim": {
+    "group": 21,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 35,
+   "section": "DIAGRAM",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 33,
+   "line": 113,
+   "t0": 441.2,
+   "h": "",
+   "anim": {
+    "group": 22,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 36,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "On the left, the index you know: 33 entries, most of them marked S, for skip-worktree. On the right, the same content with index.sparse on: 14 entries. Each directory that lies wholly outside the cone has become one line with mode 040000 and a tree ID.",
+   "tele": "On the left, the index you know: 33 entries, most of them marked S, for skip-worktree. On the right, the same content with `index.sparse` on: 14 entries. Each directory that lies wholly outside the cone has become one line with mode `040000` and a tree ID.",
+   "words": 46,
+   "est": 18.4,
+   "slide": 34,
+   "line": 136,
+   "t0": 442.7,
+   "h": "70e005b8",
+   "anim": {
+    "group": 23,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 37,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Look at services. It isn't collapsed, because the cone reaches into it. Its two outside subdirectories collapse separately, and the four files of the ranker stay as file entries.",
+   "tele": "Look at `services`. It isn't collapsed, because the cone reaches into it. Its two outside subdirectories collapse separately, and the four files of the ranker stay as file entries.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 34,
+   "line": 138,
+   "t0": 461.1,
+   "h": "1ac73e0c",
+   "anim": {
+    "group": 23,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 38,
+   "section": "DIAGRAM",
+   "type": "narration",
+   "text": "Read the root-cause line: a working-tree question was asked where a repository question was meant. The fix is to ask Git.",
+   "tele": "Read the root-cause line: a working-tree question was asked where a repository question was meant. The fix is to ask Git.",
+   "words": 21,
+   "est": 8.4,
+   "slide": 35,
+   "line": 155,
+   "t0": 472.7,
+   "h": "8207b5e9",
+   "anim": {
+    "group": 24,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "draw",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 39,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 36,
+   "line": 157,
+   "t0": 481.1,
+   "h": "",
+   "anim": {
+    "group": 25,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 40,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The cone is services/ranker and libs/tokenizer.",
+   "tele": "The cone is `services/ranker` and `libs/tokenizer`.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 37,
+   "line": 165,
+   "t0": 482.6,
+   "h": "78061b25",
+   "anim": {
+    "group": 26,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.68,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 41,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The gateway is outside the cone. Which of these four commands give an answer about it? Say it out loud. I'll wait.",
+   "tele": "The gateway is outside the cone. Which of these four commands give an answer about it? Say it out loud. I'll wait.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 38,
+   "line": 174,
+   "t0": 485.0,
+   "h": "0d39b72b",
+   "anim": {
+    "group": 27,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 42,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 38,
+   "line": 176,
+   "t0": 493.8,
+   "h": "",
+   "anim": {
+    "group": 27,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 43,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git log and git show answer: history and objects are complete. git grep finds nothing and exits 1. git grep --cached finds three files. That's the hook.",
+   "tele": "`git log` and `git show` answer: history and objects are complete. `git grep` finds nothing and exits 1. `git grep --cached` finds three files. That's the hook.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 39,
+   "line": 197,
+   "t0": 498.3,
+   "h": "d7f9fa80",
+   "anim": {
+    "group": 28,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.087,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.5,
+      "dissolve": false
+     },
+     {
+      "at": 0.419,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.39,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 44,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The work of one git status, counted. The index still has 33 entries to read, but Git asked the file system about nine files where a full checkout needs 33, and walked six directories where it would walk twenty.",
+   "tele": "The work of one `git status`, counted. The index still has 33 entries to read, but Git asked the file system about nine files where a full checkout needs 33, and walked six directories where it would walk twenty.",
+   "words": 39,
+   "est": 15.6,
+   "slide": 40,
+   "line": 210,
+   "t0": 509.1,
+   "h": "b164a1a2",
+   "anim": {
+    "group": 29,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.075,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 45,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A new file outside the cone.",
+   "tele": "A new file outside the cone.",
+   "words": 6,
+   "est": 2.4,
+   "slide": 40,
+   "line": 212,
+   "t0": 524.7,
+   "h": "d98dcbe9",
+   "anim": {
+    "group": 29,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 46,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Quick quiz, two options. A plain git add of a new file in a directory outside the cone: staged or refused? Say it out loud.",
+   "tele": "Quick quiz, two options. A plain `git add` of a new file in a directory outside the cone: staged or refused? Say it out loud.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 41,
+   "line": 221,
+   "t0": 527.1,
+   "h": "327459db",
+   "anim": {
+    "group": 30,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 1.85,
+      "dissolve": true
+     },
+     {
+      "at": 0.264,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 47,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 41,
+   "line": 223,
+   "t0": 537.1,
+   "h": "",
+   "anim": {
+    "group": 30,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 48,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Refused, with exit status 1, and the hint names --sparse. If you said staged, that's a fair guess: staging is what git add is for.",
+   "tele": "Refused, with exit status 1, and the hint names `--sparse`. If you said staged, that's a fair guess: staging is what `git add` is for.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 42,
+   "line": 245,
+   "t0": 541.6,
+   "h": "c07ff816",
+   "anim": {
+    "group": 31,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     },
+     {
+      "at": 0.873,
+      "fx": "terminal",
+      "from": {
+       "blocks": 3
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 1.2,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 49,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The file is committed and still on disk, an H entry among S entries. git sparse-checkout reapply, 🟡, enforces the cone again: the file leaves the disk and its entry becomes S.",
+   "tele": "The file is committed and still on disk, an H entry among S entries. `git sparse-checkout reapply`, 🟡, enforces the cone again: the file leaves the disk and its entry becomes S.",
+   "words": 31,
+   "est": 12.4,
+   "slide": 43,
+   "line": 278,
+   "t0": 551.6,
+   "h": "6f2c5872",
+   "anim": {
+    "group": 32,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 3.38,
+      "dissolve": true
+     },
+     {
+      "at": 0.39,
+      "fx": "terminal",
+      "from": {
+       "blocks": 4
+      },
+      "to": {
+       "blocks": 7
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 50,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now untracked files.",
+   "tele": "Now untracked files.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 43,
+   "line": 280,
+   "t0": 564.0,
+   "h": "0df332f0",
+   "anim": {
+    "group": 32,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 51,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Git kept the untracked file and its directory, and warned.",
+   "tele": "Git kept the untracked file and its directory, and warned.",
+   "words": 10,
+   "est": 4.0,
+   "slide": 44,
+   "line": 304,
+   "t0": 565.2,
+   "h": "0b5d377f",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 2.8,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 52,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Now the 🔴 command, git sparse-checkout clean. Twig looks worried, and fairly so. The five answers. What it changes: the working tree. What it can destroy: untracked files there, here results.tmp, which were never in Git, so no reflog and no git fsck returns them. Preview: --dry-run, with --verbose for every file. Recovery: none from Git. Appropriate: after reading the preview and moving away what you need.",
+   "tele": "Now the 🔴 command, `git sparse-checkout clean`. Twig looks worried, and fairly so. The five answers. What it changes: the working tree. What it can destroy: untracked files there, here `results.tmp`, which were never in Git, so no reflog and no `git fsck` returns them. Preview: `--dry-run`, with `--verbose` for every file. Recovery: none from Git. Appropriate: after reading the preview and moving away what you need.",
+   "words": 66,
+   "est": 26.4,
+   "slide": 44,
+   "line": 306,
+   "t0": 569.2,
+   "h": "dbc9a4be",
+   "anim": {
+    "group": 33,
+    "cues": [
+     {
+      "at": 0.442,
+      "fx": "terminal",
+      "from": {
+       "blocks": 2
+      },
+      "to": {
+       "blocks": 6
+      },
+      "budget": 5.0,
+      "dissolve": false
+     }
+    ],
+    "pose": "worried"
+   }
+  },
+  {
+   "i": 53,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The dry run says it would remove the whole directory pipelines/. Without --force or --dry-run the command refuses. With -f the directory is gone, the untracked file with it.",
+   "tele": "The dry run says it would remove the whole directory `pipelines/`. Without `--force` or `--dry-run` the command refuses. With `-f` the directory is gone, the untracked file with it.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 45,
+   "line": 331,
+   "t0": 595.6,
+   "h": "0d1b4333",
+   "anim": {
+    "group": 34,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 3.95,
+      "dissolve": true
+     },
+     {
+      "at": 0.486,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 5
+      },
+      "budget": 4.17,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 54,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The same sequence with an ignored file. build/ is ignored in this repository.",
+   "tele": "The same sequence with an ignored file. `build/` is ignored in this repository.",
+   "words": 13,
+   "est": 5.2,
+   "slide": 45,
+   "line": 333,
+   "t0": 607.2,
+   "h": "5ff1f09d",
+   "anim": {
+    "group": 34,
+    "cues": [],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 55,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Last time Git warned and kept the file. This time the file is ignored. What does narrowing print? Make your prediction. I'll wait.",
+   "tele": "Last time Git warned and kept the file. This time the file is ignored. What does narrowing print? Make your prediction. I'll wait.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 46,
+   "line": 343,
+   "t0": 612.4,
+   "h": "28bb5fc1",
+   "anim": {
+    "group": 35,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 5
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 56,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 46,
+   "line": 345,
+   "t0": 621.6,
+   "h": "",
+   "anim": {
+    "group": 35,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 57,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Nothing. Exit status 0, and the cache is gone. That's the silent exit from the hook.",
+   "tele": "Nothing. Exit status 0, and the cache is gone. That's the silent exit from the hook.",
+   "words": 16,
+   "est": 6.4,
+   "slide": 47,
+   "line": 361,
+   "t0": 626.1,
+   "h": "82a28d6c",
+   "anim": {
+    "group": 36,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 6
+      },
+      "budget": 4.48,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 58,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 2.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.5,
+   "slide": 48,
+   "line": null,
+   "t0": 632.5,
+   "h": "",
+   "anim": {
+    "group": 37,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.75,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 59,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "A sparse checkout with an ordinary index: 33 entries for 7 files on disk.",
+   "tele": "A sparse checkout with an ordinary index: 33 entries for 7 files on disk.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 49,
+   "line": 380,
+   "t0": 635.0,
+   "h": "fa07233d",
+   "anim": {
+    "group": 38,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.92,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 60,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "visual",
+   "hold": 5.2,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 5.2,
+   "slide": 50,
+   "line": null,
+   "t0": 640.6,
+   "h": "",
+   "anim": {
+    "group": 39,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 3.64,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 61,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Fourteen entries. This is the right-hand side of the diagram, with the real tree IDs.",
+   "tele": "Fourteen entries. This is the right-hand side of the diagram, with the real tree IDs.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 51,
+   "line": 427,
+   "t0": 645.8,
+   "h": "f8b15502",
+   "anim": {
+    "group": 40,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.2,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 62,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "The entry for docs/ holds exactly the ID of the docs tree in HEAD. So Git can compare such an entry with a commit without opening it.",
+   "tele": "The entry for `docs/` holds exactly the ID of the `docs` tree in HEAD. So Git can compare such an entry with a commit without opening it.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 52,
+   "line": 452,
+   "t0": 651.8,
+   "h": "26b11dd7",
+   "anim": {
+    "group": 41,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 4
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 63,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "Both counters now follow the cone: 14 entries read, 7 lstat calls. On orbit that saves nothing you can feel. The textbook cites GitHub's engineers, who reported an index shrinking from about 180 megabytes to under 10 megabytes on a test repository of two million files. The figure is theirs.",
+   "tele": "Both counters now follow the cone: 14 entries read, 7 `lstat` calls. On `orbit` that saves nothing you can feel. The textbook cites GitHub's engineers, who reported an index shrinking from about 180 megabytes to under 10 megabytes on a test repository of two million files. The figure is theirs.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 53,
+   "line": 462,
+   "t0": 662.6,
+   "h": "fe85011a",
+   "anim": {
+    "group": 42,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 64,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "git ls-files without --sparse must list every path. What does Git have to do first? Say it out loud.",
+   "tele": "`git ls-files` without `--sparse` must list every path. What does Git have to do first? Say it out loud.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 54,
+   "line": 469,
+   "t0": 682.6,
+   "h": "9e13c98a",
+   "anim": {
+    "group": 43,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 1
+      },
+      "budget": 1.2,
+      "dissolve": true
+     },
+     {
+      "at": 0.221,
+      "fx": "terminal",
+      "from": {
+       "blocks": 1
+      },
+      "to": {
+       "blocks": 2
+      },
+      "budget": 4.14,
+      "dissolve": false
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 65,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "hold",
+   "why": "pause",
+   "hold": 4.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 4.5,
+   "slide": 54,
+   "line": 471,
+   "t0": 690.2,
+   "h": "",
+   "anim": {
+    "group": 43,
+    "cues": [],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 66,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "It expands the index in memory and says so: \"a slow operation\". The hint's guess at the cause is wrong here. The file on disk stays sparse: 14 entries.",
+   "tele": "It expands the index in memory and says so: \"a slow operation\". The hint's guess at the cause is wrong here. The file on disk stays sparse: 14 entries.",
+   "words": 29,
+   "est": 11.6,
+   "slide": 55,
+   "line": 492,
+   "t0": 694.7,
+   "h": "2ad9ef6f",
+   "anim": {
+    "group": 44,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 5.0,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 67,
+   "section": "LIVE TERMINAL DEMO",
+   "type": "narration",
+   "text": "And the way back: git sparse-checkout set --no-sparse-index.",
+   "tele": "And the way back: `git sparse-checkout set --no-sparse-index`.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 56,
+   "line": 512,
+   "t0": 706.3,
+   "h": "c0bbbd6d",
+   "anim": {
+    "group": 45,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "terminal",
+      "from": null,
+      "to": {
+       "blocks": 3
+      },
+      "budget": 2.24,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 68,
+   "section": "COMMON MISTAKES",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 57,
+   "line": 514,
+   "t0": 709.5,
+   "h": "",
+   "anim": {
+    "group": 46,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 69,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Five mistakes to watch for.",
+   "tele": "Five mistakes to watch for.",
+   "words": 5,
+   "est": 2.0,
+   "slide": 58,
+   "line": 516,
+   "t0": 711.0,
+   "h": "76698d9b",
+   "anim": {
+    "group": 47,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 70,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Searching a sparse checkout with plain git grep or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; git grep --cached and git ls-files read the index.",
+   "tele": "Searching a sparse checkout with plain `git grep` or a directory listing and trusting \"no match\". Root cause: a working-tree question was asked where a repository question was meant; `git grep --cached` and `git ls-files` read the index.",
+   "words": 38,
+   "est": 15.2,
+   "slide": 59,
+   "line": 518,
+   "t0": 713.0,
+   "h": "1cd2b00d",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 71,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+   "tele": "Narrowing a cone over a directory with ignored files that cannot be regenerated. Root cause: if everything untracked in a directory outside the cone is ignored, the directory is deleted without a warning.",
+   "words": 33,
+   "est": 13.2,
+   "slide": 60,
+   "line": 518,
+   "t0": 728.2,
+   "h": "7ed8ac51",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 72,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Running git sparse-checkout clean -f without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+   "tele": "Running `git sparse-checkout clean -f` without the dry run. Root cause: it removes whole directories, including untracked files that were never in Git.",
+   "words": 23,
+   "est": 9.2,
+   "slide": 61,
+   "line": 518,
+   "t0": 741.4,
+   "h": "3308bca9",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 73,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Expecting git add to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless --sparse is given.",
+   "tele": "Expecting `git add` to stage a new file outside the cone. Root cause: Git does not update index entries outside the sparse-checkout definition unless `--sparse` is given.",
+   "words": 27,
+   "est": 10.8,
+   "slide": 62,
+   "line": 518,
+   "t0": 750.6,
+   "h": "bc492559",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 74,
+   "section": "COMMON MISTAKES",
+   "type": "narration",
+   "text": "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call.",
+   "tele": "Enabling the sparse index and seeing no gain. Root cause: a tool that asks for every path makes Git expand the index on each call.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 63,
+   "line": 518,
+   "t0": 761.4,
+   "h": "4b7c843d",
+   "anim": {
+    "group": 48,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 75,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 64,
+   "line": 524,
+   "t0": 771.4,
+   "h": "",
+   "anim": {
+    "group": 49,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 76,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "Now, out of the lab. A search team's pre-merge script lists Python files with find and checks that each has a test. In one engineer's clone it reports that most of the repository has no tests, and in CI, the automated checks, it's right. Her clone is a sparse checkout: git status prints \"You are in a sparse checkout\". The script is changed to read from Git, with git ls-files, so that it sees all files in every clone.",
+   "tele": "Now, out of the lab. A search team's pre-merge script lists Python files with `find` and checks that each has a test. In one engineer's clone it reports that most of the repository has no tests, and in CI, the automated checks, it's right. Her clone is a sparse checkout: `git status` prints \"You are in a sparse checkout\". The script is changed to read from Git, with `git ls-files`, so that it sees all files in every clone.",
+   "words": 79,
+   "est": 31.6,
+   "slide": 65,
+   "line": 526,
+   "t0": 772.9,
+   "h": "bec6cf98",
+   "anim": {
+    "group": 50,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 77,
+   "section": "PRODUCTION EXAMPLE",
+   "type": "narration",
+   "text": "The same team adopts a rule for narrowing a cone: run git status --short --ignored first, and move away any ignored file that cannot be regenerated, such as a local .env or a downloaded evaluation set. Then narrow, then git sparse-checkout clean --dry-run, then clean.",
+   "tele": "The same team adopts a rule for narrowing a cone: run `git status --short --ignored` first, and move away any ignored file that cannot be regenerated, such as a local `.env` or a downloaded evaluation set. Then narrow, then `git sparse-checkout clean --dry-run`, then clean.",
+   "words": 45,
+   "est": 18.0,
+   "slide": 66,
+   "line": 528,
+   "t0": 804.5,
+   "h": "3b950cd1",
+   "anim": {
+    "group": 51,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 78,
+   "section": "PRACTICE EXERCISE",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 67,
+   "line": 530,
+   "t0": 822.5,
+   "h": "",
+   "anim": {
+    "group": 52,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 79,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "Your turn. Do Exercise 18.8, \"A file that is not on disk\", in exercises/m16-m18-internals.md. Before you run anything, state for the file in question where it exists: on disk, in the index, in HEAD. Then predict what each command of the exercise will report, and only then run it.",
+   "tele": "Your turn. Do Exercise 18.8, \"A file that is not on disk\", in `exercises/m16-m18-internals.md`. Before you run anything, state for the file in question where it exists: on disk, in the index, in HEAD. Then predict what each command of the exercise will report, and only then run it.",
+   "words": 49,
+   "est": 19.6,
+   "slide": 68,
+   "line": 532,
+   "t0": 824.0,
+   "h": "38d43556",
+   "anim": {
+    "group": 53,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 80,
+   "section": "PRACTICE EXERCISE",
+   "type": "narration",
+   "text": "The challenge is Exercise 18.9, \"The clone that believes it is up to date\", in the same file.",
+   "tele": "The challenge is Exercise 18.9, \"The clone that believes it is up to date\", in the same file.",
+   "words": 18,
+   "est": 7.2,
+   "slide": 69,
+   "line": 534,
+   "t0": 843.6,
+   "h": "f7017ff8",
+   "anim": {
+    "group": 54,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 81,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 70,
+   "line": 536,
+   "t0": 850.8,
+   "h": "",
+   "anim": {
+    "group": 55,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 82,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Question 431 of the CTO question bank:",
+   "tele": "Question 431 of the CTO question bank:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 71,
+   "line": 538,
+   "t0": 852.3,
+   "h": "07442eb9",
+   "anim": {
+    "group": 56,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 83,
+   "section": "INTERVIEW QUESTION",
+   "type": "hold",
+   "why": "pause",
+   "hold": 2.0,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 2.0,
+   "slide": 72,
+   "line": 542,
+   "t0": 855.1,
+   "h": "",
+   "anim": {
+    "group": 57,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "callout",
+      "dissolve": true
+     }
+    ],
+    "pose": "thinking"
+   }
+  },
+  {
+   "i": 84,
+   "section": "INTERVIEW QUESTION",
+   "type": "narration",
+   "text": "Answer out loud. A strong answer separates three kinds of file, tracked, untracked and ignored, and gives a different outcome for each. It says which outcome comes with a warning and which without, names the command that removes leftovers and its preview, and names the only preview there is for the silent case. It states plainly what can't be recovered from Git.",
+   "tele": "Answer out loud. A strong answer separates three kinds of file, tracked, untracked and ignored, and gives a different outcome for each. It says which outcome comes with a warning and which without, names the command that removes leftovers and its preview, and names the only preview there is for the silent case. It states plainly what can't be recovered from Git.",
+   "words": 62,
+   "est": 24.8,
+   "slide": 73,
+   "line": 546,
+   "t0": 857.1,
+   "h": "1c08c21d",
+   "anim": {
+    "group": 58,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 4,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 85,
+   "section": "RECAP",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 74,
+   "line": 548,
+   "t0": 881.9,
+   "h": "",
+   "anim": {
+    "group": 59,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 86,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Let's land this.",
+   "tele": "Let's land this.",
+   "words": 3,
+   "est": 1.2,
+   "slide": 75,
+   "line": 550,
+   "t0": 883.4,
+   "h": "8e062241",
+   "anim": {
+    "group": 60,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 87,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "You should now be able to say:",
+   "tele": "You should now be able to say:",
+   "words": 7,
+   "est": 2.8,
+   "slide": 76,
+   "line": 552,
+   "t0": 884.6,
+   "h": "c89ffc15",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": null,
+      "to": {
+       "shown": 0,
+       "current": null
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 88,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+   "tele": "A path with the skip-worktree bit is in the index and in history, and Git does not look at it on disk.",
+   "words": 22,
+   "est": 8.8,
+   "slide": 77,
+   "line": 554,
+   "t0": 887.4,
+   "h": "a00d01ae",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 0,
+       "current": null
+      },
+      "to": {
+       "shown": 1,
+       "current": 0
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 89,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Working-tree commands see the cone; index and history commands see everything; git grep needs --cached.",
+   "tele": "Working-tree commands see the cone; index and history commands see everything; `git grep` needs `--cached`.",
+   "words": 15,
+   "est": 6.0,
+   "slide": 78,
+   "line": 554,
+   "t0": 896.2,
+   "h": "a1a4b555",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 1,
+       "current": 0
+      },
+      "to": {
+       "shown": 2,
+       "current": 1
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 90,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+   "tele": "Narrowing a cone keeps untracked files with a warning and deletes directories whose untracked content is all ignored, silently.",
+   "words": 19,
+   "est": 7.6,
+   "slide": 79,
+   "line": 554,
+   "t0": 902.2,
+   "h": "222d3006",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 2,
+       "current": 1
+      },
+      "to": {
+       "shown": 3,
+       "current": 2
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 91,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "git sparse-checkout clean removes leftovers and cannot be undone; run it with --dry-run first.",
+   "tele": "`git sparse-checkout clean` removes leftovers and cannot be undone; run it with `--dry-run` first.",
+   "words": 14,
+   "est": 5.6,
+   "slide": 80,
+   "line": 554,
+   "t0": 909.8,
+   "h": "7d1ebcfb",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 3,
+       "current": 2
+      },
+      "to": {
+       "shown": 4,
+       "current": 3
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 92,
+   "section": "RECAP",
+   "type": "narration",
+   "text": "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside.",
+   "tele": "The sparse index stores one tree entry per directory outside the cone, needs cone mode, and expands when a command asks for a path inside.",
+   "words": 25,
+   "est": 10.0,
+   "slide": 81,
+   "line": 554,
+   "t0": 915.4,
+   "h": "ac57c01b",
+   "anim": {
+    "group": 61,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "bullets",
+      "from": {
+       "shown": 4,
+       "current": 3
+      },
+      "to": {
+       "shown": 5,
+       "current": 4
+      },
+      "dissolve": true
+     }
+    ],
+    "pose": "celebrate"
+   }
+  },
+  {
+   "i": 93,
+   "section": "HOMEWORK",
+   "type": "hold",
+   "why": "section",
+   "hold": 1.5,
+   "text": "",
+   "tele": "",
+   "words": 0,
+   "est": 1.5,
+   "slide": 82,
+   "line": 560,
+   "t0": 925.4,
+   "h": "",
+   "anim": {
+    "group": 62,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "card",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 94,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Read sections 24.5 and 24.6 of Chapter 24.",
+   "tele": "Read sections 24.5 and 24.6 of Chapter 24.",
+   "words": 8,
+   "est": 3.2,
+   "slide": 83,
+   "line": 562,
+   "t0": 926.9,
+   "h": "feac5472",
+   "anim": {
+    "group": 63,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "keypoint",
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  },
+  {
+   "i": 95,
+   "section": "HOMEWORK",
+   "type": "narration",
+   "text": "Today you watched a correct command give a wrong answer, and you know which place to ask instead. Practise the three places on one file before the next video: partial clone plus sparse checkout. Until then, look at the state first and type second. See you in the next one.",
+   "tele": "Today you watched a correct command give a wrong answer, and you know which place to ask instead. Practise the three places on one file before the next video: partial clone plus sparse checkout. Until then, look at the state first and type second. See you in the next one.",
+   "words": 50,
+   "est": 20.0,
+   "slide": 84,
+   "line": 566,
+   "t0": 930.1,
+   "h": "91a99e9f",
+   "anim": {
+    "group": 64,
+    "cues": [
+     {
+      "at": 0,
+      "fx": "still",
+      "state": 5,
+      "dissolve": true
+     }
+    ],
+    "pose": "curious"
+   }
+  }
+ ],
+ "est_seconds": 950.1,
+ "narration_words": 2241,
+ "warnings": [],
+ "hints": [],
+ "anim_version": 3
+}

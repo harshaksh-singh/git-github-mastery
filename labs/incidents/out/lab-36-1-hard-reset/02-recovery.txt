@@ -1,0 +1,39 @@
+$ cd ravi
+$ git reflog show feature/escalation-rules -3
+0322a16 feature/escalation-rules@{0}: reset: moving to feature/escalation-rules@{2}
+4e4c0b7 feature/escalation-rules@{1}: commit: Mention escalation in the README
+2876d93 feature/escalation-rules@{2}: reset: moving to origin/main
+# The reflog also recorded the second reset. Name the old tip, undo the reset, then add:
+$ git branch rescue/before-reset
+$ git reset --keep 'feature/escalation-rules@{1}'
+$ git cherry-pick origin/main..rescue/before-reset
+[feature/escalation-rules 82d6626] Add escalation predicate
+ Author: Ravi Menon <ravi@example.com>
+ Date: Mon Sep 7 10:13:00 2026 +0530
+ 1 file changed, 2 insertions(+)
+ create mode 100644 triage/escalate.py
+[feature/escalation-rules e57429e] Route escalated tickets to the on-call queue
+ Author: Ravi Menon <ravi@example.com>
+ Date: Mon Sep 7 10:14:00 2026 +0530
+ 1 file changed, 1 insertion(+)
+[feature/escalation-rules a8267b7] Never escalate spam
+ Author: Ravi Menon <ravi@example.com>
+ Date: Mon Sep 7 10:15:00 2026 +0530
+ 1 file changed, 2 insertions(+)
+$ git fsck --lost-found
+dangling blob 959c2056cb4f78bc321cf5bcf50cf2bf42d049bd
+$ git cat-file -p $(ls .git/lost-found/other) > rules/priority.yaml
+$ cd ..
+$ incidents/01-hard-reset/check.sh
+Checking incident 01-hard-reset
+  ok    the commit "Add escalation predicate" is on feature/escalation-rules again
+  ok    the commit "Route escalated tickets to the on-call queue" is on feature/escalation-rules again
+  ok    the commit "Never escalate spam" is on feature/escalation-rules again
+  ok    the commit made after the reset is still on the branch
+  ok    no commit of main was copied
+  ok    the branch contains the current origin/main
+  ok    triage/escalate.py in the last commit has the spam rule
+  ok    the staged file rules/priority.yaml is back with its content
+  ok    no operation is left in progress
+PASS: the recovery of incident 01-hard-reset is complete.
+[exit status: 0]

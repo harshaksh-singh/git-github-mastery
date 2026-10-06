@@ -1,0 +1,44 @@
+# Case 1 of Gate 7, variant A. Constructed for the gate: this workflow is teaching material and
+# contains faults on purpose. Do not copy it.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: [3.10, 3.12]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}
+      - name: Version
+        run: |
+          VERSION=$(git describe --tags)
+          export VERSION
+      - name: Test
+        run: |
+          echo "testing version $VERSION"
+          python -m unittest discover 2>&1 | tee test.log
+
+  package:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m build

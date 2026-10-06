@@ -1,0 +1,1140 @@
+1
+00:00:04,500 --> 00:00:08,969
+Two engineers sit next to each other.
+Both have one local commit on main.
+
+2
+00:00:09,009 --> 00:00:13,230
+Both push. One gets "fetch first".
+The other gets "non-fast-forward".
+
+3
+00:00:13,270 --> 00:00:17,121
+They are in the same situation:
+a colleague pushed before them.
+
+4
+00:00:17,462 --> 00:00:23,951
+Why two messages for one cause? And here
+is the question that tells you whether
+
+5
+00:00:23,991 --> 00:00:28,332
+someone understands push:
+in both cases, who said no?
+
+6
+00:00:28,372 --> 00:00:34,944
+Their own Git, or the server? The answer
+is on the screen, in one word, and most
+
+7
+00:00:34,984 --> 00:00:37,093
+people have never read it.
+
+8
+00:00:38,933 --> 00:00:42,536
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+9
+00:00:42,576 --> 00:00:45,582
+Fetch reads another repository.
+Push writes to one.
+
+10
+00:00:45,622 --> 00:00:50,420
+That makes push the first command in this
+module that can change something you do
+
+11
+00:00:50,460 --> 00:00:54,182
+not own, and so it's the first
+where another party gets a vote.
+
+12
+00:00:54,522 --> 00:00:59,517
+Today you follow one push through its seven
+steps and see where it can be refused,
+
+13
+00:00:59,557 --> 00:01:04,674
+by whom, and with which words. Then you push
+the things that are not branches of the
+
+14
+00:01:04,714 --> 00:01:07,928
+ordinary kind: deletions,
+tags, several refs at once.
+
+15
+00:01:07,968 --> 00:01:11,550
+You look at pushes that fail
+before any comparison is made.
+
+16
+00:01:11,590 --> 00:01:14,804
+You look at the rules a plain
+Git server can enforce.
+
+17
+00:01:14,844 --> 00:01:19,900
+And you close with section 12.9: why Git
+refuses a push into a branch that somebody
+
+18
+00:01:19,940 --> 00:01:20,882
+has checked out.
+
+19
+00:01:21,222 --> 00:01:25,645
+The server in the demos is a bare repository
+on disk, which means it has no working
+
+20
+00:01:25,685 --> 00:01:30,107
+tree, only the Git data. Where GitHub changes
+the picture, the label on screen says
+
+21
+00:01:30,147 --> 00:01:30,269
+so.
+
+22
+00:01:32,109 --> 00:01:33,687
+Here's what you'll walk away with.
+
+23
+00:01:34,027 --> 00:01:35,439
+After this video you can:
+
+24
+00:01:35,779 --> 00:01:39,531
+Describe a push as a request that
+the receiving repository may refuse.
+
+25
+00:01:39,871 --> 00:01:44,596
+Tell rejected (fetch first) from rejected
+(non-fast-forward) and fix each.
+
+26
+00:01:44,936 --> 00:01:48,453
+Push and delete branches and tags,
+and predict which refs travel.
+
+27
+00:01:48,793 --> 00:01:52,967
+Explain "Everything up-to-date" when
+something you expected is not on the server.
+
+28
+00:01:53,307 --> 00:01:56,699
+Explain why Git refuses a push
+into a checked-out branch.
+
+29
+00:01:58,539 --> 00:02:02,903
+In one sentence: git push 🟡 CAUTION asks a
+remote to make some of its refs point at
+
+30
+00:02:02,943 --> 00:02:07,361
+commits of yours, sends the objects it lacks,
+and succeeds for each ref only if both
+
+31
+00:02:07,401 --> 00:02:09,590
+your Git and the remote accept the update.
+
+32
+00:02:09,930 --> 00:02:13,828
+Read that sentence again
+for its three verbs. Asks.
+
+33
+00:02:13,868 --> 00:02:19,619
+Sends. Succeeds only if both accept. A
+push is a request, and there are two
+
+34
+00:02:19,659 --> 00:02:20,545
+gatekeepers.
+
+35
+00:02:20,885 --> 00:02:25,810
+A push runs in a fixed order, and you
+will have the order on screen as today's
+
+36
+00:02:25,850 --> 00:02:29,121
+diagram. In short: your Git
+reads the server's refs.
+
+37
+00:02:29,161 --> 00:02:33,004
+Your Git applies client rules
+to each ref you want to update.
+
+38
+00:02:33,044 --> 00:02:38,160
+If they fail, nothing is sent. If they
+pass, your Git sends a line per ref, "old,
+
+39
+00:02:38,200 --> 00:02:42,298
+new, ref name", plus a packfile,
+one file that holds the objects.
+
+40
+00:02:42,638 --> 00:02:47,315
+The server puts the objects into a
+quarantine directory, checks that the ref is
+
+41
+00:02:47,355 --> 00:02:52,332
+still at the old value, applies its
+receive.deny* settings and runs its hooks, which
+
+42
+00:02:52,372 --> 00:02:56,870
+are scripts Git runs at a defined point.
+If all of that passes, the refs are
+
+43
+00:02:56,910 --> 00:03:00,155
+updated. Last, your Git moves
+your remote-tracking ref.
+
+44
+00:03:00,495 --> 00:03:05,402
+The client rules are in the manual's "push
+rules": an existing branch may only be
+
+45
+00:03:05,442 --> 00:03:09,984
+fast-forwarded, which means moved to a
+descendant of the commit it has now.
+
+46
+00:03:10,024 --> 00:03:14,992
+An existing tag may not be updated at all.
+And creations and deletions are allowed
+
+47
+00:03:15,032 --> 00:03:20,062
+unless configuration or hooks forbid them.
+On screen is today's case, as your clone
+
+48
+00:03:20,102 --> 00:03:24,766
+sees it: one commit of yours on top of
+510ee94, where origin/main still sits.
+
+49
+00:03:24,806 --> 00:03:29,774
+Whether pushing it is a fast-forward depends
+on where the server's main really is.
+
+50
+00:03:30,114 --> 00:03:34,310
+With arguments, each refspec is, optional
+plus, source, colon, destination.
+
+51
+00:03:34,350 --> 00:03:38,941
+The source is any commit expression of
+yours. The destination is a ref name on the
+
+52
+00:03:38,981 --> 00:03:39,336
+remote.
+
+53
+00:03:39,676 --> 00:03:44,688
+Inside .git, in your repository, a push
+changes only the remote-tracking ref of each
+
+54
+00:03:44,728 --> 00:03:49,439
+ref that was pushed, and its reflog. On
+the server: new objects and the updated
+
+55
+00:03:49,479 --> 00:03:49,740
+refs.
+
+56
+00:03:50,080 --> 00:03:59,033
+Your branch, your index and
+your working tree: unchanged.
+
+57
+00:03:59,073 --> 00:04:06,921
+A push does not alter your
+work. It alters theirs.
+
+58
+00:04:07,261 --> 00:04:10,482
+And section 12.9 in two
+sentences. A push moves refs.
+
+59
+00:04:10,522 --> 00:04:15,158
+It checks nothing out. So if the pushed
+ref is the branch that the receiving
+
+60
+00:04:15,198 --> 00:04:20,018
+repository has checked out, that repository's
+HEAD would name a commit that its
+
+61
+00:04:20,058 --> 00:04:24,817
+index and working tree do not match, and
+its next git status would present the
+
+62
+00:04:24,857 --> 00:04:29,063
+pushed changes as local edits that
+undo them. Git refuses by default.
+
+63
+00:04:30,903 --> 00:04:35,580
+A picture helps. The textbook's analogy:
+posting entries to a shared ledger.
+
+64
+00:04:35,620 --> 00:04:39,863
+"I have seen everything up to entry
+N; here are my entries after it."
+
+65
+00:04:39,903 --> 00:04:43,649
+Your own clerk checks the claim
+before you reach the counter.
+
+66
+00:04:43,689 --> 00:04:46,132
+Then the office applies its house rules.
+
+67
+00:04:46,472 --> 00:04:50,178
+Where it breaks: you can instruct
+your clerk to skip the check.
+
+68
+00:04:50,218 --> 00:04:54,935
+That is force, and it is the next video.
+The office then refuses only if someone
+
+69
+00:04:54,975 --> 00:04:55,946
+configured it to.
+
+70
+00:04:56,286 --> 00:04:59,551
+Carry the two gatekeepers with
+you. When the line says !
+
+71
+00:04:59,591 --> 00:05:03,269
+[rejected], your clerk stopped
+you, and your clone must change.
+
+72
+00:05:03,309 --> 00:05:06,279
+When it says ! [remote
+rejected], the office spoke.
+
+73
+00:05:06,319 --> 00:05:09,761
+A policy on the server has to
+be read, and its owner asked.
+
+74
+00:05:11,601 --> 00:05:19,223
+Quick quiz, with the seven steps on
+screen. Where does a line that says !
+
+75
+00:05:19,263 --> 00:05:24,577
+[rejected] come from? A,
+step 2, in your own clone.
+
+76
+00:05:24,617 --> 00:05:28,565
+B, step 5, on the server. Your answer?
+
+77
+00:05:33,405 --> 00:05:37,459
+A, step 2. Your own clerk said
+no, and nothing was sent.
+
+78
+00:05:37,499 --> 00:05:41,845
+Step 5 is the office, and its
+line says ! [remote rejected].
+
+79
+00:05:43,685 --> 00:05:46,220
+Part 1: one rule, two messages.
+
+80
+00:05:46,560 --> 00:05:47,525
+It says (fetch first).
+
+81
+00:05:47,865 --> 00:05:51,784
+Your clone still shows origin/main on
+510ee94. But the server's main names a commit
+
+82
+00:05:51,824 --> 00:05:55,457
+that your repository does not contain,
+so your Git cannot even test ancestry.
+
+83
+00:05:55,497 --> 00:05:59,273
+The last status still shows the stale
+[ahead 1], because a rejected push fetches
+
+84
+00:05:59,313 --> 00:05:59,654
+nothing.
+
+85
+00:05:59,994 --> 00:06:04,467
+Now fetch, and push again. Predict
+the message. Say it out loud.
+
+86
+00:06:04,507 --> 00:06:05,172
+I'll wait.
+
+87
+00:06:10,012 --> 00:06:14,097
+This time: (non-fast-forward).
+
+88
+00:06:14,437 --> 00:06:17,891
+After the fetch you have the
+server's commit, 719650d.
+
+89
+00:06:17,931 --> 00:06:23,263
+The ancestry test is possible, and it fails:
+the server's tip is not an ancestor of
+
+90
+00:06:23,303 --> 00:06:27,534
+what you push, so accepting it
+would drop Asha's commit from main.
+
+91
+00:06:27,574 --> 00:06:32,452
+One cause, two messages, and the only
+difference is whether you had fetched.
+
+92
+00:06:32,792 --> 00:06:35,984
+Now the word, and the answer
+to the opening question.
+
+93
+00:06:36,024 --> 00:06:39,216
+Both lines say ! [rejected],
+not ! [remote rejected].
+
+94
+00:06:39,256 --> 00:06:43,912
+Your own Git decided. Here is the proof,
+the client side of the conversation.
+
+95
+00:06:44,252 --> 00:06:49,819
+The server advertised its ref, the push<
+line with the ID that starts 719650d.
+
+96
+00:06:49,859 --> 00:06:55,498
+Your Git answered with an empty request,
+push> 0000, and closed the connection.
+
+97
+00:06:55,538 --> 00:06:57,440
+The server was never asked.
+
+98
+00:06:57,780 --> 00:07:09,812
+The fix does not involve force. Try
+it now. Thirty seconds, on paper.
+
+99
+00:07:09,852 --> 00:07:23,460
+You are ahead 1 and behind 1. Write the
+commands that get your commit onto the
+
+100
+00:07:23,500 --> 00:07:28,884
+server, then say them out loud.
+
+101
+00:07:33,724 --> 00:07:38,246
+Integrate, then push. A rebase
+here, and a merge works as well.
+
+102
+00:07:38,286 --> 00:07:39,911
+Preview with --dry-run.
+
+103
+00:07:40,251 --> 00:07:45,106
+The rebase re-created your commit
+on top of 719650d, as 8bf53be.
+
+104
+00:07:45,146 --> 00:07:49,236
+And look at the reflog of
+origin/main: update by push.
+
+105
+00:07:49,276 --> 00:07:54,054
+The successful push moved your
+remote-tracking ref immediately.
+
+106
+00:07:54,094 --> 00:07:58,796
+Your Git knows what the server
+has now, so no fetch is needed.
+
+107
+00:07:59,136 --> 00:08:10,806
+Part 2: pushes that fail before any
+comparison. labs/run ch12/push-errors.
+
+108
+00:08:16,946 --> 00:08:24,092
+src refspec <name> does not match any is
+about your side: the source name matched no
+
+109
+00:08:24,132 --> 00:08:31,192
+ref of yours. Either the name is wrong,
+master where your branch is main, or half a
+
+110
+00:08:31,232 --> 00:08:38,293
+branch name, or the repository has no commit
+yet, because an unborn branch is not a
+
+111
+00:08:38,333 --> 00:08:45,051
+ref. The textbook notes that this message
+is among the thirty highest-voted Git
+
+112
+00:08:45,091 --> 00:08:52,066
+questions on Stack Overflow. So if it has
+stopped you before, you're in very large
+
+113
+00:08:52,106 --> 00:08:52,750
+company.
+
+114
+00:08:53,090 --> 00:08:57,122
+With a detached HEAD there is no current
+branch whose upstream could supply a
+
+115
+00:08:57,162 --> 00:09:00,931
+destination, so you name both sides.
+The destination is written in full,
+
+116
+00:09:00,971 --> 00:09:05,215
+refs/heads/..., because a detached HEAD
+is not a ref under refs/heads/ from which
+
+117
+00:09:05,255 --> 00:09:07,277
+Git could infer that you mean a branch.
+
+118
+00:09:07,617 --> 00:09:12,528
+A misspelled remote name is taken for a
+path to a repository, hence the misleading
+
+119
+00:09:12,568 --> 00:09:14,038
+text about access rights.
+
+120
+00:09:14,378 --> 00:09:18,406
+Part 3: deleting, tags, several
+refs. labs/run ch12/push-refs.
+
+121
+00:09:18,746 --> 00:09:22,353
+git push <remote> --delete <branch>
+🔴 DANGEROUS. The five answers.
+
+122
+00:09:22,393 --> 00:09:26,773
+It changes one ref on the server. It can
+destroy the only name that the branch's
+
+123
+00:09:26,813 --> 00:09:30,641
+commits have there, and a bare server
+keeps no record of the deletion.
+
+124
+00:09:30,681 --> 00:09:35,116
+Preview with git log --oneline origin/<branch>
+--not origin/main, which lists the
+
+125
+00:09:35,156 --> 00:09:39,758
+commits that only that branch holds. Recover
+by pushing the tip again from any clone
+
+126
+00:09:39,798 --> 00:09:43,957
+that has it. It is appropriate for
+branches that are merged, or abandoned by
+
+127
+00:09:43,997 --> 00:09:44,509
+agreement.
+
+128
+00:09:44,849 --> 00:09:53,778
+The branch is gone on the server
+and so is your remote-tracking ref.
+
+129
+00:09:53,818 --> 00:10:01,033
+Your local branch stays, with
+its upstream marked gone.
+
+130
+00:10:01,373 --> 00:10:05,265
+Tags. An annotated tag is an
+object of its own, with a message.
+
+131
+00:10:05,305 --> 00:10:10,071
+A lightweight tag is only a name. You
+create one of each and run a bare push.
+
+132
+00:10:10,111 --> 00:10:11,257
+Predict the output.
+
+133
+00:10:16,097 --> 00:10:19,128
+"Everything up-to-date",
+and the server has no tags.
+
+134
+00:10:19,168 --> 00:10:23,736
+That phrase means: for the refs this push
+selected, there was nothing to send.
+
+135
+00:10:23,776 --> 00:10:27,221
+It does not mean that everything
+you made is on the server.
+
+136
+00:10:27,261 --> 00:10:28,875
+Tags travel only when asked.
+
+137
+00:10:29,215 --> 00:10:34,768
+git push origin <tag> pushes one. --follow-tags
+adds annotated tags that point into
+
+138
+00:10:34,808 --> 00:10:39,552
+the commits being pushed: v0.2.1 went,
+the lightweight nightly did not.
+
+139
+00:10:39,592 --> 00:10:41,304
+--tags pushes all of them.
+
+140
+00:10:41,644 --> 00:10:45,526
+That is the tag rule: a tag that exists on
+the remote is not replaced without force.
+
+141
+00:10:45,866 --> 00:10:52,629
+Now two refs in one push. main is behind
+the server, and release/0.1 is one commit
+
+142
+00:10:52,669 --> 00:10:57,938
+ahead. First with --atomic. Predict
+what happens to release/0.1.
+
+143
+00:11:02,778 --> 00:11:06,972
+Nothing was sent, because one
+ref failed. Without --atomic:
+
+144
+00:11:07,312 --> 00:11:13,906
+release/0.1 was updated although main
+was rejected, and the exit status is 1.
+
+145
+00:11:13,946 --> 00:11:20,970
+Refs in one push are independent by default.
+A release script that pushes a branch
+
+146
+00:11:21,010 --> 00:11:25,795
+and a tag needs --atomic and
+must check the exit status.
+
+147
+00:11:26,135 --> 00:11:30,226
+Part 4: the server's own rules.
+labs/run ch12/server-rules.
+
+148
+00:11:30,266 --> 00:11:36,108
+The demo uses --force here only to get past
+your own clerk and let the office speak.
+
+149
+00:11:36,148 --> 00:11:38,279
+Force itself is the next video.
+
+150
+00:11:38,619 --> 00:11:48,054
+Read the line: ! [remote rejected]. And
+above it a remote: line carrying the
+
+151
+00:11:48,094 --> 00:11:57,654
+server's own words. --force switches off
+your Git's checks, not the server's.
+
+152
+00:12:03,494 --> 00:12:08,403
+A pre-receive hook reads one "old new ref"
+line per proposed update and can refuse
+
+153
+00:12:08,443 --> 00:12:12,025
+the whole push, while the pushed
+objects wait in quarantine.
+
+154
+00:12:12,065 --> 00:12:16,672
+Here it refuses every direct update of
+main, and its message reaches you on a
+
+155
+00:12:16,712 --> 00:12:17,457
+remote: line.
+
+156
+00:12:17,797 --> 00:12:21,268
+Part 5: a repository with a working
+tree. labs/run ch12/push-non-bare.
+
+157
+00:12:21,308 --> 00:12:24,027
+staging-box is an ordinary
+clone with main checked out.
+
+158
+00:12:24,067 --> 00:12:24,428
+Predict.
+
+159
+00:12:29,268 --> 00:12:33,810
+"Refusing to update checked out branch."
+receive.denyCurrentBranch defaults to
+
+160
+00:12:33,850 --> 00:12:37,335
+refuse. Any branch that is not
+checked out can be pushed to.
+
+161
+00:12:37,675 --> 00:12:42,663
+For the legitimate case, a test or deployment
+machine that you reach over SSH, the
+
+162
+00:12:42,703 --> 00:12:47,691
+receiving side can opt in to updateInstead,
+which updates the working tree as part
+
+163
+00:12:47,731 --> 00:12:48,427
+of the push.
+
+164
+00:12:53,967 --> 00:12:59,016
+It works only while the target is clean.
+One uncommitted edit on the box makes every
+
+165
+00:12:59,056 --> 00:13:04,043
+later push fail with "Working directory has
+unstaged changes", which is the correct
+
+166
+00:13:04,083 --> 00:13:08,647
+outcome: somebody hot-fixed on the
+machine, and the push tells you before it
+
+167
+00:13:08,687 --> 00:13:13,553
+overwrites anything. The general rule
+stands: a repository that people push to is
+
+168
+00:13:13,593 --> 00:13:13,856
+bare.
+
+169
+00:13:15,696 --> 00:13:17,344
+Five mistakes to watch for.
+
+170
+00:13:17,684 --> 00:13:22,544
+Answering a rejection with --force. Root
+cause: rejected means the server's tip is
+
+171
+00:13:22,584 --> 00:13:27,444
+not an ancestor of yours, so forcing would
+drop the other person's commit; the fix
+
+172
+00:13:27,484 --> 00:13:28,997
+is to fetch and integrate.
+
+173
+00:13:29,337 --> 00:13:32,978
+Not reading whether the line says
+rejected or remote rejected.
+
+174
+00:13:33,018 --> 00:13:37,668
+Root cause: they come from different
+gatekeepers, your own Git at step 2 or the
+
+175
+00:13:37,708 --> 00:13:40,458
+server at step 5, and
+need different responses.
+
+176
+00:13:40,798 --> 00:13:44,452
+Assuming a release tag was
+pushed because the branch was.
+
+177
+00:13:44,492 --> 00:13:49,441
+Root cause: tags are not pushed unless
+named, or selected by --follow-tags or
+
+178
+00:13:49,481 --> 00:13:49,895
+--tags.
+
+179
+00:13:50,235 --> 00:13:54,674
+Pushing a branch and a tag in one
+command and trusting partial success.
+
+180
+00:13:54,714 --> 00:13:59,910
+Root cause: refs in one push are independent
+unless --atomic is given, and the exit
+
+181
+00:13:59,950 --> 00:14:01,361
+status is 1 either way.
+
+182
+00:14:01,701 --> 00:14:05,757
+Typing git push origin master in a
+repository whose branch is main.
+
+183
+00:14:05,797 --> 00:14:10,770
+Root cause: src refspec does not match any
+means the source name matched no ref on
+
+184
+00:14:10,810 --> 00:14:11,382
+your side.
+
+185
+00:14:13,222 --> 00:14:18,491
+Now, out of the lab. An on-call engineer
+for a model-serving team tries to push a
+
+186
+00:14:18,531 --> 00:14:23,800
+hotfix and reports: "it said rejected".
+The textbook's reply is the title of this
+
+187
+00:14:23,840 --> 00:14:26,881
+slide. Read the word
+before the bracket closes.
+
+188
+00:14:27,221 --> 00:14:30,914
+rejected means your clone must
+change: fetch and integrate.
+
+189
+00:14:30,954 --> 00:14:36,166
+remote rejected means a policy on the server
+spoke: read the remote: lines and talk
+
+190
+00:14:36,206 --> 00:14:40,406
+to whoever owns that policy. Retrying
+with --force answers neither.
+
+191
+00:14:40,746 --> 00:14:48,042
+On GitHub the server-side rules are rulesets,
+branch protection and push protection.
+
+192
+00:14:48,082 --> 00:14:55,116
+They answer in the same shape. GitHub's
+documentation gives remote: error: GH006:
+
+193
+00:14:55,156 --> 00:14:59,570
+Protected branch update
+failed for refs/heads/main.
+
+194
+00:14:59,610 --> 00:15:05,247
+as the reply of a branch protection
+rule. Chapter 18 covers them.
+
+195
+00:15:05,287 --> 00:15:11,098
+This is described from the documentation
+and was not captured here.
+
+196
+00:15:11,438 --> 00:15:16,164
+So the skill transfers. On a plain
+Git server the office's rules are
+
+197
+00:15:16,204 --> 00:15:20,299
+receive.denyNonFastForwards,
+receive.denyDeletes and hooks.
+
+198
+00:15:20,339 --> 00:15:25,905
+On GitHub they have other names and more
+features. In both, the reply arrives on
+
+199
+00:15:25,945 --> 00:15:29,760
+remote: lines and the status
+line says remote rejected.
+
+200
+00:15:31,600 --> 00:15:39,501
+Your turn. Do Lab 7.2, "A rejected push,
+then fetch and integrate by merge and by
+
+201
+00:15:39,541 --> 00:15:43,227
+rebase", in lab-manual/m07-remotes.md.
+
+202
+00:15:43,567 --> 00:15:45,097
+Predict before each command:
+
+203
+00:15:45,437 --> 00:15:49,860
+Which of the two rejection messages will
+the first push print, and why that one?
+
+204
+00:15:50,200 --> 00:15:55,244
+After the fetch, what will the second push
+print, and what does git status -sb show?
+
+205
+00:15:55,584 --> 00:16:00,593
+After integrating by merge and then again
+by rebase: what does the graph look like,
+
+206
+00:16:00,633 --> 00:16:05,643
+and what is the top entry of git reflog
+show origin/main after the successful push?
+
+207
+00:16:05,983 --> 00:16:10,889
+The challenge is Exercise 7.10, Level 5,
+"the hotfix that was pushed and is not on
+
+208
+00:16:10,929 --> 00:16:13,845
+the server", in
+exercises/m06-m10-integration.md.
+
+209
+00:16:15,685 --> 00:16:20,950
+Q206: "Two engineers in the same situation
+got rejected (fetch first) and rejected
+
+210
+00:16:20,990 --> 00:16:25,479
+(non-fast-forward). Explain the
+difference and who made each decision.
+
+211
+00:16:25,519 --> 00:16:27,678
+How is remote rejected different?"
+
+212
+00:16:30,018 --> 00:16:34,942
+Answer out loud first. A strong answer
+places all three messages on the steps of a
+
+213
+00:16:34,982 --> 00:16:39,725
+push and says, for each, which side had
+the information and which side decided.
+
+214
+00:16:39,765 --> 00:16:44,810
+It explains the two client messages as two
+states of knowledge about the same graph,
+
+215
+00:16:44,850 --> 00:16:48,866
+and it can say what evidence shows
+that the server was never asked.
+
+216
+00:16:49,206 --> 00:16:53,436
+For remote rejected it names at least two
+things on a server that can produce it and
+
+217
+00:16:53,476 --> 00:16:57,603
+says where the server's explanation appears.
+It ends with what the engineer should
+
+218
+00:16:57,643 --> 00:16:59,941
+do in each case, and
+force is in none of them.
+
+219
+00:17:01,781 --> 00:17:04,708
+Let's land this. You
+should now be able to say:
+
+220
+00:17:05,048 --> 00:17:09,758
+A push is a request: my Git checks the
+client rules first, and the receiving
+
+221
+00:17:09,798 --> 00:17:12,508
+repository applies its
+own rules after that.
+
+222
+00:17:12,848 --> 00:17:17,924
+rejected (fetch first) and rejected
+(non-fast-forward) are the same refusal by my
+
+223
+00:17:17,964 --> 00:17:23,041
+own Git, before and after I have fetched.
+The fix is to integrate and push again.
+
+224
+00:17:23,381 --> 00:17:26,868
+remote rejected is the server's
+policy speaking on remote: lines.
+
+225
+00:17:26,908 --> 00:17:31,155
+Tags are pushed only when named, refs in
+one push are independent unless I pass
+
+226
+00:17:31,195 --> 00:17:35,713
+--atomic, and "Everything up-to-date" speaks
+only about the refs that push selected.
+
+227
+00:17:35,753 --> 00:17:40,054
+A push moves refs and checks nothing out,
+so Git refuses to update a checked-out
+
+228
+00:17:40,094 --> 00:17:41,791
+branch in a non-bare repository.
+
+229
+00:17:43,631 --> 00:17:47,028
+Read sections 12.7 and 12.9 of Chapter 12.
+
+230
+00:17:47,368 --> 00:17:53,345
+Do Exercise 7.3, Level 1, "publish a
+branch, then delete it on the server", and
+
+231
+00:17:53,385 --> 00:17:58,524
+Exercise 7.8, Level 3, "a push that
+the other side refuses", both in
+
+232
+00:17:58,564 --> 00:18:01,038
+exercises/m06-m10-integration.md.
+
+233
+00:18:01,378 --> 00:18:07,540
+Today you read a push as a request with
+two gatekeepers, and you can tell from one
+
+234
+00:18:07,580 --> 00:18:12,002
+word which of them said no. Do
+Lab 7.2 while this is fresh.
+
+235
+00:18:12,042 --> 00:18:16,464
+Next time: forcing a push, what
+it destroys, and the lease.
+
+236
+00:18:16,504 --> 00:18:20,397
+Until then, look at the
+state first and type second.
+
+237
+00:18:20,437 --> 00:18:22,212
+See you in the next one.

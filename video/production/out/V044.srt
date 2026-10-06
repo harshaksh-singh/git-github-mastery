@@ -1,0 +1,1115 @@
+1
+00:00:04,500 --> 00:00:09,487
+The CTO's first question from this chapter:
+"The deploy job says the hotfix is not
+
+2
+00:00:09,527 --> 00:00:14,085
+on the server. The engineer says they
+pushed it, and their terminal printed
+
+3
+00:00:14,125 --> 00:00:16,721
+Everything up-to-date.
+Which one is wrong?"
+
+4
+00:00:17,061 --> 00:00:21,025
+Neither. The deploy job is right:
+the commit is not on the server.
+
+5
+00:00:21,065 --> 00:00:24,908
+The engineer is right: they ran
+a push and Git reported success.
+
+6
+00:00:24,948 --> 00:00:30,005
+And Git is right: "Everything up-to-date"
+is a true statement about the refspec that
+
+7
+00:00:30,045 --> 00:00:30,672
+was pushed.
+
+8
+00:00:31,012 --> 00:00:34,300
+The whole incident is contained
+in one word of that command.
+
+9
+00:00:34,340 --> 00:00:38,794
+By the end of this video you will find it
+in under a minute, with three questions
+
+10
+00:00:38,834 --> 00:00:42,233
+and one request to the server.
+Keep your eye on that one word.
+
+11
+00:00:44,073 --> 00:00:47,609
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:47,649 --> 00:00:52,534
+A ref is a name that points at a commit,
+such as a branch, and a remote is your name
+
+13
+00:00:52,574 --> 00:00:57,459
+for another repository. This is the last
+content video of the remotes module, and it
+
+14
+00:00:57,499 --> 00:01:02,032
+puts a name on something you have been
+using since the first one: the refspec.
+
+15
+00:01:02,372 --> 00:01:06,300
+Every fetch and every push you
+have seen was driven by one.
+
+16
+00:01:06,340 --> 00:01:11,209
+git clone wrote one into the configuration.
+--single-branch narrowed one.
+
+17
+00:01:11,249 --> 00:01:14,169
+A bare git push built
+one from push.default.
+
+18
+00:01:14,509 --> 00:01:19,479
+Three parts. First, refspecs as a small
+language: read them, write them, widen a
+
+19
+00:01:19,519 --> 00:01:24,177
+narrow clone, see what the plus sign
+does, exclude with a negative refspec.
+
+20
+00:01:24,217 --> 00:01:29,250
+Second, transports in brief: what the URL
+selects, and which two programs talk to
+
+21
+00:01:29,290 --> 00:01:34,449
+each other on the wire. Third, two diagnoses
+done from first principles, using only
+
+22
+00:01:34,489 --> 00:01:39,710
+what this module has taught: "the push pushed
+nothing", and "my remote-tracking refs
+
+23
+00:01:39,750 --> 00:01:40,900
+cannot be trusted".
+
+24
+00:01:42,740 --> 00:01:44,319
+Here's what you'll walk away with.
+
+25
+00:01:44,659 --> 00:01:46,071
+After this video you can:
+
+26
+00:01:46,411 --> 00:01:51,375
+Read and write a fetch refspec and a
+push refspec, including + and a negative
+
+27
+00:01:51,415 --> 00:01:51,895
+refspec.
+
+28
+00:01:52,235 --> 00:01:55,704
+Widen a narrow clone so that a
+missing branch becomes fetchable.
+
+29
+00:01:56,044 --> 00:02:00,163
+Name the transports and trace which
+programs a fetch and a push run.
+
+30
+00:02:00,503 --> 00:02:04,745
+Diagnose "the push pushed nothing" and
+"the branch exists on the server and this
+
+31
+00:02:04,785 --> 00:02:05,869
+clone cannot see it".
+
+32
+00:02:07,709 --> 00:02:13,048
+Refspecs. In one sentence: a refspec,
+optional plus, source, colon, destination, is
+
+33
+00:02:13,088 --> 00:02:18,363
+the only thing that decides which refs a
+fetch or a push touches: the source is on
+
+34
+00:02:18,403 --> 00:02:21,992
+the sending side, the destination
+on the receiving side.
+
+35
+00:02:22,332 --> 00:02:27,238
+Take that literally. For a fetch, the sender
+is the remote, so the source is a ref
+
+36
+00:02:27,278 --> 00:02:30,797
+name over there and the destination
+is a ref name of yours.
+
+37
+00:02:30,837 --> 00:02:35,683
+For a push, you are the sender, so the
+source is a commit expression of yours and
+
+38
+00:02:35,723 --> 00:02:38,156
+the destination is a ref name over there.
+
+39
+00:02:38,496 --> 00:02:44,669
+Quick quiz. Take the push refspec HEAD~1:main.
+Which side does the word main name
+
+40
+00:02:44,709 --> 00:02:49,194
+there? A, your branch. B, the
+server's branch. Your answer?
+
+41
+00:02:54,034 --> 00:02:59,004
+It's B. On a push, the destination is over
+there. Now three lines that deserve a
+
+42
+00:02:59,044 --> 00:03:04,264
+comment. main alone, on a push, is shorthand
+for refs/heads/main:refs/heads/main: my
+
+43
+00:03:04,304 --> 00:03:08,648
+main to their main. An empty source,
+colon then a name, is a deletion.
+
+44
+00:03:08,688 --> 00:03:13,658
+And the plus sign means: allow this update
+even when it is not a fast-forward, a
+
+45
+00:03:13,698 --> 00:03:14,973
+move to a descendant.
+
+46
+00:03:15,313 --> 00:03:18,432
+Why does the default fetch
+refspec carry the plus sign?
+
+47
+00:03:18,472 --> 00:03:23,143
+Because a remote-tracking ref has to record
+the server as it is, rewritten or not.
+
+48
+00:03:23,483 --> 00:03:28,419
+When does a refspec hurt you? When it
+is narrower or wider than you think.
+
+49
+00:03:28,459 --> 00:03:33,461
+A fetch refspec is configuration that
+silently shapes what a clone can see.
+
+50
+00:03:33,501 --> 00:03:38,773
+A CI clone made with --single-branch has
+a refspec for one branch, which is why
+
+51
+00:03:38,813 --> 00:03:43,950
+other branches are invisible there. And
+a mirror-style refspec pasted into an
+
+52
+00:03:43,990 --> 00:03:48,052
+ordinary clone makes the next
+fetch overwrite local branches.
+
+53
+00:03:48,092 --> 00:03:49,598
+Lab 7.7 ends with that.
+
+54
+00:03:49,938 --> 00:03:53,962
+Transports. The URL selects how
+the two Gits reach each other.
+
+55
+00:03:54,002 --> 00:03:56,583
+What they say to each other is the same.
+
+56
+00:03:56,923 --> 00:04:02,029
+On the wire, the other side of a fetch is
+git-upload-pack, and the other side of a
+
+57
+00:04:02,069 --> 00:04:07,238
+push is git-receive-pack. Over SSH the same
+two programs are started on the server.
+
+58
+00:04:07,578 --> 00:04:12,867
+Diagnosis. The method for both cases today
+is the model from the first video of this
+
+59
+00:04:12,907 --> 00:04:18,069
+module: three things called main, and only
+a few commands that talk to the server.
+
+60
+00:04:18,109 --> 00:04:23,207
+A push transfers the refs you name, not
+"my work". And remote-tracking refs are a
+
+61
+00:04:23,247 --> 00:04:23,588
+cache.
+
+62
+00:04:25,428 --> 00:04:29,444
+A picture helps. The textbook's
+analogy: a mail-forwarding rule.
+
+63
+00:04:29,484 --> 00:04:33,626
+"Whatever is addressed to refs/heads/X
+over there, file it here as
+
+64
+00:04:33,666 --> 00:04:35,084
+refs/remotes/origin/X."
+
+65
+00:04:35,424 --> 00:04:39,680
+It breaks because the rule runs only
+at the moment of a fetch or a push.
+
+66
+00:04:39,720 --> 00:04:41,589
+Nothing is forwarded in between.
+
+67
+00:04:41,929 --> 00:04:46,752
+Use the model as a diagnostic habit. When
+a clone "cannot see" a branch, the rule
+
+68
+00:04:46,792 --> 00:04:51,616
+does not cover that name: print the rule.
+When a push "did nothing", the rule you
+
+69
+00:04:51,656 --> 00:04:55,639
+typed selected a ref that had nothing
+new: read the rule you typed.
+
+70
+00:04:55,679 --> 00:04:59,781
+In both cases the command to run
+first is not a fetch and not a push.
+
+71
+00:04:59,821 --> 00:05:04,765
+It is the one that prints the refspec, or
+the one that asks the server what it has.
+
+72
+00:05:06,605 --> 00:05:11,445
+Read it from the top: a plus
+sign, a source, a destination.
+
+73
+00:05:11,485 --> 00:05:17,815
+On a fetch the server sends, so
+refs/heads/release/0.1 over there is filed as
+
+74
+00:05:17,855 --> 00:05:24,516
+refs/remotes/origin/release/0.1 here. With
+the narrow refspec, that name finds no
+
+75
+00:05:24,556 --> 00:05:29,892
+match. On a push you send, so
+HEAD~1 is yours and main is theirs.
+
+76
+00:05:31,732 --> 00:05:37,810
+Part 1: a narrow clone. A clone made with
+--single-branch, as a CI job makes it.
+
+77
+00:05:38,150 --> 00:05:43,058
+Predict the refspec, and the result of the
+switch. The branch exists on the server.
+
+78
+00:05:47,898 --> 00:05:53,595
+The refspec names main only. git switch
+release/0.1 fails with "invalid reference".
+
+79
+00:05:53,635 --> 00:05:58,849
+The clone has no ref of that name and
+its fetch rule would never create one.
+
+80
+00:05:59,189 --> 00:06:05,311
+Try it now. Thirty seconds, on paper. Write
+the fetch refspec that would let this
+
+81
+00:06:05,351 --> 00:06:08,658
+clone see release/0.1.
+Then say it out loud.
+
+82
+00:06:13,498 --> 00:06:16,976
+The answer is the second
+refspec in the output:
+
+83
+00:06:17,016 --> 00:06:22,963
++refs/heads/release/0.1:refs/remotes/origin/release/0.1.
+git remote set-branches
+
+84
+00:06:23,003 --> 00:06:29,101
+--add 🟡 CAUTION, it rewrites configuration,
+appends a refspec for one more branch,
+
+85
+00:06:29,141 --> 00:06:34,864
+and set-branches origin "*" restores the
+wildcard. Each git fetch then brings
+
+86
+00:06:34,904 --> 00:06:41,151
+exactly what the configured refspecs cover:
+first the release branch, then, with the
+
+87
+00:06:41,191 --> 00:06:44,819
+wildcard, a dependabot
+branch you had never seen.
+
+88
+00:06:45,159 --> 00:06:51,030
+Part 2: the plus sign. Asha has rewritten
+the tip of release/0.1 on the server.
+
+89
+00:06:51,070 --> 00:06:55,295
+You remove the plus from your
+refspec and fetch. Predict.
+
+90
+00:07:00,135 --> 00:07:04,589
+! [rejected] ... (non-fast-forward), on a
+fetch. Your picture of the server stays
+
+91
+00:07:04,629 --> 00:07:09,139
+wrong. With the plus restored, the
+remote-tracking ref is forced: plus sign, three
+
+92
+00:07:09,179 --> 00:07:10,470
+dots, "(forced update)".
+
+93
+00:07:10,810 --> 00:07:16,813
+One careful note from the textbook. The
+git fetch manual of 2.55 says updates
+
+94
+00:07:16,853 --> 00:07:21,915
+outside refs/heads/ and refs/tags/
+are accepted without the plus.
+
+95
+00:07:21,955 --> 00:07:27,722
+This transcript shows that Git 2.55.0
+rejects a non-fast-forward update of
+
+96
+00:07:27,762 --> 00:07:32,196
+refs/remotes/origin/release/0.1
+without it. The run wins.
+
+97
+00:07:32,536 --> 00:07:34,782
+Part 3: a negative refspec.
+
+98
+00:07:35,122 --> 00:07:39,063
+A negative refspec excludes
+matching refs from later fetches.
+
+99
+00:07:39,103 --> 00:07:43,631
+It does not delete a ref you already
+have, hence the git branch -r -d.
+
+100
+00:07:43,971 --> 00:07:45,710
+Part 4: another namespace.
+
+101
+00:07:46,050 --> 00:07:49,657
+Refs outside refs/heads/ are
+invisible to the default refspec.
+
+102
+00:07:49,697 --> 00:07:54,479
+Name one on the command line to fetch it
+into a local branch, or map the namespace
+
+103
+00:07:54,519 --> 00:07:59,243
+permanently. The last command shows the
+three configured lines: the wildcard, the
+
+104
+00:07:59,283 --> 00:08:00,831
+exclusion, and the mapping.
+
+105
+00:08:01,171 --> 00:08:06,590
+refs/pull/<number>/head is how GitHub exposes
+the head commit of every pull request.
+
+106
+00:08:06,630 --> 00:08:11,854
+Its documentation gives git fetch origin
+pull/ID/head:BRANCH_NAME and states that
+
+107
+00:08:11,894 --> 00:08:17,053
+the namespace is read-only: a push to it
+is answered with a remote rejected line
+
+108
+00:08:17,093 --> 00:08:22,057
+saying "deny updating a hidden ref". gh
+pr checkout <number> wraps the fetch.
+
+109
+00:08:22,097 --> 00:08:26,996
+Described from the documentation. The
+lab server here only imitates the ref.
+
+110
+00:08:27,336 --> 00:08:31,205
+Part 5: push refspecs. Two
+commits on main. git push 🟡.
+
+111
+00:08:31,545 --> 00:08:35,564
+Three push refspecs. Publish
+everything except your newest commit.
+
+112
+00:08:35,604 --> 00:08:40,667
+Create a branch under a different name. And
+delete it, which is 🔴 as every deletion
+
+113
+00:08:40,707 --> 00:08:44,603
+on a server. Status then shows
+the one commit that stayed local.
+
+114
+00:08:44,943 --> 00:08:49,712
+Part 6: transports.
+labs/run ch12/transports.
+
+115
+00:08:50,052 --> 00:08:55,453
+git url-parse, Git 2.55 or later,
+shows how Git reads a URL.
+
+116
+00:08:55,493 --> 00:09:00,169
+The form
+git@github.com:acme/support-bot.git is SSH.
+
+117
+00:09:00,209 --> 00:09:05,792
+A plain path is not a URL at all:
+it names a local repository.
+
+118
+00:09:06,132 --> 00:09:09,369
+labs/run ch12/transport-trace.
+
+119
+00:09:09,709 --> 00:09:12,800
+git-upload-pack for a fetch,
+git-receive-pack for a push.
+
+120
+00:09:13,140 --> 00:09:18,446
+GIT_TRACE_PACKET=1 prints the conversation.
+fetch< is received, and fetch> is sent.
+
+121
+00:09:18,486 --> 00:09:22,375
+The server announces protocol
+version 2 and its capabilities.
+
+122
+00:09:22,415 --> 00:09:27,785
+The client asks for refs with ls-refs,
+limited by ref-prefix lines derived from your
+
+123
+00:09:27,825 --> 00:09:32,358
+refspecs, so a server with very many
+refs lists only those you can use.
+
+124
+00:09:32,398 --> 00:09:37,768
+Then want names what you need and have what
+you already hold, and the server answers
+
+125
+00:09:37,808 --> 00:09:42,599
+with a packfile of the difference, one
+file that holds the missing objects.
+
+126
+00:09:48,939 --> 00:09:54,101
+A push is shorter: the advertisement, one
+"old, new, ref" command, the pack, and the
+
+127
+00:09:54,141 --> 00:09:56,392
+report unpack ok, ok refs/heads/main.
+
+128
+00:09:56,732 --> 00:09:59,463
+Back to the transports demo
+for the last transport.
+
+129
+00:10:05,003 --> 00:10:08,013
+A bundle is a file that
+plays the part of a remote.
+
+130
+00:10:08,053 --> 00:10:11,242
+You can clone or fetch from
+it. You cannot push to it.
+
+131
+00:10:11,582 --> 00:10:16,138
+Part 7: "the commit exists
+locally but not on the server".
+
+132
+00:10:16,178 --> 00:10:17,961
+labs/run ch12/diagnose.
+
+133
+00:10:18,301 --> 00:10:22,941
+That is the hook. Try it now, thirty
+seconds, on paper: before the next snippet,
+
+134
+00:10:22,981 --> 00:10:26,217
+write down the three questions
+you would ask. I'll wait.
+
+135
+00:10:31,057 --> 00:10:36,925
+Question one, which branches contain the
+commit: one local branch, hotfix/timeout,
+
+136
+00:10:36,965 --> 00:10:42,834
+and no remote-tracking branch. Question
+two, does that branch have an upstream: ##
+
+137
+00:10:42,874 --> 00:10:48,814
+hotfix/timeout with nothing after it means
+no. Question three, which commits has no
+
+138
+00:10:48,854 --> 00:10:54,578
+remote-tracking ref ever seen: git log
+--branches --not --remotes lists c19ab53.
+
+139
+00:10:54,918 --> 00:10:57,976
+And the server, asked directly,
+has no ref at that ID.
+
+140
+00:10:58,316 --> 00:11:02,937
+Here's the whole incident in one
+picture, with its branch names.
+
+141
+00:11:02,977 --> 00:11:08,981
+main and origin/main sit on 510ee94. The
+hotfix, c19ab53, is on hotfix/timeout, and
+
+142
+00:11:09,021 --> 00:11:13,205
+nowhere else. So git push origin
+main had nothing to send.
+
+143
+00:11:13,245 --> 00:11:14,807
+The one word was main.
+
+144
+00:11:15,147 --> 00:11:19,667
+And the root-cause box for the hook. Read
+its prevention line: the last lines of
+
+145
+00:11:19,707 --> 00:11:22,403
+push output name the source
+and the destination.
+
+146
+00:11:27,743 --> 00:11:31,918
+After the fix, a remote-tracking branch
+contains the commit, and the "not on any
+
+147
+00:11:31,958 --> 00:11:33,077
+remote" list is empty.
+
+148
+00:11:33,417 --> 00:11:37,913
+The same three questions sort out the other
+causes of this symptom: a rejected push
+
+149
+00:11:37,953 --> 00:11:42,395
+whose exit status a script ignored, a push
+to the wrong remote, a commit made on a
+
+150
+00:11:42,435 --> 00:11:46,930
+detached HEAD, or a reader who looked at a
+stale remote-tracking ref instead of the
+
+151
+00:11:46,970 --> 00:11:47,313
+server.
+
+152
+00:11:47,653 --> 00:11:50,861
+Part 8: "my remote-tracking
+refs cannot be trusted".
+
+153
+00:11:51,201 --> 00:11:55,554
+A local branch named origin/main,
+usually created by a mistyped command.
+
+154
+00:11:55,594 --> 00:12:00,313
+Git warns that the name is ambiguous and
+then resolves it to the local branch,
+
+155
+00:12:00,353 --> 00:12:04,401
+because refs/heads/ comes before
+refs/remotes/ in the lookup order.
+
+156
+00:12:04,441 --> 00:12:08,367
+Every comparison "against origin/main"
+now uses the wrong commit.
+
+157
+00:12:08,407 --> 00:12:12,699
+In git branch -a the impostor is the
+entry without the remotes/ prefix.
+
+158
+00:12:13,039 --> 00:12:19,178
+Here are the two names side by side: the
+remote-tracking ref on 510ee94, and the
+
+159
+00:12:19,218 --> 00:12:21,263
+impostor branch on 95671d3.
+
+160
+00:12:21,603 --> 00:12:26,280
+When the remote-tracking refs themselves
+are in doubt, remember what they are: a
+
+161
+00:12:26,320 --> 00:12:31,232
+cache. Delete them all, 🟡, and fetch. Local
+branches and their upstream settings are
+
+162
+00:12:31,272 --> 00:12:35,654
+not touched. Status says [gone] in
+between and is correct again afterwards.
+
+163
+00:12:35,694 --> 00:12:40,371
+The price is the reflogs of the deleted
+refs, your only record of earlier server
+
+164
+00:12:40,411 --> 00:12:40,783
+states.
+
+165
+00:12:42,623 --> 00:12:44,271
+Five mistakes to watch for.
+
+166
+00:12:44,611 --> 00:12:48,400
+Reading "Everything up-to-date"
+as "my commit is on the server".
+
+167
+00:12:48,440 --> 00:12:53,425
+Root cause: a push transfers the refs you
+name; the refspec main had nothing to send
+
+168
+00:12:53,465 --> 00:12:55,758
+while the commit sat on another branch.
+
+169
+00:12:56,098 --> 00:13:01,295
+Concluding that a branch does not exist
+because git switch says "invalid reference"
+
+170
+00:13:01,335 --> 00:13:06,343
+in a CI workspace. Root cause: the clone's
+fetch refspec names one branch, so no
+
+171
+00:13:06,383 --> 00:13:09,562
+remote-tracking ref for the
+other was ever created.
+
+172
+00:13:09,902 --> 00:13:13,259
+Removing the plus sign from a
+fetch refspec "for safety".
+
+173
+00:13:13,299 --> 00:13:17,431
+Root cause: without it a rewritten
+branch is rejected on fetch and the
+
+174
+00:13:17,471 --> 00:13:21,543
+remote-tracking ref keeps recording
+a state the server no longer has.
+
+175
+00:13:21,883 --> 00:13:25,698
+Adding a negative refspec and
+expecting existing refs to vanish.
+
+176
+00:13:25,738 --> 00:13:30,455
+Root cause: it excludes refs from later
+fetches and deletes nothing you already
+
+177
+00:13:30,495 --> 00:13:30,757
+have.
+
+178
+00:13:31,097 --> 00:13:35,867
+Creating a local branch called origin/main.
+Root cause: refs/heads/ is looked up
+
+179
+00:13:35,907 --> 00:13:40,678
+before refs/remotes/, so the name resolves
+to the impostor, with only a warning.
+
+180
+00:13:42,518 --> 00:13:46,813
+Now, out of the lab. An ML platform
+team trains on an air-gapped cluster.
+
+181
+00:13:46,853 --> 00:13:49,960
+There is no route from the
+cluster to the Git server.
+
+182
+00:13:50,000 --> 00:13:54,828
+The training code still has to arrive as
+a Git repository, with history, so that a
+
+183
+00:13:54,868 --> 00:13:58,094
+model artifact can record the
+commit it was built from.
+
+184
+00:13:58,434 --> 00:14:03,131
+The transport for that is a bundle. Run
+git bundle create on the connected side,
+
+185
+00:14:03,171 --> 00:14:08,046
+with git bundle verify printing the refs
+it contains and confirming that it records
+
+186
+00:14:08,086 --> 00:14:13,020
+a complete history. Carry the file across.
+Clone or fetch from it on the other side.
+
+187
+00:14:13,060 --> 00:14:15,389
+In the clone, origin is the bundle file.
+
+188
+00:14:15,729 --> 00:14:20,225
+For ordinary remotes, GitHub
+accepts HTTPS and SSH URLs.
+
+189
+00:14:20,265 --> 00:14:26,949
+According to its blog, it stopped accepting
+account passwords for Git over HTTPS on
+
+190
+00:14:26,989 --> 00:14:33,429
+13 August 2021 and removed the unauthenticated
+git:// protocol on 15 March 2022.
+
+191
+00:14:33,469 --> 00:14:36,103
+Chapter 16 covers authentication.
+
+192
+00:14:36,443 --> 00:14:41,892
+And the textbook's rule for refspec problems,
+which belongs on a team runbook: when
+
+193
+00:14:41,932 --> 00:14:47,117
+a clone "cannot see" a branch or "keeps
+losing" one, print git config get --all
+
+194
+00:14:47,157 --> 00:14:48,836
+remote.origin.fetch first.
+
+195
+00:14:50,676 --> 00:14:57,855
+Your turn. Do Lab 7.7, "Refspec
+surgery", in lab-manual/m07-remotes.md.
+
+196
+00:14:58,195 --> 00:14:59,615
+Predict before each fetch:
+
+197
+00:14:59,955 --> 00:15:05,249
+Given the configured refspecs, which refs
+will this fetch create, move or leave
+
+198
+00:15:05,289 --> 00:15:05,654
+alone?
+
+199
+00:15:05,994 --> 00:15:10,791
+If the server's branch was rewritten, will
+the fetch accept or reject the update,
+
+200
+00:15:10,831 --> 00:15:11,986
+and what decides it?
+
+201
+00:15:12,326 --> 00:15:16,942
+For the last step of the lab: which of your
+refs is the destination of the refspec
+
+202
+00:15:16,982 --> 00:15:20,008
+you are about to paste? Answer
+that before you run it.
+
+203
+00:15:20,348 --> 00:15:24,778
+The challenge is Incident 10,
+incidents/10-commit-local-not-remote.
+
+204
+00:15:24,818 --> 00:15:26,647
+Read the symptoms file only.
+
+205
+00:15:28,487 --> 00:15:33,726
+Q216: "In a CI workspace git switch
+release/2.3 fails with an invalid reference
+
+206
+00:15:33,766 --> 00:15:39,340
+although the branch exists on the server,
+and on a laptop a fetch rejects the update
+
+207
+00:15:39,380 --> 00:15:44,753
+of a remote-tracking ref as a non-fast-forward.
+Diagnose both from what a refspec
+
+208
+00:15:44,793 --> 00:15:45,021
+is."
+
+209
+00:15:47,361 --> 00:15:52,633
+Answer out loud first. A strong answer begins
+by defining a refspec in one sentence,
+
+210
+00:15:52,673 --> 00:15:56,554
+with its three parts, and then
+uses that one definition twice.
+
+211
+00:15:56,594 --> 00:16:01,613
+For each symptom it says which part of
+the refspec is responsible, which command
+
+212
+00:16:01,653 --> 00:16:05,724
+prints the evidence, and which
+command changes the configuration.
+
+213
+00:16:05,764 --> 00:16:09,139
+It also says how each clone
+came to have that refspec.
+
+214
+00:16:09,179 --> 00:16:14,261
+Two symptoms, one concept: if your answer
+needs two unrelated explanations, start
+
+215
+00:16:14,301 --> 00:16:14,641
+again.
+
+216
+00:16:16,481 --> 00:16:19,408
+Let's land this. You
+should now be able to say:
+
+217
+00:16:19,748 --> 00:16:24,774
+A refspec maps source refs on the sending
+side to destination refs on the receiving
+
+218
+00:16:24,814 --> 00:16:28,252
+side, and the plus sign allows
+a non-fast-forward update.
+
+219
+00:16:28,292 --> 00:16:32,769
+A clone can only see the branches its
+fetch refspec covers, and git remote
+
+220
+00:16:32,809 --> 00:16:37,896
+set-branches widens it. The URL selects the
+transport, and on the wire a fetch talks
+
+221
+00:16:37,936 --> 00:16:42,900
+to git-upload-pack and a push to
+git-receive-pack. A bundle is a remote in a file.
+
+222
+00:16:43,240 --> 00:16:48,356
+"Everything up-to-date" is true of the
+refspec that was pushed, so I locate a commit
+
+223
+00:16:48,396 --> 00:16:53,143
+with git branch -a --contains, check the
+upstream, and ask the server with git
+
+224
+00:16:53,183 --> 00:16:53,757
+ls-remote.
+
+225
+00:16:54,097 --> 00:16:57,859
+Remote-tracking refs are a cache that
+can be deleted and fetched again.
+
+226
+00:16:59,699 --> 00:17:06,971
+Read sections 12.12 to 12.17 of Chapter
+12, and do the Practice section 12.19.
+
+227
+00:17:07,311 --> 00:17:12,146
+That's the remotes module, complete. You
+can read a refspec, and you can find a
+
+228
+00:17:12,186 --> 00:17:15,849
+commit that was "pushed" and
+isn't there, in under a minute.
+
+229
+00:17:15,889 --> 00:17:20,478
+Do Lab 7.7 while this is fresh. Next
+time: the gate briefing for branching.
+
+230
+00:17:20,518 --> 00:17:23,687
+Until then, look at the
+state first and type second.
+
+231
+00:17:23,727 --> 00:17:25,168
+See you in the next one.

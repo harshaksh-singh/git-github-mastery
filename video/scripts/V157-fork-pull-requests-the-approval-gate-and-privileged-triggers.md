@@ -13,7 +13,13 @@
 
 An open-source evaluation harness wants to show benchmark scores on contributor pull requests. The scores need a provider API key. For every outside contributor the job fails, because the key isn't there.
 
+**[ANIMATION]** stores: boxes=the_workflow:its_trigger|the_check_"evaluation":on_a_fork_pull_request|anyone_who_opens_a_pull_request:what_they_are_handed rows=1:A:pull__request|1:B:fails:_the_API_key_is_empty@bad|2:A:pull__request__target@hl|2:B:the_check_goes_green@ok|3:C:the_API_key@bad|3:C:a_read-write_token_for_the_repository@bad arrows=3:A2>C title=One_word_in_the_trigger id=word mono=on at_1=4 at_2=45 at_3=78
+
+**[ANIMATION]** step: word.3
+
 A maintainer searches for the error, finds an answer with many upvotes, and changes one word in the trigger, the line that says which event starts the workflow: `pull_request` becomes `pull_request_target`. The check goes green. The contributor is happy. The maintainer has handed the API key, and a read-write token for the repository, to anyone who opens a pull request.
+
+**[ANIMATION]** say: The_failing_check_was_the_security_model_working
 
 The failing check was the security model working. The one-word change removed it. In this video you learn exactly what that word changes, and which line, usually two steps further down, completes the vulnerability. Keep those two steps in mind.
 
@@ -49,7 +55,13 @@ After this video you can:
 
 **Precisely.** The documentation: "With the exception of `GITHUB_TOKEN`, secrets are not passed to the runner when a workflow is triggered from a forked repository. The `GITHUB_TOKEN` has read-only permissions in pull requests from forked repositories." Pull requests opened by Dependabot, GitHub's dependency update feature, are treated the same way.
 
+**[ANIMATION]** decide: nodes=q:Any_commit_or_pull_request_merged_before?|no:requires_approval_to_run_workflows|yes:will_not_require_approval edges=q>no:no|q>yes:yes path=q,yes title=The_approval_gate,_at_its_default id=gate say_path=A_first-contact_check,_not_a_per-request_review at_path=70
+
+**[ANIMATION]** step: gate.level-2
+
 **The approval gate.** Whether such a run starts at all is a separate setting. For public repositories, by default, all first-time contributors require approval to run workflows. The options are approval for first-time contributors who are new to GitHub, for all first-time contributors, or for all external contributors.
+
+**[ANIMATION]** step: gate.path
 
 The documentation attaches a warning. A user who has had any commit or pull request merged into the repository will not require approval. And a malicious user could meet that requirement by getting a small typing fix accepted. So the gate at its default is a first-contact check, not a per-request review.
 
@@ -61,19 +73,37 @@ What it doesn't protect. The runner itself: the contributor's code still execute
 
 The textbook calls that last row the hinge. The approval gate applies to `pull_request`. It doesn't apply to `pull_request_target`.
 
+**[ANIMATION]** cards: question=A_stranger's_fork_pull_request_starts_a_pull__request_run._What_does_the_job_hold? cards=A:a_read-write_token_and_your_secrets|B:a_read-only_token_and_no_secrets marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
+
 Quick quiz. A stranger's fork pull request starts a `pull_request` run. What does the job hold? A, a read-write token and your secrets. B, a read-only token and no secrets. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: quiz.marks
+
 B. The token can read, and your secrets stay behind. But the stranger's code still runs on the runner.
+
+**[ANIMATION]** end
 
 **Privileged triggers. In one sentence:** `pull_request_target` runs your workflow, from your default branch, with your token and your secrets, in response to a stranger's pull request. It's safe exactly as long as it never executes that stranger's code. The default branch is the branch a repository presents first.
 
+**[ANIMATION]** gates: packet=a_stranger's_pull_request gates=pull__request__target:pass:the_trigger:your_workflow,_your_token,_your_secrets|a_checkout_with_a_ref:pass:brings_the_fork's_code:alone_does_not_execute_untrusted_code|the_next_step_that_runs_checked-out_code:stop:completes_the_vulnerability:for_example_make_test title=Where_a_privileged_trigger_becomes_a_vulnerability id=risk
+
+**[ANIMATION]** step: risk.1
+
 **Precisely.** GitHub's reference says such workflows "run with elevated trust: the job receives the base repository's `GITHUB_TOKEN` and access to repository and organization secrets". The base repository is the one that receives the pull request. The trigger is safe by default because the workflow, and any later checkout that doesn't specify a `ref`, is taken from the base repository's default branch. A checkout fetches code onto the runner, and a `ref` says which commit. Then the sentence that locates the risk: "You introduce risk when a workflow author overrides this default to run the fork's code."
+
+**[ANIMATION]** step: risk.3
 
 And the sentence that locates the step. Quoting the reference: "The checkout step alone does not execute untrusted code… The vulnerability is completed by the next step that runs code checked out into the current working directory." The documentation gives this pattern a name and says it "has been the root cause of multiple supply-chain compromises".
 
+**[ANIMATION]** say: The_token_is_read/write,_even_when_triggered_from_a_public_fork
+
 The token isn't read-only here. The workflow syntax reference: under `pull_request_target` the token "is granted read/write repository permission, even when it is triggered from a public fork".
+
+**[ANIMATION]** end
 
 **The unsafe pattern, as the documentation prints it.** The checkout line with `@v6` is the documentation's own example, quoted unchanged. The workflows of this course pin the checkout action at version 7.0.1 by commit ID, and since version 7 and its back-ports the action refuses this checkout unless a specific input is set.
 
@@ -95,11 +125,21 @@ jobs:
 
 Read it with the question from the last video. Whose code runs? `make test` runs the Makefile of the pull request, so the contributor's. What can the job reach? A read-write token, and every repository and organization secret the workflow names. What an attacker achieves is whatever those credentials allow. There's the line from the opening: not the trigger, not the checkout, but the step after it.
 
+**[ANIMATION]** cards: cards=A_build|An_install_step_with_lifecycle_scripts|A_test_runner|A_linter_that_loads_a_configuration_file_from_the_working_directory title="Run"_is_wider_than_it_looks id=wider
+
 And the textbook widens one word. "Run" is wider than it looks. A build. An install step with lifecycle scripts. A test runner. A linter that loads a configuration file from the working directory. Each executes or is steered by files from the checkout.
+
+**[ANIMATION]** cards: cards=Checking_out_the_pull_request's_head_or_merge_commit:through_a_ref_built_from_the_event|Pointing_the_checkout_at_the_fork:through_the_repository_input|Fetching_the_code_another_way_and_running_it:git_fetch,_gh_pr_checkout,_an_artifact title=The_shapes_to_look_for_in_review numbered=on id=shapes
+
+**[ANIMATION]** step: shapes.3
 
 **The shapes to look for in review,** from the same reference. Checking out the pull request's head or merge commit, through a `ref` built from the event. Pointing the checkout at the fork, through the `repository` input. Or fetching the code another way and running it: a `git fetch` of the pull request ref, `gh pr checkout`, or downloading an artifact built from it. An artifact is a set of files a job uploads for later download.
 
+**[ANIMATION]** say: Not_unique_to_pull__request__target:_issue__comment_and_workflow__run_too
+
 And the scope is wider than one trigger. The reference: such patterns "are also not unique to `pull_request_target`… an `issue_comment` or `workflow_run` workflow that fetches and runs a fork's pull request code is vulnerable in the same way." For `workflow_run`, remember from video 143: it's about the default branch, and it can read secrets even when the first workflow couldn't. Its privilege comes from its position, not from the run that triggered it.
+
+**[ANIMATION]** end
 
 **The fix, in order of preference.**
 
@@ -126,7 +166,13 @@ jobs:
 
 Two. If a privileged action is needed, such as a comment or a label, keep `pull_request_target` but never check out or run the pull request's code. Operate on metadata only, facts about the pull request, not its files, with the narrowest `permissions`. This is the case in which `pull_request_target` is the right trigger.
 
+**[ANIMATION]** stores: boxes=unprivileged_pull__request_workflow:the_contributor's_code_runs_here|privileged_workflow__run_workflow:never_executes_that_code rows=1:A:builds_and_tests|1:A:uploads_its_result_as_an_artifact@hl|2:B:downloads_the_artifact@hl|2:B:reads_it_as_data:_PR_numbers,_a_code_coverage_text|3:B:comments_on_the_pull_request@ok arrows=2:A2>B1:artifact title=Separate_the_two id=split
+
+**[ANIMATION]** step: split.3
+
 Three. If the privileged action needs a result computed from the contributor's code, separate the two. GitHub Security Lab's design is an unprivileged `pull_request` workflow that builds and tests and uploads its result as an artifact, and a privileged `workflow_run` workflow that downloads the artifact and comments. Artifact data is safe there when it's used, in the article's words, "in a safe manner, like reading PR numbers or reading a code coverage text to comment on the PR".
+
+**[ANIMATION]** end
 
 A label as a gate, "run only when a maintainer adds a certain label", is weaker than it looks. The Security Lab article notes it's still prone to a race condition, in which the attacker may push new changes after the workflow was approved by the label but hasn't started yet.
 
@@ -154,6 +200,8 @@ It breaks in two places. By default a visitor who has been in the building once 
 
 Where that breaks: the parcel can also influence the clerk without being opened. Its label is event text. That's the next video.
 
+**[ANIMATION]** replay: risk
+
 So carry two questions into every review of a privileged trigger. Does anything bring the stranger's files onto the runner? And does any later step execute or get steered by files in the working directory? If both answers are yes, the trigger is no longer safe, whatever the intentions were.
 
 ## DIAGRAM
@@ -161,6 +209,10 @@ So carry two questions into every review of a privileged trigger. Does anything 
 Try it now, thirty seconds, on paper. Draw two columns, `pull_request` and `pull_request_target`, and four rows: where the workflow file is read from, the token, the secrets, the approval gate. Fill in both columns, and say each row out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** walk: columns=for_a_pull_request_from_a_fork,on:_pull__request,on:_pull__request__target rows=workflow_file_read_from:the_commit_the_event_refers_to_(the_pull_request_can_change_it):the_base_repository's_default_branch|checked_out_by_default:the_test_merge,_refs/pull/N/merge_(the_contributor's_code):the_base_repository's_default_branch_(NOT_the_contributor's_code)|GITHUB__TOKEN:read-only:read/write,_even_from_a_public_fork|secrets:none_(except_the_token):repository_and_organization_secrets|approval_gate:applies:does_not_apply:_it_always_runs|safe_when:it_needs_no_secret_and_no_write_token:it_never_checks_out,_fetches_or_runs_the_pull_request's_code marks=2.2:hl,3.3:hl,4.3:hl mono=off title=Two_lanes id=lanes say_6=The_vulnerability:_the_NEXT_step_that_runs_code_checked_out_into_the_working_directory
+
+**[ANIMATION]** step: lanes.header
 
 **[DIAGRAM]** Two lanes, side by side. Fill the left lane first, row by row. Then ask the viewer to predict each row of the right lane before you write it.
 
@@ -185,6 +237,8 @@ Try it now, thirty seconds, on paper. Draw two columns, `pull_request` and `pull
 ```
 
 **[DIAGRAM]** Each lane is consistent on its own. The left lane gives the stranger's code no privilege. The right lane gives privilege and, by default, no stranger's code. The vulnerability is a workflow that takes the token and secrets from the right lane and the code from the left.
+
+**[ANIMATION]** step: lanes.6
 
 Now check your rows. The left lane gives the stranger's code no privilege. The right lane gives privilege and, by default, no stranger's code. The vulnerability is a workflow that takes the token and secrets from the right lane and the code from the left.
 
@@ -260,7 +314,11 @@ v5-build-and-deploy.yml:19:  DEPLOY_TOKEN: ${{ secrets.STAGING_DEPLOY_TOKEN }}
 
 Line 28 of file 2: a `ref` built from the head commit of the pull request. That's the first shape in the documentation's table: checking out the pull request's head. Under `pull_request_target`.
 
+**[ANIMATION]** step: risk.3
+
 Remember what the reference says about that line: the checkout step alone doesn't execute untrusted code. So the review isn't finished. You open the file and read what comes after the checkout, and ask of each step whether it runs or is steered by files in the working directory. That reading is yours to do in the lab. And you look for one more line near the checkout, the one that the changelog says is named to be spotted.
+
+**[ANIMATION]** end
 
 **Step 3: a scan that looks convincing.**
 
@@ -306,7 +364,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. The textbook's case was the hook: an open-source evaluation harness wants benchmark scores on contributor pull requests, and the scores need a provider API key. Under `pull_request` the key is absent, so the job fails for every outside contributor. The textbook's comment: this is the fork model working.
 
-The wrong fix is the one-word change. The right ones, as the textbook lists them: run the keyed evaluation after merge. Or run it on demand, by a maintainer, on a branch inside the repository. Or split the work into an unprivileged run and a privileged follow-up that never executes the contributor's code, and that treats what the first run produced as data. It never executes it and never interpolates it into a script.
+The wrong fix is the one-word change. The right ones, as the textbook lists them: run the keyed evaluation after merge. Or run it on demand, by a maintainer, on a branch inside the repository.
+
+**[ANIMATION]** replay: split
+
+Or split the work into an unprivileged run and a privileged follow-up that never executes the contributor's code, and that treats what the first run produced as data. It never executes it and never interpolates it into a script.
+
+**[ANIMATION]** end
 
 Each of the three costs something: later feedback, a manual step, or a second workflow to maintain. That cost is the price of not putting an outsider's code next to your credential.
 

@@ -13,6 +13,8 @@
 
 That's the question the capstone answers, and the evaluation says it has no in-between. The outcome is one of two statements: demonstrates senior-level mastery, or not yet. Hold on to that question. You'll soon know what the evaluation reads to answer it.
 
+**[ANIMATION]** stores: id=told boxes=what_you_are_told|what_nobody_tells_you rows=1:A:what_a_teammate,_a_manager_or_an_alert_would_tell_you|2:A:incomplete@dim|2:A:sometimes_wrong@bad|3:B:the_cause@hl|3:B:the_mechanism@hl title=Eight_working_days at_1=45 at_2=75 at_3=88
+
 For eight working days you're a backend engineer at a small company. On each day something goes wrong in or around the team's repository, and you're the person who is asked to sort it out. Nobody tells you the cause. What you're told is what a teammate, a manager or an alert would tell you: incomplete, sometimes wrong, never the mechanism.
 
 ## INTRODUCTION
@@ -35,7 +37,11 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** flow: id=router actors=a_customer_message,*intent-router,the_queue_of_a_desk msgs=1>2:received|2>2:a_keyword_score_and_an_embedding_score|2>2:the_best_intent_above_a_threshold|2>3:routed title=intent-router
+
 **The company and the product.** Tessaly sells a customer-support platform. One of its backend services is `intent-router`: it receives a customer message, decides which intent the message has, and routes it to the queue of the desk that handles that intent. The decision blends two scores per candidate intent, a keyword score and an embedding score, and picks the best intent above a threshold. The code is small on purpose. You'll read all of it within minutes, and no stage requires more Python than a three-line change.
+
+**[ANIMATION]** end
 
 **The team.**
 
@@ -49,9 +55,17 @@ After this video you can:
 
 The people are written to be reasonable. Each action that causes an incident looked right to the person who took it. Your postmortems are expected to show why.
 
+**[ANIMATION]** cards: id=conv cards=Trunk-based:everyone_integrates_into_main|Nobody_pushes_to_main:changes_arrive_by_pull_request|Squash_merges_by_default:or_a_merge_commit|After_a_merge:the_server_deletes_the_head_branch|Releases_are_annotated_tags|Maintenance_lines,_release/MAJOR.MINOR:created_at_the_release_tag|A_fix_lands_on_main_first:then_git_cherry-pick_-x marks=2:ring
+
+**[ANIMATION]** step: 7
+
 **The conventions.** The team works trunk-based: everyone integrates into one branch, `main`. Nobody pushes to `main`. Every change arrives through a pull request, a proposal to merge one branch into another, and nobody rewrites it. Squash merges by default, where a pull request's commits become one commit, and a merge commit when the individual commits should stay visible. After a merge the server deletes the head branch. Releases are annotated tags. Maintenance lines are named `release/MAJOR.MINOR` and are created at the release tag the first time a released version needs a fix that `main` cannot deliver. A fix lands on `main` first and is copied to the maintenance line with `git cherry-pick -x`.
 
+**[ANIMATION]** step: marks
+
 **GitHub, not Git.** "Nobody pushes to `main`" is a rule that only a platform can enforce. A bare repository, one with no working tree, as a server holds it, accepts any push from anyone who can write to it. In the sandbox the rule is a convention, and the check scripts verify that you kept it.
+
+**[ANIMATION]** stores: id=prside boxes=pr:a_script_in_the_sandbox_root|server.git:a_bare_repository rows=1:A:one_small_text_file_per_pull_request|2:B:refs/pull/<number>/head|2:B:refs/pull/<number>/merge|3:B:a_hook_rebuilds_them_after_every_push arrows=2:A>B:plain_Git title=How_the_pull-request_side_is_played
 
 **How the pull-request side is played.** A bare repository has no pull requests. A script named `pr` in the sandbox root keeps the few facts the simulation needs, with plain Git: one small text file per pull request, and the two refs you know from Part 5, `refs/pull/<number>/head` and, when head and base merge without conflict, `refs/pull/<number>/merge`. A hook in the server repository rebuilds them after every push. You run it from any clone.
 
@@ -93,7 +107,11 @@ A bug in production, a merge conflict, a leaked secret, failed CI, lost work, a 
 
 After stage 8 you write one blameless postmortem, for the incident of your choice among stages 1, 3 and 7, with a closing section: which two or three controls would have prevented or shortened the most incidents of the fortnight.
 
+**[ANIMATION]** stores: id=judged boxes=the_evaluation_reads|seven_dimensions|four_levels rows=1:A:the_eight_check_results|1:A:the_stage_files|1:A:the_postmortem|2:B:Git_knowledge|2:B:GitHub_knowledge|2:B:debugging_ability|2:B:production_judgment|2:B:security_awareness|2:B:recovery_skills|2:B:engineering_communication|3:C:1_not_demonstrated@dim|3:C:2_developing|3:C:3_proficient,_the_standard@hl|3:C:4_senior title=How_it_is_judged at_3=45
+
 **How it is judged.** Here's the answer to the opening: what the evaluation reads. Three sources and nothing else: the eight check results, the stage files, and the postmortem. A passing check is the entry condition for scoring a stage, not a score. Seven dimensions: Git knowledge, GitHub knowledge, debugging ability, production judgment, security awareness, recovery skills, and engineering communication. Each is scored on four levels: not demonstrated, developing, proficient, senior. Level 3 is the standard. Level 4 is what distinguishes someone who can lead the incident from someone who can resolve it.
+
+**[ANIMATION]** end
 
 **The disqualifying findings.** Seven. Any one makes the outcome "not yet", whatever the scores.
 
@@ -117,9 +135,15 @@ B. One sentence softens them: a finding you made yourself, reported in your own 
 
 ## MENTAL MODEL
 
+**[ANIMATION]** walk: id=fortnight columns=an_earlier_day,a_later_day rows=Wednesday,_you_emptied_a_reflog:Friday,_it_isn't_there|Tuesday,_you_left_a_branch_behind:it_is_still_in_the_list mono=off title=The_state_is_yours_from_yesterday at_header=40 at_1=68 at_2=84
+
 A picture helps. Think of the capstone as a fortnight on call, compressed. The difference from a drill is the same as the difference between on-call duty and a training exercise: the state is yours from yesterday. The reflog you emptied on Wednesday isn't there on Friday. The branch you left behind on Tuesday is still in the list.
 
+**[ANIMATION]** walk: id=kinder columns=in_the_sandbox,in_real_life rows=you_may_read_every_clone:you_ask_a_colleague_to_paste_a_reflog|you_administer_the_server:rules,_the_Activity_view_and_Support mono=off title=The_sandbox_is_kinder_than_production
+
 Where the comparison breaks, the README says so itself: the sandbox is kinder than production. You may read every clone and you administer the server. In real life you ask a colleague to paste a reflog, and server-side steps go through rules, the Activity view and Support. That is why the write-up must say, each time you use that power, what the equivalent step on GitHub is and who could perform it.
+
+**[ANIMATION]** end
 
 And a model for the deliverables: the check sees Git state. It can't see whether you understood what you did. Everything you hand in is what the check can't verify.
 
@@ -169,6 +193,8 @@ The README has nine rules, and they're the course in nine lines. Evidence before
 capstone/setup.sh                                  # builds the sandbox with stage 1 applied; prints its path
 labs/shell "<the path it printed>/you"             # a shell with the isolated lab configuration
 ```
+
+**[ANIMATION]** gates: id=loop gates=read_BRIEFING.md:done:-:and_nothing_else_in_the_stage_directory|work_in_the_sandbox:done:-:with_your_evidence_log_open|run_the_check:done:-:from_the_course_root|write_the_deliverables:done|apply_the_next_stage:done:-:with_its_inject.sh title=The_loop_of_one_stage
 
 Then for each stage: read the stage's `BRIEFING.md` and nothing else in the stage directory. Work in the sandbox with your evidence log open. Run the stage's check from the course root. Write the deliverables. Apply the next stage with its `inject.sh`. If a repair goes wrong, `capstone/setup.sh --stage N` rebuilds the state at the start of stage N. In the evaluation, a rebuild counts as what it would have been in production.
 
@@ -250,7 +276,7 @@ Try it now, with the output of `git log --oneline --graph --decorate origin/main
 
 **[PAUSE]**
 
-**[ANIMATION]** graph: ba48a7a-d449cc0-5ce3510-bae705c-f9ae37f-7db3ddf main origin/main; ba48a7a-10e9455-8ae1cbe; 8ae1cbe-d449cc0; ba48a7a v1.2.0; 7db3ddf v1.3.0; HEAD=main title=One_merge_commit,_then_four_squash_merges
+**[ANIMATION]** graph: id=inherit ba48a7a-d449cc0-5ce3510-bae705c-f9ae37f-7db3ddf main origin/main; ba48a7a-10e9455-8ae1cbe; 8ae1cbe-d449cc0; ba48a7a v1.2.0; 7db3ddf v1.3.0; HEAD=main title=One_merge_commit,_then_four_squash_merges
 
 Number 7 and number 3. Here's the newer one as a graph. `d449cc0` merged pull request 7: it has two parents, and the two commits of its branch stay visible beside it. The four commits after it are squash merges, one commit for each pull request.
 
@@ -272,7 +298,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A learner works through the capstone in the evenings of two weeks, one stage per sitting. On the third evening the briefing says a colleague deleted a file with a key and that the branch is clean now. She has drilled this. Her first line in the evidence log isn't a Git command: it's the request to revoke the key and the name of the role that performs it.
 
+**[ANIMATION]** replay: fortnight
+
 On the fifth evening a recovery she expects to work doesn't, because on the third evening she expired the reflogs in that clone, correctly, as part of the secret clean-up. She doesn't rebuild the sandbox. She writes down what is no longer available and why, and finds the commits by another route. In her stage file, under "Not verified", she lists what only the platform could have confirmed.
+
+**[ANIMATION]** end
 
 Her evaluator reads the stage files beside the walkthrough. Her route in two stages differs from the model. It is evidenced, safe and verified, and it scores the same. The quickest read of each file, the evaluator's notes say, was the "Not verified" list, the options table and the number of hypotheses.
 

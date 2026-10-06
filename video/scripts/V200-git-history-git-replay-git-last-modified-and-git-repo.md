@@ -13,6 +13,8 @@
 
 A colleague has read that there's a new command that rewords an old commit in one line, with no todo list and no editor full of `pick`. A commit is one saved snapshot with a message, and the todo list is the list of instructions an interactive rebase works through. It's true. The command exists in the Git on your machine, and it does what the post says.
 
+**[ANIMATION]** cards: id=notes question=It_rewords_an_old_commit_in_one_line._It_also cards=moves_every_local_branch_that_contains_the_commit:without_asking|runs_no_hooks|refuses_a_history_with_a_merge_in_it:and_any_operation_that_would_conflict|EXPERIMENTAL:the_first_line_of_its_manual_page marks=4:ring at_1=0 at_2=14 at_3=30 at_4=48 at_marks=58
+
 It also moves every local branch that contains the commit, without asking. It runs no hooks, the scripts Git can run at fixed points of a command. It refuses any history with a merge in it, and any operation that would conflict. And the first line of its manual page is one word in capitals: EXPERIMENTAL. A guideline is a promise about what works next year. This is not yet that. Hold on to the colleague's question. By the end, a team lead answers it in three sentences.
 
 ## INTRODUCTION
@@ -39,11 +41,21 @@ After this video you can:
 
 **`git history`, in one sentence.** `git history` rewrites one commit, its message, its content, or its division into two, and replays every descendant on top, updating all local branches that contain the commit, without touching a working tree and without a todo list. Its label is 🟡 CAUTION.
 
+**[ANIMATION]** gates: id=versions gates=Git_2.54:done:-:reword_and_split|Git_2.55:done:-:fixup|Git_2.56:skip:-:drop,_not_run_here title=git_history,_EXPERIMENTAL
+
 **Precisely.** The command arrived in Git 2.54 with `reword` and `split`. Git 2.55 added `fixup`. `drop` is new in Git 2.56 and is not run here. The first line of its manual says EXPERIMENTAL.
+
+**[ANIMATION]** walk: id=diff columns=,git_rebase_-i,git_history_(experimental) rows=index_and_working_tree:used:most_subcommands_need_neither|hooks:run:none_run|branches_updated:one,_unless_--update-refs:every_branch_that_descends_from_the_commit|merges_in_the_affected_history:--rebase-merges:refused,_for_now|an_operation_that_would_conflict:stops,_you_resolve,_continue:refused,_for_now mono=off title=Three_differences,_two_limits
+
+**[ANIMATION]** step: 3
 
 Compared with `git rebase -i`, the manual names three differences. Most subcommands need neither index nor working tree, so they work in a bare repository, one with no working tree, such as a server holds. No hooks are run. And by default every branch that descends from the commit is updated, where a rebase moves one branch unless you add `--update-refs`.
 
+**[ANIMATION]** step: 5
+
 Two limits are by design for now: no merges in the affected history, and no operation that would conflict.
+
+**[ANIMATION]** end
 
 **Inside `.git`.** New commit objects for the target and all its descendants. Every affected branch ref moves, each with a reflog entry of the form "reword: updating" followed by what you typed. HEAD's reflog gets one entry.
 
@@ -65,7 +77,7 @@ One observation from the lab, which the textbook marks as unverified because the
 
 Three forms. `--onto` rebases a range onto a new base.
 
-**[ANIMATION]** graph: c55bd6f-36761eb main; c55bd6f-f21ac0f-9e11dcc fix/timeout; HEAD=main => c55bd6f-36761eb-dc10709-863b8b5 main; c55bd6f-f21ac0f-9e11dcc fix/timeout; HEAD=main title=git_replay_--advance=main
+**[ANIMATION]** graph: id=advance c55bd6f-36761eb main; c55bd6f-f21ac0f-9e11dcc fix/timeout; HEAD=main => + 36761eb-dc10709-863b8b5 main; cmd:git_replay_--advance=main_main..fix/timeout; say:Copies_on_main,_the_originals_stay_on_fix/timeout => + 863b8b5-?revert main; cmd:git_replay_--revert=main_main~1..main; say:Since_Git_2.54_the_same_machinery_reverts; name:revert title=git_replay,_experimental,_in_a_bare_repository
 
 **[ANIMATION]** step: state-1
 
@@ -75,23 +87,43 @@ Three forms. `--onto` rebases a range onto a new base.
 
 After the advance, `main` carries copies of the two commits, and the originals stay on `fix/timeout`.
 
-**[ANIMATION]** end
+**[ANIMATION]** step: revert
 
 And since Git 2.54 the same machinery reverts, with `--revert`. `--linearize` was added in Git 2.56 and is not run here.
 
+**[ANIMATION]** flow: id=print actors=git_replay_--ref-action=print,a_server msgs=1>1:creates_the_commits|1>2:prints_the_ref_update|2>2:can_inspect_it|2>2:or_feed_it_to_git_update-ref_--stdin title=git_replay,_experimental:_print_the_update,_do_not_make_it
+
 `--ref-action=print` creates the commits and prints the ref update, which a server can inspect or feed to `git update-ref --stdin`. Without it, the default since Git 2.53, the ref moves in one transaction.
+
+**[ANIMATION]** walk: id=price columns=the_price,what_follows rows=no_working_tree,_so_it_cannot_stop_for_a_conflict:exit_status_1,_no_output,_the_branch_stays_where_it_was|a_bare_repository_keeps_no_reflog:a_replay_there_has_no_local_undo marks=1.2:bad,2.2:bad mono=off title=git_replay,_experimental:_two_prices
+
+**[ANIMATION]** step: 1
 
 The price of having no working tree: it cannot stop for a conflict. A replay that would conflict exits with status 1, prints nothing, and leaves the branch where it was.
 
+**[ANIMATION]** step: 2
+
 And a second price in a bare repository: a bare repository keeps no reflog, the local record of where a ref has been, unless `core.logAllRefUpdates` says so. So a replay there has no local undo.
+
+**[ANIMATION]** end
 
 Its value for you is mostly indirect: it is the kind of operation behind a "rebase and merge" button.
 
+**[ANIMATION]** walk: id=inspect columns=experimental_(Git_2.52),what_it_answers rows=git_last-modified:for_each_path,_the_commit_that_last_changed_it|git_last-modified_-r:the_same,_down_to_files|git_repo_info:named_facts_in_a_stable_key=value_form|git_repo_structure:counts_of_refs_and_objects title=Two_commands_that_inspect
+
+**[ANIMATION]** step: header
+
 **`git last-modified` and `git repo`.** Two experimental commands from Git 2.52 answer questions that used to need a loop or a peek into `.git`.
+
+**[ANIMATION]** step: 2
 
 `git last-modified` prints, for each path, the commit that last changed it: the "last commit" column of a file browser. With `-r` it descends to files.
 
+**[ANIMATION]** step: 4
+
 `git repo info` returns named facts about a repository in a stable `key=value` form, which is what a script should use in place of reading `.git/config`. Git 2.56 adds `path.*` keys, not run here. `git repo structure` counts refs and objects.
+
+**[ANIMATION]** cards: id=rule question=Four_experimental_commands,_one_rule cards=not_in_shared_automation:output_and_options_may_change_between_releases|use_them_at_the_keyboard|pin_the_Git_version:where_a_script_depends_on_one marks=1:lock
 
 **The rule for all four.** Don't adopt experimental commands in shared automation. Output and options may change between releases. Use them at the keyboard, and pin the Git version where a script depends on one.
 
@@ -99,17 +131,33 @@ Its value for you is mostly indirect: it is the kind of operation behind a "reba
 
 A picture helps. Think of two ways to correct a typo on page one of a bound manuscript.
 
+**[ANIMATION]** stores: id=desk boxes=git_rebase_-i:on_your_desk|git_history,_experimental:in_the_archive rows=1:A:the_working_tree_is_checked_out_at_each_step|1:A:HEAD_is_detached|1:A:hooks_run|1:A:a_page_doesn't_fit,_you_fix_it_by_hand|2:B:a_corrected_page_one,_fresh_copies_of_every_later_page|2:B:the_shelf_labels_move_in_one_step|2:B:your_desk_is_never_touched@ok|3:B:fast,_and_works_in_a_bare_repository|3:B:no_hook_is_called|3:B:cannot_ask_you_to_resolve_a_conflict@bad title=The_desk_and_the_archive
+
+**[ANIMATION]** step: 1
+
 Interactive rebase takes the binding apart on your desk. Page by page it rebuilds the book in front of you, and while it works your desk is covered: the working tree is checked out at each step, HEAD is detached, hooks run, and if a page doesn't fit you're asked to fix it by hand.
+
+**[ANIMATION]** step: 2
 
 `git history` works in the archive. It writes a corrected page one and fresh copies of every later page, in the object database, and then moves the shelf labels, all of them, in one step. Your desk is never touched.
 
+**[ANIMATION]** step: 3
+
 That's why it's fast, why it works in a bare repository, why no hook is called, and why it can't ask you to resolve a conflict: there is no desk to put the conflict on.
+
+**[ANIMATION]** cards: id=quiz question=You_reword_a_commit_with_git_history_(experimental)._Which_shelf_labels_move? cards=A,_only_the_branch_you're_on|B,_every_local_branch_that_contains_the_commit|C,_the_server's_branches_as_well marks=2:ok at_1=45 at_2=60 at_3=78
+
+**[ANIMATION]** step: 3
 
 Quick quiz. You reword a commit with `git history`. Which shelf labels move: A, only the branch you're on, B, every local branch that contains the commit, or C, the server's branches as well? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 B. Every local branch that contains the commit. The server's branches don't move, which is why branches that were pushed now diverge.
+
+**[ANIMATION]** end
 
 Where the picture breaks: an archivist would ask before moving a label that somebody else's catalogue points at. `git history` moves every local branch that contains the commit and asks nothing. The reflog of each branch has the old tip. There is no single undo.
 
@@ -161,7 +209,7 @@ usage: git history fixup <commit> [--dry-run] [--update-refs=(branches|head)] [-
 
 Three subcommands on Git 2.55: `fixup`, `reword`, `split`. No `drop`: that is the 2.56 addition. Each takes `--dry-run`, and `--update-refs` with two values, `branches` and `head`.
 
-Try it now, in any repository of your own. Thirty seconds, and it only prints help: `git history -h`. Predict first: how many subcommands will your Git list?
+Try it now, in any repository of your own. Thirty seconds, and it only prints help: `git history -h`. It needs Git 2.54 or newer, and an older Git reports an unknown command. Predict first: how many subcommands will your Git list?
 
 **[PAUSE]**
 
@@ -199,7 +247,7 @@ $ git log --oneline --graph --all
 
 None. The editor opened with the old message, and the message was replaced: "metirc" became "metric". Every commit ID changed, including `67d2d0a` on the side branch, which is now `131e7a7`.
 
-**[ANIMATION]** graph: ec69d27-156aedd-39f5b0c-f0d1c5a main; 39f5b0c-67d2d0a topic/judge; 39f5b0c release/0.1; HEAD=main => ec69d27-156aedd-39f5b0c-f0d1c5a; 39f5b0c-67d2d0a; ff71a66-ccbad89-545a235-544b01e main; 545a235-131e7a7 topic/judge; 545a235 release/0.1; HEAD=main; ghost:ec69d27,156aedd,39f5b0c,f0d1c5a,67d2d0a title=One_reword,_five_new_commits,_three_branches_moved
+**[ANIMATION]** graph: id=reword ec69d27-156aedd-39f5b0c-f0d1c5a main; 39f5b0c-67d2d0a topic/judge; 39f5b0c release/0.1; HEAD=main => + ff71a66-ccbad89-545a235-544b01e main; 545a235-131e7a7 topic/judge; 545a235 release/0.1; reflog:ec69d27,156aedd,39f5b0c,f0d1c5a,67d2d0a; cmd:git_history_reword_HEAD~3; say:Only_the_reflogs_still_name_the_old_five title=git_history_reword,_experimental:_five_new_commits,_three_branches_moved
 
 **[ANIMATION]** step: state-1
 
@@ -461,7 +509,7 @@ dc10709 author: Lab User, committer: Lab User | Add a 10 second timeout to routi
 ```
 <!-- /snippet -->
 
-`main` now carries copies of the two commits, `dc10709` and `863b8b5`, and the originals are still on `fix/timeout`. It's a cherry-pick of a range, done where no checkout exists.
+`main` now carries copies of the two commits, `dc10709` and `863b8b5`, and the originals are still on `fix/timeout`. It's a cherry-pick of a range, done where no checkout exists. The printed update named `1653f1a`, not `863b8b5`: the two runs made the same commits at different committer times, so their IDs differ.
 
 **Revert, and the missing reflog.**
 
@@ -536,7 +584,11 @@ f21ac0fee598130815a3870c12ac15b75494d550	src/router.py
 ```
 <!-- /snippet -->
 
-One line per entry of the top-level tree. For the directory `src` the answer is the merge commit, `5bcf6ca`, because the two sides changed different files in it and only the merge produced the present tree. With `-r` it descends to files, and each file names an ordinary commit.
+One line per entry of the top-level tree.
+
+**[ANIMATION]** graph: id=lastmod c55bd6f-36761eb-5bcf6ca; c55bd6f-f21ac0f-9e11dcc; 9e11dcc-5bcf6ca; HEAD=none; note:5bcf6ca:src => + note:9e11dcc:docs/README.md; note:f21ac0f:src/router.py; note:36761eb:src/limits.yaml; cmd:git_last-modified_-r title=git_last-modified,_experimental at_state_2=55
+
+For the directory `src` the answer is the merge commit, `5bcf6ca`, because the two sides changed different files in it and only the merge produced the present tree. With `-r` it descends to files, and each file names an ordinary commit.
 
 <!-- snippet: ch14d/inspect/02-compare -->
 ```text
@@ -616,7 +668,11 @@ Now, out of the lab. A team lead is asked the hook's question: do we change our 
 
 In a sandbox she takes a typical local stack: three small branches for one feature, none of them pushed. A typo in the first commit's message is fixed with one `git history reword`, after a dry run that lists three branches, all local. All three move together. She notes that this used to need a rebase with `--update-refs`.
 
+**[ANIMATION]** replay: notes
+
 Then she tries what the team's guidelines protect. The message convention is enforced by a `commit-msg` hook: the reword goes past it. A second stack has a merge in it: refused. A branch that is already pushed: the dry run lists it, and she stops there.
+
+**[ANIMATION]** end
 
 Her answer to the team is three sentences, and it's the answer to the opening. The guidelines don't change: interactive rebase stays the documented tool, because it runs hooks and handles merges and conflicts. `git history` is allowed for local cleanup before the first push, always after `--dry-run`. And nothing experimental goes into the release scripts. Where a script wants `git repo info`, the script pins the Git version and says so in a comment.
 

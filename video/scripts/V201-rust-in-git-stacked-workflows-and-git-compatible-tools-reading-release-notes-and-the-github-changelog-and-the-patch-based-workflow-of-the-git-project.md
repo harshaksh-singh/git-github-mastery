@@ -13,6 +13,8 @@
 
 Most engineers answer that question by reading a vendor's blog post. The post is readable, well illustrated, and selective. It tells you that something exists. It doesn't tell you what your pipeline will do on Monday.
 
+**[ANIMATION]** cards: id=disk question=The_sources_are_already_on_your_disk cards=one_file_of_release_notes_per_version|one_document_of_planned_breaking_changes|a_manual_page_for_every_command:at_the_version_you_have_installed at_1=30 at_2=42 at_3=54
+
 This course ends today, and after today nobody selects for you. The sources that do answer the question are already on your disk: one file of release notes per version, one document of planned breaking changes, and a manual page for every command at the version you have installed. The last skill of the course is reading them in a fixed order, in fifteen minutes. Hold on to the question on screen. Before the demo you'll have five steps that answer it.
 
 ## INTRODUCTION
@@ -37,9 +39,13 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** gates: id=rust gates=Git_2.49:done:-:optional|Git_2.52:done:-:auto-detected_by_one_of_the_two_build_systems|Git_2.55:done:-:enabled_by_default_in_both|Git_3.0:wait:planned:mandatory,_unless_a_deferral title=Rust_in_Git,_the_milestones_in_BreakingChanges
+
 **Rust in Git.** Rust is a programming language, and parts of Git are now written in it. BreakingChanges gives the milestones. Rust code entered Git as optional in 2.49. It was auto-detected by one of the two build systems in 2.52. It is enabled by default in both from 2.55. And it becomes mandatory in 3.0, unless the impact on distributions leads to a deferral. The long-term-support promise you heard in video 199 exists for platforms without a Rust toolchain.
 
 For you as a user nothing changes except where the binary comes from. In video 199 the first transcript printed "rust: disabled". The reason is the distributor: Homebrew builds its Git 2.55.0 with `NO_RUST=1`, as the textbook read in the formula on 2 October 2026. So "enabled by default" is a statement about the build system, and each distributor decides. That is what the build option tells you: what your binary was built with, not what the project's default is.
+
+**[ANIMATION]** end
 
 **Stacked workflows.** A stack is a chain of small dependent branches, each reviewed on its own. In Git the tools are `git rebase --update-refs`, `git range-diff` for comparing versions, and now `git history`, whose default of moving all descendant branches fits a stack.
 
@@ -59,9 +65,17 @@ For you as a user nothing changes except where the binary comes from. In video 1
 
 The last row is the one that matters for the 3.0 defaults. BreakingChanges names exactly these three libraries as the ones that must support reftable before it becomes the default. A tool built on a library reads your repository with that library's abilities, not with those of the `git` you installed.
 
+**[ANIMATION]** cards: id=notes numbered=on question=One_file_per_release,_the_same_three_parts cards=UI,_Workflows_&_Features:read_it_completely|Performance,_Internal_Implementation,_Development_Support_etc.:search_it_for_your_commands|Fixes_since_the_previous_version:search_it_for_your_commands marks=1:ring
+
+**[ANIMATION]** step: 3
+
 **Release notes.** Every release has one file, on GitHub and on your disk. Each file has the same three parts. First "UI, Workflows & Features". Then "Performance, Internal Implementation, Development Support etc.". And last "Fixes since" the previous version.
 
+**[ANIMATION]** step: marks
+
 Read the first part completely: it is short and it is where behavior changes are. Search the rest for the commands you depend on. The style is terse, one bullet per topic, often without the option names. The procedure that works: find the bullet, open the manual page of that command at the new version, and try it in a sandbox.
+
+**[ANIMATION]** end
 
 One caution from the textbook: a notes file is not proof of a release. The tag list is.
 
@@ -69,33 +83,61 @@ One caution from the textbook: a notes file is not proof of a release. The tag l
 
 **The other channels.** The maintainer's "What's cooking" messages list every topic in flight and its state, and Git Rev News summarizes the list monthly. Vendor posts, the highlight posts of GitHub and GitLab for each release, are readable and selective: use them to learn that something exists, and the primary text to learn what it does.
 
+**[ANIMATION]** cards: id=quiz question=GitHub_changes_how_a_platform_feature_behaves._Where_is_that_written_first? cards=A,_in_Git's_release_notes|B,_in_the_GitHub_Changelog|C,_in_BreakingChanges marks=2:ok at_1=50 at_2=65 at_3=80
+
+**[ANIMATION]** step: 3
+
 Quick quiz. GitHub changes how one of its platform features behaves. Where is that written first: A, in Git's release notes, B, in the GitHub Changelog, or C, in BreakingChanges? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 **GitHub, not Git: the Changelog.** The answer is B. The GitHub Changelog is the primary source for platform behavior, dated entry by entry. A feature there has a state, preview or generally available, and often a plan gate. Nothing in it describes the `git` program on your machine, and a Git release changes nothing on github.com until GitHub deploys it.
+
+**[ANIMATION]** gates: id=routine gates=Read:done:-:the_first_section_of_the_notes|Search:done:-:for_your_team's_commands|Look:done:-:at_the_diff_of_BreakingChanges|Decide:done:-:whether_any_default_you_rely_on_is_named|Write_down:done:-:the_minimum_version_for_anything_new title=Fifteen_minutes_per_release
 
 **A routine of fifteen minutes per release.** Here's the answer to the question from the opening. Five steps, and this order is the answer to today's interview question. Read the first section of the notes. Search for your team's commands. Look at the diff of BreakingChanges. Decide whether any default you rely on is named. Write down the minimum version for anything new you want to adopt.
 
+**[ANIMATION]** end
+
 **The patch-based workflow, in one sentence.** Git itself is developed by sending commits as e-mail: `git format-patch` turns commits into message files, reviewers answer on the list, and the maintainer applies accepted series with `git am`. No pull request is involved.
+
+**[ANIMATION]** flow: id=patches actors=the_author,the_mailing_list,the_maintainer msgs=1>1:git_commit_-s|1>2:git_format-patch,_git_send-email|2>1:review|1>2:v2,_with_a_range-diff|2>3:an_accepted_series|3>3:git_am;_seen,_next,_master title=Commits_sent_as_e-mail
 
 **Precisely.** A contribution starts on a topic branch. Each commit carries a `Signed-off-by` trailer, from `git commit -s`, by which the author certifies the right to submit it. A trailer is a labelled line at the end of a commit message. `git format-patch` writes one file per commit plus an optional cover letter, and `git send-email` posts them to the project's mailing list. GitGitGadget is a bridge that turns a pull request on GitHub into such a series. After review the author sends a complete new version, v2, v3, with a range-diff against the previous one. The maintainer queues topics on the branch `seen`, merges them to `next` for testing and then to `master`. And `maint` receives fixes for the last release.
 
+**[ANIMATION]** walk: id=mail columns=in_the_patch_file,what_it_is rows=the_"From"_line_with_an_ID_and_a_fixed_date:marks_the_format|the_From,_Date_and_Subject_headers:author,_author_date_and_subject|the_message_body:the_message|three_dashes,_then_a_diffstat:ignored_on_application|the_diff:the_change mono=off title=A_patch_file_is_a_commit_in_mail_form
+
 **A patch file is a commit in mail form.** The `From` line with an ID and a fixed date marks the format. The `From:`, `Date:` and `Subject:` headers become author, author date and subject. The message body follows, then three dashes, then a diffstat that is ignored on application, then the diff.
+
+**[ANIMATION]** end
 
 **Why author and committer differ after `git am`.** The author comes from the mail headers. The committer is the person who ran `git am`. The two identities of a commit exist for this workflow.
 
+**[ANIMATION]** walk: id=names columns=in_the_patch_workflow,on_GitHub rows=the_cover_letter:the_pull_request|a_new_version:a_force-pushed_branch|a_range-diff:"compare",_a_weaker_range-diff mono=off title=The_same_ideas,_other_names at_header=50 at_1=72 at_2=80 at_3=88
+
 **Where you will meet it.** In three places besides the Git project: the Linux kernel and other list-based projects, vendors who send fixes as patch files, and environments where two repositories cannot reach each other. `git am` also underlies `git rebase --apply`. On GitHub the same ideas have other names: the pull request is the cover letter, a force-pushed branch is a new version, and "compare" is a weaker range-diff.
+
+**[ANIMATION]** end
 
 **Two cautions from section 14D.13.** `git am` refuses to start when the index has changes. And `git apply` without `--index` or `--3way` patches working files only and creates no commit: it is a tool for trying a patch, not for integrating one.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** walk: id=law columns=a_document_about_a_law,for_Git rows=the_statute_itself:the_manual_page_at_your_version,_and_BreakingChanges|the_official_gazette:the_release_notes;_for_the_platform,_the_GitHub_Changelog|the_newspaper_article:the_vendor_post mono=off title=Statute,_gazette,_newspaper
+
 Two pictures help. For the sources, think of three kinds of document about a law. The statute itself: the manual page at your version, and BreakingChanges. The official gazette, which says what changed in each edition: the release notes, and for the platform the GitHub Changelog. And the newspaper article about it: the vendor post. You read the newspaper to learn that there is a new law. You don't plead in court from the newspaper.
+
+**[ANIMATION]** cards: id=dates question=A_Git_release_applies_to_you_when_the_binary_changes cards=on_your_machine|on_your_runner|in_your_IDE's_library at_1=40 at_2=52 at_3=64
 
 Where the picture breaks: a statute applies when it is published. A Git release applies to you when the binary on your machine, on your runner and in your IDE's library changes, and those are three different dates.
 
+**[ANIMATION]** walk: id=letter columns=the_letter,the_patch rows=the_envelope:who_wrote_it,_when,_and_what_it_is_about|the_letter:why|the_enclosure:the_change|the_register,_signed_by_the_recipient:the_committer|where_it_belongs_in_the_cabinet:nothing_in_the_envelope_says mono=off title=A_letter_with_an_enclosure
+
 For the patch workflow, think of a letter with an enclosure. The envelope says who wrote it and when, and what it is about. The letter explains why. The enclosure is the change. The recipient who files it signs the register: that signature is the committer. Nothing in the envelope says where in the recipient's cabinet the paper belongs, which is why a patch gets a new commit ID wherever it is applied, and why the cover letter can carry a `base-commit` line.
+
+**[ANIMATION]** end
 
 Try it now, on paper. Thirty seconds. Write three headers of a patch file, `From:`, `Date:` and `Subject:`, and beside each, the part of the commit it becomes. Then say out loud what a commit has that the file doesn't.
 
@@ -355,7 +397,7 @@ $ git -C ../contributor show casefold~1 | git patch-id --stable | cut -d" " -f1
 
 Equal trees, equal patch IDs, different commit IDs. A patch ID is computed from the change alone. The content arrived intact. The committer, the committer date and the parent are new.
 
-**[ANIMATION]** graph: 9ba24bc-0cddac1-4309e9b casefold; 9ba24bc origin/main; HEAD=casefold => 9ba24bc-0cddac1-4309e9b casefold-v1; 9ba24bc-3e0656d-5b37458 casefold; 9ba24bc origin/main; HEAD=casefold title=Version_1_kept,_version_2_rewritten
+**[ANIMATION]** graph: id=v2 9ba24bc-0cddac1-4309e9b casefold; 9ba24bc origin/main; HEAD=casefold => + 4309e9b casefold-v1; 9ba24bc-3e0656d-5b37458 casefold; cmd:git_branch_casefold-v1; say:Version_1_kept,_two_new_commits_for_version_2 title=Version_1_kept,_version_2_rewritten at_state_2=15
 
 **[ANIMATION]** step: state-1
 
@@ -495,7 +537,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A platform team upgrades Git on its build images twice a year. The engineer who owns the upgrade has a routine, and it takes her a quarter of an hour per release.
 
+**[ANIMATION]** replay: routine
+
 She opens the notes file of each new version on her disk and reads the first section completely. She searches all three sections for the commands in the team's release scripts. She compares the BreakingChanges document with the copy from the previous upgrade. She checks whether any default the team relies on is named. And she writes down, in the upgrade ticket, the minimum version for anything new the team wants to use. For platform changes she reads the GitHub Changelog separately, by date, and notes for each entry its state and its plan gate.
+
+**[ANIMATION]** end
 
 The same week a vendor sends a fix for a tokenizer library as two patch files, because the vendor cannot reach the team's repository. She reads the files, runs `git apply --check`, applies them with `git am` on a review branch, and opens a pull request from it. The commits show the vendor's engineer as author and her as committer, and the team's history says truthfully who wrote the fix and who applied it. When the vendor sends a second version, she asks for it with a range-diff, and reviews the difference between the two versions in a minute.
 
@@ -533,6 +579,10 @@ Read sections 14D.9 to 14D.14 and do the Practice section, 14D.16, with its two 
 
 That's the end of the course. You began with a repository read file by file. You can now investigate a Git or GitHub problem from first principles, explain the root cause with its layer, choose the lowest-risk fix, verify it, prevent its recurrence, and find out for yourself what the next release changes.
 
+**[ANIMATION]** cards: id=keep question=Yours_to_keep cards=the_references_file:your_reading_list|the_glossary:when_you_want_to_be_exact_about_a_word|your_playbook_and_your_weak-area_tracker:yours_to_keep_up_to_date|the_labs_and_the_incidents:generated_afresh_whenever_you_want_the_practice|a_new_Git_release:fifteen_minutes_with_its_notes
+
 So what now? Keep the course materials working for you. The references file is your reading list. The glossary is there whenever a colleague or an error message uses a word you want to be exact about. Your playbook and your weak-area tracker are yours to keep up to date. The labs and the incidents can be generated afresh whenever you want the practice. And when a new Git release comes out, take your fifteen minutes with its notes.
+
+**[ANIMATION]** end
 
 Thank you for working through all of this with such care. It has been a pleasure to teach you. Look at the state first, type second, and goodbye for now.

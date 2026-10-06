@@ -34,7 +34,11 @@ After this video you can:
 
 **What the gate covers.** Gate 7 is taken after Module 28. It covers the workflow model, the first eleven workflows, runners, and CI debugging. It passes at 85. Security of workflows isn't in this gate. That is Part 7 and Gate 8.
 
+**[ANIMATION]** bars: id=parts bars=Concepts:30|Prediction:20|Hands-on_diagnosis:30|Oral_interview:20 unit=points max=40 title=Gate_7:_four_parts say_4=Pass:_85_overall,_and_at_least_70_percent_in_every_part at_1=15 at_2=38 at_3=50 at_4=62
+
 **The four parts** are the same as in every gate. Concepts: 30 points, six written questions, closed book, no terminal. Prediction: 20 points, four items. Hands-on diagnosis: 30 points. Oral interview: 20 points, six questions with follow-ups, spoken, without notes. The pass rule is the threshold overall and at least 70 percent in every part.
+
+**[ANIMATION]** end
 
 **The hands-on part is on paper.** Three cases, built from workflow files, described runs and real Git evidence.
 
@@ -42,7 +46,11 @@ After this video you can:
 
 The rule says three things. These gates run nothing on GitHub. No GitHub output appears anywhere in them. And the only `gh` invocation you need is `gh` with a command and `--help`. Then two sentences that you must take literally. The workflow files in these directories are teaching material with faults on purpose. Never copy them into a repository, and never run them.
 
+**[ANIMATION]** cards: id=paper question=The_rule_for_paper_cases cards=nothing_runs_on_GitHub|no_GitHub_output_appears|only_gh_<command>_--help|never_copy_the_workflow_files|never_run_them marks=4:lock,5:lock pace=quick
+
 Why so strict? A file with a deliberate fault in its trigger, its permissions or its checkout is the kind of file Part 7 teaches you to fear. On paper it teaches. In a repository with a token, it acts.
+
+**[ANIMATION]** cards: id=strong question=Every_answer_about_a_run_states_four_things_first cards=the_event|the_ref_and_commit|the_permissions_of_the_token|the_runner|then_the_finding numbered=on at_1=45 at_2=52 at_3=62 at_4=75 at_5=85
 
 **What a strong answer contains.** A strong answer names which commit was tested. More generally, every answer about a run states four things before it states a finding: the event, the ref and commit, the permissions of the token, and the runner. Then the finding.
 
@@ -50,7 +58,13 @@ Why so strict? A file with a deliberate fault in its trigger, its permissions or
 
 You prepare with two orders, and each answers a different question.
 
+**[ANIMATION]** stores: id=orders boxes=the_reading_order:a_file_you_have_not_run|the_investigation_order:steps_1_to_4|still_above_the_log:steps_5_to_8|the_log_and_after:steps_9_to_12 rows=1:A:trigger|1:A:permissions|1:A:job_and_runner|1:A:checkout|1:A:commands|2:B:workflow|2:B:event|2:B:permissions|2:B:runner|2:C:environment|2:C:dependencies|2:C:secrets|2:C:action_versions|2:D:logs|2:D:artifacts|2:D:cache|2:D:concurrency|3:D:on_paper:_no_log@bad arrows=3:A>B:on_a_real_run title=Two_orders at_1=20
+
+**[ANIMATION]** step: 1
+
 The reading order is for a file you haven't run: trigger, permissions, job and runner, checkout, commands. It tells you when a run exists, with what authority, on what machine, with what code, and what the check is.
+
+**[ANIMATION]** step: 2
 
 The investigation order is for a run that happened: workflow, event, permissions, runner, environment, dependencies, secrets, action versions, logs, artifacts, cache, concurrency.
 
@@ -58,11 +72,15 @@ Quick quiz. A paper case has no log. Which steps of the investigation order can 
 
 **[PAUSE]**
 
+**[ANIMATION]** step: 3
+
 B. The two orders overlap on purpose. The first four steps of the investigation are the reading order applied to a concrete run. In a paper case you have no log at all, so everything you can conclude comes from the steps above the log. That's the gate's way of testing whether you have understood why the log is ninth.
 
 Where this breaks down in the gate: you can't observe. On your practice repository you could check a prediction by looking at a run. On paper, a claim such as "this job would be skipped" must be justified by a documented rule, stated in a sentence. "I think it would" earns nothing.
 
 ## DIAGRAM
+
+**[ANIMATION]** stores: id=frame boxes=four_lines_first:before_any_finding|then:the_finding rows=1:A:event:_pull__request_(synchronize),_pull_request_7|4:A:ref,_commit:_refs/pull/7/merge_->_the_test_merge_d04ef31@hl|4:A:detached_HEAD,_one_commit,_no_tags@hl|4:A:the_author's_commit_is_80c9cfa;_main_is_at_29b222b|2:A:permissions:_contents:_read;_every_other_permission_none|3:A:runner:_ubuntu-24.04,_GitHub-hosted,_fresh_machine|5:B:finding:_the_run_tested_the_merge_of_the_head_into_the_current_base,_not_the_head|5:B:main_changed_behavior_the_new_code_relies_on;_the_merge_is_clean_and_wrong|6:B:next_action:_merge_the_base_into_a_detached_copy_of_the_branch;_fix;_push|6:B:not_proven:_anything_about_a_base_that_has_moved_since_this_test_merge@ref title=The_answer_frame at_1=30 at_2=55 at_3=62 at_5=0 at_6=40
 
 **[DIAGRAM]** An answer frame of four lines and a finding. Fill it in for the case you will replay in a moment: a pull request whose tests pass on the author's machine and fail in the run.
 
@@ -78,6 +96,10 @@ Where this breaks down in the gate: you can't observe. On your practice reposito
   next action  : merge the base into a detached copy of the branch to reproduce; fix; push.
   not proven   : anything about a base that has moved since this test merge was made.
 ```
+
+**[ANIMATION]** step: 3
+
+Here's the answer frame for the case you'll replay next. Four lines first: the event, the ref and commit, the permissions, the runner. Line two stays empty for now: you'll fill it in. Then the finding, the next action, and what isn't proven.
 
 **[DIAGRAM]** The last line is not decoration. Saying what a result does not prove is half of the interview question for this video.
 
@@ -111,7 +133,13 @@ HEAD is now at d04ef31 Merge 80c9cfa3a369de2fb126f79a0e34f6139c858a76 into 29b22
 ```
 <!-- /snippet -->
 
-One ref, `refs/pull/7/merge`, one commit, and a detached HEAD at `d04ef31`. The subject of that commit names its two parents in full: your commit, merged into the tip of `main`.
+One ref, `refs/pull/7/merge`, one commit, and a detached HEAD at `d04ef31`.
+
+**[ANIMATION]** step: frame.4
+
+The subject of that commit names its two parents in full: your commit, merged into the tip of `main`.
+
+**[ANIMATION]** end
 
 **Step 2: what is checked out.**
 
@@ -142,11 +170,19 @@ stock.py
 ```
 <!-- /snippet -->
 
-"HEAD (no branch)". The author of the commit is GitHub. One commit. No current branch. And the threshold in the source file is 10, the value from `main`. In a paper case, evidence like these lines is printed for you. Your job is to say what it means for the commands that follow.
+"HEAD (no branch)". The author of the commit is GitHub. One commit. No current branch. And the threshold in the source file is 10, the value from `main`.
+
+**[ANIMATION]** shallow: id=merge 29b222b main; 29b222b-d04ef31 special:refs/pull/7/merge; ^80c9cfa-d04ef31; HEAD=none; absent:29b222b,80c9cfa; note:80c9cfa:the_author's_commit; note:d04ef31:HEAD_(no_branch),_author_GitHub; title:What_the_runner_holds; say:One_commit:_the_test_merge => + pass:80c9cfa; fail:d04ef31; name:tested; say:They_tested_different_commits dx=330 at_state_1=10 at_tested=0
+
+**[ANIMATION]** step: state-1
+
+In a paper case, evidence like these lines is printed for you. Your job is to say what it means for the commands that follow.
 
 Predict the last step. The author's branch passes its tests. Will this merge pass them too? Say it out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** end
 
 **Step 3: the tests on the merge.**
 
@@ -160,7 +196,17 @@ FAILED (failures=1)
 ```
 <!-- /snippet -->
 
-Exit status 1, one failure. The author's branch passes, and the merge fails. Both results are correct, and they tested different commits. That sentence, with the two commit IDs in it, is what a case answer needs. And it answers the opening slide: the commit tested was `d04ef31`.
+Exit status 1, one failure. The author's branch passes, and the merge fails.
+
+**[ANIMATION]** step: merge.tested
+
+Both results are correct, and they tested different commits.
+
+**[ANIMATION]** step: frame.6
+
+That sentence, with the two commit IDs in it, is what a case answer needs. And it answers the opening slide: the commit tested was `d04ef31`.
+
+**[ANIMATION]** end
 
 ## COMMON MISTAKES
 
@@ -175,6 +221,10 @@ Five mistakes to watch for.
 ## PRODUCTION EXAMPLE
 
 Now, out of the lab. Picture an incident review at a company that serves models. A change reached production and broke a nightly job. The pull request had been green. The question in the review is the one from the hook: the run was green, so which commit was tested?
+
+**[ANIMATION]** walk: id=review columns=-,the_incident_review rows=event:pull__request|ref_and_commit:the_test_merge_made_on_Tuesday_afternoon|permissions:read|runner:hosted|finding:three_merges_reached_main_before_the_merge_on_Wednesday;_one_changed_a_function_the_pull_request_calls|control:the_branch_was_not_required_to_be_up_to_date marks=5.2:bad,6.2:wait mono=off title=The_run_was_green._Which_commit_was_tested? at_1=10 at_2=16 at_3=30 at_4=35 at_5=42 at_6=80
+
+**[ANIMATION]** step: 6
 
 The engineer who answers uses the frame. Event: `pull_request`. Ref and commit: the test merge made on Tuesday afternoon. Permissions: read. Runner: hosted. Then the finding: three merges reached `main` between that test merge and the click on the merge button on Wednesday, and one of them changed a function the pull request calls. And then the control: the branch wasn't required to be up to date.
 

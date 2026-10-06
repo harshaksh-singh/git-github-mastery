@@ -13,7 +13,9 @@
 
 A required check on `main` has been red for five days. A required check is a test result that must pass before a change may be merged. One step fails on the runner, the machine that runs the job, with exit code 128, the program's way of reporting a failure. The script behind that step works on every laptop in the team. Re-runs fail identically. A developer with a harmless change is blocked, has a plausible culprit, and asks for the shortcut.
 
-"Flaky" is a diagnosis, and it has a property you can test. A flaky failure comes and goes: it doesn't repeat identically, and it doesn't start on one day and then fail on every run. This one does both. Today you refuse the word until the investigation order has been followed, and you rebuild the runner's view of the repository with Git alone. And hold on to one question: the laptops pass, the runner fails. Can both be right?
+**[ANIMATION]** walk: columns=,a_flaky_failure,this_failure rows=repeats_identically:no:yes|starts_on_one_day,_then_fails_on_every_run:no:yes marks=1.2:dim,2.2:dim,1.3:bad,2.3:bad mono=off title=Is_it_flaky?
+
+"Flaky" is a diagnosis, and it has a property you can test. A flaky failure comes and goes: it doesn't repeat identically, and it doesn't start on one day and then fail on every run. This failure repeats identically, and it has failed on every run for five days. Today you refuse the word until the investigation order has been followed, and you rebuild the runner's view of the repository with Git alone. And hold on to one question: the laptops pass, the runner fails. Can both be right?
 
 ## INTRODUCTION
 
@@ -38,6 +40,8 @@ After this video you can:
 5. Handle "nothing changed and CI fails" by listing what can change without a commit.
 
 ## CONCEPT
+
+**[ANIMATION]** stores: id=families boxes=in_the_repository:a_commit|outside_the_repository:no_commit rows=1:A:the_workflow|1:A:the_lock_file|1:A:the_code|2:B:a_runner_image|2:B:an_action_behind_a_moving_tag|2:B:a_secret|2:B:a_cache title=What_changed? say_2=git_log_--oneline_--_.github/workflows_and_the_list_of_recent_runs_separate_the_two
 
 **"Suddenly" is a claim to test first.** Either something in the repository changed: a commit to the workflow, the lock file or the code. A commit is one saved snapshot of the project. Or something outside it did: a runner image, an action behind a moving tag, a secret, a cache. `git log --oneline -- .github/workflows` and the list of recent runs separate the two in a minute.
 
@@ -69,47 +73,79 @@ The first answers "where does green turn red". The second answers "which commit 
 | 11 | Cache | What was restored, under which key? | A broad `restore-keys` prefix restored a stale cache |
 | 12 | Concurrency | Was the run cancelled or replaced? | Conclusion `cancelled`; a shared group name |
 
-**Applied to Incident 7.** Areas 1 to 8 are answered from the workflow file and the run report without a log: one event, a read-only token, a fixed runner label, no environment, no secrets, both actions pinned by commit SHA. Area 9 gives one line, and it's a Git message: "fatal: No names found, cannot describe anything." That points at the repository the runner had, and Git can build the same one.
+**Applied to Incident 7.** Areas 1 to 8 are answered from the workflow file and the run report without a log.
+
+**[ANIMATION]** walk: id=applied columns=#,area,Incident_7 rows=2:Event:one_event|3:Permissions:a_read-only_token|4:Runner:a_fixed_runner_label|5:Environment:no_environment|7:Secrets:no_secrets|8:Action_versions:both_actions_pinned_by_commit_SHA|9:Logs:fatal:_No_names_found,_cannot_describe_anything. marks=7.3:bad pick=7 title=The_investigation_order,_applied
+
+One event, a read-only token, a fixed runner label, no environment, no secrets, both actions pinned by commit SHA. Area 9 gives one line, and it's a Git message: "fatal: No names found, cannot describe anything." That points at the repository the runner had, and Git can build the same one.
 
 Before I name the cause, name it yourself. Say it out loud.
 
 **[PAUSE]**
 
-**The root cause.** `actions/checkout` fetches one commit and no tags by default, and `git describe` needs history and tags. `actions/checkout` is the action that fetches the repository onto the runner. A tag is a fixed name for one commit, here a release, and `git describe` derives a version from the newest such tag. The README of the checkout action, version 7.0.1, says it fetches a single commit by default, with `fetch-tags` off, and that `fetch-depth: 0` fetches all history for all branches and tags. The step was added without changing the checkout it depends on. Layer: GitHub Actions, a documented default.
-
-**[ANIMATION]** graph: ef03c89-e18efbb-5a1005a-261eb76-367b8fb main origin/main; ef03c89-e18efbb v1.4.0; HEAD=main title=A_full_clone
+**[ANIMATION]** remotes: id=clones [A full clone] ef03c89-e18efbb-5a1005a-261eb76-367b8fb main origin/main; e18efbb v1.4.0; HEAD=main || [The runner's clone] ef03c89-e18efbb-5a1005a-261eb76-367b8fb; absent:ef03c89,e18efbb,5a1005a,261eb76; HEAD=none; say:One_commit_and_no_tags_by_default => + note:367b8fb:v1.4.0-3-g367b8fb; say:Both_are_true,_at_the_same_commit; name:describe || + fail:367b8fb; note:367b8fb:No_names_found => + say:Same_commit_ID,_different_repository_around_it; name:same || + => + name:remedy || + absent:; e18efbb v1.4.0; drop:367b8fb; cmd:git_fetch_--unshallow_--tags; say:All_history_and_the_tags_fetched fly=off layout=rows title=One_commit,_two_repositories
 
 **[ANIMATION]** step: state-1
 
+**The root cause.** `actions/checkout` fetches one commit and no tags by default, and `git describe` needs history and tags. `actions/checkout` is the action that fetches the repository onto the runner. A tag is a fixed name for one commit, here a release, and `git describe` derives a version from the newest such tag. The README of the checkout action, version 7.0.1, says it fetches a single commit by default, with `fetch-tags` off, and that `fetch-depth: 0` fetches all history for all branches and tags. The step was added without changing the checkout it depends on. Layer: GitHub Actions, a documented default.
+
+**[ANIMATION]** step: describe
+
 **Why both can be right.** "It passes on my machine" and "it fails on the runner" are both true, at the same commit, because the commit isn't the whole input. A full clone, a complete copy of the repository, has five commits and a tag.
 
-**[ANIMATION]** end
+**[ANIMATION]** step: same
 
 The runner's clone has one commit and no tag. Same commit ID, different repository around it. That's the question from the opening, answered.
 
+**[ANIMATION]** end
+
 **Two habits complete the standard.**
+
+**[ANIMATION]** stores: id=behind boxes=the_job_on_the_runner|behind_the_first_failure rows=1:A:the_version_step,_exit_code_128@bad|1:A:the_tests,_never_reached@dim|2:B:tracked_under_one_spelling|2:B:opened_by_the_code_under_another@hl|3:B:a_filesystem_that_ignores_case,_works@ok|3:B:the_runner's,_does_not@bad arrows=2:A2>B:a_second_defect title=Look_behind_the_first_failure
 
 Look behind the first failure. The job never reached its tests. A second defect waits behind the first: a template tracked under one spelling while the code opens it under another, differing only in case. That works only on a filesystem that ignores case. A Mac's default filesystem does. The runner's doesn't.
 
+**[ANIMATION]** end
+
 And refuse the shortcut. A red required check isn't overridden by an administrator because the change "is only a docstring". The answer to "merge it anyway" is no, with the reason.
 
+**[ANIMATION]** cards: id=status question=The_status_after_the_fix_is_pushed cards=cause_removed_in_the_files:the_files_prove_this|confirmed_when_the_run_on_the_fix_branch_is_green:observed_on_GitHub ask=2 marks=1:ok
+
 **What "fixed" means here.** The honest status after the fix is pushed: "cause removed in the files; confirmed when the run on the fix branch is green." The files alone prove that the cause was removed, not that the job passes. Verification is a green run on the fix branch, observed on GitHub.
+
+**[ANIMATION]** cards: id=rerun question=The_fix_is_pushed._To_see_it_tested, cards=A,_re-run_the_failed_run|B,_wait_for_a_new_run_on_the_fix_branch marks=1:bad,2:ok at_2=55
+
+**[ANIMATION]** step: 2
 
 Quick quiz. The fix is pushed. To see it tested, do you A, re-run the failed run, or B, wait for a new run on the fix branch? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 **Re-running.** The answer is B. A re-run reuses the original commit and ref, so it can't test a fix. Re-run with `gh run rerun <run-id> --failed --debug` only when the log is not enough.
+
+**[ANIMATION]** end
 
 **Severity.** SEV 3: a team is blocked. The line for the postmortem, the written record of the incident, is the uncomfortable one: five days of red on `main` hid a second, real defect.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=page boxes=the_book|the_new_colleague:joined_this_morning rows=2:A:a_bookmark,_many_pages_back@ref|2:A:the_pages_in_between@dim|1:A:the_latest_page|1:B:a_single_printed_page,_the_latest_one@hl|2:B:the_version_number_of_the_book?_they_can't_say@bad|3:B:the_same_answer_every_time|4:B:a_runner_does_not_ask,_exit_code_128@bad arrows=1:A3>B1:handed_over title=One_printed_page
+
+**[ANIMATION]** step: 2
+
 A picture helps. Think of the runner as a colleague who joined this morning, was handed a single printed page of the project, the latest one, and was asked to state the version number of the book. They can't. The version is derived from a bookmark that sits many pages back, and they weren't given those pages or the bookmark.
+
+**[ANIMATION]** step: 3
 
 The colleague isn't flaky. They'll give the same answer every time. The mistake was in what they were handed, and it was a deliberate default: handing over one page is fast.
 
+**[ANIMATION]** step: 4
+
 Where the picture breaks: a new colleague would ask for the rest of the book. A runner does what the workflow file says and reports exit code 128.
+
+**[ANIMATION]** end
 
 For "suddenly fails", sort every candidate cause into two columns: changes you can see with `git log`, and changes you can't. The first column is short and is checked in a minute. If it's empty for the day the failure began, the cause is in the second.
 
@@ -118,6 +154,8 @@ Try it now, on paper. Thirty seconds. Draw those two columns and sort four cause
 **[PAUSE]**
 
 ## DIAGRAM
+
+**[ANIMATION]** stores: id=columns boxes=visible_in_git_log|not_visible_in_git_log rows=1:A:a_commit_to_.github/workflows/|1:A:a_commit_to_the_lock_file|1:A:a_commit_to_the_code_or_its_tests|1:A:a_commit_to_a_script_that_a_step_runs|2:B:the_runner_image_(a_-latest_label_moved)|2:B:an_action_behind_a_moving_tag|2:B:a_secret_(unset,_rotated,_withheld_from_forks)|2:B:a_cache_(a_broad_restore_key,_a_stale_entry)|3:A:Incident_7,_the_first_red_run_coincides_with_a_commit@hl|4:B:what_the_checkout_fetched_(depth,_tags,_merge_ref)@hl title=What_changed? say_1=first,_git_log_--oneline_--_.github/workflows_and_the_list_of_recent_runs say_3=Where_does_green_turn_red,_and_which_commit_was_the_first_red_one? at_1=4 at_2=14 at_3=30 at_4=72
 
 **[DIAGRAM]** A new list: "what changed?", in two columns, filled from section 30.18.
 
@@ -226,6 +264,8 @@ fatal: No names found, cannot describe anything.
 <!-- /snippet -->
 
 A shallow repository: a clone that holds only the newest commits and treats the history as ending there. One commit. No tags. And the script prints the same line as the run report, with exit status 128. The failure is reproduced on a Mac, with Git alone, with no runner involved. It's deterministic.
+
+**[ANIMATION]** step: clones.remedy
 
 **Proof of the remedy.** What does `fetch-depth: 0` change? The same clone, with all history and the tags fetched.
 
@@ -339,7 +379,17 @@ PASS: the recovery of incident 07-ci-passes-locally is complete.
 ```
 <!-- /snippet -->
 
-The check passes. Read what it checks: the files. It can't observe a run. So predict what the next run will test, which is objective four. A `pull_request` run for this branch checks out the merge ref, the head merged into the current base, with full history and tags. The version step finds the tag. The tests open the template under its tracked name. That's a prediction. The status to report is: cause removed in the files. Confirmed when the run on the fix branch is green.
+The check passes. Read what it checks: the files. It can't observe a run.
+
+**[ANIMATION]** cards: id=next question=The_next_run_on_fix/ci-checkout,_predicted cards=a_pull__request_run_checks_out_the_merge_ref:with_full_history_and_tags|the_version_step_finds_the_tag|the_tests_open_the_template:under_its_tracked_name ask=1,2,3
+
+So predict what the next run will test, which is objective four. A `pull_request` run for this branch checks out the merge ref, the head merged into the current base, with full history and tags. The version step finds the tag. The tests open the template under its tracked name. That's a prediction.
+
+**[ANIMATION]** replay: status
+
+The status to report is: cause removed in the files. Confirmed when the run on the fix branch is green.
+
+**[ANIMATION]** end
 
 **The answer to the reporter.** No administrative merge. The failure isn't flaky: it repeats, it began with a commit, and it can be reproduced on a laptop in six commands. The fix is in a pull request. And the docstring change isn't held up by the runner. It's held up by a red default branch that should have been treated as an incident on its first day.
 
@@ -357,7 +407,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. An evaluation-reporting service derives its version from the newest release tag and stamps it on every report. A week after that feature was added, a developer asks an administrator to bypass the red check for a documentation change, "because the runner has been flaky all week".
 
+**[ANIMATION]** replay: applied
+
 The administrator opens the list of runs first. Green turns red at one commit, and stays red. He reads the workflow file from the top: event, permissions, runner label, action versions. Nothing moves there. Then the one line the failed step printed, a message from Git. A depth-one clone without tags on his own machine gives the same line.
+
+**[ANIMATION]** end
 
 He doesn't bypass. He opens a pull request with the checkout option, and because the job hasn't reached its tests for a week, he also asks what else changed in that week. One commit moved a template path into a constant, with a capital letter that the tracked file doesn't have. Both fixes go in together. In the retrospective the team writes down the two rules from the textbook. A workflow change that adds a tool is reviewed with the inputs the tool reads. And a red default branch is an incident on its first day.
 

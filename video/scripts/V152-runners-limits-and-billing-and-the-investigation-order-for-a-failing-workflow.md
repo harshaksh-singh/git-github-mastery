@@ -39,29 +39,55 @@ After this video you can:
 
 **[ON SCREEN]** Lower third: GitHub Actions.
 
+**[ANIMATION]** gates: id=life gates=a_published_image:done:-:the_template|a_fresh_virtual_machine:done:-:selected_by_its_label|one_job:done|destroyed:done title=The_life_of_a_GitHub-hosted_runner at_1=30 at_2=45 at_3=70 at_4=85
+
 **Hosted runners. In one sentence:** a GitHub-hosted runner is a fresh virtual machine, built from a published image, that runs one job and is then destroyed.
 
 `runs-on` selects it by label. A virtual machine is a computer made in software, and the image is the template it's built from.
+
+**[ANIMATION]** end
 
 **[ON SCREEN]** The label table of section 20B.8, as of 1 October 2026.
 
 `ubuntu-latest` is Ubuntu 24.04 on the first of October 2026, and GitHub has announced its migration to Ubuntu 26.04 between the nineteenth of October and the nineteenth of November 2026. `windows-latest` is Windows Server 2025. `macos-latest` is macOS 26 on arm64, moved from macOS 15 in June and July 2026. Then the fixed labels, which name a version. `ubuntu-22.04` is deprecated since the seventeenth of September 2026, with the end of support announced for the seventeenth of April 2027. For `macos-14` the announced end of support is the second of November 2026. Those three dates lie after the course baseline: check the changelog on the day you watch this. And `ubuntu-slim`: one CPU, runs the job in a container, with jobs limited to 15 minutes.
 
+**[ANIMATION]** stores: id=latest boxes=Ubuntu_24.04:an_image|Ubuntu_26.04:an_image rows=1:A:ubuntu-latest,_on_1_October_2026@ref|2:B:ubuntu-latest,_after_the_announced_migration@ref|3:A:ubuntu-24.04:_a_fixed_label@hl|3:A:rebuilt_weekly:_tool_versions_move_too arrows=2:A1>B1:19_October_to_19_November_2026 title=A_-latest_label_is_a_moving_name at_1=20 at_2=45
+
+**[ANIMATION]** step: 2
+
 The textbook's comparison is one you can keep: a `-latest` label is a moving name, the runner equivalent of a branch. A migration is rolled out gradually over weeks, so two runs of one workflow on the same day can get different images.
+
+**[ANIMATION]** step: 3
 
 And a fixed label isn't frozen either. Images are rebuilt weekly, so tool versions inside a fixed label move too. The textbook's example: in May 2026 Node 20 left the images and the default `node` became 22. That's why the course workflows use a fixed label and also install their tools with setup actions at stated versions.
 
+**[ANIMATION]** say: The_cost_of_pinning:_move_the_label_yourself_before_the_image_retires
+
 The cost of pinning: you must move the label yourself before the image retires. Put the retirement dates in your calendar.
+
+**[ANIMATION]** end
 
 Where do you see which image a job received? The "Set up job" section of a run's log names it. The textbook adds a caveat that I pass on: the Phase 0 notes didn't verify that section separately, so read it in your own run.
 
+**[ANIMATION]** walk: id=hw columns=standard_runners,CPUs,memory,disk rows=Linux_and_Windows,_public_repositories:4:16_GB:14_GB|Linux_and_Windows,_private_repositories:2:8_GB:14_GB|macOS_arm64:3:7_GB:- marks=2.2:bad,2.3:bad mono=off title=Hardware at_1=18 at_2=32 at_3=55
+
 **Hardware.** Standard Linux and Windows runners have 4 CPUs and 16 gigabytes of memory in public repositories, and 2 CPUs and 8 gigabytes in private ones, with 14 gigabytes of disk in both. macOS arm64 runners have 3 CPUs and 7 gigabytes. So a test suite that fits in a public repository can run out of memory or time after the repository is made private.
+
+**[ANIMATION]** stores: id=self boxes=a_GitHub-hosted_runner:a_clean_machine_per_job|a_persistent_self-hosted_runner:a_machine_you_operate|an_ephemeral_runner:registered_with_--ephemeral rows=1:A:destroyed_after_the_job@ok|1:B:runs_jobs_with_whatever_access_the_machine_has|2:B:a_pull_request_can_run_code_on_it@bad|2:B:can_be_persistently_compromised@bad|2:B:an_environment_does_not_isolate_secrets_here@bad|3:C:takes_one_job_and_is_removed@ok|3:C:reused_hardware_can_still_expose_information title=Whose_machine,_and_for_how_long? at_1=40 at_2=15 at_3=5
+
+**[ANIMATION]** step: 1
 
 **Self-hosted runners. In one sentence:** a self-hosted runner is the same runner program on a machine you operate, which asks GitHub for jobs and runs them with whatever access that machine has.
 
+**[ANIMATION]** step: 2
+
 The risk, in GitHub's own words from the secure use reference: self-hosted runners "should almost never be used for public repositories", because anyone can open a pull request that runs code on them. The warning extends to private repositories where anyone with read access can fork and open a pull request. A hosted runner is a clean machine per job. A persistent self-hosted runner "can be persistently compromised by untrusted code in a workflow". And on a self-hosted runner an environment doesn't isolate secrets from other jobs on the same machine.
 
+**[ANIMATION]** step: 3
+
 Ephemeral runners. Registering with the `--ephemeral` option gives a runner that takes one job and is removed. So-called just-in-time runners are created through the REST API and also run at most one job. GitHub recommends autoscaling with ephemeral runners and advises against autoscaling persistent ones. And one more sentence from the documentation: reusing hardware for such runners can still expose information from the environment. The textbook's reading: "ephemeral" must include the disk.
+
+**[ANIMATION]** end
 
 Runner groups restrict which repositories may send jobs to which runners. They're available to organizations on every plan since the seventeenth of October 2024. The risk is a group open to "all repositories": every repository in the organization, including the least reviewed one, can run code on the machines that can reach production.
 
@@ -83,41 +109,81 @@ List prices per minute since the first of January 2026: Linux 2-core, 0.6 cents.
 
 **[ON SCREEN]** Callout: Unverified. How Windows and macOS minutes consume the included minutes is not stated on any 2026 page the Phase 0 research could fetch. Older material gives multipliers of 2 for Windows and 10 for macOS; the old multiplier page now redirects to the price list. Do not quote a multiplier. Read your own usage in the billing settings.
 
+One thing here is unverified, and it's on screen. How Windows and macOS minutes consume the included minutes isn't stated on any 2026 page the research could fetch. Don't quote a multiplier. Read your own usage in the billing settings.
+
 **[ON SCREEN]** Callout: Version note. Tutorials quote prices from before 2026; prices were cut by up to 39 percent on 1 January 2026. And one item is announced and not in effect: a charge of 0.2 cents per minute for self-hosted runners, announced on 16 December 2025 for 1 March 2026 and then postponed without a new date.
+
+And a version note. Prices were cut by up to 39 percent on the first of January 2026, so older tutorials quote more. One charge is announced and not in effect: 0.2 cents per minute for self-hosted runners, postponed without a new date.
 
 Quick quiz, on that rounding rule. Which costs more? A, one job with ten steps of six seconds each. B, ten jobs with one six-second step each. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** bars: id=round bars=one_job,_ten_steps:1|ten_jobs,_one_step_each:10 unit=min title=Each_job_is_rounded_up_to_a_whole_minute at_1=10 at_2=40
+
 B. Each job is rounded up to a whole minute, so ten short jobs are billed as ten minutes, and the one job as one. Almost everyone misses that once, because the work is the same.
+
+**[ANIMATION]** end
 
 The cost levers follow from the rules. Cancel superseded CI runs with a concurrency group. Prefer one job with several steps over many one-step jobs, because each job rounds up. Keep macOS for what needs macOS, at roughly ten times the Linux price. Use `ubuntu-slim` for glue jobs. Shorten artifact retention. Path filters also save minutes, and video 154 shows what they cost you.
 
+**[ANIMATION]** stores: id=order boxes=steps_1_to_4:did_the_right_thing_start_at_all?|steps_5_to_8:still_before_the_first_log_line|steps_9_to_12:what_did_it_say? rows=1:A:1_workflow|2:A:2_event|3:A:3_permissions|4:A:4_runner|5:B:5_environment|6:B:6_dependencies|7:B:7_secrets|8:B:8_action_versions title=The_investigation_order
+
+**[ANIMATION]** step: boxes
+
 **The investigation order.** The textbook's instruction: a failing run tempts you to open the red step and start reading. Do that last but three. The order goes from "did the right thing start at all" to "what did it say", because an answer early in the list makes everything after it irrelevant.
+
+**[ANIMATION]** step: 1
 
 One. Workflow. Which workflow file, from which commit, defined this run?
 
+**[ANIMATION]** step: 2
+
 Two. Event. What triggered it, and which ref and commit did the job check out? `push` builds the pushed commit. `pull_request` builds `refs/pull/N/merge`. A re-run reuses the original commit and ref.
+
+**[ANIMATION]** step: 3
 
 Three. Permissions. What could the token do? Top-level and job-level `permissions`. Unlisted scopes are none. Fork and Dependabot runs get a read-only token.
 
+**[ANIMATION]** step: 4
+
 Four. Runner. Which image, which size? The label, the image named at the top of the job log, and whether the repository is public or private.
+
+**[ANIMATION]** step: 5
 
 Five. Environment. Did the job reference one, and did its rules pass? Waiting, rejected, wrong branch, or an environment created by accident.
 
+**[ANIMATION]** step: 6
+
 Six. Dependencies. Were the same versions installed as locally? The lock file, `--locked`, the versions printed by setup steps.
+
+**[ANIMATION]** step: 7
 
 Seven. Secrets. Were they present? An unset or withheld secret is an empty string, not an error.
 
+**[ANIMATION]** step: 8
+
 Eight. Action versions. Which commit of each action ran? The pins, an old major on Node 24, a moved tag.
+
+**[ANIMATION]** stores: id=order2 boxes=steps_1_to_4:did_the_right_thing_start_at_all?|steps_5_to_8:still_before_the_first_log_line|steps_9_to_12:what_did_it_say? rows=1:A:1_workflow|1:A:2_event|1:A:3_permissions|1:A:4_runner|1:B:5_environment|1:B:6_dependencies|1:B:7_secrets|1:B:8_action_versions|2:C:9_logs@hl|3:C:10_artifacts|4:C:11_cache|5:C:12_concurrency title=The_investigation_order at_1=3 at_2=40
+
+**[ANIMATION]** step: 2
 
 Nine. Logs. What did the failed step print?
 
+**[ANIMATION]** step: 3
+
 Ten. Artifacts. Were the expected files produced and passed on?
+
+**[ANIMATION]** step: 4
 
 Eleven. Cache. What was restored, under which key?
 
+**[ANIMATION]** step: 5
+
 Twelve. Concurrency. Was the run cancelled or replaced by another?
+
+**[ANIMATION]** end
 
 **[ON SCREEN]** The instruments for the first steps, as the table gives them.
 
@@ -138,13 +204,25 @@ The textbook's summary of the method: steps 1 and 2 remove the most confusion fo
 
 A picture helps.
 
+**[ANIMATION]** step: self.3
+
+**[ANIMATION]** say: A_rented_workshop_is_demolished_after_each_job._Yours_stays
+
 **Analogy for self-hosted runners,** from the textbook. Lending your workshop to anyone who holds a work order. A GitHub-hosted runner is a rented workshop that is demolished after each job. Yours stays: tools, leftovers, and everything a previous visitor hid there.
 
 The analogy breaks in one respect, and the textbook says that respect is everything: you choose who may write work orders, and that choice is the whole security question.
 
+**[ANIMATION]** step: order2.5
+
+**[ANIMATION]** say: A_chain_of_decisions,_each_made_before_the_next_can_matter
+
 **A model for the investigation order.** Think of a run as a chain of decisions, each made before the next can matter. Was a run created, from which file? For which commit? With what authority? On what machine? Past which gate? With which dependencies, which secrets, which action code? Only then does your command start and print anything.
 
+**[ANIMATION]** say: If_an_earlier_link_was_different,_the_log_records_the_wrong_experiment
+
 The log is the output of the last link. If an earlier link was different from what you assume, the log is a faithful record of the wrong experiment. You can read it for an hour and learn nothing, because nothing in it says "this is not the commit you think".
+
+**[ANIMATION]** say: The_log_is_ninth:_eight_things_were_decided_before_its_first_line
 
 That's why the order is fixed and why the log sits at nine, which answers the question from the opening. The three steps after it, artifacts, cache and concurrency, are about what the run handed on or was done to it.
 
@@ -231,7 +309,7 @@ $ git merge-base main feature/bulk-reorder
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: 197d992-57c8425-2230054 main; 57c8425-34f82ef feature/bulk-reorder; HEAD=feature/bulk-reorder => 197d992-57c8425-2230054 main; 57c8425-34f82ef-9c7cc7e-2cb0b73 feature/bulk-reorder; 2230054-9c7cc7e; HEAD=feature/bulk-reorder title=Two_sides_of_the_test_merge
+**[ANIMATION]** graph: id=sides ...older-197d992-57c8425-2230054 main; 57c8425-34f82ef feature/bulk-reorder; HEAD=feature/bulk-reorder; title:Two_sides_of_the_test_merge => + ^2230054-?test_merge; 34f82ef-?test_merge; HEAD=none; note:?test_merge:HEAD_(no_branch); pass:34f82ef; fail:?test_merge; name:merge; say:The_failure_exists_only_in_the_merge => + reflog:?test_merge; 34f82ef-9c7cc7e-2cb0b73 feature/bulk-reorder; 2230054-9c7cc7e; HEAD=feature/bulk-reorder; drop:34f82ef; pass:2cb0b73; name:fixed; say:The_base_is_merged_into_the_branch,_and_the_call_is_fixed dx=230
 
 **[ANIMATION]** step: state-1
 
@@ -270,7 +348,13 @@ FAIL: TypeError: needs_reorder() missing 1 required positional argument: 'safety
 ```
 <!-- /snippet -->
 
-"HEAD (no branch)", as on the runner. The first check passes. The second fails with a `TypeError`: a function now needs an argument that the new code doesn't pass. Asha's commit changed a signature, and the branch calls the old one. No conflict, because the changes are in different places. The failure exists only in the merge.
+"HEAD (no branch)", as on the runner. The first check passes. The second fails with a `TypeError`: a function now needs an argument that the new code doesn't pass.
+
+**[ANIMATION]** step: sides.merge
+
+Asha's commit changed a signature, and the branch calls the old one. No conflict, because the changes are in different places. The failure exists only in the merge.
+
+**[ANIMATION]** end
 
 **Step 4: the wrong reflex.**
 
@@ -317,7 +401,7 @@ $ git log --oneline --graph -4
 
 Bring the base into the branch, and the failure is now on the branch, where you can work on it. One call is fixed and committed, and `git commit` is 🟢 SAFE.
 
-**[ANIMATION]** step: state-2
+**[ANIMATION]** step: sides.fixed
 
 The graph shows the merge `9c7cc7e` and the fix `2cb0b73` on top.
 
@@ -361,7 +445,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. Two cases from the textbook, both from ML teams.
 
+**[ANIMATION]** step: hw.3
+
+**[ANIMATION]** say: Step_4_of_the_order:_ask_first_for_the_visibility,_then_for_the_label
+
 The first. A model-evaluation job that fits in the team's public mirror is killed in the private repository, with identical code. The textbook's instruction: ask first for the visibility of the repository, then for the label. Public means 4 CPUs and 16 gigabytes. Private means 2 and 8. That's step 4 of the order, and no log line will say it in those words.
+
+**[ANIMATION]** cards: id=gpu question=The_defensible_design_for_GPU_evaluation_on_your_own_machines cards=ephemeral_runners|a_runner_group:only_the_evaluation_repository_may_use_it|push_to_protected_branches,_and_workflow__dispatch|never_pull__request_from_forks|no_long-lived_cloud_credentials:on_the_machine at_1=35 at_2=45 at_3=60 at_4=78 at_5=88
 
 The second. An ML team runs GPU evaluation on its own machines, because hosted GPU minutes are expensive. The textbook calls this the defensible design. Ephemeral runners, in a runner group that only the evaluation repository may use. Workflows on those runners triggered only by `push` to protected branches and by `workflow_dispatch`, never by `pull_request` from forks. And no long-lived cloud credentials on the machine.
 

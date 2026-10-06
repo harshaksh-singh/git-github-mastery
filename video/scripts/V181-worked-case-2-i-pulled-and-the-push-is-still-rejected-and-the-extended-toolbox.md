@@ -11,7 +11,15 @@
 
 **[ON SCREEN]** "My push is rejected. Git tells me to pull. I pull, Git says everything is up to date, and the push is rejected again."
 
-The developer has done exactly what the error message told them to do, twice. A push asks the server to move its branch to your commits, your saved snapshots. A pull fetches a branch from the server and integrates it into yours. Their conclusion is reasonable: the server is broken, or somebody has locked the branch, or Git is confused and needs `--force`, which overwrites the server's branch.
+The developer has done exactly what the error message told them to do, twice. A push asks the server to move its branch to your commits, your saved snapshots. A pull fetches a branch from the server and integrates it into yours.
+
+**[ANIMATION]** cards: id=why cards=the_server_is_broken|somebody_has_locked_the_branch|Git_is_confused_and_needs_--force marks=1:bad,2:bad,3:bad title=Three_plausible_explanations at_1=22 at_2=38 at_3=55 at_marks=12
+
+**[ANIMATION]** step: 3
+
+Their conclusion is reasonable: the server is broken, or somebody has locked the branch, or Git is confused and needs `--force`, which overwrites the server's branch.
+
+**[ANIMATION]** step: marks
 
 All three explanations are plausible. All three are wrong. And the third one, acted upon, deletes a teammate's commit from the server. The actual cause is one line of configuration that has been in the repository since the branch was created, and Git has been reporting it in brackets the whole time. Watch for those brackets. You'll read them yourself.
 
@@ -41,9 +49,17 @@ After this video you can:
 
 **Reading the two rejections.** The words in parentheses are evidence, and they differ.
 
+**[ANIMATION]** walk: id=rej columns=what_Git_printed,what_it_says rows=(fetch_first):the_server's_branch_has_an_object_this_clone_has_never_seen|*_[new_branch]:this_clone_learned_of_the_server's_branch_for_the_first_time|(non-fast-forward):the_clone_has_the_server's_commit,_and_the_local_branch_doesn't_contain_it|!_[rejected]:written_by_the_local_Git,_before_any_rule_on_the_server_is_consulted|!_[remote_rejected]:a_rule_on_the_server,_with_remote:_lines steps=header,1,3,2,4,5 title=The_words_are_evidence at_1=5 at_3=33 at_2=62 at_4=5 at_5=55
+
+**[ANIMATION]** step: 2
+
 The first rejection says `(fetch first)`: the server's branch has an object this clone has never seen. The second says `(non-fast-forward)`: now the clone has the server's commit and can see that the local branch doesn't contain it. Between them, the pull printed a line beginning with `* [new branch]`: this clone learned of the server's branch for the first time. So the pull fetched the commit and didn't integrate it.
 
+**[ANIMATION]** step: 5
+
 And both rejections read `! [rejected]`. That line is written by the local Git before any rule on the server is consulted. A rule on the server would read `! [remote rejected]`, with `remote:` lines.
+
+**[ANIMATION]** end
 
 **Why the developer's explanation was plausible.** Every message they saw was true. "Use git pull before pushing again" is correct advice for a branch whose upstream is the branch it's pushed to. "Already up to date" was true of the upstream. Nothing on the screen said that the two commands were talking about different branches, unless you read the brackets.
 
@@ -72,13 +88,23 @@ And both rejections read `! [rejected]`. That line is written by the local Git b
 
 Organize it in your head by the kind of question: refs, graph, remote, objects, index, configuration, and what Git is doing. The `git config get` subcommand needs Git 2.46 or later.
 
+**[ANIMATION]** cards: id=kinds cards=refs|graph|remote|objects|index|configuration|what_Git_is_doing marks=3:ring title=The_toolbox,_by_kind_of_question pace=quick at_marks=30
+
 **Local data or the server.** `git ls-remote` and `git remote show origin` contact the server. The other commands answer from local data, which is as old as the last fetch.
+
+**[ANIMATION]** stores: id=fetch boxes=git_fetch_changes|git_fetch_never_touches rows=1:A:remote-tracking_refs_(moved)|1:A:objects_(added)|2:B:your_branches|2:B:the_index|2:B:the_working_tree|3:A:each_remote-tracking_ref_has_a_reflog@ok title=A_fetch_is_part_of_evidence_collection at_1=22 at_2=38 at_3=60
 
 **Git, not GitHub: the status of `git fetch`.** `git fetch` is the one command of the opening that changes something: it moves remote-tracking refs and adds objects. It never touches your branches, the index, which is the proposed next commit, or the working tree, the files you edit. And each remote-tracking ref has a reflog, a list of the values it has had. So a fetch is treated as part of evidence collection. Record `git rev-parse origin/main` first if the stale value is itself evidence, as it is after a suspected force push.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=addr boxes=a_branch:two_addresses_written_on_it|*the_server rows=1:A:from:_the_upstream|2:A:to:_the_push_destination|3:B:main|3:B:the_feature_branch|4:B:"you_haven't_picked_up_what_is_waiting_here"@bad arrows=3:B1>A1:pull|3:A2>B2:push title=One_branch,_two_addresses at_1=20 at_2=60 at_3=5 at_4=72
+
+**[ANIMATION]** step: 2
+
 A picture helps. Picture a branch with two addresses written on it. One says where its deliveries come from: the upstream, used by `git pull`, `git status` and a bare `git rebase`. The other says where its parcels go: the push destination. For most branches the two addresses are the same, and you forget that there are two.
+
+**[ANIMATION]** step: 4
 
 In this case the "from" address is `main` on the server and the "to" address is the feature branch on the server. The developer keeps collecting deliveries from one building and trying to hand parcels in at another, and the second building keeps saying: you haven't picked up what is waiting here.
 
@@ -86,9 +112,13 @@ Where the picture breaks: a postal address is fixed by whoever wrote it, and her
 
 The lesson for the method: configuration is state. The ten commands include the configuration for this reason, and `git branch -vv` prints the upstream in brackets on every line.
 
+**[ANIMATION]** end
+
 Try it now. Thirty seconds. In the lab shell, or in any repository you have, run `git branch -vv`, which only reads. For each branch, say out loud what stands in the brackets.
 
 **[PAUSE]**
+
+**[ANIMATION]** say: The_brackets_name_the_"from"_address
 
 Each pair of brackets names that branch's upstream, its "from" address. If one names a branch you don't push to, you've found today's cause in your own repository, before it cost you anything.
 
@@ -105,26 +135,6 @@ Each pair of brackets names that branch's upstream, its "from" address. If one n
 ```
 
 Two lines of work leave `ce76024`: two local commits, and one commit by a teammate on the server's branch of the same name. The pull looks at the top right label. The push looks at the bottom arrow.
-
-**[ON SCREEN]** The root-cause box of section 29.4, after the test.
-
-```text
-Observed behavior : push rejected; git pull says "Already up to date"; push rejected again.
-Git state         : feature/batch-size is 2 ahead of origin/main and 2 ahead, 1 behind
-                    origin/feature/batch-size. branch.feature/batch-size.merge = refs/heads/main.
-Mechanism         : git switch -c <name> origin/main records origin/main as the upstream, because
-                    the starting point is a remote-tracking branch (branch.autoSetupMerge=true).
-                    git pull without arguments integrates the upstream. git push origin <name>
-                    targets the server branch <name>. Pull and push address different branches.
-Root cause        : The upstream of the local branch is not the branch it is pushed to.
-Why Git does this : Tracking the starting point is right for a local copy of a remote branch
-                    (git switch -c main origin/main). Git cannot know that this time the
-                    starting point was meant only as a base.
-Correct fix       : Point the upstream at origin/feature/batch-size, replay the two unpublished
-                    commits on top of it, push. No force.
-Prevention        : Create feature branches with --no-track, or from the local main. Read the
-                    brackets in git branch -vv before the first push.
-```
 
 ## LIVE TERMINAL DEMO
 
@@ -201,7 +211,7 @@ $ git log --graph --decorate --oneline --all
 
 "Your branch is ahead of 'origin/main' by 2 commits." Not ahead of `origin/feature/batch-size`. The brackets in `git branch -vv` say the same. There are the brackets from the opening.
 
-**[ANIMATION]** graph: bafe874-ce76024 main origin/main; ce76024-3d6663d-2defa92 feature/batch-size; ce76024-56bb8e4 origin/feature/batch-size; HEAD=feature/batch-size => bafe874-ce76024 main origin/main; ce76024-3d6663d-2defa92 backup/batch-size-before-rebase; ce76024-56bb8e4-097fe6f-aca1b2f feature/batch-size; 56bb8e4 origin/feature/batch-size; HEAD=feature/batch-size title=Two_lines_of_work_leave_ce76024
+**[ANIMATION]** graph: bafe874-ce76024 main origin/main; ^ce76024-3d6663d-2defa92 feature/batch-size; ce76024-56bb8e4 origin/feature/batch-size; HEAD=feature/batch-size => + range:3d6663d,2defa92:ahead_2; range2:56bb8e4:behind_1; say:No_object_moved._Only_the_comparison_did. => bafe874-ce76024 main origin/main; ce76024-3d6663d-2defa92 backup/batch-size-before-rebase; ce76024-56bb8e4-097fe6f-aca1b2f feature/batch-size; 56bb8e4 origin/feature/batch-size; HEAD=feature/batch-size; range:; range2:; say:off title=Two_lines_of_work_leave_ce76024 id=lines
 
 **[ANIMATION]** step: state-1
 
@@ -355,6 +365,10 @@ $ git fsck
 
 The server's tip is a commit by another author, with `ce76024` as its parent: a teammate's work, based on `main`. The index has three entries, all at stage 0: no conflict is in progress. `git fsck`, which checks the object store, prints nothing.
 
+**[ANIMATION]** cards: id=hyp cards=the_server's_branch_has_a_commit_the_local_branch_lacks,_and_git_pull_integrates_a_different_branch|a_rule_on_the_server_rejects_the_push|someone_rewrote_the_server's_branch|the_pull_failed numbered=on title=The_textbook's_four_hypotheses at_1=8 at_2=45 at_3=62 at_4=80
+
+**[ANIMATION]** step: 4
+
 **Hypotheses and test.** The textbook's four. One: the server's branch has a commit the local branch lacks, and `git pull` integrates a different branch. Two: a rule on the server rejects the push. Three: someone rewrote the server's branch. Four: the pull failed.
 
 ```bash
@@ -382,7 +396,29 @@ e2386b3e50aabb629564655df6e66d79d2d11040
 ```
 <!-- /snippet -->
 
-The first hypothesis is confirmed by the first two commands. A rewrite is rejected: the remote-tracking reflog has one entry, a first fetch, and a forced update would have printed a plus sign. A server rule is rejected by the wording of the rejection. And the last command is a test merge: it writes a tree object and touches neither the index nor the working tree. Exit status 0 with no file names means the two lines of work combine without conflict. Show the root-cause box.
+The first hypothesis is confirmed by the first two commands. A rewrite is rejected: the remote-tracking reflog has one entry, a first fetch, and a forced update would have printed a plus sign. A server rule is rejected by the wording of the rejection. And the last command is a test merge: it writes a tree object and touches neither the index nor the working tree. Exit status 0 with no file names means the two lines of work combine without conflict.
+
+**[ON SCREEN]** The root-cause box of section 29.4, after the test.
+
+```text
+Observed behavior : push rejected; git pull says "Already up to date"; push rejected again.
+Git state         : feature/batch-size is 2 ahead of origin/main and 2 ahead, 1 behind
+                    origin/feature/batch-size. branch.feature/batch-size.merge = refs/heads/main.
+Mechanism         : git switch -c <name> origin/main records origin/main as the upstream, because
+                    the starting point is a remote-tracking branch (branch.autoSetupMerge=true).
+                    git pull without arguments integrates the upstream. git push origin <name>
+                    targets the server branch <name>. Pull and push address different branches.
+Root cause        : The upstream of the local branch is not the branch it is pushed to.
+Why Git does this : Tracking the starting point is right for a local copy of a remote branch
+                    (git switch -c main origin/main). Git cannot know that this time the
+                    starting point was meant only as a base.
+Correct fix       : Point the upstream at origin/feature/batch-size, replay the two unpublished
+                    commits on top of it, push. No force.
+Prevention        : Create feature branches with --no-track, or from the local main. Read the
+                    brackets in git branch -vv before the first push.
+```
+
+And that's the root-cause box, filled in. Read its fourth line with me, the root cause: the upstream of the local branch isn't the branch it's pushed to.
 
 **Select the lowest-risk fix.**
 
@@ -427,9 +463,13 @@ $ git log --graph --oneline -4
 ```
 <!-- /snippet -->
 
-B. After the upstream change, `git status -sb` already tells the truth: ahead 2, behind 1. No object moved. Only the comparison did.
+B. After the upstream change, `git status -sb` already tells the truth: ahead 2, behind 1.
 
-**[ANIMATION]** step: state-2
+**[ANIMATION]** step: lines.state-2
+
+No object moved. Only the comparison did.
+
+**[ANIMATION]** step: state-3
 
 Then the rebase puts the two commits on top of the teammate's. The copies have new IDs, `097fe6f` and `aca1b2f`, and the backup branch still names the originals.
 
@@ -531,7 +571,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. Two engineers on an embeddings team share a feature branch for a week. One created it and pushed it first. The other created a local branch of the same name from `origin/main` and has been committing happily. On the day she first tries to push, the push is rejected, the pull says there's nothing to do, and a senior colleague walking past says: "force it, it is your branch."
 
+**[ANIMATION]** stores: id=addr2 boxes=a_branch:two_addresses_written_on_it|*the_server rows=1:A:from:_the_upstream|2:A:to:_the_push_destination|3:B:main|3:B:the_feature_branch|4:B:"you_haven't_picked_up_what_is_waiting_here"@bad arrows=3:B1>A1:pull|3:A2>B2:push title=One_branch,_two_addresses at_1=18 at_2=30 at_3=45 at_4=85
+
 She runs `git branch -vv` instead, and reads the brackets. The upstream is `origin/main`. One toolbox command tells her how far apart the two branches are, and another that they merge without conflict. The fix takes three commands and no force: a backup ref, the upstream, a rebase of two commits that exist nowhere else. Her teammate's commit is still on the server.
+
+**[ANIMATION]** end
 
 In the team's notes she records the cause and the prevention in two lines. Feature branches are created with `--no-track`, or from the local `main`. And `push.autoSetupRemote` is set in the team's recommended configuration, so that the first push creates the upstream under the branch's own name.
 

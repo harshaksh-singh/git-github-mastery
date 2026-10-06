@@ -11,7 +11,13 @@
 
 **[ON SCREEN]** "I added two commits to my pull request this week. The pull request does not show them. I pushed again and Git says there is nothing to push."
 
-A developer says this on a Thursday. A commit is a saved snapshot of the project, a pull request is a proposal on GitHub to merge a branch of commits, and a push asks the server to move its branch to your commits. The obvious reactions are all changes: push with force, pull, rebase, or the classic, delete the clone and start again. Any of them could destroy two days of work, because nobody yet knows where those two commits are.
+A developer says this on a Thursday. A commit is a saved snapshot of the project, a pull request is a proposal on GitHub to merge a branch of commits, and a push asks the server to move its branch to your commits.
+
+**[ANIMATION]** cards: cards=push_with_force|pull|rebase|delete_the_clone_and_start_again question=Nobody_yet_knows_where_those_two_commits_are title=The_obvious_reactions_are_all_changes at_1=12 at_2=18 at_3=23 at_4=34
+
+The obvious reactions are all changes: push with force, pull, rebase, or the classic, delete the clone and start again. Any of them could destroy two days of work, because nobody yet knows where those two commits are.
+
+**[ANIMATION]** end
 
 Chapter 29 opens with the fact that shapes this whole part of the course: most damage is done after the incident, by the first repair attempt. The original problem in a Git repository is rarely destructive. The second command, typed before the state was understood, is what removes the uncommitted change or rewrites the published branch. So where are those two commits? Today we find them without changing a thing.
 
@@ -41,11 +47,19 @@ After this video you can:
 
 One: most damage is done by the first repair attempt. Git keeps unreachable commits, the ones no name leads to, for weeks. So the original problem is usually recoverable until somebody acts.
 
+**[ANIMATION]** layers: probe="CI_is_red" layers=Git:the_commit_lacks_a_file|GitHub:the_check_ran_on_the_merge_ref|GitHub_Actions:the_image_of_the_runner_changed title=A_symptom_names_no_layer at_1=28 at_2=42 at_3=68
+
 Two: a symptom names no layer. "CI is red" says that the automated checks failed. It may be a Git fact: the commit lacks a file. Or a GitHub fact: the check ran on the merge ref, which names GitHub's test merge of the pull request. Or a GitHub Actions fact: the image of the runner, the machine that runs the job, changed. Evidence decides, not the wording of the complaint.
+
+**[ANIMATION]** end
 
 Three: experience doesn't protect you. The textbook cites a study of Git questions on Stack Exchange: in 2020, 40.0 percent of the people asking Git-command questions had been registered for more than five years, against 21.2 percent of all askers. A fixed procedure is what replaces confidence.
 
 **The method, in one sentence.** Diagnosis is a read-only search for the one fact about the state that explains the symptom, followed by the smallest change that repairs that fact.
+
+**[ANIMATION]** stores: id=phases boxes=*PHASE_1_READ-ONLY:only_commands_with_the_green_label|PHASE_2_PRESERVE:adds_refs_and_files;_destroys_nothing|PHASE_3_CHANGE:moves_refs,_rewrites_files,_talks_to_the_server rows=1:A:SYMPTOM|1:A:OBSERVE|1:A:COLLECT_EVIDENCE|1:A:UNDERSTAND_STATE|1:A:FORM_HYPOTHESES|1:A:TEST_HYPOTHESES|1:A:IDENTIFY_ROOT_CAUSE|2:B:record_the_output|2:B:backup_ref|2:B:copy_of_the_repository|2:B:bundle|3:C:SELECT_LOWEST-RISK_FIX|3:C:EXECUTE_(preview,_one_step)|3:C:VERIFY_(same_commands)|3:C:PREVENT title=Three_phases_with_different_permissions at_1=15 at_2=62 at_3=75
+
+**[ANIMATION]** step: 3
 
 **Precisely.** The eleven steps of the framework fall into three phases with different permissions. Phase 1 is read-only: symptom, observe, collect evidence, understand state, form hypotheses, test hypotheses, identify the root cause. It uses only commands with the green label. Phase 2 preserves: it adds refs and files and removes nothing. Phase 3 is the first moment a ref moves or a file is overwritten: select the lowest-risk fix, execute, verify, prevent.
 
@@ -75,9 +89,15 @@ In production, ask the reporter for three things: the exact text on the screen, 
 
 ## MENTAL MODEL
 
+**[ANIMATION]** gates: gates=secure_the_site:done|record_everything:done|reconstruct_the_sequence:done|state_a_cause:done title=The_accident_investigator at_1=35 at_2=50 at_3=60 at_4=80
+
+**[ANIMATION]** step: 4
+
 The textbook's analogy is an accident investigator. The investigator secures the site, records everything, reconstructs the sequence, and only then states a cause. Nobody tows the vehicles away first to see whether the road works again.
 
 The analogy breaks in one useful way: a repository can be copied in seconds, so you can rehearse the repair on the copy. No accident site offers that.
+
+**[ANIMATION]** stores: id=uptodate boxes=your_clone|*the_server rows=1:A:the_local_branch@ref|1:B:the_branch_of_that_name@ref|2:A:your_work:_where?@ghost arrows=1:A1>B1:same_commit title="Everything_up-to-date"_is_a_statement_about_one_ref at_1=22 at_2=55
 
 Carry one more picture for "Everything up-to-date". It's a statement about one ref: the local branch and the server's branch of that name point at the same commit. It isn't a statement about your work. A push sends a ref. If the ref didn't move, there's nothing to send, wherever your commits are.
 
@@ -97,6 +117,10 @@ Carry one more picture for "Everything up-to-date". It's a statement about one r
   IDENTIFY ROOT CAUSE  name the layer      destroys nothing)        talks to the server)
 ```
 
+The three phases on one sheet. The demo stays in the left column until the root cause has a name.
+
+**[ANIMATION]** stores: id=sofar boxes=The_root-cause_box:section_29.3 rows=1:A:Observed_behavior:_git_push_prints_"Everything_up-to-date";_two_commits_are_missing_from_the_pull_request|2:A:Git_state:_HEAD_is_detached_at_075407e;_.git/rebase-merge_exists,_1_of_3_picks_done|2:A:Mechanism:_git_rebase_moves_the_branch_ref_only_when_the_last_pick_succeeds;_git_rebase_--continue_was_never_run|2:A:Root_cause:_an_unfinished_rebase;_the_developer_worked_for_days_inside_it|3:A:Why_Git_does_this:_moving_the_branch_only_at_the_end_is_what_makes_git_rebase_--abort_possible|3:A:Correct_fix:_anchor_the_detached_commits,_abort_the_rebase,_add_the_two_new_commits,_push|3:A:Prevention:_read_the_first_line_of_git_status_before_committing_and_before_pushing steps=boxes,1 title=What_we_know_so_far
+
 **[DIAGRAM]** Later, after the evidence has been collected, the state diagram of section 29.3. Two boxes: the clone and the server. Draw the server first; it is the smaller picture.
 
 ```text
@@ -112,27 +136,7 @@ Carry one more picture for "Everything up-to-date". It's a statement about one r
  +-----------------------------------------------------------+    +--------------------------------+
 ```
 
-The lower line in the clone equals the server. The upper line exists only in the clone, and only HEAD names it.
-
-**[ON SCREEN]** The root-cause box of section 29.3, shown after the test.
-
-```text
-Observed behavior : git push prints "Everything up-to-date"; two commits are missing from the pull request.
-Git state         : HEAD is detached at 075407e. .git/rebase-merge exists: 1 of 3 picks done.
-                    refs/heads/feature/latency-budget = origin/feature/latency-budget = 4a03014.
-Mechanism         : git rebase detaches HEAD, replays commits on it, and moves the branch ref only
-                    when the last pick succeeds. The rebase stopped at a conflict. The conflict was
-                    resolved with git commit, and git rebase --continue was never run. Later
-                    commits extended the detached HEAD. git push <remote> <branch> sends the ref,
-                    and the ref had not moved.
-Root cause        : An unfinished rebase. The developer worked for days inside it.
-Why Git does this : Moving the branch only at the end is what makes git rebase --abort possible:
-                    the original branch stays intact until the whole replay has succeeded.
-Correct fix       : Anchor the detached commits, abort the rebase, add the two new commits to the
-                    published branch, push. Nothing published is rewritten.
-Prevention        : Read the first line of git status before committing and before pushing.
-                    Show the Git state in the shell prompt.
-```
+The state diagram comes later, after the evidence has been collected, and so does the root-cause box. Before the demo, only the first line of that box can be filled in: the observed behavior. That's all we know so far.
 
 ## LIVE TERMINAL DEMO
 
@@ -345,7 +349,15 @@ config/service.yaml
 ```
 <!-- /snippet -->
 
-`app/metrics.py` and `app/audit.py`, the files of the two new commits, are in the index. The work exists. Show the state diagram now.
+`app/metrics.py` and `app/audit.py`, the files of the two new commits, are in the index. The work exists.
+
+**[ANIMATION]** remotes: [scoring-api (your clone)] 8bd6e7d-4b30d7e main origin/main; 8bd6e7d-60d09a1-cd8451c-4a03014 feature/latency-budget origin/feature/latency-budget; HEAD=none || [server.git] 8bd6e7d-4b30d7e main; 8bd6e7d-60d09a1-cd8451c-4a03014 feature/latency-budget; HEAD=none => + ^4b30d7e-9fbe4d7-96a7b55-075407e; HEAD=075407e; say:The_upper_line_exists_only_in_the_clone || => + say:.git/rebase-merge:_1_done,_2_to_do || layout=columns id=state title=The_clone_and_the_server at_state_2=60
+
+**[ANIMATION]** step: state-2
+
+Here's that state as one picture. The lower line in the clone equals the server. The upper line exists only in the clone, and only HEAD names it.
+
+**[ANIMATION]** step: state-3
 
 **The state files.** A rebase keeps its state in a directory.
 
@@ -399,6 +411,10 @@ Stop the video here. You have the symptom and every piece of evidence. Write thr
 
 **[PAUSE]**
 
+**[ANIMATION]** cards: id=hyp cards=the_commits_were_made_on_another_branch|a_rebase_stopped_and_the_commits_were_made_on_the_detached_HEAD|the_commits_were_pushed_and_the_pull_request_page_is_stale|the_push_went_to_another_repository numbered=on marks=1:bad,2:ok,3:bad,4:bad title=The_textbook's_four_hypotheses at_1=12 at_2=33 at_3=60 at_4=84
+
+**[ANIMATION]** step: 4
+
 **The test.** The textbook's four hypotheses. One: the commits were made on another branch. Two: a rebase stopped and the commits were made on the detached HEAD. Three: the commits were pushed and the pull request page is stale. Four: the push went to another repository.
 
 ```bash
@@ -426,7 +442,33 @@ $ git branch -a --contains HEAD
 ```
 <!-- /snippet -->
 
-The first command lists what HEAD has that the branch doesn't: the two missing commits, the conflict resolution, and the commit of `main`. The server holds `4a03014` for the branch, so nothing newer was pushed. And `--contains HEAD` lists only the detached HEAD: no other branch has the commits. One hypothesis is confirmed and three are rejected. Show the root-cause box. The layer is Git. GitHub displayed the branch it was given. And there are the two commits from the opening: on a detached HEAD, where no branch names them.
+The first command lists what HEAD has that the branch doesn't: the two missing commits, the conflict resolution, and the commit of `main`. The server holds `4a03014` for the branch, so nothing newer was pushed. And `--contains HEAD` lists only the detached HEAD: no other branch has the commits.
+
+**[ANIMATION]** step: hyp.marks
+
+One hypothesis is confirmed and three are rejected.
+
+**[ON SCREEN]** The root-cause box of section 29.3, shown after the test.
+
+```text
+Observed behavior : git push prints "Everything up-to-date"; two commits are missing from the pull request.
+Git state         : HEAD is detached at 075407e. .git/rebase-merge exists: 1 of 3 picks done.
+                    refs/heads/feature/latency-budget = origin/feature/latency-budget = 4a03014.
+Mechanism         : git rebase detaches HEAD, replays commits on it, and moves the branch ref only
+                    when the last pick succeeds. The rebase stopped at a conflict. The conflict was
+                    resolved with git commit, and git rebase --continue was never run. Later
+                    commits extended the detached HEAD. git push <remote> <branch> sends the ref,
+                    and the ref had not moved.
+Root cause        : An unfinished rebase. The developer worked for days inside it.
+Why Git does this : Moving the branch only at the end is what makes git rebase --abort possible:
+                    the original branch stays intact until the whole replay has succeeded.
+Correct fix       : Anchor the detached commits, abort the rebase, add the two new commits to the
+                    published branch, push. Nothing published is rewritten.
+Prevention        : Read the first line of git status before committing and before pushing.
+                    Show the Git state in the shell prompt.
+```
+
+That's the root-cause box, filled in. The layer is Git. GitHub displayed the branch it was given. And there are the two commits from the opening: on a detached HEAD, where no branch names them.
 
 **Preserve.** Before any change, give the unnamed commits a name. 🟢 SAFE: `git branch` adds one ref and touches nothing else.
 
@@ -505,7 +547,9 @@ c54eb8c Add p95 latency metric
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: 05ba901-8bd6e7d-4b30d7e-9fbe4d7-96a7b55-075407e rescue/latency-wip; 4b30d7e main origin/main; 8bd6e7d-60d09a1-cd8451c-4a03014 feature/latency-budget origin/feature/latency-budget; HEAD=feature/latency-budget => 05ba901-8bd6e7d-4b30d7e-9fbe4d7-96a7b55-075407e rescue/latency-wip; 4b30d7e main origin/main; 8bd6e7d-60d09a1-cd8451c-4a03014-c54eb8c-30e8fe4 feature/latency-budget; 4a03014 origin/feature/latency-budget; HEAD=feature/latency-budget title=Two_picks,_two_new_IDs
+**[ANIMATION]** graph: 05ba901-8bd6e7d-4b30d7e-9fbe4d7-96a7b55-075407e rescue/latency-wip; 4b30d7e main origin/main; 8bd6e7d-60d09a1-cd8451c-4a03014 feature/latency-budget origin/feature/latency-budget; HEAD=feature/latency-budget => 05ba901-8bd6e7d-4b30d7e-9fbe4d7-96a7b55-075407e rescue/latency-wip; 4b30d7e main origin/main; 8bd6e7d-60d09a1-cd8451c-4a03014-c54eb8c-30e8fe4 feature/latency-budget; 4a03014 origin/feature/latency-budget; HEAD=feature/latency-budget => + 30e8fe4 origin/feature/latency-budget; mark:+:4b30d7e,9fbe4d7; mark:-:96a7b55,075407e; say:git_cherry_-v_compares_by_patch,_not_by_ID; title:After_the_push title=Two_picks,_two_new_IDs id=picks dx=250
+
+**[ANIMATION]** step: state-2
 
 The picks created `c54eb8c` and `30e8fe4`: the same changes as `96a7b55` and `075407e` with a different parent, and therefore different IDs.
 
@@ -557,7 +601,13 @@ $ ls .git | grep -c rebase
 ```
 <!-- /snippet -->
 
-The first line of `git status` is "On branch". HEAD, the remote-tracking branch and the server agree on `30e8fe4`. `git cherry -v` compares by patch, that is, by the change and not by the ID. The minus sign marks the two rescued commits as present on the branch in equivalent form. The plus sign marks the commit of `main` and the conflict resolution `9fbe4d7`, which were deliberately left out. No rebase directory remains.
+The first line of `git status` is "On branch". HEAD, the remote-tracking branch and the server agree on `30e8fe4`. No rebase directory remains.
+
+**[ANIMATION]** step: picks.state-3
+
+`git cherry -v` compares by patch, that is, by the change and not by the ID. The minus sign marks the two rescued commits as present on the branch in equivalent form. The plus sign marks the commit of `main` and the conflict resolution `9fbe4d7`, which were deliberately left out.
+
+**[ANIMATION]** end
 
 **Prevent.** Make a stopped operation visible where people look. Git ships a prompt script, `git-prompt.sh`, whose `__git_ps1` function prints the branch and the operation in progress. The habit that needs no tool: the first line of `git status` before every commit and every push.
 
@@ -579,9 +629,15 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
+**[ANIMATION]** stores: id=phases2 boxes=*PHASE_1_READ-ONLY:only_commands_with_the_green_label|PHASE_2_PRESERVE:adds_refs_and_files;_destroys_nothing|PHASE_3_CHANGE:moves_refs,_rewrites_files,_talks_to_the_server rows=1:A:SYMPTOM|1:A:OBSERVE|1:A:COLLECT_EVIDENCE|1:A:UNDERSTAND_STATE|1:A:FORM_HYPOTHESES|1:A:TEST_HYPOTHESES|1:A:IDENTIFY_ROOT_CAUSE|2:B:record_the_output|2:B:backup_ref|2:B:copy_of_the_repository|2:B:bundle|3:C:SELECT_LOWEST-RISK_FIX|3:C:EXECUTE_(preview,_one_step)|3:C:VERIFY_(same_commands)|3:C:PREVENT title=Three_phases_with_different_permissions at_2=3 at_3=14
+
+**[ANIMATION]** step: 1
+
 Now, out of the lab. An engineer on a ranking team asks for help on Friday afternoon: the latency work she did this week isn't on her pull request, and the release is cut on Monday. The colleague she asks doesn't touch her keyboard for the first ten minutes. He asks for the exact message, the last commands she remembers, and whether she has tried anything since. She hasn't.
 
 He runs the ten commands and reads the first line of `git status` aloud: a rebase in progress, started on Monday. She remembers the conflict. She had fixed it, committed, and gone on working. He writes down four hypotheses in the incident channel with the command for each, runs three commands, and names the root cause with its layer: Git, an unfinished rebase. GitHub showed what it was given.
+
+**[ANIMATION]** step: 3
 
 Then one branch to anchor the work, the abort, two cherry-picks, a dry-run push, the push, and the same commands again to verify. The pull request shows the two commits. The message he posts afterwards has four lines: what happened, how he knows, what the fix changed, and what the team adds: the shell prompt that shows an operation in progress.
 

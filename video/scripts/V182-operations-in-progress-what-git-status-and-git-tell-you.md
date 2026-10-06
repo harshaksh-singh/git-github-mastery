@@ -13,6 +13,8 @@
 
 A colleague's laptop is handed to you with that sentence. Nothing is broken. An earlier `git pull`, which fetches from the server and then merges, stopped at a conflict three weeks ago and was left. A conflict is a place where Git can't decide between two changes. Since then the repository has been in the middle of a merge, through reboots and a holiday, and every refusal Git printed was a correct statement about that state. Keep the laptop's sentence in mind. Later you'll watch Git print the refusal behind it.
 
+**[ANIMATION]** cards: id=outcomes cards=continue|abort|anchor,_and_then_abort title=Three_different_outcomes_for_the_work at_1=62 at_2=67 at_3=72
+
 The diagnosis is one `git status`, or one listing of the `.git` directory, where Git keeps the repository. The decision that follows isn't automatic, and that is where people do damage: continue, abort, or anchor and then abort are three different outcomes for the work that was done inside the operation.
 
 ## INTRODUCTION
@@ -41,41 +43,79 @@ After this video you can:
 
 **In one sentence.** Merge, rebase, cherry-pick, revert and bisect can stop half-way, and each leaves named files in `.git` that say which operation it is, where it started, and what remains.
 
+**[ANIMATION]** stores: id=files boxes=.git:an_operation_in_progress_is_nothing_but_files|git_status|three_consequences rows=1:A:MERGE__HEAD:_a_pseudoref_that_holds_a_commit_ID|1:A:a_directory_with_a_todo_list|2:B:reads_those_files_and_prints_its_first_lines_from_them|3:C:a_stopped_operation_survives_a_reboot|4:C:deleting_the_files_ends_it_without_undoing_it|5:C:list_.git_to_diagnose_a_repository_you_were_handed arrows=2:A>B:reads title=No_process_"is"_a_rebase at_1=30 at_2=75
+
+**[ANIMATION]** step: 2
+
 **Precisely.** Git has no process that "is" a rebase. An operation in progress is nothing but files: a pseudoref such as `MERGE_HEAD` that holds a commit ID, and for multi-step operations a directory with a todo list. `git status` reads those files and prints its first lines from them.
 
 Three consequences follow, and each one matters in an incident.
 
+**[ANIMATION]** step: 3
+
 A stopped operation survives a reboot and can be weeks old.
 
+**[ANIMATION]** step: 4
+
 Deleting the files by hand ends the operation without undoing it.
+
+**[ANIMATION]** step: 5
 
 And you can diagnose a repository you were handed by listing `.git`.
 
 **The signatures.**
 
+**[ANIMATION]** walk: id=sig columns=operation,signature_in_.git,what_it_holds rows=Merge:MERGE__HEAD:the_commit_being_merged_in|Rebase:rebase-merge/_or_rebase-apply/,_REBASE__HEAD:head-name,_orig-head,_onto,_msgnum,_end,_git-rebase-todo|Cherry-pick:CHERRY__PICK__HEAD:the_commit_being_applied;_sequencer/_when_several_were_requested|Revert:REVERT__HEAD:the_commit_being_undone|Bisect:BISECT__START,_BISECT__LOG,_BISECT__TERMS:the_branch_to_return_to,_the_record,_the_two_words;_marks_under_refs/bisect/|not_a_signature:ORIG__HEAD,_FETCH__HEAD:records_of_past_commands marks=6.1:dim,6.2:dim,6.3:dim title=The_signatures
+
+**[ANIMATION]** step: 1
+
 Merge: `MERGE_HEAD` is the commit being merged in. It becomes the second parent. `MERGE_MSG` is the prepared message. `ORIG_HEAD` is the tip before the merge. `AUTO_MERGE` is a tree with the conflict markers as Git wrote them. HEAD, Git's note of where you are, is still attached to the branch.
+
+**[ANIMATION]** step: 2
 
 Rebase: a directory, `rebase-merge`, or `rebase-apply` for the older apply backend, with the same role. HEAD is a raw commit ID. `REBASE_HEAD` is the commit whose replay stopped. Inside the directory, `head-name` is the branch that will be moved at the end, `orig-head` its tip at the start, `onto` the new base, `msgnum` and `end` the position, and `git-rebase-todo` the remaining picks.
 
+**[ANIMATION]** step: 3
+
 Cherry-pick: `CHERRY_PICK_HEAD` is the commit being applied. HEAD stays on the branch. A `sequencer` directory exists when several commits were requested: `head` is where the branch was before the first pick, and `todo` lists the current pick first and then those not yet applied. A cherry-pick of a single commit has no `sequencer` directory.
+
+**[ANIMATION]** step: 4
 
 Revert: `REVERT_HEAD` is the commit being undone. The rest is the same machinery as cherry-pick with the roles of base and "theirs" exchanged.
 
+**[ANIMATION]** step: 5
+
 Bisect: `BISECT_START` is the branch to return to, `BISECT_LOG` the replayable record, `BISECT_TERMS` the two words in use, and the marks are refs under `refs/bisect/`. HEAD is detached on the commit under test. A bisect has no conflict and a clean working tree, which is why it's the operation most often forgotten.
+
+**[ANIMATION]** step: 6
 
 Two files aren't signatures. `ORIG_HEAD` and `FETCH_HEAD` are records of past commands, not of an operation in progress.
 
+**[ANIMATION]** cards: id=exits cards=Continue|Leave_and_restore:the_starting_point|Leave_and_keep:the_current_state title=Up_to_three_kinds_of_exit at_1=45 at_2=55 at_3=78
+
 **The exits.** Each operation has up to three kinds of exit. Continue. Leave and restore the starting point. Or leave and keep the current state.
 
+**[ANIMATION]** end
+
 Every "leave and restore" command resets the index, which is the proposed next commit, and the working tree, the files you edit, for tracked files. So uncommitted edits made during the operation are lost. Section 29.6 marks them all 🟡. The chapter's command safety table, section 29.14, is stricter about one of them, and this video follows the table: `git merge --abort` is 🔴 DANGEROUS, because it destroys every resolution made so far and edits staged during the merge, and the manual warns that uncommitted changes present when the merge started can't always be reconstructed. `git rebase --abort`, `git cherry-pick --abort`, `git revert --abort` and `git bisect reset` are 🟡 CAUTION.
+
+**[ANIMATION]** cards: id=when question=What_was_intended? cards=Continue:the_operation_was_intended_and_the_resolution_is_known|Abort:nothing_done_inside_it_matters|Anchor,_then_abort:commits_were_made_inside_it title=The_decision_is_not_automatic at_1=16 at_2=36 at_3=50
 
 **When not to reach for an exit.** The decision isn't automatic. Continue, if the operation was intended and the resolution is known. Abort, if nothing done inside it matters. Anchor and then abort, as in video 180, if commits were made inside it. To anchor is to give those commits a branch name. Ask what was intended before choosing.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=list boxes=the_list_on_the_wall:Git's_state_files rows=1:A:says_what_is_still_inside_the_patient|2:A:is_also_the_undo_record:_what_--abort_reads@hl|3:A:deleted_by_hand:_not_finished,_and_not_undone@bad title=The_instrument_count at_1=35 at_2=8 at_3=55
+
+**[ANIMATION]** step: 1
+
 A picture helps. The textbook's analogy is a surgeon's instrument count: the list on the wall says what is still inside the patient. You don't close until the count is right, and anyone who walks into the room can read the list.
 
+**[ANIMATION]** step: 3
+
 The analogy breaks because Git's list is also the undo record. The same files that describe the operation are what `--abort` reads to restore the starting point. Delete the list by hand, and you haven't finished the operation or undone it. You've made it impossible to do either with Git's help.
+
+**[ANIMATION]** cards: id=two cards=Which_state_files_exist?:that_names_the_operation|Is_HEAD_a_branch_name_or_a_raw_commit_ID?:that_tells_you_where_new_commits_would_go numbered=on title=Two_questions_for_any_repository_you're_handed at_1=22 at_2=55
 
 So hold two questions for any repository you're handed. First: which state files exist? That names the operation. Second: is HEAD a branch name or a raw commit ID? That tells you where new commits would go.
 
@@ -142,7 +182,7 @@ ref: refs/heads/main
 ```
 <!-- /snippet -->
 
-Memorize this listing. `.git/HEAD` contains `ref: refs/heads/main`. Any file in capitals that isn't in this listing is a sign of activity.
+Memorize this listing. `.git/HEAD` contains `ref: refs/heads/main`. Any file in capitals that isn't in this listing was left by a command: by an operation still in progress, or by one that has finished.
 
 Try it now. Thirty seconds. In the lab shell, or in any repository you have, run `ls .git`, which only reads. Is there a name in capitals that this listing lacks? Say it out loud.
 
@@ -612,7 +652,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A data engineer goes on leave and hands her laptop's project directory to a colleague with one line: the pipeline repository won't let her switch to the release branch. The colleague doesn't run a single command that changes anything for the first minutes.
 
+**[ANIMATION]** graph: A-B-C-D-E feature; good:A; bad:E; HEAD=C; say:Bisecting,_started_from_a_feature_branch => + C-?her_commit; HEAD=?her_commit; say:One_commit_made_on_the_detached_HEAD => + ?her_commit a-branch-name; say:Anchor_first => + HEAD=feature; drop:good,bad; cmd:git_bisect_reset; say:Then_end_the_bisect id=handed at_state_2=62 at_state_3=3 at_state_4=74
+
+**[ANIMATION]** step: state-2
+
 He lists `.git`: `BISECT_LOG` and its companions. `git status` confirms it: bisecting, started from a feature branch, working tree clean. He reads `BISECT_LOG` and sees that she was two steps from the answer when she stopped. The reflog, Git's local record of where HEAD has been, shows one commit made after the bisect began, on the detached HEAD. That commit is the one thing in this repository that an exit could lose.
+
+**[ANIMATION]** step: state-4
 
 He gives it a branch name first. Then he messages her with a precise question, not "can I reset it?", but: "you were bisecting from this branch; I have saved the commit you made on top; do you want the bisect finished, or may I end it?" She had forgotten the bisect entirely. He ends it with `git bisect reset`, checks the first line of `git status`, and switches to the release branch.
 

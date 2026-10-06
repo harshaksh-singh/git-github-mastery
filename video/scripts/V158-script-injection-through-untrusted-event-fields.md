@@ -47,13 +47,23 @@ After this video you can:
 
 **Precisely.** The documentation: "The `run` command executes within a temporary shell script on the runner. Before the shell script is run, the expressions inside are evaluated and then substituted with the resulting values, which can make it vulnerable to shell command injection."
 
+**[ANIMATION]** flow: actors=workflow_file,*GitHub_Actions,runner subs=a_run_step,-,- msgs=1>1:title="${{_X_}}"|1>2:1._evaluate_${{_..._}}|2>2:2._paste_the_VALUE_of_X_into_the_script_text|2>3:the_script_text|3>3:3._write_the_text_to_a_temporary_script_file|3>3:4._start_the_shell_on_it mono=off title=The_order_is_the_whole_mechanism id=mech at_1=6 at_2=22 at_3=40 at_4=58 at_5=62 at_6=82
+
+**[ANIMATION]** step: mech.6
+
 The order is the whole mechanism. Four steps. One: GitHub Actions evaluates the expression. Two: it pastes the value into the script text. Three: the runner writes that text to a temporary script file. Four: the runner starts the shell on the file.
 
+**[ANIMATION]** say: The_shell_never_sees_"${{_X_}}"._It_sees_whatever_X_contained,_as_source_code
+
 The shell never sees the expression. It sees whatever the value contained, as source code.
+
+**[ANIMATION]** say: Code_generation:_the_workflow_file_is_a_template,_each_run_a_new_program
 
 That's why the right phrase is code generation. The workflow file is a template, and each run generates a new program from it. If part of the input to the generator comes from an outsider, the outsider is a co-author of the program.
 
 **Which values are attacker-controlled?** A context is a named object of facts about a run, and the documentation says: "Attackers can add their own malicious content to the `github` context, which should be treated as potentially untrusted input. These contexts typically end with `body`, `default_branch`, `email`, `head_ref`, `label`, `message`, `name`, `page_name`, `ref`, and `title`."
+
+**[ANIMATION]** walk: columns=the_context_ends_with,what_it_is,whose_data rows=head__ref:a_branch_name:Git_data|message:a_commit_message:Git_data|name,_email:author_fields:Git_data|title,_body:of_issues,_pull_requests_and_comments:GitHub_data_that_any_account_can_write title=Text_an_outsider_controls id=fields
 
 Go through that list with Git in mind. `head_ref` is a branch name, and Git allows characters in a branch name that a shell treats as syntax. `message` is a commit message. `name` and `email` are author fields, and you proved in video 138 that anyone can set those to anything. Titles and bodies of issues, pull requests and comments are GitHub data that any account can write.
 
@@ -80,6 +90,10 @@ B. The quotes look careful, and they don't help, because the value arrives befor
 
 What an attacker achieves is arbitrary commands in that job, with that job's token and secrets: its credential for the repository, and the encrypted values it was given.
 
+**[ANIMATION]** stores: boxes=contained:read-only_token,_no_secrets|not_contained:the_base_repository's_token rows=1:A:pull__request_from_a_fork@ok|2:B:pull__request__target|2:B:issues|2:B:issue__comment|2:B:discussion|3:B:v1-issue-triage.yml:_on_issues,_with_issues:_write@bad title=Where_an_injection_matters id=where mono=on at_1=15 at_2=55
+
+**[ANIMATION]** step: where.2
+
 **Where that matters.** On `pull_request` from a fork, a second repository made from yours, it's contained by the fork model of the last video: read-only token, no secrets. On `pull_request_target`, `issues`, `issue_comment` or `discussion`, it isn't contained. Those run with the base repository's token.
 
 **The fixed step,** with the documented mitigation, an intermediate environment variable. An environment variable is a named value that a program receives when it starts.
@@ -98,11 +112,21 @@ What an attacker achieves is arbitrary commands in that job, with that job's tok
     fi
 ```
 
+**[ANIMATION]** walk: columns=,expression_inside_run,through_env rows=the_value_goes:into_the_script_text:into_memory,_as_a_variable|the_script_the_shell_parses:a_new_program_for_every_run:a_constant,_reviewed_once|the_value_reaches_the_shell:as_source_code:as_the_value_of_a_variable,_after_parsing|the_shell:parses_it_as_commands:does_not_re-parse_it_as_commands marks=1.2:bad,2.2:bad,3.2:bad,4.2:bad,1.3:ok,2.3:ok,3.3:ok,4.3:ok mono=off title=Code,_or_data id=forms
+
+**[ANIMATION]** step: forms.1
+
 **Why this form is safe.** The expression is still evaluated. But its value no longer goes into the script text. In the documentation's words, the value "is stored in memory and used as a variable, and doesn't interact with the script generation process".
+
+**[ANIMATION]** step: forms.4
 
 Follow the consequences. The script that the shell parses is now a constant. It's identical for every pull request, and you can review it once. The title reaches the shell as the value of a variable, after parsing is over. And the shell doesn't re-parse the value of a variable as commands when it expands it.
 
+**[ANIMATION]** say: Still_quote_the_variable:_an_unquoted_expansion_is_split_and_glob-expanded
+
 The double quotes around the variable are still needed, for the ordinary shell reason: an unquoted expansion is split into words and glob-expanded, meaning its wildcard characters are matched against file names. The documentation tells you to quote for that reason.
+
+**[ANIMATION]** end
 
 **A second mitigation,** which the same reference prefers when available: use an action instead of an inline script, and pass the value through `with`.
 
@@ -118,7 +142,11 @@ And `env` doesn't make later misuse safe. Passing the variable to `eval`, the sh
 
 The textbook says the analogy is close, and breaks only in one respect: a shell is far more obedient than any reader, and treats quotes and separators in the pasted text as structure.
 
+**[ANIMATION]** replay: forms
+
 Now the two forms in that picture. With the expression inside `run`, the name is pasted into the letter before it's handed to the reader. The reader can't tell which words were yours and which came from the customer. With `env`, the letter says "read out the content of the envelope marked TITLE". The letter is always the same. The envelope's content is read out as a name, never obeyed as a sentence.
+
+**[ANIMATION]** say: Keep_the_outsider's_text_on_the_data_side
 
 That's the difference between code and data, and the whole fix is to keep the outsider's text on the data side.
 
@@ -127,6 +155,10 @@ That's the difference between code and data, and the whole fix is to keep the ou
 Try it now, thirty seconds, on paper. Write the four steps in order, from the workflow file to the running shell, and mark the step where an outsider's text enters. Say it out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** flow: actors=workflow_file,*GitHub_Actions,runner subs=a_run_step,-,- msgs=1>1:title="${{_X_}}"|1>2:1._evaluate_${{_..._}}|2>2:2._paste_the_VALUE_of_X_into_the_script_text|2>3:the_script_text|3>3:3._write_the_text_to_a_temporary_script_file|3>3:4._start_the_shell_on_it mono=off title=The_order_is_the_whole_mechanism id=order say_6=The_shell_never_sees_"${{_X_}}"._It_sees_whatever_X_contained,_as_source_code at_2=12 at_3=30 at_4=36 at_5=42 at_6=56
+
+**[ANIMATION]** step: order.1
 
 **[DIAGRAM]** The picture of section 21A.6. Three columns: the workflow file, GitHub Actions, the runner. Draw the two numbered steps in the middle, then the two on the right, then the sentence underneath.
 
@@ -139,6 +171,8 @@ Try it now, thirty seconds, on paper. Write the four steps in order, from the wo
 
   The shell never sees "${{ X }}". It sees whatever X contained, as source code.
 ```
+
+**[ANIMATION]** step: order.6
 
 Check your order. Evaluate, paste, write the file, start the shell. The outsider's text enters at step two, and the shell only arrives at step four. So the shell never sees the expression. It sees whatever the value contained, as source code.
 
@@ -162,7 +196,11 @@ One line, in file 1, line 32, inside a multi-line script. There's the `echo` fro
 
 **[PAUSE]**
 
+**[ANIMATION]** step: where.3
+
 The number can't carry code. The title is on the documentation's list. And file 1 runs on an opened issue, with the base repository's token and `issues: write`. So: an outsider's text, placed where the shell expects source code, in a job with a write scope.
+
+**[ANIMATION]** end
 
 **Step 2: the fix.** Replay `labs/run ch21a/lab-29-1-fixes`. It applies the reference fix to each of the five lab files and shows the diffs.
 
@@ -190,7 +228,7 @@ Five files changed, 24 insertions and 33 deletions. The fixes remove more than t
 git diff -U2 -- v1-issue-triage.yml
 ```
 
-Before the diff appears, write the fix yourself. You need two new lines above `run`, and one changed line below it. Make your prediction on paper.
+Before the diff appears, write the fix yourself. You need three new lines above `run`, an `env` line and two variables, and one changed line below it. Make your prediction on paper.
 
 **[PAUSE]**
 
@@ -268,7 +306,15 @@ $ git status --short
 
 `git commit` is 🟢 SAFE: it adds an object and moves the branch. The status is clean. In your own run of the lab you make one commit per file, with a message that says what you fixed.
 
-**The review comment.** Here's the form a security engineer would use for that line, and you can adapt it. Name the line. Name the class: script injection through an event field. State what is substituted and when: the issue title is pasted into the script text before the shell starts. State the condition: the workflow runs on `issues`, so anyone who can open an issue supplies that text, and the job's token can write issues. State the smallest change: move both expressions to `env` and reference the quoted variables. And cite the documentation's page on script injections. Five sentences, no drama, and the author can act on it without a meeting.
+**[ANIMATION]** cards: cards=Name_the_line|Name_the_class:script_injection_through_an_event_field|State_what_is_substituted_and_when:pasted_into_the_script_text_before_the_shell_starts|State_the_condition:who_supplies_the_text,_what_the_token_can_write|State_the_smallest_change:move_both_expressions_to_env,_quote_the_variables|Cite_the_documentation:its_page_on_script_injections title=The_review_comment numbered=on id=comment
+
+**[ANIMATION]** step: comment.3
+
+**The review comment.** Here's the form a security engineer would use for that line, and you can adapt it. Name the line. Name the class: script injection through an event field. State what is substituted and when: the issue title is pasted into the script text before the shell starts.
+
+**[ANIMATION]** step: comment.6
+
+State the condition: the workflow runs on `issues`, so anyone who can open an issue supplies that text, and the job's token can write issues. State the smallest change: move both expressions to `env` and reference the quoted variables. And cite the documentation's page on script injections. Five sentences, no drama, and the author can act on it without a meeting.
 
 ## COMMON MISTAKES
 
@@ -285,6 +331,8 @@ Five mistakes to watch for.
 Now, out of the lab. The textbook's case. A prompt-evaluation workflow prints the pull request title in a job that holds a provider API key, because it runs on `pull_request_target`. The textbook's comment: that one line is the Nx pattern.
 
 The fix is two edits, and they're from two different videos. The `env` form, from this one, so that the title is data. And removing the privileged trigger, from the last one, so that the key isn't in the job at all.
+
+**[ANIMATION]** walk: columns=the_edit,what_it_does,with_this_edit_alone rows=the_env_form:the_title_is_data:a_job_that_still_holds_a_key,_started_by_an_outsider|removing_the_privileged_trigger:the_key_is_not_in_the_job_at_all:the_injectable_line,_still_in_the_file mono=off title=Two_edits,_from_two_videos id=two
 
 Notice that either edit alone would have left something. With only the first, an outsider's pull request still starts a job that holds a key. With only the second, the injectable line is still in the file, waiting for the next person who changes the trigger. A review that finds one weakness in a workflow should finish reading the file.
 

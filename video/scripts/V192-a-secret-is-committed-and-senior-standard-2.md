@@ -13,6 +13,10 @@
 
 Ravi committed an environment file with a password. A commit is one saved snapshot of the project, and a push sends commits to the team's server. He pushed, noticed, deleted the file in a later commit and pushed again. Then he did the one thing in this story that deserves protection: he told someone.
 
+**[ANIMATION]** cards: id=claims question=Three_claims,_none_tested cards=The_branch_is_clean.|It_was_only_his_branch.|The_repository_is_private. ask=1,2,3 marks=1:bad,2:bad,3:bad at_marks=85
+
+**[ANIMATION]** step: 3
+
 His message contains three claims. The branch is clean. It was only his branch. The repository is private. Each claim is a hypothesis, and none of the three has been tested. And while you're reading his message, the password still works. Hold on to those three claims. Each one meets its evidence before the end.
 
 ## INTRODUCTION
@@ -39,21 +43,35 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** gates: id=order gates=1_Contain:done:at_the_provider:revoke_or_rotate_first|2_Assess:done:-:five_facts_for_the_record|3_Eradicate:done:-:remove,_and_decide_whether_to_rewrite|4_Recover:done:-:deploy_the_new_credential,_remove_the_old_objects|5_Communicate:done:-:the_team_and_the_CTO|6_Prevent:done:-:an_ignore_rule,_push_protection title=The_order_is_fixed at_5=10
+
+**[ANIMATION]** step: setup
+
 **The order is fixed, and its first step is not Git.** Contain, assess, eradicate, recover, communicate, prevent.
+
+**[ANIMATION]** step: 1
 
 **1. Contain: revoke or rotate the credential first.** Revoking cancels the credential, and rotating replaces it with a new one. The damage happens where the secret is accepted, and automated scanners copy fast. Revocation works against every copy, including the ones you can't reach. GitHub's documentation says that revoking or rotating may be sufficient and that a history rewrite may not be warranted. And the sentence to remember under pressure: every `git` command typed before this step is time in which the key still works.
 
+**[ANIMATION]** step: 2
+
 **2. Assess.** Five facts for the record. Which secret, and what it can reach. The first commit, and the time of the first push. Which refs contain it, a ref being a name that points at a commit, such as a branch or a tag. Who could read it. And whether it was used. Git answers the middle three. Whether it was used is answered only by the issuer's logs.
+
+**[ANIMATION]** step: claims.3
 
 Now the three claims of the report. Before the evidence, give your own verdict on each. True or false? Say it out loud.
 
 **[PAUSE]**
 
+**[ANIMATION]** step: claims.marks
+
 The three claims, against the evidence. "The branch is clean now": a deletion removes nothing from history. The tip, the newest commit of the branch, has no file, and the history under the tip has. "It was only my branch": `--contains` decides, and here two branches on the server reach the commit, because a colleague based her work on his. "The repository is private": that limits the audience and doesn't end the exposure. Each claim was a hypothesis, and each is false. That's the opening, answered.
+
+**[ANIMATION]** step: order.3
 
 **3. Eradicate.** Remove the secret from current code, and decide whether to rewrite history. Rewrite when the data stays harmful after rotation, or when the affected history is small and unmerged, as here. Don't rewrite by reflex for a revoked key on a busy `main`: a rewrite costs every collaborator their clone, changes every recorded commit ID and removes signatures.
 
-**[ANIMATION]** graph: 963298b-cb446bd-76aa6c4-fdd903c-c5d0303-bb4230f-668b910 feature/digest-template; bb4230f feature/email-digest; 963298b main => 963298b-cb446bd-76aa6c4-fdd903c-c5d0303-bb4230f-668b910 feature/digest-template; cb446bd-8d98701-bd86515-4397ba9 feature/email-digest; 963298b main => 963298b-cb446bd-76aa6c4-fdd903c-c5d0303-bb4230f-668b910; cb446bd-8d98701-bd86515-4397ba9 feature/email-digest; 4397ba9-10f97d4 feature/digest-template; 963298b main; ghost:76aa6c4,fdd903c,c5d0303,bb4230f,668b910 title=The_branches_on_the_server
+**[ANIMATION]** graph: id=server 963298b-cb446bd-76aa6c4-fdd903c-c5d0303-bb4230f-668b910 feature/digest-template; bb4230f feature/email-digest; 963298b main; HEAD=main => + cb446bd-8d98701-bd86515-4397ba9 feature/email-digest; say:After_the_forced_push:_new_commits_with_new_IDs => + 4397ba9-10f97d4 feature/digest-template; ghost:76aa6c4,fdd903c,c5d0303,bb4230f,668b910; say:No_branch_reaches_the_old_commits,_and_they_still_exist => + gone:76aa6c4,fdd903c,c5d0303,bb4230f,668b910; cmd:git_gc_--prune=now; say:Pruned_on_the_server; name:pruned title=The_branches_on_the_server
 
 **[ANIMATION]** step: state-1
 
@@ -69,23 +87,39 @@ So every branch built on the old commits is transplanted with `git rebase --onto
 
 **[ANIMATION]** step: state-3
 
-**4. Recover.** Deploy the new credential. Then remove the old objects, which a force push doesn't do: in the picture they're dashed, because no branch reaches them, and they still exist. In the sandbox you administer the server and run `git gc --prune=now` there. On GitHub that's a request to Support, who need the first changed commit and the number of affected pull requests and who assist only where rotation cannot mitigate the risk. GitHub states that old commits can otherwise stay reachable by ID in cached views, in forks and through pull requests. Each clone keeps the objects through its reflogs until it is re-cloned or its reflogs are expired and its objects pruned.
+**4. Recover.** Deploy the new credential. Then remove the old objects, which a force push doesn't do: in the picture they're dashed, because no branch reaches them, and they still exist.
 
-**[ANIMATION]** end
+**[ANIMATION]** step: pruned
+
+In the sandbox you administer the server and run `git gc --prune=now` there. On GitHub that's a request to Support, who need the first changed commit and the number of affected pull requests and who assist only where rotation cannot mitigate the risk. GitHub states that old commits can otherwise stay reachable by ID in cached views, in forks and through pull requests. Each clone keeps the objects through its reflogs until it is re-cloned or its reflogs are expired and its objects pruned.
+
+**[ANIMATION]** step: order.5
 
 **5. Communicate.** The team is told which branches were rewritten and exactly what to do with a clone that fetched them. The CTO is told the exposure window, what the credential could reach, what the issuer's logs show, and that rotation is complete. Concealment is the one choice that makes a leak worse.
 
+**[ANIMATION]** step: order.6
+
 **6. Prevent.** An ignore rule in the project template. Staging by name and reading `git diff --cached`. Push protection, which blocks recognised token formats and not free-form passwords. And short-lived credentials.
+
+**[ANIMATION]** walk: id=never columns=claim,a_statement_about,verified_when rows="Gone":every_repository:no_ref_reaches_it,_and_the_object_no_longer_exists|"Safe":the_issuer:the_old_password_is_rejected mono=off title=Never_claimed_before_it_is_verified
 
 **What must never be claimed before it is verified.** That the secret is gone, and that it is safe. "Gone" is a statement about every repository: no ref reaches a commit with the file, and the object no longer exists, on the server and in each clone. "Safe" is a statement about the issuer: the old password is rejected. Verification of the step that matters is in the provider's console.
 
+**[ANIMATION]** layers: id=cause probe=.env,_staged_by_git_add_. layers=Git:stores_it|the_issuer:accepts_it|GitHub:may_keep_it title=The_root_cause,_in_three_layers
+
 **The root cause.** An unignored file with a secret in the working tree, staged by `git add .`. Layers, three of them. Git stores it. The issuer accepts it. GitHub may keep it.
+
+**[ANIMATION]** end
 
 **Severity.** SEV 1 until rotation is confirmed. Raise the level the moment a secret is involved. Lowering it later costs nothing.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=key boxes=the_notice_board|the_people_who_copied_it|the_door rows=1:A:a_photograph_of_the_house_key|1:B:copies_of_the_photograph|2:A:taken_down,_the_history_rewrite@ok|2:B:the_copies_stay@bad|3:C:the_lock_is_changed,_the_rotation@ok|3:B:a_picture_of_a_key_that_opens_nothing@dim arrows=1:A1>B1:copied title=The_photographed_key
+
 A picture helps. Think of a house key that was photographed and posted on a notice board. Taking the photograph down is the history rewrite. It's worth doing, and it does nothing about the people who already copied the photograph. Changing the lock is the rotation. After the lock is changed, every copy of the photograph is a picture of a key that opens nothing.
+
+**[ANIMATION]** end
 
 So the order follows from one question, and it's your quiz. Which step works against copies you can't reach: A, taking the photograph down, or B, changing the lock? Your answer?
 
@@ -93,7 +127,11 @@ So the order follows from one question, and it's your quiz. Which step works aga
 
 B. Only the lock.
 
+**[ANIMATION]** cards: id=places question=A_notice_board_is_one_place._A_Git_repository_is_many. cards=the_server|every_clone_that_fetched|every_branch_built_on_top|on_GitHub,_views_and_refs:only_Support_can_clear
+
 Where the picture breaks: a notice board is one place. A Git repository is many. The photograph is on the server, in every clone that fetched, in every branch built on top, and on GitHub in views and refs that only Support can clear. That's why "taken down" has to be verified per repository.
+
+**[ANIMATION]** end
 
 And the model for the message to the team: write it for the colleague who will read only the commands. If the message says "please be careful with your clones", they will run `git pull`.
 
@@ -235,7 +273,11 @@ Once you are satisfied with your changes, run
 ```
 <!-- /snippet -->
 
-One practical detail first: the local `.env` is untracked now, and the rebase will check out a commit that contains a file of that name. Git refuses to overwrite an untracked file, so the local copy is moved out of the repository. Then the todo list: `edit` on the commit that added the file, `drop` on the commit that removed it. The rebase stops at the adding commit.
+One practical detail first: the local `.env` is untracked now, and the rebase will check out a commit that contains a file of that name. Git refuses to overwrite an untracked file, so the local copy is moved out of the repository.
+
+**[ANIMATION]** todo: todo=pick:cb446bd:Add_digest_builder|pick:76aa6c4:Add_SMTP_sender|pick:fdd903c:Sort_digest_events_by_time|pick:c5d0303:Remove_env_file|pick:bb4230f:Schedule_the_digest_hourly edit=pick:cb446bd:Add_digest_builder|edit:76aa6c4:Add_SMTP_sender|pick:fdd903c:Sort_digest_events_by_time|pick:bb4230f:Schedule_the_digest_hourly
+
+Then the todo list: `edit` on the commit that added the file, `drop` on the commit that removed it. The rebase stops at the adding commit.
 
 ```bash
 git rm --cached .env
@@ -474,9 +516,17 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
+**[ANIMATION]** replay: order
+
+**[ANIMATION]** step: 2
+
 Now, out of the lab. A notification service's developer commits an environment file with the SMTP password to a feature branch, pushes, deletes it in the next commit and reports it within the hour. The lead thanks him before anything else, and asks one question: has it been rotated? It hasn't. The next ten minutes are spent in the mail provider's console, not in a terminal. The old password is rejected, and the provider's logs show no use from an unknown address.
 
+**[ANIMATION]** step: 4
+
 Only then the repository. Two branches reach the commit, because a colleague started her template work from his branch that morning. The history is short and unmerged, so the lead decides for a rewrite and records the reason. The developer edits the one commit, the colleague's branch is transplanted with `--onto`, both are pushed with a lease, and the Support request for the unreachable objects and cached views is filed with the first changed commit.
+
+**[ANIMATION]** step: 6
 
 The summary to the CTO has the facts the CTO needs: the exposure window from the first push to rotation, what the credential could reach, what the provider's logs show, and that rotation is complete. The prevention is three lines: `.env` in the project template's ignore file, staging by name, and push protection, with its limit stated: it blocks recognised token formats, not free-form passwords.
 

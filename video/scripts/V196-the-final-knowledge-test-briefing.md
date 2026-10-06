@@ -13,6 +13,8 @@
 
 The final test of this course has a rule that answers that engineer. In every debugging and incident item, a state-changing command given before the root cause is established loses half of the item's points, whatever follows. A state-changing command alters the repository instead of only reading it, and the root cause is the mechanism behind the symptom. A brilliant fix, reached by the right instinct, after the wrong first move, is worth half.
 
+**[ANIMATION]** gates: id=standard packet=a_state_or_a_symptom gates=name_the_mechanism:done|show_the_evidence:done|choose_the_lowest-risk_fix:done|verify_it:done|say_what_prevents_a_repeat:done title=The_standard_the_test_measures
+
 The test measures the standard the course was built for: given a state or a symptom, you name the mechanism, show the evidence, choose the lowest-risk fix, verify it, and say what prevents a repeat. Recalling a command earns little. Keep that engineer's sentence in mind. By the end you'll have a reply to it.
 
 ## INTRODUCTION
@@ -35,7 +37,7 @@ After this video you can:
 
 ## CONCEPT
 
-**The structure.** The test has 250 items in eighteen sections. The sections are the eighteen areas of the question bank, from Fundamentals to the CTO interview. There are eight types of item.
+**The structure.** The test has 250 items in eighteen sections. The sections are the eighteen areas of the question bank, from Fundamentals to the CTO interview.
 
 **[ON SCREEN]** The table from "How the test is taken".
 
@@ -51,39 +53,81 @@ After this video you can:
 | Oral | 41 | 4 | Spoken to an examiner, or recorded. Two to three minutes per answer, no notes, no terminal | 4 |
 | **Total** | **250** | **804** | | **about 21.5 hours** |
 
+There are eight types of item. For each, the table gives the count, the points and how it is answered.
+
+**[PAUSE]**
+
+**[ANIMATION]** cards: id=quiz question=Which_type_carries_the_most_points_in_total? cards=A,_multiple_choice|B,_debugging|C,_the_practical_labs at_1=45 at_2=58 at_3=70
+
+**[ANIMATION]** step: 3
+
 Quick quiz, from the table. Which type carries the most points in total: A, multiple choice, B, debugging, or C, the practical labs? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** bars: id=points bars=Multiple_choice:86|Debugging:168|Oral:164|Incident_response:96|Practical_lab:90 unit=points max=168 title=Where_the_points_are,_of_804
+
 B. Look at where the points are. Multiple choice is 86 items and 86 points of 804. The debugging items alone are 168 points, the oral items 164, the incident responses 96, the practical labs 90. The test is weighted toward explaining, diagnosing and doing.
+
+**[ANIMATION]** end
 
 **The rules.** Six, from the test file.
 
+**[ANIMATION]** cards: id=rules numbered=on cards=Closed_book:except_in_the_practical_labs|"No_terminal"_is_literal:a_terminal_is_a_failed_item|Write_<id>_for_a_commit_ID:lines_with_a_hash_sign_are_comments|Read-only_before_the_root_cause:or_half_of_the_item's_points_is_lost|GitHub-side_items,_from_documented_behavior:no_account,_no_network|Practical_labs,_by_the_generator_protocol:6_points_for_the_end_state,_4_for_the_hand-in marks=4:ring
+
+**[ANIMATION]** step: 1
+
 One. Closed book, except in the practical labs, where `git help <command>` and the manual pages are allowed and the textbook is not.
+
+**[ANIMATION]** step: 2
 
 Two. Where an item says "no terminal", a terminal is a failed item. The prediction items are worthless if you run them. They measure whether the model in your head produces the output. A terminal measures nothing about you.
 
+**[ANIMATION]** step: 3
+
 Three. In prediction items you write `<id>` where an abbreviated commit ID would appear. Lines that start with a hash sign in a transcript are comments that describe hidden setup or what a person did.
+
+**[ANIMATION]** step: 4
 
 Four. In debugging and incident items, a state-changing command given before the root cause is established loses half of the item's points, whatever follows. The read-only phase is the first thing that is marked.
 
+**[ANIMATION]** step: 5
+
 Five. GitHub-side items are answered from what you know of the documented behavior. Nothing in the test requires a GitHub account or a network connection.
+
+**[ANIMATION]** step: 6
 
 Six. The practical labs follow the generator protocol of the incident drills: run the generator, open the lab shell at the path it prints, work, then run the check from the course root. Running the generator again rebuilds the lab from nothing. A lab counts when its check prints `PASS` and the hand-in listed on its task card is complete: 6 points for the end state, 4 for the hand-in.
 
+**[ANIMATION]** step: marks
+
 **Why rule four exists.** It's the first fact of Chapter 29 made into a marking scheme: most damage is done after the incident, by the first repair attempt. The rule doesn't ask you to be slow. It asks for an order. A fixed opening is what replaces confidence, and the study the textbook cites found that experienced users were strongly represented among those asking Git questions. The ritual isn't for juniors. It's for anyone whose repository contains something that exists nowhere else. That's the reply to the engineer from the opening.
+
+**[ANIMATION]** end
 
 **The sittings.** Six, in this order, on separate days.
 
+**[ANIMATION]** cards: id=pass numbered=on question=The_pass_rule,_all_three_required cards=85_percent_of_the_total:684_of_804_points|at_least_70_percent_in_every_section|at_least_seven_of_the_nine_practical_labs:with_a_passing_check marks=2:ring
+
+**[ANIMATION]** step: 3
+
 **The pass rule.** Three conditions, all required. 85 percent of the total: 684 of 804 points. At least 70 percent in every section. And at least seven of the nine practical labs with a passing check.
 
+**[ANIMATION]** step: marks
+
 **After a section below 70 percent.** That section is retaken alone, after the restudy that the answer key names for each item. The labs are retaken by regenerating them.
+
+**[ANIMATION]** end
 
 **The answer key.** The test file contains no answers. You receive the key after you've handed in the whole test. Before that it isn't opened, and between sittings you don't read ahead in the test.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** walk: id=eight columns=item_type,a_way_of_asking rows=Multiple_choice:choose_it|Command_prediction:predict_it|Diagram:draw_it|Output_interpretation:read_it|Debugging:diagnose_it|Practical_lab:do_it|Incident_response:lead_it|Oral:say_it mono=off title=Eight_ways_of_asking_the_same_five_things at_header=35 at_1=56 at_2=60 at_3=64 at_4=68 at_5=72 at_6=76 at_7=80 at_8=84
+
 A picture helps. Think of the test as the course in miniature, folded so that every part shows at once. Each section asks the same five things about a different area: the state, the mechanism, the evidence, the fix, the prevention. The eight item types are eight ways of asking them: choose it, predict it, draw it, read it, diagnose it, do it, lead it, say it.
+
+**[ANIMATION]** end
 
 Where this breaks: a miniature suggests that a quick look is enough. The time budget says otherwise: about twenty-one and a half hours, in six sittings. It's the longest assessment in the course, and it's built so that it can't be passed by a good memory for commands.
 
@@ -120,6 +164,10 @@ Into the lab, for one snippet that isn't from the test. The form of a practical 
 
 🔴 DANGEROUS: `git reset --hard`. It moves the branch, replaces the index and overwrites the working tree, and uncommitted work is destroyed. Preview with `git status` and `git diff`. In the lab it's the tempting move, run on purpose.
 
+Predict before the transcript appears: the reset brings the three commits back, and the check still says "NOT YET". Why? Say it out loud.
+
+**[PAUSE]**
+
 <!-- snippet: incidents/lab-36-1-hard-reset/01-failure -->
 ```text
 $ cd ravi
@@ -149,11 +197,7 @@ NOT YET: 4 check(s) failed.
 ```
 <!-- /snippet -->
 
-Predict before you read the check: the three commits are back, so why is the result "NOT YET"? Say it out loud.
-
-**[PAUSE]**
-
-You know the answer from video 186. The branch was moved back, so the commit made after the accident left it. The staged file wasn't restored. And the relation to `main` is wrong. Four failed lines.
+The three commits are back, and the result is "NOT YET". You know the answer from video 186. The branch was moved back, so the commit made after the accident left it. The staged file wasn't restored. And the relation to `main` is wrong. Four failed lines.
 
 That's what a practical lab in the final test looks like from the outside. The check prints one line per condition and ends with `PASS` or `NOT YET`. And the lesson of this snippet is the lesson of rule six: a lab counts when the check passes and the hand-in is complete. Six points for the end state, four for the hand-in. A passing end state without the hand-in is six of ten.
 
@@ -172,6 +216,8 @@ Five mistakes to watch for.
 Now, out of the lab. An engineer plans the final test the way she would plan a release. Six sittings on six separate days over three weeks. The day before each sitting, a revision of the sections it covers, with the revision checklist and the cheat sheet, closed afterwards. The longest sitting on a Saturday.
 
 After sitting 2 she knows, without any key, that her rebase predictions were slow: she had to reconstruct what `--onto` takes as arguments each time. She doesn't read ahead. She restudies exactly that, with the chapter and its lab, before sitting 3.
+
+**[ANIMATION]** gates: id=retake gates=handed_in_and_scored:done:-:one_section_at_66_percent,_remote_workflows|the_answer_key_arrives:done:-:the_restudy_named_per_item|that_section_is_retaken_alone:done|the_one_lab_is_regenerated:done result=nothing_else_is_repeated title=After_a_section_below_70_percent
 
 When the whole test is handed in and scored, one section is at 66 percent: remote workflows. The answer key now reaches her, with the restudy named for each item she lost. She does that restudy, retakes the one section alone, and regenerates the one lab whose check had not passed. Nothing else is repeated. Her comment afterwards is about rule four: twice she had caught herself writing a `reset` as the first line of a debugging answer, and both times the read-only commands she wrote instead showed that the reset would have been the wrong fix.
 

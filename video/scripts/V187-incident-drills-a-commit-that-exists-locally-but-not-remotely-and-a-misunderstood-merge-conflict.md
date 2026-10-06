@@ -15,6 +15,10 @@ In both, two competent people disagree about a fact, and each has output on the 
 
 A dispute like this doesn't end when one person wins. It ends when you produce evidence that both parties accept.
 
+**[ANIMATION]** cards: id=quiz question=Which_one_proves_that_the_fix_is_on_the_team's_server? cards=A:the_commit_in_git_log|B:a_status_that_says_up_to_date|C:a_push_that_printed_main_->_main|D:none_of_them title=Quick_quiz at_1=62 at_2=70 at_3=78 at_4=86
+
+**[ANIMATION]** step: 4
+
 Quick quiz, before any cause is named. The author of the first fix has three things on his screen: the commit in `git log`, a status that says up to date, and a push that printed `main -> main`. Which one proves that the fix is on the team's server? A, the log. B, the status. C, the push line. Or D, none of them. Your answer?
 
 **[PAUSE]**
@@ -47,9 +51,15 @@ After this video you can:
 
 **Incident 10: "on the server" has a hidden parameter.** Which server. Everything Ravi said is confirmed in his clone. The commit is in his log. `git status` says up to date with `origin/main`. The push printed `main -> main`.
 
+**[ANIMATION]** cards: id=states cards=it_was_never_pushed:git_status_-sb_would_show_ahead|it_was_pushed_to_another_branch|it_was_made_in_detached_HEAD|origin_isn't_the_repository_the_team_means|the_platform_shows_stale_data numbered=on title="It_is_pushed",_and_the_commit_isn't_where_the_team_looks at_1=42 at_2=58 at_3=66 at_4=78 at_5=88
+
 The textbook's hypotheses are also the general list of states that produce "it is pushed" or "Everything up-to-date" while the commit isn't where the team looks. It was never pushed, and `git status -sb` would show `ahead`. It was pushed to another branch. It was made in detached HEAD, as in video 180. `origin` isn't the repository the team means. Or the platform shows stale data.
 
+**[ANIMATION]** end
+
 **The root cause.** `origin` in this clone is Ravi's old fork, his personal copy of the repository on the server, and `main` follows `origin/main`. A remote name is a local alias. Every local signal was true about the fork. Layer: Git configuration.
+
+**[ANIMATION]** cards: id=proof question=Which_one_proves_that_the_fix_is_on_the_team's_server? cards=A:the_commit_in_git_log|B:a_status_that_says_up_to_date|C:a_push_that_printed_main_->_main|D:none_of_them marks=1:bad,2:bad,3:bad,4:ok title=What_counts_as_proof_of_a_push pace=quick at_marks=14
 
 **What counts as proof of a push.** First, the quiz from the opening: D, none of the three. Proof is the `To <url>` line of the push output, `git ls-remote`, or the commit's page in the team repository. Never `git status`: it compares with a remote-tracking ref, which is this clone's memory of whatever `origin` means here.
 
@@ -71,7 +81,11 @@ Then the clone is repaired so that it can't happen again: `main` follows the tea
 
 **The audit of a merge.** `git show --remerge-diff` re-runs the merge and shows what the human changed relative to Git's mechanical result. A hunk is one block of changed lines. A resolution that changes a hunk Git had already merged cleanly is the signature of taking one side of the whole file.
 
+**[ANIMATION]** walk: id=ours columns=who,"ours"_means rows=as_it_was_read:the_team's_version|in_git_merge_X:the_branch_you're_on,_here_the_feature_branch|in_a_rebase:the_roles_are_swapped marks=1.2:bad,2.2:ok mono=off title=git_checkout_--ours at_1=18 at_2=38 at_3=62
+
 **The root cause.** `git checkout --ours limiter/bucket.py`. "Ours" was read as "the team's version". In `git merge X`, ours is the branch you're on, here the feature branch. In a rebase the roles are swapped. Layer: Git. GitHub merged what it was given.
+
+**[ANIMATION]** end
 
 **The recovery is additive here too.** `main` is shared and four commits sit on the faulty merge, so nothing is rewritten and nothing is reverted: a revert of the merge would remove Ravi's feature. One new commit restores both changes, adapted to his rename, and its message names the merge and the two lost commits.
 
@@ -81,9 +95,15 @@ Then the clone is repaired so that it can't happen again: `main` follows the tea
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=dial boxes=Ravi's_button:labelled_"origin"|a_teammate's_button:labelled_"origin" rows=1:B:dials_the_office|2:A:the_call_went_through|2:A:it_wasn't_the_office@bad title=A_label_on_a_speed-dial_button at_1=40 at_2=70
+
+**[ANIMATION]** step: 2
+
 A picture helps. For Incident 10, picture the word "origin" as a label on a speed-dial button. Everyone on the team has a button with that label. Nothing guarantees that the buttons dial the same number. Ravi pressed "origin" and the call went through. The person he reached confirmed everything. It wasn't the office.
 
 Where the picture breaks: a phone tells you nothing about who answered, and Git does. The push output begins with a line that says `To` and a URL. It was on Ravi's screen. Nobody reads that line.
+
+**[ANIMATION]** end
 
 Try it now. Thirty seconds, read-only. In any clone you have, run `git remote -v`, and read out the URL beside each name.
 
@@ -91,11 +111,17 @@ Try it now. Thirty seconds, read-only. In any clone you have, run `git remote -v
 
 That URL is the number your button dials. If you can say whose repository it is, good. If you can't, you've found Ravi's situation in your own clone, before it cost you a release.
 
+**[ANIMATION]** walk: id=form columns=lines_of_the_merge,the_result_column rows=most_lines:filled_in_by_Git|where_both_sides_changed_the_same_lines:a_human_fills_it_in|in_this_incident:a_human_overwrote_a_cell_that_Git_had_filled_in_correctly marks=3.2:bad mono=off title=A_merge_commit_as_a_form at_1=28 at_2=42 at_3=80
+
 For Incident 9, picture a merge commit as a form with two columns, one per parent, and a third column for the result. For most lines the result column is filled in by Git. Where both sides changed the same lines, a human fills it in. `--remerge-diff` shows you only the cells where the human's entry differs from what Git would have written. In this incident a human overwrote a cell that Git had already filled in correctly.
+
+**[ANIMATION]** end
 
 And one sentence for both: the tools told the truth. `git status` told the truth about the fork. `git log -- <file>` told the truth about the simplified history. The question each person asked wasn't the question they needed answered.
 
 ## DIAGRAM
+
+**[ANIMATION]** cards: id=sofar question=What_we_know_so_far:_two_disputes cards="It_is_pushed._GitHub_must_be_caching."|"My_fix_is_in_the_log_and_not_in_the_file." title=Before_the_demo at_1=30 at_2=50
 
 **[DIAGRAM]** Incident 10: two remotes and one clone. Draw the clone at the bottom with its one branch, then the two servers above it, and the arrow for the push. IDs are from the transcript.
 
@@ -112,7 +138,9 @@ And one sentence for both: the tools told the truth. `git status` told the truth
    +-----------------------------------------------------------------------------+
 ```
 
-Every local signal points at the left box. The release is built from the right box.
+Before the demo, what we know so far is two disputes, and in each, both sides have output that supports them.
+
+**[ANIMATION]** step: sofar.2
 
 **[DIAGRAM]** Incident 9: a merge commit with a discarded side. Draw `main` with Asha's two fixes, the feature branch with Ravi's commit, the merge of `main` into the feature branch, and then the pull request merge.
 
@@ -128,7 +156,7 @@ Every local signal points at the left box. The release is built from the right b
                                                 the changes of bfd1f07 and 8a11540 are discarded
 ```
 
-Both of Asha's commits are ancestors of `main`: follow the lines. And the file at `d7497e2` equals its first parent's version. Ancestry kept, content discarded.
+The picture of each incident is drawn in the demo, from the evidence on the screen.
 
 ## LIVE TERMINAL DEMO
 
@@ -216,6 +244,12 @@ ebd3afc Lab User: Show p95 latency on the dashboard
 <!-- /snippet -->
 
 One commit by a colleague that Ravi's `main` lacks. So his fix can't be pushed to the team's `main` as it is, and it shouldn't go there without a pull request anyway.
+
+**[ANIMATION]** remotes: [ravi's clone] 6e16f60-133c159-f3bb790 main origin/main; 133c159-ebd3afc upstream/main; HEAD=main || [origin: ../ravi-fork.git] 6e16f60-133c159-f3bb790 main; HEAD=none || [upstream: ../server.git] 6e16f60-133c159-ebd3afc main; HEAD=none id=two title=Two_remotes_and_one_clone say_state_1=Every_local_signal_points_at_the_fork
+
+Here's that as one picture. Every local signal points at the fork. The release is built from the team repository.
+
+**[ANIMATION]** end
 
 **Publish.** 🟡 CAUTION: `git rebase` replaces one unpublished commit with a new one. The push creates a new branch.
 
@@ -421,7 +455,9 @@ $ git log --oneline --graph
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: d40b668-6ac34e3-bfd1f07-8a11540-fb67f49-fc1898f main origin/main; 6ac34e3-f8435ea-d7497e2; 8a11540-d7497e2; d7497e2-fb67f49; HEAD=main title=A_merge_before_the_merge
+**[ANIMATION]** graph: d40b668-6ac34e3-bfd1f07-8a11540-fb67f49-fc1898f main origin/main; 6ac34e3-f8435ea-d7497e2; 8a11540-d7497e2; d7497e2-fb67f49; HEAD=main => + note:f8435ea:Ravi:_rate_per_tenant; note:bfd1f07:Asha:_cap; note:8a11540:Asha:_halve_the_rate; note:d7497e2:resolved_with_"ours"_for_the_whole_file; mark:discarded:bfd1f07,8a11540; say:Ancestry_kept,_content_discarded title=A_merge_before_the_merge id=merge9
+
+**[ANIMATION]** step: state-1
 
 The graph shows the merge of `origin/main` into the feature branch, `d7497e2`, before the pull request was merged. That's the candidate.
 
@@ -483,6 +519,12 @@ d7497e2 commit (merge): Merge remote-tracking branch 'origin/main' into feature/
 <!-- /snippet -->
 
 Confirmation: the file in the merge equals its first parent's version exactly, and differs from the second parent's. And the reflog in Ravi's clone shows the merge commit being made there.
+
+**[ANIMATION]** step: merge9.state-2
+
+Both of Asha's commits are ancestors of `main`: follow the lines. And the file at `d7497e2` equals its first parent's version. Ancestry kept, content discarded.
+
+**[ANIMATION]** end
 
 **The fix: one forward commit.** 🟢 SAFE: a commit on a new branch.
 
@@ -589,6 +631,8 @@ PASS: the recovery of incident 09-misunderstood-conflict is complete.
 
 The fix lands through review, `main` is fast-forwarded, and the check passes. Read the lower half of the check: history wasn't rewritten, and the faulty merge is still in the history of `main`.
 
+**[ANIMATION]** walk: id=msgs columns=to,the_message rows=Ravi_and_Asha,_Incident_10:every_command_Ravi_quoted_told_the_truth_about_another_repository|both,_Incident_9:the_repository_is_intact,_nobody_reverted_anything,_and_why_git_log_--_<file>_hid_it|the_CTO:a_merged_fix_was_removed_inside_a_merge_commit,_where_review_couldn't_see_it mono=off title=The_messages at_1=5 at_2=35 at_3=70
+
 **The messages.** To Ravi and Asha, Incident 10: every command Ravi quoted told the truth about another repository. Incident 9, to both: the repository is intact, nobody reverted anything, and why `git log -- <file>` hid it. To the CTO: the outage recurred because a merged fix was removed inside a merge commit, where review couldn't see it.
 
 ## COMMON MISTAKES
@@ -605,7 +649,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A rate limiter on an inference gateway was tuned after an overload: the default rate halved, the bucket capped. Three weeks later the same overload happens again. The on-call engineer finds both fixes in the history of `main` and neither in the file.
 
+**[ANIMATION]** gates: id=audit gates=git_log_--_<path>:done:-:lists_too_little|--full-history:done:-:a_merge_of_main_into_a_feature_branch|--remerge-diff:done:-:a_hunk_with_no_conflict,_changed_anyway title=He_doesn't_look_for_a_culprit at_1=10 at_2=28 at_3=45
+
 He doesn't look for a culprit. He runs the path-limited log, sees that it lists too little, adds `--full-history`, and finds a merge of `main` into a feature branch in the list. `git show --remerge-diff` on that merge shows a hunk that had no conflict and was changed anyway. The colleague who made the merge remembers it: a conflict in one line, and "I kept ours, because ours is what the team has."
+
+**[ANIMATION]** end
 
 The repair is one commit with a message that names the merge. The summary for the CTO names the layer and the reason review missed it: after the bad merge, the branch and the merge base, the common starting point of the two sides, agreed on those lines, so the pull request diff couldn't show the loss. The control is a regression test for the cap, which would have failed on the feature branch, and a line in the review guide: a merge commit on a pull request branch is reviewed with `--remerge-diff` before it's pushed.
 

@@ -11,7 +11,15 @@
 
 **[ON SCREEN]** "It works on my machine now. Is the incident closed?"
 
-An engineer repaired a release branch in her clone, her own copy of the repository, at eleven at night. A release branch is the line of commits a release is cut from and fixed on. `git status` is clean, the tests pass locally, and she wants to go to bed. Four questions decide whether she may. Did the thing the user wanted happen? Did the state that caused the problem change, for the reason she expected? Is the fix on the server, and in the pull request, GitHub's proposal to merge the branch, and in the pipeline run for that exact commit? And did anything change that shouldn't have?
+An engineer repaired a release branch in her clone, her own copy of the repository, at eleven at night. A release branch is the line of commits a release is cut from and fixed on. `git status` is clean, the tests pass locally, and she wants to go to bed. Four questions decide whether she may.
+
+**[ANIMATION]** cards: id=checks cards=Did_the_thing_the_user_wanted_happen?|Did_the_state_that_caused_the_problem_change,_for_the_reason_she_expected?|Is_the_fix_on_the_server,_in_the_pull_request,_and_in_the_pipeline_run_for_that_exact_commit?|Did_anything_change_that_shouldn't_have? numbered=on marks=1:ok,3:bad title=Four_questions_before_bed at_1=0 at_2=14 at_3=38 at_4=86 at_marks=25
+
+**[ANIMATION]** step: 4
+
+Did the thing the user wanted happen? Did the state that caused the problem change, for the reason she expected? Is the fix on the server, and in the pull request, GitHub's proposal to merge the branch, and in the pipeline run for that exact commit? And did anything change that shouldn't have?
+
+**[ANIMATION]** step: marks
 
 A fix in your clone isn't a fix on the server. The first check can pass while the third one fails. Hold on to that sentence. Tonight it comes true for her.
 
@@ -47,15 +55,27 @@ After this video you can:
 4. Is it undone by one command? A new commit is undone by a revert; a moved ref by moving it back; a pruned object by nothing.
 5. Can it be previewed? `--dry-run`, `git merge-tree`, `git diff <target>`, `git log <range>`, or a rehearsal in a copy.
 
+**[ANIMATION]** walk: id=rungs columns=rung,what_it_costs,commands rows=6_remove_the_safety_net:nothing_undoes_it:git_reflog_expire,_git_gc_--prune=now|5_rewrite_the_server:others_must_repair_their_clones:git_push_--force-with-lease=<ref>:<expected>|4_overwrite_the_work_tree:uncommitted_work_is_unrecoverable:git_reset_--hard,_git_restore,_git_clean|3_move_a_local_ref:undone_through_the_reflog_or_a_backup_ref:git_reset_--keep,_git_branch_-f,_git_rebase|2_add_a_commit:undone_by_a_revert_or_by_moving_the_ref_back:git_commit,_git_revert,_git_cherry-pick,_merge|1_add_a_ref:nothing_can_be_lost:git_branch,_git_tag,_git_update-ref steps=header,6,5,4,3,2,1 title=The_ladder_of_section_29.9 pace=quick
+
 The result is a ladder of six rungs, which is today's diagram. Prefer the lowest rung that repairs the cause. In the case of video 180 that was rungs 1 and 2. In the case of video 181 it was rung 3, on commits that existed nowhere else, with rung 1 first.
 
 **Three rules of thumb.**
 
+**[ANIMATION]** walk: id=thumb columns=when,not,use rows=on_a_shared_branch,_to_undo:git_reset:git_revert|a_ref_must_move_back:git_reset_--hard:git_reset_--keep|a_force_push_is_the_correct_fix:the_bare_form:git_push_--force-with-lease=<branch>:<expected-id> marks=1.2:bad,2.2:bad,3.2:bad,1.3:ok,2.3:ok,3.3:ok title=Three_rules_of_thumb
+
+**[ANIMATION]** step: 1
+
 On a shared branch, undo with `git revert`, not with `git reset`, which moves the branch to another commit. A revert adds a commit. Everyone's next pull is a fast-forward, a plain move ahead.
+
+**[ANIMATION]** step: 2
 
 When a ref must move back, use `git reset --keep`. It refuses when a file with local changes would be overwritten, where `--hard` overwrites it.
 
+**[ANIMATION]** step: 3
+
 When a force push, which overwrites the server's branch, is the correct fix, state the expected old value: `git push --force-with-lease=<branch>:<expected-id>`. The bare form is defeated by anything that fetches in the background.
+
+**[ANIMATION]** end
 
 **Verification, in one sentence.** A fix is verified when the commands that showed the problem now show its absence, for the reason you predicted, in every place the problem existed.
 
@@ -70,13 +90,17 @@ Try it now. Thirty seconds, and it only reads. In the lab shell, or in any repos
 
 **[PAUSE]**
 
+**[ANIMATION]** stores: id=copies boxes=HEAD|@{upstream}:the_server_at_your_last_fetch|*the_server:what_it_holds_now rows=1:A:an_ID|1:B:the_same_ID@ok|2:C:only_git_ls-remote_tells_you@hl arrows=1:A1>B1:equal title=Compare_IDs,_not_names at_1=3 at_2=45
+
 Two equal IDs mean your branch agrees with your record of its upstream. That record is the server at your last fetch, so only `git ls-remote` tells you what the server holds now. And if Git answered that no upstream is configured, that's a finding too.
+
+**[ANIMATION]** end
 
 Write the prediction before you run the check. Then, and only then, remove what the investigation added: the rescue branch, the evidence directory, the bundle. `git branch -D` prints the ID, which is one more safety line.
 
 **What a pull request needs after a fix** is platform behavior: a push to the head branch reruns workflows and can dismiss approvals. A forced push marks review comments as outdated. Verification includes reading the pull request page again.
 
-**The symptom catalog.** Twenty-six symptoms in five groups. History and refs. Working tree and index. Remotes, access and identity. Pull requests, checks and CI. And submodules, LFS and scale. Each row gives the likely causes in the order worth testing, the commands that distinguish them, and the chapter with the mechanism.
+**The symptom catalog.** Twenty-six symptoms in five groups. History and refs. Working tree and index. Remotes, access and identity. Pull requests, checks and CI. And submodules, LFS and scale: a submodule is another repository checked out in a subdirectory of yours, and Git LFS is a separate program that keeps large files outside your commits. Each row gives the likely causes in the order worth testing, the commands that distinguish them, and the chapter with the mechanism.
 
 **[ON SCREEN]** Three rows of section 29.11, as examples of the form.
 
@@ -88,11 +112,19 @@ Write the prediction before you run the check. Then, and only then, remove what 
 
 How to use a row: the causes are your ready-made hypotheses, already more than three, and each command is the test that separates them. The catalog doesn't replace the opening ritual. It replaces the blank page after it.
 
+**[ANIMATION]** walk: id=pairs columns=one_place,the_other rows=the_working_tree:the_commit|the_branch:HEAD|the_local_branch:its_upstream|the_remote-tracking_branch:the_server|the_branch:the_merge_ref mono=off title=Two_places_that_someone_assumed_were_equal at_1=48 at_2=56 at_3=64 at_4=73 at_5=83
+
 **The pattern across the catalog.** The textbook calls it the content of the book in one line: nearly every symptom is a difference between two of the places of the state table that someone assumed were equal. The working tree and the commit. The branch and HEAD. The local branch and its upstream. The remote-tracking branch and the server. The branch and the merge ref. The diagnosis is finding which two.
+
+**[ANIMATION]** end
 
 **When not to use the full method.** A message that names its own remedy, and whose remedy is green, needs no hypothesis table: "The current branch has no upstream branch", with the command printed beneath it, or a typo in a branch name. Run `git status`, do what the message says, and move on. The full method is for symptoms that contradict what the reporter believes about the state. The opening ritual is never skipped: it takes less than a minute.
 
+**[ANIMATION]** walk: id=stop columns=the_evidence_shows,stop,_and rows=a_credential_in_history:start_the_secret_response;_revoke_first,_investigate_second|corrupt_or_missing_objects:don't_continue_working_in_it;_copy_it_and_follow_Chapter_13|production_is_down:restore_service_first;_diagnose_afterwards_on_preserved_evidence mono=off title=When_to_stop_and_escalate at_1=5 at_2=38 at_3=72
+
 **When to stop and escalate.** If the evidence shows a credential in history, stop diagnosing and start the secret response: revoke first, investigate second. If the repository reports corrupt or missing objects, don't continue working in it: copy it and follow the procedure of Chapter 13. If production is down, restore service first and diagnose afterwards on preserved evidence.
+
+**[ANIMATION]** end
 
 **How the method itself fails.**
 
@@ -105,13 +137,19 @@ How to use a row: the causes are your ready-made hypotheses, already more than t
 
 ## MENTAL MODEL
 
+**[ANIMATION]** step: rungs.1
+
 A picture helps. The ladder is a physical picture, and it works as one. You climb only as high as the repair requires, and each rung up is further to fall. On the first rung nothing can be lost. On the sixth, nothing can be undone.
 
 Where the picture breaks: on a real ladder the rungs are equally spaced. Here the gap between rung 3 and rung 4 is much larger than the others, because it's the gap between "undone through the reflog" and "unrecoverable". The reflog is Git's local record of where each ref has been. And the gap between 4 and 5 is of a different kind: from your own loss to other people's.
 
+**[ANIMATION]** cards: id=doctor cards=The_symptom:the_patient_says_the_pain_is_gone|The_state:the_test_that_showed_the_cause_is_repeated|Every_copy:both_lungs_are_checked,_not_one|Nothing_else_changed:nothing_else_was_harmed_by_the_treatment numbered=on title=A_doctor_who_ends_a_treatment at_1=20 at_2=36 at_3=53 at_4=68
+
 For verification, think of a doctor who ends a treatment. The patient says the pain is gone: the symptom. The test that showed the cause is repeated: the state. Both lungs are checked, not one: every copy. And nothing else was harmed by the treatment: nothing else changed. A doctor who stops at the first check has asked the patient, not examined them.
 
 ## DIAGRAM
+
+**[ANIMATION]** step: rungs.1
 
 **[DIAGRAM]** The ladder of section 29.9. Build it from the bottom rung, number 1, upward, and say the right-hand column aloud for each rung.
 
@@ -130,7 +168,11 @@ Then place the interview question's five fixes on it as a preview: each has a ru
 
 **[TERMINAL]** We continue `labs/run ch29/lab-35-3-preserve-then-fix` where V183 stopped. The situation: a cherry-pick of two commits onto `release/1.4` stopped at a conflict in `guard.yaml`. A colleague resolved the file by hand and left a note: on this line the threshold stays 0.50, and the limit becomes 128. The record, a rescue branch, a copy, a rehearsal copy and a bundle exist.
 
+**[ANIMATION]** walk: id=choose columns=rung,what_it_costs,commands rows=6_remove_the_safety_net:nothing_undoes_it:git_reflog_expire,_git_gc_--prune=now|5_rewrite_the_server:others_must_repair_their_clones:git_push_--force-with-lease=<ref>:<expected>|4_overwrite_the_work_tree:uncommitted_work_is_unrecoverable:git_reset_--hard,_git_restore,_git_clean|3_move_a_local_ref:undone_through_the_reflog_or_a_backup_ref:git_reset_--keep,_git_branch_-f,_git_rebase|2_add_a_commit:undone_by_a_revert_or_by_moving_the_ref_back:git_commit,_git_revert,_git_cherry-pick,_merge|1_add_a_ref:nothing_can_be_lost:git_branch,_git_tag,_git_update-ref steps=header,6,5,4,3,2,1,pick title=The_ladder_of_section_29.9 pick=5 pace=quick at_pick=30
+
 **Choosing.** Put the candidates on the ladder before running anything. Continue the cherry-pick with the colleague's resolution: rung 2, it adds commits. Abort and start again: an abort discards the uncommitted resolution, which exists in no object. The note says the operation was intended and gives the intended result, so the resolution can be checked against it. Continue is the lowest rung that repairs the cause.
+
+**[ANIMATION]** end
 
 **The fix.** 🟡 CAUTION: `git cherry-pick --continue` adds commits to the current branch. Preview: read the resolved file against the note first.
 
@@ -197,7 +239,11 @@ Go through the checks. State: "On branch", clean, and zero state files. The inte
 
 **[PAUSE]**
 
+**[ANIMATION]** graph: b039fd7-73ef788-b24fd62-e0631de-f9e40d6 main; b039fd7-329817a-5c011a9-99a0531-78b0e20 release/1.4; HEAD=release/1.4; mark:+:73ef788,e0631de; mark:-:b24fd62,f9e40d6; cmd:git_cherry_-v_release/1.4_main => + note:e0631de:its_port_is_99a0531; say:The_patch-ID_check_compares_by_change:_a_resolved_port_looks_missing id=cherry at_state_2=35
+
 This is the limit of the patch-ID check that you met in video 172. It compares commits by their change, not by their ID, and the port needed a conflict resolution, so its diff differs from the original. A check that passes or fails has to be read with its limits. Here the evidence that the port happened is the commit itself and the handover note.
+
+**[ANIMATION]** end
 
 **The failure scenario, in the rehearsal copy.** What would the other choice have done? 🟡 CAUTION: `git cherry-pick --abort` resets the index and the working tree to the starting commit.
 
@@ -299,6 +345,8 @@ $ git status -sb
 
 The commit IDs differ from the first repair. The tree IDs, which name the complete snapshots, are equal: both repositories end with the same content. That's the fourth check done precisely: nothing else changed.
 
+**[ANIMATION]** graph: b039fd7-329817a-5c011a9 release/1.4 rescue/backport-partial; HEAD=release/1.4; say:The_rehearsal_copy,_before_the_abort => + 329817a release/1.4; cmd:git_cherry-pick_--abort; say:The_abort:_back_at_329817a,_before_the_whole_backport => + 5c011a9 release/1.4; cmd:git_merge_--ff-only_rescue/backport-partial; say:The_rescue_branch_returns_the_completed_pick => + 5c011a9-dc02c3b-f46f218 release/1.4; cmd:git_cherry-pick_--continue; say:The_copy_returns_the_resolved_file id=rehearsal dx=330 at_state_2=18 at_state_3=62 at_state_4=80
+
 Say the lesson of the scenario in one sentence: the same mistake was made in the rehearsal that a tired engineer makes at night, and it cost nothing, because two layers of preservation each returned the part they hold.
 
 ## COMMON MISTAKES
@@ -313,9 +361,17 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
+**[ANIMATION]** walk: id=night columns=check,what_she_sees,result rows=the_symptom:the_backported_release_branch_builds:passes|the_state:no_cherry-pick_in_progress,_clean_status:passes|every_copy:git_ls-remote_origin_prints_a_different_ID:fails|every_copy,_again:she_pushes_and_compares_the_three_IDs:passes|nothing_else_changed:git_range-diff_shows_only_the_intended_commits:passes marks=1.3:ok,2.3:ok,3.3:bad,4.3:ok,5.3:ok mono=off title=The_four_checks,_at_eleven_at_night at_1=22 at_2=34 at_3=60 at_4=8 at_5=70
+
+**[ANIMATION]** step: 3
+
 Now, out of the lab. The engineer from the hook does the four checks before she goes to bed. The symptom: the backported release branch builds. The state: no cherry-pick in progress, clean status. Every copy: `git rev-parse HEAD @{upstream}` prints two equal IDs, and `git ls-remote origin` prints a different one for the branch. She hadn't pushed. Check three failed, at eleven at night, with check one green. There's the sentence from the opening, come true.
 
+**[ANIMATION]** step: 5
+
 She previews the push, pushes, compares the three IDs again, and opens the pull request for the release: the push has rerun the workflows, and one approval was dismissed, which she notes for the morning. The fourth check: `git range-diff` against her rescue branch shows only the intended commits.
+
+**[ANIMATION]** end
 
 The next day the case becomes one line in the team's checklist, written as a check and not as advice: "A fix is closed when `git ls-remote origin <branch>` prints the ID you verified locally, and the pipeline run for that ID is green."
 

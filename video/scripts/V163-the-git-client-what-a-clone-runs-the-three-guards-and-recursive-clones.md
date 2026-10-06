@@ -45,21 +45,45 @@ After this video you can:
 
 **In one sentence.** Cloning a repository copies its objects and refs and nothing that Git would execute, so cloning and reading is generally safe. Running Git inside a `.git` directory that somebody else wrote isn't. Objects are the stored snapshots and files, and refs are the names, such as branches, that point at them.
 
+**[ANIMATION]** stores: boxes=hooks:files_Git_runs|configuration:.git/config rows=1:A:the_files_in_.git/hooks|1:A:or_wherever_core.hooksPath_points|2:B:an_alias_beginning_with_an_exclamation_mark@hl|2:B:core.pager|2:B:core.editor|2:B:core.fsmonitor|2:B:core.sshCommand|2:B:a_credential_helper|2:B:a_filter_driver title=Two_kinds_of_file_under_.git_can_make_Git_execute_a_program id=files
+
+**[ANIMATION]** step: files.boxes
+
 **Precisely.** Two kinds of file under `.git` can make Git execute a program.
+
+**[ANIMATION]** step: files.1
 
 Hooks: the files in `.git/hooks`, or wherever `core.hooksPath` points.
 
+**[ANIMATION]** step: files.2
+
 And configuration: `.git/config`. An alias beginning with an exclamation mark names a shell command. So do `core.pager`, `core.editor`, `core.fsmonitor`, `core.sshCommand`, a credential helper, a filter driver, and several other settings.
+
+**[ANIMATION]** say: Configuration_and_hooks_are_not_copied_by_git_clone
 
 Git's manual states the rule in its SECURITY section. Configuration and hooks aren't copied by `git clone`. So cloning a remote repository with untrusted content and inspecting it with `git log` is generally safe. Running Git commands in a `.git` directory, or the working tree around it, that came from an untrusted source isn't. And the documented way to get a clean copy of such a directory is `git clone --no-local`.
 
+**[ANIMATION]** stores: boxes=your_clone:git_clone|*source_repository:somebody_else's|"unpacked"_copy:cp_-R,_unzip,_tar_x rows=1:B:objects,_refs|1:B:.git/config|1:B:.git/hooks/*|2:A:objects,_refs@ok|2:A:config:_written_by_your_git_clone|2:A:hooks:_*.sample_only|3:C:objects,_refs|3:C:the_author's_config@bad|3:C:the_author's_hooks@bad arrows=2:B1>A1:pack_+_ref_advertisement|3:B1>C1:every_file_as_written|3:B2>C2|3:B3>C3 title=What_a_clone_copies,_and_what_an_archive_copies say_2=.git/config_and_.git/hooks:_not_copied say_3=With_an_archive,_all_three_cross id=copy
+
+**[ANIMATION]** step: copy.2
+
 **Inside `.git`.** A clone creates a new `.git` from the template directory of your own Git installation. Its hooks directory holds only the inactive sample files. Its `config` holds what `git clone` writes: the repository format, the `origin` remote and the branch's upstream. From the source it receives objects, in a pack, and refs. Nothing else crosses.
+
+**[ANIMATION]** end
 
 **The three guards.** Git added three standing defenses in 2022. Each closes one way of getting you to run Git inside configuration that you didn't write.
 
+**[ANIMATION]** decide: nodes=q1:Owned_by_the_user_running_Git?|yes:Git_reads_its_configuration|q2:Listed_in_safe.directory?|ok:Git_reads_its_configuration|no:fatal:_detected_dubious_ownership edges=q1>yes:yes|q1>q2:no|q2>ok:yes|q2>no:no title=safe.directory:_whose_repository_directory_is_this? id=owner say_level_3=Honored_only_in_protected_configuration:_system,_global_and_command_scope
+
+**[ANIMATION]** step: owner.level-2
+
 **`safe.directory`. In one sentence:** Git refuses to read the configuration of a repository whose directory is owned by a different operating-system user, unless you have listed that directory as safe.
 
+**[ANIMATION]** say: Git_walks_up_from_the_current_directory_to_find_a_repository
+
 Why it exists: Git discovers a repository by walking up from the current directory. On a shared machine another user can create a `.git` directory high up, in a temporary or scratch directory. Without this check, any Git command you run below that directory would load their configuration and hooks.
+
+**[ANIMATION]** step: owner.level-3
 
 The check compares the owner of the repository directory with the user running Git. `safe.directory` lists exceptions. It is multi-valued. It accepts a path ending in a star for everything under a directory, and a lone star to switch the check off. And it's honored only in protected configuration: system, global and command scope. So a repository can't declare itself safe.
 
@@ -67,13 +91,27 @@ The check compares the owner of the repository directory with the user running G
 
 **`safe.bareRepository`. In one sentence:** with the value `explicit`, Git uses a bare repository only when you name it with `--git-dir` or `GIT_DIR`, never because you happened to be inside one.
 
+**[ANIMATION]** stores: boxes=your_clone_of_a_project:ordinary_tracked_files|a_subdirectory_of_it:an_embedded_bare_repository rows=1:B:HEAD|1:B:objects|1:B:refs|1:B:config@bad|2:A:a_clone_does_copy_it@hl|3:B:with_explicit:_used_only_when_named_with_--git-dir_or_GIT__DIR@ok title=safe.bareRepository id=bare say_2=Change_into_it,_run_any_Git_command:_Git_reads_its_config at_1=5 at_2=70
+
+**[ANIMATION]** step: bare.2
+
 The attack it answers. A bare repository is a repository with no working tree: a directory with `HEAD`, `objects`, `refs` and `config`, and it doesn't need to be called `.git`. A project can therefore contain one as ordinary tracked files in a subdirectory. A clone does copy it, because to Git those are ordinary files. If you then change into that subdirectory and run any Git command, Git discovers the embedded bare repository and reads its `config`. So this is a way around the rule that a clone doesn't copy configuration.
+
+**[ANIMATION]** step: bare.3
 
 The default in Git 2.x is `all`. `explicit` will be the default in Git 3.0. The textbook's advice: if you don't work inside bare repositories by hand, set `explicit` globally now.
 
+**[ANIMATION]** walk: columns=protocol,default_policy,meaning rows=the_safe_network_protocols:always:allowed|ext:never:refused|everything_else,_file_included:user:you_may_use_it_directly;_a_clone_Git_starts_on_its_own_may_not marks=3.2:hl mono=off title=protocol.file.allow id=proto
+
+**[ANIMATION]** step: proto.header
+
 **`protocol.file.allow`. In one sentence:** since 2022 the `file` transport defaults to the policy `user`: you may use it directly, and commands that start a clone on their own, such as submodule initialization, may not. A submodule is another repository checked out in a subdirectory of yours.
 
+**[ANIMATION]** step: proto.3
+
 The setting has three values: `always`, `never` and `user`. The safe network protocols default to `always`, `ext` to `never`, and everything else, `file` included, to `user`. The risk it closes: a `.gitmodules` file, the file that lists each submodule's path and URL, that names a local path makes a recursive clone read from a directory on your disk that the attacker chose.
+
+**[ANIMATION]** end
 
 **Recursive clones.** The textbook says the statement "cloning is safe" has had exceptions, and they share a shape: a repository with submodules, cloned with `--recurse-submodules`, tricks Git into writing a file where a hook is expected and then running it. Each has a CVE number, its entry in the public catalogue of vulnerabilities.
 
@@ -91,11 +129,19 @@ Where you stand: no core-Git advisory was published in 2026 up to the first of O
 
 **Hooks as a control.** The manual documents 28 hooks, six of which run on the receiving side of a push. Client-side hooks aren't cloned, and `pre-commit` and `commit-msg` are skipped by `--no-verify`. Since Git 2.54 hooks can also be declared in configuration, including global and system configuration, so the question "why did a hook run?" is now answered with `git hook list --show-scope` and the event name.
 
+**[ANIMATION]** cards: question=A_pre-commit_hook_on_every_laptop._Is_that_a_control? cards=A:yes,_it_runs_before_every_commit|B:no,_the_committer_can_skip_it marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
+
 Quick quiz. A team wants to stop a certain kind of commit, and installs a `pre-commit` hook on every laptop. Is that a control? A, yes, it runs before every commit. B, no, the committer can skip it. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: quiz.marks
+
 B. A client-side hook isn't a control, because the person it is meant to stop can skip it.
+
+**[ANIMATION]** end
 
 **Fake popularity.** For an engineer who clones research code weekly, the textbook says, the ecosystem is a larger risk than the client. Researchers documented a network of more than 3,000 GitHub accounts that distributed malware through repositories made to look popular. Hundreds of fake project repositories that stole about 5 bitcoin. And about six million suspected fake stars. Each figure is from the source cited in the section. The conclusion: stars, forks and a polished README aren't evidence of legitimacy.
 
@@ -105,13 +151,25 @@ B. A client-side hook isn't a control, because the person it is meant to stop ca
 
 The analogy breaks in one place, and it matters for an ML engineer more than for most. The pages can still contain code that you later choose to run: a Makefile, a notebook. Git protects you from Git running something. It doesn't protect you from yourself running the project.
 
+**[ANIMATION]** stores: boxes=Reading:Git_executes_nothing_the_author_chose|Git_acting_on_the_author's_own_metadata:Git_may_execute_or_be_steered_by_what_the_author_wrote|Running_the_project:the_author's_code,_by_your_decision rows=1:A:git_clone|1:A:git_log|1:A:git_show|1:A:git_diff|2:B:an_unpacked_.git@bad|2:B:an_embedded_bare_repository@bad|2:B:a_recursive_clone@bad|3:C:pip_install_-e_.|3:C:make|3:C:a_notebook's_first_cell title=Three_rings_of_trust,_from_inside_out id=rings
+
+**[ANIMATION]** step: rings.boxes
+
 So there are three rings of trust, from inside out.
+
+**[ANIMATION]** step: rings.1
 
 Reading: `git clone`, `git log`, `git show`, `git diff`. Git executes nothing the author chose.
 
+**[ANIMATION]** step: rings.2
+
 Git acting on the author's own metadata: an unpacked `.git`, an embedded bare repository, a recursive clone. Here Git may execute or be steered by what the author wrote.
 
+**[ANIMATION]** step: rings.3
+
 And running the project: `pip install -e .`, `make`, a notebook's first cell. That's the author's code, by your decision.
+
+**[ANIMATION]** say: Clone,_do_not_unpack._Read_before_you_run
 
 The four rules of the section follow from the rings. One: clone. Don't unpack somebody else's `.git`. If you must, `git clone --no-local` it first. Two: treat a recursive clone of an untrusted repository as running its code. Clone without submodules, read `.gitmodules`, then decide. Three: set `safe.bareRepository` to `explicit`, leave `protocol.file.allow` alone, and never set `safe.directory` to a star on a workstation. Four: cloning is the safe part. Read before you run, or run in a container without your credentials.
 
@@ -120,6 +178,10 @@ The four rules of the section follow from the rings. One: clone. Don't unpack so
 Try it now, thirty seconds, on paper. Draw a source repository as a box with three lines: objects and refs, the config file, and the hooks. Draw one arrow labelled `git clone`, and a second labelled unzip. For each arrow, which of the three lines cross? Say it out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** stores: boxes=your_clone:git_clone|*source_repository:somebody_else's|"unpacked"_copy:cp_-R,_unzip,_tar_x rows=1:B:objects,_refs|1:B:.git/config|1:B:.git/hooks/*|2:A:objects,_refs@ok|2:A:config:_written_by_your_git_clone|2:A:hooks:_*.sample_only|3:C:objects,_refs|3:C:the_author's_config@bad|3:C:the_author's_hooks@bad arrows=2:B1>A1:pack_+_ref_advertisement|3:B1>C1:every_file_as_written|3:B2>C2|3:B3>C3 title=What_a_clone_copies,_and_what_an_archive_copies say_2=.git/config_and_.git/hooks:_not_copied say_3=With_an_archive,_all_three_cross id=copy2 at_2=10 at_3=45
+
+**[ANIMATION]** step: copy2.1
 
 **[DIAGRAM]** The picture of section 21B.2: two rows. Draw the top row first: source, arrow, clone, and write on the arrow what crosses and what does not. Then the bottom row with the same source and three arrows that all cross.
 
@@ -139,6 +201,8 @@ Try it now, thirty seconds, on paper. Draw a source repository as a box with thr
  | .git/hooks/*       | ----------------------------------> | the author's hooks  |
  +--------------------+                                     +---------------------+
 ```
+
+**[ANIMATION]** step: copy2.3
 
 Check your arrows. With a clone, one line crosses: objects and refs. Config and hooks stay behind. With an archive, all three cross. That's the whole difference between the two versions of the intern's story.
 
@@ -345,6 +409,8 @@ Five mistakes to watch for.
 Now, out of the lab. The textbook's case. An ML team receives a "reproduction package" for a paper as a tarball that contains a full repository. A shell prompt that shows the branch name runs `git status` as soon as someone changes into the directory. And `git status` consults `core.fsmonitor` from the package's own `.git/config`.
 
 Nobody typed a Git command. Nobody ran the project. Changing directory was enough.
+
+**[ANIMATION]** replay: rings
 
 The safe procedure is the manual's: `git clone --no-local package clean`, and work in `clean`. The clone takes the objects and the refs, and leaves the author's configuration and hooks behind. After that the team is in the first ring: reading. Whether to enter the third ring and run the paper's code is a separate decision, made after reading, or made inside a container without credentials.
 

@@ -13,6 +13,8 @@
 
 On the eleventh of May 2026, 84 malicious versions of 42 packages were published through a project's own trusted-publisher identity. No registry token was stolen. The project had read-only workflow permissions. It published through OIDC. By the standards of most checklists, it had followed best practice.
 
+**[ANIMATION]** cards: cards=A_privileged_trigger|A_build_of_fork_code|A_shared_cache|A_release_job_that_restored_it|An_identity_that_any_code_in_the_job_could_ask_for title=You_now_know_every_mechanism_that_was_involved id=mech at_1=12 at_2=20 at_3=27 at_4=33 at_5=40
+
 You now know every mechanism that was involved. A privileged trigger. A build of fork code. A shared cache. A release job that restored it. An identity that any code in the job could ask for. In this video you put the links in order, for this case and seven others, and for each you name the control that would have broken the chain. Hold on to the question on screen. You'll answer it yourself, link by link.
 
 ## INTRODUCTION
@@ -53,95 +55,207 @@ Root cause: a stolen bot token. The chain began with a `pull_request_target` fla
 
 Lesson: tags are mutable. Only commit-pinned workflows were unaffected. And public logs are world-readable.
 
+**[ANIMATION]** cards: question=Which_sentence_do_the_sources_support? cards=A:more_than_23,000_repositories_leaked_secrets|B:more_than_23,000_repositories_used_the_action marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
+
 Quick quiz. You retell this case in a design review. Which sentence do the sources support? A, more than 23,000 repositories leaked secrets. B, more than 23,000 repositories used the action. Your answer?
 
 **[PAUSE]**
 
-B, and the flags explain it. Flags: there is a conflict about the time window. CISA gives it as the twelfth of March at midnight UTC to the fifteenth of March at noon UTC, 2025. The advisory says the fourteenth to the fifteenth of March. Unit 42 places the mass tag override on the fourteenth of March at sixteen fifty-seven UTC. The textbook's instruction: use CISA's window for audits. And how many repositories leaked secrets is not stated by either source. A figure of "218 repositories" is secondary and unverified. So when you tell this case, say "more than 23,000 repositories used the action". Don't say that number leaked.
+**[ANIMATION]** step: quiz.marks
+
+B, and the flags explain it.
+
+**[ANIMATION]** walk: columns=source,the_time_it_gives rows=CISA:12_March_00:00_UTC_to_15_March_12:00_UTC,_2025|the_advisory:14_to_15_March|Unit_42:the_mass_tag_override_on_14_March_at_16:57_UTC marks=1.2:ok mono=off title=A_conflict_about_the_time_window id=window say_3=Use_CISA's_window_for_audits
+
+Flags: there is a conflict about the time window. CISA gives it as the twelfth of March at midnight UTC to the fifteenth of March at noon UTC, 2025. The advisory says the fourteenth to the fifteenth of March. Unit 42 places the mass tag override on the fourteenth of March at sixteen fifty-seven UTC. The textbook's instruction: use CISA's window for audits.
+
+**[ANIMATION]** say: "218_repositories"_is_secondary_and_unverified._Say:_used_the_action
+
+And how many repositories leaked secrets is not stated by either source. A figure of "218 repositories" is secondary and unverified. So when you tell this case, say "more than 23,000 repositories used the action". Don't say that number leaked.
+
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:malicious_versions_of_eight_packages_were_live_for_about_four_hours_and_harvested_developer_credentials|Root_cause:a_pull__request__target_workflow_that_echoed_an_unsanitised_pull_request_title;_a_legacy_read-write_default_token;_a_publish_workflow_that_could_be_dispatched|Lesson:one_injectable_line_plus_a_write_token_reaches_a_publish_credential|Flags:none mono=off title=Nx,_"s1ngularity",_August_2025 id=nx say_header=Source:_the_project's_post-mortem
+
+**[ANIMATION]** step: nx.header
 
 **Nx, "s1ngularity", August 2025.** Source: the project's post-mortem.
 
+**[ANIMATION]** step: nx.1
+
 What happened: malicious versions of eight packages were live for about four hours and harvested developer credentials.
+
+**[ANIMATION]** step: nx.2
 
 Root cause, in three parts. A `pull_request_target` workflow that echoed an unsanitised pull request title. A legacy read-write default token. And a publish workflow that could be dispatched.
 
+**[ANIMATION]** step: nx.3
+
 Lesson: one injectable line plus a write token reaches a publish credential.
+
+**[ANIMATION]** step: nx.4
 
 Flags: none.
 
 Map the three causes to three videos. The echoed title is video 158. The legacy default token is video 156: a repository created before the default changed. And the dispatch is the documented exception from video 156: events from the job token start no runs, except `workflow_dispatch` and `repository_dispatch`.
 
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:compromised_maintainer_accounts_pushed_a_workflow_that_sent_secrets_to_an_attacker's_server:_3,325_secrets_from_817_repositories|Root_cause:write_access_equals_secret_access|Lesson:protect_workflow_files_with_code-owner_review;_prefer_environment-scoped_secrets_and_OIDC|Flag:a_vendor_report mono=off title=GhostAction,_September_2025 id=ghost say_header=Source:_GitGuardian
+
+**[ANIMATION]** step: ghost.header
+
 **GhostAction, September 2025.** Source: GitGuardian.
+
+**[ANIMATION]** step: ghost.1
 
 What happened: compromised maintainer accounts pushed a workflow that sent secrets to an attacker's server: 3,325 secrets from 817 repositories.
 
+**[ANIMATION]** step: ghost.2
+
 Root cause: write access equals secret access.
+
+**[ANIMATION]** step: ghost.3
 
 Lesson: protect workflow files with code-owner review, and prefer environment-scoped secrets and OIDC.
 
+**[ANIMATION]** step: ghost.4
+
 Flag: this is a vendor report.
+
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:a_self-replicating_npm_worm_stole_tokens,_pushed_secret-dumping_workflows,_and_in_its_second_wave_registered_infected_machines_as_self-hosted_runners|Root_cause:stolen_developer_and_CI_tokens|Lesson:a_token_with_workflow_write_access_is_equivalent_to_every_secret_it_can_reach;_monitor_for_new_workflows,_runners_and_repositories|Flag:the_size_of_the_second_wave_is_approximate:_about_700_malicious_versions_and_about_800_packages,_from_the_same_Wiz_post mono=off title=Shai-Hulud_and_its_sequel,_September_and_November_2025 id=shai say_header=Sources:_the_GitHub_Blog_and_Wiz
+
+**[ANIMATION]** step: shai.header
 
 **Shai-Hulud and its sequel, September and November 2025.** Sources: the GitHub Blog and Wiz.
 
+**[ANIMATION]** step: shai.1
+
 What happened: a self-replicating npm worm stole tokens, pushed secret-dumping workflows, and in its second wave registered infected machines as self-hosted runners.
+
+**[ANIMATION]** step: shai.2
 
 Root cause: stolen developer and CI tokens.
 
+**[ANIMATION]** step: shai.3
+
 Lesson: a token with workflow write access is equivalent to every secret it can reach. Monitor for new workflows, runners and repositories.
+
+**[ANIMATION]** step: shai.4
 
 Flag: the size of the second wave is approximate. The notes cite the same Wiz post for about 700 malicious versions and about 800 packages.
 
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:persistent_self-hosted_runners_on_a_public_ML_repository_could_be_reached_by_a_pull_request;_a_poisoned_Actions_cache_led_to_malicious_PyPI_releases_published_through_the_legitimate_workflow|Root_cause:self-hosted_runners_with_weak_approval_settings;_an_insecure_trigger_plus_cache_trust|Lesson:ML_projects_are_prime_targets;_use_ephemeral_runners_and_treat_caches_as_untrusted|Flag:PyTorch_is_a_researcher_disclosure,_not_an_observed_attack mono=off title=PyTorch_runners,_disclosed_January_2024,_and_Ultralytics,_December_2024 id=ml say_header=Sources:_a_researcher_write-up_and_the_PyPI_blog
+
+**[ANIMATION]** step: ml.header
+
 **PyTorch runners, disclosed January 2024, and Ultralytics, December 2024.** Sources: a researcher write-up and the PyPI blog.
+
+**[ANIMATION]** step: ml.1
 
 What happened: persistent self-hosted runners, machines the project operated itself, on a public ML repository could be reached by a pull request. And, in the second case, a poisoned Actions cache led to malicious PyPI releases published through the legitimate workflow.
 
+**[ANIMATION]** step: ml.2
+
 Root cause: self-hosted runners with weak approval settings, and an insecure trigger plus cache trust.
+
+**[ANIMATION]** step: ml.3
 
 Lesson: ML projects are prime targets. Use ephemeral runners and treat caches as untrusted.
 
+**[ANIMATION]** step: ml.4
+
 Flag: PyTorch is a researcher disclosure, not an observed attack. Say "could be reached", not "was attacked".
+
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:a_pull__request__target_flaw_leaked_a_token;_weeks_later_a_malicious_release,_and_almost_all_action_tags_force-pushed;_downstream,_a_publishing_credential_stolen|Root_cause:incomplete,_non-atomic_credential_rotation_after_the_first_incident;_tag-pinned_security_tooling|Lesson:rotate_everything_at_once;_security_tools_in_CI_are_high-value_targets;_pin_by_commit|Flags:tag_count:_75_of_76_according_to_Wiz,_76_of_77_according_to_Datadog;_the_account_behind_the_first_exploit_is_named_differently mono=off title=Trivy_and_LiteLLM,_February_to_March_2026 id=trivy say_header=Sources:_the_advisory,_the_vendor's_notice,_and_Datadog
+
+**[ANIMATION]** step: trivy.header
 
 **Trivy and LiteLLM, February to March 2026.** Sources: the advisory, the vendor's notice, and Datadog.
 
+**[ANIMATION]** step: trivy.1
+
 What happened: a `pull_request_target` flaw leaked a token. Weeks later a malicious scanner release was published and almost all action tags were force-pushed to malicious commits. A downstream LLM gateway library that ran the scanner unpinned had its publishing credential stolen, and two malicious versions were on PyPI for about three hours.
+
+**[ANIMATION]** step: trivy.2
 
 Root cause: incomplete, non-atomic credential rotation after the first incident, meaning the credentials weren't all replaced at once. And tag-pinned security tooling.
 
+**[ANIMATION]** step: trivy.3
+
 Lesson: rotate everything at once. Security tools in CI are high-value targets. Pin by commit.
+
+**[ANIMATION]** step: trivy.4
 
 Flags: a conflict in the count of tags: 75 of 76 according to Wiz, 76 of 77 according to Datadog. And write-ups name the account behind the first exploit differently. Use the advisory and the vendor notice for exact figures. That's why I said "almost all".
 
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:84_malicious_versions_of_42_packages_were_published_through_the_project's_own_trusted-publisher_identity;_no_npm_token_was_stolen|Root_cause:a_pull__request__target_workflow_built_fork_code;_the_fork_poisoned_the_shared_cache;_the_release_job_restored_it;_malware_read_the_job's_OIDC_token_from_runner_memory|Lesson:read-only_permissions_did_not_block_cache_writes;_OIDC_is_not_safe_if_untrusted_code_runs_in_the_job;_pull__request__target_bypassed_the_first-time-contributor_gate|Flags:the_claim_of_valid_provenance_attestations,_and_the_name_"Mini_Shai-Hulud",_come_from_secondary_reports;_no_GitHub-authored_post-mortem_was_found mono=off title=TanStack,_11_May_2026 id=tan say_header=Source:_the_project's_post-mortem
+
+**[ANIMATION]** step: tan.header
+
 **TanStack, 11 May 2026.** Source: the project's post-mortem.
+
+**[ANIMATION]** step: tan.1
 
 What happened: 84 malicious versions of 42 packages were published through the project's own trusted-publisher identity. No npm token was stolen.
 
+**[ANIMATION]** step: tan.2
+
 Root cause, as a chain. A `pull_request_target` workflow built fork code. The fork poisoned the shared cache. The release job restored it. Malware read the job's OIDC token from runner memory.
+
+**[ANIMATION]** step: tan.3
 
 Lesson: read-only `permissions` didn't block cache writes. OIDC isn't safe if untrusted code runs in the job. And `pull_request_target` bypassed the first-time-contributor gate.
 
+**[ANIMATION]** step: tan.4
+
 Flags: whether the versions carried valid provenance attestations, and the name "Mini Shai-Hulud", come from secondary reports. The post-mortem does not say so. And no GitHub-authored post-mortem was found.
+
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:a_modified_uploader_script_exported_CI_environment_variables_for_two_months|Root_cause:a_mutable_script_fetched_and_executed_in_CI|Lesson:remote_scripts_are_the_same_risk_class_as_mutable_tags|Flag:history_only mono=off title=Codecov,_2021 id=codecov say_header=Source:_Codecov's_security_update
+
+**[ANIMATION]** step: codecov.header
 
 **Codecov, 2021.** Source: Codecov's security update.
 
+**[ANIMATION]** step: codecov.1
+
 What happened: a modified uploader script exported CI environment variables for two months.
+
+**[ANIMATION]** step: codecov.2
 
 Root cause: a mutable script fetched and executed in CI.
 
+**[ANIMATION]** step: codecov.3
+
 Lesson: remote scripts are the same risk class as mutable tags.
 
+**[ANIMATION]** step: codecov.4
+
 Flag: history only.
+
+**[ANIMATION]** end
 
 And one sentence of completeness from the textbook. A further tag hijack, of the actions-cool actions in May 2026, is known to the course only through secondary reporting. It is mentioned for completeness and nothing is built on it.
 
 **Three recurring patterns.**
 
+**[ANIMATION]** stores: boxes=pattern_one|pattern_two|pattern_three rows=1:A:mutable_references_repointed_after_a_maintainer_credential_was_stolen@hl|1:A:tj-actions|1:A:Trivy|2:B:a_privileged_trigger_ran_or_interpolated_outsider_input@hl|2:B:the_upstream_of_tj-actions|2:B:Nx|2:B:Trivy|2:B:TanStack|3:C:stolen_tokens_were_used_to_push_workflows@hl|3:C:GhostAction|3:C:Shai-Hulud title=Three_recurring_patterns id=patterns
+
+**[ANIMATION]** step: patterns.1
+
 One: mutable references were repointed after a maintainer credential was stolen. tj-actions and Trivy.
+
+**[ANIMATION]** step: patterns.2
 
 Two: a privileged trigger ran or interpolated outsider input. The upstream of tj-actions, Nx, Trivy, and TanStack.
 
+**[ANIMATION]** step: patterns.3
+
 Three: stolen tokens were used to push workflows. GhostAction and Shai-Hulud.
 
+**[ANIMATION]** say: One_technique_across_them:_reading_the_runner_process's_memory
+
 And one technique recurs across them: reading the runner process's memory to collect secrets and OIDC tokens.
+
+**[ANIMATION]** say: Masked_logs_are_irrelevant_once_attacker_code_runs_in_a_job
 
 The report's conclusion is the sentence to carry into a design review. Masked logs are irrelevant once attacker code runs in a job. Then the quotation: "the robust controls are preventing untrusted code from running in privileged jobs and limiting which secrets a job holds."
 
@@ -149,19 +263,35 @@ The report's conclusion is the sentence to carry into a design review. Masked lo
 
 A picture helps. Think of each incident as a chain, and of each control as a pair of cutters.
 
+**[ANIMATION]** gates: packet=a_fork_pull_request gates=A_privileged_workflow_builds_fork_code:done:link_one:pull__request__target|The_fork_writes_into_the_shared_cache:done:link_two:the_cache_is_poisoned|The_release_job_restores_that_cache:done:link_three:restored|Code_in_the_release_job_reads_the_job's_OIDC_token:done:link_four:from_runner_memory title=TanStack,_11_May_2026_(the_project's_post-mortem) id=chain at_1=22 at_2=34 at_3=44 at_4=54
+
 A chain needs every link. The TanStack chain, as the post-mortem gives it, has four. A privileged workflow builds fork code. The fork writes into the shared cache. The release job restores that cache. Code in the release job reads the job's OIDC token. There's the answer to "No password was stolen. How?" Four links, and none of them is a stolen password.
+
+**[ANIMATION]** end
 
 Try it now, thirty seconds, on paper. Write the four links as a chain, top to bottom. Then take the controls from this part and write each beside the link it cuts. Say them out loud.
 
 **[PAUSE]**
 
+**[ANIMATION]** walk: columns=the_link,the_control_that_cuts_it rows=1._A_privileged_workflow_builds_fork_code:not_using_pull__request__target_for_a_build,_or_not_running_the_fork's_code_under_it|2._The_fork_writes_into_the_shared_cache:a_read-only_default-branch_cache_for_low-trust_triggers|3._The_release_job_restores_that_cache:cache-mode:_none_on_the_job_that_holds_an_identity|4._Code_in_the_release_job_reads_the_job's_OIDC_token:cut_by_cutting_the_earlier_ones marks=1.2:ok,2.2:ok,3.2:ok,4.2:wait mono=off title=Each_control_cuts_one_link id=cuts
+
+**[ANIMATION]** step: cuts.1
+
 Not using `pull_request_target` for a build, or not running the fork's code under it: cuts link one. That's video 157, and the checkout action's refusal since version 7 leans on the same link.
+
+**[ANIMATION]** step: cuts.2
 
 A read-only default-branch cache for low-trust triggers: cuts link two. That's the platform change of the twenty-sixth of June 2026.
 
+**[ANIMATION]** step: cuts.3
+
 `cache-mode: none` on the job that holds an identity: cuts link three. That's video 160 and workflow 12.
 
+**[ANIMATION]** step: cuts.4
+
 Binding the identity to an environment with protection rules, and letting no untrusted code or cache into that job: addresses link four. Note the word. Once attacker code is running inside a job that may request the token, nothing in the job stops the request. Link four is cut by cutting the earlier ones.
+
+**[ANIMATION]** say: You_do_not_know_in_advance_which_chain_will_be_tried:_layer_the_controls
 
 Where this model breaks: it suggests one cut is enough. For one chain, it is. But you don't know in advance which chain will be tried, and several of these projects were hit through a combination nobody had drawn. That's why the controls are layered, and why section 21A.21 says to review workflows as a set.
 
@@ -254,7 +384,7 @@ runs:
 
 The same name, a different commit: `5de1e2d`. No consumer workflow changed. And the commit that was reviewed still exists under its own ID, with exactly its old content.
 
-**[ANIMATION]** graph: 80827f4-5de1e2d main; 80827f4 tag:v1; HEAD=main => 80827f4-5de1e2d main tag:v1; HEAD=main title=Same_name,_different_commit
+**[ANIMATION]** graph: 80827f4 tag:v1; HEAD=none => + 80827f4-5de1e2d tag:v1 dx=420 title=Same_name,_different_commit
 
 **[ANIMATION]** step: state-1
 
@@ -282,7 +412,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A staff engineer proposes three changes to an ML platform's repositories: require commit pins by policy, forbid `pull_request_target` except for metadata-only jobs, and move publishing credentials behind environments. A director asks why this is worth a week of work, given that "we have never had an incident".
 
+**[ANIMATION]** walk: columns=the_proposed_change,the_row,its_flag rows=require_commit_pins_by_policy:tj-actions,_"only_commit-pinned_workflows_were_unaffected":how_many_leaked_secrets_is_not_given_by_the_primary_sources|forbid_pull__request__target_except_for_metadata-only_jobs:Nx,_with_its_three_causes:none|publishing_credentials_behind_environments:GhostAction,_with_its_one-line_root_cause:a_vendor_report mono=off title=Three_rows,_one_per_pattern id=rows
+
+**[ANIMATION]** step: rows.3
+
 The engineer answers with three rows, one per pattern, and for each row the three parts and the flag. For pins: the tj-actions row, with the sentence "only commit-pinned workflows were unaffected", the figure of more than 23,000 repositories that used the action, and the statement that the number of repositories that leaked secrets is not given by the primary sources. For the trigger: the Nx row, whose flags column says "none", with its three causes. For credentials: the GhostAction row, marked as a vendor report, with its one-line root cause.
+
+**[ANIMATION]** say: The_numbers_match._That_is_what_the_flags_are_for
 
 The director checks one of the links during the meeting. The numbers match. The proposal is approved. That's what the flags are for.
 

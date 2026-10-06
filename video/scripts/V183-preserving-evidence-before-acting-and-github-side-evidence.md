@@ -11,7 +11,13 @@
 
 **[ON SCREEN]** "`main` moved backwards on Friday evening. Who did it, when, from which commit to which, and did a rule allow it?"
 
-Four questions, and your clone can answer about half of one of them. Your clone is your own copy of the repository, and a commit is one saved snapshot in it. Your clone knows two commit IDs, if it happened to fetch, that is, to download the server's state, before and after. It doesn't know who pushed. The author field of a commit doesn't say either: anyone can set it.
+Four questions, and your clone can answer about half of one of them.
+
+**[ANIMATION]** cards: id=four cards=Who_did_it?|When?|From_which_commit_to_which?|Did_a_rule_allow_it? marks=3:ring title=Four_questions pace=quick at_marks=30
+
+Your clone is your own copy of the repository, and a commit is one saved snapshot in it. Your clone knows two commit IDs, if it happened to fetch, that is, to download the server's state, before and after. It doesn't know who pushed. The author field of a commit doesn't say either: anyone can set it.
+
+**[ANIMATION]** end
 
 And there's a second problem. The person who noticed on Friday evening tried three repairs before calling you. Each repair moved refs, the names that point at commits, and pushed lines down in the reflog, Git's local record of where each ref has been. One of the repairs ran a cleanup. The evidence you need is partly gone, and it was destroyed by the investigation. So where do the four answers live? By the end you'll have a source for each.
 
@@ -54,21 +60,37 @@ A ref under `refs/backup/` isn't shown by `git branch`. A branch under `rescue/`
 
 None of the four layers changes the working tree, the index, HEAD or any existing ref. The working tree is the files you edit, the index is the proposed next commit, and HEAD is Git's note of where you are. A backup ref adds one ref. The copy and the bundle are written outside the repository.
 
+**[ANIMATION]** walk: id=which columns=when,layer rows=A_ref_is_about_to_move:a_backup_ref,_always|Uncommitted_work_or_an_operation_in_progress_is_involved:a_copy_of_the_whole_directory|The_disk_is_suspect_or_the_evidence_must_leave_the_machine:a_bundle,_stored_elsewhere|Someone_else_will_ask_what_happened:the_recorded_output mono=off title=Which_layer_when at_1=8 at_2=25 at_3=52 at_4=80
+
 **Which layer when.** A ref is about to move: a backup ref, always. Uncommitted work or an operation in progress is involved: a copy of the whole directory. The disk is suspect or the evidence must leave the machine: a bundle, stored elsewhere. Someone else will ask what happened: the recorded output.
 
 **One warning about the copy.** A copy of a repository contains everything the repository contains, including credentials in `.git/config` URLs and any secret in history. Treat it with the same care, and delete it when the incident is closed.
 
+**[ANIMATION]** walk: id=notro columns=command,what_it_writes,when_nothing_may_change rows=git_fsck_--lost-found:files_under_.git/lost-found/:-|git_fetch:moves_remote-tracking_refs;_with_--prune_deletes_those_whose_server_branch_is_gone,_with_their_reflogs:git_ls-remote|git_status:may_rewrite_the_index_to_refresh_cached_stat_data:git_--no-optional-locks_status title=Not_strictly_read-only
+
+**[ANIMATION]** step: header
+
 **Diagnostic commands that are not strictly read-only.** Section 29.13 names three.
+
+**[ANIMATION]** step: 1
 
 `git fsck --lost-found` writes files under `.git/lost-found/`.
 
+**[ANIMATION]** step: 2
+
 `git fetch` moves remote-tracking refs, your clone's records of the server's branches. With `fetch.prune=true` or `--prune` it deletes those whose server branch is gone, together with their reflogs: the last local record of a deleted branch. Use `git ls-remote` when you must not change anything.
+
+**[ANIMATION]** step: 3
 
 `git status` may rewrite the index to refresh cached stat data. In a repository you must not touch at all, use `git --no-optional-locks status`, which the Git manual documents for background tools.
 
+**[ANIMATION]** layers: id=lanes layers=Your_clone_records:what_you_did|GitHub_records:what_reached_the_server+who_was_authenticated_when_it_arrived+which_rules_were_evaluated title=GitHub-side_evidence at_1=30 at_2=50
+
 **GitHub-side evidence, in one sentence.** Your clone records what you did, and GitHub records what reached the server, who was authenticated when it arrived, and which rules were evaluated.
 
-**GitHub, not Git.** Nothing in this part is part of Git. Git's reflogs are local and aren't shared with remotes, and GitHub exposes no server-side reflog. So the timeline of a server-side branch doesn't come from Git at all. It comes from the sources below. None of the commands was executed here, and user-interface labels change.
+**[ANIMATION]** end
+
+**GitHub, not Git.** Nothing in this part is part of Git. Git's reflogs are local and aren't shared with remotes, and GitHub exposes no server-side reflog.
 
 **[ON SCREEN]** Five sources, from section 29.8.
 
@@ -79,6 +101,8 @@ None of the four layers changes the working tree, the index, HEAD or any existin
 | **Events API** | `PushEvent` with `ref`, `before` and `head` | up to 300 events, only those created within the past 30 days; latency anywhere from 30 seconds to 6 hours; since 7 October 2025 push events no longer carry commit summaries | Anyone who can read the repository |
 | **Rule Insights** | Every ref update evaluated by a ruleset: passed, failed or bypassed, and what would have happened in Evaluate mode | Rulesets only, not classic branch protection. An exempt actor skips enforcement without the signals a bypass generates. The insights dashboard is for Team and Enterprise Cloud plans | Repository administrators |
 | **Audit log** | Organization: events of the last 180 days, for owners, exportable. Enterprise: also Git events such as `git.push`, retained for seven days and available only via the REST API, audit log streaming, or JSON/CSV exports | Organization and enterprise accounts only. A personal repository has no audit log of this kind | Organization owners; enterprise owners |
+
+So the timeline of a server-side branch doesn't come from Git at all. It comes from these five sources. None of the commands was executed here, and user-interface labels change.
 
 **[ON SCREEN]** The commands that read these sources, shown without output.
 
@@ -100,6 +124,8 @@ gh ruleset check main
 
 The activity endpoint is documented with the activity types `push`, `force_push`, `branch_creation`, `branch_deletion`, `pr_merge` and `merge_queue_merge`, and items that carry `before`, `after`, `ref`, `timestamp` and `actor`.
 
+**[ANIMATION]** layers: id=sides layers=Git_evidence_answers:what_is_the_state+which_local_command_produced_it|GitHub_evidence_answers:which_authenticated_account_moved_the_server's_ref+when+from_which_commit_to_which+did_a_rule_allow_it title=How_the_two_sides_combine at_1=10 at_2=45
+
 **How the two sides combine.** Git evidence answers "what is the state and which local command produced it". GitHub evidence answers "which authenticated account moved the server's ref, when, from which commit to which, and did a rule allow it".
 
 **[ON SCREEN]** Unverified. Two flags travel with these facts.
@@ -118,7 +144,11 @@ For the four layers, think of what each would let you rebuild after the worst af
 
 **[PAUSE]**
 
+**[ANIMATION]** cards: id=back cards=The_recorded_output:lets_you_tell_the_story|The_backup_ref:lets_you_get_the_commits_back|The_bundle:the_commits_back,_on_another_machine|The_copy:the_afternoon_back:_uncommitted_edits,_the_reflog,_the_operation_in_progress title=What_each_layer_gives_you_back at_1=0 at_2=18 at_3=36 at_4=58
+
 The recorded output lets you tell the story. The backup ref lets you get the commits back. The bundle lets you get the commits back on another machine. The copy lets you get the afternoon back: the uncommitted edits, the reflog, the operation in progress.
+
+**[ANIMATION]** stores: id=building boxes=your_clone:your_own_notebook|*GitHub:the_log_at_the_front_desk rows=1:A:what_you_carried_in_and_out|2:B:who_badged_in|2:B:at_what_time|2:B:which_door|2:B:whether_a_guard_waved_them_through|3:B:the_log_isn't_kept_forever@dim title=Two_kinds_of_evidence at_1=18 at_2=38 at_3=85
 
 For the two kinds of evidence, think of a building. Your clone is your own notebook of what you carried in and out. GitHub is the log at the front desk: who badged in, at what time, which door, and whether a guard waved them through. Neither replaces the other. And the front desk doesn't keep its log forever.
 
@@ -294,7 +324,13 @@ $ git status --short
 ```
 <!-- /snippet -->
 
-`git rebase --abort` printed nothing, and the last command shows that the staged and the unstaged edit are gone with it. With the anchors deleted, the reflogs emptied and the objects pruned, `075407e` is no longer an object in this repository. This is the point of no return of Chapter 13, reached in five commands.
+`git rebase --abort` printed nothing, and the last command shows that the staged and the unstaged edit are gone with it.
+
+**[ANIMATION]** ladder: commit=075407e at_1=2 at_2=10 at_3=22 at_4=34
+
+With the anchors deleted, the reflogs emptied and the objects pruned, `075407e` is no longer an object in this repository. This is the point of no return of Chapter 13, reached in five commands.
+
+**[ANIMATION]** end
 
 **Step 6: back from the bundle.**
 
@@ -418,7 +454,11 @@ index 383f082,47a6e5c..0000000
 
 **[PAUSE]**
 
+**[ANIMATION]** cards: id=keep cards=A:the_backup_ref|B:the_bundle|C:the_copy marks=1:bad,2:bad,3:ok title=A_resolution_that_exists_in_no_object pace=quick at_marks=12
+
 C, the copy. A ref and a bundle keep commits, and this resolution is in no commit. The copy keeps the file itself.
+
+**[ANIMATION]** end
 
 **The preservation.**
 
@@ -456,7 +496,11 @@ All four layers, in order: the record, the anchor, the copy, the bundle. And one
 
 **[ON SCREEN]** GitHub side. Layer label: GitHub.
 
-Open your own practice repository in a browser, in the normal way. The interface changes, the lab's text and the linked documentation are the reference, and nothing was captured by the authors. This is only to show where one instrument is. Find the repository's Activity view, wherever the current interface places it. In it, find by function: the filter for the branch, the filter for the activity type, which the documentation lists as direct pushes, pull request merges, force pushes, branch creations and branch deletions, and on one entry the control that compares the before and after commit. That's all. The documentation doesn't describe a restore action there, and this course doesn't claim one.
+Open your own practice repository in a browser, in the normal way. The interface changes, the lab's text and the linked documentation are the reference, and nothing was captured by the authors. This is only to show where one instrument is. Find the repository's Activity view, wherever the current interface places it.
+
+**[ANIMATION]** cards: id=activity question=The_Activity_view:_find_by_function cards=the_filter_for_the_branch|the_filter_for_the_activity_type|the_control_that_compares_the_before_and_after_commit title=Described_from_GitHub's_documentation at_1=8 at_2=18 at_3=58
+
+In it, find by function: the filter for the branch, the filter for the activity type, which the documentation lists as direct pushes, pull request merges, force pushes, branch creations and branch deletions, and on one entry the control that compares the before and after commit. That's all. The documentation doesn't describe a restore action there, and this course doesn't claim one.
 
 ## COMMON MISTAKES
 
@@ -472,9 +516,17 @@ Five mistakes to watch for.
 
 Now, out of the lab. `main` of a model-serving repository moved backwards on Friday evening. The on-call engineer doesn't start by moving it forward again.
 
+**[ANIMATION]** cards: id=answers cards=Who_did_it?:the_Activity_view,_filtered_by_force_pushes|When?:the_Activity_view,_filtered_by_force_pushes|From_which_commit_to_which?:git_reflog_show_origin/main|Did_a_rule_allow_it?:Rule_Insights marks=1:ok,2:ok,3:ok,4:ok steps=3,1,2,4,marks title=Four_answers,_each_with_its_source at_3=30 at_1=12 at_2=18 at_4=30
+
+**[ANIMATION]** step: 3
+
 In her own clone, which fetched in the morning and again at night, `git reflog show origin/main` gives the two IDs: where the remote-tracking branch was, and where the forced update put it. She anchors the old ID with a backup ref before anything else and records the output. That's the Git half: the state, and the two commits.
 
+**[ANIMATION]** step: 4
+
 The GitHub half answers the rest. The Activity view filtered by force pushes names the authenticated account and the time. Rule Insights says whether a ruleset, GitHub's named list of rules for certain refs, evaluated that update and whether the actor bypassed it. The audit log shows whether a rule was edited shortly before. She exports what she finds the same evening, because the sources have different lifetimes and some are short.
+
+**[ANIMATION]** step: marks
 
 On Monday she can answer all four questions of the hook, each with its source. There are your four answers. And the repair itself, restoring the ref, was done from the anchored ID with a lease, a forced push that succeeds only if the server's branch is still where she expects it.
 

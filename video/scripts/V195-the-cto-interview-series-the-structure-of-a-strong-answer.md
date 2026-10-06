@@ -13,6 +13,8 @@
 
 You know the answer. You've known it since Part 2. Now say it aloud, to a person who is waiting, without a terminal, in under two minutes, and then take the follow-up question.
 
+**[ANIMATION]** cards: id=heard question=At_a_table,_the_interviewer_hears cards=They_narrate_commands|"the_branch_on_GitHub":when_they_mean_a_ref_in_their_own_clone|"so,_yes,_it_is_a_bit_weird" marks=1:bad,2:bad,3:bad at_1=18 at_2=28 at_3=48 at_marks=60
+
 Most engineers who can fix this in thirty seconds at a keyboard can't explain it in two minutes at a table. They narrate commands. They say "the branch on GitHub" when they mean a ref in their own clone, a ref being a name that holds a commit ID. They end with "so, yes, it is a bit weird". An interviewer, and a CTO, hears all three. I won't answer the question on screen in this video, and that's deliberate. By the end you'll know where its model answer is, and what to do first.
 
 ## INTRODUCTION
@@ -54,9 +56,17 @@ After this video you can:
 
 Four formats. The longest is the full CTO interview: twenty questions in sixty minutes, from at least ten areas.
 
+**[ANIMATION]** cards: id=rules numbered=on cards=One_question_at_a_time|No_terminal,_no_notes,_no_textbook:paper_for_a_commit_graph_is_fine|Two_minutes_for_the_answer:one_minute_for_the_follow-up|One_clarifying_question|"I_do_not_know"_is_an_acceptable_answer:better_than_a_wrong_mechanism|No_praise,_no_hints,_no_leading:"Noted"|No_trivia|Layer_discipline:Git,_GitHub,_GitHub_Actions
+
+**[ANIMATION]** step: 5
+
 **The rules during a session.** Eight, from the protocol. One question at a time. No terminal, no notes, no textbook, though a sheet of paper for drawing a commit graph is allowed and encouraged. Two minutes for the answer, one minute for the follow-up: a long answer is a weak answer. The candidate may ask one clarifying question about the situation. "I do not know" is an acceptable answer and is graded as such. A confident wrong mechanism is graded lower than an honest gap, because it's more dangerous in an incident.
 
+**[ANIMATION]** step: 8
+
 No praise, no hints, no leading: the interviewer says "Noted" and grades. No trivia: if you have the mechanism right and can't recall an exact flag spelling or version number, nothing is deducted on correctness. And layer discipline. The layers are Git, GitHub and GitHub Actions, and an answer that attributes GitHub behavior to Git, or the reverse, loses the correctness point for that claim, even when the described effect is right.
+
+**[ANIMATION]** end
 
 **The grading.** Each first answer is graded on six dimensions, 0 to 2 points each, 12 in total.
 
@@ -73,7 +83,13 @@ Quick quiz. An answer uses exact terms, fluently, on top of a wrong mechanism. D
 
 **[PAUSE]**
 
-B, none. The correctness gate: if correctness is 0, the whole answer scores 0. Fluent terminology on top of a wrong mechanism earns nothing. The follow-up is graded 0 to 3, so each question is worth 15 points. A session is passed at 85 percent of the available points, 90 percent when it covers Recovery, Security or Production incidents, and with no answer scoring 0 on correctness for a question about a red-label operation.
+B, none. The correctness gate: if correctness is 0, the whole answer scores 0. Fluent terminology on top of a wrong mechanism earns nothing.
+
+**[ANIMATION]** bars: id=score bars=Correctness:2|Depth:2|Terminology:2|Reasoning:2|Practical_understanding:2|Production_awareness:2|The_follow-up:3 unit=points max=3 title=15_points_per_question at_1=0 at_2=2 at_3=4 at_4=6 at_5=8 at_6=10 at_7=14
+
+The follow-up is graded 0 to 3, so each question is worth 15 points. A session is passed at 85 percent of the available points, 90 percent when it covers Recovery, Security or Production incidents, and with no answer scoring 0 on correctness for a question about a red-label operation.
+
+**[ANIMATION]** end
 
 **The structure of a strong answer.** Five parts, in this order. Not every question needs all five at the same length, but none may contradict another, and the first two are never optional.
 
@@ -89,21 +105,37 @@ B, none. The correctness gate: if correctness is 0, the whole answer scores 0. F
 
 This is the seven-line root-cause box, arranged for speech. Evidence is added because an interviewer can't see your terminal.
 
+**[ANIMATION]** walk: id=scale columns=the_question,carries_the_answer,the_rest rows=a_definition:State_and_Mechanism:Evidence_is_one_command;_Fix_and_Prevention_one_sentence|an_incident:State_and_Evidence,_first:you_don't_yet_know_the_mechanism|a_design:Prevention:the_other_four_are_the_justification marks=1.2:hl,2.2:hl,3.2:hl mono=off title=How_the_five_parts_scale
+
 **How the five parts scale.** For a definition question, State and Mechanism are the answer, Evidence is one command, and Fix and Prevention shrink to one sentence about the mistake the definition prevents. For an incident question, State and Evidence come first and take most of the time, because you don't yet know the mechanism. For a design question, Prevention is the answer, and the other four are the justification.
+
+**[ANIMATION]** end
 
 **Three rules for the first sentence.** Answer the question that was asked: "why" starts with "because". Name the object or ref that the answer turns on. Name the layer if two are possible.
 
 **One rule for the last sentence.** End on the control or the limit, not on a summary.
 
+**[ANIMATION]** stores: id=weak boxes=loses_an_interview|marks_a_senior_answer rows=1:A:a_command_before_the_state@bad|2:A:certainty_without_evidence@bad|3:A:blaming_the_tool@bad|4:B:saying_which_layer_acted@ok|5:B:what_you_would_check_before_you_believe_yourself@ok|6:B:"I_do_not_know_that;_here_is_how_I_would_find_out"@ok title=Weak_against_strong
+
+**[ANIMATION]** step: 3
+
 **Weak against strong, on the same question.** The guide names three behaviors that lose an interview faster than a wrong fact. Reaching for a command before describing the state: "I would run `git reset --hard`" as a first sentence tells the interviewer how you behave in an incident. Certainty without evidence: "it must be a force push", where the stronger sentence is "three mechanisms produce this; the branch reflog separates them". And blaming the tool: an answer that ends in "weird" has reached neither the mechanism nor the design reason.
 
+**[ANIMATION]** step: 6
+
 And three behaviors mark a senior answer even when a detail is missing. First, saying which layer acted. Second, saying what you would check before you believe your own explanation. Third, saying "I do not know that; here is how I would find out", followed by a command that would in fact find out.
+
+**[ANIMATION]** gates: id=alone gates=draw_the_numbers:done:-:by_level_mix,_without_reading|read_one_question:done|record_the_answer:done:-:within_two_minutes|the_follow-up:done:-:the_same_way|open_the_answers_file:done:-:only_then|grade_the_recording:done:-:what_you_said,_not_what_you_meant|write_the_gap:done:-:in_one_sentence title=Running_a_session_alone
 
 **Running a session alone.** Draw the question numbers before you start, by level mix, without reading the questions. Read one question, start a recorder, answer aloud within two minutes, stop the recorder. Answer the follow-up the same way. Only then open the answers file. Listen to the recording and grade what you said, not what you meant. Write the gap in one sentence before moving on. And don't reuse a question whose model answer you read less than a week ago: you would be grading memory of the text.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** cards: id=five numbered=on question=A_very_short_incident_report,_read_aloud cards=Here_is_where_things_stand|Here_is_why|Here_is_how_I_know|Here_is_what_I_would_change|Here_is_what_stops_it_next_time
+
 A picture helps. Think of the five parts as the five paragraphs of a very short incident report, read aloud. Here is where things stand. Here is why. Here is how I know. Here is what I would change. Here is what stops it next time. A listener who hears those five in that order can interrupt at any point and still have something true.
+
+**[ANIMATION]** end
 
 Compare the other order, the one people fall into. Here is what I would type. And then this. And then it works. A listener who interrupts that answer after ten seconds has a command and no reason to trust it.
 
@@ -199,7 +231,7 @@ Try it before I do. From the brackets and the graph on this screen, say the stat
 
 Spoken: "The local branch has two commits that the server's branch of the same name lacks, and the server's branch has one commit that the local branch lacks. The local branch's upstream is `origin/main`, not the branch it is pushed to." Notice what that sentence took from the screen: the brackets and the graph. Nothing else.
 
-**[ANIMATION]** graph: bafe874-ce76024 main origin/main; ce76024-3d6663d-2defa92 feature/batch-size; ^ce76024-56bb8e4 origin/feature/batch-size; HEAD=feature/batch-size title=The_picture_you_carry_in_your_head
+**[ANIMATION]** graph: id=head bafe874-ce76024 main origin/main; ce76024-3d6663d-2defa92 feature/batch-size; ^ce76024-56bb8e4 origin/feature/batch-size; HEAD=feature/batch-size title=The_picture_you_carry_in_your_head
 
 **[ANIMATION]** step: state-1
 
@@ -317,6 +349,8 @@ Then listen. Count the commands you named: more than four means you were narrati
 
 And the question from the opening? Its worked answer is in section 3 of the guide, in the five parts, in about a hundred words. Record your own answer to it first. Then read the example.
 
+**[ANIMATION]** flow: id=round actors=the_interviewer,the_candidate msgs=1>2:a_symptom,_in_one_sentence|2>1:what_I_would_inspect_first,_and_why|1>2:only_the_output_of_that_command|2>1:the_root_cause,_a_fix,_how_to_verify|2>1:a_state-changing_command_before_the_cause_is_known:fail title=The_debugging_round
+
 One more format to know: the debugging round. The interviewer states a symptom in one sentence. You say what you would inspect first, and why. The interviewer answers only with the output that command would produce. This repeats until you state the root cause in the seven-line form, propose a fix, and say how to verify it. A state-changing command proposed before the cause is known ends the symptom with zero for the first graded item, and the interviewer says which work that command could have destroyed.
 
 ## COMMON MISTAKES
@@ -333,7 +367,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A senior engineer is interviewing for a staff role. The interviewer says: "`main` moved backwards overnight. Go." This is the incident walk-through form, and the interviewer plays the repository.
 
+**[ANIMATION]** stores: id=cands boxes=has_only_used_Git|has_practised_the_five_parts rows=1:A:"I_would_reset_it_and_force-push"@bad|1:A:which_commit?_not_known_yet|2:B:first_the_state@ok|2:B:the_root_cause_with_its_layer|2:B:a_restore_with_a_lease|2:B:the_rule_that_would_have_refused_the_push title=`main`_moved_backwards_overnight
+
+**[ANIMATION]** step: 1
+
 A candidate who has only used Git says: "I would reset it to the last good commit and force-push." The interviewer notes it and asks which commit that is. The candidate doesn't know yet.
+
+**[ANIMATION]** step: 2
 
 The candidate who has practised the five parts says: "First the state: I want the server's current value and the previous one, so I would ask the server directly and read the reflog of the remote-tracking branch in a clone that fetched before and after. Three mechanisms produce this; that reflog separates two of them." The interviewer answers with output. Four exchanges later the candidate states the root cause with its layer, proposes a restore with a lease that names the examined value after two checks, and ends with the rule that would have refused the push, and with what it would cost. The whole exchange takes six minutes, and at no point did the candidate propose a change before knowing the cause.
 

@@ -1,0 +1,1235 @@
+1
+00:00:04,500 --> 00:00:08,929
+A CTO asks: "git status said 'up
+to date' on the release laptop.
+
+2
+00:00:08,969 --> 00:00:12,840
+We tagged, and the tag does
+not contain yesterday's fix.
+
+3
+00:00:12,880 --> 00:00:14,376
+Why did Git say that?"
+
+4
+00:00:14,716 --> 00:00:19,717
+Git said it because it was true about the
+only thing git status looks at, which is a
+
+5
+00:00:19,757 --> 00:00:23,258
+ref, a name that points at a
+commit, stored on that laptop.
+
+6
+00:00:23,298 --> 00:00:28,239
+git status never contacts a server. To see
+why that sentence is not a technicality,
+
+7
+00:00:28,279 --> 00:00:31,659
+you need to know what a remote
+is. It's not a connection.
+
+8
+00:00:31,699 --> 00:00:36,340
+It's a few lines of configuration and
+some refs, all of them in your own .git.
+
+9
+00:00:36,380 --> 00:00:38,740
+Keep that laptop in mind. It comes back.
+
+10
+00:00:40,580 --> 00:00:45,034
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:45,074 --> 00:00:50,706
+This video opens the module on remote
+operations. A repository is the dot git
+
+12
+00:00:50,746 --> 00:00:55,715
+folder: the commits, the names that
+point at them, and the settings.
+
+13
+00:00:55,755 --> 00:00:59,546
+Until now every repository
+in this course was alone.
+
+14
+00:00:59,586 --> 00:01:05,513
+From here on there are at least two, and
+the first skill is to keep them apart in
+
+15
+00:01:05,553 --> 00:01:06,250
+your head.
+
+16
+00:01:06,590 --> 00:01:10,772
+Two things today. First, look at what a
+remote is inside .git: a name, a URL, a
+
+17
+00:01:10,812 --> 00:01:15,101
+refspec, and the refs that refspec creates.
+Second, take git clone apart into six
+
+18
+00:01:15,141 --> 00:01:19,591
+steps and rebuild a clone by hand, so that
+nothing about a fresh clone is a mystery.
+
+19
+00:01:19,631 --> 00:01:23,814
+On the way you compare a normal clone, a
+bare clone and a mirror clone by their
+
+20
+00:01:23,854 --> 00:01:27,982
+refs, and you look at origin/HEAD, a
+small ref that goes stale without telling
+
+21
+00:01:28,022 --> 00:01:28,357
+anyone.
+
+22
+00:01:28,697 --> 00:01:34,572
+The project in this module is support-bot,
+retrieval-augmented answers for a help
+
+23
+00:01:34,612 --> 00:01:40,342
+desk. A bare repository on disk plays the
+server. A bare repository on disk and
+
+24
+00:01:40,382 --> 00:01:45,600
+GitHub differ in authentication and
+in the rules a platform adds on top.
+
+25
+00:01:45,640 --> 00:01:47,864
+The Git mechanics are the same.
+
+26
+00:01:49,704 --> 00:01:51,282
+Here's what you'll walk away with.
+
+27
+00:01:51,622 --> 00:01:53,034
+After this video you can:
+
+28
+00:01:53,374 --> 00:01:57,347
+Describe a remote as a name, URLs
+and refspecs in the configuration.
+
+29
+00:01:57,687 --> 00:02:01,163
+Take git clone apart into
+the commands it performs.
+
+30
+00:02:01,503 --> 00:02:04,916
+Explain where origin/main is
+stored and what origin/HEAD is.
+
+31
+00:02:05,256 --> 00:02:09,149
+Compare a normal clone, a bare clone
+and a mirror clone by their refs.
+
+32
+00:02:10,989 --> 00:02:16,063
+Start with the model the whole module
+rests on. There are at least three things
+
+33
+00:02:16,103 --> 00:02:16,840
+called main.
+
+34
+00:02:17,180 --> 00:02:21,673
+Quick quiz. Which of these
+commands contacts the server?
+
+35
+00:02:21,713 --> 00:02:25,883
+A, git status. B, git log
+origin/main. C, git fetch.
+
+36
+00:02:25,923 --> 00:02:26,854
+Your answer?
+
+37
+00:02:31,694 --> 00:02:37,292
+It's C, and only C. Git contacts another
+repository only when you run a command that
+
+38
+00:02:37,332 --> 00:02:42,594
+says so: clone, fetch, pull, push,
+ls-remote, and a few git remote subcommands.
+
+39
+00:02:42,634 --> 00:02:48,031
+Every other command, including status, log
+origin/main and branch -vv, reads refs
+
+40
+00:02:48,071 --> 00:02:51,790
+stored in your own .git. That
+is the answer to the hook.
+
+41
+00:02:52,130 --> 00:02:56,546
+Now the definition. In one sentence: a
+remote is a name in your repository's
+
+42
+00:02:56,586 --> 00:03:01,472
+configuration that stands for another
+repository: its URL, and the rules for copying
+
+43
+00:03:01,512 --> 00:03:03,759
+refs between that repository and yours.
+
+44
+00:03:04,099 --> 00:03:09,097
+Precisely: a remote is a configuration
+section, [remote "<name>"], holding one or
+
+45
+00:03:09,137 --> 00:03:14,010
+more URLs and one or more fetch refspecs.
+A refspec has the form, optional plus
+
+46
+00:03:14,050 --> 00:03:19,172
+sign, source, colon, destination, and it
+maps ref names on one side to ref names on
+
+47
+00:03:19,212 --> 00:03:23,401
+the other. The default written by
+git clone and by git remote add is
+
+48
+00:03:23,441 --> 00:03:28,252
++refs/heads/*:refs/remotes/<name>/*. Read
+it aloud: every branch of the remote
+
+49
+00:03:28,292 --> 00:03:33,165
+becomes a ref of yours under refs/remotes/<name>/,
+and the plus sign allows the
+
+50
+00:03:33,205 --> 00:03:35,777
+update even when it is not a fast-forward.
+
+51
+00:03:36,117 --> 00:03:40,010
+The refs it creates are remote-tracking
+branches. The glossary defines one as a ref
+
+52
+00:03:40,050 --> 00:03:42,617
+that is used to follow changes
+from another repository.
+
+53
+00:03:42,657 --> 00:03:46,408
+The data-model manual is blunter: it is
+how Git stores the last-known state of a
+
+54
+00:03:46,448 --> 00:03:50,199
+branch in a remote repository. Last-known.
+On screen is a fresh clone of today's
+
+55
+00:03:50,239 --> 00:03:53,658
+project. main is your branch. origin/main
+and origin/feature/reranker are
+
+56
+00:03:53,698 --> 00:03:57,307
+remote-tracking branches. And origin is
+only the name that git clone picks by
+
+57
+00:03:57,347 --> 00:03:57,686
+default.
+
+58
+00:03:58,026 --> 00:04:06,251
+Inside .git a remote occupies four places.
+The [remote] and [branch] sections of
+
+59
+00:04:06,291 --> 00:04:12,863
+.git/config. The refs under
+refs/remotes/<name>/. Their reflogs.
+
+60
+00:04:12,903 --> 00:04:20,922
+And FETCH_HEAD, rewritten by every fetch.
+There is no object store per remote:
+
+61
+00:04:20,962 --> 00:04:26,914
+objects from every remote land
+in the one object database.
+
+62
+00:04:27,254 --> 00:04:34,771
+Then git clone 🟢. In one sentence: it creates
+a new repository, registers the source
+
+63
+00:04:34,811 --> 00:04:42,238
+as the remote origin, fetches everything
+the default refspec covers, and checks out
+
+64
+00:04:42,278 --> 00:04:47,455
+one branch. Six steps, each of
+which you can run yourself.
+
+65
+00:04:47,795 --> 00:04:51,053
+Create the directory and an
+empty repository: git init.
+
+66
+00:04:51,393 --> 00:04:56,070
+Write the remote, its URL and the default
+fetch refspec: git remote add origin
+
+67
+00:04:56,110 --> 00:04:56,433
+<url>.
+
+68
+00:04:56,773 --> 00:05:01,567
+Fetch: copy the objects, create a
+remote-tracking branch for every branch of the
+
+69
+00:05:01,607 --> 00:05:02,897
+remote, copy the tags.
+
+70
+00:05:03,237 --> 00:05:08,358
+Record the remote's default branch as the
+symbolic ref refs/remotes/origin/HEAD.
+
+71
+00:05:08,698 --> 00:05:13,211
+Create one local branch, named after the
+branch that the remote's HEAD points at,
+
+72
+00:05:13,251 --> 00:05:16,696
+starting at the same commit, with
+that branch as its upstream.
+
+73
+00:05:17,036 --> 00:05:19,646
+Check it out: fill the
+index and the working tree.
+
+74
+00:05:19,986 --> 00:05:26,013
+When is a clone not this? With --bare and
+--mirror, which have no working tree and
+
+75
+00:05:26,053 --> 00:05:32,007
+copy branches to refs/heads/* directly.
+They differ from each other in one thing,
+
+76
+00:05:32,047 --> 00:05:37,705
+the configuration, and that difference
+decides whether a "backup" follows its
+
+77
+00:05:37,745 --> 00:05:39,851
+source. You will see it fail.
+
+78
+00:05:41,691 --> 00:05:46,657
+A picture helps. The textbook's analogy:
+an entry in an address book with a filing
+
+79
+00:05:46,697 --> 00:05:51,785
+instruction attached. "The supplier we call
+origin is at this address; file our copy
+
+80
+00:05:51,825 --> 00:05:54,227
+of whatever they call X under origin/X."
+
+81
+00:05:54,567 --> 00:05:59,683
+It breaks in two places, and both matter.
+The entry is not a connection: nothing is
+
+82
+00:05:59,723 --> 00:06:03,224
+live, and the filed copies are
+as old as your last visit.
+
+83
+00:06:03,264 --> 00:06:08,194
+And the supplier is not special: it is a
+full Git repository like yours, and the
+
+84
+00:06:08,234 --> 00:06:10,990
+name origin exists only
+in your address book.
+
+85
+00:06:11,330 --> 00:06:15,292
+For clone, the analogy is moving
+into a furnished copy of an office.
+
+86
+00:06:15,332 --> 00:06:20,001
+You receive every document, a board that
+shows where the head office's bookmarks
+
+87
+00:06:20,041 --> 00:06:24,828
+stood this morning, and one desk set up
+for work. On screen, the dashed labels are
+
+88
+00:06:24,868 --> 00:06:29,596
+that board, and main is your desk. It
+breaks because nothing ties the copy to the
+
+89
+00:06:29,636 --> 00:06:32,362
+original afterwards except
+the address on file.
+
+90
+00:06:32,702 --> 00:06:38,707
+So when you look at origin/main, say to
+yourself: this is where main was on the
+
+91
+00:06:38,747 --> 00:06:41,998
+server the last time
+this repository asked.
+
+92
+00:06:43,838 --> 00:06:50,881
+Try it now. Thirty seconds, on paper.
+Draw two boxes, a server and your clone.
+
+93
+00:06:50,921 --> 00:06:57,056
+The server has two branches, main
+and feature/reranker, and one tag.
+
+94
+00:06:57,096 --> 00:07:01,779
+Write down every ref your
+clone has after git clone.
+
+95
+00:07:01,819 --> 00:07:06,683
+Then say out loud how many
+of them are local branches.
+
+96
+00:07:11,523 --> 00:07:16,364
+Here's the answer. The server has two
+branches. Your clone has two remote-tracking
+
+97
+00:07:16,404 --> 00:07:21,364
+branches and exactly one local branch. The
+server's feature/reranker is not a branch
+
+98
+00:07:21,404 --> 00:07:26,364
+of yours. It's origin/feature/reranker, a
+bookmark of where that branch was when you
+
+99
+00:07:26,404 --> 00:07:26,780
+cloned.
+
+100
+00:07:28,620 --> 00:07:30,537
+Part 1: what a clone wrote down.
+
+101
+00:07:30,877 --> 00:07:33,151
+Predict which sections the
+configuration has besides [core].
+
+102
+00:07:33,191 --> 00:07:34,192
+Say it out loud. I'll wait.
+
+103
+00:07:39,032 --> 00:07:43,238
+Two. [remote "origin"] is the whole remote:
+a URL, an absolute path here because the
+
+104
+00:07:43,278 --> 00:07:47,485
+clone source was a local path, and one
+refspec. [branch "main"] records the upstream
+
+105
+00:07:47,525 --> 00:07:49,912
+of your branch main, which
+a later video covers.
+
+106
+00:07:50,252 --> 00:07:52,380
+Now compare the refs on the two sides.
+
+107
+00:07:52,720 --> 00:07:57,746
+The server: two branches and a tag. Your
+clone: the tag under the same name, both
+
+108
+00:07:57,786 --> 00:08:03,000
+branches under refs/remotes/origin/, one
+local branch, and refs/remotes/origin/HEAD.
+
+109
+00:08:03,340 --> 00:08:08,327
+git branch -a -vv is the quickest complete
+view: local branches with their upstream
+
+110
+00:08:08,367 --> 00:08:11,174
+in brackets, then the
+remote-tracking branches.
+
+111
+00:08:11,514 --> 00:08:16,360
+The server is a bare repository: no working
+tree, and its directory is itself the
+
+112
+00:08:16,400 --> 00:08:17,205
+Git directory.
+
+113
+00:08:17,545 --> 00:08:22,480
+No index, and git status refuses. Notice
+also what the listing lacks: logs/.
+
+114
+00:08:22,520 --> 00:08:27,783
+core.logAllRefUpdates defaults to true in
+a repository with a working tree and to
+
+115
+00:08:27,823 --> 00:08:33,086
+false in a bare one, so a plain bare server
+keeps no reflog, the list of values a
+
+116
+00:08:33,126 --> 00:08:38,585
+ref has had. When a branch on such a server
+is overwritten, the server has no record
+
+117
+00:08:38,625 --> 00:08:42,579
+of the old value. The video on
+forced pushes depends on this.
+
+118
+00:08:42,919 --> 00:08:49,069
+A version note that the textbook attaches
+here: Git 2.55 works inside any bare
+
+119
+00:08:49,109 --> 00:08:55,179
+repository it finds, safe.bareRepository=all,
+but the 2.55 manual states that
+
+120
+00:08:55,219 --> 00:09:00,496
+explicit will be the default in Git
+3.0. Under explicit, the git -C
+
+121
+00:09:00,536 --> 00:09:06,606
+<bare-repository> form these demos use
+fails, and git --git-dir=<path> works.
+
+122
+00:09:06,946 --> 00:09:10,987
+One line of housekeeping. git remote
+set-url 🟡 CAUTION rewrites the URL.
+
+123
+00:09:11,327 --> 00:09:17,532
+The demos store a relative path so that
+the commit IDs do not depend on where your
+
+124
+00:09:17,572 --> 00:09:23,928
+lab root is. The last command, git config
+get --all --show-names --regexp, needs Git
+
+125
+00:09:23,968 --> 00:09:30,020
+2.46 or later. It prints the four lines
+that are the entire relationship between
+
+126
+00:09:30,060 --> 00:09:32,000
+your clone and the server.
+
+127
+00:09:32,340 --> 00:09:37,300
+Part 2: a clone by hand.
+labs/run ch12/clone-by-hand.
+
+128
+00:09:37,340 --> 00:09:38,620
+Steps 1 and 2.
+
+129
+00:09:38,960 --> 00:09:42,310
+git remote add wrote the URL
+and the default refspec.
+
+130
+00:09:42,350 --> 00:09:47,554
+No network activity, no objects. Step 3.
+Predict: after git fetch origin, how many
+
+131
+00:09:47,594 --> 00:09:48,897
+local branches exist?
+
+132
+00:09:53,737 --> 00:09:59,090
+None. If you said one, you're in good
+company. The fetch created remote-tracking
+
+133
+00:09:59,130 --> 00:10:04,753
+branches, a tag and origin/HEAD, and nothing
+else. git status still says "No commits
+
+134
+00:10:04,793 --> 00:10:08,932
+yet": HEAD names a main that has
+not been born. Steps 5 and 6:
+
+135
+00:10:15,272 --> 00:10:19,582
+git switch main found no local main, found
+exactly one remote-tracking branch of
+
+136
+00:10:19,622 --> 00:10:23,877
+that name, and created the branch from
+origin/main with upstream configuration.
+
+137
+00:10:23,917 --> 00:10:27,520
+That's the picture of a fresh clone
+again, this time built by hand.
+
+138
+00:10:27,560 --> 00:10:30,674
+This is the --guess behavior
+of git switch, on by default.
+
+139
+00:10:30,714 --> 00:10:32,849
+The older spelling is git checkout main.
+
+140
+00:10:33,189 --> 00:10:37,556
+A real git clone differs from the
+hand-built version in three details.
+
+141
+00:10:37,596 --> 00:10:42,404
+It takes the name of the initial branch
+from the remote's HEAD, not from your
+
+142
+00:10:42,444 --> 00:10:46,496
+init.defaultBranch. It writes
+clone: from <url> into the reflogs.
+
+143
+00:10:46,536 --> 00:10:51,596
+And when the source is a local path it
+does not transfer a pack: the object files
+
+144
+00:10:51,636 --> 00:10:53,233
+are hard-linked or copied.
+
+145
+00:10:53,573 --> 00:10:59,575
+Part 3: options that change the
+result. labs/run ch12/clone-options.
+
+146
+00:10:59,915 --> 00:11:04,838
+--origin company changes the name of the
+remote and with it the prefix of every
+
+147
+00:11:04,878 --> 00:11:09,989
+remote-tracking branch. --branch release/0.1
+changes which local branch is created
+
+148
+00:11:10,029 --> 00:11:15,140
+and checked out. It does not limit what is
+fetched, and company/HEAD still records
+
+149
+00:11:15,180 --> 00:11:17,087
+the remote's own default, main.
+
+150
+00:11:17,427 --> 00:11:19,864
+--branch also accepts a tag.
+
+151
+00:11:20,204 --> 00:11:23,700
+The result is a detached HEAD at the tagged
+commit: HEAD holds a commit ID instead
+
+152
+00:11:23,740 --> 00:11:27,149
+of a branch name. The warning only says
+that the name given was an annotated tag
+
+153
+00:11:27,189 --> 00:11:28,183
+object and not a commit.
+
+154
+00:11:28,523 --> 00:11:34,226
+--single-branch narrows the refspec to
+one branch. Every later git fetch in that
+
+155
+00:11:34,266 --> 00:11:40,039
+clone follows only that branch. --depth
+implies it, and CI systems produce clones
+
+156
+00:11:40,079 --> 00:11:40,757
+like this.
+
+157
+00:11:41,097 --> 00:11:44,186
+Now bare and mirror. Predict
+the difference in their refs.
+
+158
+00:11:54,826 --> 00:12:01,583
+The refs are identical. If you looked
+for the difference there, so does almost
+
+159
+00:12:01,623 --> 00:12:07,682
+everyone. Both are bare, and both
+copied the branches to refs/heads/*.
+
+160
+00:12:07,722 --> 00:12:14,565
+The difference is in the configuration.
+The --bare clone has a URL and no fetch
+
+161
+00:12:14,605 --> 00:12:21,622
+refspec. The --mirror clone has the refspec
++refs/*:refs/*, every ref, same name,
+
+162
+00:12:21,662 --> 00:12:23,888
+forced, and mirror = true.
+
+163
+00:12:24,228 --> 00:12:28,081
+Part 4: the consequence.
+labs/run ch12/mirror-refresh.
+
+164
+00:12:28,121 --> 00:12:32,550
+The server has moved: one new
+commit on main and a new branch.
+
+165
+00:12:32,890 --> 00:12:41,037
+With no refspec, git fetch downloads the
+remote's HEAD into FETCH_HEAD and moves no
+
+166
+00:12:41,077 --> 00:12:48,631
+ref. This "backup" still has the old
+main and has never heard of release/1.0.
+
+167
+00:12:48,971 --> 00:12:49,929
+The mirror follows.
+
+168
+00:12:50,269 --> 00:12:52,539
+And with --prune it deletes
+what the source deleted.
+
+169
+00:12:52,579 --> 00:12:53,916
+That faithfulness is the catch.
+
+170
+00:12:54,256 --> 00:12:59,096
+A mirror reproduces a destructive force
+push or a branch deletion at its next
+
+171
+00:12:59,136 --> 00:13:04,167
+update, and being bare it keeps no reflog.
+It is a replica of the present, not a
+
+172
+00:13:04,207 --> 00:13:05,371
+record of the past.
+
+173
+00:13:05,711 --> 00:13:10,417
+Part 5: origin/HEAD.
+labs/run ch12/origin-head.
+
+174
+00:13:10,757 --> 00:13:13,529
+A symbolic ref, which is a ref that
+holds the name of another ref.
+
+175
+00:13:13,569 --> 00:13:15,701
+In a files-format repository,
+it's a one-line file.
+
+176
+00:13:15,741 --> 00:13:19,194
+It makes the bare remote name a valid
+revision, which is why git log origin works.
+
+177
+00:13:19,234 --> 00:13:22,645
+It's a local record, and it goes stale.
+The server's default branch is now trunk.
+
+178
+00:13:22,685 --> 00:13:24,477
+Predict what git fetch
+does to origin/HEAD.
+
+179
+00:13:29,317 --> 00:13:33,958
+Nothing. The fetch brought the new
+branch and left origin/HEAD on main.
+
+180
+00:13:33,998 --> 00:13:38,442
+git remote set-head origin --auto
+🟡 asks the server and repoints it.
+
+181
+00:13:38,482 --> 00:13:43,717
+If the old default branch is later deleted
+and pruned, the symbolic ref dangles:
+
+182
+00:13:44,057 --> 00:13:46,934
+And a fetch creates origin/HEAD
+when it is missing.
+
+183
+00:13:47,274 --> 00:13:52,761
+Look at the command that created it: on
+Git 2.55.0, git fetch --dry-run wrote the
+
+184
+00:13:52,801 --> 00:13:58,220
+ref. "Dry run" does not cover this side
+effect. The textbook's version note: git
+
+185
+00:13:58,260 --> 00:14:03,951
+fetch has created the ref when missing since
+Git 2.48, and what it does when the ref
+
+186
+00:14:03,991 --> 00:14:09,683
+exists and disagrees is the per-remote
+setting remote.<name>.followRemoteHEAD, whose
+
+187
+00:14:09,723 --> 00:14:14,937
+default, create, never touches an existing
+ref. The recommendation is warn in
+
+188
+00:14:14,977 --> 00:14:16,165
+long-lived clones.
+
+189
+00:14:18,005 --> 00:14:19,653
+Five mistakes to watch for.
+
+190
+00:14:19,993 --> 00:14:23,863
+Reading git status as a
+statement about the server.
+
+191
+00:14:23,903 --> 00:14:30,227
+Root cause: status reads refs/remotes/origin/main
+in your own .git, which is as old
+
+192
+00:14:30,267 --> 00:14:31,684
+as your last fetch.
+
+193
+00:14:32,024 --> 00:14:35,766
+Using git clone --bare plus a
+nightly git fetch as a backup.
+
+194
+00:14:35,806 --> 00:14:40,557
+Root cause: a bare clone has a URL and
+no fetch refspec, so the fetch writes
+
+195
+00:14:40,597 --> 00:14:42,322
+FETCH_HEAD and moves no ref.
+
+196
+00:14:42,662 --> 00:14:47,311
+Treating a mirror as a backup. Root cause:
+a mirror copies every ref, forced, and
+
+197
+00:14:47,351 --> 00:14:52,174
+being bare keeps no reflog, so it reproduces
+a destructive push or a deletion at its
+
+198
+00:14:52,214 --> 00:14:52,868
+next update.
+
+199
+00:14:53,208 --> 00:14:58,311
+Scripts that trust origin/HEAD
+after a default-branch rename.
+
+200
+00:14:58,351 --> 00:15:04,802
+Root cause: origin/HEAD is a local
+symbolic ref that a fetch with the default
+
+201
+00:15:04,842 --> 00:15:10,198
+setting does not update; git remote
+set-head origin --auto does.
+
+202
+00:15:10,538 --> 00:15:13,158
+Two people saying "origin" and
+meaning different repositories.
+
+203
+00:15:13,198 --> 00:15:16,719
+Root cause: the name exists only in each
+clone's configuration; git remote -v shows
+
+204
+00:15:16,759 --> 00:15:17,534
+what it stands for.
+
+205
+00:15:19,374 --> 00:15:23,945
+Now, out of the lab. A nightly
+evaluation job clones with --depth 1.
+
+206
+00:15:23,985 --> 00:15:29,640
+An engineer debugging in that workspace
+types git switch release/2.3 and gets fatal:
+
+207
+00:15:29,680 --> 00:15:33,708
+invalid reference, although the
+branch exists on the server.
+
+208
+00:15:33,748 --> 00:15:39,200
+The clone's refspec does not include it:
+--depth implies --single-branch, and the
+
+209
+00:15:39,240 --> 00:15:40,895
+refspec names one branch.
+
+210
+00:15:41,235 --> 00:15:46,088
+Second case, same team. After a
+default-branch rename, every script that says
+
+211
+00:15:46,128 --> 00:15:51,299
+origin/HEAD or origin/master keeps comparing
+against the old branch until set-head
+
+212
+00:15:51,339 --> 00:15:52,697
+has run in that clone.
+
+213
+00:15:53,037 --> 00:15:58,584
+Across the layer boundary: which branch is
+the default is a property of the server
+
+214
+00:15:58,624 --> 00:16:03,762
+repository, its HEAD. On GitHub a
+repository administrator changes it in the
+
+215
+00:16:03,802 --> 00:16:09,348
+repository settings or by renaming the
+branch. After a rename GitHub redirects web
+
+216
+00:16:09,388 --> 00:16:14,458
+URLs and retargets open pull requests,
+but it cannot reach into clones: its
+
+217
+00:16:14,498 --> 00:16:20,045
+documentation lists four commands for every
+existing clone, ending with git remote
+
+218
+00:16:20,085 --> 00:16:24,200
+set-head origin -a. This is
+described from the documentation.
+
+219
+00:16:24,540 --> 00:16:29,540
+And the rule for incidents, from the
+textbook: read git remote -v before you read
+
+220
+00:16:29,580 --> 00:16:30,410
+anything else.
+
+221
+00:16:32,250 --> 00:16:41,821
+Your turn. Do Lab 7.1, "A bare server
+and two clones, watching every ref", in
+
+222
+00:16:41,861 --> 00:16:45,066
+lab-manual/m07-remotes.md.
+
+223
+00:16:45,406 --> 00:16:46,758
+Predict before each step:
+
+224
+00:16:47,098 --> 00:16:51,747
+After the clone, which refs exist in
+the clone and which on the server?
+
+225
+00:16:51,787 --> 00:16:52,870
+Write both lists.
+
+226
+00:16:53,210 --> 00:16:57,758
+After a commit in one clone and before any
+push or fetch, which of the three things
+
+227
+00:16:57,798 --> 00:16:59,029
+called main have moved?
+
+228
+00:16:59,369 --> 00:17:02,996
+Which command, and only which, will
+change the other clone's view?
+
+229
+00:17:03,336 --> 00:17:10,151
+The challenge is Exercise 7.7, Level 3,
+"the branch that this clone cannot see", in
+
+230
+00:17:10,191 --> 00:17:12,877
+exercises/m06-m10-integration.md.
+
+231
+00:17:14,717 --> 00:17:18,439
+Q210: "Take git clone apart
+into separate commands.
+
+232
+00:17:18,479 --> 00:17:24,562
+What does --mirror add to --bare, and why
+does the difference matter for a backup?"
+
+233
+00:17:26,902 --> 00:17:30,895
+Answer out loud before you open the answers
+file. A strong answer lists the steps in
+
+234
+00:17:30,935 --> 00:17:34,927
+order and says, for each, what appears in
+.git. It states the difference between the
+
+235
+00:17:34,967 --> 00:17:38,864
+two clone types in terms of configuration,
+not in terms of what the refs look like
+
+236
+00:17:38,904 --> 00:17:39,392
+on day one.
+
+237
+00:17:39,732 --> 00:17:44,018
+And it is honest about the backup question
+in both directions: what one of them
+
+238
+00:17:44,058 --> 00:17:46,866
+fails to do, and what the
+other does too faithfully.
+
+239
+00:17:46,906 --> 00:17:51,466
+If you end by saying what a backup needs
+that neither gives, you have answered as an
+
+240
+00:17:51,506 --> 00:17:53,055
+engineer and not as a manual.
+
+241
+00:17:54,895 --> 00:17:57,822
+Let's land this. You
+should now be able to say:
+
+242
+00:17:58,162 --> 00:18:03,099
+A remote is configuration: a name, a URL
+and a refspec, and the remote-tracking
+
+243
+00:18:03,139 --> 00:18:06,501
+branches under refs/remotes/
+that the refspec creates.
+
+244
+00:18:06,541 --> 00:18:11,353
+origin/main is the last-known position
+of the server's main, stored in my own
+
+245
+00:18:11,393 --> 00:18:14,818
+repository and moved only
+when Git talks to the remote.
+
+246
+00:18:15,158 --> 00:18:20,071
+git clone is init, remote add, fetch,
+recording origin/HEAD, creating one local
+
+247
+00:18:20,111 --> 00:18:25,274
+branch with an upstream, and a checkout. A
+bare clone has no fetch refspec and does
+
+248
+00:18:25,314 --> 00:18:30,352
+not follow its source. A mirror follows
+every ref, including deletions and forced
+
+249
+00:18:30,392 --> 00:18:35,556
+updates. origin/HEAD is a local record of
+the server's default branch and has to be
+
+250
+00:18:35,596 --> 00:18:37,123
+repointed after a rename.
+
+251
+00:18:38,963 --> 00:18:42,771
+Read sections 12.1 to 12.3 of Chapter 12.
+
+252
+00:18:43,111 --> 00:18:49,435
+Do Exercise 7.1, Level 1, "what a clone
+writes down about its remote", in
+
+253
+00:18:49,475 --> 00:18:52,311
+exercises/m06-m10-integration.md.
+
+254
+00:18:52,651 --> 00:18:55,164
+Today the word remote stopped
+meaning a connection.
+
+255
+00:18:55,204 --> 00:18:59,369
+It's configuration and a few refs in your
+own repository, and that's how the release
+
+256
+00:18:59,409 --> 00:19:03,474
+laptop could say "up to date" and still be
+behind. Do Lab 7.1 while this is fresh.
+
+257
+00:19:03,514 --> 00:19:07,579
+Next time: git fetch, and which refs move.
+Until then, look at the state first and
+
+258
+00:19:07,619 --> 00:19:09,432
+type second. See you in the next one.

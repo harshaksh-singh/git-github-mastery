@@ -27,7 +27,11 @@ The second half is about the repository: why deletion, a forced push, and making
 
 **[ON SCREEN]** Three layer labels: Git, GitHub, the issuer.
 
+**[ANIMATION]** layers: layers=Git_on_your_machine:what_history_contains|GitHub:what_is_displayed,_scanned,_blocked_and_retained|the_issuer:whether_the_leaked_secret_still_works winner=3 rule=where_incidents_are_decided title=Three_layers id=three at_1=12 at_2=22 at_3=32 at_result=55
+
 The chapter insists on three layers, and you should hold them apart for the rest of this part. Git on your machine: what history contains. GitHub: what is displayed, scanned, blocked and retained. And the issuer of the credential, the service that created it: whether the leaked secret still works. The third layer is the one tutorials leave out, and it's where incidents are decided. A secret is harmless from the moment its issuer revokes it, meaning cancels it, and dangerous until then, whatever you do to the repository.
+
+**[ANIMATION]** end
 
 Every secret in the transcripts is a dummy.
 
@@ -65,15 +69,31 @@ A classic personal access token: every repository and organization its owner can
 
 Two automatic protections exist, and both are narrow. GitHub revokes its own tokens when they're pushed to a public repository or gist. And it removes tokens unused for a year.
 
+**[ANIMATION]** cards: question=Which_leak_is_worse? cards=A:an_installation_token_that_lives_for_one_hour|B:the_App_private_key_that_mints_such_tokens_and_never_expires marks=1:dim,2:ring id=quiz
+
+**[ANIMATION]** step: quiz.2
+
 Quick quiz. Which leak is worse? A, an installation token that lives for one hour. B, the App private key that mints such tokens and never expires. Your answer?
 
 **[PAUSE]**
 
-B. The textbook calls the App private key the row people forget, and gives a figure with its source: of 4,802 leaked GitHub App private keys tested in September 2026, 474 still authenticated, 44 of them with organization admin access, according to GitGuardian. The conclusion: short-lived installation tokens are only as safe as the long-lived key that mints them.
+**[ANIMATION]** step: quiz.marks
+
+B. The textbook calls the App private key the row people forget, and gives a figure with its source.
+
+**[ANIMATION]** bars: bars=leaked_keys_tested:4802|still_authenticated:474|organization_admin_access:44 title=Leaked_GitHub_App_private_keys,_September_2026_(GitGuardian) id=keys
+
+Of 4,802 leaked GitHub App private keys tested in September 2026, 474 still authenticated, 44 of them with organization admin access, according to GitGuardian. The conclusion: short-lived installation tokens are only as safe as the long-lived key that mints them.
+
+**[ANIMATION]** cards: cards=OIDC-issued_cloud_tokens_and_the_job-scoped_GITHUB__TOKEN:wherever_the_work_happens_inside_a_workflow|GitHub_App_installation_tokens:the_private_key_in_a_secrets_manager|fine-grained_personal_access_tokens:with_an_expiry_and_organization_approval|deploy_keys:read_access_to_a_single_repository|classic_tokens_and_shared_machine_users:with_a_written_reason numbered=on title=A_hierarchy_for_automation_(an_inference,_not_a_GitHub_statement) id=order at_1=22 at_2=38 at_3=52 at_4=66 at_5=78
 
 **A hierarchy for automation.** The Phase 0 report derives an order from those facts. It is marked as an inference, not a GitHub statement. First: OIDC-issued cloud tokens and the job-scoped `GITHUB_TOKEN`, wherever the work happens inside a workflow. Second: GitHub App installation tokens, with the App's private key in a secrets manager. Third: fine-grained personal access tokens with an expiry and organization approval. Fourth: deploy keys, for read access to a single repository. Fifth and last: classic tokens and shared machine users, with a written reason.
 
+**[ANIMATION]** walk: columns=when,what_was_abused,the_lesson rows=April_2022:stolen_OAuth_tokens_issued_to_two_integrators:a_third_party's_token_store_is_part_of_your_attack_surface|December_2022:an_already_authenticated_session,_stolen_by_malware_on_a_laptop:two-factor_authentication_protects_the_login,_not_the_session|May_2026:a_poisoned_third-party_editor_extension_on_an_employee_device:flag:_attribution_and_extension_details_come_from_vendor_reports mono=off title=Tokens,_sessions_and_laptops,_not_Git id=real
+
 **Real compromises abuse tokens, sessions and laptops, not Git.** Three cases from the section. In April 2022, stolen OAuth tokens issued to two integrators were used to clone private repositories of dozens of organizations. The lesson is that a third party's token store is part of your attack surface. In December 2022, malware on an engineer's laptop at a CI provider stole an already authenticated session, bypassing two-factor authentication. The lesson is that two-factor authentication protects the login, not the session that follows it. And in May 2026, a poisoned third-party editor extension on an employee device led to exfiltration of GitHub-internal repositories, and GitHub rotated critical secrets. For that third case the textbook flags that attribution and details of the extension come from vendor reports, and that one vendor gives the detection date as the nineteenth of May where GitHub says the eighteenth of May.
+
+**[ANIMATION]** end
 
 **Token forensics.** After a suspected compromise the question is "what did this token do?". GitHub's audit log, an organization's record of events, can be searched by token without storing the token itself: you compute its SHA-256 and search for the hash.
 
@@ -107,13 +127,25 @@ GitHub states the second and the third row itself, and researchers have shown bo
 
 **Finding it.** You need three commands, and you need to know what each one can't see.
 
+**[ANIMATION]** walk: columns=command,what_it_lists,the_question_it_answers rows=git_log_-S_string:commits_where_the_number_of_occurrences_changed:where_did_it_enter_and_leave?|git_log_-G_regex:commits_whose_diff_has_a_matching_line:the_shape_of_a_secret,_not_its_value|git_grep,_all_commits:the_content_of_every_commit's_tree:in_which_snapshots_is_it_present?|--contains:branches_and_tags_that_reach_a_commit:what_is_the_scope? title=Three_commands,_and_what_each_one_answers id=find
+
+**[ANIMATION]** step: find.1
+
 `git log -S` with a string, the pickaxe, lists commits in which the number of occurrences of the string changed: the commits that added it and the commits that removed it. Without `--all` it walks only the current branch.
+
+**[ANIMATION]** step: find.2
 
 `git log -G` with a regular expression lists commits whose diff has an added or removed line that matches. Use it when you know the shape of a secret and not its value, and with `--all` to cover every ref.
 
+**[ANIMATION]** step: find.3
+
 `git grep` with a pattern and the list of all commits searches the content of every commit's tree, not the diffs. It answers "in which snapshots is the secret present?", which is the exposure. The pickaxe answers "where did it enter and leave?".
 
+**[ANIMATION]** step: find.4
+
 And to turn a commit into scope: `git branch -a --contains` and `git tag --contains`.
+
+**[ANIMATION]** say: All_of_these_only_read:_they_change_nothing
 
 All of these are 🟢 SAFE: they change nothing.
 
@@ -123,9 +155,17 @@ All of these are 🟢 SAFE: they change nothing.
 
 The analogy breaks for unpushed commits: an edition that never left the building can be pulped. That's the next video.
 
+**[ANIMATION]** repos: [your repository] A-B main; mark:the_secret:B; HEAD=none; say:Before_the_first_push:_one_repository,_yours || [the server] A main; HEAD=none || [a fork] A main; HEAD=none || [a clone] A main; HEAD=none => + say:After_the_first_push:_every_repository_that_fetched_it || + A-B main; mark:the_secret:B || + A-B main; mark:the_secret:B || + A-B main; mark:the_secret:B => + say:Revoked_at_the_issuer:_every_copy_is_a_string_that_opens_nothing || || || title=The_dividing_line_is_the_first_push id=push at_state_2=55
+
+**[ANIMATION]** step: push.state-2
+
 So the dividing line is the first push. Before it, the secret exists in one repository, yours, and you can rewrite your own unpushed commits. After it, the secret exists in every repository that fetched those commits, and you control none of them.
 
+**[ANIMATION]** step: push.state-3
+
 Now put the two halves of this video together. After the first push you can't un-publish. What you can do is make the published thing worthless. That happens at the issuer, by revocation, and it works against every copy at once: the one on the server, the one in a fork, the one in a colleague's clone, the one in a log. Nothing you do in Git has that property. So there's the question from the opening: not "is the file gone?", but "does the key still work?"
+
+**[ANIMATION]** end
 
 And how urgent it is depends on the first half: the type of credential. A job token that died with its job an hour ago is one situation. An App private key that never expires is another.
 
@@ -134,6 +174,10 @@ And how urgent it is depends on the first half: the type of credential. A job to
 Try it now, thirty seconds, on paper. Write "leaked commit" in the middle of the page. Around it, write every place where a copy of that commit may live. How many can you name? Say them out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** stores: boxes=commit_0805fd8:tree_contains_.env_(blob_e523d04)|what_each_action_changes rows=1:A:server_branch_main:_the_tip_is_clean;_the_commit_is_an_ancestor|1:A:server_tag_v0.2.0:_still_points_into_the_affected_range|1:A:an_old_pull_request_ref,_and_cached_views_by_commit_ID|1:A:a_fork,_or_the_fork_network,_even_after_the_fork_is_deleted|1:A:two_clones_(teammates,_CI_workspaces),_and_a_CI_log_that_printed_it|2:B:a_deletion_commit:_the_next_snapshot_only@dim|2:B:a_forced_push:_where_one_ref_points@dim|2:B:going_private:_who_may_read_through_the_normal_interface@dim|3:B:the_issuer_of_the_key:_REVOKE@ok|3:B:every_copy_becomes_a_string_that_opens_nothing@ok arrows=3:B4>A:every_copy title=One_leaked_commit,_and_every_place_a_copy_lives id=copies at_1=8 at_2=45 at_3=75
+
+**[ANIMATION]** step: copies.boxes
 
 **[DIAGRAM]** One leaked commit in the middle. Draw each place a copy may live around it, one at a time, and for each say which of the three "repairs" reaches it. At the end, draw the issuer at the bottom, outside all of it.
 
@@ -159,6 +203,8 @@ Try it now, thirty seconds, on paper. Write "leaked commit" in the middle of the
   ----------------------------------------------------------------------------------------------
   the issuer of the key:   REVOKE   ->  every copy above becomes a string that opens nothing
 ```
+
+**[ANIMATION]** step: copies.3
 
 Compare with the picture. A server branch, a server tag, an old pull request ref and cached views, a fork or the fork network, and clones with a CI log. A deletion commit, a forced push and going private each change one thing, and none of them reaches every copy. Revoking at the issuer does: every copy becomes a string that opens nothing.
 
@@ -234,7 +280,7 @@ LLM_BASE_URL=https://llm.example.com
 
 The file list has no `.env`. `git grep` finds nothing and exits with status 1. That's what the developer saw, and why they felt safe. And `git show HEAD~4:.env` prints the key. The tip is clean. The commit that added the file still has it.
 
-**[ANIMATION]** graph: dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762 main origin/main; dfd59fd-0c55276-6388058-987a49d v0.1.0; 987a49d-0805fd8-64b9b89 v0.2.0; HEAD=main => dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762-d42d1a1 main; b509fe3-d4b8762 origin/main; dfd59fd-0c55276-6388058-987a49d v0.1.0; 987a49d-0805fd8-64b9b89 v0.2.0; HEAD=main title=A_deletion_adds_a_commit_and_removes_nothing
+**[ANIMATION]** graph: dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762 main origin/main; dfd59fd-0c55276-6388058-987a49d v0.1.0; 987a49d-0805fd8-64b9b89 v0.2.0; HEAD=main => dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762-d42d1a1 main; b509fe3-d4b8762 origin/main; dfd59fd-0c55276-6388058-987a49d v0.1.0; 987a49d-0805fd8-64b9b89 v0.2.0; HEAD=main => + b509fe3-7fae871 origin/feature/streaming; ^987a49d-54093fe origin/exp/rerank; range:0805fd8,64b9b89,b509fe3,d4b8762,7fae871:.env_present; note:54093fe:a_token_in_a_notebook_output; say:The_scope:_every_ref_from_which_the_commit_is_reachable title=A_deletion_adds_a_commit_and_removes_nothing id=leak
 
 **[ANIMATION]** step: state-1
 
@@ -367,7 +413,13 @@ v0.2.0
 ```
 <!-- /snippet -->
 
-The local `main`, the remote-tracking `main`, a remote-tracking feature branch, and the tag `v0.2.0`. That list is the scope on the Git side: every ref from which the commit is reachable.
+The local `main`, the remote-tracking `main`, a remote-tracking feature branch, and the tag `v0.2.0`.
+
+**[ANIMATION]** step: leak.state-3
+
+That list is the scope on the Git side: every ref from which the commit is reachable.
+
+**[ANIMATION]** end
 
 **Step 7: the server.**
 
@@ -411,7 +463,11 @@ Now, out of the lab. The textbook's description of how these leaks happen in you
 
 Take that as an incident on an AI team. Monday, an engineer commits a `.env` with a provider key. Wednesday, they notice, delete the file in a new commit, and push. Friday, a scanner run by someone outside the company reports the key as valid.
 
+**[ANIMATION]** replay: push
+
 What the team should have asked on Wednesday isn't "is the file gone?" but two other things. First, at the issuer: is the key revoked? It wasn't. Nobody thought of the provider's console, because the repository looked clean. Second, in Git: which commits, which refs? With the three commands the answer takes two minutes, and in a case like the demonstration it includes a release tag and a colleague's branch.
+
+**[ANIMATION]** end
 
 And one more question, from the first half: what type of credential was it, and what can it reach? A provider key with no expiry and full account scope is the wide end of the table.
 

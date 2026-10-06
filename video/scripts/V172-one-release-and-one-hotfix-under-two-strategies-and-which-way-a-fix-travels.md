@@ -13,13 +13,19 @@
 
 A customer upgrades from 1.4.1 to 1.5.0 and reports a bug that was fixed two months ago. Support checks the release notes: the fix is listed under 1.4.1. Engineering checks the code of 1.5.0: the faulty line is there. Nobody reverted anything. Nobody force-pushed.
 
+**[ANIMATION]** graph: ...-*1-*2 main; *2 tag:v1.5.0; *1-?the_fix release/1.4; ?the_fix tag:v1.4.1; HEAD=none; say:The_fix_never_reached_main title=Why_did_1.5.0_ship_the_same_bug_again?
+
 The answer is precise, and you'll be able to produce it from the repository alone: the fix was committed on the release branch and never reached `main`, and nobody ran the one-line check that would have listed it. Keep that one-line check in mind. You'll watch it print the missing fix.
 
 ## INTRODUCTION
 
 Welcome back to Git and GitHub Deep Mastery. Pull up a chair. In video 171 you saw the models as drawings. Today the same project is run through one release and one hotfix twice, with real commits, and you compare the two histories by asking the tags. A tag is a name fixed on one commit, and here every release is a tag. A hotfix is an urgent fix to something already released.
 
+**[ANIMATION]** graph: *1-?pull_request_41-?pull_request_42 main; *1 tag:v1.3.0; ?pull_request_42 tag:v1.4.0; HEAD=none; name:released => + ?pull_request_42-?pull_request_43 main; note:?pull_request_43:a_batch_endpoint; name:third => + say:Suspended_tenants_are_not_blocked:_a_fix_must_ship_as_1.4.1; name:bug title=The_scenario dx=260
+
 The scenario is fixed. `promptgate` 1.3.0 is released. Two pull requests are merged, and 1.4.0 is released. A third pull request, a batch endpoint, is merged afterwards. Then production reports that suspended tenants, whose limit is 0, aren't blocked, and a fix must ship as 1.4.1.
+
+**[ANIMATION]** end
 
 The second half is about direction. Once there are two lines of development, a fix has to exist on both, and there are two legitimate conventions for how it gets there. They're opposites. Each gives you an invariant, a statement that must always hold, and one command can test it. From video 63 you know cherry-pick, `-x` and patch IDs, which carry the second convention. A cherry-pick copies one commit's change onto another branch as a new commit with a new ID. The `-x` option records the original's ID in the copy's message. And a patch ID is a hash of the change itself, by which Git recognizes the same change under another commit ID.
 
@@ -39,7 +45,13 @@ After this video you can:
 
 **Two strategies, one sentence.** The same three features and the same one-line fix produce two different answers to "what does the patch release contain", and the difference is where the release tag lives.
 
+**[ANIMATION]** stores: boxes=strategy_A:GitHub_Flow|strategy_B:a_release_branch rows=1:A:releases_are_tags_on_main|2:B:the_tag_is_on_the_release_branch|3:A:two_tag_objects|3:A:refs/heads/main_moved|4:B:the_same_two_tags|4:B:refs/heads/release/1.4@hl|4:B:one_extra_commit_object@hl title=Where_the_release_tag_lives id=ingit
+
+**[ANIMATION]** step: ingit.2
+
 Under strategy A, GitHub Flow, releases are tags on `main`. A hotfix is the next deployment of `main`. Under strategy B there is a release branch. The fix is made on `main` first and cherry-picked down, and the tag is on the release branch.
+
+**[ANIMATION]** step: ingit.4
 
 **Inside `.git`.** Strategy A created two tag objects and moved `refs/heads/main`. Strategy B created the same two tags, one extra ref `refs/heads/release/1.4`, and one extra commit object. A "release" in both is `refs/tags/v1.4.1` naming an annotated tag object that names a commit.
 
@@ -60,11 +72,11 @@ One sentence from the textbook belongs on this table: strategy A can become stra
 
 **Which way does a fix travel?** There are two legitimate conventions and they're opposites: commit the fix on the oldest branch that needs it and merge upward, or commit it on `main` first and cherry-pick it down.
 
-**[ANIMATION]** merge: three-way release/1.4 into main common=518d961 main_only=a1351be feature_only=64610e3 merge_id=1a91aff base=tag_v1.4.0 title=Merge_upward:_one_commit,_carried_by_a_merge say_merge=One_fix,_one_ID:_64610e3_is_now_in_both_lines
+**[ANIMATION]** graph: ...older-518d961-a1351be main; 518d961 tag:v1.4.0; ^518d961-5928b76-a1351be; 518d961-64610e3 release/1.4; 64610e3 tag:v1.4.1; HEAD=main; note:64610e3:the_fix,_on_the_oldest_branch; name:fix => + a1351be-1a91aff main; 64610e3-1a91aff; say:One_fix,_one_ID:_64610e3_is_now_in_both_lines; cmd:git_merge_release/1.4; name:merge title=Merge_upward:_one_commit,_carried_by_a_merge id=up
 
 **Merge upward.** The Git project's own workflow document states it: "Always commit your fixes to the oldest supported branch that requires them. Then (periodically) merge the integration branches upwards into each other." The fix is one commit with one ID, and the merge commit is, in that document's word, a "promise" that everything from the older branch is included in the newer one. The invariant: each release branch is an ancestor of the next line. Ancestor means that you reach it by following parents back from the newer line.
 
-**[ANIMATION]** end
+**[ANIMATION]** graph: ...older-518d961-a1351be-d9474f7 main; 518d961 tag:v1.4.0; ^518d961-5928b76-a1351be; 518d961 release/1.4; HEAD=main; note:d9474f7:the_fix,_on_main_first; name:fix => + 518d961-a2d7a91 release/1.4; a2d7a91 tag:v1.4.1; cmd:git_cherry-pick_-x_main; note:a2d7a91:a_copy_with_its_own_ID; say:Two_commits,_never_merged:_the_invariant_compares_patches; name:pick title=Fix_on_main_first,_cherry-pick_down id=down
 
 **Fix on main first, cherry-pick down.** The trunk-based development site, Google's published practice, Microsoft's Release Flow and GitLab's rules all prescribe this. The stated reason is the failure it prevents: a fix made on the release branch can be forgotten on the trunk, and the next release then regresses. The invariant can't be ancestry, because the release branch is never merged back. It's a comparison of patches: every change on the release branch has an equivalent on `main`.
 
@@ -78,11 +90,17 @@ One sentence from the textbook belongs on this table: strategy A can become stra
 | Extra baggage | merging the release branch upward brings **everything** on it, including version bumps and release-only changes, which then conflict or must be neutralized | the patch-ID check breaks when the port needed conflict resolution, because the diffs then differ |
 | Fits | projects with several maintained lines and maintainers who curate merges (Git itself) | trunk-based teams with late-cut, short-lived release branches |
 
-Quick quiz, with the table on screen. Under pick down, somebody forgets the pick. What happens? A, the next release ships the bug again. B, nothing dangerous. Your answer?
+Read the table row by row: the identity of the fix, the question you can ask, a forgotten step, the baggage, and where each fits.
+
+**[ANIMATION]** end
+
+Quick quiz. Under pick down, somebody forgets the pick. What happens? A, the next release ships the bug again. B, nothing dangerous. Your answer?
 
 **[PAUSE]**
 
-B. That's the third row: the old release lacks a fix it never had. Under merge upward, the forgotten step is the merge, and the fix is then missing from `main` until the next upward merge.
+B. That was the third row of the table: the old release lacks a fix it never had. Under merge upward, the forgotten step is the merge, and the fix is then missing from `main` until the next upward merge.
+
+**[ANIMATION]** cards: question=The_limits_of_the_two_checks cards=A_cherry-pick_that_needed_a_conflict_resolution:another_patch_ID:_reported_missing._The_-x_line_is_the_evidence|An_upward_merge_that_discarded_the_release_side:the_ancestry_test_passes,_the_fix_is_absent._git_log_--remerge-diff_shows_it at_2=45
 
 **The limits of the checks.** Two, and you need both for the interview question. A cherry-pick that needed a conflict resolution has a different patch ID, so `--cherry-pick` reports it as missing although a human ported it. The `-x` line is then the evidence. And an upward merge resolved by discarding the release branch's side satisfies the ancestry test while the fix is absent. `git log --remerge-diff` shows what the resolver changed.
 
@@ -98,6 +116,8 @@ And one sentence to keep under all of it, from the root-cause box: nothing in Gi
 
 ## DIAGRAM
 
+**[ANIMATION]** graph: ...-*1-F release/1.4; *1-*2-*3-M1 release/1.5; F-M1; *3-*4-*5-M2-*6 main; M1-M2; HEAD=none; say:release/1.4_is_an_ancestor_of_release/1.5,_which_is_an_ancestor_of_main title=Merge_upward:_one_commit,_carried_by_merges id=dup at_state_1=15
+
 **[DIAGRAM]** A new drawing: two release lines and `main`, drawn twice. First with upward merges. The fix F is committed once, on the oldest line. Each merge M carries it one line up.
 
 ```text
@@ -112,7 +132,9 @@ And one sentence to keep under all of it, from the root-cause box: nothing in Gi
     invariant: release/1.4 is an ancestor of release/1.5, which is an ancestor of main
 ```
 
-Then with downward picks. F is committed on `main`. The two copies, F prime and F double prime, are separate commits with their own IDs. The dashed lines aren't in the repository. They stand for "same change", which Git can only infer from the patch ID or read from the `-x` line.
+Two release lines and `main`, first with upward merges. The fix F is committed once, on the oldest line. Each merge carries it one line up.
+
+**[ANIMATION]** graph: ...-*1-F′′ release/1.4; *1-*2-*3-F′ release/1.5; *3-*4-F-*6 main; HEAD=none; mark:same_change:F,F′,F′′; say:No_change_on_a_release_branch_lacks_an_equivalent_on_main title=Fix_on_main,_pick_down:_one_commit_per_line id=ddown at_state_1=15
 
 ```text
   Fix on main, pick down: one commit per line, linked only by patch ID and the -x line
@@ -126,25 +148,7 @@ Then with downward picks. F is committed on `main`. The two copies, F prime and 
     invariant: no change on a release branch lacks an equivalent on main
 ```
 
-**[ON SCREEN]** After the "forgotten" demo, the root-cause box of section 27.10.
-
-```text
-Observed behavior : v1.5.0 ships a bug that v1.4.1 fixed.
-Git state         : commit 70188ed is reachable from release/1.4 and from tag v1.4.1 only.
-                    main and v1.5.0 do not contain it and contain no commit with the same patch.
-Mechanism         : a commit on one branch is on another branch only if somebody merges or
-                    cherry-picks it. Nothing in Git propagates a fix between branches.
-Root cause        : the fix was committed on the release branch, and the step that carries it
-                    to main (a merge upward, or a port) was a human step that nobody took.
-Why Git does this : branches are independent refs. "This fix belongs everywhere" is knowledge
-                    held by the team, not by the repository.
-Correct fix       : port the commit to main (git cherry-pick -x 70188ed, or merge release/1.4
-                    into main if your convention is merge-upward), then release 1.5.1. Do not
-                    move the v1.5.0 tag: people already have it.
-Prevention        : make the check a release gate. Either "release/x is an ancestor of main"
-                    (merge-upward), or "git log --cherry-pick --right-only main...release/x is
-                    empty" (pick-down). Both are one command with a testable result.
-```
+Then with downward picks. F is committed on `main`. The two copies, F prime and F double prime, are separate commits with their own IDs. The marks aren't in the repository. They stand for "same change", which Git can only infer from the patch ID or read from the `-x` line.
 
 ## LIVE TERMINAL DEMO
 
@@ -259,7 +263,11 @@ $ git branch --list
 ```
 <!-- /snippet -->
 
-Two commits and two files. Version 1.4.1 contains the fix and the batch endpoint. Under GitHub Flow that is by design: `main` is what you ship, and everything merged since the last tag ships with the next one. For a hosted service with one live version this is fine, and usually desirable. For a customer who pinned 1.4 and expects a patch release to contain only fixes, it's a breach of what the version number promised: Semantic Versioning reserves the third number for backward-compatible bug fixes.
+Two commits and two files. Version 1.4.1 contains the fix and the batch endpoint.
+
+**[ANIMATION]** graph: ...older-518d961-a1351be-?merge_44 main; 518d961 tag:v1.4.0; ^518d961-5928b76-a1351be; a1351be-9a75273-?merge_44; ?merge_44 tag:v1.4.1; HEAD=main => + range:5928b76,a1351be,9a75273,?merge_44:v1.4.0..v1.4.1; note:5928b76:Add_batch_endpoint; note:9a75273:the_fix; say:Everything_merged_since_the_last_tag_ships title=Strategy_A:_what_ships_in_1.4.1 at_state_1=5 at_state_2=15
+
+Under GitHub Flow that is by design: `main` is what you ship, and everything merged since the last tag ships with the next one. For a hosted service with one live version this is fine, and usually desirable. For a customer who pinned 1.4 and expects a patch release to contain only fixes, it's a breach of what the version number promised: Semantic Versioning reserves the third number for backward-compatible bug fixes.
 
 **Step 5: strategy B.** Replay `labs/run ch27/release-branch`. The same two pull requests are merged. The release gets a branch of its own.
 
@@ -363,7 +371,13 @@ $ git cherry -v main release/1.4
 ```
 <!-- /snippet -->
 
-`git branch --contains` gives a different answer for each ID: one says `main`, the other says `release/1.4`. The fix exists as two commits. Git can still pair them, because they introduce the same change: the two lines marked with an equals sign.
+`git branch --contains` gives a different answer for each ID: one says `main`, the other says `release/1.4`.
+
+**[ANIMATION]** graph: ...older-518d961-?merge_43-?merge_44 main; 518d961 tag:v1.4.0; ^518d961-7a47553-?merge_43; ?merge_43-bc59804-?merge_44; 518d961-996796d release/1.4; 996796d tag:v1.4.1; HEAD=release/1.4 => + same:bc59804,996796d; say:Two_commits,_one_change:_the_same_patch_ID title=Strategy_B:_where_the_fix_is at_state_1=10 at_state_2=35
+
+The fix exists as two commits. Git can still pair them, because they introduce the same change: the two lines marked with an equals sign.
+
+**[ANIMATION]** end
 
 Try it now, for thirty seconds. In any repository you have, type `git log --oneline`, copy one ID, and type `git branch --contains` with that ID. Both commands only read. I'll wait.
 
@@ -422,7 +436,13 @@ $ git merge-base --is-ancestor release/1.4 main
 ```
 <!-- /snippet -->
 
-One commit, `64610e3`, contained in both branches. `git merge-base --is-ancestor release/1.4 main` exits with status 0, and an exit status is something a CI job, an automated check, can test.
+One commit, `64610e3`, contained in both branches.
+
+**[ANIMATION]** step: up.merge
+
+`git merge-base --is-ancestor release/1.4 main` exits with status 0, and an exit status is something a CI job, an automated check, can test.
+
+**[ANIMATION]** end
 
 Convention B, pick down. Predict: what will the same ancestry test return here? Say it out loud.
 
@@ -464,7 +484,13 @@ $ git log --oneline --cherry-pick --right-only --no-merges main...release/1.4
 ```
 <!-- /snippet -->
 
-Two commits, `d9474f7` and `a2d7a91`. The ancestry test fails by design. What replaces it is `git log --cherry-pick --right-only main...release/1.4`, which lists the commits on the release branch that have no equivalent change on `main`. Empty means nothing is missing. The manual describes `--cherry-pick` as omitting "any commit that introduces the same change as another commit on the 'other side'" of a symmetric difference, and Git decides "the same change" by patch ID. If the two checks blur together at first, that's normal: one tests ancestry, the other compares patches.
+Two commits, `d9474f7` and `a2d7a91`. The ancestry test fails by design.
+
+**[ANIMATION]** step: down.pick
+
+What replaces it is `git log --cherry-pick --right-only main...release/1.4`, which lists the commits on the release branch that have no equivalent change on `main`. Empty means nothing is missing. The manual describes `--cherry-pick` as omitting "any commit that introduces the same change as another commit on the 'other side'" of a symmetric difference, and Git decides "the same change" by patch ID. If the two checks blur together at first, that's normal: one tests ancestry, the other compares patches.
+
+**[ANIMATION]** end
 
 **Step 8: the failure both conventions exist to prevent.** A fix made only on the release branch. Weeks later release 1.5 is cut from `main`.
 
@@ -499,7 +525,35 @@ $ git log --oneline --cherry-pick --right-only --no-merges main...release/1.4
 ```
 <!-- /snippet -->
 
-The ancestry test exits with 1. The patch comparison prints one line, and that line names the forgotten fix: `70188ed`. There's the one-line check from the opening. Either check finds it before the tag. The root-cause box has the "Correct fix" line: port the commit, release 1.5.1, and don't move the `v1.5.0` tag, because people already have it.
+The ancestry test exits with 1. The patch comparison prints one line, and that line names the forgotten fix: `70188ed`.
+
+**[ANIMATION]** graph: ...older-518d961-a1351be main; 518d961 tag:v1.4.0; a1351be tag:v1.5.0; ^518d961-5928b76-a1351be; 518d961-70188ed release/1.4; 70188ed tag:v1.4.1; HEAD=main; note:70188ed:the_forgotten_fix; say:Reachable_from_release/1.4_and_v1.4.1_only title=v1.5.0_ships_the_bug_that_v1.4.1_fixed at_state_1=10
+
+There's the one-line check from the opening. Either check finds it before the tag.
+
+**[ANIMATION]** end
+
+**[ON SCREEN]** After the "forgotten" demo, the root-cause box of section 27.10.
+
+```text
+Observed behavior : v1.5.0 ships a bug that v1.4.1 fixed.
+Git state         : commit 70188ed is reachable from release/1.4 and from tag v1.4.1 only.
+                    main and v1.5.0 do not contain it and contain no commit with the same patch.
+Mechanism         : a commit on one branch is on another branch only if somebody merges or
+                    cherry-picks it. Nothing in Git propagates a fix between branches.
+Root cause        : the fix was committed on the release branch, and the step that carries it
+                    to main (a merge upward, or a port) was a human step that nobody took.
+Why Git does this : branches are independent refs. "This fix belongs everywhere" is knowledge
+                    held by the team, not by the repository.
+Correct fix       : port the commit to main (git cherry-pick -x 70188ed, or merge release/1.4
+                    into main if your convention is merge-upward), then release 1.5.1. Do not
+                    move the v1.5.0 tag: people already have it.
+Prevention        : make the check a release gate. Either "release/x is an ancestor of main"
+                    (merge-upward), or "git log --cherry-pick --right-only main...release/x is
+                    empty" (pick-down). Both are one command with a testable result.
+```
+
+The root-cause box has the "Correct fix" line: port the commit, release 1.5.1, and don't move the `v1.5.0` tag, because people already have it.
 
 **Step 9: mixing the directions.** Replay `labs/run ch27/mixed-directions`. The first fix went from `main` to `release/1.4` by cherry-pick. A second fix, on the neighbouring line of the same function, is made on the release branch.
 
@@ -565,6 +619,8 @@ Five mistakes to watch for.
 ## PRODUCTION EXAMPLE
 
 Now, out of the lab. A team ships an inference SDK with two supported versions and uses the pick-down convention: fix on `main`, cherry-pick with `-x` to each supported release branch. During an urgent customer escalation an engineer fixes a tokenizer bug directly on `release/2.3`, tags 2.3.4 and goes home. Six weeks later 2.4.0 is cut from `main`.
+
+**[ANIMATION]** cards: question=The_check_as_a_release_gate numbered=on cards=The_release_job_ran_the_check:it_printed_one_line|The_commit_was_ported_to_main:git_cherry-pick_-x|The_job_went_green|2.4.0_was_tagged:an_hour_late marks=1:bad,3:ok
 
 This time nothing regresses, because the team had made the check a release gate after an earlier incident. The release job runs `git log --oneline --cherry-pick --right-only --no-merges main...release/2.3` and fails if it prints anything. It printed one line. The release manager ported the commit to `main` with `git cherry-pick -x`, the job went green, and 2.4.0 was tagged an hour late. The team also knows the gate's limit: when a port needed conflict resolution, the job prints the commit although it was ported, and a person confirms from the `-x` line.
 

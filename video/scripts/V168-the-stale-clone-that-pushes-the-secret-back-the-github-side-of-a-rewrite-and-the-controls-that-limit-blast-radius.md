@@ -11,7 +11,13 @@
 
 **[ON SCREEN]** "A day after a history rewrite the secret is back on `main`, and nobody force-pushed."
 
-The cleanup was done properly. A fresh mirror clone, every ref rewritten, the scan clean, a forced push after a freeze. The next morning the scanner reports the same secret on `main` again. The branch rule that forbids force pushes was back on and it didn't fire. Nobody did anything unusual. One colleague ran `git pull` and `git push`, as on every other morning.
+The cleanup was done properly. A fresh mirror clone, every ref rewritten, the scan clean, a forced push after a freeze.
+
+**[ANIMATION]** gates: packet=git_push gates=no_force_pushes:pass:-:it_did_not_fire result=the_secret_is_back_on_main title=The_rule_against_force_pushes
+
+The next morning the scanner reports the same secret on `main` again. The branch rule that forbids force pushes was back on and it didn't fire. Nobody did anything unusual. One colleague ran `git pull` and `git push`, as on every other morning.
+
+**[ANIMATION]** end
 
 Today you reconstruct from the commit graph how that happens, you learn the exact instruction to give colleagues about their clones, and you see what remains on GitHub that no Git command of yours can reach. Hold on to one detail: the rule against force pushes didn't fire. One line of push output will show you why.
 
@@ -19,7 +25,11 @@ Today you reconstruct from the commit graph how that happens, you learn the exac
 
 Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Three words first. A commit is one saved snapshot of the project, with an ID computed from its content. A clone is a copy of a repository on one machine. And a stale clone is a clone that still has the history from before a rewrite.
 
+**[ANIMATION]** stores: boxes=*the_server:after_the_rewrite|other_people's_clones|GitHub rows=1:A:clean_refs@ok|2:B:the_complete_old_history@hl|2:B:Git_sees_nothing_wrong_with_it|3:C:copies_you_cannot_remove_with_Git@hl title=The_end_of_the_command,_the_middle_of_the_operation
+
 In video 167 the rewrite ended with the server holding clean refs. A ref is a name, such as a branch or a tag, that points at a commit. That's the end of the command and the middle of the operation. Two things remain. Other people's clones still contain the complete old history, and Git sees nothing wrong with that history. And on GitHub there are copies that you can't remove with Git.
+
+**[ANIMATION]** end
 
 From video 59 you know what a rebased shared branch does to the people who use it: their copy still descends from the old commits. A whole-history rewrite is the same situation for every branch and every person at once.
 
@@ -39,15 +49,19 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** merge: three-way origin/main into main common=987a49d main_only=0805fd8,64b9b89,b509fe3,d4b8762,95f98b0 feature_only=0ac4257,66a99cc,51e2d95,c8ce738 merge_id=f7ed5a9 base=the_shared_commit title=A_stale_clone_meets_the_new_history cmd_merge=git_pull_--no-rebase say_merge_base=Old_and_new_history_meet_at_the_shared_commit say_merge=An_ordinary_merge:_f7ed5a9_has_two_parents
+**[ANIMATION]** graph: ...older-987a49d-0805fd8-64b9b89-b509fe3-d4b8762-95f98b0 main; d4b8762 origin/main; HEAD=main; note:987a49d:the_shared_commit; note:64b9b89:old_history,_with_.env; title:A_stale_clone; name:clone => + 987a49d-0ac4257-66a99cc-51e2d95-c8ce738 origin/main; note:66a99cc:rewritten_history; say:The_fetch_half_of_the_pull:_origin/main_now_names_the_rewritten_history; name:fetch => + 95f98b0-f7ed5a9 main; c8ce738-f7ed5a9; cmd:git_pull_--no-rebase; say:An_ordinary_merge:_f7ed5a9_has_two_parents; name:merge => + f7ed5a9 origin/main; cmd:git_push; say:c8ce738_is_an_ancestor_of_f7ed5a9:_a_fast-forward,_no_force; name:push => + title:main,_on_the_server_again; say:off; cmd:off; name:server => + range:0805fd8,64b9b89,b509fe3,d4b8762,95f98b0,f7ed5a9:reachable_from_main; say:Follow_the_upper_parent_back_to_0805fd8; name:reach id=stale at_fetch=25
 
-**[ANIMATION]** step: merge-base
+**[ANIMATION]** step: stale.fetch
 
 **Why this failure exists.** A rewrite produces a second history that shares only its oldest commits with the first. To Git, the old history and the new history are two lines of work that happen to have a common ancestor. Git has no concept of "the withdrawn version". If someone merges the two lines, joining them in one new commit, that's a merge like any other.
 
-**[ANIMATION]** step: merge
+**[ANIMATION]** step: stale.merge
 
-**What happens.** A clone that still has the old history merges or rebases it back and pushes it as ordinary new commits. The merge commit has two parents: the clean tip, and a commit whose ancestors include the commit that added the secret. The push from the clean tip to that merge commit is a fast-forward: the server's current commit is an ancestor of the new one, so the branch only moves forward. The server accepts it without force, and no branch rule that forbids force pushes objects.
+**What happens.** A clone that still has the old history merges or rebases it back and pushes it as ordinary new commits. The merge commit has two parents: the clean tip, and a commit whose ancestors include the commit that added the secret.
+
+**[ANIMATION]** step: stale.push
+
+The push from the clean tip to that merge commit is a fast-forward: the server's current commit is an ancestor of the new one, so the branch only moves forward. The server accepts it without force, and no branch rule that forbids force pushes objects.
 
 **[ANIMATION]** end
 
@@ -70,7 +84,11 @@ The manual adds two warnings. Colleagues must not run the same filter command th
 
 GitHub's page lists "high risk of recontamination" first among the side effects of a rewrite and gives the rule: collaborators must rebase, not merge, branches created from the old history, because one merge commit can reintroduce some or all of it.
 
+**[ANIMATION]** cards: question=Can_the_server_refuse_the_old_commits? cards=A_ban_on_one_commit:few_hosting_services_can;_none_documented_on_GitHub|Push_protection:when_the_secret_matches_a_supported_pattern|A_push_ruleset:blocks_the_file_path|A_pre-receive_hook:the_local_analogue,_tested_in_the_lab marks=1:bad,2:ring,3:ring,4:ok
+
 **Can the server refuse the old commits?** Few hosting services can ban a specific commit from being pushed again. The filter-repo manual says so, and the research notes of this course found no documented built-in control of that kind on GitHub. Push protection, when the secret matches a supported pattern, and a push ruleset that blocks the file path are the nearest platform equivalents. The local analogue is a `pre-receive` hook, a program the server runs before it accepts a push, which the lab installs and tests.
+
+**[ANIMATION]** end
 
 **The GitHub side.** This part is GitHub, not Git, and it's described from GitHub's page on removing sensitive data. Nothing here was run. After your force push, four copies remain that you can't reach with Git. A pull request is a GitHub object that proposes a merge, and a fork is a second repository on GitHub made from the first.
 
@@ -106,15 +124,21 @@ These controls reduce blast radius, which is how far one leaked credential reach
 
 Keep the analogy of video 167: the recalled book. One reader who lends an old copy to the library puts the removed page back on the shelf. The librarian doesn't object, because a book was returned and that's what readers do.
 
+**[ANIMATION]** push: src=main dst=main names=the_stale_clone,the_server local=f7ed5a9 remote=c8ce738 gates=your_Git:_a_fast-forward?,the_server:_a_fast-forward? client=pass server=pass notes=yes,yes:_origin_not_checked result=c8ce738..f7ed5a9_main_->_main title=What_the_server_checks
+
 In Git terms: the server checks whether a push is a fast-forward. It doesn't check where the new commits came from. A merge commit that has the current tip as one of its parents is a fast-forward by definition, whatever its other parent drags in.
 
+**[ANIMATION]** rebase: main onto origin/main common=...older,987a49d main_only=0ac4257,66a99cc,51e2d95,c8ce738 upstream=<old-upstream-tip> upstream_only=0805fd8,64b9b89,b509fe3,d4b8762 feature_only=95f98b0 new_ids=62cd8e1 title=Replay_only_your_own_commits id=onto at_lift=35 at_copy=55
+
 Where the analogy breaks: the reader's copy is one object, and a stale clone is a graph. The clone can keep its own new work and drop the old pages, if the owner replays only their own commits onto the new history. That's the `--onto` rebase.
+
+**[ANIMATION]** stores: boxes=the_server:unreachable_objects|pull_request_refs:refs/pull/N/head|each_fork:its_own_refs|each_clone:on_other_people's_disks rows=1:A:GitHub_Support@ref|2:B:GitHub_Support@ref|3:C:each_fork's_owner@ref|4:D:their_owners@ref title=Count_repositories,_not_commands._Who_can_remove_it?
 
 The second model is for the question "where can this data still be?" Count repositories, not commands. The server, with its unreachable objects. The pull request refs. Each fork. Each clone. Each of them has its own refs and its own objects, and each has a different owner.
 
 ## DIAGRAM
 
-**[ANIMATION]** step: merge
+**[ANIMATION]** step: stale.server
 
 **[DIAGRAM]** Draw the shared commit `987a49d` on the left. From it, the old history on the upper line, ending in Asha's own commit. From it, the rewritten history on the lower line. Then join both lines in one merge commit and label it `main`.
 
@@ -131,6 +155,8 @@ Quick quiz. From `main`, is the commit that added `.env` reachable? A, no, becau
 
 **[PAUSE]**
 
+**[ANIMATION]** step: stale.reach
+
 B, yes. Follow the upper parent of the merge, back along the old history, to `0805fd8`. That's the whole incident in one picture.
 
 **[ON SCREEN]** The root-cause box of section 21B.18, one line at a time.
@@ -145,6 +171,8 @@ Correct fix       : force-push the clean refs again; clean or replace the stale 
 Prevention        : freeze and re-clone; rebase onto the new history, never merge; a server-side check that
                     rejects the first changed commit or the secret pattern
 ```
+
+Here is the same incident as the root-cause box of section 21B.18. Read the mechanism line: a pull in a stale clone merged old and new history, and the push was a fast-forward.
 
 ## LIVE TERMINAL DEMO
 
@@ -275,7 +303,13 @@ $ cd ..
 ```
 <!-- /snippet -->
 
-Read the error: "could not apply 0805fd8... Add staging settings". Git tried to replay the commit that added the secret. After a plain fetch, the knowledge of the previous `origin/main` is no longer used, so `git rebase origin/main` treats every old commit that is missing from the new history as hers. The rebase stops in a conflict with a detached HEAD, and `git rebase --abort` returns to the start.
+Read the error: "could not apply 0805fd8... Add staging settings". Git tried to replay the commit that added the secret.
+
+**[ANIMATION]** rebase: main onto origin/main common=...older,987a49d main_only=0ac4257,66a99cc,51e2d95,c8ce738 feature_only=0805fd8,64b9b89,b509fe3,d4b8762,95f98b0 stop=0 steps=setup,lift,conflict title=asha2:_git_rebase_origin/main
+
+After a plain fetch, the knowledge of the previous `origin/main` is no longer used, so `git rebase origin/main` treats every old commit that is missing from the new history as hers. The rebase stops in a conflict with a detached HEAD, and `git rebase --abort` returns to the start.
+
+**[ANIMATION]** end
 
 Third: the explicit form.
 
@@ -304,7 +338,13 @@ $ git grep -l DUMMY-KEY $(git rev-list HEAD) | wc -l
 ```
 <!-- /snippet -->
 
-The old upstream tip is read from the reflog of `main`, the clone's own list of the positions `main` has had. Its oldest entry is `d4b8762`, the commit she cloned. `--onto origin/main` with that old base replays only what came after it. One commit, on the clean history. This is the form to send to colleagues, because it works whatever the clone did before.
+The old upstream tip is read from the reflog of `main`, the clone's own list of the positions `main` has had. Its oldest entry is `d4b8762`, the commit she cloned.
+
+**[ANIMATION]** replay: onto
+
+`--onto origin/main` with that old base replays only what came after it. One commit, on the clean history. This is the form to send to colleagues, because it works whatever the clone did before.
+
+**[ANIMATION]** end
 
 Try it now, for thirty seconds. In the lab shell, or in any clone you have, type `git reflog show main`, with your own branch name if it's not `main`. It only reads. Find the bottom line. I'll wait.
 
@@ -421,7 +461,11 @@ c8ce738 Document setup in README
 ```
 <!-- /snippet -->
 
-Read the reflog of `main` from the bottom: clone, her commit, the merge. `main@{1}` is her commit before the merge. Reset to it, then replay only that commit onto the clean history with `--onto`. The result is one new commit, `01e4fd0`, on top of the clean tip.
+Read the reflog of `main` from the bottom: clone, her commit, the merge. `main@{1}` is her commit before the merge.
+
+**[ANIMATION]** graph: ...old-d4b8762-95f98b0-9d6c12c main; ...clean-c8ce738-0177e32 origin/main; 0177e32-9d6c12c; HEAD=main; title:Asha's_clone,_after_the_fetch; name:merged => + 95f98b0 main; reflog:9d6c12c; cmd:!git_reset_--hard_main@{1}; say:Back_to_her_commit_before_the_merge; name:reset => + 0177e32-01e4fd0 main; reflog:9d6c12c,95f98b0,d4b8762,...old; cmd:git_rebase_--onto_origin/main_d4b8762; say:Only_her_own_commit_is_replayed:_01e4fd0; name:onto id=recover at_reset=10 at_onto=35
+
+Reset to it, then replay only that commit onto the clean history with `--onto`. The result is one new commit, `01e4fd0`, on top of the clean tip.
 
 **Step 7: verification.**
 
@@ -470,9 +514,19 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
-Now, out of the lab. Picture this: an LLM application team rewrote the history of its retrieval service to remove a customer export. The rewrite was verified and pushed on a Friday evening. On Monday the file was back. The lead didn't ask who had force-pushed, because the branch rule would have blocked it. She ran `git log --merges -1` on `main` and looked at the parents of the newest merge commit: one was the rewritten tip, the other descended from the old history. The author of the merge had been on leave during the freeze.
+Now, out of the lab. Picture this: an LLM application team rewrote the history of its retrieval service to remove a customer export. The rewrite was verified and pushed on a Friday evening. On Monday the file was back. The lead didn't ask who had force-pushed, because the branch rule would have blocked it.
 
-The fix followed the root-cause box. The clean refs were force-pushed again from the cleanup clone, which had been kept for exactly this case. The colleague's clone was repaired with the `--onto` form, so that only his two commits were replayed. And two controls were added: a push ruleset that blocks the file path, and a line in the freeze announcement that names the per-clone sequence instead of the word "pull". The Support request for the pull request refs and the cached views, which had been filed on Friday with the count of affected pull requests and the first changed commit, wasn't affected.
+**[ANIMATION]** graph: ...new-?the_rewritten_tip-?newest_merge main; ...old-?from_the_old_history-?newest_merge; HEAD=none; cmd:git_log_--merges_-1 title=Monday:_the_file_is_back dx=300 at_state_1=30
+
+She ran `git log --merges -1` on `main` and looked at the parents of the newest merge commit: one was the rewritten tip, the other descended from the old history. The author of the merge had been on leave during the freeze.
+
+**[ANIMATION]** cards: question=The_fix_followed_the_root-cause_box cards=Force-push_the_clean_refs_again:from_the_cleanup_clone,_kept_for_this_case|Repair_the_clone_with_--onto:only_his_two_commits_are_replayed|A_push_ruleset:blocks_the_file_path|The_freeze_announcement:names_the_per-clone_sequence,_not_"pull" numbered=on
+
+The fix followed the root-cause box. The clean refs were force-pushed again from the cleanup clone, which had been kept for exactly this case. The colleague's clone was repaired with the `--onto` form, so that only his two commits were replayed. And two controls were added: a push ruleset that blocks the file path, and a line in the freeze announcement that names the per-clone sequence instead of the word "pull".
+
+**[ANIMATION]** end
+
+The Support request for the pull request refs and the cached views, which had been filed on Friday with the count of affected pull requests and the first changed commit, wasn't affected.
 
 ## PRACTICE EXERCISE
 
@@ -491,6 +545,8 @@ The challenge is Incident 3, [`incidents/03-committed-secret`](../../incidents/0
 Answer out loud first. A strong answer starts from evidence: which command shows the newest merge on `main` and what you read from its two parents. It then explains why the push needed no force, in terms of fast-forward. It gives two fixes and keeps them apart: one for the server's refs and one for the clone, and for the clone it says how only the person's own commits are carried over and why the simpler-looking rebase is wrong. It ends with prevention at three levels: the people, the clones and the server. Mention what Git can't do here, and what on GitHub comes nearest.
 
 ## RECAP
+
+**[ANIMATION]** step: stale.reach
 
 Let's land this. Say each of these in your own words.
 

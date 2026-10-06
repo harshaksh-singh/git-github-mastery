@@ -13,6 +13,8 @@
 
 Your eight check scripts print `PASS`. Eight stage files and a postmortem are in your notes directory. And the evaluation says, in its first section: a passing check is the entry condition for scoring a stage, not a score.
 
+**[ANIMATION]** stores: id=saw boxes=the_check_saw|the_check_did_not_see rows=1:A:the_Git_state_you_reached@ok|2:B:whether_your_first_command_changed_anything|3:B:three_hypotheses_or_one|4:B:whether_the_forced_push_named_what_it_expected|5:B:a_claim_to_the_CTO_that_you_never_checked title=PASS_is_the_entry_condition,_not_a_score at_1=2 at_2=10 at_3=18 at_4=25 at_5=34
+
 The check saw the Git state you reached. It didn't see whether your first command changed anything, whether you had three hypotheses or one, whether the forced push named what it expected, or whether your message to the CTO claimed something you never checked. Today you read your own work the way a reviewer would. That's harder than doing the work was. Hold on to the question on screen. You'll answer it yourself before the end.
 
 ## INTRODUCTION
@@ -56,21 +58,47 @@ After this video you can:
 
 Level 3 is the standard. Level 4 is what distinguishes someone who can lead the incident from someone who can resolve it.
 
+**[ANIMATION]** walk: id=dims columns=dimension,where_its_evidence_is rows=Git_knowledge:the_root-cause_item;_the_commands_in_the_evidence_log_and_the_recovery|GitHub_knowledge:the_"equivalent_on_GitHub"_notes,_the_prevention_item,_the_"Not_verified"_lists|Debugging_ability:the_evidence_log|Production_judgment:the_options_table,_your_answers_to_the_shortcuts,_the_severity|Security_awareness:the_leaked-secret_stage,_every_forced_push,_the_workflow_reading|Recovery_skills:|Engineering_communication:the_two_messages_of_every_stage_and_the_postmortem mono=off title=Seven_dimensions,_and_where_their_evidence_is
+
 **The seven dimensions, and where their evidence is.** Git knowledge: the root-cause item of every stage and the commands in the evidence log and the recovery. GitHub knowledge: the "equivalent on GitHub" notes, the prevention item and the "Not verified" lists. Debugging ability: the evidence log. Production judgment: the options table, your answers to the shortcuts proposed in the briefings, and the severity. Security awareness: all of the leaked-secret stage, every forced push, the workflow reading. Recovery skills. Engineering communication: the two messages of every stage and the postmortem.
+
+**[ANIMATION]** cards: id=quiz question=The_right_result,_one_hypothesis,_confirmed,_and_a_log_written_up_afterwards cards=A,_level_2|B,_level_3|C,_level_4 marks=1:ok at_1=60 at_2=70 at_3=80
+
+**[ANIMATION]** step: 3
 
 Quick quiz. A stage file reaches the right result with one hypothesis, confirmed, and a log written up afterwards. Is that A, level 2, B, level 3, or C, level 4? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 **What separates level 2 from level 3, in every dimension.** The answer is A. At level 2 the result is right and something is asserted that isn't shown. At level 3 it's on the page. The evaluation's wording for debugging at level 2 is exact: one hypothesis, confirmed. The briefing's claims neither tested nor challenged. The log reconstructed afterwards.
+
+**[ANIMATION]** cards: id=four question=Level_4,_senior cards=predicts_before_it_runs|a_second_line_of_evidence|trade-offs_on_both_sides,_where_they_are_real|states_the_limits|turns_the_result_into_a_control
 
 **What level 4 looks like.** The write-up predicts before it runs. It gives a second line of evidence for its conclusion. It argues trade-offs on both sides where they are real. It states the limits: what a control would not have caught, what an instrument can and cannot restore. And it turns the result into a control.
 
-**The final judgment.** "Demonstrates senior-level mastery" requires all of the following. All eight checks pass, on a sandbox worked through in order. No disqualifying finding. Every dimension score is 3 or higher, where the dimension score is the median of its stage levels, rounded down. The median is the middle value when the levels are put in order. Every floor is 3 or higher, where the floor is the lowest level among the dimension's primary stages: a senior engineer doesn't have a category of incident that goes badly. At least three dimension scores are 4, and they include production judgment or debugging ability. And the postmortem is at level 3 or higher and has its closing section.
+**[ANIMATION]** cards: id=final numbered=on question="Demonstrates_senior-level_mastery"_requires_all_of_these cards=All_eight_checks_pass:on_a_sandbox_worked_through_in_order|No_disqualifying_finding|Every_dimension_score_is_3_or_higher:the_median_of_its_stage_levels,_rounded_down|Every_floor_is_3_or_higher:the_lowest_level_among_the_primary_stages|At_least_three_dimension_scores_are_4:with_production_judgment_or_debugging_ability|The_postmortem_is_at_level_3_or_higher:and_has_its_closing_section
+
+**[ANIMATION]** step: 3
+
+**The final judgment.** "Demonstrates senior-level mastery" requires all of the following. All eight checks pass, on a sandbox worked through in order. No disqualifying finding. Every dimension score is 3 or higher, where the dimension score is the median of its stage levels, rounded down. The median is the middle value when the levels are put in order.
+
+**[ANIMATION]** step: 5
+
+Every floor is 3 or higher, where the floor is the lowest level among the dimension's primary stages: a senior engineer doesn't have a category of incident that goes badly. At least three dimension scores are 4, and they include production judgment or debugging ability.
+
+**[ANIMATION]** step: 6
+
+And the postmortem is at level 3 or higher and has its closing section.
 
 Otherwise the outcome is "not yet", and it comes with a list: each condition that failed, the stage and item where the evidence was missing, and what to restudy.
 
+**[ANIMATION]** end
+
 **How to score yourself.** The evaluation allows self-evaluation under one condition: you score a day after finishing, from what is on the page and not from what you remember meaning. If the evidence for a level isn't written down, the level wasn't demonstrated, however likely it is that you knew.
+
+**[ANIMATION]** cards: id=quick question=The_quickest_read_of_a_stage_file cards=the_"Not_verified"_list|the_options_table|the_number_of_hypotheses
 
 **The quickest read.** The evaluator's notes say where to look first in a stage file: the "Not verified" list, the options table, and the number of hypotheses. Their absence is almost always level 2.
 
@@ -81,6 +109,8 @@ A picture helps. Think of yourself as the reviewer of a colleague's incident rep
 That isn't an artificial rule. It's exactly the position of the CTO who reads your summary, of the auditor who reads your postmortem a year later, and of the engineer who inherits the repository and wonders why a branch was force-pushed on a Tuesday.
 
 Where the model breaks: a real reviewer has no stake. You do, and the pull is always upward: "I knew that, I did not write it down." The scale has an answer for that sentence. It is level 2.
+
+**[ANIMATION]** cards: id=rope question=In_a_log,_the_rope_is cards=an_anchor_before_a_rewrite|a_lease_on_a_forced_push:it_names_the_value_the_push_expects_on_the_server|a_read-only_phase_before_the_first_change at_1=55 at_2=65 at_3=88
 
 The second model is for the comparison with the replay: two climbers on different routes up the same face. You don't ask whether they used the same holds. You ask whether each was roped in before every exposed move. In a log, the rope is an anchor before a rewrite, a lease on a forced push, which names the value the push expects on the server, and a read-only phase before the first change.
 
@@ -150,7 +180,13 @@ Your branch is up to date with 'origin/main'.
 ```
 <!-- /snippet -->
 
-The first bad commit is `5ce3510`, another pull request. Look in your own log for two things. Did you prove your reproduction on both known ends, the good release and the bad one, before you relied on it? And did you test the claim in the briefing, or act on it? Merging the speculative revert is one of the shortcuts the evaluation lists as disqualifying.
+The first bad commit is `5ce3510`, another pull request.
+
+**[ANIMATION]** graph: id=bisect1 ba48a7a-d449cc0-5ce3510-bae705c-*-7db3ddf; ba48a7a v1.2.0; 7db3ddf v1.3.0; HEAD=none; good:ba48a7a; bad:7db3ddf; cmd:git_bisect_start_v1.3.0_v1.2.0 => + good:d449cc0 => + bad:bae705c => + bad:5ce3510; first_bad:5ce3510; say:The_first_bad_commit_is_another_pull_request title=Both_known_ends,_then_the_halving
+
+Look in your own log for two things. Did you prove your reproduction on both known ends, the good release and the bad one, before you relied on it? And did you test the claim in the briefing, or act on it? Merging the speculative revert is one of the shortcuts the evaluation lists as disqualifying.
+
+**[ANIMATION]** end
 
 **Stage 2, a merge conflict.** Primary for Git knowledge. A colleague had resolved "your conflicts" and the pull request said clean.
 
@@ -248,7 +284,13 @@ ImportError: cannot import name 'FALLBACK' from 'router.classify'
 ```
 <!-- /snippet -->
 
-The model fetches the merge ref and runs the tests on it. They fail locally, with a message that names a symbol another pull request changed on `main`. Both statements of the briefing were true: the head passes, the merge doesn't. In your log: did you answer the first questions of the investigation order on paper, workflow, event, commit checked out, before you reproduced anything? And in your "Not verified" list: did you write what a local reproduction doesn't prove?
+The model fetches the merge ref and runs the tests on it. They fail locally, with a message that names a symbol another pull request changed on `main`.
+
+**[ANIMATION]** graph: id=pull17 ...-3c4f762-530a3b3 special:refs/pull/17/merge; ^...older-58931e9-530a3b3; 58931e9 special:refs/pull/17/head; HEAD=none; note:3c4f762:the_current_base => + pass:58931e9; fail:530a3b3; say:The_head_passes,_the_test_merge_does_not title=One_pull_request,_two_refs dx=300
+
+Both statements of the briefing were true: the head passes, the merge doesn't. In your log: did you answer the first questions of the investigation order on paper, workflow, event, commit checked out, before you reproduced anything? And in your "Not verified" list: did you write what a local reproduction doesn't prove?
+
+**[ANIMATION]** end
 
 **Stage 5, lost work.** Primary for Git knowledge and recovery skills.
 
@@ -303,7 +345,13 @@ d3ed8df Pick the keyword lists by detected language
 ```
 <!-- /snippet -->
 
-The pull request ref holds a third commit, `d3ed8df`, that no clone's branch had. The model restores from there. You may have found the tip elsewhere, and that scores the same if it is evidenced. What the deliverable asks is the list of copies that existed, per repository, each with its commit, which one you used and why, and the GitHub instrument that corresponds to your recovery, with its limit.
+The pull request ref holds a third commit, `d3ed8df`, that no clone's branch had. The model restores from there.
+
+**[ANIMATION]** graph: id=pull21 ...-dcdc06b-3167a88-d3ed8df special:refs/pull/21/head; 3167a88 origin/feature/multilingual-intents; HEAD=none; note:d3ed8df:no_clone's_branch_had_it title=The_copies_that_existed dx=300
+
+You may have found the tip elsewhere, and that scores the same if it is evidenced. What the deliverable asks is the list of copies that existed, per repository, each with its commit, which one you used and why, and the GitHub instrument that corresponds to your recovery, with its limit.
+
+**[ANIMATION]** end
 
 **Stage 7, a broken pull request.** Primary for Git knowledge and recovery skills. This is the senior standard of video 188 with three people instead of two.
 
@@ -457,6 +505,8 @@ Now complete the sheet: medians, rounded down, and floors. Stop the video while 
 
 **[PAUSE]**
 
+**[ANIMATION]** cards: id=three numbered=on question=Three_questions,_in_writing cards=In_which_stage_was_your_evidence_log_thinnest?:and_what_would_you_collect_now?|Which_control_should_each_stage_have_left_behind?:and_on_which_layer?|What_would_you_do_differently_in_a_real_incident_tomorrow?
+
 Then answer three questions in writing. In which stage was your evidence log thinnest, and what would you collect now? Which control should each stage have left behind, and on which layer? And what would you do differently in a real incident tomorrow?
 
 ## COMMON MISTAKES
@@ -473,7 +523,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A learner scores her capstone a day after finishing. Her checks all pass. Her first pass over the sheet gives her threes and fours.
 
+**[ANIMATION]** replay: quick
+
 Then she applies the quickest read to her own files. In stage 4 her "Not verified" list is empty. In stage 6 she has one hypothesis, confirmed. In stage 7 her forced push is written with a lease and with `--force-if-includes`, on a branch she had examined a moment before, which the rules of the simulation accept. But the proof that the repair changed no content comes after the push in her log, not before. She corrects three scores downward. Debugging ability now has a floor of 2, because stage 6 is a primary stage for it.
+
+**[ANIMATION]** end
 
 The outcome on her own sheet is "not yet", with a list. Debugging ability, stage 6. Restudy the method chapter and the history-investigation sections the evaluation names. Two incidents she hasn't done. Then retake the stage in a rebuilt sandbox with new deliverables. She does that in a week. Her note on the retake says what changed: three hypotheses were on the page before the first test, and one of them, the one she had thought unlikely, was the cause.
 

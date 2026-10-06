@@ -13,6 +13,8 @@
 
 A CTO can ask that in the next twelve months, after reading a headline. There are two tempting answers. "Nothing, it is years away." And: "Everything, we need a migration project." Both are guesses.
 
+**[ANIMATION]** cards: id=parts numbered=on question=Three_parts,_each_from_a_different_kind_of_source cards=What_is_planned:a_document_that_ships_with_your_own_Git_installation|When_it_happens:an_official_sentence,_an_announcement,_reports|What_breaks_for_your_team:found_out_this_afternoon,_in_a_sandbox
+
 The honest answer has three parts, and each comes from a different kind of source. What is planned is written in a document that ships with your own Git installation. When it happens has one official sentence, one primary announcement and a set of secondary reports that you must label as such. And what breaks for your team is something you can find out this afternoon, in a sandbox, by switching the future defaults on. Hold on to the CTO's question. Before the end you'll hear it answered in three paragraphs, each with its source.
 
 ## INTRODUCTION
@@ -39,11 +41,23 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** cards: id=official question=BreakingChanges,_shipped_with_every_installation cards=Breaking_releases_happen_rarely:1.6.0_in_August_2008,_2.0_in_May_2014|It_lists_what_Git_3.0_will_change|"There_is_no_planned_release_date_for_this_breaking_version_yet."|The_last_version_before_3.0:a_long-term-support_release|Every_breaking_change:guarded_by_WITH__BREAKING__CHANGES marks=3:ring
+
+**[ANIMATION]** step: 3
+
 **What is official.** The Git project keeps a document named BreakingChanges, shipped with every installation. It says that breaking releases happen rarely: 1.6.0 in August 2008, 2.0 in May 2014. It lists what Git 3.0 will change. And it states: "There is no planned release date for this breaking version yet." That sentence is in the copy installed with Git 2.55.0 and, according to the course's research report, unchanged at 2.56.0.
+
+**[ANIMATION]** step: 5
 
 The same document makes two promises. The last version before 3.0 will be a long-term-support release, with important bug fixes for at least four release cycles and security fixes for six. And every breaking change is guarded by a build switch, `WITH_BREAKING_CHANGES`, so that the future behavior can be tested before it ships.
 
+**[ANIMATION]** walk: id=road columns=version,what_is_said,zone rows=2.55.0:29_Jun_2026_(this_course):released|2.56.0:28_Sep_2026_(current):released|2.98:"near_the_end_of_this_year":announced|2.99:after_2.98;_"LTS"_is_secondary:announced|3.0:no_official_date;_"with_2.99"_is_secondary:reported_only marks=1.3:ok,2.3:ok,3.3:wait,4.3:wait,5.3:dim mono=off title=Released,_announced,_reported_only
+
+**[ANIMATION]** step: 4
+
 **What the maintainer announced.** Git 2.56.0 was released on 28 September 2026. On the same day the maintainer wrote that the next version will be numbered 2.98, "scheduled near the end of this year", to be followed by 2.99 "to solidify the codebase in preparation for Git 3.0". The textbook read that message through a mailing-list mirror. The jump in the number is the signal.
+
+**[ANIMATION]** step: 5
 
 **What only secondary sources say.** Calendar months, and the relation between 2.99 and 3.0, are not in any official document.
 
@@ -73,29 +87,53 @@ Every date in the last three rows of the table. Treat them as a plan reported fr
 
 Read the table as a plan, row by row. New repositories would use SHA-256 as their hash function, when libraries, applications and forges are ready, and SHA-1 is not being deprecated. Their refs would be stored with reftable, which JGit, libgit2 and Gitoxide need to support. The initial branch would be named `main`. A bare repository found by walking up directories would be refused. And Rust would be mandatory in the build, which may be deferred if distributions are hit hard.
 
+**[ANIMATION]** cards: id=removals question=Planned_removals,_as_listed_in_BreakingChanges cards=Grafts:replaced_by_git_replace|git_pack-redundant|.git/branches/_and_.git/remotes/:as_sources_of_remotes|git_name-rev_--stdin:replaced_by_--annotate-stdin|git_whatchanged|core.commentString:the_value_auto|core.preferSymlinkRefs:the_value_true|git_checkout_stays:a_recorded_decision_not_to_remove_it marks=8:ok
+
 **The removals.** Grafts, replaced by `git replace`. `git pack-redundant`. The directories `.git/branches/` and `.git/remotes/` as sources of remotes. `git name-rev --stdin`, replaced by `--annotate-stdin`. `git whatchanged`. And the values `core.commentString=auto` and `core.preferSymlinkRefs=true`. One section of the document records a decision not to remove something: `git checkout` stays next to `git switch` and `git restore`.
+
+**[ANIMATION]** cards: id=quiz question=Suppose_Git_3.0_is_released_and_you_upgrade._The_repositories_you_already_have? cards=A,_they're_converted_to_the_new_formats|B,_nothing_converts_them marks=2:ok at_1=62 at_2=78
+
+**[ANIMATION]** step: 2
 
 Quick quiz. Suppose Git 3.0 is released and you upgrade. What happens to the repositories you already have? A, they're converted to the new formats. B, nothing converts them. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 **Three points keep the scale in proportion.** The answer is B. The changed defaults apply when a repository is created. Nothing converts an existing repository. A proposal to accept only lowercase hexadecimal object IDs was still waiting for review on 28 September 2026 and is not a decision. And hosting decides more than Git does.
+
+**[ANIMATION]** end
 
 **Opting in, in one sentence.** Four configuration keys select, for the repositories you create, the behavior that Git 3.0 will make the default, and the same keys keep today's behavior afterwards.
 
+**[ANIMATION]** walk: id=explicit columns=with_explicit,what_happens rows=a_bare_repository_you_did_not_name:not_used|fetching_from_it,_pushing_to_it,_cloning_it:still_work,_those_commands_name_the_repository|a_.git_directory_inside_a_working_tree:not_"bare"_in_this_sense marks=1.2:bad,2.2:ok,3.2:ok mono=off title=safe.bareRepository=explicit,_the_planned_default at_header=30 at_1=45 at_2=62 at_3=84
+
 **`safe.bareRepository`.** The fourth key is about which repositories Git agrees to use. A bare repository is one with no working tree, such as the one a server holds. With `explicit`, a bare repository is used only when you name it. Fetching from it, pushing to it and cloning it still work, because those commands name the repository, and a `.git` directory inside a working tree is not "bare" in this sense.
+
+**[ANIMATION]** stores: id=bare boxes=a_clone|a_tracked_directory:shaped_like_a_bare_repository rows=1:A:never_brings_a_.git/config@ok|2:B:HEAD|2:B:config|2:B:objects/|2:B:refs/|3:B:with_the_current_default,_Git_reads_this_config@bad|4:B:it_can_name_a_command,_through_core.fsmonitor@bad arrows=2:A>B:can_bring title=Why_the_default_is_planned_to_change at_1=10 at_2=22 at_3=48 at_4=72
 
 The reason for the change is a case you met in video 163. A clone never brings a `.git/config`. It can bring a tracked directory that is shaped like a bare repository, with a `HEAD`, a `config`, `objects/` and `refs/`. Step into that directory, and with the current default Git takes it for a repository and reads the configuration file that arrived as ordinary tracked content. BreakingChanges describes the attack in which such a file names a command, through `core.fsmonitor` for example, that runs when a shell prompt calls `git status`.
 
+**[ANIMATION]** end
+
 **SHA-256 and reftable, locally.** Two practical facts complete what video 107 taught.
+
+**[ANIMATION]** flow: id=stream actors=a_SHA-1_repository,a_text_stream,a_SHA-256_repository msgs=1>2:git_fast-export|2>3:git_fast-import|3>3:every_object_gets_a_new_ID|3>3:signatures_do_not_survive|3>3:quoted_commit_IDs_point_at_nothing title=Across_the_format_boundary,_only_as_a_stream
 
 History can cross the format boundary only as a stream. `git fast-export` writes history as text and `git fast-import` rebuilds it in the format of the receiving repository. Every object gets a new ID. Signatures do not survive, and commit IDs quoted in messages, issue trackers and CI configuration point at nothing in the new repository. A conversion is a migration project with a cut-over date, not a setting.
 
+**[ANIMATION]** stores: id=refs boxes=ref_format_files|ref_format_reftable rows=1:A:.git/refs/heads/<branch>,_a_file_you_can_read|1:B:no_file_per_branch|2:A:code_that_reads_the_file_works@dim|2:B:code_that_reads_the_file_breaks@bad|3:A:git_rev-parse,_git_for-each-ref,_git_refs_list@ok|3:B:git_rev-parse,_git_for-each-ref,_git_refs_list@ok arrows=1:A>B:git_refs_migrate title=The_ref_format_changes_in_place at_1=8 at_2=50 at_3=75
+
 The ref format can change in place and back. `git refs migrate --ref-format=reftable` converts an existing repository, with the limits the manual lists: not with linked worktrees, and no concurrent writers during the migration. Code that reads `.git/refs/heads/<branch>` breaks at that moment, and code that expects forty hexadecimal digits breaks on SHA-256. The repair is the habit this course has used since Part 4: ask Git, with `git rev-parse`, `git for-each-ref` or `git refs list`, and never read the directory.
+
+**[ANIMATION]** end
 
 **GitHub, not Git.** GitHub had no publicly available support for SHA-256 repositories on 1 October 2026. A private preview is reported by GitLab's blog, a community comment and a conference speaker, and no GitHub blog post, changelog entry or documentation page announces it, so the course's research report marks it unverified. Whether a host stores refs with reftable on its servers does not concern you: the ref format is local.
 
 So, for objective five: before a hosted team repository can use SHA-256, the host has to accept it, and so do the libraries and applications around the repository: the condition in the first row of the table. Until then a repository that must live on github.com stays SHA-1.
+
+**[ANIMATION]** cards: id=advice numbered=on question=The_textbook's_advice,_three_lines cards=init.defaultBranch=main:everywhere,_now|safe.bareRepository=explicit:on_developer_machines,_now;_check_the_scripts_first|object_and_ref_formats:left_at_their_defaults_in_shared_configuration marks=1:ok,2:ok,3:lock
 
 **In production.** The textbook's advice has three lines. Set `init.defaultBranch=main` everywhere now. It is what 3.0 will do. Set `safe.bareRepository=explicit` on developer machines now, and check the scripts that `cd` into bare repositories, backup jobs, mirror scripts, self-hosted Git servers, before 3.0 does it for you. Leave the object and ref formats at their defaults in shared configuration until your hosting and your tools are ready.
 
@@ -103,11 +141,17 @@ So, for objective five: before a hosted team repository can use SHA-256, the hos
 
 A picture helps. Think of a country that announces it will change the side of the road on which new roads are built. Existing roads stay as they are. No date is fixed. The transport ministry publishes the plan in a document anyone can read, and offers a test track where you can drive the new way today.
 
+**[ANIMATION]** walk: id=haulage columns=the_haulage_company_asks,for_you_that_is rows=Which_of_our_vehicles_assume_the_old_side?:the_script_that_reads_.git/refs/heads/main_by_hand|Can_we_drive_on_the_test_track?:the_sandbox_with_the_four_keys_set|What_do_the_newspapers_say,_as_opposed_to_the_ministry?:the_table_with_its_status_column mono=off title=The_plan,_the_test_track,_the_newspapers
+
 The questions a sensible haulage company asks are yours. Which of our vehicles assume the old side? That is the script that reads `.git/refs/heads/main` by hand. Can we drive on the test track? That is the sandbox with the four keys set. And what do the newspapers say about the date, as opposed to the ministry? That is the table with its status column.
+
+**[ANIMATION]** walk: id=shared columns=,the_ref_format,the_object_format rows=who_shares_it:local_to_each_clone:everything_that_exchanges_objects|so:the_protocol_never_sees_it:hosting_decides marks=2.3:hl mono=off title=Two_of_the_four_changes_are_not_shared
 
 Where the picture breaks: roads are shared, and two of these four changes are not. The ref format is local to each clone and the protocol never sees it. The object format is the opposite: it is shared by everything that exchanges objects, which is why hosting decides.
 
 ## DIAGRAM
+
+**[ANIMATION]** walk: id=zones columns=version,what_is_said,zone rows=2.55.0:29_Jun_2026_(this_course):released|2.56.0:28_Sep_2026_(current):released|2.98:"near_the_end_of_this_year":announced|2.99:after_2.98;_"LTS"_is_secondary:announced|3.0:no_official_date;_"with_2.99"_is_secondary:reported_only marks=1.3:ok,2.3:ok,3.3:wait,4.3:wait,5.3:dim mono=off title=Released,_announced,_reported_only
 
 **[DIAGRAM]** The diagram of section 14D.2. Draw the line left to right. Put the two released versions first, with their dates. Then the announced ones. Then mark the three zones underneath.
 
@@ -414,7 +458,11 @@ $ sh ../scripts/release-id.sh
 ```
 <!-- /snippet -->
 
-`git repo info --all` prints the layout and the two formats. Then read the release script: it reads `.git/refs/heads/main` with `cat` and checks for exactly forty hexadecimal digits. It works today. Predict two ways in which it will stop working.
+`git repo info --all` prints the layout and the two formats. Then read the release script: it reads `.git/refs/heads/main` with `cat` and checks for exactly forty hexadecimal digits. It works today. Predict two ways in which it will stop working. Say them out loud.
+
+**[PAUSE]**
+
+Keep your two predictions. Lab 42.1 is where you check them.
 
 **The future: both formats at creation.** 🟢 SAFE: `git init` creates a new repository.
 
@@ -496,7 +544,13 @@ references.format=files
 ```
 <!-- /snippet -->
 
-"Mismatched algorithms": the two formats cannot exchange objects. The stream carries the history across. The subjects match and no ID does: `53a79b6` on one side, `587a0ea` on the other, for the same commit.
+"Mismatched algorithms": the two formats cannot exchange objects.
+
+**[ANIMATION]** remotes: id=convert [inference, sha1] 3e283dd-53a79b6-c284765; HEAD=none || [inference-sha256]; HEAD=none => || [inference-sha256] 6daacca-587a0ea-4fea7f1; HEAD=none; cmd:git_fast-export_--all_|_git_fast-import; say:The_subjects_match_and_no_ID_does fly=off title=The_same_history,_new_IDs
+
+The stream carries the history across. The subjects match and no ID does: `53a79b6` on one side, `587a0ea` on the other, for the same commit.
+
+**[ANIMATION]** end
 
 **Migrating the ref format in place.** 🟡 CAUTION: `git refs migrate` rewrites how refs are stored in this repository. Preview: `git for-each-ref` before, to compare afterwards. It can be migrated back. Not with linked worktrees, and no concurrent writers.
 
@@ -541,7 +595,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A platform engineer is asked the hook's question by her CTO on a Monday. She answers on Tuesday, with three paragraphs and their sources.
 
+**[ANIMATION]** replay: parts
+
 What is planned: new defaults for new repositories and a list of removals, from the BreakingChanges document installed on her own laptop. When: no official date. The maintainer has announced versions 2.98 and 2.99. The months in circulation are from two secondary sources, and she labels them so. What breaks for us: she spent the afternoon on that. In a sandbox with the four keys set, she ran the team's release tooling and its backup job. Two things failed. A release script read a branch file with `cat` and checked for forty characters. And the nightly mirror job changed directory into bare repositories and ran `git log` there, which `safe.bareRepository=explicit` refuses.
+
+**[ANIMATION]** replay: advice
 
 Her recommendation follows the textbook's three lines. `init.defaultBranch=main` everywhere, today. `safe.bareRepository=explicit` on developer machines today, after the mirror job is changed to name its repository. Object and ref formats left at their defaults in shared configuration, with one sentence on why: the host. The two scripts are fixed that week, and they are fixed in the durable way: they ask Git. And that's the question from the opening, answered: three paragraphs, each with its source.
 

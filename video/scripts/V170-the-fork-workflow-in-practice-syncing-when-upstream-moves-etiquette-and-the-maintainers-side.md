@@ -13,6 +13,8 @@
 
 A team that depends on an open-source gateway finds a bug, fixes it in an afternoon and opens a pull request. Three weeks later nothing has happened. Meanwhile the project's `main` has moved, the pull request shows a conflict, and the engineer's fork says it is "two commits ahead, forty behind". Nobody on the team can say how the fork got ahead of a project they never had write access to.
 
+**[ANIMATION]** cards: question=Two_problems,_two_causes_you_can_name cards=the_fork_is_"two_commits_ahead,_forty_behind":the_cause_is_in_the_commit_graph|the_pull_request_has_waited_three_weeks:the_cause_is_in_how_it_spends_a_maintainer's_attention at_2=40
+
 Both problems have causes you can name. One is in the commit graph. The other is in how the pull request spends a maintainer's attention. Keep that "two commits ahead" in mind. One number in a terminal will explain it.
 
 ## INTRODUCTION
@@ -47,6 +49,8 @@ After this video you can:
 | Your fork | `origin` | fetch and push | publish branches for pull requests |
 | Your clone | none: it is the local repository | everything | do the work |
 
+You fetch from upstream, you fetch and push to your fork, and you do the work in your clone.
+
 **[ON SCREEN]** The ten steps as section 27.2 lists them. Steps 1, 5, 6 and 8 happen on GitHub; the commands are shown without output.
 
 ```bash
@@ -78,7 +82,11 @@ git push
 
 **When upstream moves.** There are two different things to keep current, and people mix them up.
 
+**[ANIMATION]** graph: 4ebb785-7de9633 upstream/main; 4ebb785 main origin/main; HEAD=main => 4ebb785-7de9633 main upstream/main; 4ebb785 origin/main; HEAD=main => 4ebb785-7de9633 main origin/main upstream/main; HEAD=main title=Your_local_main_is_only_a_relay id=relay at_state_2=35 at_state_3=60
+
 The first is the fork's default branch. It should be an exact copy of the project's `main`. If you never commit on it, updating it is always a fast-forward: the branch name moves ahead, and no new commit is made. That's the rule to remember from today: never commit on the fork's `main`. It should only ever fast-forward to upstream.
+
+**[ANIMATION]** end
 
 The second is your feature branch. It contains your commits on top of an old upstream commit. Updating it means either replaying your commits on the new tip, which is a rebase, or merging the new tip into the branch.
 
@@ -96,11 +104,25 @@ One trap in the middle row: `gh repo sync` without an argument updates the local
 
 **Etiquette, in one sentence.** A maintainer is a person who decides what the project accepts. A maintainer's scarce resource is attention, and every convention of open-source contribution is a way of spending less of it per accepted change.
 
-Before you write code: read the contribution guide. It tells you the branch to target, the merge method, the test command, the commit message convention and whether a sign-off or a contributor agreement is required. GitHub shows a repository's `CONTRIBUTING` file when someone opens an issue or pull request, and since the seventh of August 2025 in the repository's tab bar and sidebar. And open an issue first for anything large. A pull request nobody asked for forces the maintainer to choose between reviewing work that doesn't fit the roadmap and rejecting work somebody spent a week on. An issue costs both sides ten minutes.
+**[ANIMATION]** stores: boxes=before_you_write_code|when_you_open_the_pull_request|while_it_is_in_review rows=1:A:read_the_contribution_guide|2:A:an_issue_first_for_anything_large|3:B:one_logical_change|4:B:say_what_you_tested|5:B:leave_"allow_edits_by_maintainers"_on|6:B:checks_run_without_the_project's_secrets|7:C:answer_every_comment|8:C:no_force-push_over_a_review_in_progress|9:C:no_second_pull_request:_ask_once title=Spend_less_of_a_maintainer's_attention id=etiq
+
+**[ANIMATION]** step: etiq.1
+
+Before you write code: read the contribution guide. It tells you the branch to target, the merge method, the test command, the commit message convention and whether a sign-off or a contributor agreement is required. GitHub shows a repository's `CONTRIBUTING` file when someone opens an issue or pull request, and since the seventh of August 2025 in the repository's tab bar and sidebar.
+
+**[ANIMATION]** step: etiq.2
+
+And open an issue first for anything large. A pull request nobody asked for forces the maintainer to choose between reviewing work that doesn't fit the roadmap and rejecting work somebody spent a week on. An issue costs both sides ten minutes.
+
+**[ANIMATION]** step: etiq.6
 
 When you open the pull request: one logical change, because a small, self-contained change is one a stranger can evaluate. Say what you tested. For an ML change, which evaluation set, which metric, which commit. Leave "allow edits by maintainers" on for a fork you own. And expect checks to behave differently: workflows on a pull request from a fork run without the project's secrets, and in a public repository the default is that first-time contributors need a maintainer's approval before workflows run. A red check that needs a secret isn't your bug. Say so in the pull request instead of pushing guesses.
 
+**[ANIMATION]** step: etiq.9
+
 While it is in review: answer every comment, and don't force-push over a review in progress unless the project asks for it. Don't open a second pull request because the first is quiet. Ask once, after a reasonable wait, in the place the project names.
+
+**[ANIMATION]** end
 
 **The maintainer's side.** The same economics in reverse.
 
@@ -112,19 +134,25 @@ While it is in review: answer every comment, and don't force-push over a review 
 | Keep `main` releasable | required checks, required review, merge queue |
 | Keep credit when squashing | read the proposed squash message before confirming; who GitHub records as author and co-authors is flagged as unverified in Chapter 17 |
 
+Read it as need and tool: rules told once, review routed, `main` kept releasable.
+
 ## MENTAL MODEL
 
 A picture helps. The textbook's analogy is a journal submission. You don't edit the journal. You send a manuscript, reviewers ask for changes, you send a revision, and an editor decides.
 
 The analogy carries the etiquette well. A manuscript on a topic the journal didn't ask for, three times the usual length, with no statement of method, waits. So does a pull request.
 
+**[ANIMATION]** stores: boxes=the_upstream_repository:its_own_refs|*one_object_store:a_fork_network|your_fork:its_own_refs rows=1:C:a_commit_you_push|1:B:the_commit@hl|2:A:reachable_here_by_commit_ID@hl arrows=1:C1>B1:push|2:A1>B1:by_ID title=Where_the_analogy_breaks
+
 It breaks at storage. On GitHub your copy and the journal's share one object store, a fork network, so what you push to your fork can be reached from the upstream repository by commit ID. A manuscript in your drawer is private. A commit on your public fork is not.
 
-**[ANIMATION]** graph: 4ebb785-7de9633 upstream/main; 4ebb785 main origin/main; HEAD=main => 4ebb785-7de9633 main upstream/main; 4ebb785 origin/main; HEAD=main => 4ebb785-7de9633 main origin/main upstream/main; HEAD=main title=Your_local_main_is_only_a_relay
+**[ANIMATION]** replay: relay
 
 For the Git side, hold this picture, with its three labels: your local `main` is only a relay. First, it fast-forwards to `upstream/main`. Then a push carries the same commit on to `origin/main`. It never contributes a commit of its own. The moment it has one, the relay is broken, and every later pull request branch that starts from it carries that commit along.
 
 ## DIAGRAM
+
+**[ANIMATION]** stores: boxes=*upstream:the_project|origin:your_fork|your_clone rows=1:A:main|1:B:main|2:C:main|2:C:origin/main|3:C:upstream/main|4:C:fix/suspended-tenant|4:B:fix/suspended-tenant|5:A:refs/pull/57/head@ref|6:C:(6)_review_asks_for_changes|7:C:(7)_commit_and_push_again|8:A:(8)_merge,_by_a_maintainer@ok arrows=1:A1>B1:(1)_fork|2:B1>C1:(2)_clone|3:A1>C3:(3)_fetch|4:C4>B2:(4)_push|5:B2>A2:(5)_pull_request id=forkmap
 
 **[DIAGRAM]** Three boxes. Upstream top left, your fork top right, your clone across the bottom. Add the arrows in the order of their numbers.
 
@@ -143,26 +171,11 @@ For the Git side, hold this picture, with its three labels: your local `main` is
   +----------------------------------------------------------------------------+
 ```
 
+**[ANIMATION]** step: forkmap.8
+
+Follow the numbers. One, the fork. Two, the clone. Three, a fetch from upstream. Four, a push to your fork. Five, the pull request. Six and seven, the review asks for changes and you push again. Eight, a maintainer merges.
+
 Notice what is missing: no arrow goes from your clone up into the left box. You fetch from upstream. You never push to it. The pull request's ref, `refs/pull/57/head`, lives in the upstream repository, although the commits arrived through your fork.
-
-**[ON SCREEN]** Later, after the squash merge in the demo, the root-cause box of section 27.3.
-
-```text
-Observed behavior : after a squash merge, "is my branch merged?" gets three different answers.
-Git state         : upstream main has one new commit, 16e9e75. Your branch tip is 147ed67.
-                    147ed67 is not an ancestor of 16e9e75.
-Mechanism         : "merged" in Git means "reachable from". git merge-base --is-ancestor and
-                    git branch --merged both test reachability, and a squash creates a commit
-                    with one parent and no link to your commits.
-Root cause        : the merge method discarded the ancestry and kept the content.
-Why Git does this : a commit's parents are part of its ID. Git cannot record "these commits were
-                    folded into that one" without a second parent, and a second parent is
-                    exactly what a squash omits.
-Correct fix       : test content, not ancestry: an empty "git diff main <branch>" here, or the
-                    merge-tree comparison of Lab 34.1 when main has moved further.
-Prevention        : delete the branch right after the merge, on the fork and locally, and never
-                    reuse it. Chapter 17, section 17.12 shows what reuse does to the next pull request.
-```
 
 ## LIVE TERMINAL DEMO
 
@@ -337,7 +350,7 @@ $ git log --oneline --graph --all
 
 The rebase replaced commit `a83a713` with `3560caf`: same change, new parent, new ID. The fork still had the old commit, so the plain push was rejected as a non-fast-forward.
 
-**[ANIMATION]** graph: 4ebb785-7de9633 main origin/main upstream/main; 4ebb785-a83a713 fix/suspended-tenant origin/fix/suspended-tenant; HEAD=fix/suspended-tenant => 4ebb785-7de9633 main origin/main upstream/main; 7de9633-3560caf fix/suspended-tenant; 4ebb785-a83a713 origin/fix/suspended-tenant; HEAD=fix/suspended-tenant => 4ebb785-7de9633 main origin/main upstream/main; 7de9633-3560caf fix/suspended-tenant origin/fix/suspended-tenant; 4ebb785-a83a713; HEAD=fix/suspended-tenant; ghost:a83a713 title=Rebase,_then_a_forced_push
+**[ANIMATION]** graph: 4ebb785-7de9633 main origin/main upstream/main; 4ebb785-a83a713 fix/suspended-tenant origin/fix/suspended-tenant; HEAD=fix/suspended-tenant => 4ebb785-7de9633 main origin/main upstream/main; 7de9633-3560caf fix/suspended-tenant; 4ebb785-a83a713 origin/fix/suspended-tenant; HEAD=fix/suspended-tenant => 4ebb785-7de9633 main origin/main upstream/main; 7de9633-3560caf fix/suspended-tenant origin/fix/suspended-tenant; 4ebb785-a83a713; HEAD=fix/suspended-tenant; reflog:a83a713 title=Rebase,_then_a_forced_push
 
 As a graph, with labels. First, the rebase copies your commit onto the new tip, and the fork's copy stays on the old one. Then the forced push moves it. The lease makes the forced push succeed only if the fork's branch is where your clone last saw it, and `--force-if-includes` only if you have integrated what you last saw.
 
@@ -376,7 +389,11 @@ $ git log --oneline --graph fix/suspended-tenant
 ```
 <!-- /snippet -->
 
-No commit changed its ID, so the push is an ordinary fast-forward. The price is the merge commit `44d750c` in the middle of your branch.
+No commit changed its ID, so the push is an ordinary fast-forward.
+
+**[ANIMATION]** graph: 4ebb785-7de9633-3560caf-44d750c fix/suspended-tenant origin/fix/suspended-tenant; 7de9633-bb1ddd2 upstream/main; bb1ddd2-44d750c; 7de9633 main origin/main; HEAD=fix/suspended-tenant; note:44d750c:the_merge_commit title=Way_2:_a_merge,_and_a_plain_push at_state_1=10
+
+The price is the merge commit `44d750c` in the middle of your branch.
 
 **[ON SCREEN]** The comparison table of section 27.3.
 
@@ -462,13 +479,50 @@ One line contradicts a rule you may have read: `git branch -d` deleted a branch 
 
 Now the reason, as a graph. The squash commit `16e9e75` has one parent and no link to your commits, so your branch tip `147ed67` isn't an ancestor of it. "Merged" in Git means "reachable from", and the merge method discarded the ancestry and kept the content.
 
+**[ANIMATION]** end
+
+**[ON SCREEN]** Later, after the squash merge in the demo, the root-cause box of section 27.3.
+
+```text
+Observed behavior : after a squash merge, "is my branch merged?" gets three different answers.
+Git state         : upstream main has one new commit, 16e9e75. Your branch tip is 147ed67.
+                    147ed67 is not an ancestor of 16e9e75.
+Mechanism         : "merged" in Git means "reachable from". git merge-base --is-ancestor and
+                    git branch --merged both test reachability, and a squash creates a commit
+                    with one parent and no link to your commits.
+Root cause        : the merge method discarded the ancestry and kept the content.
+Why Git does this : a commit's parents are part of its ID. Git cannot record "these commits were
+                    folded into that one" without a second parent, and a second parent is
+                    exactly what a squash omits.
+Correct fix       : test content, not ancestry: an empty "git diff main <branch>" here, or the
+                    merge-tree comparison of Lab 34.1 when main has moved further.
+Prevention        : delete the branch right after the merge, on the fork and locally, and never
+                    reuse it. Chapter 17, section 17.12 shows what reuse does to the next pull request.
+```
+
+This is the root-cause box of section 27.3. Read its fix line: test content, not ancestry.
+
 **[ON SCREEN]** GitHub walkthrough. Layer label: GitHub.
 
 Now the same cycle in your own practice repository, following Lab 21.1, Part B. The GitHub interface changes. The lab's text and the linked documentation are the reference, and no GitHub output was captured for this course. Run it in your normal shell, not in `labs/shell`, because the lab shell switches off the system configuration where the credential helper lives.
 
-As the contributor: fork the practice repository and clone the fork, and check with `git remote -v` that two remotes exist. Create the branch from `upstream/main`, commit, push to `origin`, and open the pull request against the upstream repository. On the pull request page, find three things by their function. First, the base and the head, which name two repositories. Second, the control that allows edits by maintainers. Third, the list of checks.
+As the contributor: fork the practice repository and clone the fork, and check with `git remote -v` that two remotes exist. Create the branch from `upstream/main`, commit, push to `origin`, and open the pull request against the upstream repository.
 
-Then exchange the roles, so that you're the maintainer. Open the pull request as the owner of the organization. Read it the way section 27.4 says a maintainer does: is it one logical change, does it say what was tested, does it target the branch your contribution guide names? Merge it, and before you confirm a squash, read the proposed commit message. Then go back to the contributor's clone, sync `main` with the fast-forward relay, and delete the branch in both places.
+**[ANIMATION]** cards: question=On_the_pull_request_page,_find_three_things_by_their_function numbered=on cards=the_base_and_the_head:they_name_two_repositories|the_control_that_allows_edits_by_maintainers|the_list_of_checks title=Layer:_GitHub._A_schematic,_not_the_interface id=page
+
+**[ANIMATION]** step: page.3
+
+On the pull request page, find three things by their function. First, the base and the head, which name two repositories. Second, the control that allows edits by maintainers. Third, the list of checks.
+
+Then exchange the roles, so that you're the maintainer. Open the pull request as the owner of the organization.
+
+**[ANIMATION]** cards: question=Read_it_the_way_a_maintainer_does cards=Is_it_one_logical_change?|Does_it_say_what_was_tested?|Does_it_target_the_branch_your_guide_names?|Before_you_confirm_a_squash:read_the_proposed_commit_message marks=4:ring title=Layer:_GitHub._A_schematic,_not_the_interface
+
+Read it the way section 27.4 says a maintainer does: is it one logical change, does it say what was tested, does it target the branch your contribution guide names? Merge it, and before you confirm a squash, read the proposed commit message.
+
+**[ANIMATION]** end
+
+Then go back to the contributor's clone, sync `main` with the fast-forward relay, and delete the branch in both places.
 
 ## COMMON MISTAKES
 
@@ -482,7 +536,13 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
-Now, out of the lab. A model-evaluation team uses an open-source tokenizer library and finds that it miscounts a class of inputs. The engineer reads the project's contribution guide first. It asks for an issue before a pull request, for a rebase onto `main` before review and added commits after, and for a sign-off. She opens an issue with a ten-line reproduction. A maintainer answers the next day and names the function to change.
+Now, out of the lab. A model-evaluation team uses an open-source tokenizer library and finds that it miscounts a class of inputs. The engineer reads the project's contribution guide first.
+
+**[ANIMATION]** cards: question=The_project's_contribution_guide_asks_for cards=an_issue_before_a_pull_request|a_rebase_onto_main_before_review:and_added_commits_after|a_sign-off numbered=on
+
+It asks for an issue before a pull request, for a rebase onto `main` before review and added commits after, and for a sign-off. She opens an issue with a ten-line reproduction. A maintainer answers the next day and names the function to change.
+
+**[ANIMATION]** end
 
 Her pull request is one commit and one test, and its description says which evaluation set, which metric and which commit she tested against. The check that publishes benchmark results is red, because it needs a secret that fork runs don't get. She says so in the description. When upstream moves, she rebases, pushes with the lease, and writes one line saying that nothing but the base changed. The pull request is merged in four days. The team's earlier attempt, a single large pull request with a refactoring nobody had asked for, is still open.
 

@@ -78,19 +78,37 @@ jobs:
         run: bash scripts/deploy.sh staging
 ```
 
+**[ANIMATION]** walk: columns=who_has_DEPLOY__TOKEN,workflow-level_env,one_step's_env rows=the_lint_job:has_it:does_not|the_test_job:has_it,_and_so_does_every_package_whose_install_script_or_test_runs_there:does_not|the_deploy_job:every_step_has_it:one_step,_Deploy,_behind_the_environment_staging marks=1.2:bad,2.2:bad,3.2:bad,1.3:ok,2.3:ok,3.3:ok mono=off title=Where_you_include_a_secret_sets_the_exposure id=scope
+
 In the first form the secret is in workflow-level `env`, the environment variables that every step receives. The lint job has it. The test job has it, and so does every package whose install script or test runs there. In the second form, one step of one job has it, and that job is behind an environment, a named gate the job must pass first. You saw the first form in the inventory of video 156: a secret named on line 19 of a file, before any job.
+
+**[ANIMATION]** end
 
 Two facts are routinely misunderstood.
 
 **Write access is secret access.** The documentation: "Any user with write access to your repository has read access to all secrets configured in your repository." The reason: they can push a branch with a workflow that uses them. The textbook says two of the case studies are this sentence at scale. And it names the exception: environment secrets behind required reviewers make the sentence false for your most valuable credentials.
 
+**[ANIMATION]** stores: boxes=a_job:env:_TOKEN_=_****|the_log|anywhere_on_the_network rows=1:A:step_1,_your_script:_TOKEN|1:A:step_2,_a_third-party_action:_TOKEN|1:A:step_3,_a_dependency's_install_script:_TOKEN|2:B:****@ok|3:C:the_value@bad arrows=3:A3>C1 title=A_job_that_holds_a_secret say_2=The_log_shows_**** say_3=Masking_edits_log_lines;_it_is_not_a_boundary id=mask
+
+**[ANIMATION]** step: mask.2
+
 **Masking is a courtesy for logs.** Registered secrets are redacted from logs. But the documentation says: "because there are multiple ways a secret value can be transformed, this redaction is not guaranteed". It adds: "never use structured data as a secret". And: "if an unredacted secret is sent to a workflow run log, you should delete the log and rotate the secret".
+
+**[ANIMATION]** step: mask.3
 
 Redaction matches known strings in log output. It does nothing about a process that sends the value elsewhere, and nothing about code that reads the runner's memory, which the Phase 0 report finds recurring across the incidents. The textbook's conclusion is the sentence to remember: the boundary is which code runs in the job and which secrets the job holds.
 
+**[ANIMATION]** flow: actors=the_job,GitHub's_OIDC_provider,*the_cloud_provider subs=id-token:_write,-,- msgs=1>2:1._asks_for_a_token|2>1:signed_token_with_claims|1>3:2._presents_it_to_the_cloud_provider|3>3:trust_policy,_conditions_on_aud_and_sub|3>1:3._short-lived_credential,_this_job_only:ok title=The_OIDC_exchange say_2=sub_=_repo:ORG/REPO:environment:NAME say_4=THE_ACCESS_DECISION_IS_MADE_HERE id=oidc
+
+**[ANIMATION]** step: oidc.1
+
 **OIDC federation. In one sentence:** instead of storing a cloud key as a secret, the job asks GitHub for a signed statement of what it is, and the cloud exchanges that statement for a credential valid for that job only.
 
+**[ANIMATION]** step: oidc.2
+
 **Precisely.** The job or workflow must grant the `id-token: write` permission to allow GitHub's OIDC provider to create a JSON Web Token, a small signed document. And the documentation is exact about what the permission is: it "only enables fetching and setting the OIDC token; it does not grant write access to other resources". The cloud returns a short-lived access token that is only valid for a single job.
+
+**[ANIMATION]** say: The_claims_describe_the_run;_the_trust_policy_matches_on_them,_above_all_the_subject
 
 The token's claims describe the run. A claim is one stated fact inside the token. Besides the standard ones there are the repository and its ID, the owner and its ID, the visibility, the ref and its type, the environment, the event name, the workflow reference, the runner environment, the actor, and others. The cloud's trust policy matches on them, above all on the subject, the claim that says which repository, and which branch or environment, is asking.
 
@@ -102,7 +120,11 @@ Quick quiz. Where is the access decision made? A, at GitHub, when it signs the t
 
 **[PAUSE]**
 
+**[ANIMATION]** step: oidc.5
+
 B. Not at GitHub. GitHub states facts. The cloud provider decides, by comparing those facts with its trust policy, its own list of conditions. The OIDC reference: "You must define at least one condition, so that untrusted repositories can't request access tokens for your cloud resources." The textbook: the trust policy is where the security lives.
+
+**[ANIMATION]** say: A_wildcard_subject:_every_branch,_every_tag,_every_pull_request_workflow
 
 GitHub's guide for one cloud gives a condition that requires the audience and the exact subject of one environment in one repository. The same guide also shows a wildcard form: the repository followed by a star. The textbook tells you how to read that one: every branch, every tag and every pull request workflow of the repository may assume the role. Prefer the exact form.
 
@@ -114,11 +136,21 @@ Subject customization lets an organization or repository change which claims for
 
 **What OIDC does not do.** It removes the long-lived key. It doesn't make the job trustworthy. The textbook quotes a post-mortem, a team's published account of its incident: "OIDC trusted-publisher binding has no per-publish review. Once configured, any code path in the workflow can mint a publish-capable token." So the rule has three parts. Grant `id-token: write` to one job. Bind the subject to an environment with protection rules. And let no untrusted code or cache into that job.
 
+**[ANIMATION]** stores: boxes=a_less_trusted_run:in_the_default_branch's_context|*a_cache:shared,_unsigned,_keyed_by_a_string|the_release_job:permissions:_contents:_read rows=1:A:writes_an_entry@bad|1:B:an_entry_under_a_key@hl|2:C:computes_the_same_key|2:C:restores_that_entry@bad arrows=1:A1>B1:a_runner-internal_token|2:B1>C2:not_signed_or_verified title=Who_controls_what_the_release_job_restores? id=cache at_1=45 at_2=75
+
+**[ANIMATION]** step: cache.2
+
 **Caches and artifacts. In one sentence:** a cache is a shared, unsigned directory keyed by a string. Whoever can write an entry under the key your release job computes controls what that job restores.
+
+**[ANIMATION]** say: Cache_writes_use_a_runner-internal_token,_not_the_workflow_GITHUB__TOKEN
 
 **Precisely.** The documentation: "Anyone with read access can create a pull request on a repository and access the contents of a cache", and "cache contents are not signed or verified". A run can restore caches from its own branch and from the default branch. A `pull_request` run saves to its own merge ref, which other branches can't restore. A privileged trigger runs in the default branch's context, and that was the opening. The post-mortem records: "cache writes use a runner-internal token, not the workflow `GITHUB_TOKEN`… Setting `permissions: contents: read` does not block cache mutation."
 
+**[ANIMATION]** say: The_read-only_job_token_was_never_the_token_that_writes_the_cache
+
 That's the third sentence of the hook, answered. The read-only job token was never the token that writes the cache. Two platform changes followed.
+
+**[ANIMATION]** end
 
 The twenty-sixth of June 2026: only `push`, `workflow_dispatch`, `repository_dispatch`, `delete`, `registry_package`, `page_build` and `schedule` can create or overwrite caches in the default branch's scope. Other triggers that resolve to it get read-only access.
 
@@ -132,29 +164,55 @@ jobs:
 
 Setup actions cache implicitly, so check them too. And artifacts, the files one job uploads for another to download, follow the same rule. The documentation: "A `workflow_run` workflow should treat artifacts uploaded by other workflows as untrusted data, since their contents can come from a fork."
 
+**[ANIMATION]** stores: boxes=GitHub-hosted:virtual_machines|self-hosted:your_machine,_on_your_network rows=1:A:"ephemeral_and_clean_isolated_virtual_machines"@ok|1:B:keeps_its_state_between_jobs@hl|2:B:"can_be_persistently_compromised_by_untrusted_code_in_a_workflow"@bad|3:B:control:_ephemeral_runners,_one_job,_then_removed@ok|3:B:control:_runner_groups@ok|3:B:control:_restrict_or_disable_repository-level_runners@ok|3:B:control:_approval_for_all_external_contributors@ok title=A_self-hosted_runner_keeps_what_a_job_left id=runners
+
+**[ANIMATION]** step: runners.1
+
 **Self-hosted runners. In one sentence:** a self-hosted runner is your machine, on your network, executing whatever the workflow says, and it keeps its state between jobs unless you make it ephemeral.
+
+**[ANIMATION]** step: runners.2
 
 The documentation: "Self-hosted runners should almost never be used for public repositories on GitHub, because any user can open pull requests against the repository and compromise the environment." Private repositories aren't exempt: anyone who can fork the repository and open a pull request, generally those with read access, can do the same. GitHub-hosted runners are "ephemeral and clean isolated virtual machines". Self-hosted ones "can be persistently compromised by untrusted code in a workflow".
 
+**[ANIMATION]** say: On_self-hosted_runners,_environments_do_not_isolate_secrets
+
 The fork approval gate doesn't help once a contributor is past it. And on self-hosted runners, environments don't isolate secrets.
+
+**[ANIMATION]** step: runners.3
 
 The documented controls. Ephemeral runners that take one job and are removed. Runner groups that restrict which repositories may use a runner. The organization setting that restricts or disables repository-level runners. And approval for all external contributors.
 
 **Environment protection. In one sentence:** an environment puts a human decision, a branch condition, or both between a job and the secrets and cloud identity that belong to a deployment target.
 
+**[ANIMATION]** cards: cards=A_name_that_does_not_exist:creates_an_environment_with_no_rules|Deployment_branch_rules:evaluated_against_the_ref_the_run_executes_on|Required_reviewers_and_wait_timers:plan-gated title=Three_details_for_security_review numbered=on id=envs
+
+**[ANIMATION]** step: envs.3
+
 You know the mechanics from video 149. For security review three details matter. Referencing a name that doesn't exist creates an environment with no rules: a typing error in the name silently removes the gate. Deployment branch rules are evaluated against the ref the run executes on: since the eighth of December 2025 that is the merge ref for `pull_request` events and the default branch for `pull_request_target`. And required reviewers and wait timers are plan-gated, meaning they depend on your GitHub plan: on Free, Pro and Team they exist only for public repositories.
+
+**[ANIMATION]** say: With_OIDC:_the_environment's_name_in_the_subject
 
 And the combination that makes the whole design hold: with OIDC, an environment name in the subject means the cloud role can be assumed only by a job that passed that environment's rules.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** replay: oidc
+
 **Analogy for OIDC,** from the textbook. A notarized letter of introduction in place of a copied house key. The cloud reads the letter, which names the repository, the branch and the environment, and decides whether to open.
+
+**[ANIMATION]** say: Any_code_running_in_the_job_can_ask_for_the_token
 
 The analogy breaks at one point: any code running in the job can ask the notary for the letter.
 
+**[ANIMATION]** end
+
 Take that sentence seriously and the three topics of this video become one. A secret in the environment, an OIDC token on request, the job token: all of them are available to every piece of code that runs in the job. Masking doesn't change that. Short lifetimes don't change that. A read-only job token doesn't change that for the other two.
 
+**[ANIMATION]** cards: cards=What_the_job_holds:as_little_as_possible,_in_as_few_jobs_as_possible,_behind_a_gate|What_code_and_input_reach_the_job:no_outsider's_code,_no_cache_it_did_not_build,_no_artifact_as_anything_but_data title=Only_two_real_levers numbered=on id=levers
+
 So there are only two real levers. What the job holds: as little as possible, in as few jobs as possible, behind a gate. And what code and input reach the job: no outsider's code, no cache it didn't build, no artifact it treats as anything but data.
+
+**[ANIMATION]** end
 
 That's the question from video 156 again, now with a full answer to its third part: "what can the job reach" includes what the job can ask for.
 
@@ -163,6 +221,10 @@ That's the question from video 156 again, now with a full answer to its third pa
 Try it now, thirty seconds, on paper. Draw a job as a box with three steps: your script, a third-party action, and a dependency's install script. The job holds one secret in `env`. Mark every step that can read it, and say the number out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** stores: boxes=a_job:env:_TOKEN_=_****|the_log|anywhere_on_the_network rows=1:A:step_1,_your_script:_TOKEN|1:A:step_2,_a_third-party_action:_TOKEN|1:A:step_3,_a_dependency's_install_script:_TOKEN|2:B:****@ok|3:C:the_value@bad arrows=3:A3>C1 title=A_job_that_holds_a_secret say_2=The_log_shows_**** say_3=Masking_edits_log_lines;_it_is_not_a_boundary id=mask2
+
+**[ANIMATION]** step: mask2.1
 
 **[DIAGRAM]** Two pictures side by side. On the left, a job with a secret and three steps. Draw the three steps, then the secret available to all three, then the arrow from the third step outward. On the right, the OIDC exchange, one arrow at a time.
 
@@ -186,9 +248,15 @@ Try it now, thirty seconds, on paper. Draw a job as a box with three steps: your
    it is not a boundary                             short-lived credential, valid for this job only
 ```
 
-All three. On the left, the mask and the leak are unrelated: the log shows stars, and the value left through step three. On the right, the only place where "no" can be said is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.
+**[ANIMATION]** step: mask2.3
 
-**[DIAGRAM]** On the left, the mask and the leak are unrelated. On the right, the only place where "no" can be said is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.
+All three. In the first picture, the mask and the leak are unrelated: the log shows stars, and the value left through step three.
+
+**[ANIMATION]** replay: oidc
+
+In the second picture, the OIDC exchange, the only place where "no" can be said is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.
+
+**[DIAGRAM]** On the left, the mask and the leak are unrelated. On the right, the only place where the answer can be no is the trust policy. If its condition is a wildcard, it says yes to every branch and every pull request workflow of the repository.
 
 ## LIVE TERMINAL DEMO
 
@@ -283,7 +351,7 @@ $ grep -c 'persist-credentials: false' .github/workflows/12-secure.yml
 
 Clean status, the scan is empty again, and the count is back to four.
 
-**[ANIMATION]** trees: file=.github/workflows/12-secure.yml versions=the_committed_file,the_cleanup steps=setup,edit,restore title=What_the_restore_did
+**[ANIMATION]** trees: file=.github/workflows/12-secure.yml versions=intact_workflow_12,the_cleanup steps=setup,edit,restore history=off title=What_the_restore_did
 
 One picture of what happened. The cleanup edited the file in the working tree only. Nothing was staged, and nothing was committed. So restore had one job: copy the version in the index back over the edit.
 

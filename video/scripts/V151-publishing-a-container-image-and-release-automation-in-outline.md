@@ -13,6 +13,8 @@
 
 The on-call engineer looks at the deployment and reads the image reference. It ends in `:latest`. A container image is an application packaged with what it needs to run, and a registry is the server that stores images.
 
+**[ANIMATION]** stores: id=latest boxes=the_registry:four_pushes_this_week|production:the_image_reference rows=1:A:the_first_push|1:A:the_second_push|1:A:the_third_push|1:A:the_fourth_push:_latest_names_this_one@ref|2:B:it_ends_in_:latest@hl|2:B:which_push_is_running?@bad title=A_tag_names_whatever_was_pushed_last at_1=5 at_2=35
+
 That tag was pushed four times this week. It names whatever was pushed last, not what is running. To answer the question, someone now has to correlate timestamps from a registry, a deployment log and a workflow history, and hope they line up.
 
 The team could have answered in one command if the image had been identified by something that can't move, and if that identifier had been recorded together with the commit, the saved snapshot of the source. This video is about making an artifact carry its own answer. Keep that question. By the end it has a one-line answer.
@@ -56,11 +58,19 @@ Third, and this is the sentence of the video: an image is identified by its dige
 
 And the connection to video 145: a job that derives the version from a tag needs the tags and enough history for `git describe` to walk. The default checkout has neither.
 
+**[ANIMATION]** cards: id=facts question=Releases,_in_outline cards=A_release_is_a_GitHub_object_on_a_Git_tag:gh_release_create_with_--verify-tag|With_immutable_releases:a_draft,_every_asset,_then_publish|release-please:named_as_a_concept,_not_run_for_the_book|and_one_trap ask=4 numbered=on
+
+**[ANIMATION]** step: 1
+
 **Releases, in outline.** Three facts and one trap.
 
 Fact one. A release is a GitHub object on a Git tag. In a job, `gh release create` with the tag, the files, `--verify-tag` and `--generate-notes` creates it, with the token in the environment and `contents: write` permission. `--verify-tag` refuses to invent a tag that doesn't exist. You saw why that matters in video 140: without it the command may create a tag on the default branch, and section 15.22 labels that form 🔴 DANGEROUS. With `--verify-tag` and `--draft` the label is 🟡 CAUTION.
 
+**[ANIMATION]** step: 2
+
 Fact two. With immutable releases, create a draft, attach every asset, then publish.
+
+**[ANIMATION]** step: 4
 
 Fact three. Tools such as release-please derive the release from conventional commit messages. The textbook is explicit: it's named as a concept and wasn't run for the book.
 
@@ -68,7 +78,13 @@ Quick quiz. One workflow creates a release with the job token. A second workflow
 
 **[PAUSE]**
 
+**[ANIMATION]** flow: id=trap actors=workflow_one,*GitHub,workflow_two subs=creates_the_release,-,on_release msgs=1>2:a_release,_with_the_job_token|2>3:no_new_run_starts:fail|1>1:or_jobs_of_one_workflow,_with_needs:ok|1>2:or_the_tag,_with_a_GitHub_App_token:ok title=A_release_that_triggers_nothing at_1=25 at_2=50
+
+**[ANIMATION]** step: 2
+
 **The trap.** B, it doesn't. Events caused by the `GITHUB_TOKEN` don't start new workflow runs, with narrow exceptions. A workflow that creates a tag or a release with the job token won't trigger your separate `on: release` or tag-push workflow.
+
+**[ANIMATION]** step: 4
 
 The textbook gives two ways out. Either chain the work as jobs of one workflow with `needs`. Or create the tag with a GitHub App token.
 
@@ -76,19 +92,33 @@ Why does GitHub do this? You heard the rule in video 143 as a property of the jo
 
 ## MENTAL MODEL
 
+**[ANIMATION]** walk: id=names columns=a_name_on_an_image,behaves_like,because rows=a_tag_like_main_or_latest:a_branch:it_moves_when_someone_pushes|a_tag_like_0.2.0:a_release_tag:meant_to_stay,_and_only_discipline_keeps_it|the_digest:a_commit_ID:computed_from_the_content marks=1.3:bad,2.3:wait,3.3:ok mono=off title=Three_kinds_of_names,_each_with_a_twin_in_Git
+
+**[ANIMATION]** step: header
+
 There are three kinds of names on an image, and each has a twin in Git.
+
+**[ANIMATION]** step: 1
 
 A tag like `main` or `latest` behaves like a branch: it's a name that moves when someone pushes.
 
+**[ANIMATION]** step: 2
+
 A tag like `0.2.0` behaves like a release tag: it's meant to stay, and nothing but discipline makes it stay.
+
+**[ANIMATION]** step: 3
 
 The digest behaves like a commit ID: it's computed from the content, so it can't name anything else.
 
 The model you built in Part 1, that a branch is a ref and a commit ID is the identity, carries over directly. Deploying `:latest` is like deploying "whatever `main` is at the moment the machine pulls".
 
+**[ANIMATION]** say: A_commit_ID_covers_the_source,_a_digest_the_built_image:_record_both,_together
+
 Where the comparison breaks: a commit ID covers the source. A digest covers the built image. The same commit built twice doesn't necessarily give the same digest, because a build tool isn't always reproducible. You heard that in video 149. So neither identifier replaces the other. You record both, together, and that pair is what answers the on-call engineer's question.
 
 ## DIAGRAM
+
+**[ANIMATION]** stores: id=chain boxes=commit:on_main|build:a_clean_runner_checkout|image:digest_sha256,_tags_are_names|deployment:by_digest rows=1:B:commit_ID_in_the_checkout|2:C:commit_ID_in_tag_sha-<short_ID>_and_label|3:D:digest_+_commit_ID_recorded|3:D:environment_production|4:A:git_describe,_with_--dirty@hl arrows=1:A>B:ID|2:B>C:ID|3:C>D:ID title=The_commit_ID_travels_along_the_chain
 
 **[DIAGRAM]** A chain from left to right. Draw the commit first. Then each box and arrow in turn, and write the commit ID on every arrow, so that at no point in the chain the question "from which commit?" needs a lookup.
 
@@ -104,6 +134,12 @@ Where the comparison breaks: a commit ID covers the source. A digest covers the 
    git describe --tags --match 'v*' --dirty
    says what the commit is called, and whether the tree IS the commit
 ```
+
+**[ANIMATION]** step: 3
+
+Start at the commit. The build gets its ID in the checkout. The image carries it in a tag and a label. The deployment record holds the digest and the commit ID together.
+
+**[ANIMATION]** step: 4
 
 Follow the commit ID along the chain: it's written on every arrow.
 
@@ -139,7 +175,15 @@ v1.1.0-2-g57c8425
 ```
 <!-- /snippet -->
 
-The full ID of HEAD. Then nothing from `git status --porcelain`: the tree is clean, it's exactly that commit. Nothing from `git tag --points-at`: this commit isn't a release. And the description: `v1.1.0-2-g57c8425`. The last release, two commits since, and the abbreviated ID. That string is a usable build identifier: it names one commit and tells a human where it sits.
+The full ID of HEAD. Then nothing from `git status --porcelain`: the tree is clean, it's exactly that commit. Nothing from `git tag --points-at`: this commit isn't a release.
+
+**[ANIMATION]** graph: id=desc ...older-c4b5de2-197d992-57c8425 main; c4b5de2 atag:v1.1.0; HEAD=main; range:197d992,57c8425:2_commits_since_v1.1.0; cmd:git_describe_--tags_--match_'v*'; say:v1.1.0-2-g57c8425:_the_last_release,_two_commits_since,_the_abbreviated_ID => + 57c8425 atag:v1.2.0; range:; name:tagged; cmd:git_tag_-a_v1.2.0_-m_"Release_1.2.0"; say:The_tag_points_at_HEAD:_the_description_is_v1.2.0 dx=260 at_state_1=8
+
+**[ANIMATION]** step: state-1
+
+And the description: `v1.1.0-2-g57c8425`. The last release, two commits since, and the abbreviated ID. That string is a usable build identifier: it names one commit and tells a human where it sits.
+
+**[ANIMATION]** end
 
 Try it now. Thirty seconds, in any repository of your own. Run `git status --porcelain`, which only reads. Does it print anything?
 
@@ -209,7 +253,13 @@ v1.2.0
 ```
 <!-- /snippet -->
 
-After the restore the description is clean again. After the annotated tag, the tag points at HEAD and the description is the tag name itself: `v1.2.0`. That's the moment a release build wants: the commit's name is the version, with nothing after it.
+After the restore the description is clean again.
+
+**[ANIMATION]** step: desc.tagged
+
+After the annotated tag, the tag points at HEAD and the description is the tag name itself: `v1.2.0`. That's the moment a release build wants: the commit's name is the version, with nothing after it.
+
+**[ANIMATION]** end
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
@@ -240,7 +290,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A team that serves a ranking model has two workflows. The first runs on pushes to `main`: it tests, computes the next version, and creates a release with the job token. The second has the trigger `on: release` and builds and publishes the image. The first workflow goes green. A release appears. The second workflow never starts, and for a day people look for a typing error in its trigger.
 
+**[ANIMATION]** step: trap.4
+
 There is none. The release was created by the `GITHUB_TOKEN`, and events caused by that token don't start new workflow runs.
+
+**[ANIMATION]** step: chain.4
+
+**[ANIMATION]** say: One_workflow:_the_digest_and_the_commit_ID,_recorded_together
 
 The team chooses the first of the textbook's two repairs: one workflow, with the image job chained after the release job by `needs`. In the same change, the image job stops deploying `latest`. It writes the digest and the commit ID into its job summary, and the deploy job refers to the image by digest. The on-call engineer's question now has a one-line answer.
 

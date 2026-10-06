@@ -13,6 +13,8 @@
 
 The repository is repaired. The check script would pass. You're tired, and the CTO, the chief technology officer, stops you in the corridor with those two questions. You begin to explain the interactive rebase, the todo list, the lease: the Git details of the repair. After thirty seconds the CTO interrupts: "I did not ask what you typed."
 
+**[ANIMATION]** cards: id=reader question=A_CTO_reads_an_incident_summary_to_decide cards=whether_customers_or_outsiders_are_affected|whether_anything_is_still_at_risk|whether_to_spend_money_or_attention_on_prevention numbered=on
+
 A CTO reads an incident summary to decide three things: whether customers or outsiders are affected, whether anything is still at risk, and whether to spend money or attention on prevention. Commands don't help with any of them. Hold on to those two questions. Each has its own part of the summary.
 
 ## INTRODUCTION
@@ -50,21 +52,37 @@ After this video you can:
 
 The third part carries the rule of this video: never write that something was verified unless you ran the check. And state what is not yet verified. A summary that claims more than was checked fails at the first follow-up question, and after that nothing else in it is believed.
 
+**[ANIMATION]** cards: id=parts numbered=on cards=What_happened|Root_cause|What_was_done,_and_how_it_was_verified:"Is_it_over?"|Prevention:"And_will_it_happen_again?" marks=3:ring,4:ring at_1=0 at_2=6 at_3=12 at_4=18 at_marks=45
+
 And there are the CTO's two questions from the corridor. Part three answers "is it over". Part four answers "will it happen again".
+
+**[ANIMATION]** cards: id=habits numbered=on cards=Separate_what_you_observed_from_what_you_infer|Give_every_time_and_every_ID_a_source:the_reflog_entry,_the_tag,_the_log_line|Say_"I_do_not_know_yet"_early:with_the_time_of_the_next_update|Never_"verified"_unless_you_ran_the_check|Send_a_first,_short_version_before_the_recovery
 
 **Five habits make a summary trustworthy.** Separate what you observed from what you infer, and say which is which. Give every time and every ID a source: the reflog entry, the tag, the log line. Say "I do not know yet" early, with the time of the next update. Never write that something was verified unless you ran the check. And send a first, short version before the recovery, as soon as the team knows what to leave alone: silence during an incident is read as "it is worse than they say".
 
+**[ANIMATION]** replay: parts
+
 A status without a root cause is still a status. The same four parts, one sentence each, are the spoken answer when the CTO asks in a corridor.
+
+**[ANIMATION]** end
 
 **The postmortem, in one sentence.** A postmortem is a written record of an incident that explains how the system allowed it, so that the system can be changed. "Blameless" means it treats every person's action as reasonable given what they knew.
 
+**[ANIMATION]** stores: id=blame boxes=the_evidence_came_from_people|people_who_expect_blame rows=1:A:Ravi's_reflog|1:A:Asha's_account_of_the_reset|1:A:"I_committed_a_password"|2:B:run_git_gc|2:B:or_re-clone|2:B:or_stay_silent|3:B:the_evidence_is_gone@bad title=Why_blameless_is_a_technical_requirement
+
 **Why blameless is a technical requirement.** The evidence in the last nine videos came from people: Ravi's reflog, his clone's local record of where each branch has been, Asha's account of the reset, a developer saying "I committed a password". People who expect blame run `git gc`, Git's clean-up, or re-clone, or stay silent, and the evidence is gone. The textbook cites Google's SRE book, as a secondary source, for the principle of assuming that everyone involved "had good intentions and did the right thing with the information they had". The useful question is never "who ran the command" but "why did running it look right, and why did nothing stop it".
+
+**[ANIMATION]** walk: id=test columns=the_sentence,what_it_explains rows="Ravi_force-pushed_production":nothing|"The_production_branch_accepted_a_forced_update_from_any_member_with_write_access":names_something_that_can_be_changed marks=1.2:bad,2.2:ok mono=off title=Replace_every_name_by_a_role at_1=45 at_2=65
+
+**[ANIMATION]** step: 2
 
 **The test.** Replace every name by a role. If the document still explains the incident, it's about the system. "Ravi force-pushed production" explains nothing. "The production branch accepted a forced update from any member with write access" names something that can be changed.
 
 Try it now, on paper. Thirty seconds. Write one sentence about a mistake you remember at work, with a name in it. Then replace the name by a role, and say out loud what the sentence still explains.
 
 **[PAUSE]**
+
+**[ANIMATION]** end
 
 If it explains nothing now, that's normal: the sentence was about a person. The next draft asks why the action looked right, and why nothing stopped it.
 
@@ -84,11 +102,23 @@ Write the postmortem within days, while reflogs and memories exist. Have the peo
 
 **Four questions take you from root cause to control.** Which layer could have refused the action: the platform, the pipeline, the client, a reviewer? What is the strongest control available on that layer and on your plan, since some ruleset features are plan-gated? What will the control block that is legitimate, and what is the path for that case? And how will you know it works: a ruleset's insights, a test that fails when the fix is removed, an attempt in a sandbox.
 
+**[ANIMATION]** cards: id=quiz question=A_release_job_tests_the_ancestry_of_a_branch_and_refuses_to_deploy_a_rewritten_one cards=A,_prevent|B,_detect|C,_recover marks=2:ok at_1=55 at_2=65 at_3=75
+
+**[ANIMATION]** step: 3
+
 Quick quiz. A release job tests the ancestry of a branch and refuses to deploy a rewritten one. Is that control A, prevent, B, detect, or C, recover? Your answer?
 
 **[PAUSE]**
 
-**Prevent, detect, recover.** The answer is B. The template's action table asks for the type of each control. A ruleset, GitHub's named list of rules for chosen branches, that refuses a forced push prevents. The release job's ancestry test detects: the rewrite had already happened, and the job noticed before deployment. A backup ref, a deployment tag that names the running commit, or a clone that hasn't fetched is what lets you recover. A good set of actions has at least a prevent and a detect, because every prevention has a bypass.
+**[ANIMATION]** step: marks
+
+**Prevent, detect, recover.** The answer is B. The template's action table asks for the type of each control.
+
+**[ANIMATION]** walk: id=types columns=type,control rows=prevent:a_ruleset_that_refuses_a_forced_push|detect:the_release_job's_ancestry_test|recover:a_backup_ref,_a_deployment_tag,_a_clone_that_hasn't_fetched marks=1.1:ok,2.1:hl,3.1:wait mono=off title=Prevent,_detect,_recover
+
+A ruleset, GitHub's named list of rules for chosen branches, that refuses a forced push prevents. The release job's ancestry test detects: the rewrite had already happened, and the job noticed before deployment. A backup ref, a deployment tag that names the running commit, or a clone that hasn't fetched is what lets you recover. A good set of actions has at least a prevent and a detect, because every prevention has a bypass.
+
+**[ANIMATION]** end
 
 Prefer one strong control to five weak ones. For the rewritten production branch the list could have ten items. The one that matters is a checkbox on the server. "Engineers will take more care" is not a control.
 
@@ -96,11 +126,21 @@ Prefer one strong control to five weak ones. For the rewritten production branch
 
 ## MENTAL MODEL
 
+**[ANIMATION]** cards: id=pilot question=A_pilot's_announcement_after_turbulence numbered=on cards=what_happened|why|the_aircraft_is_fine,_and_how_the_crew_knows|what_will_be_done_differently marks=4:ring
+
+**[ANIMATION]** step: 4
+
 Three pictures help. For the summary, think of a pilot's announcement after turbulence. It has four sentences: what happened, why, that the aircraft is fine and how the crew knows, and what will be done differently for the rest of the flight. Nobody in the cabin wants the control inputs. And a pilot who says "everything is checked" before the check is done has spent the passengers' trust for the rest of the flight.
+
+**[ANIMATION]** step: marks
 
 Where the picture breaks: passengers can't act on what they hear. A CTO can and will. The fourth sentence is a request for a decision, with an owner and a date in it.
 
+**[ANIMATION]** end
+
 For blamelessness, think of the next incident. The person who caused this one holds the evidence for it, and will be near the next one too. Whatever happens to them now decides whether the next reflog is pasted into the channel or quietly collected.
+
+**[ANIMATION]** layers: id=ladder layers=The_server_refuses:applies_to_every_client_and_tool|Automation_checks:runs_every_time,_but_only_on_what_it_was_written_to_see|A_safe_default_on_the_client:works_until_someone_has_another_configuration|A_checklist_or_review_step:depends_on_the_reviewer_doing_it|Training_and_habit:decays,_and_does_not_reach_new_people winner=1 result=the_highest_rung_that_prevents rule=take title=The_ladder_of_controls
 
 For controls, the ranking is a ladder again, and this time you climb as high as you can. The ladder of video 184 said: take the lowest rung that repairs. This one says: take the highest rung that prevents.
 
@@ -227,11 +267,17 @@ $ git reflog show --date=iso origin/production
 
 10:33: our own clone first saw the forced update. In real life the detection line is the time of the alert: here, the release job's refusal.
 
+**[ANIMATION]** walk: id=timeline columns=time_(+05∶30),event,source_of_the_fact rows=10∶14:the_release_job_tagged_3277739_as_deployed:the_annotated_tag|10∶25:a_rebase_of_production_finished_in_one_clone:that_clone's_branch_reflog|10∶26:the_result_was_amended:that_clone's_branch_reflog|10∶27:the_rewritten_branch_was_pushed:its_reflog_of_origin/production|10∶28:a_second_clone_fetched_and_saw_a_forced_update:the_second_clone's_reflogs|10∶29:its_branch_was_reset_to_the_server's:the_second_clone's_reflogs|10∶30:a_new_commit_was_made_on_top:the_second_clone's_reflogs|10∶31:that_commit_was_pushed:the_second_clone's_reflogs|10∶33:our_own_clone_first_saw_the_forced_update:this_clone's_reflog_of_origin/production mono=off title=The_timeline,_every_line_with_its_source
+
+**[ANIMATION]** step: 9
+
 Now read the timeline as the postmortem would. How long was it from the publication of the rewrite to our detection? Work it out, and say it out loud.
 
 **[PAUSE]**
 
 Six minutes. From 10:27 to the restore, the server's branch pointed at a rewritten history: that's the window of the summary's first part. Between the publication at 10:27 and the detection, six minutes passed, and in those six minutes a second clone adopted the rewrite and shipped on top of it. That interval is the "Detection" section, and it's the argument for the control: the earlier the server refuses, the shorter this list.
+
+**[ANIMATION]** end
 
 Notice what the sandbox let us do that real life doesn't. We read two colleagues' reflogs directly. In real life you ask a colleague to run `git reflog show --date=iso origin/production` and paste it. Whether they do depends on what happened to the last person who pasted one.
 
@@ -251,9 +297,15 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
+**[ANIMATION]** replay: parts
+
 Now, out of the lab. After the rewritten production branch of a billing service has been restored, the engineer who led the recovery writes the summary before she goes home. It's the slide you saw: four parts, one screen, with one sentence that says what is not yet verified, the CI caches, and when it will be.
 
+**[ANIMATION]** end
+
 The postmortem follows within three days. She builds the timeline from two colleagues' reflogs, which they paste without hesitation, because the first sentence she said to them on the day was "nobody is in trouble; I need your reflogs before you fetch again". Under "Contributing conditions" she writes what made the clean-up look right: the branch had accumulated fixup commits, the developer had been told to keep history tidy, and nothing distinguished `production` from any other branch at the moment of the push. Under "What went well": an ancestry check in the release job that somebody added two years earlier.
+
+**[ANIMATION]** walk: id=actions columns=control,type,and rows=a_ruleset_on_production:prevent:owner,_the_platform_team;_active_the_same_day|an_alert_on_the_release_job's_refusal:detect:the_next_refusal_reaches_a_person_in_minutes marks=1.2:ok,2.2:hl mono=off title=The_action_table_has_two_rows
 
 The action table has two rows. A ruleset on `production`, type prevent, owner the platform team, active the same day, verified by an attempted forced push in a test repository with the same ruleset. And an alert on the release job's refusal, type detect, so that the next refusal reaches a person in minutes. She resists adding eight more rows.
 

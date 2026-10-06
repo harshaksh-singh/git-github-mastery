@@ -11,7 +11,11 @@
 
 **[ON SCREEN]** "Ten minutes into an incident the CTO asks for a status, and you have no root cause yet. What do you say?"
 
-There are two bad answers. One is silence, or "we are looking into it". The other is a guess, delivered as a cause. Gate 9, the last of the course's graded checkpoints, is built to find out whether you have a third answer, and whether your hands do the right thing while you give it: evidence first, a way back before any change, and no command that could destroy work where a safer one exists. Hold on to that third answer. It's coming.
+There are two bad answers. One is silence, or "we are looking into it". The other is a guess, delivered as a cause.
+
+**[ANIMATION]** cards: id=answers question=Ten_minutes_in,_and_no_root_cause_yet cards=silence,_or_"we_are_looking_into_it"|a_guess,_delivered_as_a_cause|a_third_answer ask=3 marks=1:bad,2:bad at_1=0 at_2=5 at_3=10 at_marks=22
+
+Gate 9, the last of the course's graded checkpoints, is built to find out whether you have a third answer, and whether your hands do the right thing while you give it: evidence first, a way back before any change, and no command that could destroy work where a safer one exists. Hold on to that third answer. It's coming.
 
 ## INTRODUCTION
 
@@ -34,9 +38,17 @@ After this video you can:
 
 **What the gate covers.** Gate 9 is taken after Module 38. It covers the diagnosis method, the ten incidents, and communication and postmortems: Chapters 29 and 30. You pass at 90 points of 100, with at least 70 percent in every part.
 
+**[ANIMATION]** bars: id=points bars=Concepts:30|Prediction:20|Hands-on_diagnosis:30|Oral_interview:20 unit=points max=30 title=100_points,_four_parts
+
 **The four parts.** As in every gate: Concepts, 30 points, six written questions that each require a mechanism, closed book and without a terminal. Prediction, 20 points, four items, without a terminal. Hands-on diagnosis, 30 points. Oral interview, 20 points, six questions asked one at a time, each with a follow-up, without notes.
 
+**[ANIMATION]** stores: id=hands boxes=the_sandbox:built_in_a_broken_state|you_read|you_do_not_read rows=1:B:the_symptoms|1:B:a_report,_incomplete_and_partly_wrong|2:C:the_generator,_the_answer_to_"what_happened"@bad|2:C:the_check_script,_the_end_state_line_by_line@bad|3:A:a_log_of_every_command@hl|3:A:when_you_think_you_are_done,_run_the_check title=The_hands-on_part
+
 **The hands-on part.** For Gate 9 it's a repository that a script builds in a broken state, with a report that is incomplete and partly wrong. You know this form from the ten incidents. From the course root you run the generator of variant A, which prints the path of the sandbox. You open the lab shell there and read the symptoms. You don't read the generator, which is the answer to "what happened", or the check script, which lists the end state line by line. You keep a log of every command. When you think you're done, you run the check.
+
+**[ANIMATION]** cards: id=quiz question=The_right_end_state,_reached_with_a_hard_reset_and_a_forced_push cards=A,_full_marks|B,_points_at_risk marks=2:ok at_1=60 at_2=72
+
+**[ANIMATION]** step: 2
 
 Quick quiz. Your sandbox ends in exactly the right state, reached with a hard reset and a forced push. A, full marks, or B, points at risk? Your answer?
 
@@ -50,9 +62,15 @@ Quick quiz. Your sandbox ends in exactly the right state, reached with a hard re
 - **Safety of the path.** Your command log is read: evidence before change, a way back before each rewrite, no command that could destroy uncommitted or shared work where a safer one exists. A correct end state reached through `git reset --hard`, a forced push or a re-clone can still fail this row.
 - **Explanation.** What the symptoms file asks you to write: root causes in the form of the seven-line root-cause box, and, in Gate 9, the summary for the CTO and the control.
 
+**[ANIMATION]** walk: id=scored columns=row,what_is_read rows=End_state:the_sandbox,_by_the_check_script|Safety_of_the_path:your_command_log|Explanation:the_root-cause_box,_the_summary_for_the_CTO,_the_control pick=2 mono=off title=The_points_are_split_three_ways at_1=3 at_2=6 at_3=9 at_pick=14
+
 The answer was B, so read the second item twice. A state-changing command before the root cause is established costs more here than anywhere else in the course. The gate doesn't only ask whether you can repair the repository. It asks whether a colleague could trust you with theirs.
 
+**[ANIMATION]** cards: id=status question=A_status_without_a_root_cause_is_still_a_status cards=Say_"I_do_not_know_yet"_early:with_the_time_of_the_next_update|Separate_what_you_observed_from_what_you_infer|The_first_message_goes_out:as_soon_as_you_know_which_branch_people_must_leave_alone numbered=on
+
 **A status without a root cause.** Here's the third answer from the opening. From video 193: a status without a root cause is still a status. Say "I do not know yet" early, with the time of the next update. Separate what you observed from what you infer. And remember when the first message goes out: as soon as you know which branch people must leave alone, long before you know the cause.
+
+**[ANIMATION]** gates: id=miss gates=your_score_sheet:done|restudy:done:-:with_the_remediation_map|wait:done:-:at_least_two_days|retake_the_whole_gate:done:-:the_hands-on_part_is_variant_B title=After_a_miss
 
 **After a miss.** Remediation and a different variant, not the answers. You receive your score sheet, restudy with the remediation map, wait at least two days, and retake the whole gate. The hands-on part is then variant B, with a different project, a different state and different faults.
 
@@ -60,7 +78,11 @@ The answer was B, so read the second item twice. A state-changing command before
 
 A picture helps. Think of a driving test. The examiner doesn't only check whether you arrive. The examiner watches the mirrors, the signals, the speed at the crossing. A candidate who arrives at the destination after running a red light has failed, and nobody finds that unfair.
 
+**[ANIMATION]** cards: id=log question=The_command_log_shows cards=whether_you_looked_before_you_moved:with_read-only_commands|whether_you_set_an_anchor_before_each_rewrite:a_named_commit_to_return_to|whether_you_chose_the_lower_rung:when_one_was_available
+
 The command log is the examiner's view of your mirrors. It shows whether you looked, with read-only commands, before you moved. It shows whether you set an anchor, a named commit to return to, before each rewrite. And it shows whether you chose the lower rung of the ladder when one was available.
+
+**[ANIMATION]** end
 
 Where the picture breaks: in a driving test nobody asks you to explain the engine. Here a third of the hands-on points is explanation: the root cause with its layer, the summary, the control.
 
@@ -91,7 +113,7 @@ Preserve and communicate, and each carries points. No stage is unscored.
 
 **[TERMINAL]** A warm-up, not a gate item. Replay `labs/run ch29/preserve-evidence` and show its first two snippets: the two acts that should precede any repair. Both are 🟢 SAFE. Before them, in any unknown repository, come the three read-only looks you know by heart: `git status`, `git reflog`, and `git ls-remote origin` for what the server holds.
 
-Into the lab, for a warm-up, not a gate item. Before any repair come three read-only looks: `git status`, `git reflog`, and `git ls-remote origin` for what the server holds. Try it now, in a repository of your own that has a remote. Thirty seconds. Say out loud what each one told you.
+Into the lab, for a warm-up, not a gate item. Before any repair come three read-only looks: `git status`, `git reflog`, and `git ls-remote origin` for what the server holds. Try it now, in a repository of your own that has a remote. Thirty seconds. All three only read, and the third one contacts your remote to do it. Say out loud what each one told you.
 
 **[PAUSE]**
 
@@ -145,7 +167,11 @@ $ git for-each-ref refs/heads/rescue refs/backup
 ```
 <!-- /snippet -->
 
-Two refs, one second each. A ref is a name that points at a commit. In a command log these two snippets are what "a way back before each rewrite" looks like. If your log for a drill doesn't contain their equivalent before the first state-changing command, repeat the drill.
+Two refs, one second each. A ref is a name that points at a commit.
+
+**[ANIMATION]** graph: id=anchor *-...2-4a03014 feature/latency-budget; *-...3-075407e; HEAD=075407e => + 075407e rescue/latency-wip; cmd:git_branch_rescue/latency-wip_HEAD => + 4a03014 special:refs/backup/latency-budget; cmd:git_update-ref_refs/backup/latency-budget_feature/latency-budget title=A_way_back_before_each_rewrite dx=260
+
+In a command log these two snippets are what "a way back before each rewrite" looks like. If your log for a drill doesn't contain their equivalent before the first state-changing command, repeat the drill.
 
 **[ON SCREEN]** The gate rules from the assessments README: finish the modules first; one sitting, parts in order; do not read `generate.sh` or `check.sh`; keep a log of every command; the examiner scores with the answer key, which you do not open. Part 4 needs a second person or the tutor; if you rehearse alone, record yourself and score the recording the next day.
 
@@ -161,7 +187,13 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
+**[ANIMATION]** walk: id=two columns=,the_first_engineer,the_second_engineer rows=begins_with:git_reset_--hard_origin/main:git_status,_the_reflog,_git_ls-remote_origin|then:a_cherry-pick_from_memory,_a_forced_push:an_evidence_file,_a_rescue_branch,_three_hypotheses,_one_additive_fix|the_end_state:passing:passing|"Is_the_uncommitted_change_still_there?":cannot_know:answers_from_the_evidence_file marks=3.2:ok,3.3:ok,4.2:bad,4.3:ok mono=off title=Two_logs,_one_end_state
+
+**[ANIMATION]** step: 3
+
 Now, out of the lab. Two engineers are asked to repair the same broken branch in a hiring exercise. Both end with a passing state. The first one's shell history begins with `git reset --hard origin/main`, followed by a cherry-pick from memory and a forced push. The second one's begins with `git status`, the reflog, and `git ls-remote origin`. Then an evidence file and a rescue branch. Then three hypotheses in a comment. Then one additive fix and the same commands again.
+
+**[ANIMATION]** step: 4
 
 The reviewer asks both the same follow-up: "A colleague had an uncommitted change in that clone. Is it still there?" The second engineer answers from the evidence file. The first cannot know. The team hires the second, and the reviewer's note says why in one line: the end states were equal, and only one of the two could be given a production repository.
 

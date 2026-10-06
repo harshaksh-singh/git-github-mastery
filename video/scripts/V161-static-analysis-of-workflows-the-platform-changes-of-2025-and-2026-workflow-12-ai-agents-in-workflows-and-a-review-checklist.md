@@ -45,21 +45,41 @@ After this video you can:
 
 **Static analysis.** Four tools, from the table of section 21A.14.
 
+**[ANIMATION]** walk: columns=tool,what_it_is,it_finds rows=CodeQL_for_workflows:part_of_GitHub_code_scanning:missing_permissions,_dangerous_inputs,_script_injection|zizmor:third-party,_1.30.1:template_injection,_dangerous_triggers,_excessive_permissions,_unpinned_uses,_and_others|actionlint:third-party,_1.7.12:syntax_and_expression_types,_shellcheck,_script_injection,_hard-coded_credentials|OpenSSF_Scorecard:third-party:Dangerous-Workflow,_Token-Permissions,_Pinned-Dependencies mono=off title=Four_tools_that_read_workflow_files id=tools
+
+**[ANIMATION]** step: tools.1
+
 CodeQL for workflows is part of GitHub code scanning, the analysis of code for vulnerabilities and coding errors. It has been generally available since the twenty-second of April 2025, and default setup enables it when workflow files exist on the default branch. It finds, in the changelog's words, "missing required permissions, dangerous inputs without proper validation, and script injection vulnerabilities", and since CodeQL 2.26.4 also mutable references to reusable workflows.
+
+**[ANIMATION]** step: tools.2
 
 zizmor is a third-party tool. Version 1.30.1 was observed on the first of October 2026. Its audits have names you'll recognize from this module: template injection, dangerous triggers, excessive permissions, unpinned uses, cache poisoning, overprovisioned secrets, secrets inherit, self-hosted runner, Dependabot cooldown, and others.
 
+**[ANIMATION]** step: tools.3
+
 actionlint is a third-party tool, at version 1.7.12. Syntax and expression type checks, shellcheck integration, and script injection by untrusted inputs and hard-coded credentials.
+
+**[ANIMATION]** step: tools.4
 
 OpenSSF Scorecard is a third-party tool whose results can surface in code scanning, with the checks Dangerous-Workflow, Token-Permissions and Pinned-Dependencies.
 
+**[ANIMATION]** say: Neither_zizmor_nor_actionlint_is_installed_here:_no_output_is_shown
+
 Neither zizmor nor actionlint is installed in the course's environment, so no output is shown.
+
+**[ANIMATION]** cards: question=A_scanner_runs_on_your_workflow_and_reports_nothing._What_have_you_learned? cards=A:the_workflow_is_secure|B:the_patterns_that_scanner_knows_did_not_match marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
 
 Quick quiz. A scanner runs on your workflow and reports nothing. What have you learned? A, the workflow is secure. B, the patterns that scanner knows didn't match. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: quiz.marks
+
 B. The textbook gives the limit in one sentence: a scanner finds patterns. It doesn't know which of your jobs holds the credential that matters. Its advice: run one in CI, your automated checks, as a required check, and still read the file.
+
+**[ANIMATION]** end
 
 **The platform changes of 2025 and 2026.** One caution first, in the textbook's words. The dates are sourced. Pairing each change with an incident is the researchers' inference, not GitHub's statement. GitHub's changelog posts don't name the incidents.
 
@@ -75,9 +95,15 @@ The twenty-eighth of July 2026: runs "identified as potentially malicious" are h
 
 You've met every row but one in the last five videos. Seen as one list, it says something about direction: the platform is moving defaults toward what this module teaches. And about a limit: each row has a "does not cover", and none of them reads your file for you.
 
+**[ANIMATION]** cards: cards=test|pr-metadata:reads_the_pull_request_title|dependency-review|deploy-staging:a_staging_deployment_through_OIDC marks=4:lock title=Workflow_12:_the_controls_in_one_place id=jobs
+
 **Workflow 12.** The file puts the controls in one place: a test job, a job that reads the pull request title, a dependency review, and a staging deployment through OIDC, the exchange that replaces a stored cloud key. It was assembled from documented syntax and input names and parse-checked. It was not executed on GitHub by the author. Lab 29.2 has you run it.
 
+**[ANIMATION]** cards: cards=Which_events_start_it?|What_may_the_token_do?|Whose_code_runs,_and_is_every_reference_a_full_commit_ID?|Where_does_an_expression_appear,_and_is_any_of_them_inside_a_script?|Which_stored_secrets_does_it_read? numbered=on title=Five_questions_grep_can_answer_for_any_workflow id=five
+
 The textbook reads it with five questions, which `grep` can answer for any workflow. Which events start it? What may the token do? Whose code runs, and is every reference a full commit ID? Where does an expression appear, and is any of them inside a script? Which stored secrets does it read? You'll run all five in a moment.
+
+**[ANIMATION]** end
 
 Then the controls, each with the threat it answers.
 
@@ -105,9 +131,15 @@ The deployment `if` requires a push to `main`: against unreviewed code reaching 
 
 And what the file doesn't do, which the textbook lists as carefully as what it does. It doesn't attest the build. It doesn't scan itself. Add CodeQL default setup for that. And the staging role's trust policy lives in the cloud account, where the workflow can't enforce it.
 
+**[ANIMATION]** stores: boxes=text_the_agent_reads:attacker-controlled|*an_agent_in_a_workflow:for_an_agent,_text_is_instruction|what_the_job_holds rows=1:B:an_LLM_reviewer|1:B:a_triage_bot|1:B:a_coding_agent|2:A:attacker-controlled_text@bad|2:C:credentials@hl arrows=2:A1>B:reads|2:B>C1:holds title=An_agent_combines_two_parts_of_the_model id=agent say_2=No_env_trick_separates_data_from_code_in_a_prompt at_2=55
+
 **AI agents inside workflows.** An agent in a workflow, whether an LLM reviewer, a triage bot or a coding agent, combines parts three and four of the model in a new form. An LLM is a large language model, a program that reads text and writes text. The agent reads attacker-controlled text and holds credentials. And for an agent, text is instruction. The textbook's sentence: no `env` trick separates data from code in a prompt.
 
+**[ANIMATION]** end
+
 Two findings from the report, with their flags. An automated account ran a week-long campaign in February and March 2026 that combined `pull_request_target` abuse, branch-name and filename injection, and prompt injection, instructions hidden in the text an agent reads, against an AI reviewer. And researchers reported in April 2026 that AI coding agents run as GitHub Actions could be steered by text in pull request titles, issue bodies or comments into revealing CI secrets. The textbook marks the second: this is secondary reporting only, and the primary write-up was not fetched.
+
+**[ANIMATION]** cards: cards=A_dedicated_low-privilege,_spend-capped_key|No_write_token_unless_required|It_does_not_run_automatically_on_untrusted_contributions numbered=on title=The_report's_recommendation,_labelled_as_an_inference id=recs at_1=15 at_2=30 at_3=42
 
 The report's recommendation, which it labels as an inference. An agent in a workflow gets a dedicated low-privilege, spend-capped key. No write token unless required. And it doesn't run automatically on untrusted contributions. Then the chapter's own formulation, which is the one to remember: give the agent's job `permissions` as if the pull request author had written the job, because through the prompt they partly did.
 
@@ -141,9 +173,17 @@ Eleven, process. Was the change reviewed by a code owner of the workflows direct
 
 A picture helps. Hold workflow 12 as a reference shape, and review other workflows as differences from it.
 
+**[ANIMATION]** stores: boxes=open_zone:outsiders'_code_and_text_are_allowed_in|*closed_zone:an_identity_lives_here rows=1:A:the_test_job|1:A:the_title_job|1:A:the_dependency_review|1:A:token_read-only_or_absent@ok|1:A:no_secrets@ok|1:A:untrusted_text_is_only_ever_data@ok|2:B:the_deployment_job@hl|2:B:only_a_push_to_main@ok|2:B:behind_an_environment@ok|2:B:with_no_cache@ok title=Workflow_12_as_a_reference_shape id=zones at_1=8 at_2=58
+
+**[ANIMATION]** step: zones.2
+
 The shape has two zones. An open zone, where outsiders' code and text are allowed in: the test job, the title job, the dependency review. In that zone the token is read-only or absent, there are no secrets, and untrusted text is only ever data. And a closed zone, the deployment job, where an identity lives. Nothing from outside gets in: only a push to `main`, behind an environment, with no cache.
 
+**[ANIMATION]** say: From_outside_into_the_closed_zone?_Something_valuable_into_the_open_zone?
+
 Every item of the checklist asks one of two things. Did this change let something from outside into the closed zone? Or did it move something valuable into the open zone?
+
+**[ANIMATION]** stores: boxes=a_low-privilege_workflow:can_write|something_shared|a_high-privilege_workflow:trusts_it rows=1:B:a_cache|1:B:an_artifact|1:B:a_label|1:B:a_branch arrows=1:A>B:writes|2:B>C:trusted title=Two_safe-looking_workflows_that_share_something id=shared say_2=The_zones_are_not_per_file:_review_workflows_as_a_set at_1=40 at_2=62
 
 Where the model needs a warning, and the textbook gives it in section 21A.21: the edge case behind most incidents is two safe-looking workflows that share something. A low-privilege workflow that can write a cache, an artifact, a label or a branch, and a high-privilege workflow that trusts it. So the zones aren't per file. Review workflows as a set.
 
@@ -462,7 +502,13 @@ $ git diff --stat main...feature/coverage-comment
 ```
 <!-- /snippet -->
 
-With two dots, the stat shows a third file, `README.md`, with two deletions the author never made: `main` moved after the branch was created. With three dots you see the branch against its merge base, the most recent commit both histories share, as the pull request page does. Review the three-dot diff, or you'll comment on changes that aren't in the pull request.
+With two dots, the stat shows a third file, `README.md`, with two deletions the author never made: `main` moved after the branch was created.
+
+**[ANIMATION]** graph: ?merge_base-?main_moved main; ?merge_base-4b55a46 feature/coverage-comment; HEAD=none; say:Two_dots_compare_the_tips:_main_moved,_so_README.md_appears => + role:?merge_base:base; range:4b55a46:main...feature/coverage-comment; say:Three_dots:_the_branch_against_its_merge_base dx=300 title=Which_diff_is_the_pull_request? id=base at_state_2=8
+
+**[ANIMATION]** step: base.state-2
+
+With three dots you see the branch against its merge base, the most recent commit both histories share, as the pull request page does. Review the three-dot diff, or you'll comment on changes that aren't in the pull request.
 
 **[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
 
@@ -482,9 +528,15 @@ Five mistakes to watch for.
 
 Now, out of the lab. A team adds an LLM reviewer to its repository of evaluation code. The workflow runs on pull requests, gives the agent the diff and the description, and lets it post a review. To post, it needs a write scope, and to call the model it needs an API key. The first version runs on every pull request, including those from forks, on the privileged trigger so that the key is available.
 
+**[ANIMATION]** replay: agent
+
 Run the checklist. Item one: a privileged trigger, and the outsider-controlled input is the entire content of the pull request, handed to the agent as text. Item seven: a provider key in a job that reads that text. Item three: a write scope in the same job.
 
+**[ANIMATION]** replay: recs
+
 The textbook's recommendation applies point by point. A dedicated low-privilege, spend-capped key, so that a leak is bounded. No write token unless required: for example, the agent writes its review to the job summary, and a separate job without the model key posts it. And it doesn't run automatically on untrusted contributions: a maintainer starts it for a fork's pull request after reading the change.
+
+**[ANIMATION]** end
 
 The team's rule afterwards is the chapter's sentence, pinned in the repository: give the agent's job `permissions` as if the pull request author had written the job.
 

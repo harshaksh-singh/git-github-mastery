@@ -13,13 +13,25 @@
 
 Three messages. CI here means the automated checks that GitHub Actions runs on each change, and a commit is one saved snapshot of the project.
 
+**[ANIMATION]** cards: id=msgs question=Three_messages,_one_week cards=The_loader_test_passes_on_my_Mac:in_CI,_the_configuration_file_does_not_exist|The_deploy_script_works_when_I_run_it:in_CI,_the_very_first_line_fails|The_version_step_works_on_every_laptop:in_CI,_it_exits_with_128 numbered=on
+
+**[ANIMATION]** step: 1
+
 "The loader test passes on my Mac. In CI it says the configuration file does not exist. The file is right there in the repository."
+
+**[ANIMATION]** step: 2
 
 "The deploy script works when I run it. In CI the very first line fails, something about bash and a strange character."
 
+**[ANIMATION]** step: 3
+
 "The version step works on every laptop in the team. In CI it exits with 128."
 
+**[ANIMATION]** say: Each_message_ends:_"and_it_is_the_same_commit"
+
 Each of them ends the message the same way: "and it is the same commit." They're right about that. Same commit, and still not the same input. The machine is different, the clone is different, and in the first two cases what they have on their own disk isn't what Git has recorded.
+
+**[ANIMATION]** end
 
 All three can be proven on your own machine, with Git alone, without re-running anything on GitHub. And keep the phrase "the same commit" in mind. By the end you'll have four questions to ask whenever you hear it.
 
@@ -51,27 +63,51 @@ After this video you can:
 
 Go through the fourteen rows grouped by where they sit in the investigation order.
 
+**[ANIMATION]** walk: id=fourteen columns=where_in_the_order,documented_causes rows=the_commit_and_the_clone:a_shallow,_tagless_clone;_not_the_pushed_commit|authority:missing_secrets|the_machine:shell_differences;_moving_images_and_tools;_out_of_memory_or_time;_environment_differences|what_the_run_depends_on:old_action_majors;_a_stale_or_missing_cache|whether_a_run_exists:a_check_that_stays_pending;_cancelled_runs;_a_workflow_that_never_fires|Git:case_sensitivity;_line_endings marks=6.1:hl,6.2:hl mono=off title=Fourteen_documented_causes
+
+**[ANIMATION]** step: 1
+
 **About the commit and the clone.** A shallow, tagless clone: the checkout fetches one commit and no tags, so `git describe` and tag-derived versions fail. A tag is a fixed name for one commit, and `git describe` builds a name from a tag in the history. The remedy is `fetch-depth: 0`. And the job isn't testing the pushed commit: on `pull_request` it checks out the test merge in detached HEAD, and it doesn't run at all while the pull request conflicts. The remedy is to merge or rebase the base locally to reproduce.
+
+**[ANIMATION]** step: 2
 
 **About authority.** Missing secrets. A secret is an encrypted value stored in GitHub's settings. Secrets aren't passed to runs from forks or from Dependabot. The token is read-only. And an unset secret is an empty string. The remedy is fork-safe jobs, and the textbook adds: never `pull_request_target` as a shortcut.
 
+**[ANIMATION]** step: 3
+
 **About the machine.** Shell differences: the implicit shell on Linux and macOS is `bash -e` without `pipefail`, and `shell: bash` adds it. In a job container the default is `sh`. On Windows it's PowerShell. Moving images and tools: weekly image rebuilds, and every `-latest` label moved in 2026. Out of memory or time: smaller runners in private repositories, and the six-hour limit. Environment differences: the variable `CI` is set to true, steps share no shell state, and every job is a new machine.
 
+**[ANIMATION]** step: 4
+
 **About what the run depends on.** Old action majors: actions written for Node 20 now run on Node 24. A stale or missing cache: a cache is immutable per key, restore keys take the most recent prefix match, and pull request caches are scoped to the merge ref.
+
+**[ANIMATION]** step: 5
 
 **About whether a run exists.** A required check that stays pending, because a workflow skipped by a filter or by `[skip ci]` never reports. Runs cancelled by a newer run in the same concurrency group. And a workflow that never fires: events made with the job token start no runs, and scheduled workflows are disabled after 60 days without repository activity in public repositories.
 
 **[ON SCREEN]** Lower third: Git.
 
+**[ANIMATION]** step: 6
+
 **And the two that are Git.** Case sensitivity: macOS and Windows filesystems ignore case by default, and a Linux runner doesn't. The remedy is to fix the names in Git. Line endings: CRLF committed, or converted on checkout by `core.autocrlf`. CRLF is a line ending of two characters, a carriage return and then a line feed, and LF is the line feed alone. The remedy is `.gitattributes`.
+
+**[ANIMATION]** end
 
 **[ON SCREEN]** Callout: Unverified.
 
 The textbook attaches a caveat here and I keep it. The official Actions pages read for the Phase 0 report don't state the time zone and locale of hosted runners, whether Windows runners check out with CRLF by default, or whether the hosted runners' filesystems are case-sensitive. Only the Git mechanisms are sourced, from Git's documentation and from real runs. Linux filesystems being case-sensitive is the general rule the chapter relies on.
 
+**[ANIMATION]** stores: id=rec boxes=your_Mac:a_filesystem_that_ignores_case|*Git's_records:names_and_bytes,_compared_byte_by_byte|a_Linux_runner:a_filesystem_that_distinguishes_case rows=1:B:a_name_with_a_capital_letter|2:A:the_code_asks_for_the_lower-case_name:_the_file_opens@ok|2:C:the_same_request:_no_such_file@bad|3:B:a_blob_whose_bytes_contain_carriage_returns|3:C:an_interpreter_whose_name_ends_in_a_carriage_return@bad title=One_record,_two_machines at_1=45 at_2=75
+
+**[ANIMATION]** step: 2
+
 **Why the two Git causes happen at all.** For case: when Git creates a repository it tests the filesystem, and on a case-insensitive one it sets `core.ignorecase` to true. Git's own records compare names byte by byte. Those records are the index, which is the proposed next commit, and the trees, the directory listings inside commits. So Git can hold a name with a capital letter, your code can ask for the lower-case name, and on your Mac the file opens, because the filesystem answers for both spellings. On a filesystem that distinguishes case, it doesn't.
 
+**[ANIMATION]** step: 3
+
 For line endings: a blob, the stored content of one file, is bytes. If the bytes contain carriage returns, every checkout that doesn't convert them gets carriage returns. A shell script whose first line ends in a carriage return asks the kernel for an interpreter whose name ends in that character.
+
+**[ANIMATION]** say: The_laptop_is_the_forgiving_machine:_it_hides_what_is_recorded_in_Git
 
 In both cases, the laptop is the forgiving machine, and the forgiveness hides what is recorded in Git.
 
@@ -81,11 +117,21 @@ Let's take that phrase apart.
 
 "Same commit" means: the same tree, the same bytes in every blob, the same names. It says nothing about four other inputs.
 
+**[ANIMATION]** cards: id=four question="Same_commit"_says_nothing_about_four_other_inputs cards=the_filesystem:the_names_are_written_onto_it|how_much_of_the_repository_came_along:the_history_and_the_tags|which_commit_the_job_took|the_process_that_runs_your_command:the_shell_and_its_options numbered=on
+
+**[ANIMATION]** step: 1
+
 The filesystem that the names are written onto. A name is recorded once in Git and interpreted by each machine's filesystem.
+
+**[ANIMATION]** step: 2
 
 How much of the repository came along. The commit is the same. The history and the tags around it aren't.
 
+**[ANIMATION]** step: 3
+
 Which commit the job took. On a pull request it's not your commit at all.
+
+**[ANIMATION]** step: 4
 
 And the process that runs your command: the shell and its options.
 
@@ -94,6 +140,8 @@ So when someone says "it is the same commit", agree, and then ask the four quest
 Where this model has an edge: the first two demonstrations aren't really differences between the Mac and the runner. They're differences between what is on your disk and what is in Git. The runner only sees what is in Git. That's why the proof in each case is a Git command that reads the index or a commit, and not a command that reads a file.
 
 ## DIAGRAM
+
+**[ANIMATION]** walk: id=mac columns=-,your_Mac,the_runner_(Linux_job) rows=checkout_depth:full_history:one_commit;_.git/shallow_lists_it|tags:all_tags:none|commit_tested:your_branch_tip:on_pull__request:_the_test_merge_under_refs/pull/N/merge,_detached_HEAD|shell_for_run:your_interactive_shell:bash_-e_{0};_with_shell:_bash,_bash_--noprofile_--norc_-eo_pipefail_{0}|filesystem:ignores_case_by_default;_core.ignorecase_=_true:case-sensitive_(the_general_rule_for_Linux;_not_stated_on_the_Actions_pages) mono=off title=Your_Mac_and_the_runner
 
 **[DIAGRAM]** A two-column table. Fill the left column from the viewer's own experience, then the right column, and for each row name the command that shows the difference.
 
@@ -111,9 +159,13 @@ Where this model has an edge: the first two demonstrations aren't really differe
                                                              with shell: bash
 ```
 
+**[ANIMATION]** step: 4
+
 Try it now. Thirty seconds, in any repository on your own machine. Run `git config get core.ignorecase`, which only reads. What does it print?
 
 **[PAUSE]**
+
+**[ANIMATION]** step: 5
 
 If it prints true, Git found a filesystem that ignores case when it created that repository, which is the macOS default. Then the left column of this table describes your own disk.
 
@@ -175,7 +227,15 @@ $ git cat-file -e HEAD:configs/Thresholds.yaml
 ```
 <!-- /snippet -->
 
-B. 128 for the lower-case name, with a message that is almost a diagnosis in itself: the path "exists on disk, but not in HEAD". 0 for the name with the capital. Git answered the way a case-sensitive filesystem will. If you said C, that's the Mac's answer, not Git's. You've proven the cause without a runner.
+B. 128 for the lower-case name, with a message that is almost a diagnosis in itself: the path "exists on disk, but not in HEAD". 0 for the name with the capital.
+
+**[ANIMATION]** step: rec.3
+
+**[ANIMATION]** say: Git_recorded_configs/Thresholds.yaml._The_code_asks_for_configs/thresholds.yaml
+
+Git answered the way a case-sensitive filesystem will. If you said C, that's the Mac's answer, not Git's. You've proven the cause without a runner.
+
+**[ANIMATION]** end
 
 ```bash
 git mv configs/Thresholds.yaml configs/thresholds.yaml
@@ -285,7 +345,15 @@ i/lf    w/crlf  attr/text eol=lf      	scripts/deploy.sh
 ```
 <!-- /snippet -->
 
-`i/lf`, the attribute `text eol=lf`, and still `w/crlf`. The index is fixed. This working tree still has the old bytes until the file is checked out again. A fresh clone, which is what a runner makes, gets LF.
+`i/lf`, the attribute `text eol=lf`, and still `w/crlf`.
+
+**[ANIMATION]** trees: id=eol file=scripts/deploy.sh versions=CRLF,LF say_setup=The_commit,_the_index_and_the_working_tree_all_hold_CRLF steps=setup,add,commit,restore cmd_add=git_add_--renormalize_. cmd_restore=git_restore_scripts/deploy.sh history=off title=Three_places,_one_file say_add=The_index_gets_LF say_commit=The_commit_holds_LF._The_working_tree_still_has_the_old_bytes say_restore=Checked_out_again:_LF_everywhere at_add=5 at_commit=35
+
+**[ANIMATION]** step: commit
+
+The index is fixed. This working tree still has the old bytes until the file is checked out again. A fresh clone, which is what a runner makes, gets LF.
+
+**[ANIMATION]** end
 
 The last snippet makes your own working tree catch up. It deletes the file and restores it from the index. `git restore` on a path is 🔴 DANGEROUS, so the five answers. What it changes: the file in the working tree, from the index. What it can destroy: uncommitted content of that file that was never staged. How to preview: `git diff` for the path. How to recover: none for content that was never staged. When it's appropriate: here, where the committed version is the one you want and `git status` shows nothing else pending for that file.
 
@@ -303,6 +371,12 @@ would deploy to staging
 <!-- /snippet -->
 
 Now all three columns agree, and the script runs.
+
+**[ANIMATION]** step: eol.restore
+
+In the three-trees picture: the working tree holds LF now, too.
+
+**[ANIMATION]** end
 
 **Case 3: a shallow clone has no tags to describe.** Replay `labs/run ch20b/shallow-describe`.
 
@@ -325,9 +399,9 @@ v1.1.0-2-g57c8425
 
 On the laptop: six commits, two tags, and the description `v1.1.0-2-g57c8425`.
 
-**[ANIMATION]** graph: 91fe9ab-e797c71-3c8340d-c4b5de2-197d992-57c8425 main; e797c71 v1.0.0; c4b5de2 v1.1.0; HEAD=main title=Your_clone:_full_history,_all_tags
+**[ANIMATION]** graph: id=six 91fe9ab-e797c71-3c8340d-c4b5de2-197d992-57c8425 main; e797c71 v1.0.0; c4b5de2 v1.1.0; HEAD=main; title:Your_clone:_full_history,_all_tags => + absent:91fe9ab,e797c71,3c8340d,c4b5de2,197d992; drop:v1.0.0,v1.1.0; note:57c8425:grafted; title:The_runner's_clone; name:cut; say:One_commit_and_no_tags => + absent:91fe9ab,3c8340d,197d992; e797c71 v1.0.0; c4b5de2 v1.1.0; name:tags; say:Both_tags_exist_now._The_history_is_still_one_commit_long => + absent:; drop:57c8425; name:full; say:Six_commits_again:_v1.1.0-2-g57c8425 at_cut=70
 
-**[ANIMATION]** step: state-1
+**[ANIMATION]** step: cut
 
 Here's that history as a picture: six commits in a row, two tags, and `main` on the newest. The runner is about to receive only that last commit.
 
@@ -373,7 +447,13 @@ $ git rev-list --count HEAD
 ```
 <!-- /snippet -->
 
-Fetching the tags alone, still at depth 1: both tags exist now, and the error changes to "No tags can describe". The textbook's comment: both messages mean the same root cause. The history is one commit long.
+Fetching the tags alone, still at depth 1: both tags exist now, and the error changes to "No tags can describe".
+
+**[ANIMATION]** step: six.tags
+
+The textbook's comment: both messages mean the same root cause. The history is one commit long.
+
+**[ANIMATION]** end
 
 ```bash
 git fetch --quiet --unshallow --tags
@@ -394,7 +474,13 @@ v1.1.0-2-g57c8425
 ```
 <!-- /snippet -->
 
-Not shallow, six commits, and the same description as on the laptop. In the workflow, the minimal fix is `fetch-depth: 0` on the checkout step of the one job that needs it.
+Not shallow, six commits, and the same description as on the laptop.
+
+**[ANIMATION]** step: six.full
+
+In the workflow, the minimal fix is `fetch-depth: 0` on the checkout step of the one job that needs it.
+
+**[ANIMATION]** end
 
 ## COMMON MISTAKES
 
@@ -410,7 +496,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A team trains and evaluates models from one repository, with engineers on Macs and CI on Linux. A new engineer adds a configuration loader and a configuration file. The file was first saved with a capital letter and added to Git that way. Later the engineer "renamed" it in the editor's file tree, and the code refers to the lower-case name. Every test passes on every Mac in the team for a week, because each Mac answers for both spellings. The first pull request that makes CI load that file fails with file-not-found.
 
+**[ANIMATION]** step: rec.3
+
+**[ANIMATION]** say: One_git_mv,_one_commit:_fixed_for_every_machine
+
 Step 2 of the investigation order says the commit is right. Step 4 says the machine differs. One command, `git ls-files` for the directory, shows the recorded name. One `git mv`, one commit, and it's fixed for every machine.
+
+**[ANIMATION]** end
 
 The prevention the team adopts is a check that asks Git, not the disk, for the names the code needs.
 

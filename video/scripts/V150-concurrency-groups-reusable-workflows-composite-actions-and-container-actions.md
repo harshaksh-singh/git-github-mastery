@@ -13,6 +13,8 @@
 
 The release manager looks at the deployment history in the afternoon and finds two deployments, not three. A deployment is one delivery of the software to a live system, and here each merge to `main` starts a run of the deploy workflow. The second merge was never deployed on its own. Nobody cancelled anything by hand.
 
+**[ANIMATION]** walk: id=sym columns=in_the_deployment_history,merge_on_main_at rows=a_deployment:10:00|never_deployed_on_its_own:10:02|a_deployment:10:04 marks=2.1:wait mono=off title=Three_merges,_two_deployments at_1=5 at_2=15 at_3=25
+
 Was a change lost? Is the pipeline broken? Before you answer, you need to know what a concurrency group does by default with a run that is waiting when another one arrives. The answer is one sentence in the workflow syntax reference, and most teams have never read it. Keep those three merges in mind. They come back, as trains.
 
 ## INTRODUCTION
@@ -51,7 +53,11 @@ Quick quiz. Three runs arrive in one group, one after another, with the default 
 
 **[PAUSE]**
 
+**[ANIMATION]** walk: id=three columns=run,when_it_is_queued,what_happens rows=run_1:in_progress:it_finishes|run_2:pending:cancelled_when_run_3_is_queued|run_3:pending:it_waits,_then_runs marks=1.3:ok,2.3:bad,3.3:ok mono=off title=One_group,_three_runs,_the_default at_1=12 at_2=35 at_3=65
+
 B, two. The first is in progress and finishes. The second is pending, and it's cancelled when the third is queued. The third waits, and then runs. If you said A, you're in good company.
+
+**[ANIMATION]** end
 
 `cancel-in-progress: true` also cancels the run in progress. It may be an expression.
 
@@ -101,33 +107,65 @@ A Docker container action replaces one step. It's an `action.yml` with `runs.usi
 
 **[ON SCREEN]** `11-reusable-workflow.yml`, the interface; then `11-caller.yml`.
 
-The called file declares its interface under `on.workflow_call`: two inputs, each with a type, one secret, and one output, mapped from a job output. The caller has a job named `staging` whose body is `uses`, `with` and `secrets`, and a second job that needs `staging` and reads its output.
+The called file declares its interface under `on.workflow_call`: two inputs, each with a type, one secret, and one output, mapped from a job output.
+
+**[ANIMATION]** stores: id=cross boxes=11-caller.yml:the_caller|*11-reusable-workflow.yml:on.workflow__call rows=1:B:two_inputs,_each_with_a_type|1:B:one_secret|1:B:one_output,_from_a_job_output|2:A:job_staging:_uses,_with,_secrets|3:A:a_second_job_needs_staging|4:B:an_environment_secret_is_read_here@hl|5:A:workflow-level_env_does_not_cross@bad|6:B:token_permissions:_only_narrower|7:B:github_context_and_billing:_the_caller's arrows=2:A1>B1:with,_secrets|3:B3>A2:the_output title=What_crosses_between_caller_and_called_file at_1=3 at_2=30 at_3=50
+
+**[ANIMATION]** step: 2
+
+The caller has a job named `staging` whose body is `uses`, `with` and `secrets`, and a second job that needs `staging` and reads its output.
 
 The rules.
 
+**[ANIMATION]** step: 3
+
 Inputs have a type of boolean, number or string. Outputs are declared at workflow level and mapped from job outputs. The caller reads them through `needs` and the name of the calling job.
+
+**[ANIMATION]** say: A_calling_job_has_uses,_with_and_secrets:_no_runs-on_and_no_steps
 
 A calling job isn't a normal job. It may contain only a fixed set of keys, among them `name`, `uses`, `with`, `secrets`, `strategy`, `needs`, `if`, `concurrency` and `permissions`. It has no `runs-on` and no `steps`. No context or expression is allowed in `uses`.
 
+**[ANIMATION]** say: ./_means_the_same_repository_at_the_commit_of_the_run
+
 Where the file comes from. A path starting with `./` is the same repository at the commit of the run. The form with owner, repository, path and a ref after the at sign is another repository. Pin the ref to a full commit ID, for the reason every action is pinned. Since the thirtieth of July 2026 the documentation recommends a form starting with `$/` for the same repository on github.com. It needs runner 2.336.0 or later and doesn't exist on GitHub Enterprise Server. And files in subdirectories of `.github/workflows` can't be called.
+
+**[ANIMATION]** step: 4
 
 Secrets pass only one level: a workflow called by a called workflow needs them passed again. `secrets: inherit` passes all of the caller's secrets and works within one organization or enterprise. And environment secrets can't be passed by the caller, because, in the documentation's words, "`on.workflow_call` does not support the `environment` keyword". The called job names the environment. In workflow 11 the `deploy` job does that with the environment taken from an input. So an environment secret is read where the environment is named: in the called job.
 
+**[ANIMATION]** step: 5
+
 `env` doesn't cross. Variables in the caller's workflow-level `env` aren't visible in the called workflow. Use inputs, or configuration variables.
 
+**[ANIMATION]** step: 6
+
 Permissions only narrow. The called workflow's token permissions can be reduced, not raised, relative to the caller's.
+
+**[ANIMATION]** step: 7
 
 The `github` context is the caller's: event, ref, commit and `github.workflow`. Billing is the caller's too.
 
 Limits: up to ten levels of workflows, and at most 50 unique reusable workflows called from one workflow file, since the sixth of November 2025.
 
+**[ANIMATION]** cards: id=name question=The_check_of_a_job_in_a_called_workflow cards=Staging:the_calling_job's_name|Test,_build_and_deploy:the_called_job's_name say_2=Staging_/_Test,_build_and_deploy at_1=30 at_2=45
+
 And check names. A required status check for a job in a called workflow is named with the calling job's name, a slash, and the called job's name. With the two course files, the check is "Staging / Test, build and deploy". Renaming either job silently breaks a rule that requires the old name.
+
+**[ANIMATION]** end
 
 **[ON SCREEN]** Callout: Unverified. How secrets of the environment that a called job names appear in that job when the caller passes named secrets and does not use `secrets: inherit` is not spelled out on the pages read for the chapter. Workflow 11 avoids the question: the caller passes a repository secret, and the called file documents it. Verify the behavior in your repository before you depend on it.
 
+One point is unverified, and it's on screen now. How the secrets of an environment that a called job names appear in that job, when the caller passes named secrets and doesn't use `secrets: inherit`, isn't spelled out on the pages read for the chapter. Workflow 11 avoids the question. Verify the behavior in your repository before you depend on it.
+
+**[ANIMATION]** pin: id=rerun A main; HEAD=none; note:A:the_first_attempt_ran_this_commit; title:A_called_workflow_referenced_as_@main => + A-B main; note:B:re-running_all_jobs_resolves_@main_again; name:moved; say:Re-running_failed_or_selected_jobs_stays_on_the_first_commit dx=420 at_moved=55
+
 **Re-runs.** Re-running all jobs resolves a reference that's not a commit ID again. Re-running failed or selected jobs uses the same commit of the called workflow as the first attempt. A reusable workflow referenced as `@main` can therefore differ between a first run and a full re-run.
 
+**[ANIMATION]** end
+
 **Composite actions.** The documented rules that differ from workflow steps. Every `run` step must state its `shell`. Inputs are read through the `inputs` context. Outputs need a `value` that maps to a step output. The `secrets` context isn't available. And the parallel-step keywords of June 2026 can't be used inside one. In the log the whole action is one step, which makes a failure inside it harder to locate than the same steps written out.
+
+**[ANIMATION]** walk: id=which columns=what_repeats,use rows=steps_inside_jobs:a_composite_action|a_whole_job,_or_one_that_needs_an_environment,_a_runner_choice_or_secrets:a_reusable_workflow|a_tool_that_needs_its_own_operating_system_environment:a_container_action|two_short_blocks_in_one_file:YAML_anchors_or_plain_repetition mono=off title=Which_one? at_1=8 at_2=25 at_3=50 at_4=72
 
 **Which one.** The textbook's rule. Steps that repeat inside jobs: a composite action. A whole job, or a job that needs an environment, a runner choice or secrets: a reusable workflow. A tool that needs an operating system environment you don't want on the runner: a container action. And neither, when the duplication is two short blocks in one file: YAML anchors or plain repetition are easier to read and to debug.
 
@@ -135,11 +173,19 @@ And check names. A required status check for a job in a called workflow is named
 
 A picture helps, and this one has trains.
 
+**[ANIMATION]** stores: id=rail boxes=the_track:one_run_in_progress|the_siding:one_run_pending|sent_away:cancelled rows=1:A:merge_one|2:B:merge_two|3:C:merge_two,_when_merge_three_arrives@bad|3:B:then_merge_three|4:A:then_merge_three@ok title=A_single_track_with_one_siding at_1=12 at_2=22 at_3=32 at_4=50
+
+**[ANIMATION]** step: boxes
+
 **Analogy for concurrency,** from the textbook. A single-track railway section with one waiting siding. One train is on the track. A second train waits in the siding. If a third arrives, the second is sent away and the third takes the siding. With `cancel-in-progress: true`, the arriving train also removes the one on the track.
 
 The analogy breaks with `queue: max`, which turns the siding into a yard for up to 100 trains.
 
+**[ANIMATION]** step: 4
+
 Now run the three merges from the opening through it. Merge one is on the track. Merge two waits in the siding. Merge three arrives, merge two is sent away, and merge three takes the siding. Two deployments, and that's the release manager's afternoon, explained. Is anything lost? Usually not, because the third run's commit contains the second merge. It's not fine when each run must happen, for example a database migration per commit. Then you use `queue: max`, or you design the deployment to be cumulative.
+
+**[ANIMATION]** end
 
 **Analogy for a reusable workflow.** A subcontractor who brings a whole crew, their own tools and their own site rules, and works to a written order, which is the inputs. You can't give the crew individual instructions. You can only place the order and read the delivery note, which is the outputs.
 
@@ -159,6 +205,8 @@ The textbook says it breaks on trust: the subcontractor works with your access b
 Try it now, on paper. Thirty seconds. Copy these three bars. Then draw them again for `cancel-in-progress: true`. Which runs finish now?
 
 **[PAUSE]**
+
+**[ANIMATION]** walk: id=vars columns=run_1,run_2,run_3,with rows=finishes:cancelled:finishes:the_default|cancelled:cancelled:finishes:cancel-in-progress:_true|finishes:finishes:finishes:queue:_max marks=1.2:bad,2.1:bad,2.2:bad mono=off title=Three_runs_in_one_group at_1=3 at_2=20 at_3=80
 
 Only run 3. Run 1 is cancelled when run 2 arrives, and run 2 when run 3 arrives.
 
@@ -190,7 +238,11 @@ Three branches, each of which gets pushes. A workflow's group is named `ci`, wit
 
 **[PAUSE]**
 
+**[ANIMATION]** walk: id=tracks columns=a_push_to,group_ci,a_group_with_github.ref rows=refs/heads/docs/rollback-steps:the_one_shared_track:its_own_track|refs/heads/feature/safety-stock:the_one_shared_track:its_own_track|refs/heads/main:the_one_shared_track:its_own_track marks=1.2:bad,2.2:bad,3.2:bad,1.3:ok,2.3:ok,3.3:ok title=What_makes_groups_distinct pace=quick
+
 It's cancelled. A group named `ci` gives all three refs one track. A group that contains `github.ref` gives each its own. Section 20B.16 lists exactly this symptom: CI runs of different branches cancel each other, because the group lacks the ref.
+
+**[ANIMATION]** end
 
 **Step 2: which version of a reusable workflow runs.** Replay `labs/run ch20b/lab-27-5-reusable-ref`.
 
@@ -222,7 +274,13 @@ ci/python-version:.github/workflows/reusable-deploy.yml:1
 ```
 <!-- /snippet -->
 
-Only for the branch. The caller on `main` uses the `./` form, which means: the called file from the same commit as the caller. So a branch that changes the called file tests its own version, and `main` keeps using the old one until the merge.
+Only for the branch.
+
+**[ANIMATION]** stores: id=vers boxes=main:the_commit_of_the_run|ci/python-version:the_branch rows=1:A:deploy.yml_uses_./.github/workflows/reusable-deploy.yml|1:A:reusable-deploy.yml:_no_python-version|1:B:reusable-deploy.yml_declares_python-version@hl|2:A:deploy.yml_now_passes_python-version@bad|3:A:after_the_merge:_both_files_mention_it@ok arrows=3:B1>A4:merge title=Caller_and_called_file,_from_the_same_commit at_1=10
+
+**[ANIMATION]** step: 1
+
+The caller on `main` uses the `./` form, which means: the called file from the same commit as the caller. So a branch that changes the called file tests its own version, and `main` keeps using the old one until the merge.
 
 **Step 3: caller and called file disagree.**
 
@@ -253,7 +311,11 @@ $ git grep -c "python-version" HEAD -- .github/workflows/reusable-deploy.yml
 ```
 <!-- /snippet -->
 
-Exit status 1: no match. The caller on `main` now passes an input that the called file on `main` doesn't declare. You found the disagreement with `git grep`, before any run.
+Exit status 1: no match.
+
+**[ANIMATION]** step: vers.2
+
+The caller on `main` now passes an input that the called file on `main` doesn't declare. You found the disagreement with `git grep`, before any run.
 
 <!-- snippet: ch20b/lab-27-5-reusable-ref/03-recovery -->
 ```text
@@ -265,7 +327,13 @@ HEAD:.github/workflows/reusable-deploy.yml:1
 ```
 <!-- /snippet -->
 
-The recovery brings the declaration to `main` with a merge. `git merge --no-ff` is 🟡 CAUTION. Now both files mention the input in the same commit. The rule from the textbook: caller and called file must agree in one commit when they live in one repository, and across a pinned ref when they don't.
+The recovery brings the declaration to `main` with a merge. `git merge --no-ff` is 🟡 CAUTION. Now both files mention the input in the same commit.
+
+**[ANIMATION]** step: vers.3
+
+The rule from the textbook: caller and called file must agree in one commit when they live in one repository, and across a pinned ref when they don't.
+
+**[ANIMATION]** end
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 

@@ -17,7 +17,7 @@ And here's how a team finds out that it doesn't. The workflow file says `environ
 
 **[PAUSE]**
 
-**[ANIMATION]** gates: id=nogate packet=the_job_that_names_production gates=environment_production:pass:GitHub:created_by_the_first_run_that_named_it:_no_rule result=nobody_approved title=A_line_that_looked_like_a_gate at_1=10 at_result=45
+**[ANIMATION]** gates: id=nogate packet=the_job_that_names_production gates=the_environment:pass:GitHub:created_by_the_first_run_that_named_it|protection_rules:skip:GitHub:none_were_configured result=nobody_approved title=A_line_that_looked_like_a_gate at_1=10 at_result=45
 
 The gate had never been configured, and naming an environment that doesn't exist creates it, without any rule. So what does make a real gate? Three things together, and before this video ends you'll be able to say all three to a CTO.
 
@@ -384,7 +384,7 @@ $ git log --oneline refs/deployed/production..refs/deployed/staging
 
 Production is at `c4b5de2`, staging at `57c8425`.
 
-**[ANIMATION]** graph: id=promo ...older-c4b5de2-197d992-57c8425 main; c4b5de2 special:refs/deployed/production; 57c8425 special:refs/deployed/staging; HEAD=none; range:197d992,57c8425:production..staging; title:What_an_approval_releases; say:An_approval_would_release_these_two_commits => + 57c8425-e39e6de hotfix/lead-days; HEAD=hotfix/lead-days; range:; name:hotfix; title:The_fix_goes_through_main; say:The_ref_is_refs/heads/hotfix/lead-days:_the_fix_is_not_contained_in_main => + 57c8425-fe34a26 main; e39e6de-fe34a26; HEAD=main; range:197d992,57c8425,e39e6de,fe34a26:production..main; name:merged; say:Through_main:_the_range_from_production_to_main_lists_four_commits dx=230 at_state_1=10 at_hotfix=0
+**[ANIMATION]** graph: id=promo ...older-c4b5de2-197d992-57c8425 main; c4b5de2 special:refs/deployed/production; 57c8425 special:refs/deployed/staging; HEAD=none; range:197d992,57c8425:production..staging; title:What_an_approval_releases; say:An_approval_would_release_these_two_commits => + ^57c8425-e39e6de hotfix/lead-days; HEAD=hotfix/lead-days; range:; name:hotfix; title:The_fix_goes_through_main; say:The_ref_is_refs/heads/hotfix/lead-days:_the_fix_is_not_contained_in_main => + 57c8425-fe34a26 main; e39e6de-fe34a26; HEAD=main; range:197d992,57c8425,e39e6de,fe34a26:production..main; name:merged; say:Through_main:_the_range_from_production_to_main_lists_four_commits dx=230 at_state_1=10 at_hotfix=0
 
 **[ANIMATION]** step: state-1
 

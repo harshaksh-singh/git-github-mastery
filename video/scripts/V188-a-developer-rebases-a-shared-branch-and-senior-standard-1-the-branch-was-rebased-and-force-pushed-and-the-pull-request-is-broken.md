@@ -13,6 +13,10 @@
 
 A reviewer opens a pull request that had five commits yesterday. A commit is one saved snapshot of the project, and a pull request is GitHub's proposal to merge a branch of commits. Today it lists nine. Three subjects appear twice, and a merge commit that nobody intended joins them. A merge commit is a commit that joins two lines of work. A second reviewer opens the same pull request, looks at the changed files, and sees nothing wrong: the same three files as before.
 
+**[ANIMATION]** cards: id=reviewers question="Every_commit_is_in_the_pull_request_twice." cards=one_reviewer:nine_commits,_three_subjects_twice,_and_a_merge_commit_nobody_intended|a_second_reviewer:the_same_three_files_as_before title=Two_reviewers,_one_pull_request at_1=5 at_2=12
+
+**[ANIMATION]** step: 2
+
 Both reviewers are describing the same pull request accurately. How can both be right? Hold that question. Somebody rebased, that is, copied commits onto a new base. Somebody pulled, somebody pushed, and no command printed an error at any point. Now a branch that two people share has to be rebuilt, in front of reviewers, without losing anybody's work.
 
 A first question, before the cause is named. Is this a display problem on the page, or the real content of the repository? Which read-only checks would tell you? Say them out loud.
@@ -47,9 +51,15 @@ After this video you can:
 
 **What happened, as a mechanism.** Commits that another person had built on were rewritten, and that person's `git pull`, configured to merge, joined both versions. A rewritten shared branch met a clone that still had the originals. The merge made both series reachable from one tip, the newest commit of the branch, and the push published it.
 
+**[ANIMATION]** walk: id=views columns=the_view,what_it_is,what_it_shows rows=the_commit_list:main..head:nine_entries|the_file_view:main...head:the_same_three_files_as_before title=Two_views,_two_questions at_1=5 at_2=38
+
 **Why the two reviewers disagree.** The commit list of a pull request is `main..head`, the commits the head branch has and `main` lacks: nine entries. The file view is the diff `main...head`, what changed since the two split: the same three files as before, because two copies of one change are one change in a tree. The commit list and the file view answer different questions. So both reviewers were right.
 
+**[ANIMATION]** walk: id=fault columns=suspect,at_fault?,why rows=--force-with-lease:no:it_protects_the_server's_commits,_not_unpublished_commits_in_a_teammate's_clone|the_rebase:no:it_lost_nothing_and_changed_nothing_in_content|the_merge:yes:it_made_both_series_reachable_from_one_tip marks=1.2:ok,2.2:ok,3.2:bad mono=off title=What_is_not_at_fault at_1=3 at_2=50 at_3=68
+
 **What is not at fault.** `--force-with-lease` isn't at fault. It's a forced push that succeeds only if the server's branch is still where you expect it, so it protects the server's commits, not the unpublished commits in a teammate's clone. And the rebase itself lost nothing and changed nothing in content. The damage is entirely the merge that made both series reachable. Layer: Git.
+
+**[ANIMATION]** end
 
 **The senior standard: eleven steps.**
 
@@ -65,7 +75,11 @@ After this video you can:
 10. Explain what happened.
 11. Prevent recurrence.
 
+**[ANIMATION]** stores: id=std boxes=*read-only|preserve|change|not_Git rows=1:A:1_inspect_the_state|1:A:2_inspect_refs|1:A:3_inspect_the_reflog|1:A:4_identify_the_old_branch_state|1:A:5_understand_what_changed|2:B:6_preserve_recoverable_references|3:C:7_determine_the_safest_recovery|3:C:8_restore_the_correct_history|3:C:9_update_the_pull_request_safely|4:D:10_explain_what_happened|4:D:11_prevent_recurrence title=The_senior_standard:_eleven_steps at_1=2 at_2=35 at_3=50 at_4=70
+
 Steps 1 to 5 are the read-only phase of the method. Step 6 is the preserve phase. Steps 7 to 9 are the change phase, and steps 10 and 11 are the part that isn't Git.
+
+**[ANIMATION]** end
 
 **The options at step 7.**
 
@@ -87,39 +101,27 @@ Steps 1 to 5 are the read-only phase of the method. Step 6 is the preserve phase
 
 ## MENTAL MODEL
 
+**[ANIMATION]** walk: id=book columns=the_book,in_Git rows=Asha_reprinted_the_chapters,_same_text,_new_page_numbers:the_rebase|the_old_printing_on_your_desk,_with_two_chapters_of_your_own:your_clone|both_printings_bound_into_one_book:the_merge|your_two_chapters,_stapled_behind_the_new_printing:the_repair marks=3.2:bad,4.2:ok mono=off title=Two_editions_of_the_same_three_chapters at_1=18 at_2=38 at_3=58 at_4=45
+
+**[ANIMATION]** step: 3
+
 A picture helps. Think of two editions of the same three chapters. Asha reprinted the chapters on new paper: same text, new page numbers. That's the rebase. You still had the old printing on your desk with two chapters of your own stapled behind it. Then you bound both printings into one book. The book now contains chapters one to three twice, and a reader who counts chapters is confused, while a reader who reads the text finds nothing changed.
+
+**[ANIMATION]** step: 4
 
 The repair isn't to throw away the new printing, which would undo Asha's work, and not to publish the double book. It is to take your two chapters out and staple them behind the new printing.
 
 Where the picture breaks: with paper you would know which pages are yours. In Git you have to find the boundary, and it has a precise name: the old shared tip. Everything after it on your side is yours. That boundary is what `git rebase --onto <new-tip> <old-shared-tip>` takes as its arguments.
 
+**[ANIMATION]** cards: id=ids cards=the_old_shared_tip|the_rebased_tip|your_tip_before_the_pull numbered=on title=Three_IDs,_before_anything_moves at_1=55 at_2=62 at_3=68
+
 And a rule for the whole standard: every commit that matters gets identified by name in step 4, before anything moves. If you can't write down three IDs, the old shared tip, the rebased tip and your tip before the pull, you aren't ready for step 7.
 
 ## DIAGRAM
 
-**[DIAGRAM]** A new drawing: the eleven steps as a numbered column, each with the command that performs it and the evidence it produces. Build it during the demo, one row per step.
+**[ANIMATION]** step: std.4
 
-```text
-  step                                  command                                    evidence it produces
-  ------------------------------------  -----------------------------------------  ----------------------------------
-   1 inspect the state                  git status -sb; git log main..head;        9 commits listed, 3 files changed
-                                        git diff --stat main...head
-   2 inspect refs                       git for-each-ref; git ls-remote origin     local, tracking and server agree
-   3 inspect the reflog                 git reflog show <branch>;                  "pull: Merge made"; "forced-update"
-                                        git reflog show origin/<branch>
-   4 identify the old branch state      read three IDs from the reflogs            old shared tip, rebased tip, my tip
-   5 understand what changed            git range-diff <old series> <new series>   three "=" pairs: same changes
-   ---------------------------- nothing has changed up to here ----------------------------------------------
-   6 preserve recoverable references    git branch rescue/...                      two anchors
-   7 determine the safest recovery      a table of options                         one option chosen, with reasons
-   8 restore the correct history        git reset --keep; git rebase --onto        5 commits, once each, no merge
-   9 update the pull request safely     git push --force-with-lease=<ref>:<id>     forced update from the examined ID
-  10 explain what happened              three sentences, no blame                  a message to the team
-  11 prevent recurrence                 git config set pull.rebase true;           a setting and an agreement
-                                        an agreement about rewrites
-```
-
-Draw the line under step 5 last and heavily.
+The eleven steps once more, in their phases. The heavy line sits under step 5: nothing has changed up to there. The evidence each step produces is filled in during the demo.
 
 ## LIVE TERMINAL DEMO
 
@@ -243,9 +245,9 @@ false
 
 Your branch: a fast-forward to the shared tip, two commits of your own, then "pull: Merge made by the 'ort' strategy". The remote-tracking branch: "pull: forced-update". The server's branch was replaced, and your pull, configured with `pull.rebase=false`, merged the replacement with what you had.
 
-**[ANIMATION]** graph: c587823-65cb28c-8131d29 origin/main; 65cb28c main; 65cb28c-be7fb7a-8f79c42-4967e71-af1f6de-57b5972-6e7ebbd feature/online-serving origin/feature/online-serving; 8131d29-c8d1712-5e57ed9-d4fd03c; d4fd03c-6e7ebbd; HEAD=feature/online-serving => c587823-65cb28c-8131d29 origin/main; 65cb28c main; 65cb28c-be7fb7a-8f79c42-4967e71-af1f6de-57b5972-6e7ebbd rescue/merged-state origin/feature/online-serving; 57b5972 rescue/my-work; 8131d29-c8d1712-5e57ed9-d4fd03c-021ec35-5e4c03f feature/online-serving; d4fd03c-6e7ebbd; HEAD=feature/online-serving title=Two_series,_one_tip
+**[ANIMATION]** graph: c587823-65cb28c-8131d29-c8d1712-5e57ed9-d4fd03c; 8131d29 origin/main; 65cb28c main; 65cb28c-be7fb7a-8f79c42-4967e71-af1f6de-57b5972-6e7ebbd feature/online-serving origin/feature/online-serving; d4fd03c-6e7ebbd; HEAD=feature/online-serving => + note:4967e71:old_shared_tip; note:d4fd03c:rebased_tip; note:57b5972:my_tip_before_the_pull; say:Three_commits,_by_name => + 6e7ebbd rescue/merged-state; 57b5972 rescue/my-work; d4fd03c-021ec35-5e4c03f feature/online-serving; HEAD=feature/online-serving; say:Asha's_three_rebased_commits,_and_your_two_on_top title=Two_series,_one_tip id=series dx=215 at_state_2=40
 
-**[ANIMATION]** step: state-1
+**[ANIMATION]** step: state-2
 
 **Step 4: identify the old branch state.** Three commits, by name. The shared tip before the rebase: `4967e71`. The rebased tip: `d4fd03c`. Your tip before the pull: `57b5972`.
 
@@ -289,7 +291,7 @@ c8d1712  author 10:10  committer 10:29  Add online lookup
 
 Three lines with an equals sign: the same changes under new IDs. The dates agree with that: a rebase keeps the author date and sets a new committer date. Nothing was lost by the rebase.
 
-Here is the line in the diagram. Before we cross it, try it now, on paper. Thirty seconds. Write down the three IDs from memory: the old shared tip, the rebased tip, and your tip before the pull.
+Here is the heavy line under step 5. Before we cross it, try it now, on paper. Thirty seconds. Write down the three IDs from memory: the old shared tip, the rebased tip, and your tip before the pull.
 
 **[PAUSE]**
 
@@ -339,7 +341,7 @@ $ git log --oneline --graph origin/main~1..feature/online-serving
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** step: state-2
+**[ANIMATION]** step: series.state-3
 
 B. A straight line: Asha's three rebased commits and your two on top, `021ec35` and `5e4c03f`.
 
@@ -440,6 +442,30 @@ PASS: the recovery of incident 05-rebased-shared-branch is complete.
 
 The setting, the cleanup of the anchors after verification, and the check: each subject exactly once, five commits, no merge commit, both clones equal to the server.
 
+**[DIAGRAM]** A new drawing: the eleven steps as a numbered column, each with the command that performs it and the evidence it produces. Build it during the demo, one row per step.
+
+```text
+  step                                  command                                    evidence it produces
+  ------------------------------------  -----------------------------------------  ----------------------------------
+   1 inspect the state                  git status -sb; git log main..head;        9 commits listed, 3 files changed
+                                        git diff --stat main...head
+   2 inspect refs                       git for-each-ref; git ls-remote origin     local, tracking and server agree
+   3 inspect the reflog                 git reflog show <branch>;                  "pull: Merge made"; "forced-update"
+                                        git reflog show origin/<branch>
+   4 identify the old branch state      read three IDs from the reflogs            old shared tip, rebased tip, my tip
+   5 understand what changed            git range-diff <old series> <new series>   three "=" pairs: same changes
+   ---------------------------- nothing has changed up to here ----------------------------------------------
+   6 preserve recoverable references    git branch rescue/...                      two anchors
+   7 determine the safest recovery      a table of options                         one option chosen, with reasons
+   8 restore the correct history        git reset --keep; git rebase --onto        5 commits, once each, no merge
+   9 update the pull request safely     git push --force-with-lease=<ref>:<id>     forced update from the examined ID
+  10 explain what happened              three sentences, no blame                  a message to the team
+  11 prevent recurrence                 git config set pull.rebase true;           a setting and an agreement
+                                        an agreement about rewrites
+```
+
+And there are all eleven steps on one sheet, each with its command and the evidence it produced. The first five rows changed nothing.
+
 **[TERMINAL]** Now the standard against the clock. Replay `labs/run incidents/lab-38-3-lease`. The same repair, with one difference: while you were rebuilding, Asha updated, committed and pushed.
 
 **The lease refuses.**
@@ -538,7 +564,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. Two engineers share a branch for an online feature store. One rebases it onto `main` on Wednesday evening and pushes with a lease. The other starts Thursday with `git pull` and `git push`, as always. At ten, a reviewer asks why the pull request has nine commits.
 
+**[ANIMATION]** stores: id=std2 boxes=*read-only|preserve|change|not_Git rows=1:A:1_inspect_the_state|1:A:2_inspect_refs|1:A:3_inspect_the_reflog|1:A:4_identify_the_old_branch_state|1:A:5_understand_what_changed|2:B:6_preserve_recoverable_references|3:C:7_determine_the_safest_recovery|3:C:8_restore_the_correct_history|3:C:9_update_the_pull_request_safely|4:D:10_explain_what_happened|4:D:11_prevent_recurrence title=The_senior_standard:_eleven_steps at_1=40 at_2=62 at_3=68
+
+**[ANIMATION]** step: 3
+
 The second engineer leads the repair, by the eleven steps, and posts in the pull request before the forced push: "This branch will be force-pushed once in the next ten minutes; the diff will not change; do not push to it until I confirm." He reads the two reflogs, writes down three IDs, proves with `git range-diff` that the two series are the same changes, anchors two refs, rebuilds, proves that no content changed, and pushes with the lease naming the ID he examined.
+
+**[ANIMATION]** step: 4
 
 His explanation is three sentences without blame, and the reviewers keep their review, because the diff is identical. The prevention has two parts. A setting, `pull.rebase true`, in the team's recommended configuration. And an agreement in the contribution guide: whoever rewrites a shared branch announces it first, with the old tip and the command teammates need.
 

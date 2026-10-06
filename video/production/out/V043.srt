@@ -1,0 +1,1112 @@
+1
+00:00:04,500 --> 00:00:09,018
+A branch that the team merged and deleted
+a month ago is back on the server.
+
+2
+00:00:09,058 --> 00:00:13,937
+Nobody intended it. It carries old commits,
+it shows up in the branch list, and by
+
+3
+00:00:13,977 --> 00:00:17,236
+Thursday somebody has built
+a new feature on top of it.
+
+4
+00:00:17,576 --> 00:00:22,852
+No one ran a strange command. One engineer
+switched to an old local branch and typed
+
+5
+00:00:22,892 --> 00:00:27,914
+git push. The line on screen is all Git
+said. To understand how an ordinary push
+
+6
+00:00:27,954 --> 00:00:32,787
+resurrects a deleted branch, you need
+to know one thing a fetch never does by
+
+7
+00:00:32,827 --> 00:00:37,091
+default. Hold on to that zombie
+branch. Later you make one yourself.
+
+8
+00:00:38,930 --> 00:00:42,473
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+9
+00:00:42,513 --> 00:00:46,818
+Two subjects today, joined by a common
+idea: your clone's picture of other
+
+10
+00:00:46,858 --> 00:00:49,931
+repositories is a set of
+refs that only you maintain.
+
+11
+00:00:49,971 --> 00:00:54,570
+A remote is your name for another repository,
+and a remote-tracking ref such as
+
+12
+00:00:54,610 --> 00:00:58,622
+origin/main records where one of its
+branches was at your last fetch.
+
+13
+00:00:58,962 --> 00:01:03,664
+First, more than one remote. You build
+a fork in plain Git, with origin and
+
+14
+00:01:03,704 --> 00:01:08,849
+upstream, and set it up so that you fetch
+from one repository and push to another.
+
+15
+00:01:08,889 --> 00:01:13,149
+A fork is a second repository on a
+server, made from the shared one.
+
+16
+00:01:13,189 --> 00:01:18,396
+That setup is called a triangular workflow,
+and it is where @{upstream} and @{push}
+
+17
+00:01:18,436 --> 00:01:23,644
+finally give different answers. You also
+meet the small tools around remote URLs: a
+
+18
+00:01:23,684 --> 00:01:27,754
+separate push URL, URL rewriting,
+renaming and removing a remote.
+
+19
+00:01:28,094 --> 00:01:33,038
+Second, pruning. A fetch creates and moves
+remote-tracking refs, but by default it
+
+20
+00:01:33,078 --> 00:01:37,779
+never deletes one. You will see stale
+refs block a fetch, see what gone means,
+
+21
+00:01:37,819 --> 00:01:42,641
+reproduce the zombie branch from the hook,
+and then look at the price of pruning
+
+22
+00:01:42,681 --> 00:01:43,492
+automatically.
+
+23
+00:01:45,332 --> 00:01:46,910
+Here's what you'll walk away with.
+
+24
+00:01:47,250 --> 00:01:48,663
+After this video you can:
+
+25
+00:01:49,003 --> 00:01:53,244
+Configure origin and upstream for a fork
+and say which one each command uses.
+
+26
+00:01:53,584 --> 00:01:58,667
+Set separate fetch and push URLs,
+and rename or remove a remote.
+
+27
+00:01:59,007 --> 00:02:01,853
+Explain what pruning deletes
+and what it never deletes.
+
+28
+00:02:02,193 --> 00:02:06,091
+Explain how a branch deleted on the
+server comes back, and prevent it.
+
+29
+00:02:07,931 --> 00:02:12,887
+More than one remote. In one sentence: a
+repository can have any number of remotes,
+
+30
+00:02:12,927 --> 00:02:17,100
+each with its own URL, refspecs and
+namespace of remote-tracking refs.
+
+31
+00:02:17,140 --> 00:02:20,230
+Nothing connects them except
+the objects they share.
+
+32
+00:02:20,570 --> 00:02:25,533
+So adding a remote named upstream gives
+you refs/remotes/upstream/* next to
+
+33
+00:02:25,573 --> 00:02:30,937
+refs/remotes/origin/*. Two namespaces. If
+both name the same commit, it is stored
+
+34
+00:02:30,977 --> 00:02:36,073
+once. On screen is today's clone right
+after that step: main, origin/main and
+
+35
+00:02:36,113 --> 00:02:39,676
+upstream/main are three names
+for one commit, 510ee94.
+
+36
+00:02:40,016 --> 00:02:44,930
+By convention origin is the repository
+you push to and upstream is the shared
+
+37
+00:02:44,970 --> 00:02:49,241
+repository you take changes from.
+That is a convention about names.
+
+38
+00:02:49,281 --> 00:02:51,750
+Git attaches no meaning to either word.
+
+39
+00:02:52,090 --> 00:02:56,958
+A triangular workflow fetches from
+one repository and pushes to another.
+
+40
+00:02:56,998 --> 00:03:02,003
+Which remote a bare git push uses is
+decided by settings in a fixed order:
+
+41
+00:03:02,043 --> 00:03:07,593
+branch.<name>.pushRemote, then remote.pushDefault,
+then branch.<name>.remote, then
+
+42
+00:03:07,633 --> 00:03:13,251
+origin. Which branch name it uses is decided
+by push.default, from the video before
+
+43
+00:03:13,291 --> 00:03:13,591
+last.
+
+44
+00:03:13,931 --> 00:03:17,217
+Pruning. In one sentence: a fetch creates
+and moves remote-tracking refs but by
+
+45
+00:03:17,257 --> 00:03:20,668
+default never deletes one, so branches
+deleted on the server live on in your clone
+
+46
+00:03:20,708 --> 00:03:21,342
+until you prune.
+
+47
+00:03:21,682 --> 00:03:25,992
+Three commands. git remote prune
+--dry-run <remote> previews.
+
+48
+00:03:26,032 --> 00:03:31,982
+git fetch --prune 🟡 CAUTION deletes
+remote-tracking refs that no longer exist on the
+
+49
+00:03:32,022 --> 00:03:36,975
+server and then fetches. And
+fetch.prune=true makes every fetch prune.
+
+50
+00:03:37,315 --> 00:03:49,631
+Quick quiz. A branch was deleted on the
+server, and you run git fetch --prune.
+
+51
+00:03:49,671 --> 00:04:00,246
+What does it delete in your clone?
+A, the remote-tracking ref only.
+
+52
+00:04:00,286 --> 00:04:10,068
+B, the remote-tracking ref and
+your local branch. Your answer?
+
+53
+00:04:14,908 --> 00:04:19,276
+It's A. What pruning deletes: stale
+remote-tracking refs and their reflogs.
+
+54
+00:04:19,316 --> 00:04:23,214
+What it never touches: local branches,
+and their upstream settings.
+
+55
+00:04:23,254 --> 00:04:27,329
+A local branch whose upstream ref
+has been pruned is reported as gone.
+
+56
+00:04:27,669 --> 00:04:32,213
+When not to prune automatically? Section
+12.16 has the sentence: pruning is
+
+57
+00:04:32,253 --> 00:04:37,103
+forgetting. A remote-tracking ref may be
+the last name that some commits have in
+
+58
+00:04:37,143 --> 00:04:42,238
+your clone. Prune it and its reflog goes
+with it. If your clones are the team's only
+
+59
+00:04:42,278 --> 00:04:44,132
+safety net, prune deliberately.
+
+60
+00:04:45,972 --> 00:04:50,859
+A picture helps. Go back to the address
+book from the first video of this module.
+
+61
+00:04:50,899 --> 00:04:54,022
+Each remote is one entry
+with its own filing drawer.
+
+62
+00:04:54,062 --> 00:04:59,009
+Two remotes, two drawers. A fetch files
+fresh copies into a drawer and updates the
+
+63
+00:04:59,049 --> 00:05:03,935
+ones already there. It does not go through
+the drawer and throw out the bookmarks
+
+64
+00:05:03,975 --> 00:05:08,071
+for things the supplier has
+discontinued. Pruning is that clean-out.
+
+65
+00:05:08,411 --> 00:05:12,804
+Where the picture breaks: in an office,
+an out-of-date bookmark is clutter.
+
+66
+00:05:12,844 --> 00:05:17,650
+In Git it can be two things at once. It
+can be a trap, because a local branch that
+
+67
+00:05:17,690 --> 00:05:21,609
+still points at a discontinued name
+can re-create it with one push.
+
+68
+00:05:21,649 --> 00:05:26,515
+And it can be a rescue, because that stale
+bookmark may be the only name your clone
+
+69
+00:05:26,555 --> 00:05:31,066
+has for commits that somebody deleted
+by mistake. The clean-out removes both.
+
+70
+00:05:32,906 --> 00:05:38,441
+Try it now. Thirty seconds, on paper. Draw
+three boxes: the shared repository, your
+
+71
+00:05:38,481 --> 00:05:44,015
+clone, and your fork. Add one arrow for
+fetch and one for push, and write origin or
+
+72
+00:05:44,055 --> 00:05:49,255
+upstream next to the right box. Then say
+out loud which box your pushes go to.
+
+73
+00:05:54,095 --> 00:05:58,899
+Here's the answer. Changes come in from
+the top and go out at the bottom, to your
+
+74
+00:05:58,939 --> 00:06:03,803
+fork, origin. The pull request, which is
+a GitHub object and not a Git one, closes
+
+75
+00:06:03,843 --> 00:06:06,734
+the triangle from the
+bottom box back to the top.
+
+76
+00:06:08,574 --> 00:06:10,704
+Part 1: a fork, in plain Git.
+
+77
+00:06:11,044 --> 00:06:14,505
+A server-side bare clone
+stands in for the Fork button.
+
+78
+00:06:14,545 --> 00:06:19,470
+You clone your fork, add upstream, fetch
+it. git remote -v now has four lines.
+
+79
+00:06:19,810 --> 00:06:24,895
+Two namespaces, origin/* and upstream/*,
+each with its own HEAD, all naming the same
+
+80
+00:06:24,935 --> 00:06:25,322
+commit.
+
+81
+00:06:25,662 --> 00:06:30,984
+Git has no notion of a fork. The Fork button
+creates a GitHub object: a server-side
+
+82
+00:06:31,024 --> 00:06:36,347
+copy that stays connected to its parent and
+shares Git data with it in a repository
+
+83
+00:06:36,387 --> 00:06:39,771
+network. To Git it is one
+more repository with a URL.
+
+84
+00:06:39,811 --> 00:06:45,134
+According to the documentation, gh repo
+fork --clone names your fork origin and the
+
+85
+00:06:45,174 --> 00:06:47,847
+parent upstream, the convention used here.
+
+86
+00:06:48,187 --> 00:06:49,598
+Part 2: the triangle.
+
+87
+00:06:49,938 --> 00:06:54,860
+Predict: after one commit and a bare git
+push 🟡, which repository receives the
+
+88
+00:06:54,900 --> 00:06:58,360
+branch? And what do @{upstream}
+and @{push} resolve to?
+
+89
+00:06:58,400 --> 00:07:00,077
+Say it out loud. I'll wait.
+
+90
+00:07:04,917 --> 00:07:06,235
+The push went to the fork.
+
+91
+00:07:06,576 --> 00:07:11,020
+@{upstream} is upstream/main, and
+@{push} is origin/feature/streaming.
+
+92
+00:07:11,060 --> 00:07:16,210
+Two different refs. remote.pushDefault=origin
+sends every bare push to your fork,
+
+93
+00:07:16,250 --> 00:07:21,528
+whatever the upstream of the branch is, and
+the branch tracks upstream/main, so git
+
+94
+00:07:21,568 --> 00:07:24,475
+pull takes changes from
+the shared repository.
+
+95
+00:07:24,815 --> 00:07:30,272
+labs/run ch12/push-destination
+takes the settings one at a time.
+
+96
+00:07:30,612 --> 00:07:36,541
+With only remote.pushDefault set, the push
+goes to the fork under the branch's own
+
+97
+00:07:36,581 --> 00:07:41,418
+name, but Git 2.55 cannot answer
+@{push} under push.default=simple.
+
+98
+00:07:41,758 --> 00:07:46,586
+push.default=current makes the destination
+a plain function of the branch name.
+
+99
+00:07:46,626 --> 00:07:51,763
+The for-each-ref line is the one to remember
+in an incident: for every branch, where
+
+100
+00:07:51,803 --> 00:07:54,043
+it pulls from and where it pushes to.
+
+101
+00:07:54,383 --> 00:07:58,530
+branch.<name>.pushRemote overrides
+the rest for one branch.
+
+102
+00:07:58,870 --> 00:08:02,095
+Back in the fork demo. The
+shared repository has moved.
+
+103
+00:08:02,435 --> 00:08:08,036
+status.compareBranches, Git 2.54 or
+later, makes git status report both
+
+104
+00:08:08,076 --> 00:08:09,148
+relationships.
+
+105
+00:08:09,488 --> 00:08:15,025
+Your branch has diverged from upstream/main,
+which moved to f11a751, and it is up to
+
+106
+00:08:15,065 --> 00:08:17,349
+date with origin/feature/streaming.
+
+107
+00:08:24,889 --> 00:08:29,738
+After a rebase onto the moved upstream, the
+branch in your fork still holds the old
+
+108
+00:08:29,778 --> 00:08:32,213
+commit, so the push is not a fast-forward.
+
+109
+00:08:32,553 --> 00:08:36,494
+git push --force-with-lease 🔴
+DANGEROUS, as every forced push.
+
+110
+00:08:36,534 --> 00:08:41,697
+The five answers are in the previous video.
+This is the legitimate case: a branch
+
+111
+00:08:41,737 --> 00:08:44,009
+that only you push to, with a lease.
+
+112
+00:08:51,349 --> 00:08:56,401
+Bringing the fork's main up to date is a
+fast-forward from upstream/main and a push
+
+113
+00:08:56,441 --> 00:08:57,014
+to origin.
+
+114
+00:08:57,354 --> 00:09:02,271
+Part 3: URL tools.
+labs/run ch12/remote-urls.
+
+115
+00:09:02,611 --> 00:09:06,565
+git remote set-url --push 🟡 gives
+a remote a separate push URL.
+
+116
+00:09:06,605 --> 00:09:11,447
+Here it is deliberately not a repository:
+a cheap guard that makes pushing to
+
+117
+00:09:11,487 --> 00:09:16,773
+upstream impossible from this clone. The
+manual warns that a real fetch URL and push
+
+118
+00:09:16,813 --> 00:09:20,006
+URL of one remote must lead
+to the same repository.
+
+119
+00:09:20,046 --> 00:09:22,669
+For two different places, use two remotes.
+
+120
+00:09:23,009 --> 00:09:28,259
+Several push URLs make one push update
+several repositories, one after the other and
+
+121
+00:09:28,299 --> 00:09:29,203
+not atomically.
+
+122
+00:09:29,543 --> 00:09:32,843
+url.<base>.insteadOf rewrites
+URLs when they are used.
+
+123
+00:09:32,883 --> 00:09:37,977
+The configuration keeps the URL that was
+written, and git remote get-url shows what
+
+124
+00:09:38,017 --> 00:09:39,090
+will be contacted.
+
+125
+00:09:46,230 --> 00:09:50,725
+git remote rename 🟡 moves the remote-tracking
+refs and rewrites the configuration,
+
+126
+00:09:50,765 --> 00:09:55,371
+including the upstream of main. git remote
+remove 🟡 deletes the remote-tracking refs
+
+127
+00:09:55,411 --> 00:10:00,016
+with their reflogs and removes upstream
+settings that pointed at the remote: main is
+
+128
+00:10:00,056 --> 00:10:00,846
+left with none.
+
+129
+00:10:01,186 --> 00:10:04,979
+Part 4: stale refs. labs/run
+ch12/prune-gone. This runs in Asha's clone.
+
+130
+00:10:05,019 --> 00:10:09,345
+Since she last fetched, feature/reranker
+was merged and deleted on the server, and
+
+131
+00:10:09,385 --> 00:10:12,114
+the team replaced the branch
+release by release/1.0.
+
+132
+00:10:12,454 --> 00:10:17,950
+git branch -r reads the stale local view:
+it still lists origin/feature/reranker and
+
+133
+00:10:17,990 --> 00:10:21,048
+origin/release. git
+ls-remote reads the server.
+
+134
+00:10:21,388 --> 00:10:27,011
+git remote show origin contacts the server
+and classifies every branch as tracked,
+
+135
+00:10:27,051 --> 00:10:30,119
+stale or new. Now an
+ordinary fetch. Predict.
+
+136
+00:10:34,959 --> 00:10:40,461
+Exit status 1. A stale ref can block a
+fetch. origin/release still exists, so
+
+137
+00:10:40,501 --> 00:10:46,507
+origin/release/1.0 cannot be created: one
+ref name cannot be a directory-like prefix
+
+138
+00:10:46,547 --> 00:10:49,242
+of another, in any ref storage format.
+
+139
+00:10:49,582 --> 00:10:55,252
+The dry run previews. git fetch --prune
+deletes the two stale refs and then creates
+
+140
+00:10:55,292 --> 00:10:56,078
+the new one.
+
+141
+00:10:56,418 --> 00:11:01,346
+Pruning never touches local branches.
+feature/reranker is still there, and its
+
+142
+00:11:01,386 --> 00:11:06,633
+upstream is now reported as gone.
+%(upstream:track) gives the same fact to scripts.
+
+143
+00:11:06,973 --> 00:11:13,069
+Part 5: the zombie. Asha switches to that
+branch. Predict what git pull does and
+
+144
+00:11:13,109 --> 00:11:14,527
+what git push does.
+
+145
+00:11:19,367 --> 00:11:24,109
+git pull fails with a clear message. git
+push succeeds and re-creates the branch on
+
+146
+00:11:24,149 --> 00:11:28,719
+the server. That is the hook: a branch
+that the team merged and deleted is back,
+
+147
+00:11:28,759 --> 00:11:32,292
+with old commits. One ordinary
+push, and nothing looked wrong.
+
+148
+00:11:32,632 --> 00:11:36,392
+Delete it on the server again,
+🔴 git push origin --delete.
+
+149
+00:11:36,432 --> 00:11:41,633
+Bring main up to date. And delete the
+local branch with -d, which refuses if the
+
+150
+00:11:41,673 --> 00:11:43,140
+commits are not merged.
+
+151
+00:11:43,480 --> 00:11:46,815
+With fetch.prune=true every fetch prunes.
+
+152
+00:11:47,155 --> 00:11:50,510
+Part 6: the price. labs/run ch12/prune-forgets.
+Asha has deleted spike/hybrid-search
+
+153
+00:11:50,550 --> 00:11:52,450
+on the server. Your clone
+has not fetched since.
+
+154
+00:11:52,790 --> 00:11:56,944
+Before the prune, your clone still
+named the two commits, and only the
+
+155
+00:11:56,984 --> 00:12:01,856
+remote-tracking ref contained them. Afterwards
+the ref is gone, its reflog is gone
+
+156
+00:12:01,896 --> 00:12:05,151
+with it, and git fsck lists
+the commits as unreachable.
+
+157
+00:12:05,191 --> 00:12:10,124
+They stay in the object database until
+garbage collection, Git's cleanup of objects
+
+158
+00:12:10,164 --> 00:12:12,220
+that nothing reaches, removes them.
+
+159
+00:12:12,560 --> 00:12:18,813
+Until then git fsck --lost-found can find
+the tip, 509f067, and a branch gives it a
+
+160
+00:12:18,853 --> 00:12:25,106
+name again. With fetch.prune=true this
+forgetting happens on every fetch, without a
+
+161
+00:12:25,146 --> 00:12:25,713
+preview.
+
+162
+00:12:27,553 --> 00:12:29,201
+Five mistakes to watch for.
+
+163
+00:12:29,541 --> 00:12:32,561
+Pushing from an old local
+branch whose upstream is gone.
+
+164
+00:12:32,601 --> 00:12:37,041
+Root cause: pruning removes the remote-tracking
+ref but keeps the local branch and
+
+165
+00:12:37,081 --> 00:12:40,920
+its upstream setting, so a push creates
+the branch on the server again.
+
+166
+00:12:41,260 --> 00:12:44,398
+Believing git branch -r
+lists the server's branches.
+
+167
+00:12:44,438 --> 00:12:49,532
+Root cause: it lists remote-tracking refs
+in your clone, which a default fetch never
+
+168
+00:12:49,572 --> 00:12:50,021
+deletes.
+
+169
+00:12:50,361 --> 00:12:54,619
+Pushing a topic branch to the
+shared repository in a fork setup.
+
+170
+00:12:54,659 --> 00:13:00,260
+Root cause: without remote.pushDefault or
+branch.<name>.pushRemote, a branch created
+
+171
+00:13:00,300 --> 00:13:03,349
+from upstream/main has
+upstream as its remote.
+
+172
+00:13:03,689 --> 00:13:08,484
+Setting fetch.prune=true everywhere and
+counting on clones as a safety net.
+
+173
+00:13:08,524 --> 00:13:13,706
+Root cause: pruning deletes the ref and
+its reflog, which may be the last name of
+
+174
+00:13:13,746 --> 00:13:16,092
+commits that were deleted by mistake.
+
+175
+00:13:16,432 --> 00:13:21,053
+Giving one remote a fetch URL and a push
+URL that are different repositories.
+
+176
+00:13:21,093 --> 00:13:26,137
+Root cause: the manual requires both to lead
+to the same repository; two places need
+
+177
+00:13:26,177 --> 00:13:26,864
+two remotes.
+
+178
+00:13:28,704 --> 00:13:33,569
+Now, out of the lab. You contribute a fix
+to an open-source evaluation library.
+
+179
+00:13:33,609 --> 00:13:38,723
+Fork, clone, add upstream, branch from
+upstream/main, push to origin, open the pull
+
+180
+00:13:38,763 --> 00:13:43,938
+request. Inside a company the same triangle
+appears when a team keeps a patched copy
+
+181
+00:13:43,978 --> 00:13:49,030
+of a vendor repository. The textbook's
+advice for both: write down which remote is
+
+182
+00:13:49,070 --> 00:13:50,769
+which before the first push.
+
+183
+00:13:51,109 --> 00:13:56,529
+On the pruning side, picture a platform
+team that sets fetch.prune=true in every
+
+184
+00:13:56,569 --> 00:14:00,624
+developer's global configuration
+to keep branch lists short.
+
+185
+00:14:00,664 --> 00:14:02,330
+It works well for months.
+
+186
+00:14:02,670 --> 00:14:07,313
+Then someone deletes the wrong branch on
+the server, a spike that was never merged.
+
+187
+00:14:07,353 --> 00:14:11,771
+Within a day every clone that fetches
+forgets it. That is acceptable for merged
+
+188
+00:14:11,811 --> 00:14:14,253
+feature branches and
+costly on that one day.
+
+189
+00:14:14,593 --> 00:14:20,065
+Section 12.16 lists more cases where a
+technique from this module is the wrong one.
+
+190
+00:14:20,105 --> 00:14:25,577
+Three to remember. git push --mirror and
+git push --prune delete refs on the server
+
+191
+00:14:25,617 --> 00:14:30,690
+that your repository lacks. They are
+migration tools for a mirror clone and 🔴
+
+192
+00:14:30,730 --> 00:14:31,752
+everywhere else.
+
+193
+00:14:32,092 --> 00:14:37,806
+A token inside the remote URL stores the
+secret in plain text in .git/config, and
+
+194
+00:14:37,846 --> 00:14:41,997
+git remote -v prints it wherever
+it runs, CI logs included.
+
+195
+00:14:42,037 --> 00:14:47,822
+Use a credential helper. And a forced push
+is not a way to remove a leaked secret.
+
+196
+00:14:47,862 --> 00:14:49,527
+Rotate the secret first.
+
+197
+00:14:51,367 --> 00:14:58,611
+Your turn. Do Lab 7.5, "Upstream configuration
+and a triangular fork simulation", in
+
+198
+00:14:58,651 --> 00:15:00,865
+lab-manual/m07-remotes.md.
+
+199
+00:15:01,205 --> 00:15:02,402
+Predict before you type:
+
+200
+00:15:02,742 --> 00:15:06,958
+After adding upstream and fetching,
+which refs exist under refs/remotes/?
+
+201
+00:15:07,298 --> 00:15:11,866
+For the topic branch you create: what will
+@{upstream} and @{push} resolve to, and
+
+202
+00:15:11,906 --> 00:15:13,383
+which setting decides each?
+
+203
+00:15:13,723 --> 00:15:19,017
+After the shared repository moves and you
+rebase, will a plain push to your fork be
+
+204
+00:15:19,057 --> 00:15:19,917
+accepted? Why?
+
+205
+00:15:20,257 --> 00:15:24,248
+The challenge is Incident 8,
+incidents/08-branch-disappeared.
+
+206
+00:15:24,288 --> 00:15:26,098
+Read the symptoms file only.
+
+207
+00:15:27,938 --> 00:15:33,755
+Q214: "A branch that was deleted a month
+ago is back on the server, and nobody
+
+208
+00:15:33,795 --> 00:15:37,960
+intended it. How did it happen,
+and what do you change?"
+
+209
+00:15:40,300 --> 00:15:44,959
+Answer out loud first. A strong answer
+reconstructs the sequence from the three
+
+210
+00:15:44,999 --> 00:15:49,659
+kinds of ref: what the deletion removed,
+what it left behind in some clone, and
+
+211
+00:15:49,699 --> 00:15:54,180
+which ordinary command turned what was
+left into a new branch on the server.
+
+212
+00:15:54,220 --> 00:15:59,117
+It says how you would find out which clone
+did it. Then it separates the changes by
+
+213
+00:15:59,157 --> 00:16:03,936
+layer: what each engineer does in their
+clone, what can be configured in Git, and
+
+214
+00:16:03,976 --> 00:16:08,397
+what a server-side rule could refuse.
+It also names the cost of the obvious
+
+215
+00:16:08,437 --> 00:16:09,468
+configuration fix.
+
+216
+00:16:11,308 --> 00:16:14,235
+Let's land this. You
+should now be able to say:
+
+217
+00:16:14,575 --> 00:16:19,584
+Each remote has its own URL, refspec
+and namespace of remote-tracking refs.
+
+218
+00:16:19,624 --> 00:16:23,825
+In a triangular setup I fetch
+from upstream and push to origin.
+
+219
+00:16:23,865 --> 00:16:29,480
+branch.<name>.pushRemote, remote.pushDefault,
+branch.<name>.remote and origin decide
+
+220
+00:16:29,520 --> 00:16:31,567
+the push remote, in that order.
+
+221
+00:16:31,907 --> 00:16:35,539
+A fetch never deletes a
+remote-tracking ref unless it prunes.
+
+222
+00:16:35,579 --> 00:16:40,174
+Pruning deletes stale remote-tracking
+refs and their reflogs and leaves local
+
+223
+00:16:40,214 --> 00:16:41,860
+branches alone, marked gone.
+
+224
+00:16:42,200 --> 00:16:45,342
+A push from such a branch
+re-creates it on the server.
+
+225
+00:16:45,382 --> 00:16:48,936
+Pruning is also forgetting, so
+automatic pruning has a price.
+
+226
+00:16:50,776 --> 00:16:55,162
+Read sections 12.10 and
+12.11 of Chapter 12.
+
+227
+00:16:55,502 --> 00:17:01,812
+Do Lab 7.6, "Prune and "gone" branches",
+in lab-manual/m07-remotes.md.
+
+228
+00:17:02,152 --> 00:17:07,435
+Today you kept two remotes apart, and you
+made a zombie branch on purpose, so you'll
+
+229
+00:17:07,475 --> 00:17:11,427
+recognise one when it turns up.
+Do Lab 7.5 while this is fresh.
+
+230
+00:17:11,467 --> 00:17:16,624
+Next time: refspecs in depth, transports,
+and two diagnoses from first principles.
+
+231
+00:17:16,664 --> 00:17:19,919
+Until then, look at the
+state first and type second.
+
+232
+00:17:19,959 --> 00:17:21,440
+See you in the next one.

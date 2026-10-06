@@ -1,0 +1,1093 @@
+1
+00:00:04,500 --> 00:00:09,584
+The CTO's question, word for word from the
+chapter: "Someone force-pushed with the
+
+2
+00:00:09,624 --> 00:00:14,709
+'safe' option, --force-with-lease, and a
+colleague's commit still disappeared from
+
+3
+00:00:14,749 --> 00:00:18,084
+the shared branch. How, and
+where is that commit now?"
+
+4
+00:00:18,424 --> 00:00:23,334
+The short answer: the lease was satisfied
+by a fetch that nobody looked at, and the
+
+5
+00:00:23,374 --> 00:00:27,628
+commit still sits in places you can
+name. The long answer is this video.
+
+6
+00:00:27,668 --> 00:00:32,637
+You will build the losing sequence step by
+step, watch the guard pass when it should
+
+7
+00:00:32,677 --> 00:00:36,514
+have refused, and then find the
+commit in three different places.
+
+8
+00:00:36,554 --> 00:00:38,124
+Keep count of those places.
+
+9
+00:00:39,964 --> 00:00:42,071
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+10
+00:00:42,111 --> 00:00:44,606
+A push asks the server to move one of
+its branches to a commit of yours.
+
+11
+00:00:44,646 --> 00:00:47,528
+In the last video a push was refused because
+it was not a fast-forward, and the fix
+
+12
+00:00:47,568 --> 00:00:49,641
+was to integrate. But sometimes
+you don't want to integrate.
+
+13
+00:00:49,681 --> 00:00:52,563
+You rebased your own pull request branch.
+You squashed two work-in-progress commits
+
+14
+00:00:52,603 --> 00:00:55,062
+into one. The server's history is the
+old one and you want it replaced.
+
+15
+00:00:55,402 --> 00:00:59,984
+That is what force is for. It is also the
+one push that can remove other people's
+
+16
+00:01:00,024 --> 00:01:03,464
+commits from a branch, including
+commits you have never seen.
+
+17
+00:01:03,804 --> 00:01:07,555
+So today has three layers. Plain
+--force and what it destroys.
+
+18
+00:01:07,595 --> 00:01:12,263
+--force-with-lease, what it compares,
+and the exact sequence that defeats it.
+
+19
+00:01:12,303 --> 00:01:15,565
+And the two stronger forms
+that survive that sequence.
+
+20
+00:01:15,605 --> 00:01:20,639
+Then you cross to the teammate's clone and
+see what the rewrite does there, because
+
+21
+00:01:20,679 --> 00:01:25,225
+the damage has a second act that surprises
+people even more than the first.
+
+22
+00:01:27,065 --> 00:01:28,643
+Here's what you'll walk away with.
+
+23
+00:01:28,983 --> 00:01:30,395
+After this video you can:
+
+24
+00:01:30,735 --> 00:01:35,099
+Explain what a forced push does to the
+server's ref and to teammates' commits.
+
+25
+00:01:35,439 --> 00:01:40,711
+Explain what --force-with-lease checks, and
+construct the sequence in which it fails
+
+26
+00:01:40,751 --> 00:01:41,407
+to protect.
+
+27
+00:01:41,747 --> 00:01:44,643
+Explain what --force-if-includes adds.
+
+28
+00:01:44,983 --> 00:01:48,451
+Find the overwritten commits
+afterwards and say who still has them.
+
+29
+00:01:50,291 --> 00:01:56,671
+Recall the seven steps of a push. Step 2
+was the client rule: an existing branch may
+
+30
+00:01:56,711 --> 00:02:02,861
+only be fast-forwarded. A forced push tells
+step 2 to skip the fast-forward test.
+
+31
+00:02:02,901 --> 00:02:09,051
+The server's ref is set to your commit,
+and whatever it named before is no longer
+
+32
+00:02:09,091 --> 00:02:10,885
+reachable from that ref.
+
+33
+00:02:11,225 --> 00:02:16,261
+git push --force 🔴 DANGEROUS. It's also
+spelled -f, or a plus sign before one
+
+34
+00:02:16,301 --> 00:02:21,733
+refspec. This is the first dangerous command
+of the video, so the five answers come
+
+35
+00:02:21,773 --> 00:02:27,139
+before anything is run. Twig looks worried,
+and with a red label on screen, fairly
+
+36
+00:02:27,179 --> 00:02:27,337
+so.
+
+37
+00:02:27,677 --> 00:02:31,345
+What it changes: the ref on the
+server, and your remote-tracking ref.
+
+38
+00:02:31,685 --> 00:02:35,933
+What it can destroy: every commit on
+the server's branch that is not in your
+
+39
+00:02:35,973 --> 00:02:40,672
+history, including commits you have never
+seen. A default bare server has no reflog,
+
+40
+00:02:40,712 --> 00:02:42,421
+so it keeps no pointer to them.
+
+41
+00:02:42,761 --> 00:02:46,032
+Try it now. Thirty seconds,
+on paper. You have fetched.
+
+42
+00:02:46,072 --> 00:02:50,908
+Write a git log command that lists the
+commits a forced push of your branch would
+
+43
+00:02:50,948 --> 00:02:52,534
+drop. Then say it out loud.
+
+44
+00:02:57,374 --> 00:03:05,165
+How to preview, and here's the answer:
+git fetch, then git log --oneline
+
+45
+00:03:05,205 --> 00:03:12,778
+HEAD..origin/<branch> lists exactly
+the commits that would be dropped.
+
+46
+00:03:12,818 --> 00:03:21,806
+git push --dry-run --force prints the
+server's current commit ID to the left of the
+
+47
+00:03:21,846 --> 00:03:23,002
+three dots.
+
+48
+00:03:23,342 --> 00:03:28,619
+How to recover: the old tip survives in
+any clone that had it, a teammate's branch
+
+49
+00:03:28,659 --> 00:03:33,741
+or the reflog of anybody's remote-tracking
+ref, and, until the server's garbage
+
+50
+00:03:33,781 --> 00:03:39,188
+collection removes it, as an unreachable
+object on the server, one that no ref leads
+
+51
+00:03:39,228 --> 00:03:40,874
+to any more. Push it back.
+
+52
+00:03:41,214 --> 00:03:46,367
+When it is appropriate: on a branch that
+only you use, such as your own pull request
+
+53
+00:03:46,407 --> 00:03:50,014
+branch after a rebase, or in a
+coordinated history rewrite.
+
+54
+00:03:50,054 --> 00:03:51,064
+Then use a lease.
+
+55
+00:03:51,404 --> 00:03:59,626
+Now the lease. --force-with-lease means:
+force only if the server is where I think
+
+56
+00:03:59,666 --> 00:04:07,685
+it is. The bare form says "overwrite only
+if the server's branch still equals my
+
+57
+00:04:07,725 --> 00:04:09,801
+remote-tracking ref".
+
+58
+00:04:10,141 --> 00:04:13,655
+Quick quiz. While you work, your
+editor quietly runs git fetch.
+
+59
+00:04:13,695 --> 00:04:16,701
+Does your lease, A, stay as
+it was, or B, get renewed?
+
+60
+00:04:16,741 --> 00:04:17,378
+Your answer?
+
+61
+00:04:22,218 --> 00:04:25,477
+It's B, and there is the
+weakness, in the definition.
+
+62
+00:04:25,517 --> 00:04:29,336
+The lease does not compare the
+server with what you have seen.
+
+63
+00:04:29,376 --> 00:04:32,635
+It compares the server with
+your remote-tracking ref.
+
+64
+00:04:32,675 --> 00:04:37,738
+Anything that moves that ref renews the
+lease: an editor's auto-fetch, a scheduled
+
+65
+00:04:37,778 --> 00:04:39,730
+job, or you in another terminal.
+
+66
+00:04:40,070 --> 00:04:45,456
+--force-if-includes adds a second condition:
+the tip of the remote-tracking ref must
+
+67
+00:04:45,496 --> 00:04:50,881
+be reachable from some entry in the reflog
+of your local branch, meaning your branch
+
+68
+00:04:50,921 --> 00:04:56,178
+contained that commit at some time. The
+setting push.useForceIfIncludes=true turns
+
+69
+00:04:56,218 --> 00:04:57,599
+it on for every lease.
+
+70
+00:04:57,939 --> 00:05:02,357
+And the explicit form,
+--force-with-lease=<ref>:<expect>, ignores the
+
+71
+00:05:02,397 --> 00:05:06,686
+remote-tracking ref and compares
+the server with a commit you name.
+
+72
+00:05:07,026 --> 00:05:12,330
+When not to force at all: on a branch that
+someone else pushes to, unless you have
+
+73
+00:05:12,370 --> 00:05:17,739
+told them. And never as a routine undo on
+main. The textbook marks that as outdated
+
+74
+00:05:17,779 --> 00:05:22,887
+advice: tutorials that teach "git reset
+--hard, then git push -f" teach the one
+
+75
+00:05:22,927 --> 00:05:26,341
+habit in this chapter that
+loses other people's work.
+
+76
+00:05:26,381 --> 00:05:28,883
+Undo published commits with git revert.
+
+77
+00:05:30,723 --> 00:05:34,809
+A picture helps. The textbook's model
+for the lease is the compare-and-swap of
+
+78
+00:05:34,849 --> 00:05:39,093
+optimistic locking: "set the branch to my
+commit only if it still has the value I
+
+79
+00:05:39,133 --> 00:05:39,675
+last read".
+
+80
+00:05:40,015 --> 00:05:43,033
+It breaks at the word "I". Your Git does
+the reading, and a fetch that you never
+
+81
+00:05:43,073 --> 00:05:46,244
+looked at refreshes the value. In a database,
+you read a row, you compute, you write
+
+82
+00:05:46,284 --> 00:05:49,417
+back with the old value as a condition.
+Here, something else can re-read the row on
+
+83
+00:05:49,457 --> 00:05:52,514
+your behalf, silently, between your computing
+and your writing, and the condition
+
+84
+00:05:52,554 --> 00:05:53,967
+then holds for a value you never used.
+
+85
+00:05:54,307 --> 00:05:59,595
+So keep two things apart that feel like
+one: what my clone has fetched, and what I
+
+86
+00:05:59,635 --> 00:06:03,819
+have seen or integrated. A
+remote-tracking ref records the first.
+
+87
+00:06:03,859 --> 00:06:08,693
+Only your branch's own history records
+the second, and that is exactly what
+
+88
+00:06:08,733 --> 00:06:13,956
+--force-if-includes consults. This is
+today's case, a little ahead of the demo: a
+
+89
+00:06:13,996 --> 00:06:19,285
+fetch has put origin/feature/prompt-cache
+on 833bc8a, and your branch, at 1a1fa49,
+
+90
+00:06:19,325 --> 00:06:21,364
+has never contained that commit.
+
+91
+00:06:23,204 --> 00:06:31,355
+Row 3 is the lease working. Row 4
+is nobody doing anything wrong.
+
+92
+00:06:31,395 --> 00:06:38,916
+Row 5 is the same command as
+row 3 with the opposite result.
+
+93
+00:06:40,756 --> 00:06:45,814
+Step 1: the rewrite. You squash two published
+commits into one, after marking the
+
+94
+00:06:45,854 --> 00:06:47,198
+old tip with a branch.
+
+95
+00:06:54,338 --> 00:06:58,739
+The graph shows your new commit
+1a1fa49 beside the old pair, with
+
+96
+00:06:58,779 --> 00:07:02,974
+backup/prompt-cache on the old
+tip. Status: ahead 1, behind 2.
+
+97
+00:07:03,014 --> 00:07:06,595
+That is what a rewrite looks
+like to Git: divergence.
+
+98
+00:07:06,935 --> 00:07:12,657
+Step 2: the lease holds. Meanwhile Asha
+pushes a test commit on top of the old
+
+99
+00:07:12,697 --> 00:07:16,647
+history. You try to publish.
+Predict. Say it out loud.
+
+100
+00:07:16,687 --> 00:07:17,385
+I'll wait.
+
+101
+00:07:22,225 --> 00:07:27,918
+! [rejected] ... (stale info). Your
+remote-tracking ref says 12cdd3d, and the server
+
+102
+00:07:27,958 --> 00:07:33,651
+has the commit that starts 833bc8a. The word
+is rejected, without "remote": your own
+
+103
+00:07:33,691 --> 00:07:37,677
+Git decided, from the advertisement.
+Asha's commit is safe.
+
+104
+00:07:38,017 --> 00:07:39,912
+Step 3: something fetches.
+
+105
+00:07:44,752 --> 00:07:49,067
+Your remote-tracking ref now equals the
+server. You have not looked at Asha's
+
+106
+00:07:49,107 --> 00:07:51,272
+commit, but the lease cannot know that.
+
+107
+00:07:51,612 --> 00:07:55,892
+Step 4: the two stronger forms.
+Predict whether each of these passes.
+
+108
+00:08:00,732 --> 00:08:05,292
+Both refuse. With --force-if-includes:
+"remote ref updated since checkout".
+
+109
+00:08:05,332 --> 00:08:10,384
+Your branch never contained 833bc8a. With
+the explicit form, the server is compared
+
+110
+00:08:10,424 --> 00:08:15,107
+with the backup branch at the commit you
+rewrote, and it differs: stale info.
+
+111
+00:08:15,447 --> 00:08:23,774
+Step 5: the bare lease. Same
+command as step 2. Predict.
+
+112
+00:08:28,614 --> 00:08:35,869
++ 833bc8a...1a1fa49 (forced
+update), exit status 0.
+
+113
+00:08:36,209 --> 00:08:41,930
+Asha's commit is no longer on the server's
+branch. And in your clone, no branch
+
+114
+00:08:41,970 --> 00:08:43,753
+reaches 833bc8a any more.
+
+115
+00:08:44,093 --> 00:08:49,759
+Step 6: where is the commit now?
+
+116
+00:08:50,099 --> 00:08:54,147
+Place one: your own clone. The
+background fetch recorded it, and
+
+117
+00:08:54,187 --> 00:08:59,385
+origin/feature/prompt-cache@{1} names it.
+Place two: the server's object database,
+
+118
+00:08:59,425 --> 00:09:04,559
+as an unreachable commit. The server has
+no logs directory at all, so no pointer,
+
+119
+00:09:04,599 --> 00:09:05,581
+only the object.
+
+120
+00:09:05,921 --> 00:09:11,566
+Step 7: the teammate's
+clone. Asha fetches.
+
+121
+00:09:11,906 --> 00:09:14,627
+Place three: Asha's local
+branch still has 833bc8a.
+
+122
+00:09:14,667 --> 00:09:19,119
+And learn this line: a plus sign, three
+dots, and "(forced update)" in fetch output
+
+123
+00:09:19,159 --> 00:09:21,933
+is the signal that a branch
+was rewritten under you.
+
+124
+00:09:22,273 --> 00:09:26,500
+She is ahead 3, behind 1. The
+reflex is git pull --rebase.
+
+125
+00:09:26,540 --> 00:09:30,325
+Predict what happens to her
+commit "Add cache test".
+
+126
+00:09:35,165 --> 00:09:39,288
+"Successfully rebased", no conflict, and
+her commit is no longer on the branch.
+
+127
+00:09:39,328 --> 00:09:43,398
+Look at the middle command: git merge-base
+--fork-point returns her own pushed
+
+128
+00:09:43,438 --> 00:09:43,767
+commit.
+
+129
+00:09:44,107 --> 00:09:49,336
+Pull with rebase replays only the commits
+after the fork point, and the fork point
+
+130
+00:09:49,376 --> 00:09:52,871
+is found through the reflog
+of the remote-tracking ref.
+
+131
+00:09:52,911 --> 00:09:58,268
+So nothing was left to replay. If that feels
+unfair to Asha, hold on: the root-cause
+
+132
+00:09:58,308 --> 00:09:59,875
+box says why Git does it.
+
+133
+00:10:00,215 --> 00:10:04,352
+Step 8: recovery. git cherry-pick
+🟡 CAUTION, from her reflog.
+
+134
+00:10:11,892 --> 00:10:16,307
+HEAD@{2} is "commit: Add cache test". She
+cherry-picks it onto the new tip, which
+
+135
+00:10:16,347 --> 00:10:20,763
+makes a new commit with the same change.
+It becomes 9074b47, and an ordinary push
+
+136
+00:10:20,803 --> 00:10:21,478
+publishes it.
+
+137
+00:10:21,818 --> 00:10:27,646
+The other forms. labs/run ch12/lease-forms.
+Two branches were reworded locally.
+
+138
+00:10:27,686 --> 00:10:31,879
+Asha has pushed to docs/runbook
+and you have not fetched.
+
+139
+00:10:32,219 --> 00:10:35,642
+--force-with-lease=<ref>
+leases and forces one ref.
+
+140
+00:10:35,682 --> 00:10:40,939
+Every other ref in the same push follows
+the normal rules, so docs/runbook was
+
+141
+00:10:40,979 --> 00:10:46,371
+rejected. The push was also not atomic:
+one ref was overwritten and one refused.
+
+142
+00:10:46,711 --> 00:10:51,681
+An empty expected value means "the ref
+must not exist yet": a create-only push.
+
+143
+00:10:51,721 --> 00:10:56,564
+Without the lease, the second command
+would have been a legal fast-forward of
+
+144
+00:10:56,604 --> 00:10:57,325
+release/1.0.
+
+145
+00:10:57,665 --> 00:11:02,248
+Now plain force, on docs/runbook, where
+you have never fetched Asha's commit.
+
+146
+00:11:02,588 --> 00:11:09,204
+Your clone believes the server is at 17783a7.
+The dry run prints 73f4877...ca3cabb:
+
+147
+00:11:09,244 --> 00:11:15,859
+the server is at 73f4877, and git cat-file
+says your repository has no such object.
+
+148
+00:11:15,899 --> 00:11:21,793
+That is Asha's commit. The forced push
+replaces it, and the reflog of your
+
+149
+00:11:21,833 --> 00:11:26,444
+remote-tracking ref goes from
+17783a7 straight to ca3cabb.
+
+150
+00:11:26,484 --> 00:11:30,133
+Your clone never held
+the commit it destroyed.
+
+151
+00:11:30,473 --> 00:11:32,936
+It survives in Asha's clone and,
+unreachable, on the server.
+
+152
+00:11:32,976 --> 00:11:36,107
+The other two unreachable commits are
+your own earlier versions, replaced on
+
+153
+00:11:36,147 --> 00:11:36,441
+purpose.
+
+154
+00:11:36,781 --> 00:11:44,853
+Under protocol version 2, the default, a
+plain Git server hands out any object it
+
+155
+00:11:44,893 --> 00:11:52,666
+has when asked by full ID. An abbreviation
+is not accepted, and under protocol
+
+156
+00:11:52,706 --> 00:12:01,079
+version 0 the request is refused. This is
+a recovery route for as long as the object
+
+157
+00:12:01,119 --> 00:12:09,492
+exists. It is also one reason why a forced
+push does not remove a leaked secret from
+
+158
+00:12:09,532 --> 00:12:10,393
+a server.
+
+159
+00:12:12,233 --> 00:12:13,881
+Five mistakes to watch for.
+
+160
+00:12:14,221 --> 00:12:19,276
+Treating --force-with-lease as "safe force".
+Root cause: the bare lease compares the
+
+161
+00:12:19,316 --> 00:12:24,309
+server with your remote-tracking ref, and
+any fetch, including one you never looked
+
+162
+00:12:24,349 --> 00:12:25,158
+at, renews it.
+
+163
+00:12:25,498 --> 00:12:28,748
+Using plain --force on a
+branch you have not fetched.
+
+164
+00:12:28,788 --> 00:12:33,900
+Root cause: nothing is checked, so commits
+you have never seen are dropped and your
+
+165
+00:12:33,940 --> 00:12:35,390
+own clone holds no copy.
+
+166
+00:12:35,730 --> 00:12:39,199
+Running git pull --rebase after
+a "(forced update)" line.
+
+167
+00:12:39,239 --> 00:12:44,062
+Root cause: the fork point comes from the
+reflog of the remote-tracking ref, so
+
+168
+00:12:44,102 --> 00:12:49,232
+commits you had already pushed are treated
+as removed upstream and are not replayed.
+
+169
+00:12:49,572 --> 00:12:52,989
+Believing a forced push removes
+a commit from the server.
+
+170
+00:12:53,029 --> 00:12:58,022
+Root cause: the old commits remain as
+unreachable objects until garbage collection,
+
+171
+00:12:58,062 --> 00:13:00,569
+and a server may hand them out by full ID.
+
+172
+00:13:00,909 --> 00:13:04,676
+Looking for the overwritten
+commit in the server's reflog.
+
+173
+00:13:04,716 --> 00:13:10,190
+Root cause: core.logAllRefUpdates defaults
+to false in a bare repository, so a plain
+
+174
+00:13:10,230 --> 00:13:11,569
+bare server has none.
+
+175
+00:13:13,409 --> 00:13:18,919
+Now, out of the lab. The textbook gives
+a routine for rewriting a branch that is
+
+176
+00:13:18,959 --> 00:13:22,665
+already published. One: fetch
+and read git status -sb.
+
+177
+00:13:22,705 --> 00:13:27,104
+Two: mark the old tip, git branch
+backup/<name>. Three: rewrite.
+
+178
+00:13:27,144 --> 00:13:30,989
+Four: push with
+--force-with-lease=<name>:backup/<name>.
+
+179
+00:13:31,029 --> 00:13:34,804
+Five: tell everyone who has
+the branch what to do next.
+
+180
+00:13:34,844 --> 00:13:40,285
+And set push.useForceIfIncludes=true once,
+for the days you forget the explicit
+
+181
+00:13:40,325 --> 00:13:40,631
+form.
+
+182
+00:13:40,971 --> 00:13:46,101
+Picture an evaluation team where two people
+share a long-running experiment branch.
+
+183
+00:13:46,141 --> 00:13:50,897
+One of them rebases it on Friday evening
+using that routine, minus step five.
+
+184
+00:13:50,937 --> 00:13:54,385
+On Monday the other runs git
+pull --rebase out of habit.
+
+185
+00:13:54,425 --> 00:13:59,306
+It says "Successfully rebased". Their
+Friday commit is gone from the branch and
+
+186
+00:13:59,346 --> 00:14:04,476
+nothing was red. Step five is not politeness.
+It is the only control for the second
+
+187
+00:14:04,516 --> 00:14:05,410
+root-cause box.
+
+188
+00:14:05,750 --> 00:14:10,417
+On GitHub, according to the documentation,
+"Block force pushes" is enabled by
+
+189
+00:14:10,457 --> 00:14:15,430
+default in a new ruleset, and classic branch
+protection rules disable force pushes
+
+190
+00:14:15,470 --> 00:14:20,504
+by default. GitHub offers no reflog that
+Git can query, but its Activity view lists
+
+191
+00:14:20,544 --> 00:14:25,455
+force pushes and offers a comparison for
+each entry, and its troubleshooting page
+
+192
+00:14:25,495 --> 00:14:30,468
+gives the plain-Git answer: ask a collaborator
+who still has the commit to push it
+
+193
+00:14:30,508 --> 00:14:35,053
+to a new branch. The interface changes.
+The documentation is the reference.
+
+194
+00:14:36,893 --> 00:14:44,914
+Your turn. Do Lab 7.4, "When --force-with-lease
+saves you and when it does not", in
+
+195
+00:14:44,954 --> 00:14:47,439
+lab-manual/m07-remotes.md.
+
+196
+00:14:47,779 --> 00:14:50,537
+Before each forced push
+in the lab, write down:
+
+197
+00:14:50,877 --> 00:14:54,691
+The value of your remote-tracking ref,
+and the value you believe the server has.
+
+198
+00:14:55,031 --> 00:15:05,446
+Whether your local branch has
+ever contained the server's tip.
+
+199
+00:15:05,786 --> 00:15:10,142
+For each of the three forms, bare lease,
+lease plus --force-if-includes, explicit
+
+200
+00:15:10,182 --> 00:15:12,855
+lease: accepted or rejected,
+and with which words.
+
+201
+00:15:13,195 --> 00:15:17,432
+The challenge is Incident 2,
+incidents/02-force-push-wrong-branch.
+
+202
+00:15:17,472 --> 00:15:21,126
+Read only the symptoms file
+and work from the repository.
+
+203
+00:15:22,966 --> 00:15:27,037
+Q203: "Why does --force-with-lease exist?"
+
+204
+00:15:29,377 --> 00:15:34,154
+Answer out loud first. A strong answer
+starts from the problem, what plain force
+
+205
+00:15:34,194 --> 00:15:38,551
+does not check, and states the lease
+as a condition on two specific refs.
+
+206
+00:15:38,591 --> 00:15:43,248
+It does not stop there: it names the
+assumption the condition rests on and one
+
+207
+00:15:43,288 --> 00:15:47,886
+ordinary event that breaks it. It then
+gives the stronger forms and what each
+
+208
+00:15:47,926 --> 00:15:52,704
+compares instead. A senior answer finishes
+with team practice: on which branches
+
+209
+00:15:52,744 --> 00:15:57,281
+forcing is acceptable at all, and what
+a server can be configured to refuse.
+
+210
+00:15:59,121 --> 00:16:02,048
+Let's land this. You
+should now be able to say:
+
+211
+00:16:02,388 --> 00:16:12,960
+A forced push skips the fast-forward test
+and sets the server's ref to my commit.
+
+212
+00:16:13,000 --> 00:16:23,835
+Every commit that only the old tip reached
+becomes unreachable there, and a default
+
+213
+00:16:23,875 --> 00:16:27,504
+bare server keeps no reflog.
+
+214
+00:16:27,844 --> 00:16:32,865
+The bare lease compares the server with my
+remote-tracking ref, so a fetch I never
+
+215
+00:16:32,905 --> 00:16:38,050
+looked at defeats it. --force-if-includes
+also requires that the remote tip was once
+
+216
+00:16:38,090 --> 00:16:41,939
+in my branch, and the explicit
+lease names the expected commit.
+
+217
+00:16:41,979 --> 00:16:47,062
+Overwritten commits survive in teammates'
+clones, in the reflogs of remote-tracking
+
+218
+00:16:47,102 --> 00:16:49,963
+refs, and as unreachable
+objects on the server.
+
+219
+00:16:50,303 --> 00:17:02,226
+After a "(forced update)" line I look before
+I integrate, because pull --rebase can
+
+220
+00:17:02,266 --> 00:17:08,280
+drop my pushed commits without a conflict.
+
+221
+00:17:10,120 --> 00:17:12,839
+Read section 12.8 of Chapter 12.
+
+222
+00:17:13,179 --> 00:17:17,576
+Then close the book and write the lease-defeating
+sequence from memory as a timeline
+
+223
+00:17:17,616 --> 00:17:20,217
+with three columns: you,
+the server, the teammate.
+
+224
+00:17:20,557 --> 00:17:25,953
+Today you answered the CTO: the lease was
+renewed by a fetch nobody read, and the
+
+225
+00:17:25,993 --> 00:17:31,389
+lost commit was in three places you can
+now name. Do Lab 7.4 while this is fresh.
+
+226
+00:17:31,429 --> 00:17:36,624
+Next time: more than one remote, pruning,
+and branches whose upstream is gone.
+
+227
+00:17:36,664 --> 00:17:40,115
+Until then, look at the
+state first and type second.
+
+228
+00:17:40,155 --> 00:17:41,725
+See you in the next one.

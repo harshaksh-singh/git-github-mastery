@@ -56,11 +56,13 @@ To Git, `refs/heads/release/1.4` is a ref whose name happens to contain a slash.
 
 Read the right-hand column. Force comes from three places: a platform setting, a rule with a pattern, which GitHub calls a ruleset, or automation that triggers on a pattern. Everything else is habit. The lab configuration sets `init.defaultBranch=main`. Unconfigured Git 2.55 still creates `master`. Neither name does anything the other does not.
 
-Quick quiz, with the table on screen. What gives the name `develop` its force? A, Git itself. B, a platform setting. C, only the team's agreement. Your answer?
+**[ANIMATION]** end
+
+Quick quiz. What gives the name `develop` its force? A, Git itself. B, a platform setting. C, only the team's agreement. Your answer?
 
 **[PAUSE]**
 
-C, only the team's agreement. That's the second row of the table.
+C, only the team's agreement. That was the second row of the table.
 
 The convention earns its keep when rules are attached to it. "Nobody pushes to `release/**` except through a pull request with two approvals" is one ruleset with one pattern, and it works only if every release branch is named that way. A name that carries the author, such as `asha/rerun`, says the branch is private and may be rebased.
 
@@ -70,17 +72,33 @@ Try it now, for thirty seconds. In any repository you have, type `git branch --l
 
 If it printed nothing, no branch of yours matches. That's the point of a naming pattern: a branch outside the pattern is outside the rule.
 
+**[ANIMATION]** graph: *1-*2-M1 main; ^*2-*4-*5-M1; HEAD=main; note:*5:feature/streaming; say:One_long-lived_branch,_short_branches_off_it; name:one => + M1-M2 main; M1-*6-*7-M2; note:*7:feature/tenant-limits; M2 tag:v1.4.0; say:Merge,_tag,_deploy; name:two => + M2-M3 main; note:M3:feature/batch-api_merged; say:off; name:three => + M3-*3-M4 main; ^*3-*8-M4; note:*8:hotfix/suspended-tenant; M4 tag:v1.4.1; say:A_hotfix_is_one_more_short_branch; name:hotfix => + range:M3,*3,*8,M4:between_the_two_tags; say:off; name:between title=GitHub_Flow id=ghf dy=95 dx=170 at_between=50
+
+**[ANIMATION]** step: ghf.one
+
 **GitHub Flow.** One long-lived branch that is always deployable, short branches off it, a pull request for each, and deployment right after the merge. Deployable means that it can go into service for users at any moment, and a pull request is GitHub's object for proposing and reviewing a merge.
 
+**[ANIMATION]** step: ghf.three
+
 GitHub's documentation describes six steps: create a branch, make changes, create a pull request, address review comments, merge, delete the branch. Scott Chacon's 2011 essay, where the name comes from, adds the rules that give it its character: anything on the main branch is deployable, and you deploy immediately after merging. He also gives the reason GitHub didn't use Git Flow: GitHub deployed many times a day, while Git Flow is organised around releases. Martin Fowler's reading is that the model assumes a single production version, so release branches and hotfix branches disappear: a hotfix is one more short branch.
+
+**[ANIMATION]** step: ghf.hotfix
 
 What it assumes: that there is one live version, that `main` can be deployed at any commit, and that a broken deployment is repaired by rolling forward or back quickly. Microsoft's description of its own practice records where the strict form stops scaling: when a repository completes more than 200 pull requests a day, deploying each one before or after merge turns into a queue, so Microsoft batches deployments into sprint releases instead.
 
 What it doesn't say: how long a feature branch may live, or what to do when a customer can't take the newest version. The next video shows that consequence with a real history.
 
+**[ANIMATION]** flow: actors=feature,develop,release,*main,hotfix subs=-,integration,stabilization,released_code,- msgs=1>2:merge_--no-ff|2>3:cut_from_develop|3>4:merge,_tag|3>2:merge_back|4>5:cut_from_main|5>4:merge,_tag|5>2:merge title=Git_Flow,_as_Driessen_published_it_in_2010 id=gf
+
+**[ANIMATION]** step: gf.actors
+
 **Git Flow.** Two long-lived branches, `main` for released code and `develop` for integration, plus three kinds of supporting branch: feature, release and hotfix.
 
+**[ANIMATION]** step: gf.7
+
 Vincent Driessen published "A successful Git branching model" on the fifth of January 2010. Feature branches start from and merge into `develop`, with `--no-ff` so that each feature stays visible as a unit. A release branch is cut from `develop`, receives only stabilization commits, and is merged into `main`, and tagged, and back into `develop`. A hotfix branch is cut from `main`, and is merged into `main`, and tagged, and into `develop`.
+
+**[ANIMATION]** cards: question=The_note_of_reflection_of_5_March_2020,_as_the_course's_research_report_summarizes_it numbered=on cards=Conceived_for_explicitly_versioned_software:that_may_need_several_versions_supported_in_the_wild|Continuous_delivery_of_a_web_application:adopt_a_simpler_workflow_such_as_GitHub_Flow|Weigh_your_own_context:no_model_is_a_cure-all at_2=45 at_3=65
 
 **The 2020 note.** On the fifth of March 2020 the author added a "note of reflection" at the top of the article. I give it as the course's research report summarizes it, not as a quotation, in three points. First, the model was conceived for explicitly versioned software that may need several versions supported in the wild. Second, a team doing continuous delivery of a web application should adopt a simpler workflow such as GitHub Flow. Third, readers should weigh their own context, because no model is a cure-all. Fowler adds that Git Flow says nothing about how long feature branches live, and Atlassian's tutorial now labels Gitflow a legacy workflow.
 
@@ -90,31 +108,53 @@ Vincent Driessen published "A successful Git branching model" on the fifth of Ja
 
 **When it still fits.** Installed software, firmware, SDKs and libraries with several maintained versions, and organizations where a release is a scheduled, audited event. Even there, the part that does the work is the release branch, which you can have without `develop`.
 
+**[ANIMATION]** graph: *1-*2-*3-*4-*5-*6 main; ...-M-M′ production; *3-M; *5-M′; HEAD=none; note:*6:every_merge_deploys_to_staging; note:M′:a_merge_from_main_deploys_to_production title=GitLab_Flow_with_a_production_branch id=gl
+
 **GitLab Flow.** GitLab defines it as a simplified strategy that works directly with `main` and adds, where needed, a production branch, environment branches such as staging and production, or release branches for software shipped in versions. Three of its eleven published rules: fix bugs in `main` first and release branches second, base releases on tags, and never rebase pushed commits.
 
 **[ON SCREEN]** Unverified.
 
 GitLab's original 2014 "GitLab Flow" document is no longer reachable on docs.gitlab.com. The phrase "upstream first" for its fix direction was read only through a mirror, according to the research notes of this course. The two current pages the textbook links are the source for what I said.
 
+**[ANIMATION]** graph: *1-*2-*3-*4-*5-*6-*7 main; *1-*8-*2; *3-*9-*4; *4-*10-*5; *6-*11-*7; HEAD=none; note:*10:branches_that_live_hours_to_two_days title=Trunk-based_development:_main_is_the_trunk id=tbd dy=55 dx=200
+
 **Trunk-based development.** Developers integrate into one branch, the trunk, and avoid other long-lived development branches. Very small teams may commit straight to the trunk. Larger teams use short-lived feature branches, which should last no more than a couple of days, belong to one developer or a pair, and be deleted after the merge. Long-running changes are handled with feature flags and a technique called branch by abstraction, instead of long branches. A feature flag is a condition in the code that keeps unfinished behavior switched off. Fowler treats it as close to a synonym for continuous integration.
+
+**[ANIMATION]** end
 
 The difference from GitHub Flow is one of degree, not of kind. Both have one long-lived branch. Trunk-based development adds a limit on branch lifetime and, in its strictest form, drops the pre-merge review gate.
 
+**[ANIMATION]** graph: *1-*2-*3-*4-F-*5-*6 main; *3-*7-F′ release/1.4; *7 tag:v1.4.0; F′ tag:v1.4.1; HEAD=none; note:F:the_fix,_made_on_main_first; note:F′:cherry-pick_of_F title=A_release_branch,_with_the_fix_made_on_main_first id=rel
+
 **Release branches.** A release branch is cut from the trunk shortly before a release, receives only fixes, and is the place the release and its patches are tagged. The trunk-based development site states the rules: cut late. The branch may start from a commit older than the trunk's head. It's never merged back. It's deleted when the version is no longer supported. And bugs are reproduced and fixed on the trunk first and cherry-picked to the release branch. A cherry-pick copies one commit's change onto another branch as a new commit with a new ID.
+
+**[ANIMATION]** graph: *1-*2-*3-*4-*5-F-*6-*7-*8 main; *3-*9 releases/M128; *5-F′ releases/M129; *7-*10 releases/M130; HEAD=none; note:F′:hotfix_cherry-picked_to_M129 title=Microsoft's_Release_Flow id=rf dy=90
 
 **Microsoft's Release Flow.** Short-lived topic branches are merged to `main` through pull requests with branch policies. At the end of each three-week sprint a release branch is created, named for the sprint. The document's example is `releases/M129`. It's deployed in rings. A hotfix is made in `main` first and then cherry-picked to the release branch through its own pull request. Release branches never merge back to `main`, and the old one is abandoned after the next sprint ships. Release Flow is trunk-based development plus a release branch per sprint plus the "fix on main first" rule. The names differ more than the graphs do.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** end
+
 Now one question that sorts them all. All of these models keep one integration branch. They differ in what, if anything, sits downstream of it, and in which direction a fix travels.
+
+**[ANIMATION]** decide: nodes=q:How_many_versions_are_alive_at_once?|a:nothing_downstream_of_main|b:something_has_to_name_each_live_version|a1:between_GitHub_Flow_and_trunk-based_development|b1:a_release_branch|b2:in_Git_Flow,_the_pair_main_and_develop edges=q>a:one|q>b:more_than_one|a>a1:|b>b1:|b>b2: path=q,b,b1 id=sort
+
+**[ANIMATION]** step: sort.level-3
 
 Use this as the sorting question: **how many versions are alive at once?** If the answer is one, there's nothing downstream of `main`, and you're somewhere between GitHub Flow and trunk-based development. If the answer is more than one, something has to name each live version, and that something is a release branch or, in Git Flow, the pair of `main` and `develop`.
 
+**[ANIMATION]** end
+
 A way to picture it: a river and its canals. The integration branch is the river. A release branch is a canal cut from the river at one point, with its own slower water. The models differ in whether canals exist and whether water is ever pumped from a canal back into the river.
+
+**[ANIMATION]** step: rel.state-1
 
 Where the picture breaks: water mixes, and commits do not. A fix that is cherry-picked into a canal is a second commit with a second ID, and Git records no link between the two. The next video is about that.
 
 ## DIAGRAM
+
+**[ANIMATION]** step: ghf.between
 
 **[DIAGRAM]** First, GitHub Flow, the diagram of section 27.6. Draw `main` as one line. Add three short feature branches that leave and return. Mark two tags on `main`, and the hotfix as one more short branch.
 
@@ -131,6 +171,8 @@ Where the picture breaks: water mixes, and commits do not. A fix that is cherry-
 
 A question for you: what is between the two tags on `main`? The hotfix, and also the merge M3. Hold that thought for video 172.
 
+**[ANIMATION]** step: gl.state-1
+
 **[DIAGRAM]** Now the four diagrams of section 27.8, one at a time. GitLab Flow with a production branch:
 
 ```text
@@ -139,14 +181,18 @@ A question for you: what is between the two tags on `main`? The hotfix, and also
     -------------M-------M     production    a merge from main deploys to production
 ```
 
-Trunk-based development:
+Now the four diagrams of section 27.8 again. GitLab Flow with a production branch: every merge deploys to staging, and a merge from `main` deploys to production.
+
+**[ANIMATION]** step: tbd.state-1
 
 ```text
     ---o---o---o---o---o---o---o---o---   main (trunk)
         \_/     \_/ \_/         \_/        branches that live hours to two days
 ```
 
-A release branch, with the fix made on `main` first:
+Trunk-based development: branches that live hours to two days.
+
+**[ANIMATION]** step: rel.state-1
 
 ```text
     ---o---o---o---o---F---o---o---   main          F = the fix, made on main first
@@ -156,7 +202,9 @@ A release branch, with the fix made on `main` first:
               v1.4.0   v1.4.1
 ```
 
-Microsoft's Release Flow:
+A release branch, with the fix made on `main` first, and its cherry-pick on the branch.
+
+**[ANIMATION]** step: rf.state-1
 
 ```text
     ---o---o---o---o---o---F---o---o---o---   main
@@ -164,6 +212,10 @@ Microsoft's Release Flow:
              o               F'      o        releases/M129, then releases/M130
           releases/M128   (hotfix cherry-picked to M129)
 ```
+
+Microsoft's Release Flow: the hotfix is cherry-picked to M129.
+
+**[ANIMATION]** graph: [a branch per version] *1-*2-*3-*4-F-*5-*6 main; *3-*7-F′ release/1.4; HEAD=none || [a branch per sprint] *1-*2-*3-*4-*5-F-*6-*7-*8 main; *3-*9 releases/M128; *5-F′ releases/M129; *7-*10 releases/M130; HEAD=none layout=rows title=The_same_graph dy=80
 
 Put the last two side by side: it's the same graph, with a branch per version in one and a branch per sprint in the other.
 
@@ -354,6 +406,8 @@ Five mistakes to watch for.
 ## PRODUCTION EXAMPLE
 
 Now, out of the lab. A company runs an LLM gateway as a hosted service and deploys from `main` after every merge. It uses GitHub Flow and has never needed more. Then two enterprise customers sign contracts to run the gateway on their own hardware and to stay one version behind. This is the first question of the chapter: does the branching model survive that?
+
+**[ANIMATION]** step: sort.path
 
 The staff engineer doesn't propose Git Flow. She applies the sorting question. Until now one version was alive. Next quarter there will be three. Something has to name the two older ones, so the team adds release branches, cut from `main` late, named by one pattern, `release/<version>`, with one ruleset on that pattern. `main` stays the only integration branch, and no `develop` is introduced, because the hosted service still deploys from `main` and the tags already record what was released. She writes the scheme into `CONTRIBUTING.md`, including the direction a fix travels, which is the subject of the next video.
 

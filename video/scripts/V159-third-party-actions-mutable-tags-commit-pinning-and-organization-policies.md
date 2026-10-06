@@ -13,6 +13,10 @@
 
 Your repository hasn't received a commit in a week. Your workflow file hasn't changed in two years. This morning your job runs code that didn't exist yesterday, with your job's token and every secret the job holds.
 
+**[ANIMATION]** graph: ?the_code_yesterday tag:v4; HEAD=none; say:uses:_some-owner/some-action@v4 => + ?the_code_yesterday-?code_that_did_not_exist_yesterday tag:v4; say:Somebody_moved_a_tag_in_another_repository dx=460 title=Nobody_touched_your_repository id=hook at_state_2=12
+
+**[ANIMATION]** step: hook.state-2
+
 Nobody touched your repository. Somebody moved a tag in another one. That somebody was either a maintainer of the action or a person holding a maintainer's token, and from your side of the line you can't tell which.
 
 You'll reproduce the move locally in three commands, with a bare repository playing the action's repository. A bare repository is one with no working tree, like a server's. Then you'll see the one form of that line that wouldn't have changed. Keep that promise in mind. You'll collect on it in the demo.
@@ -47,11 +51,21 @@ After this video you can:
 
 **Precisely.** From GitHub's secure use reference. A compromised action "would have access to all secrets configured on your repository, and may be able to use the `GITHUB_TOKEN` to write to the repository". And: "Pinning an action to a full-length commit SHA is currently the only way to use an action as an immutable release." A commit SHA is the commit ID, and immutable means it can never change. Tags are a matter of trust: "Pin actions to a tag only if you trust the creator… a tag can be moved or deleted if a bad actor gains access to the repository." The same applies to reusable workflows.
 
+**[ANIMATION]** cards: question=Your_workflow_says_@v4._When_is_that_tag_looked_up? cards=A:once,_on_the_day_you_wrote_the_line|B:again_on_every_run marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
+
 Quick quiz. Your workflow says `@v4`, and the file never changes. When is that tag looked up? A, once, on the day you wrote the line. B, again on every run. Your answer?
 
 **[PAUSE]**
 
-B, on every run. So what does `@v4` trust? Three things at once. That the author is honest. That nobody else can push to the author's repository. And that both stay true on every future day your workflow runs, because the reference is resolved again on every run.
+**[ANIMATION]** step: quiz.marks
+
+B, on every run.
+
+**[ANIMATION]** cards: cards=The_author_is_honest|Nobody_else_can_push_to_the_author's_repository|Both_stay_true_on_every_future_day_your_workflow_runs title=What_@v4_trusts numbered=on id=trust
+
+So what does `@v4` trust? Three things at once. That the author is honest. That nobody else can push to the author's repository. And that both stay true on every future day your workflow runs, because the reference is resolved again on every run.
 
 **[ON SCREEN]** The two forms, from section 21A.7.
 
@@ -76,15 +90,27 @@ updates:
       interval: "weekly"
 ```
 
+**[ANIMATION]** gates: packet=a_version_update gates=a_release:done:of_the_action:a_new_version|cooldown:done:three_days_by_default:since_14_July_2026|a_pull_request_is_opened:done:by_Dependabot:the_pin_gets_a_new_commit_ID|read_the_diff:done:you:before_merging title=Pins_do_not_update_themselves id=maintain say_2=Security_updates_are_immediate
+
 That's the documented configuration. And one behavior to know: since the fourteenth of July 2026, version updates wait a default cooldown of three days after a release before a pull request is opened. Security updates are immediate, and the `cooldown` option configures it. The textbook's reading: a cooldown gives the ecosystem time to notice a malicious release before you adopt it.
 
 **The limits of pinning.** The textbook says: state these whenever you recommend it.
 
+**[ANIMATION]** cards: cards=The_pinned_code_itself:a_malicious_commit_pinned_deliberately|Code_the_pin_does_not_reach:unpinned_actions_nested_inside_composite_actions|Dependabot_alerts:not_created_for_actions_pinned_to_SHA_values|A_remote_script_in_a_run_step:the_same_risk_class,_with_no_pin_available|Immutable_releases:not_visible_from_a_uses_line title=What_a_pin_does_not_protect_against id=limits
+
+**[ANIMATION]** step: limits.2
+
 First. A pin protects against a moved tag, but, quoting the Phase 0 report, "not against a malicious commit pinned deliberately or against unpinned actions nested inside composite actions". A composite action is an action that bundles several steps. So: read the diff of a pin update.
+
+**[ANIMATION]** step: limits.3
 
 Second. Quoting GitHub: "Dependabot only creates alerts for vulnerable actions that use semantic versioning and will not create alerts for actions pinned to SHA values." Pinning trades automatic alerts for immutability. Version updates, and advisories you read yourself, fill the gap.
 
+**[ANIMATION]** step: limits.4
+
 Third. A remote script fetched and executed in a `run` step, the pattern of downloading with `curl` and piping into a shell, is the same risk class with no pin available. That's the Codecov case of video 162.
+
+**[ANIMATION]** step: limits.5
 
 Fourth, a nuance. Immutable releases, generally available since the twenty-eighth of October 2025, make a published release's tag unchangeable once a maintainer enables the feature. `astral-sh/setup-uv` has used them since version 8.0.0. But you can't see from a `uses` line whether a tag is protected this way. So the pin remains the rule.
 
@@ -108,13 +134,23 @@ Workflow execution protections: actor rules, for who may trigger workflows, and 
 
 And "Allow GitHub Actions to create and approve pull requests": off by default for new personal repositories. Keep it off, so that a workflow can't approve its own change.
 
-**The change dated 2 November 2026.** With execution protections, GitHub introduced a default event rule. For public repositories that don't already have an applicable event policy, a default rule disables `pull_request_target`. It initially runs in evaluate mode, and GitHub announced that on the second of November 2026 it is enforced automatically for affected repositories. That date lies after the course baseline, so check the changelog on the day you watch this. Private and internal repositories aren't affected. A maintainer can explicitly allow the event, optionally for named workflow files. The textbook's advice for a public repository with a labeler or a welcome bot on that trigger: decide before that date. Migrate it, or allow it deliberately after reviewing it against section 21A.5.
+**[ANIMATION]** decide: nodes=q1:A_public_repository?|n1:private_and_internal:_not_affected|q2:Already_an_applicable_event_policy?|n2:no_default_rule|rule:a_default_rule_disables_pull__request__target|allow:a_maintainer_can_explicitly_allow_the_event edges=q1>n1:no|q1>q2:yes|q2>n2:yes|q2>rule:no|rule>allow:or title=The_default_event_rule:_enforced_2_November_2026,_as_announced id=nov say_level_3=In_evaluate_mode_first;_enforced_on_2_November_2026,_as_announced at_level_2=22 at_level_3=45
+
+**[ANIMATION]** step: nov.level-3
+
+**The change dated 2 November 2026.** With execution protections, GitHub introduced a default event rule. For public repositories that don't already have an applicable event policy, a default rule disables `pull_request_target`. It initially runs in evaluate mode, and GitHub announced that on the second of November 2026 it is enforced automatically for affected repositories.
+
+**[ANIMATION]** step: nov.level-4
+
+That date lies after the course baseline, so check the changelog on the day you watch this. Private and internal repositories aren't affected. A maintainer can explicitly allow the event, optionally for named workflow files. The textbook's advice for a public repository with a labeler or a welcome bot on that trigger: decide before that date. Migrate it, or allow it deliberately after reviewing it against section 21A.5.
+
+**[ANIMATION]** end
 
 **Policies do not replace review of the files.** The control for that is a code-owner rule on `.github/workflows/`, enforced by a ruleset, as you set it up in video 136.
 
 ## MENTAL MODEL
 
-**[ANIMATION]** graph: 80827f4-5de1e2d main; 80827f4 tag:v1; HEAD=main => 80827f4-5de1e2d main tag:v1; HEAD=main title=An_address_can_move,_a_fingerprint_cannot
+**[ANIMATION]** graph: 80827f4 tag:v1; HEAD=none => + 80827f4-5de1e2d tag:v1 dx=420 title=An_address_can_move,_a_fingerprint_cannot id=address
 
 **[ANIMATION]** step: state-1
 
@@ -136,6 +172,10 @@ Try it now, thirty seconds, on paper. Write one workflow line that ends in `@v1`
 
 **[PAUSE]**
 
+**[ANIMATION]** graph: 80827f4 tag:v1; HEAD=none; note:80827f4:yesterday:_the_code_you_reviewed; say:uses:_owner/report-size@v1 => + 80827f4-5de1e2d tag:v1; note:5de1e2d:today:_code_you_never_saw; cmd:!git_push_--force_origin_v1; say:uses:_owner/report-size@v1,_unchanged => + mark:pinned:80827f4; cmd:off; say:uses:_owner/report-size@80827f43993c0dc6fc8324685d01e720707e5429 dx=420 title=One_workflow_line,_one_tag,_two_commits id=line at_state_2=10 at_state_3=55
+
+**[ANIMATION]** step: line.state-1
+
 **[DIAGRAM]** One workflow line on the left. A tag in the middle. Two commits on the right. Draw the first arrow from the tag to the first commit. Then, without touching the workflow line, move the tag's arrow to the second commit. Last, add the pinned form below with its arrow straight to the first commit.
 
 ```text
@@ -156,6 +196,8 @@ Try it now, thirty seconds, on paper. Write one workflow line that ends in `@v1`
 ```
 
 **[DIAGRAM]** The top line did not change, and what it runs did. The bottom line cannot change what it runs without a commit to your own repository.
+
+**[ANIMATION]** step: line.state-3
 
 Nothing. The top line didn't change, and what it runs did. The pinned line at the bottom can't change what it runs without a commit to your own repository.
 
@@ -241,7 +283,11 @@ runs:
 
 A new tag object, `0ca190d`, and a new commit, `5de1e2d`. Same name, different commit. No consumer workflow changed. A workflow that says `@v1` now runs `5de1e2d`.
 
-Then the second half of the snippet. `git cat-file -p` with the old commit's full ID and the path of `action.yml`. The commit that was reviewed still exists, and its ID still names exactly that content. A workflow pinned to that ID runs what it ran yesterday. There's the promise from the opening: the one form of the line that doesn't change.
+Then the second half of the snippet. `git cat-file -p` with the old commit's full ID and the path of `action.yml`.
+
+**[ANIMATION]** graph: 80827f4 atag:v1#71c87ce; HEAD=none; say:refs/tags/v1_before_the_move => + drop:v1; 80827f4-5de1e2d atag:v1#0ca190d; say:Same_name,_different_commit => + note:80827f4:its_ID_still_names_exactly_that_content; say:A_workflow_pinned_to_80827f4_runs_what_it_ran_yesterday dx=420 title=No_consumer_workflow_changed id=after pace=quick
+
+The commit that was reviewed still exists, and its ID still names exactly that content. A workflow pinned to that ID runs what it ran yesterday. There's the promise from the opening: the one form of the line that doesn't change.
 
 **[ON SCREEN]** The state table of section 21A.7 for the two commands. For `git tag -f -a v1`: working tree, index, HEAD and the current branch unchanged; `refs/tags/v1` points at a new tag object; remote unchanged; GitHub unchanged. For `git push --force origin v1`: everything local unchanged; on the remote, `refs/tags/v1` is replaced; and on GitHub, every `@v1` reference resolves to the new commit on its next run.
 
@@ -265,7 +311,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. An ML platform organization with sixty repositories decides to pin. Asking sixty teams to remember is the first idea, and the textbook's sentence about policies describes why it won't hold: you want the rule moved from "every author must remember" to "the platform refuses".
 
+**[ANIMATION]** gates: packet=sixty_repositories gates=Dependabot_configuration:done:the_github-actions_ecosystem:a_source_of_updates_first|convert_the_references:done:each_ID_from_the_action's_own_repository:from_tag_to_commit_ID|switch_on_the_policy:done:pinned_to_a_full-length_commit_SHA:the_platform_refuses title=Three_things,_in_this_order id=rollout
+
+**[ANIMATION]** step: rollout.3
+
 So the organization does three things. It adds the `github-actions` ecosystem to the Dependabot configuration of every repository, so that pins have a source of updates before the rule bites. It converts the existing references, reading each ID from the action's own repository. Then it switches on the policy that requires actions to be pinned to a full-length commit SHA. From that day a workflow with an unpinned action fails.
+
+**[ANIMATION]** say: The_policy_covers_GitHub's_own_actions;_reusable_workflows_can_still_use_a_tag
 
 Two details from the table decide whether the rollout goes smoothly. The policy applies to GitHub's own actions as well, so `actions/checkout` by tag fails too. And reusable workflows can still be referenced by tag, so the central deploy workflow that forty repositories call needs its own discipline: a pinned ref by convention, and code-owner review on the callers.
 

@@ -11,7 +11,13 @@
 
 **[ON SCREEN]** The question, as a CTO asks it: "You rewrote history to remove a customer data file and force-pushed. Where may the file still exist, and who controls each place?"
 
-A team finds a file in the repository that should never have been there. Somebody searches, finds a command that removes a file from every commit, runs it in the clone on their laptop, force-pushes `main`, and reports that the file is gone. Three things are wrong with that report. The release tag still points at the old commits. The server still holds every old object. And every colleague's clone still holds the complete old history, and can push it back with an ordinary push tomorrow morning.
+A team finds a file in the repository that should never have been there. Somebody searches, finds a command that removes a file from every commit, runs it in the clone on their laptop, force-pushes `main`, and reports that the file is gone.
+
+**[ANIMATION]** cards: question=The_report:_the_file_is_gone cards=The_release_tag:still_points_at_the_old_commits|The_server:still_holds_every_old_object|Every_colleague's_clone:still_holds_the_complete_old_history marks=1:ring,2:ring,3:ring title=Three_things_are_wrong
+
+Three things are wrong with that report. The release tag still points at the old commits. The server still holds every old object. And every colleague's clone still holds the complete old history, and can push it back with an ordinary push tomorrow morning.
+
+**[ANIMATION]** end
 
 Today you see a whole-history rewrite the way an operator has to see it: as a change to every ref and to every commit ID after the first affected commit, with a list of owners, an order and a verification. The command is the smallest part. Keep one question in mind. After that force-push, can the server still print the file? The terminal will answer.
 
@@ -21,7 +27,17 @@ Welcome back to Git and GitHub Deep Mastery. Pull up a chair. Four words first. 
 
 In video 166 you learned the six steps of a leak response, and why containment comes first: the credential is revoked at its issuer, the service that accepts it, before anything is done to the repository. The third step, eradicate, said "rewrite history only where warranted". This video is about that clause.
 
-You already have the two facts that explain everything you're about to see. From video 52: a commit's ID is the hash of its content, a fingerprint computed from its bytes, and that content includes the ID of its parent, the commit it was built on. So a commit whose parent changes is a different commit. From video 79: a forced push moves refs on the remote, here the server, and deletes no objects. An object is one stored unit in Git, such as a commit or the content of a file.
+You already have the two facts that explain everything you're about to see.
+
+**[ANIMATION]** hash: differs=byte left=a_commit right=the_same_commit,_another_parent lines=tree:_the_snapshot|parent:_the_commit_it_was_built_on|author,_date,_message change=2 alt=parent:_a_replaced_commit ids=one-ID,another-ID diff=Another_parent,_another_ID steps=one,different title=The_ID_is_computed_from_the_content at_different=55
+
+From video 52: a commit's ID is the hash of its content, a fingerprint computed from its bytes, and that content includes the ID of its parent, the commit it was built on. So a commit whose parent changes is a different commit.
+
+**[ANIMATION]** remotes: [your clone] A-B-C′ main; HEAD=none || [the server] A-B-C main; HEAD=none => || [the server] + B-C′ main; ghost:C; cmd:!git_push_--force; say:The_ref_moves._No_object_is_deleted title=A_forced_push at_state_2=40
+
+From video 79: a forced push moves refs on the remote, here the server, and deletes no objects. An object is one stored unit in Git, such as a commit or the content of a file.
+
+**[ANIMATION]** end
 
 Three things today. First, what the recommended tool, git-filter-repo, requires and records, as section 21B.16 gives it from the tool's manual and from GitHub's procedure. Second, the mechanics, replayed locally with a command that ships with Git, so that you can watch the refs and the objects. Third, what the rewrite costs, because the costs decide whether you do it at all.
 
@@ -45,19 +61,35 @@ After this video you can:
 
 **Why it exists.** Some data stays harmful after its credential is rotated, or can't be rotated at all: personal data, customer records, proprietary model weights, a private key whose public half is pinned in devices, a secret whose revocation takes weeks. For that data, and only for that data, you want the repository's history to stop containing it.
 
+**[ANIMATION]** graph: A-B-C-D-E main; HEAD=none; note:C:first_affected => + B-C′-D′-E′ main; ghost:C,D,E; say:The_first_affected_commit_and_every_descendant_are_replaced title=A_whole-history_rewrite at_state_2=30
+
 **What it is, in one sentence.** A whole-history rewrite replaces the first affected commit and every descendant with new commits that have new IDs, and the command is the smallest part of the work. Descendants are the commits built on top of it.
+
+**[ANIMATION]** end
 
 **How: the recommended tool.** The recommended tool is git-filter-repo. It's a separate program and it isn't part of Git. It isn't installed in the lab, and this course installs nothing. Section 21B.16 gives five facts about it from its manual and from GitHub's page on removing sensitive data.
 
 **[ON SCREEN]** The five facts, one line at a time.
 
+**[ANIMATION]** cards: question=git-filter-repo,_as_section_21B.16_gives_it numbered=on cards=Wants_a_fresh_clone:it_ends_by_pruning_reflogs_and_old_objects|--sensitive-data-removal:since_version_2.47;_fetches_all_refs_first|Records_its_work:.git/filter-repo/commit-map|Signatures_are_removed:signed_tags_become_annotated_tags|Removes_the_origin_remote:by_default,_in_a_full_rewrite id=facts
+
+**[ANIMATION]** step: facts.1
+
 One. It refuses to run outside a fresh clone unless forced, because the rewrite is irreversible: by default it ends with an immediate pruning of reflogs and old objects. A reflog is a clone's own list of where each ref has pointed, and pruning means deleting.
+
+**[ANIMATION]** step: facts.2
 
 Two. The option `--sensitive-data-removal` exists since version 2.47. It fetches all refs first and gathers the extra information needed to clean up other copies.
 
+**[ANIMATION]** step: facts.3
+
 Three. It records its work in `.git/filter-repo/`: a file `commit-map` with the old and new ID of every commit, and the files `ref-map`, `changed-refs` and `first-changed-commits`.
 
+**[ANIMATION]** step: facts.4
+
 Four. Commits get new IDs, so signatures on commits and tags can't remain valid and are removed. A signature is a cryptographic seal over the bytes of one commit or one annotated tag. Signed tags become annotated tags.
+
+**[ANIMATION]** step: facts.5
 
 Five. By default a full rewrite removes the `origin` remote, as a forcing function against pushing by reflex. `origin` is the name under which a clone remembers the repository it came from.
 
@@ -106,6 +138,8 @@ One statement here is marked unverified in the textbook, and I say it as the tex
 
 Stay on the third and fourth rows, because they answer two of today's objectives. A pull request is a GitHub object that proposes merging one branch into another. Its review comments are attached to commit IDs and lines, and the IDs no longer exist on the branch. So the comments detach, and the diffs of closed pull requests break. A signature covers the commit object, the object is replaced, so the signature can't be carried over. The textbook's row says signatures are removed also on commits that predate the removed data. A rule that requires signed commits therefore rejects the rewritten history unless it is bypassed.
 
+**[ANIMATION]** cards: question=Do_not_rewrite_... numbered=on cards=for_a_revoked_credential:when_the_provider_logs_show_no_use|a_public_repository:it_un-publishes_nothing|before_containment|in_your_working_clone:the_tool_prunes_reflogs_and_stashes|by_the_same_command_on_every_machine:identical_commands_can_produce_different_IDs title=Section_21B.22:_five_cases
+
 **When not.** Section 21B.22 lists five cases. Don't rewrite for a credential that is revoked and whose provider logs show no use: record the decision and stop. Don't rewrite a public repository in the belief that it un-publishes anything. Don't rewrite before containment. Don't rewrite in your working clone, because the tool prunes reflogs and stashes, the work you set aside without committing. And don't have each colleague run the same command: identical commands can produce different IDs.
 
 **[ON SCREEN]** Outdated advice.
@@ -116,13 +150,21 @@ Older guides use `git filter-branch` or the BFG Repo-Cleaner. Git's own manual s
 
 A picture helps. The textbook's analogy is the recall of a printed book to remove one page. You can reprint every copy in your warehouse. Each reader's copy stays as it was until that reader exchanges it. The page numbers after the removed page all change. Every citation by page number now points at the wrong place. And one reader who lends an old copy to the library puts the page back on the shelf.
 
+**[ANIMATION]** walk: columns=the_book_recall,the_rewrite rows=the_warehouse:the_cleanup_clone_and_the_server|the_readers'_copies:clones_and_forks|the_page_numbers:commit_IDs|the_citations:everything_that_stored_an_ID|the_reader_who_lends_an_old_copy:the_stale_clone_of_the_next_video mono=off
+
 Map it. The warehouse is the cleanup clone and the server. The readers' copies are clones and forks. The page numbers are commit IDs. The citations are everything that stored an ID: issue comments, release notes, experiment records, deployment manifests. The reader who lends the old copy is the stale clone of the next video.
 
+**[ANIMATION]** end
+
 Where the analogy breaks: a reprinted book has no memory of the old edition, and a Git repository does. After the rewrite the old objects are still in the object database, unreachable, until something prunes them. The warehouse still has the old copies in the back room.
+
+**[ANIMATION]** stores: boxes=*the_cleanup_clone:where_the_filter_runs|the_server|a_colleague's_clone rows=1:A:new_commits_are_written@hl|2:A:refs_are_moved_to_them|3:A:old_objects_are_deleted,_separately|4:B:nothing_deleted_here@dim|4:C:nothing_deleted_here@dim title=Three_separate_things,_per_repository
 
 So the model to carry is this. A rewrite does three separate things, and only the first one is done by the filter: it writes new commits. Then refs are moved to them. Then, separately and deliberately, old objects are deleted. Each of the three happens per repository. Nothing you do in one repository deletes anything in another.
 
 ## DIAGRAM
+
+**[ANIMATION]** graph: dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762 main; b509fe3-7fae871 feature/streaming; 987a49d tag:v0.1.0; 64b9b89 tag:v0.2.0; HEAD=none; note:0805fd8:.env_added; name:before; title:before => + range:dfd59fd,0c55276,6388058,987a49d:shared,_unchanged; name:shared => + 987a49d-0ac4257-66a99cc-51e2d95-c8ce738; 51e2d95-ba9f0e0; note:0ac4257:no_.env; name:replaced; title:after; say:Replaced:_everything_from_the_first_changed_commit_on => + c8ce738 main; 66a99cc tag:v0.2.0; ba9f0e0 feature/streaming; ghost:0805fd8,64b9b89,b509fe3,d4b8762,7fae871; name:after => + title:server.git,_after_the_forced_push; say:No_ref_leads_to_the_five_old_commits._They_are_still_there; name:server id=rw
 
 **[DIAGRAM]** Build the "before" line first, left to right: eight commits on `main`. Mark the fifth, where `.env` was added. Hang `v0.1.0` below the commit before it and `v0.2.0` above the commit after it. Branch `feature/streaming` off the sixth commit.
 
@@ -142,13 +184,27 @@ So the model to carry is this. A rewrite does three separate things, and only th
   shared, unchanged: dfd59fd .. 987a49d        replaced: everything from the first changed commit on
 ```
 
-Read the two lines against each other. In the "after" line, the first four commits are the same objects: same IDs, drawn in the same place. From the fifth commit on, every ID is different.
+**[ANIMATION]** step: rw.before
+
+Watch the "before" line turn into the "after" line. Eight commits on `main`, the fifth is where `.env` was added, two tags, and `feature/streaming`.
+
+**[ANIMATION]** step: rw.shared
+
+In the "after" line, the first four commits are the same objects: same IDs, drawn in the same place.
+
+**[ANIMATION]** step: rw.replaced
+
+From the fifth commit on, every ID is different.
 
 Quick quiz. The sixth, seventh and eighth commits got new IDs as well, although nobody edited the changes they make. Which field of a commit makes that unavoidable: A, the message, B, the parent, or C, the author? Your answer?
 
 **[PAUSE]**
 
-B, the parent. Each commit records its parent's ID, and the parent was replaced. The last line of the diagram is the sentence to remember: shared and unchanged up to the commit before the leak, replaced from the first changed commit on. `v0.1.0` stays where it was. `v0.2.0` has to move, and so does `feature/streaming`.
+B, the parent. Each commit records its parent's ID, and the parent was replaced. The words on the picture are the sentence to remember: shared and unchanged up to the commit before the leak, replaced from the first changed commit on.
+
+**[ANIMATION]** step: rw.after
+
+`v0.1.0` stays where it was. `v0.2.0` has to move, and so does `feature/streaming`.
 
 ## LIVE TERMINAL DEMO
 
@@ -235,7 +291,13 @@ v0.2.0
 ```
 <!-- /snippet -->
 
-Hold on the two counts. Over the branches: zero. Over all refs: five snapshots that contain the key. So the answer was yes. The last command says why: the tag `v0.2.0` contains the first affected commit. The tag points at the old commit `64b9b89`, and a tag keeps its commit and all of that commit's ancestors alive. Anyone who fetches the tag fetches the secret. One more detail from the textbook: `--all` also includes the backup refs that `filter-branch` wrote under `refs/original/`.
+Hold on the two counts. Over the branches: zero. Over all refs: five snapshots that contain the key. So the answer was yes. The last command says why: the tag `v0.2.0` contains the first affected commit.
+
+**[ANIMATION]** graph: dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762; b509fe3-7fae871; 987a49d-0ac4257-66a99cc-51e2d95-c8ce738 main; 51e2d95-ba9f0e0 feature/streaming; 987a49d tag:v0.1.0; 64b9b89 tag:v0.2.0; HEAD=none; note:d4b8762:refs/original/; note:7fae871:refs/original/; note:0805fd8:.env; title:cleanup.git; say:The_tag_still_points_at_the_old_commit_64b9b89; name:attempt => + 66a99cc tag:v0.2.0; drop:d4b8762,7fae871; note:0805fd8:.env; note:64b9b89:refs/original/; reflog:b509fe3,d4b8762,7fae871; say:Every_ref_is_moved._The_old_objects_are_still_there; name:allrefs => + gone:0805fd8,64b9b89,b509fe3,d4b8762,7fae871; drop:64b9b89,0805fd8; say:Pruned_in_this_clone_only; cmd:!git_gc_--prune=now; name:pruned id=att at_attempt=12
+
+**[ANIMATION]** step: att.attempt
+
+The tag points at the old commit `64b9b89`, and a tag keeps its commit and all of that commit's ancestors alive. Anyone who fetches the tag fetches the secret. One more detail from the textbook: `--all` also includes the backup refs that `filter-branch` wrote under `refs/original/`.
 
 **Step 3: all refs, with tags following their commits.**
 
@@ -285,7 +347,19 @@ dfd59fd  dfd59fd  Add BM25 retriever
 ```
 <!-- /snippet -->
 
-Four. `0805fd8` became `0ac4257` because its tree changed. The three above it changed for two reasons. Every one of their snapshots held `.env` too, so their trees changed. And each records its parent's ID, and the parent changed. That second reason is enough by itself. The four commits below the leak are byte for byte the same objects. This table is what git-filter-repo writes to `commit-map`. In an incident, that file belongs in the incident record, so that old IDs can be translated.
+Four. The four commits below the leak are byte for byte the same objects. This table is what git-filter-repo writes to `commit-map`. In an incident, that file belongs in the incident record, so that old IDs can be translated.
+
+**[ANIMATION]** walk: columns=old_ID,its_tree,its_parent,new_ID rows=0805fd8:.env_removed:987a49d,_the_same:0ac4257|64b9b89:.env_removed:0ac4257,_new:66a99cc|b509fe3:.env_removed:66a99cc,_new:51e2d95|d4b8762:.env_removed:51e2d95,_new:c8ce738 marks=1.2:hl,2.2:hl,3.2:hl,4.2:hl,2.3:hl,3.3:hl,4.3:hl,1.3:dim last=new_ID title=Why_each_ID_changed id=why at_1=15
+
+**[ANIMATION]** step: why.1
+
+Now the reasons. `0805fd8` became `0ac4257` because its tree changed.
+
+**[ANIMATION]** step: why.4
+
+The three above it changed for two reasons. Every one of their snapshots held `.env` too, so their trees changed. And each records its parent's ID, and the parent changed. That second reason is enough by itself.
+
+**[ANIMATION]** step: att.allrefs
 
 **Step 5: the old objects are still there.** A rewrite adds new objects and moves refs. It deletes nothing by itself.
 
@@ -334,7 +408,13 @@ $ git fsck --no-progress
 ```
 <!-- /snippet -->
 
-Three deliberate steps: delete the backup refs, expire the reflogs, prune. Now `git cat-file -t` fails with "Not a valid object name", the scan prints zero, and `git fsck` prints nothing. git-filter-repo performs this pruning for you at the end of its run, which is why it insists on a fresh clone.
+Three deliberate steps: delete the backup refs, expire the reflogs, prune. Now `git cat-file -t` fails with "Not a valid object name", the scan prints zero, and `git fsck` prints nothing.
+
+**[ANIMATION]** step: att.pruned
+
+git-filter-repo performs this pruning for you at the end of its run, which is why it insists on a fresh clone.
+
+**[ANIMATION]** end
 
 **Step 7: the forced push.** 🔴 DANGEROUS. The five answers before the command is run. What it changes: `git push --force --mirror` sets every ref on the remote to the local value and deletes those the clone lacks. What it can destroy: branches and tags that exist only on the remote. A branch that a colleague pushed after you cloned is removed by your push. That's the mechanical reason for the freeze. Preview: `git push --dry-run --force --mirror origin`. Recovery: another clone that still has the old refs. On GitHub, the instruments of Chapter 13. When appropriate: once, after a freeze, at the end of a verified rewrite. Every other force push uses `--force-with-lease`.
 
@@ -389,7 +469,11 @@ unreachable commit 7fae8719801ebfc91df813470f8a380ac13184fc
 ```
 <!-- /snippet -->
 
-This is the output the whole video was built for, and it closes the question from the opening. No ref on the server reaches the secret. The scan over all refs is clean. And `git show` on the server still prints the key, from a commit that `git fsck` lists as unreachable, with four others. Unreachable means that no ref leads to it any more. A bare repository of your own can be pruned with `git gc --prune=now`. On GitHub you can't run that. Video 168 says who can.
+This is the output the whole video was built for, and it closes the question from the opening. No ref on the server reaches the secret. The scan over all refs is clean. And `git show` on the server still prints the key, from a commit that `git fsck` lists as unreachable, with four others.
+
+**[ANIMATION]** step: rw.server
+
+Unreachable means that no ref leads to it any more. A bare repository of your own can be pruned with `git gc --prune=now`. On GitHub you can't run that. Video 168 says who can.
 
 **[ON SCREEN]** The state table of section 21B.17.
 
@@ -413,7 +497,13 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
-Now, out of the lab. An ML platform team finds that a file with customer support transcripts was committed to the evaluation repository four months ago. This isn't a credential. Nothing can be rotated, so the data stays harmful, and the textbook's criterion for a rewrite is met. The lead writes the plan before anyone types a command: a freeze from a stated time, the rules that block force pushes and tag updates switched off for the duration and an owner for switching them back on, a fresh clone on one machine, the verification commands, the count of affected pull requests for the Support request, and the instruction to colleagues about their clones.
+Now, out of the lab. An ML platform team finds that a file with customer support transcripts was committed to the evaluation repository four months ago. This isn't a credential. Nothing can be rotated, so the data stays harmful, and the textbook's criterion for a rewrite is met.
+
+**[ANIMATION]** gates: packet=the_plan gates=a_freeze:done:-:from_a_stated_time|rules_on_force_pushes_and_tags_switched_off:done:-:with_an_owner_for_switching_them_back_on|a_fresh_clone:done:-:on_one_machine|the_verification_commands:done|the_count_of_affected_pull_requests:done:-:for_the_Support_request|the_instruction_to_colleagues:done:-:about_their_clones title=The_operation_around_the_command
+
+The lead writes the plan before anyone types a command: a freeze from a stated time, the rules that block force pushes and tag updates switched off for the duration and an owner for switching them back on, a fresh clone on one machine, the verification commands, the count of affected pull requests for the Support request, and the instruction to colleagues about their clones.
+
+**[ANIMATION]** end
 
 Then comes the cost that is specific to an ML team. Every experiment record, model card and deployment manifest that stored a commit ID from the last four months now points at a commit that no longer exists on the remote. The team doesn't try to edit all of those records. It stores git-filter-repo's `commit-map` file in the incident record, so that anyone who holds an old ID can translate it. And because the repository required signed commits, the lead plans the bypass for the rewritten history in advance, since the signatures are gone.
 
@@ -434,6 +524,8 @@ When that is done, the challenge is Exercise 31.5, Level 4, "How far did it get?
 Answer it out loud before you open the answers file. A strong answer does four things. It starts with the layer where the damage happens, the issuer, and says what revocation achieves that no repository operation can. It gives the criterion for when a rewrite is warranted at all, with examples of data that can't be rotated. It names the costs concretely: what happens to clones, to recorded commit IDs, to signatures, to open pull requests, and what the rewrite can't recall. And it ends with a decision that is written down with its reason. An answer that describes only the filter command has answered a different question.
 
 ## RECAP
+
+**[ANIMATION]** say: Shared_up_to_987a49d,_replaced_from_0ac4257_on
 
 Let's land this. You should now be able to say these sentences, in your own words.
 

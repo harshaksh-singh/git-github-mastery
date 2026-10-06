@@ -13,6 +13,8 @@
 
 At some point a message like this arrives. A branch is a named line of commits, the saved snapshots of a project, and `main` is the branch the whole team shares. The CTO who receives the message doesn't want a command. The CTO wants four answers: what happened, how you know, what you changed and how you proved it worked, and why it won't happen again. Keep those four answers in view. Every drill in this part ends with them.
 
+**[ANIMATION]** cards: id=adds cards=Other_people:their_clones_hold_evidence,_and_they_keep_working|Time_pressure:it_makes_the_destructive_shortcut_attractive|An_audience:it_has_to_decide_on_the_basis_of_what_you_tell_them title=An_incident_adds_three_things at_1=28 at_2=60 at_3=76
+
 You have a method for one repository and one symptom. An incident adds three things the method alone doesn't cover. Other people, whose clones, their own copies of the repository, hold evidence, and who keep working while you investigate. Time pressure, which makes the destructive shortcut attractive. And an audience that has to decide something on the basis of what you tell them.
 
 ## INTRODUCTION
@@ -37,7 +39,11 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** cards: id=shared question=A_problem_in_shared_state_that_other_people_depend_on cards=a_shared_branch|a_published_history|a_credential|a_pipeline title=An_incident,_in_one_sentence at_1=30 at_2=38 at_3=46 at_4=58
+
 **An incident, in one sentence.** An incident is a problem in shared state, a shared branch, a published history, a credential such as a password or token, a pipeline, that other people depend on while you're still working out what it is.
+
+**[ANIMATION]** end
 
 **The loop.** Seven stages. It's the root-cause framework with the stages that only exist when other people are involved.
 
@@ -59,7 +65,11 @@ Try it now, on paper. Thirty seconds. Cover the table and write the seven stages
 
 **[PAUSE]**
 
+**[ANIMATION]** gates: id=loop gates=stabilise:done|preserve:done|diagnose:done|recover:done|verify:done|communicate:done:-:the_first_message_goes_out_at_stage_1|prevent:done title=The_loop,_in_seven_stages pace=quick
+
 Stabilise, preserve, diagnose, recover, verify, communicate, prevent. And the arrow runs from stage 1 to stage 6.
+
+**[ANIMATION]** end
 
 **Where the evidence lives.** In an incident the evidence is spread over several repositories, and each kind lives in a specific place. Much of it is in reflogs, Git's local records of each ref's past values.
 
@@ -76,7 +86,11 @@ A prediction. Every clone keeps reflogs. Does the server keep one for its branch
 
 **[PAUSE]**
 
+**[ANIMATION]** stores: id=evidence boxes=the_clones:each_keeps_reflogs|GitHub|*server.git:one_shared_state rows=2:A:your_clone:_reflog_of_origin/main|2:A:Asha's_clone:_reflog_of_her_branch|2:A:Ravi's_clone:_has_not_fetched_yet|1:C:refs/heads/main|1:C:no_reflog_of_its_own@bad|3:B:Activity_view,_audit_log title=Where_the_history_of_a_server-side_branch_lives at_1=2 at_2=52 at_3=62
+
 No, not by default. The retention periods are Git's defaults, and the lab configuration switches reflog expiry off. And one fact decides how you treat colleagues' clones: a bare repository, which is what a server holds, keeps no reflog unless `core.logAllRefUpdates` is set. So the history of a server-side branch exists only as the sum of what the clones remember, plus whatever the hosting platform records. That's why "preserve" includes asking colleagues not to run `git fetch --prune`, `git gc` or a re-clone until you've read their reflogs. Each of those can delete old records.
+
+**[ANIMATION]** end
 
 **Severity.** Severity decides who is told and how fast, not how interesting the Git problem is. The textbook's scale is a working scale for repository incidents, to be adapted to your organisation's own. It asks three questions: which state was affected, could wrong code or a secret have reached users or outsiders, and is anything unrecoverable.
 
@@ -89,11 +103,19 @@ No, not by default. The retention periods are Git's defaults, and the lab config
 
 Three rules for using a scale. Assign the level on what could have happened in the window, not only on what did. Raise the level the moment a secret is involved. Lowering it later costs nothing. And never let severity depend on who caused the incident.
 
+**[ANIMATION]** cards: id=sevquiz question=A_production_branch_was_rewritten,_and_nothing_shipped cards=A:SEV_4|B:SEV_3|C:SEV_2 marks=3:ok title=Quick_quiz_on_the_first_rule at_1=55 at_2=65 at_3=75
+
+**[ANIMATION]** step: 3
+
 Quick quiz on the first rule. A production branch was rewritten, and nothing shipped. A, SEV 4. B, SEV 3. Or C, SEV 2? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 C. The first rule is the one people resist. The textbook's example is exactly this, a rewritten production branch that shipped nothing and is still SEV 2, because the only thing between the rewritten branch and production was one check.
+
+**[ANIMATION]** end
 
 **The ten incidents.** Each is a directory under `incidents/` with three files.
 
@@ -111,9 +133,15 @@ The report is incomplete and partly wrong, as real reports are. The generator is
 
 ## MENTAL MODEL
 
+**[ANIMATION]** gates: id=ward gates=stabilise:done|record:done|diagnose:done|treat:done|confirm:done|hand_over:done title=A_ward_doctor_with_an_unstable_patient at_1=42 at_2=47 at_3=52 at_4=57 at_5=62 at_6=67
+
+**[ANIMATION]** step: 6
+
 The textbook's analogy is a ward doctor with an unstable patient. The doctor follows a fixed sequence: stabilise, record, diagnose, treat, confirm, hand over. The sequence exists because under pressure people skip to treatment.
 
 The analogy breaks in two places, both in your favor. A repository can be copied in seconds, so a treatment can be rehearsed on a copy. And Git almost never destroys committed work by itself, so "stabilise" usually means stopping people, not stopping a process.
+
+**[ANIMATION]** cards: id=sentence question=In_most_Git_incidents_the_first_act_is_a_sentence,_not_a_command cards="Nobody_pushes_to_or_resets_this_branch_until_I_say_so." title=Stage_1 at_1=28
 
 That second point changes what the first minute looks like. In most Git incidents the first act is a sentence, not a command: "Nobody pushes to or resets this branch until I say so." The textbook's production example is exactly that: an ML platform team deploys an inference service from a branch called `production`, the deploy job refuses to run, and stage 1 is one sentence in the channel.
 
@@ -159,7 +187,11 @@ You're allowed to look into and work in every clone, the way you would sit down 
 
 The generator runs with the fixed lab clock, so the commit IDs in your sandbox equal the IDs printed in the solutions and in Chapter 30. Commits that you create in the lab shell use the real clock and get other IDs. Running the generator again deletes the sandbox and builds it afresh. Do that whenever a repair went wrong: an incident sandbox is the one place where a destructive mistake costs nothing.
 
+**[ANIMATION]** gates: id=solve gates=symptoms:done:-:in_one_sentence|evidence:done:-:read-only,_in_each_clone|hypotheses:done:-:at_least_three|preserve:done:-:before_you_change|fix:done:-:destroys_least|verify:done:-:the_same_commands|report:done:-:four_lines_for_a_CTO title=How_to_solve_one:_seven_steps at_1=9 at_2=27 at_3=41 at_4=54 at_5=61 at_6=75 at_7=85
+
 **How to solve one.** Seven steps, from the README. Read the symptoms and write the symptom in one sentence without interpretation. Collect evidence with read-only commands only, in each clone that matters. Write at least three hypotheses and the command that tells them apart. Preserve before you change. Choose the fix that destroys least and run it one command at a time. Verify with the commands that showed the problem. And write the four lines a CTO needs. There are the four answers from the opening.
+
+**[ANIMATION]** end
 
 **How to check.**
 
@@ -197,7 +229,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. An ML platform team deploys an inference service from the branch `production`. On a Tuesday the deploy job refuses to run, with a message that the deployed commit isn't an ancestor of the branch. In plain words, the branch's history no longer contains it.
 
+**[ANIMATION]** walk: id=first columns=stage,what_she_does rows=Stage_1:one_sentence_in_the_channel|Stage_2:asks_two_colleagues_not_to_fetch,_prune_or_re-clone;_anchors_the_commits_she_can_already_name|Stage_6,_early:a_first_status_to_the_lead,_with_the_level;_SEV_2 mono=off title=The_first_five_minutes,_and_no_repair at_1=14 at_2=30 at_3=62
+
 The engineer on call does three things in the first five minutes, and none of them is a repair. Stage 1: one sentence in the channel, "Nobody pushes to or resets `production` until I say so." Stage 2: she asks two colleagues not to fetch, prune or re-clone, because their clones are the witnesses, and she anchors the commits she can already name, giving each a branch of its own. Stage 6, early: a first status to the lead, with the level. She rates it SEV 2 although nothing was deployed, and says why: the only thing between the rewritten branch and production was one check.
+
+**[ANIMATION]** end
 
 The diagnosis, the recovery and the verification come after that, in that order. The lead later says that the first sentence was the most valuable act of the incident: while it stood, nobody added a second problem to the first.
 

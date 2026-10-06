@@ -13,6 +13,10 @@
 
 Each report contains a diagnosis, and each diagnosis names a suspect: a command in the first, the server in the second. A branch is a named line of commits, the saved snapshots of a project. `git pull` fetches commits from the team's server and integrates them, and a push sends yours there. People in this situation aren't careless. They're describing what they believe happened, in the only words they have.
 
+**[ANIMATION]** cards: id=suspects cards=Ravi's_report_suspects_a_command:git_pull|Asha's_report_suspects_the_server title=Two_reports,_two_suspects at_1=15 at_2=25
+
+**[ANIMATION]** step: 2
+
 Your job in the next twenty minutes is to treat both sentences as symptoms, find out from the repositories what did happen, bring back everything that can be brought back, and say plainly what can't. Keep those two suspects in mind. Each gets a verdict before we finish.
 
 A first question. Ravi blames `git pull`. Which record on his laptop could confirm that, or clear it? Say it out loud.
@@ -59,7 +63,7 @@ Committed work is in the reflog. Staged work was written to the object database 
 
 **The root cause, as the textbook states it.** Ravi wanted to discard one edit and used a command that moves the branch, replaces the index and overwrites the working tree. `origin/main`, his clone's record of the server's `main`, wasn't his branch's counterpart. No counterpart existed. Layer: Git, one laptop. `git pull` wasn't involved.
 
-**[ANIMATION]** graph: 43fb607-44fa655-2876d93-4e4c0b7 feature/escalation-rules; 44fa655 main; 2876d93 origin/main; 44fa655-95d110d-a26c697-0322a16; HEAD=feature/escalation-rules; ghost:95d110d,a26c697,0322a16 => 43fb607-44fa655-2876d93-4e4c0b7-990c316-faa407c-028bfd1 feature/escalation-rules; 44fa655 main; 2876d93 origin/main; 44fa655-95d110d-a26c697-0322a16 rescue/before-reset; HEAD=feature/escalation-rules title=Add,_do_not_move
+**[ANIMATION]** graph: 43fb607-44fa655-2876d93-4e4c0b7 feature/escalation-rules; 44fa655 main; 2876d93 origin/main; 44fa655-95d110d-a26c697-0322a16; HEAD=feature/escalation-rules; reflog:95d110d,a26c697,0322a16 => 43fb607-44fa655-2876d93-4e4c0b7-990c316-faa407c-028bfd1 feature/escalation-rules; 44fa655 main; 2876d93 origin/main; 44fa655-95d110d-a26c697-0322a16 rescue/before-reset; HEAD=feature/escalation-rules; reflog: title=Add,_do_not_move
 
 **[ANIMATION]** step: state-1
 
@@ -71,15 +75,21 @@ So the three commits are added on top instead. This is the ladder of video 184: 
 
 **[ANIMATION]** end
 
+**[ANIMATION]** cards: id=missing question=Why_can_a_branch_be_missing? cards=it_was_renamed|it_was_deleted_locally|the_server's_branch_was_deleted,_and_a_pruning_fetch_removed_the_remote-tracking_ref|it_was_never_pushed title="Disappeared"_is_a_symptom at_1=22 at_2=29 at_3=36 at_4=62
+
 **Incident 8: "disappeared" is a symptom with several mechanisms.** A branch can be missing because it was renamed. Because it was deleted locally. Because the server's branch was deleted and a pruning fetch removed the remote-tracking ref, the clone's record of that branch. Or because it was never pushed. Usually more than one of these has happened, and the question that matters isn't "where is the branch" but "which work is where".
 
+**[ANIMATION]** gates: id=foursteps gates=squash_merge:done:GitHub:and_the_head_branch_deleted|fetch.prune:done:Git:removed_the_remote-tracking_ref|more_work:done:Git:continued_on_the_merged_branch|git_branch_-D:done:Git:overrode_the_refusal_of_-d zones=GitHub,Git split=1 title=Four_steps,_each_reasonable_alone at_1=12 at_2=40 at_3=52 at_4=60
+
 **The root cause here: four steps, each reasonable alone.** GitHub squash-merged the pull request, the proposal to merge her branch, and deleted the head branch. A squash merge combines a branch's commits into one new commit. `fetch.prune` removed the remote-tracking ref. Work had continued on the merged branch. `git branch -d` refused, correctly, because squashed commits aren't ancestors of `main`, and `-D` overrode the refusal. Layers: GitHub for the first step, Git for the rest.
+
+**[ANIMATION]** end
 
 **Two tools, one of which misleads.** `git cherry` compares patch IDs, which are hashes of each commit's change, and a squashed commit equals none of its parts, so every original commit looks unmerged. Trees, the complete snapshots, are reliable: compare the content of the old tip with the content of `main`.
 
 **GitHub, not Git.** A closed pull request offers "Restore branch" for its head branch. It restores what the server had. A commit that was never pushed isn't on the server, and Support can't produce it.
 
-**[ANIMATION]** graph: c8dbea7-1a7ca10 main origin/main; c8dbea7-c12fb6d-a93889a-ceaa8bc-70df7f7; HEAD=main; ghost:c12fb6d,a93889a,ceaa8bc,70df7f7 => c8dbea7-1a7ca10-499c20c feature/prompt-validation; 1a7ca10 main origin/main; c8dbea7-c12fb6d-a93889a-ceaa8bc-70df7f7 rescue/prompt-versioning; HEAD=feature/prompt-validation title=Which_work_is_where
+**[ANIMATION]** graph: c8dbea7-1a7ca10 main origin/main; c8dbea7-c12fb6d-a93889a-ceaa8bc-70df7f7; HEAD=main; reflog:c12fb6d,a93889a,ceaa8bc,70df7f7 => c8dbea7-1a7ca10-499c20c feature/prompt-validation; 1a7ca10 main origin/main; c8dbea7-c12fb6d-a93889a-ceaa8bc-70df7f7 rescue/prompt-versioning; HEAD=feature/prompt-validation; reflog: title=Which_work_is_where
 
 **[ANIMATION]** step: state-1
 
@@ -93,9 +103,15 @@ The safe recovery is a new branch from the current `main` with the one commit th
 
 ## MENTAL MODEL
 
+**[ANIMATION]** walk: id=desk columns=on_the_desk,in_Git,after_the_sweep rows=pages_that_were_filed:the_commits:in_the_archive,_with_an_index_card:_the_reflog|pages_in_the_out-tray:the_staged_file:photocopied,_without_its_folder_label|pages_you_were_still_writing_on:the_unstaged_edit:never_copied_by_anyone mono=off marks=1.3:ok,2.3:ok,3.3:bad title=A_desk_that_somebody_swept_clean at_1=22 at_2=50 at_3=80
+
+**[ANIMATION]** step: 3
+
 Think of the three layers of Incident 1 as three kinds of paper on a desk that somebody swept clean. Pages that were filed, the commits, are in the archive, and the archive has an index card for each: the reflog. Pages that were put in the out-tray, the staged file, were photocopied by the clerk before the sweep. The copy exists, without its folder label. Pages you were still writing on were never copied by anyone.
 
 Where the picture breaks: the archive's index cards expire. By default a reflog entry for a commit that's no longer reachable lasts 30 days, and a dangling blob goes two weeks after it becomes unreachable, once maintenance runs. The lab switches reflog expiry off. A real laptop doesn't.
+
+**[ANIMATION]** end
 
 Try it now. Thirty seconds, read-only. In the lab shell or any repository you have, run `git reflog -5`, and read the lines from the bottom up.
 
@@ -106,6 +122,8 @@ Each line is one move of HEAD, Git's note of where you are: the commit it arrive
 For Incident 8, hold the sentence from video 170: "merged" in Git means "reachable from". A squash keeps the content and discards the ancestry. So every tool that asks about ancestry or patch identity says "not merged", and the tool that compares content says "already there".
 
 ## DIAGRAM
+
+**[ANIMATION]** cards: id=sofar question=What_we_know_so_far:_two_reports cards=Ravi:"I_think_git_pull_ate_my_work."|Asha:"My_branch_has_disappeared._I_am_sure_everything_was_pushed." title=Before_the_demo at_1=30 at_2=55
 
 **[DIAGRAM]** A new drawing for each incident: a timeline strip built from reflog entries, read left to right, with the destructive moment marked. Incident 1, from the reflog of the branch:
 
@@ -123,7 +141,9 @@ For Incident 8, hold the sentence from video 170: "merged" in Git means "reachab
                     an unstaged edit (survives nowhere)
 ```
 
-Incident 8, from the reflog of HEAD, because the branch's own reflog went with the branch:
+Before the demo, here is everything we know so far from the people involved: two reports, each naming a suspect.
+
+**[ANIMATION]** step: sofar.2
 
 ```text
   HEAD, from its reflog (oldest on the left)
@@ -138,6 +158,8 @@ Incident 8, from the reflog of HEAD, because the branch's own reflog went with t
    not in this reflog: the squash merge and branch deletion on GitHub, the pruning fetch,
    and git branch -D, which removed the ref and its reflog
 ```
+
+Each incident gets a timeline, built from a reflog. We draw both in the demo, once the reflogs are on screen.
 
 ## LIVE TERMINAL DEMO
 
@@ -199,6 +221,12 @@ $ git reflog | grep -c pull
 <!-- /snippet -->
 
 Three hypotheses, separated by this one output. A pull rewrote the branch: no `pull` line exists, the count is 0. The commits were made elsewhere: no, three `commit:` lines are in this branch's reflog. A reset moved the branch away from them: `@{1}` says "reset: moving to origin/main". And `@{0}` is the commit Ravi made afterwards.
+
+**[ANIMATION]** walk: id=t1 columns=reflog,what_happened,note rows=@{5}:branch_created:|@{4}:commit_95d110d:|@{3}:commit_a26c697:|@{2}:commit_0322a16:last_good_tip:_anchor_here|@{1}:RESET_--hard_to_origin/main:destructive_moment|@{0}:commit_4e4c0b7:|also_lost:a_staged_file:survives_as_a_dangling_blob|also_lost:an_unstaged_edit:survives_nowhere marks=4.3:ok,5.2:bad,5.3:bad,8.3:bad title=feature/escalation-rules,_from_its_reflog pace=quick
+
+Here's that reflog as a timeline, oldest at the top: the last good tip at `@{2}`, the destructive moment at `@{1}`.
+
+**[ANIMATION]** end
 
 **Anchor.** 🟢 SAFE: a branch at the last good tip.
 
@@ -327,6 +355,8 @@ Deleted branch rescue/before-reset (was 0322a16).
 
 🔴 DANGEROUS: `git branch -D`. It deletes the branch reflog and the only name of commits that aren't merged elsewhere. The recovery is the HEAD reflog, until it expires. It's appropriate here because the range-diff has shown that every commit on the rescue branch has its copy on the real branch. The rescue branch is deleted only after the verification, and the deletion prints the ID once more.
 
+**[ANIMATION]** cards: id=verdict1 cards=Ravi's_report_suspects_a_command:git_pull|Asha's_report_suspects_the_server marks=1:ok title=Two_reports,_two_suspects pace=quick at_marks=72
+
 **The message to Ravi.** What is back: three commits, and one file as untracked content. What isn't: the unstaged edit to the routing rules, which Git never stored. And: `git pull` wasn't involved. That's the first suspect cleared. Nobody else needs a message.
 
 **[TERMINAL]** Replay `labs/run incidents/solve-08-branch-disappeared`. We sit at Asha's clone.
@@ -445,6 +475,12 @@ $ git diff --stat main 70df7f7~1
 
 `git cherry` reports all four commits as unmerged, which is misleading: a squashed commit equals none of its parts. Trees are reliable. The old tip differs from `main` by one file. The commit before it doesn't differ at all. So three commits are in `main` as one, and the fourth, the validation, was never pushed. "I am sure everything was pushed" was true of three commits out of four.
 
+**[ANIMATION]** walk: id=t2 columns=reflog,what_happened,note rows=@{7},_@{6}:clone,_then_switch_to_the_branch:|@{5}_to_@{3}:commits_c12fb6d,_a93889a,_ceaa8bc:pushed,_then_squash-merged_as_one_commit|@{2}:commit_70df7f7:never_pushed:_the_only_copy|@{1},_@{0}:switch_to_main,_then_pull,_fast-forward:|not_in_this_reflog:the_squash_merge_and_branch_deletion_on_GitHub:and_the_pruning_fetch,_and_git_branch_-D marks=3.3:bad,5.1:dim,5.2:dim,5.3:dim title=HEAD,_from_its_reflog pace=quick
+
+And here's the timeline of Incident 8, from the reflog of HEAD, because the branch's own reflog went with the branch.
+
+**[ANIMATION]** end
+
 **Anchor, then recover.** 🟢 SAFE for the anchor and the new branch. 🟡 CAUTION for the cherry-pick and the push of a new branch.
 
 <!-- snippet: incidents/solve-08-branch-disappeared/05-anchor -->
@@ -512,6 +548,8 @@ PASS: the recovery of incident 08-branch-disappeared is complete.
 
 A pull request for the new branch would list one commit and one file. The diff between the rescue branch and the new branch prints nothing: the new branch has everything the lost one had. Then the rescue branch goes, and the check passes. Read its last line: "the merged branch was not pushed again".
 
+**[ANIMATION]** cards: id=verdict2 cards=Ravi's_report_suspects_a_command:git_pull|Asha's_report_suspects_the_server marks=1:ok,2:ok title=Two_reports,_two_suspects pace=quick at_marks=70
+
 **The message to Asha.** Nothing was deleted by mistake. Three commits are in `main` as one. The fourth survived only in her reflog. So the server, the second suspect, is cleared too.
 
 ## COMMON MISTAKES
@@ -528,7 +566,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A prompt-engineering team uses squash merges and automatic deletion of head branches. An engineer comes back from two days off, finds her branch gone everywhere, and can't find her commit messages on `main`. She is certain that the server lost her work, and she is about to ask an administrator to restore the branch from the closed pull request.
 
+**[ANIMATION]** graph: *-S main; *-A-B-C-D; HEAD=main; reflog:A,B,C,D; note:S:the_squash_merge; note:D:committed_after_the_last_push => + D rescue; say:They_anchor_the_tip => + S-D′ new-branch; HEAD=new-branch; say:The_one_unmerged_commit_moves_to_a_new_branch id=prod at_state_1=40
+
+**[ANIMATION]** step: state-1
+
 A colleague asks one question first: "Did you commit anything after your last push?" Then he reads the reflog of HEAD with her. The answer is on the screen: one commit after the last push. Restoring the server's branch would have brought back the three commits that are already in `main` and not the one she needs, because the server never had it.
+
+**[ANIMATION]** step: state-3
 
 They anchor the tip, compare trees, and move the one unmerged commit to a new branch. The team's notes get two lines. A new branch after every merge. And "pushed" is read from `git status -sb`, not from memory. The colleague adds the line from the textbook's postmortem, because it's the one that changes behavior: the only copy of a day's work was a reflog entry, which by default expires 30 days after its commit becomes unreachable.
 

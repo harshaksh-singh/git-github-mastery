@@ -11,7 +11,13 @@
 
 **[ON SCREEN]** "Which branching model do you follow?"
 
-An auditor asks that question, and most teams answer with a name. A branching model is a team's agreement about its branches: its names for lines of commits, the saved snapshots of a project. The name tells the auditor nothing: not how long branches live, not which way fixes travel, not who may move which ref, meaning a branch or a tag, not what was in the last patch release. The chapter's advice is blunt: don't adopt a model by name. Write down the refs, the rules and the fix direction.
+An auditor asks that question, and most teams answer with a name. A branching model is a team's agreement about its branches: its names for lines of commits, the saved snapshots of a project.
+
+**[ANIMATION]** cards: question=Which_branching_model_do_you_follow? cards=how_long_branches_live|which_way_fixes_travel|who_may_move_which_ref|what_was_in_the_last_patch_release title=The_name_tells_the_auditor_nothing at_1=12 at_2=24 at_3=34 at_4=50
+
+The name tells the auditor nothing: not how long branches live, not which way fixes travel, not who may move which ref, meaning a branch or a tag, not what was in the last patch release. The chapter's advice is blunt: don't adopt a model by name. Write down the refs, the rules and the fix direction.
+
+**[ANIMATION]** end
 
 Level 8 ends by asking you to do exactly that for a whole company, and then to defend it against five people who each want something different. So what do you tell the auditor instead?
 
@@ -32,9 +38,15 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** cards: id=parts cards=Evidence|Branching_and_release_model|Governance|CI_design|Security_policy|Reproducibility:of_model_releases|Migration numbered=on title=Seven_parts,_in_this_order at_1=42 at_2=50 at_3=60 at_4=66 at_5=72 at_6=79 at_7=86
+
+**[ANIMATION]** step: 7
+
 **What is asked.** A design document of at most four pages, plus an evidence table. It has seven parts, in this order. Evidence. Branching and release model. Governance. CI design. Security policy. Reproducibility of model releases. And migration.
 
 Two requirements run through all seven. For every control, you state the layer that enforces it: a convention, a local hook, a CI check, a GitHub rule, or a contractual or human process. And for every factual claim about GitHub, whether a feature, a plan requirement or a default, you cite the chapter of the book or the documentation page. If you don't know whether a plan includes a feature, you say so and say how you would find out.
+
+**[ANIMATION]** end
 
 **How it is judged.** One hundred points, pass at 70 or more, with no automatic failure.
 
@@ -58,13 +70,31 @@ Two requirements run through all seven. For every control, you state the layer t
 - Inventing a GitHub feature, default or plan requirement, or a Git command or option.
 - A design that cannot produce a patch release for a customer containing only fixes.
 
+**[ANIMATION]** cards: id=quiz question=A_policy_enforced_only_by_a_local_hook cards=A:a_finished_control|B:an_automatic_failure marks=2:ok title=Quick_quiz at_1=60 at_2=75
+
+**[ANIMATION]** step: 2
+
 Quick quiz. A policy is enforced only by a local hook, a script Git runs on one person's own machine. A, a finished control, or B, an automatic failure?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 B, the second on that list. A hook isn't cloned, so the person it controls can step over it.
 
-**The defence.** After you submit, the assessor raises objections, one at a time, from five directions. A developer who finds the model too heavy. A release manager with an urgent fix for one customer. A security reviewer. An auditor. And the CTO, asking about cost and about evidence. For each objection you may defend the design, amend it, or concede. A reasoned amendment scores as well as a successful defence. What costs points is changing the design without saying what the change breaks, or defending a control you can't say how to enforce.
+**[ANIMATION]** cards: id=five cards=A_developer:finds_the_model_too_heavy|A_release_manager:an_urgent_fix_for_one_customer|A_security_reviewer|An_auditor|The_CTO:cost_and_evidence title=Objections_from_five_directions at_1=30 at_2=46 at_3=64 at_4=72 at_5=80
+
+**[ANIMATION]** end
+
+**The defence.** After you submit, the assessor raises objections, one at a time, from five directions. A developer who finds the model too heavy. A release manager with an urgent fix for one customer. A security reviewer. An auditor. And the CTO, asking about cost and about evidence.
+
+**[ANIMATION]** cards: id=answers cards=defend|amend|concede marks=1:ok,2:ok title=Three_answers_to_an_objection at_1=8 at_2=18 at_3=24 at_marks=40
+
+For each objection you may defend the design, amend it, or concede. A reasoned amendment scores as well as a successful defence. What costs points is changing the design without saying what the change breaks, or defending a control you can't say how to enforce.
+
+**[ANIMATION]** cards: id=decision cards=The_decision|The_reason:a_measurement,_a_mechanism_or_a_source|The_cost|Enforced_by:the_layer_that_enforces_it numbered=on marks=4:ring title=One_decision,_four_lines at_1=18 at_2=28 at_3=62 at_4=70
+
+**[ANIMATION]** step: 4
 
 **How to structure a decision.** Each decision in your design has the same four lines. The decision. The reason, which is a measurement you made, a mechanism you can explain, or a source you can cite. The cost. And the layer that enforces it. A decision whose "enforced by" line reads "people will remember" isn't finished.
 
@@ -72,13 +102,21 @@ Try it now, on paper. Thirty seconds. Write those four lines for one rule you wo
 
 **[PAUSE]**
 
+**[ANIMATION]** step: marks
+
 A layer, such as a CI check, can be tested. "People will remember" can't, so that's the line to work on.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=bridge boxes=a_claim_with_support:it_holds|a_claim_without:nothing_underneath rows=1:A:an_objection_arrives@hl|2:A:a_reason@ok|2:A:an_enforcing_layer@ok|3:B:an_objection_arrives@hl|3:B:"that_is_best_practice"@ghost title=An_objection_is_a_load_on_one_member at_1=50 at_2=65 at_3=82
+
+**[ANIMATION]** step: 3
+
 Think of the design as a set of load-bearing claims, like the members of a bridge. Each claim carries something: a patch release that contains only fixes, a secret that can't arrive, a model that can be named five years later. An objection in the defence is a load applied to one member. If the member has a reason and an enforcing layer, it holds. If it rests on "that is best practice", it has nothing underneath it.
 
 Where the picture breaks: a bridge member that fails is a defect, and in the defence a member you replace isn't. You're allowed, and scored well, for amending a decision under a good objection, provided you say what the amendment breaks elsewhere.
+
+**[ANIMATION]** layers: layers=a_habit|a_client_setting|a_server_rule|a_review|a_pipeline probe=a_control_in_your_design title=The_layers,_from_video_177 at_1=26 at_2=32 at_3=38 at_4=45 at_5=50
 
 The second model is the one from video 177: the layers. A habit, a client setting, a server rule, a review, a pipeline. For every control in your design, be able to point at its layer and say who can step over it and how that would be seen afterwards.
 
@@ -250,9 +288,17 @@ Yours. The replay contains more measurements: the content of the history, people
 
 ## PRODUCTION EXAMPLE
 
+**[ANIMATION]** cards: id=example cards=The_decision|The_reason:a_measurement,_a_mechanism_or_a_source|The_cost|Enforced_by:the_layer_that_enforces_it numbered=on title=One_decision,_four_lines at_4=30
+
+**[ANIMATION]** step: 1
+
 Now, out of the lab. A staff engineer is asked to propose a new workflow for a company that runs a hosted product and also ships an on-premises edition. In the review meeting a developer objects that release branches are heavy and that the team should tag `main` and nothing more.
 
+**[ANIMATION]** step: 2
+
 She doesn't answer with "release branches are best practice". She answers with a measurement and a mechanism: the on-premises customers take patch releases only, and under tags on `main` the range between two tags contains everything merged since, which she shows with one `git log` between the last two tags of the existing repository.
+
+**[ANIMATION]** step: 4
 
 Then she states the cost of her own proposal, a pipeline per supported line and a port check as a release gate, and offers the amendment she can accept: release branches only for the on-premises minors, cut late, and nothing downstream of `main` for the hosted product. The developer's objection changed the design, the change is written down with what it affects, and the decision now has a reason that survives the next objection.
 

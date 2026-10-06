@@ -15,9 +15,15 @@ What does the team do in the first ten minutes? Decide on your own first move, a
 
 **[PAUSE]**
 
+**[ANIMATION]** cards: cards=open_the_repository|look_for_the_file|delete_it,_or_rewrite_history?|argue_about_force_pushes|ask_who_has_a_clone numbered=on title=The_first_hour,_in_most_teams id=wrong say_5=An_hour_later:_the_key_still_works at_1=5 at_2=22 at_3=32 at_4=50 at_5=62
+
 In most teams, someone opens the repository. They look for the file, discuss whether to delete it or to rewrite history, argue about force pushes, and ask who has a clone. An hour later the history is being rewritten. The key still works.
 
+**[ANIMATION]** cards: cards=A_key_valid_about_two_months_after_the_first_alert|Cloud_keys_valid_48_hours_after_the_repository_was_taken_down|An_organization_breached_a_second_time_through_tokens_it_had_not_rotated title=What_that_order_costs id=cost
+
 The cases in this video show what that order costs. A key valid about two months after the first alert. Cloud keys valid 48 hours after the repository was taken down. An organization breached a second time through tokens it had not rotated.
+
+**[ANIMATION]** end
 
 There are six steps, and their order matters more than the tools. The first step is the one that teams under pressure skip. Hold on to your own first move. You'll check it against step one in a moment.
 
@@ -51,57 +57,113 @@ After this video you can:
 
 **Step 1: contain.** Revoke or rotate the credential first. Was that your first move? The sources, GitHub and OWASP, add: that alone may be sufficient, and a history rewrite may not be warranted.
 
+**[ANIMATION]** walk: columns=step,what_it_is rows=1_CONTAIN:revoke_or_rotate_at_the_issuer|2_ASSESS:five_facts,_written_down|3_ERADICATE:remove_from_current_code;_rewrite_history_ONLY_where_warranted|4_RECOVER:new_credential_to_dependent_services;_re-clone_if_rewritten|5_COMMUNICATE:collaborators:_what_to_do_with_their_clones;_a_reachable_contact|6_PREVENT:push_protection,_scanning,_OIDC,_least_privilege,_named_files_and_git_diff_--cached marks=1.2:ok mono=off title=Six_steps,_in_this_order id=track say_1=The_key_stops_working_HERE:_against_every_clone,_fork,_cache_and_screenshot
+
+**[ANIMATION]** step: track.1
+
 The evidence of what goes wrong otherwise. An xAI key valid about two months after the first alert. A contractor's AWS keys valid 48 hours after the repository was taken down. And the Internet Archive, breached a second time through tokens it had not rotated.
+
+**[ANIMATION]** step: track.2
 
 **Step 2: assess.** Identify the secret, its owner, and what it can reach. Check validity status and exposure labels. Review GitHub audit logs and the provider's logs for use. And include forks, deleted forks and force-pushed commits in scope.
 
+**[ANIMATION]** say: Otherwise:_"was_it_used?"_has_no_answer
+
 What goes wrong otherwise: an affected company declined to say whether logs showed third-party use of an exposed token. When you can't answer "was it used?", that is the answer the public hears.
+
+**[ANIMATION]** step: track.3
 
 **Step 3: eradicate.** Remove the secret from current code. Rewrite history, meaning replace the old commits with new ones, only where warranted, with git-filter-repo 2.47 or later, then force-push, then a GitHub Support request. And note what the documentation says about Support: it assists only where rotation can't mitigate the risk.
 
+**[ANIMATION]** say: After_a_supply-chain_compromise:_every_credential_reachable_from_the_runtime
+
 The scope warning attached to this step: after a supply-chain compromise the scope is every credential reachable from the affected runtime.
+
+**[ANIMATION]** step: track.4
 
 **Step 4: recover.** Update dependent services with the new credential. If history was rewritten, have collaborators re-clone, and re-enable force-push protection. Close the alert as revoked, and document.
 
+**[ANIMATION]** say: Otherwise:_partial_rotation_produced_a_second_breach
+
 What goes wrong otherwise: partial rotation produced a second breach.
+
+**[ANIMATION]** step: track.5
 
 **Step 5: communicate.** Track internally. Tell collaborators exactly what to do with their clones. Keep a reachable disclosure contact, such as `SECURITY.md`.
 
+**[ANIMATION]** say: Otherwise:_a_researcher_with_no_way_to_report_went_to_the_press
+
 What goes wrong otherwise: a researcher couldn't find a way to report a contractor's leak and went to the press. And concealment turned Uber's 2016 breach into a regulatory case.
+
+**[ANIMATION]** step: track.6
 
 **Step 6: prevent.** Push protection. Pre-commit and CI scanning. Secrets out of code. Short-lived credentials through OIDC. Least privilege. Staging named files and reviewing `git diff --cached`, instead of `git add .` with a dot. And scheduled rotation.
 
+**[ANIMATION]** say: Hardcoded_long-lived_keys_recur_in_every_case_of_the_next_section
+
 The evidence: hardcoded long-lived keys recur in every case of the next section.
+
+**[ANIMATION]** say: Why_containment_comes_first
 
 **Why containment comes first.** This is the argument you must be able to make to someone who wants to start with the repository.
 
+**[ANIMATION]** say: The_damage_happens_at_the_issuer,_where_the_key_is_accepted
+
 The repository isn't where the damage happens. The damage happens at the issuer, where the key is accepted. Until revocation the key works for whoever copied it. And revocation is the only step that is complete: it works against clones, forks, caches and screenshots alike.
+
+**[ANIMATION]** say: Rotate_immediately._A_history_rewrite_is_often_unnecessary_once_revoked
 
 GitHub's own guidance says the same: rotate immediately. Removing the secret from history is time-consuming and often unnecessary once the credential is revoked.
 
+**[ANIMATION]** walk: columns=the_fact,who_answers rows=a)_which_secret,_and_what_it_can_reach:|b)_first_commit,_and_when_first_pushed:Git_can_answer|c)_which_refs_contain_it:Git_can_answer|d)_who_could_read_it_(visibility,_forks,_collaborators,_CI_logs):|e)_was_it_used?:only_the_issuer's_logs marks=2.2:ok,3.2:ok,5.2:hl mono=off title=What_assessment_has_to_produce:_five_facts,_written_down id=facts
+
+**[ANIMATION]** step: facts.header
+
 **What assessment has to produce.** Five facts, written down.
+
+**[ANIMATION]** step: facts.1
 
 One: which secret, and what it can reach.
 
+**[ANIMATION]** step: facts.2
+
 Two: the first commit that contains it, and when that commit was first pushed.
+
+**[ANIMATION]** step: facts.3
 
 Three: which refs contain it.
 
+**[ANIMATION]** step: facts.4
+
 Four: who could read it: repository visibility, forks, collaborators, CI logs.
+
+**[ANIMATION]** step: facts.5
 
 Five: whether it was used, from the provider's logs.
 
 And the sentence that divides the work: Git answers the second and the third. Only the issuer answers the last.
 
+**[ANIMATION]** cards: cards=personal_data|customer_records|proprietary_model_weights|a_private_key_whose_public_half_is_pinned_in_devices|a_secret_whose_revocation_takes_weeks title=Rewrite_when_the_data_stays_harmful_after_rotation,_or_cannot_be_rotated id=rewrite at_1=45 at_2=55 at_3=62 at_4=70 at_5=82
+
 **When a history rewrite is warranted.** Rewrite when the data stays harmful after rotation, or can't be rotated. The textbook's list: personal data, customer records, proprietary model weights, a private key whose public half is pinned in devices, and a secret whose revocation takes weeks.
+
+**[ANIMATION]** cards: question=An_ordinary_API_key,_revoked_within_the_hour._Do_you_rewrite_history? cards=A:yes,_always,_to_be_clean|B:not_by_reflex marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
 
 Quick quiz. An ordinary API key leaked. It was revoked within the hour. Do you rewrite history? A, yes, always, to be clean. B, not by reflex. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: quiz.marks
+
 B. Don't rewrite by reflex for an API key that was revoked within the hour. The rewrite costs every collaborator their clone, invalidates every recorded commit ID, strips signatures, and can't recall copies that already exist.
 
+**[ANIMATION]** say: Either_way:_record_the_decision_and_its_reason
+
 Either way: record the decision and its reason.
+
+**[ANIMATION]** end
 
 **The case studies.**
 
@@ -133,13 +195,25 @@ A contractor of CISA, 2025 to 2026. Exposed: administrative cloud credentials an
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: boxes=look_for_the_key|*change_the_lock rows=1:A:the_car|1:A:the_office|1:A:the_street|1:A:who_saw_it_or_copied_it?@bad|2:B:one_call|2:B:every_copy_of_the_old_key_opens_nothing@ok title=A_lost_house_key,_with_your_address_on_the_tag id=lock
+
+**[ANIMATION]** step: lock.boxes
+
 Section 21B.14 gives no analogy of its own, so here is one for this video. Imagine you lost the key to your house, with a tag on it that gives your address.
+
+**[ANIMATION]** step: lock.1
 
 You can spend the morning looking for the key: the car, the office, the street. You may even find it. You still don't know who saw it or copied it while it was gone.
 
+**[ANIMATION]** step: lock.2
+
 Or you can change the lock. That takes one call, and from that moment every copy of the old key, wherever it is, opens nothing.
 
+**[ANIMATION]** say: Change_the_lock_first._Then_look_for_the_key
+
 Change the lock first. Then look for the key, to learn what was at risk and for how long.
+
+**[ANIMATION]** end
 
 Where the picture falls short: a house key opens one door. A credential may open many, and it may have opened them already without leaving a trace you can see from your side. That's why step two includes the provider's logs, and why the fifth fact can only come from the issuer.
 
@@ -150,6 +224,10 @@ And the picture explains the rewrite decision. Changing the lock does nothing fo
 Try it now, thirty seconds, on paper. Draw a line with six stations and write the six steps on it, in order. Under station two, write the five facts. Then mark the facts that Git can answer. Say them out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** walk: columns=step,what_it_is rows=1_CONTAIN:revoke_or_rotate_at_the_issuer|2_ASSESS:five_facts,_written_down|3_ERADICATE:remove_from_current_code;_rewrite_history_ONLY_where_warranted|4_RECOVER:new_credential_to_dependent_services;_re-clone_if_rewritten|5_COMMUNICATE:collaborators:_what_to_do_with_their_clones;_a_reachable_contact|6_PREVENT:push_protection,_scanning,_OIDC,_least_privilege,_named_files_and_git_diff_--cached marks=1.2:ok mono=off title=Six_steps,_in_this_order id=track2 say_1=The_key_stops_working_HERE:_against_every_clone,_fork,_cache_and_screenshot at_1=45
+
+**[ANIMATION]** step: track2.header
 
 **[DIAGRAM]** A horizontal track with six stations. Draw the track, then mark the first station. Then hang the five assessment facts under station two, and mark which of them Git can answer.
 
@@ -168,7 +246,13 @@ Try it now, thirty seconds, on paper. Draw a line with six stations and write th
                         +-- e) was it used?                            <-- only the issuer's logs
 ```
 
-Check your track. Contain, assess, eradicate, recover, communicate, prevent. The key stops working at station one, against every clone, fork, cache and screenshot. And Git answers two of the five facts: the first commit, and which refs contain it. One caution about the first: when that commit was first pushed is a question about the server.
+**[ANIMATION]** step: track2.6
+
+Check your track. Contain, assess, eradicate, recover, communicate, prevent. The key stops working at station one, against every clone, fork, cache and screenshot.
+
+**[ANIMATION]** replay: facts
+
+And Git answers two of the five facts: the first commit, and which refs contain it. One caution about the first: when that commit was first pushed is a question about the server.
 
 **[DIAGRAM]** One caution about fact b. Git gives you the first commit and its dates. When that commit was first pushed is a question about the server; your clone can give you a hint, as you will see in the demonstration, and the platform's records give the rest.
 
@@ -290,6 +374,8 @@ Three commits lie between the first one and the server's tip. And over all commi
 
 The last command is the hint for the second half of fact b. The reflog is Git's local record of the values a ref has had. The reflog of `origin/main` in your clone records when your clone saw the server's branch change, here "update by push". It's your clone's view, not the server's record. For the server's side you go to the platform.
 
+**[ANIMATION]** walk: columns=the_fact,the_answer_comes_from rows=a)_which_secret,_and_what_it_can_reach:the_credential's_type_and_scope|b)_first_commit,_and_when_first_pushed:Git,_and_the_platform_for_the_push|c)_which_refs_contain_it:Git|d)_who_could_read_it:platform_state|e)_was_it_used?:only_the_provider's_logs marks=2.2:ok,3.2:ok mono=off title=Git_answered_two_of_five id=facts2
+
 Now the facts that got no command. Fact a: which secret and what it can reach. That's a question about the credential's type and scope, from the last video. Fact d: who could read it. That's repository visibility, forks, collaborators and CI logs: platform state. And fact e: was it used. Only the provider's logs. Git answered two of five.
 
 **[ON SCREEN]** Stop the replay here.
@@ -310,17 +396,33 @@ Five mistakes to watch for.
 
 Now, out of the lab. Picture an AI company on a Tuesday. A scanner alert arrives for a provider key in a repository of evaluation scripts. The engineer on call follows the six steps, and writes one line per step in the incident channel.
 
+**[ANIMATION]** walk: columns=step,the_line_in_the_incident_channel,time rows=1_contain:key_revoked,_new_key_issued,_the_two_services_that_use_it_named:09:14|2_assess:five_facts:09:31|3_eradicate:file_removed_from_the_tip_and_ignored;_rewrite_not_warranted,_reason_recorded:09:40|4_recover:both_services_run_with_the_new_key;_the_alert_is_closed_as_revoked:10:05|5_communicate:a_short_note_to_the_team;_no_action_on_clones_is_needed:10:10|6_prevent:push_protection_enabled;_one_sentence_added_to_the_team's_guide:Afternoon mono=off title=A_Tuesday,_one_line_per_step id=day
+
+**[ANIMATION]** step: day.1
+
 At nine fourteen, contain: key revoked in the provider's console, new key issued, and the two services that use it are named.
+
+**[ANIMATION]** step: day.2
 
 At nine thirty-one, assess, five facts. The secret: a provider key with access to the company's fine-tuned models. First commit and first push: an ID, an author, a date, and pushed the same day according to the platform's activity record. Refs: `main` and one release tag. Who could read: the repository is internal, with forty collaborators, and one CI log printed the variable name but not the value. Was it used: the provider's log shows no calls from unknown addresses in the window.
 
+**[ANIMATION]** step: day.3
+
 At nine forty, eradicate: the file is removed from the tip and ignored. Rewrite decision: not warranted. The key is revoked and the provider's logs show no use. Reason recorded.
+
+**[ANIMATION]** step: day.4
 
 At five past ten, recover: both services run with the new key, and the alert is closed as revoked.
 
+**[ANIMATION]** step: day.5
+
 At ten past ten, communicate: a short note to the team with what happened and that no action on clones is needed, because nothing was rewritten.
 
+**[ANIMATION]** step: day.6
+
 Afternoon, prevent: push protection is enabled for the repository, and the team's guide gains one sentence about staging named files and reading `git diff --cached` before every commit.
+
+**[ANIMATION]** say: Under_an_hour_from_the_alert_to_recovery
 
 Under an hour from the alert to recovery, and the first step did most of the work.
 

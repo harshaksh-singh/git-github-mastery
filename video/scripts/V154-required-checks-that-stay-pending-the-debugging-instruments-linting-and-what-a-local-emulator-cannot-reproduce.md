@@ -17,6 +17,8 @@ Why would a green run, started by hand, not count? Say your guess out loud.
 
 **[PAUSE]**
 
+**[ANIMATION]** walk: id=tries columns=what_was_tried,why_it_did_not_count rows=the_filtered_workflow:it_never_reports_the_name_the_rule_waits_for|re-run_the_workflow:there_is_nothing_to_re-run|start_it_by_hand_on_the_branch:not_evaluated_for_the_pull_request marks=1.2:wait,2.2:bad,3.2:bad mono=off title=Waiting_for_status_to_be_reported at_1=22 at_2=30 at_3=38
+
 Both attempts were reasonable and both were wrong, for reasons that are written in the documentation. A workflow that was filtered out never reports the name the rule is waiting for. And a run started by hand isn't evaluated for the pull request. This video is about the design that makes the situation impossible, and about the instruments you use when a run does exist. That design is one small job. Watch for it.
 
 ## INTRODUCTION
@@ -49,19 +51,33 @@ After this video you can:
 
 The workflow never started, because of a path filter, a branch filter, or `[skip ci]` in the commit message. The check reports nothing. It stays pending. The merge is blocked.
 
+**[ANIMATION]** walk: id=five columns=the_situation,the_check_reports,the_merge rows=the_workflow_never_started:nothing,_it_stays_pending:blocked|the_job_was_skipped_by_its_if:success:allowed|a_job_it_needs_failed,_so_it_was_skipped:skipped,_so_it_may_not_block:allowed,_wrongly|it_ran_on_a_workflow__dispatch_run:not_evaluated_for_the_pull_request:blocked|a_merge_queue,_and_no_merge__group_event:nothing_in_the_queue:blocked_in_the_queue marks=1.3:bad,2.3:ok,3.3:wait,4.3:bad,5.3:bad mono=off title=Who_reports_the_required_name? at_1=3 at_2=15
+
+**[ANIMATION]** step: 2
+
 The workflow started and the job was skipped by its `if`. The check reports success, because skipped counts as passing. The merge is allowed.
 
 Quick quiz, before the third row. A job is skipped because a job it needs failed. Does that block the merge? A, yes, because something failed. B, no, because a skipped job doesn't block. Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: 3
+
 B. A job was skipped because a job it needs failed. It's skipped, so it may not block. The merge is allowed, and the textbook adds one word: wrongly. If that surprised you, good. It surprises almost everyone, and the design that follows exists because of it.
+
+**[ANIMATION]** step: 4
 
 The check ran on a `workflow_dispatch` run of the head branch. It's not evaluated for the pull request. The merge is blocked.
 
+**[ANIMATION]** step: 5
+
 A merge queue is used and the workflow lacks `on: merge_group`. A merge queue merges pull requests one group at a time, and runs the required checks on each group first. Nothing is reported in the queue. The merge is blocked in the queue.
 
+**[ANIMATION]** say: Three_block_a_merge_with_nothing_wrong._Two_let_one_through_without_a_real_result
+
 Three of those five block a merge that has nothing wrong with it. Two let a merge through without a real result. And a path filter has its own edges, which you heard in video 143: a push with more than 1,000 commits always runs the workflow, and with more than 3,000 changed files a match beyond the first 3,000 isn't seen.
+
+**[ANIMATION]** run: id=agg event=pull_request jobs=unit-tests|lint|all-checks:unit-tests+lint title=The_robust_design:_an_inference_from_these_rules say_jobs=Require_all-checks,_and_nothing_else at_jobs=45
 
 **The robust design.** The textbook is careful about its status: the Phase 0 report labels it an inference from these rules. Don't filter the workflow. Start it always. Decide inside which jobs to run, with `if`. And require one aggregate job that always runs and fails when something it needs failed or was cancelled.
 
@@ -91,6 +107,8 @@ gh pr checks --watch
 ```
 
 All 🟢 SAFE: they change nothing. `--log-failed` prints the log of the failed steps only. `gh run watch` follows a run until it ends and, with `--exit-status`, exits non-zero when it fails, so it can be chained in a script. `gh pr checks` exits with status 8 while checks are pending. The flags are from the help output of GitHub CLI 2.88.1.
+
+**[ANIMATION]** graph: id=rerun A-...-B main; HEAD=none; note:A:the_original_run_was_bound_to_this_commit; note:B:main_today; say:A_re-run_is_not_a_new_run => + mark:re-run:A; name:again; say:The_same_GITHUB__SHA_and_GITHUB__REF_as_the_original_event dx=330 at_again=40
 
 **Re-run.** The textbook starts with a correction: a re-run isn't a new run. It uses, in the documentation's words, "the same `GITHUB_SHA` and `GITHUB_REF` of the original event", and the privileges of the actor who triggered the original. It's possible for 30 days, and at most 50 times.
 
@@ -123,23 +141,37 @@ One warning. Dumping the whole `github` context into a log is a documented debug
 
 Then the sentence that sets the expectation: all six broken workflows of Lab 28.1 pass that check, and a linter would pass most of them too. A linter proves that a file is well formed. It can't know that the history is shallow or that a secret is withheld.
 
+**[ANIMATION]** cards: id=act question=What_act_does_not_implement,_by_its_own_documentation cards=concurrency|job_permissions|environment|OIDC|timeout-minutes|continue-on-error|step_summaries|a_complete_github_context at_1=30 at_2=34 at_3=38 at_4=42 at_5=46 at_6=50 at_7=54 at_8=58
+
 **A local emulator.** `act` runs workflows locally in Docker containers. Its own documentation lists what it doesn't implement: `concurrency`, job `permissions`, `environment`, OIDC, `timeout-minutes`, `continue-on-error`, step summaries, and a complete `github` context. The textbook's verdict: useful for the shell logic of steps, and useless for exactly the topics of this chapter: gates, tokens, groups, runner images. Treat a green local run as evidence about your scripts, never about your deployment.
 
 ## MENTAL MODEL
 
 A picture helps.
 
+**[ANIMATION]** stores: id=roll boxes=the_rule:reads_a_name_from_its_list|the_room:who_answers? rows=1:A:the_required_name|1:A:it_waits_for_an_answer|2:B:the_workflow_never_started:_nobody_answers@bad|3:B:told_by_its_if_to_sit_out:_answers_"present"@ok|4:B:the_aggregate_job:_always_in_the_room@hl title=A_roll_call at_1=40 at_2=25 at_3=65
+
+**[ANIMATION]** step: 1
+
 A required check is a name, and the rule waits for somebody to say that name with a result.
+
+**[ANIMATION]** step: 3
 
 Picture a roll call. The rule reads a name from its list and waits for an answer. If the workflow that owns the name was never started, nobody is in the room to answer, and the rule keeps waiting. It doesn't conclude "absent means fine". If the job was in the room and was told by its `if` to sit this one out, it answers "present", and that counts.
 
 Where the picture breaks: at a roll call, anyone can see the empty chair. In a merge box, a check that will never report and a check that will report in two minutes look alike. You tell them apart by asking whether a run exists at all, which is step 1 of the investigation order.
 
+**[ANIMATION]** step: 4
+
 The aggregate job is the one person who is always in the room and answers for everyone else, truthfully.
+
+**[ANIMATION]** walk: id=instr columns=instrument,step_of_the_order rows=gh_run_view_with_JSON_fields:1_and_2|--log-failed:9|gh_run_download:10|gh_cache_list:11|gh_run_list_for_the_workflow:12 title=Each_instrument_belongs_to_a_step at_1=18 at_2=38 at_3=50 at_4=60 at_5=70
 
 And a model for the instruments: each one is tied to a step of the order. `gh run view` with JSON fields is steps 1 and 2. `--log-failed` is step 9. `gh run download` is step 10. `gh cache list` is step 11. `gh run list` for the workflow is step 12. If you reach for an instrument, know which step you're on.
 
 ## DIAGRAM
+
+**[ANIMATION]** stores: id=who boxes=pull_request:changed_paths|*ruleset_on_main:requires_check_"X"|workflows:who_says_the_name? rows=1:A:docs/runbook.md|1:B:waits_for_the_NAME_"X"|2:C:(a)_no_filter,_on_pull__request|2:C:(b)_paths_"src/**",_on_pull__request|3:C:(a)_a_run_exists:_X_reports_success_or_failure@ok|3:C:(b)_no_path_matches:_NO_RUN@bad|3:B:from_(b):_"expected",_forever@bad|4:C:the_design:_no_filter,_and_all-checks_with_!cancelled()_needs_both@hl|4:B:then_require_"all-checks"_only@hl title=Who_says_the_name_X? at_1=10 at_2=45 at_3=5 at_4=70
 
 **[DIAGRAM]** A pull request on the left with its changed paths. A ruleset in the middle that requires a check named X. Two workflows on the right. Draw the first workflow reporting X. Then draw the second, filtered, and ask what it reports.
 
@@ -163,9 +195,13 @@ And a model for the instruments: each one is tied to a step of the order. `gh ru
             ruleset requires "all-checks" only
 ```
 
+**[ANIMATION]** step: 2
+
 Try it now, on paper. Thirty seconds. Draw a ruleset that requires the name X, and two workflows that could say it: one without a filter, and one with a path filter for `src`. A pull request changes only `docs/runbook.md`. Under each workflow, write what the rule hears.
 
 **[PAUSE]**
+
+**[ANIMATION]** step: 4
 
 From the first: success or failure, so the rule gets its answer. From the second: nothing. No run exists, and the rule waits.
 
@@ -232,7 +268,13 @@ uv.lock
 ```
 <!-- /snippet -->
 
-The documentation branch changed one file under `docs`. The feature branch changed a file under `src` and the lock file. The workflow starts for the second and not for the first. Its job is a required check. This is the hook, proven with a three-dot diff.
+The documentation branch changed one file under `docs`. The feature branch changed a file under `src` and the lock file.
+
+**[ANIMATION]** walk: id=diff columns=branch,changed_paths,a_filter_for_src,the_required_check rows=docs/rollback-steps:docs/runbook.md:no_match,_no_run:unit-tests_never_reports|feature/safety-stock:src/warehouse/rules.py,_uv.lock:a_match,_a_run_starts:unit-tests_reports marks=1.3:bad,1.4:bad,2.3:ok,2.4:ok mono=off title=A_path_filter_on_the_three-dot_diff pace=quick
+
+The workflow starts for the second and not for the first. Its job is a required check. This is the hook, proven with a three-dot diff.
+
+**[ANIMATION]** end
 
 **Workflow 5: "runs on feature branches end as cancelled although nobody cancelled them."**
 
@@ -321,7 +363,13 @@ Five mistakes to watch for.
 
 Now, out of the lab. A platform team with a busy repository adopts a merge queue to stop pull requests from going out of date. On the first morning the queue fills and nothing leaves it. Every entry waits for the required check.
 
+**[ANIMATION]** step: five.5
+
+**[ANIMATION]** say: Row_five:_nothing_is_reported_in_the_queue
+
 Go to the table. Row five: a merge queue is used and the workflow lacks `on: merge_group`. Nothing is reported in the queue. The workflow listens for `pull_request` and for `push`, and neither of those is the event of a merge group.
+
+**[ANIMATION]** say: For_every_way_a_merge_can_be_attempted:_will_anything_say_the_required_name?
 
 The fix is one more event in the trigger of the workflow that owns the required name. The lesson is the same as for the path filter: for every way a merge can be attempted, ask whether anything will say the required name. With one aggregate job as the only required check, that question has to be answered for exactly one workflow.
 

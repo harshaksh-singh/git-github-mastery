@@ -11,11 +11,19 @@
 
 **[ON SCREEN]** A terminal. A push is rejected: the remote says a commit contains a secret.
 
+**[ANIMATION]** graph: X-A-B main; X origin/main; HEAD=none; note:A:adds_.env_with_the_key; note:B:other_work; cmd:git_push; say:DECLINED:_the_push_contains_A => + B-C main; note:C:deletes_.env; say:DECLINED_again:_A_is_still_delivered => + X-A′-B′ main; reflog:A,B,C; note:A′:same_change_without_.env,_.gitignore_added; note:B′:other_work; say:The_repair:_replace_the_commits_that_were_never_pushed => + B′ origin/main; cmd:off; say:ACCEPTED:_no_commit_that_would_be_delivered_contains_the_key dx=300 title=Every_commit_the_push_would_introduce id=gate
+
+**[ANIMATION]** step: gate.state-1
+
 A developer's push is blocked. A push sends your commits to the server, and this one was refused. Good: the protection worked. The developer does the natural thing. They delete the file, commit the deletion, and push again.
+
+**[ANIMATION]** step: gate.state-2
 
 Blocked again, with the same message, naming the same commit.
 
 Now they're confused and a little annoyed, because the file is gone. Some developers at this point reach for the bypass, choose a reason from a list, and the secret goes to the server after all.
+
+**[ANIMATION]** say: A_deletion_adds_a_commit_and_removes_nothing
 
 You know from the last video why the second push was blocked: a deletion adds a commit and removes nothing, and the push would still deliver the first commit. What this developer didn't know is that they were standing at the one moment where a full repair is cheap. In this video you make that repair, and you learn what the block covers and what it doesn't. Keep those words in mind: the cheap moment.
 
@@ -59,19 +67,41 @@ Push protection for repositories: off by default. It requires GitHub Secret Prot
 
 It covers command-line pushes, commits made in the web interface, file uploads, REST API requests, and, on public repositories, interactions through the GitHub MCP server.
 
+**[ANIMATION]** cards: question=A_block_asks_for_a_reason cards="It's_used_in_tests":a_closed_alert|"It's_a_false_positive":a_closed_alert|"I'll_fix_it_later":an_open_alert title=By_default,_anyone_with_write_access_can_bypass_a_block id=bypass at_1=12 at_2=18 at_3=28
+
 By default anyone with write access can bypass a block by choosing a reason. "It's used in tests" and "It's a false positive" create a closed alert. "I'll fix it later" creates an open one. The bypass is written to the audit log and emailed to administrators. Delegated bypass, part of Secret Protection for organization-owned repositories, restricts who may bypass and puts other contributors' requests through a review that expires after seven days.
 
+**[ANIMATION]** end
+
 **What it does not cover.** The textbook says GitHub's default protection is narrower than most engineers assume. Four points.
+
+**[ANIMATION]** cards: question=Push_protection_for_users_is_on_by_default._Does_it_check_your_push_to_a_private_repository? cards=A:yes|B:no marks=1:bad,2:ok id=quiz
+
+**[ANIMATION]** step: quiz.2
 
 Quick quiz first. Push protection for users is on by default. Does it check your push to a private repository? A, yes. B, no. Your answer?
 
 **[PAUSE]**
 
-B. User push protection guards only pushes to public repositories. A private repository without Secret Protection has no push-time check at all. Almost everyone assumes otherwise.
+**[ANIMATION]** step: quiz.marks
+
+B.
+
+**[ANIMATION]** cards: cards=Private_repositories:no_push-time_check_at_all_without_Secret_Protection|Generic_secrets:passwords_and_connection_strings_are_not_blocked|A_block_is_a_prompt,_not_a_wall:unless_delegated_bypass_is_configured|Coverage_differs_by_provider:in_three_independent_columns numbered=on title=What_push_protection_does_not_cover id=notcov
+
+**[ANIMATION]** step: notcov.1
+
+User push protection guards only pushes to public repositories. A private repository without Secret Protection has no push-time check at all. Almost everyone assumes otherwise.
+
+**[ANIMATION]** step: notcov.2
 
 It blocks high-confidence provider patterns, the known shapes of particular providers' keys. Generic secrets such as passwords and connection strings aren't blocked, and AI-detected passwords are explicitly excluded from push protection.
 
+**[ANIMATION]** step: notcov.3
+
 A block is a prompt, not a wall, unless delegated bypass is configured.
+
+**[ANIMATION]** step: notcov.4
 
 And coverage differs by provider, in three independent columns: whether the provider is notified for public leaks, whether push protection blocks the pattern, and whether there is a validity check.
 
@@ -89,13 +119,25 @@ And partner notification doesn't guarantee revocation. GitHub revokes its own le
 
 **Dependabot** is three features that share a name.
 
+**[ANIMATION]** walk: columns=feature,what_it_does,it_needs rows=Alerts:a_dependency_on_the_default_branch_has_a_known_vulnerability:the_dependency_graph|Security_updates:a_pull_request_to_the_minimum_patched_version:alerts|Version_updates:pull_requests_that_keep_dependencies_current:the_file_.github/dependabot.yml mono=off title=Dependabot_is_three_features_that_share_a_name id=dep
+
+**[ANIMATION]** step: dep.1
+
 Alerts tell you that a dependency on the default branch has a known vulnerability. A dependency is a package your project uses. Alerts need the dependency graph. Only advisories reviewed by GitHub raise alerts. Archived repositories aren't scanned. And for Actions, alerts exist only for actions referenced by semantic version, not by commit ID.
+
+**[ANIMATION]** step: dep.2
 
 Security updates open a pull request that raises a vulnerable dependency to the minimum patched version. They need alerts.
 
+**[ANIMATION]** step: dep.3
+
 Version updates open pull requests to keep dependencies current, vulnerable or not. They are enabled by committing a file, `.github/dependabot.yml`. Since the fourteenth of July 2026 a default cooldown of 3 days applies to version updates and not to security updates.
 
+**[ANIMATION]** say: All_three_are_free_on_every_plan
+
 All three are free on every plan. And note the trade-off with the advice of video 159: pinned actions get no Dependabot alerts, so version updates must move the pins.
+
+**[ANIMATION]** end
 
 Two things older configurations get wrong. The `reviewers` option was removed on the eighth of August 2025 in favor of CODEOWNERS, the file that maps paths to reviewers. And the comment commands, such as asking Dependabot to merge in a comment, stopped working on the twenty-seventh of January 2026. Without explicit configuration at most five version-update pull requests stay open at once. Security updates don't count toward that limit.
 
@@ -105,13 +147,19 @@ Two things older configurations get wrong. The `reviewers` option was removed on
 
 ## MENTAL MODEL
 
+**[ANIMATION]** step: gate.state-2
+
 A picture helps. Think of the commits you haven't pushed as editions that haven't left the building.
 
 From the last video: publishing a correction doesn't recall yesterday's edition, and withdrawing it from your own archive doesn't either. The textbook said that analogy breaks for unpushed commits: an edition that never left the building can be pulped.
 
 A push-time check is the person at the loading dock who looks into every box before it leaves. If one box contains the wrong edition, the whole shipment is refused. Putting a correction slip on top of the shipment doesn't help: the box is still in it. You have to take the box out. And because the shipment is still in the building, you can.
 
+**[ANIMATION]** say: Before_the_first_push:_the_one_moment_a_rewrite_fully_removes_a_secret
+
 The textbook's sentence: before the first push is the one moment at which rewriting history fully removes a secret. A push-time block exists to keep you there.
+
+**[ANIMATION]** gates: packet=a_commit_with_a_secret gates=the_client-side_hook:bypass:at_your_own_desk:you_can_walk_past_it_with_one_option|the_server-side_check:stop:at_the_dock:you_cannot zones=your_machine,the_server split=1 title=Local_hooks_are_advice._A_server-side_check_is_enforcement id=checkers at_1=55 at_2=75
 
 Then two things the picture needs. The checker has a list of what the wrong editions look like. Anything not on the list goes through. And there are two checkers who look alike: the one at your own desk, the client-side hook, whom you can walk past with one option, and the one at the dock, on the server, whom you can't. Local hooks are advice. A server-side check is enforcement.
 
@@ -120,6 +168,8 @@ Then two things the picture needs. The checker has a list of what the wrong edit
 Try it now, thirty seconds, on paper. Write X for the server's tip. To its right, draw commit A, which adds the key, then B, other work, then C, which deletes the file. Now list the commits a push would deliver. Is A among them? Say it out loud.
 
 **[PAUSE]**
+
+**[ANIMATION]** step: gate.state-2
 
 **[DIAGRAM]** Three rows. In each, the server's tip on the left and the commits to be pushed on the right. Draw the first row and its rejection. Then the second, and ask whether the new commit changes what the push would deliver. Then the third.
 
@@ -140,6 +190,8 @@ Try it now, thirty seconds, on paper. Write X for the server's tip. To its right
                                                                              the key
         A and B were never pushed, so replacing them with A' and B' costs nobody anything
 ```
+
+**[ANIMATION]** step: gate.state-4
 
 Yes. A is still delivered, so the push is declined again. Row 2 is what people try. Row 3 is the repair. The check doesn't look at the tip. It looks at every commit the push would introduce.
 
@@ -263,13 +315,13 @@ c3cf659 Add ticket router
 
 Accepted. The server's `main` has two commits: the original one and "Ignore .env". There's the cheap moment from the opening, used.
 
-**[ANIMATION]** graph: c3cf659-49384d9-8546eb9 main; c3cf659 origin/main; HEAD=main => c3cf659-5584d4f main origin/main; c3cf659-49384d9-8546eb9; HEAD=main; ghost:49384d9,8546eb9 title=Replacing_commits_that_were_never_pushed
+**[ANIMATION]** graph: c3cf659-49384d9-8546eb9 main; c3cf659 origin/main; HEAD=main => c3cf659-5584d4f main origin/main; c3cf659-49384d9-8546eb9; HEAD=main; reflog:49384d9,8546eb9 title=Replacing_commits_that_were_never_pushed id=repair
 
-**[ANIMATION]** step: state-1
+**[ANIMATION]** step: repair.state-1
 
 Here's the repair as a picture. Before it, `main` was two commits ahead of the server: `49384d9`, which added the file, and `8546eb9`, which removed it.
 
-**[ANIMATION]** step: state-2
+**[ANIMATION]** step: repair.state-2
 
 After the soft reset and one new commit, `main` and the server agree on `5584d4f`. Commit `49384d9` exists only in your local object database and reflog, Git's local record of where your branches have been. It never left the building.
 
@@ -320,7 +372,11 @@ error: failed to push some refs to '../server.git'
 ```
 <!-- /snippet -->
 
-The commit succeeds, `4be6dc6`. And the push is declined by the server. The comment in the transcript is the rule: the client hook is advice, and the server hook is enforcement. On GitHub the corresponding enforcement points are push protection, push rulesets and required checks.
+The commit succeeds, `4be6dc6`. And the push is declined by the server. The comment in the transcript is the rule: the client hook is advice, and the server hook is enforcement.
+
+**[ANIMATION]** step: checkers.2
+
+On GitHub the corresponding enforcement points are push protection, push rulesets and required checks.
 
 **Step 6: when the secret is in an earlier unpushed commit.** Replay `labs/run ch21b/lab-30-1-push-check`. Here there are two unpushed commits, and the secret is in the first. The second is real work that must be kept. A soft reset would mix them. The tool is an interactive rebase, which replays your commits and stops where you ask.
 

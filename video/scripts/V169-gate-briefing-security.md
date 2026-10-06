@@ -41,17 +41,31 @@ After this video you can:
 | 3 Hands-on diagnosis | 30 | For Gate 8: three cases on paper, built from configuration files, workflow files, described situations and real Git evidence | Paper |
 | 4 Oral interview | 20 | Six questions, one at a time, each with a follow-up | Spoken, no terminal, no notes |
 
-The pass rule has two conditions: the threshold overall, and at least 70 percent in every part. That is 21 of 30 in Concepts, 14 of 20 in Prediction, 21 of 30 in the cases, 14 of 20 in the oral part.
+The pass rule has two conditions: the threshold overall, and at least 70 percent in every part.
+
+**[ANIMATION]** walk: columns=part,points,at_least rows=1_Concepts:30:21|2_Prediction:20:14|3_Hands-on_diagnosis:30:21|4_Oral_interview:20:14|the_whole_gate:100:90 marks=5.3:hl last=at_least mono=off title=The_pass_rule:_two_conditions id=rule
+
+That is 21 of 30 in Concepts, 14 of 20 in Prediction, 21 of 30 in the cases, 14 of 20 in the oral part.
+
+**[ANIMATION]** end
 
 Quick quiz. Your total is above the threshold, and your oral part is 13 of 20. A, a pass, or B, a miss? Your answer?
 
 **[PAUSE]**
 
+**[ANIMATION]** step: rule.5
+
 B. A total above the threshold with one part below 70 percent is a miss.
+
+**[ANIMATION]** cards: question=Part_3_of_Gate_8_is_on_paper cards=Nothing_runs_on_GitHub|No_GitHub_output:anywhere_in_the_gate|gh_<command>_--help:the_only_gh_invocation_you_need|The_workflow_files:faults_on_purpose._Never_copy_them,_never_run_them marks=4:lock
 
 **Why Part 3 is on paper.** The gates for GitHub, Actions and Security run nothing on GitHub. No GitHub output appears anywhere in them, and the only `gh` invocation you need is `gh <command> --help`. The workflow files in the case directories are teaching material with faults on purpose. Never copy them into a repository, and never run them. Reading a faulty workflow is the skill being examined. Executing one is the mistake the chapter taught you to avoid.
 
+**[ANIMATION]** walk: columns=the_answer,first,then,the_score rows=A:revoke_at_the_issuer:rewrite_history:in_order|B:rewrite_history:revoke_at_the_issuer:loses_the_points_for_the_case marks=1.4:ok,2.4:bad,2.2:bad mono=off title=Order_is_scored
+
 **Order is scored.** In a leak-response case, an answer that rewrites history before revoking loses the points for the case, whatever else it gets right. You know the reason from section 21B.14: the damage happens at the issuer, where the key is accepted, and revocation is the only step that is complete.
+
+**[ANIMATION]** gates: packet=a_miss gates=your_score_sheet:done|restudy:done:-:the_sections_of_the_remediation_map|wait:done:-:at_least_two_days|retake_the_whole_gate:done:-:with_variant_B_in_Part_3 title=After_a_miss
 
 **After a miss.** A miss leads to remediation and a different variant, not to the answers. You receive your score sheet, restudy the sections of the remediation map, wait at least two days, and retake the whole gate with variant B in Part 3.
 
@@ -59,9 +73,17 @@ B. A total above the threshold with one part below 70 percent is a miss.
 
 A picture helps. Think of the gate as a review board for two documents that you carry in your head.
 
+**[ANIMATION]** stores: boxes=a_checklist:the_first_document|a_sequence:the_second_document rows=1:A:laid_over_any_workflow|2:B:run_on_any_leak|3:A:ends_in:_what_could_this_job_reach,_and_why@hl|3:B:ends_in:_what_could_this_credential_reach,_and_why@hl|4:A:applied_line_by_line|5:B:in_order:_each_step_changes_what_the_next_one_finds@ok title=Two_documents_you_carry_in_your_head id=docs at_5=45
+
+**[ANIMATION]** step: docs.3
+
 The first document is a checklist that you lay over any workflow. The second is a sequence that you run on any leak. Neither is recited at the gate. Each is applied to a case you haven't seen, and each answer is expected to end in the same kind of sentence: this job, or this credential, could reach the following, and for the following reason.
 
+**[ANIMATION]** step: docs.5
+
 Where this model breaks: a checklist can be applied line by line, and a leak response cannot. Its steps are ordered because each one changes what the next one finds. That's why the order carries points.
+
+**[ANIMATION]** end
 
 Try it now, on paper, for thirty seconds. Write the six steps of the leak response from memory, in order. I'll wait.
 
@@ -87,7 +109,11 @@ Try it now, on paper, for thirty seconds. Write the six steps of the leak respon
   11. Process
 ```
 
-The left list first, with what each heading asks about, in half a sentence: which event starts the job. Which code is checked out. What the job token may do. Whether an expression lands inside a script. Whether each action is pinned. Whether code is downloaded and run. Where each secret is referenced. Under which conditions a publishing job runs. Which machine runs it. Whether credentials stay in the checkout. And who reviewed the change. Now the right list, and your paper: contain, assess, eradicate, recover, communicate, prevent. Underline the first step.
+The left list first, with what each heading asks about, in half a sentence: which event starts the job. Which code is checked out. What the job token may do. Whether an expression lands inside a script. Whether each action is pinned. Whether code is downloaded and run. Where each secret is referenced. Under which conditions a publishing job runs. Which machine runs it. Whether credentials stay in the checkout. And who reviewed the change.
+
+**[ANIMATION]** gates: gates=Contain:done:-:revoke_or_rotate_first|Assess:done|Eradicate:done:-:rewrite_only_where_warranted|Recover:done|Communicate:done|Prevent:done title=Leak_response,_in_this_order_(21B.14)
+
+Now the right list, and your paper: contain, assess, eradicate, recover, communicate, prevent. Underline the first step.
 
 ## LIVE TERMINAL DEMO
 
@@ -115,7 +141,11 @@ d42d1a1 Stop tracking .env and ignore it
 ```
 <!-- /snippet -->
 
-Two commits: `0805fd8`, which added the string, and `d42d1a1`, which removed it. The pickaxe lists commits that change the number of occurrences, so the deletion is listed too. The deletion didn't remove anything from history. It's one more commit on top. So, to the opening question: we deleted it, and no, that alone doesn't make us safe.
+Two commits: `0805fd8`, which added the string, and `d42d1a1`, which removed it. The pickaxe lists commits that change the number of occurrences, so the deletion is listed too.
+
+**[ANIMATION]** graph: ...older-0805fd8-...3-d42d1a1 main; HEAD=main; note:0805fd8:Add_staging_settings; note:d42d1a1:Stop_tracking_.env_and_ignore_it; say:The_deletion_is_one_more_commit_on_top title=We_deleted_it dx=300 at_state_1=15
+
+The deletion didn't remove anything from history. It's one more commit on top. So, to the opening question: we deleted it, and no, that alone doesn't make us safe.
 
 **Step 2: which refs contain the first commit.**
 
@@ -140,7 +170,11 @@ v0.2.0
 ```
 <!-- /snippet -->
 
-Look at the tag in the last line. A branch listing alone would have missed it. In a paper case the same evidence is printed for you, and you're asked what it means. The warm-up is to say, for each line of such output, what it rules in and what it rules out.
+Look at the tag, the last line of the output.
+
+**[ANIMATION]** graph: ...older-0805fd8-64b9b89-b509fe3-d4b8762-d42d1a1 main; b509fe3-7fae871 origin/feature/streaming; d4b8762 origin/main; HEAD=main; note:0805fd8:the_first_commit; name:branches; cmd:git_branch_-a_--contains_0805fd8 => + 64b9b89 tag:v0.2.0; cmd:git_tag_--contains_0805fd8; say:A_branch_listing_alone_would_have_missed_the_tag; name:tag title=Which_refs_contain_the_first_commit? at_branches=4 at_tag=12
+
+A branch listing alone would have missed it. In a paper case the same evidence is printed for you, and you're asked what it means. The warm-up is to say, for each line of such output, what it rules in and what it rules out.
 
 **[ON SCREEN]** The rules for paper cases, from the assessments README: open the case file of variant A and the files beside it; nothing runs on GitHub; the workflow files have faults on purpose; never copy them into a repository, and never run them.
 
@@ -156,7 +190,15 @@ Five mistakes to watch for.
 
 ## PRODUCTION EXAMPLE
 
-Now, out of the lab. A reviewer on an ML platform team receives a pull request that adds an evaluation workflow. She doesn't start by reading the script. She goes down the checklist: the trigger, and which outsider-controlled input reaches the job. The checkout. The permissions block. Expressions inside `run:`. The pins of the actions. The secrets and where they're referenced. The runner. For each finding she writes one sentence of blast radius: what the job token could write, what the provider key could reach. The same week a colleague reports a key in a notebook. She doesn't open the repository first either. She asks who can revoke the key at the provider, and has it done, and only then runs the two commands of the warm-up. The gate asks for exactly this behavior, on paper.
+Now, out of the lab. A reviewer on an ML platform team receives a pull request that adds an evaluation workflow. She doesn't start by reading the script.
+
+**[ANIMATION]** cards: question=She_goes_down_the_checklist cards=the_trigger:and_which_input_reaches_the_job|the_checkout|the_permissions_block|expressions_inside_run:|the_pins_of_the_actions|the_secrets:where_they_are_referenced|the_runner numbered=on
+
+She goes down the checklist: the trigger, and which outsider-controlled input reaches the job. The checkout. The permissions block. Expressions inside `run:`. The pins of the actions. The secrets and where they're referenced. The runner. For each finding she writes one sentence of blast radius: what the job token could write, what the provider key could reach.
+
+**[ANIMATION]** end
+
+The same week a colleague reports a key in a notebook. She doesn't open the repository first either. She asks who can revoke the key at the provider, and has it done, and only then runs the two commands of the warm-up. The gate asks for exactly this behavior, on paper.
 
 ## PRACTICE EXERCISE
 

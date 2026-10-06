@@ -37,25 +37,47 @@ After this video you can:
 
 **Feature flags.** A feature flag is a condition in the code that keeps unfinished or unreleased behavior switched off, so that the code can be merged long before the feature is released.
 
+**[ANIMATION]** graph: [Long-lived branch] *1-*2-*3-*4-*5-*6-M main; *1-*7-*8-*9-*10-*11-*12-M; HEAD=none; note:*10:feature/batch-api:_3_weeks,_one_big_merge || [Behind a flag] *1-b1-*2-b2-*3-b3-*4 main; HEAD=none; note:b2:b1_to_b3:_small_merged_pieces,_switched_off_until_release layout=rows id=flag dy=90
+
 A flag replaces a long-lived branch with a short-lived condition. Instead of keeping `feature/batch-api` unmerged for three weeks, you merge it in small pieces behind `if flags.enabled("batch_api")`, and `main` contains the code from the first day. In other words, a flag separates deployment from release. Deployment is the code reaching production. Release is the behavior being switched on for users.
+
+**[ANIMATION]** cards: question=Pete_Hodgson's_taxonomy_of_feature_toggles cards=release_toggles:ship_incomplete_code_dark|experiment_toggles|ops_toggles|permission_toggles at_2=30 at_3=38 at_4=46
 
 Pete Hodgson's taxonomy distinguishes release toggles, which ship incomplete code dark, experiment toggles, ops toggles and permission toggles. They differ in how long they live and how dynamically they change. And the taxonomy names the cost: added complexity, combinations to test, and "toggle debt" when flags aren't removed. Microsoft describes flags as what lets its developers avoid long-running feature branches and separate deployment from exposure.
 
+**[ANIMATION]** end
+
 Remember the "extra failure mode" of GitHub Flow in video 172's table: a half-finished feature on `main` blocks an urgent release. A flag is what removes it. A half-finished feature on `main` doesn't block a release if it's dark.
+
+**[ANIMATION]** cards: question=When_not_to_use_a_flag cards=Unfinished_code_ships_inside_the_product:Fowler's_caveat:_it_demands_strong_automated_tests|A_change_that_cannot_be_made_conditional:a_schema_migration,_a_dependency_upgrade|A_flag_that_guards_a_security_boundary:must_fail_closed|A_flag_is_configuration:version_control,_or_a_system_with_its_own_audit_trail
 
 **When not to use one.** Fowler's caveat is that with flags the unfinished code ships inside the product, so the approach demands strong automated tests to keep the main line healthy. A flag is the wrong tool for a change that can't be made conditional, such as a schema migration or a dependency upgrade. A flag that guards a security boundary must fail closed. And a flag is configuration: configuration that changes behavior belongs in version control or in a system with its own audit trail.
 
+**[ANIMATION]** graph: A-B main; ^B-?change_1; B-?change_2; HEAD=none; pass:?change_1; pass:?change_2; say:Each_passed_its_checks_against_an_older_main; name:apart => + B-?main_with_change_1-?main_with_changes_1_and_2; pass:?main_with_change_1; pass:?main_with_changes_1_and_2; say:The_queue_runs_the_checks_on_temporary_branches,_in_order; name:queue => + ?main_with_changes_1_and_2 main; say:What_is_merged_was_tested_in_the_combination_in_which_it_lands; name:lands title=A_merge_queue dx=330 id=queue at_apart=25
+
+**[ANIMATION]** step: queue.apart
+
 **Merge queues.** A pull request is GitHub's object for proposing a merge, and its checks are the automated tests that run on it. Two pull requests can each pass their checks against an older `main` and break `main` together. Requiring every branch to be up to date before merging fixes that, and creates a race, because every merge makes every other pull request stale.
+
+**[ANIMATION]** step: queue.lands
 
 A merge queue runs the required checks on temporary branches that contain the base plus the queued changes, in order, and merges what passes. That's the guarantee the up-to-date rule doesn't give without the race: what is merged was tested in the combination in which it lands. On GitHub those checks run on the `merge_group` event, and the merge method is fixed by the queue instead of being chosen per pull request.
 
+**[ANIMATION]** cards: question=The_published_experience_comes_from_large_repositories cards=GitHub_reports:average_wait_to_ship_down_33_percent|Shopify_described:CI_on_a_predicted_post-merge_branch;_failures_ejected|Five_pull_requests_a_day:the_correctness_guarantee_and_little_else
+
 The published experience comes from large repositories. GitHub reports about 2,500 pull requests a month from more than 500 engineers landing through its own queue, with the average wait to ship down 33 percent. Shopify described running CI on a predicted post-merge branch and ejecting failures to keep its main branch green. Those numbers describe those companies. A team that merges five pull requests a day gets the correctness guarantee and little else.
 
+**[ANIMATION]** graph: *1 main; *1-a1-a2 pr/1-schema; a2-b1 pr/2-endpoint; b1-c1-c2 pr/3-client; HEAD=none; note:a2:base:_main; note:b1:base:_pr/1-schema; note:c2:base:_pr/2-endpoint title=A_stack_of_three_pull_requests id=stack dy=110 at_state_1=15
+
 **Stacked changes.** A stack is a chain of small changes, each reviewed separately and each based on the one below. The practice comes from tools with per-commit review, such as Phabricator at Facebook and chained changelists at Google. The stated benefits are an unblocked author and small reviews. The stated costs are the rebasing skill and tooling it needs, and little gain for a small team. GitHub's native stacked pull requests have been in public preview since the thirtieth of July 2026.
+
+**[ANIMATION]** end
 
 Neither a queue nor a stack is a branching strategy. A merge queue makes any model with pre-merge checks safer at volume, and stacks make short-lived branches practical for a change too large for one review.
 
 **What the evidence shows.** The research associates short-lived branches and small batches with better delivery performance. It doesn't rank named workflows, and it doesn't establish cause.
+
+**[ANIMATION]** cards: question=DORA,_research_of_2016_and_2017:_higher_delivery_performance_is_associated_with cards=three_or_fewer_active_branches|merging_to_trunk_at_least_daily|no_code_freezes_or_integration_phases at_1=45 at_2=55 at_3=62
 
 DORA is a research programme on software delivery, and its findings come from surveys. DORA defines trunk-based development as each developer dividing work into small batches and merging into the trunk at least once a day. Its capability page reports, from research conducted in 2016 and 2017, that higher delivery performance is associated with three or fewer active branches, merging to trunk at least daily, and no code freezes or integration phases. It lists heavyweight, slow code review and skipping automated tests before commit as pitfalls. A companion capability says that working in small batches predicts delivery and organizational performance.
 
@@ -68,6 +90,8 @@ DORA is a research programme on software delivery, and its findings come from su
 | Expressed in branch lifetime, number of active branches and batch size | it says nothing about "Git Flow" or "GitHub Flow" by name; a GitHub Flow team with one-day branches satisfies it, and a nominally trunk-based team with week-long branches does not |
 | The branch findings date from 2016 and 2017 | later reports were not read for this course: the research notes record that the 2024 and 2025 report PDFs were not read and that no numeric effect sizes were captured |
 
+Read the left column: survey-based, correlational, expressed in branch lifetime and batch size, and dating from 2016 and 2017.
+
 **[ON SCREEN]** Unverified.
 
 Any specific number for how much trunk-based development improves delivery performance. The notes behind this course contain none, and you shouldn't quote one from memory.
@@ -78,7 +102,11 @@ Quick quiz. The research says "is associated with". Which sentence may you say i
 
 B. Sentence A claims a cause, and the research is correlational. Sentence C names a workflow, and the research ranks none.
 
+**[ANIMATION]** cards: question=What_other_sources_add cards=Fowler:real_advantages_of_feature_branching|A_2025_study_of_Brazilian_developers:one_study_of_one_population|Company_case_studies:very_large_investments_in_CI,_flags_and_tooling|DORA's_recent_reports:AI_as_an_amplifier;_small_batches_still_matter
+
 **What other sources add.** Fowler, who accepts this research, still lists real advantages of feature branching: a feature can be assessed as a unit, code enters the product only when complete, and it suits teams that can't yet keep a main line healthy and open-source projects with occasional contributors who aren't yet trusted. An interview-and-survey study of Brazilian developers published in 2025 concludes that trunk-based workflows suit fast-paced projects with experienced, smaller teams, and branch-based workflows suit less experienced and larger teams despite their management overhead. It's one study of one population. The company case studies come from organizations with very large investments in CI, flags and tooling, and Google and Meta don't use stock Git for their main repositories, so they support the principle more than any Git command sequence. DORA's recent reports describe AI as an amplifier of an organization's existing strengths and weaknesses, and keep small batches and version control among the capabilities that matter.
+
+**[ANIMATION]** end
 
 **How to say it to a CTO.** The textbook's wording: "The research does not prove that trunk-based development is best. It shows that teams reporting short-lived branches and small batches also report better delivery performance. The variable we can act on is how long our branches live and how large our changes are, under whatever name we give the model." There's the variable from the opening: branch lifetime and change size.
 
@@ -94,11 +122,17 @@ Keep that paper. Those two answers choose your first rows in the decision table 
 
 Three pictures, one for each topic. For flags, the textbook's analogy is a new wing of a building, built and inspected behind a locked door: part of the building from day one, open to the public later. The analogy breaks because both sides of the door run in the same production process, so a mistake behind the door can still bring the building down.
 
+**[ANIMATION]** walk: columns=rung,what_the_source_lets_you_say rows=lowest:these_companies_describe_doing_this|above_it:teams_that_report_this_practice_also_report_that_outcome|top:this_practice_causes_that_outcome,_by_this_much marks=3.2:bad,2.2:ok mono=off title=A_ladder_of_evidence
+
 For evidence, hold a ladder with three rungs. On the lowest rung: "these companies describe doing this." Above it: "teams that report this practice also report that outcome." On the top rung, which this research doesn't reach: "this practice causes that outcome, by this much." When you cite, say which rung you're standing on. Stop at the rung the source reached.
+
+**[ANIMATION]** end
 
 For the choice, think of the decision table as a set of pressures, not a lookup. A team is usually in several rows at once, and the rows push in different directions. The design is what you get when you name each pressure and the control that answers it.
 
 ## DIAGRAM
+
+**[ANIMATION]** step: flag.state-1
 
 **[DIAGRAM]** The diagram of section 27.11. Draw the long-lived branch first: three weeks of commits off `main`, one big merge at the end. Then the same work behind a flag: three small pieces, each merged into `main` as it is finished.
 
@@ -113,6 +147,8 @@ For the choice, think of the decision table as a set of pressures, not a lookup.
 
 With the flag, the feature never exists as a diverged line, so it never needs a large merge and never blocks a release.
 
+**[ANIMATION]** step: stack.state-1
+
 **[DIAGRAM]** The diagram of section 27.12: a stack of three pull requests. Draw from the bottom: each one names the one below as its base.
 
 ```text
@@ -124,6 +160,8 @@ With the flag, the feature never exists as a diverged line, so it never needs a 
                       \
                        c1---c2 pr/3-client       (base: pr/2-endpoint)
 ```
+
+And the stack of three pull requests: each one names the one below as its base.
 
 **[ON SCREEN]** The table of section 27.14. It stays on screen for the rest of the video.
 
@@ -137,6 +175,8 @@ With the flag, the feature never exists as a diverged line, so it never needs a 
 | Open source with outside contributors | fork workflow, pull requests, maintainers merge | contributors are not yet trusted with write access | secrets and `pull_request_target` |
 | Regulated environment (segregation of duties, audit trail, change approval) | protected branches with required review by someone other than the author, signed tags for releases, release branches where a release is an audited event | the audit asks who approved what and what exactly shipped | make bypasses visible: rulesets and Rule Insights; compliance comes from enforced, logged rules, not from the name of the model |
 | Model or prompt releases that must be reproducible | tags on the exact commit, plus the data and model versions recorded with it | "which code produced this model" must have one answer | Chapter 28, section 28.7 |
+
+And the decision table of section 27.14. Each row is a context, what it pushes you toward, why, and what to watch.
 
 ## LIVE TERMINAL DEMO
 
@@ -231,7 +271,11 @@ release/1.4
 ```
 <!-- /snippet -->
 
-This is the form of evidence to bring to a strategy discussion. Not "release branches are cleaner", but: under this model the patch release changes two files, under that one a single file. This model leaves one long-lived ref, that one leaves two. Each line is a command anyone in the room can run.
+This is the form of evidence to bring to a strategy discussion.
+
+**[ANIMATION]** walk: columns=,GitHub_Flow,release_branch rows=files_changed_by_the_patch_release:two:one|long-lived_refs:one:two mono=off title=Evidence_anyone_in_the_room_can_run
+
+Not "release branches are cleaner", but: under this model the patch release changes two files, under that one a single file. This model leaves one long-lived ref, that one leaves two. Each line is a command anyone in the room can run.
 
 **[ON SCREEN]** The decision table, with one team placed in it live.
 
@@ -239,9 +283,15 @@ Take this description: a company of forty engineers runs a hosted LLM gateway, d
 
 **[PAUSE]**
 
+**[ANIMATION]** walk: columns=row,context,pushes_toward rows=one:one_live_version,_deployed_continuously:one_long-lived_branch,_flags_for_unfinished_work|three:several_supported_versions:release/x.y_branches,_the_port_check_as_a_release_gate|seven:a_regulated_environment:review_by_someone_other_than_the_author,_signed_tags mono=off title=One_team,_three_rows_at_once id=team
+
+**[ANIMATION]** step: team.3
+
 Now down the rows. Row one applies: one live hosted version, deployed continuously, so one long-lived branch and flags for unfinished work. Row three applies from next quarter: several supported versions, so `release/x.y` branches, a fix direction that is written down, and the port check as a release gate. Row seven applies: a regulated environment, so required review by someone other than the author, signed tags, and bypasses made visible.
 
 Three rows at once, and the textbook says so: the rows combine. We won't resolve it into a named model here. The design itself is the subject of Lab 34.1 and of video 179, and you write it yourself. What you take from here is the method: name the rows, and for each row say what it pushes toward, why, and what to watch.
+
+**[ANIMATION]** end
 
 One more sentence from the section, for the day somebody asks whether the choice is final. Changing the model later is cheap in Git, because branches are refs, and expensive in habits, pipelines and rulesets. So start with the simplest model that answers the two questions, and add a branch only when you can name the version or the audit requirement that needs it.
 

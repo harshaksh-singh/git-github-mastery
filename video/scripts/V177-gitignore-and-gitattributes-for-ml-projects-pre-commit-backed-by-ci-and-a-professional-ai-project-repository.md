@@ -13,6 +13,8 @@
 
 The first answer: a checkpoint was committed two years ago and "deleted", and every clone still carries it. The ignore rule that was added afterwards changed nothing about that.
 
+**[ANIMATION]** walk: columns=the_CTO_asks,the_answer rows=The_clone_takes_eleven_minutes._Why?:a_checkpoint_committed_two_years_ago;_every_clone_still_carries_it|How_did_a_900_kB_dump_reach_main?:a_hook_that_is_not_installed_does_not_run mono=off at_1=3 at_2=12
+
 The second answer is five words long: a hook that isn't installed doesn't run. The engineer who pushed the dump never skipped anything. Her clone had no hook.
 
 Both failures have the same shape. A safeguard existed, and it wasn't in force at the moment and in the place where the mistake was made. Hold on to both answers. You'll watch each of them happen in a terminal.
@@ -45,15 +47,27 @@ After this video you can:
 
 The course's research found no authoritative, maintained `.gitignore` template for ML projects. GitHub's Python template covers interpreter, packaging, environment and tool caches and contains nothing ML-specific. The file you'll see is assembled from that template and from each tool's documentation of where it writes output. Read it as a starting point and adjust it to the tools you run. The same holds for the attributes file and for the layout.
 
+**[ANIMATION]** walk: columns=ignored,because rows=the_data_directory:data_is_versioned_by_reference|weight_formats:one_stray_git_add_._would_commit_a_checkpoint|wandb/,_mlruns/,_mlflow.db:the_trackers_write_there_by_default|outputs/,_multirun/:Hydra_creates_a_directory_per_run|.env:local_credentials_go_there|editor_and_OS_files:absent:_they_belong_in_core.excludesFile marks=6.2:dim title=Why_each_group_in_the_ignore_file_exists
+
 Why each group in the ignore file exists. The data directory, because data is versioned by reference. Weight formats, because one stray `git add .` after training would otherwise commit a checkpoint. `wandb/`, `mlruns/` and `mlflow.db`, because the trackers write there by default. `outputs/` and `multirun/`, because Hydra creates a directory per run. `.env`, because that's where local credentials go. Editor and operating-system files are deliberately absent: they belong in each developer's global ignore file, `core.excludesFile`, not in every project.
+
+**[ANIMATION]** cards: question=Three_rules numbered=on cards=Ignore_patterns_never_affect_tracked_files:the_index_decides_what_is_tracked|Drivers_are_named_in_.gitattributes:and_defined_in_configuration|An_ignore_file_is_not_a_security_control:it_prevents_accidents_with_git_add id=r3
+
+**[ANIMATION]** step: r3.1
 
 **Three rules.**
 
 Rule 1: ignore patterns never affect files that are already tracked. The manual defines ignore files as specifying "intentionally untracked files". The index decides what is tracked, not `.gitignore`. The index is Git's list of what the next commit will contain.
 
+**[ANIMATION]** step: r3.2
+
 Rule 2: drivers are named in `.gitattributes` and defined in configuration. A committed attribute that names a driver nobody configured is a silent no-op, or a hard failure when the filter is required. That was video 175 in one sentence.
 
+**[ANIMATION]** step: r3.3
+
 Rule 3: an ignore file isn't a security control. It prevents accidents by people who use `git add` without `-f`. It does nothing about a file committed before the rule existed, a file added with `--force`, or a secret pasted into a tracked file.
+
+**[ANIMATION]** end
 
 **Hooks, in one sentence.** A hook gives the author feedback in seconds. Only a check that runs where the author can't skip it is a control. Usually that place is CI, the automation that runs checks on a server for every pushed change.
 
@@ -87,6 +101,8 @@ pre-commit run --all-files    # what CI runs
 
 Add one secret scanner. The report notes that the gitleaks README now describes the project as feature complete, with future releases limited to security patches, so check the state of whichever scanner you choose. prek, version 0.5.4, is a Rust reimplementation that reads the same configuration. The report collected no benchmarks for it.
 
+**[ANIMATION]** cards: question=How_a_local_hook_fails_open,_from_the_report cards=Hooks_are_not_installed_by_cloning|They_are_skipped_with_one_flag|They_are_bypassed:the_web_interface,_the_API,_an_agent's_own_Git_client
+
 **Why "once per clone" is the whole problem.** The report lists the ways a local hook fails open: hooks aren't installed by cloning. They're skipped with one flag. And they're bypassed by commits made through the web interface, the API, or an agent's own Git client.
 
 **[ON SCREEN]** The layers, from section 28.10.
@@ -107,9 +123,17 @@ No single authoritative layout exists. Two reference points are well documented:
 
 A picture helps. Think of three fences at increasing distance from the author.
 
+**[ANIMATION]** cards: question=Three_fences,_at_increasing_distance_from_the_author numbered=on cards=at_the_desk:the_ignore_file,_the_filter,_the_hook|at_the_gate_of_the_branch:a_required_check_in_CI|at_the_door_of_the_server:push_protection_and_push_rulesets marks=1:dim,2:dim,3:ok id=fences
+
+**[ANIMATION]** step: fences.1
+
 The first fence is at the desk: the ignore file, the filter, the hook. It's close, fast and friendly, and the author can step over it, or may never have had it built.
 
+**[ANIMATION]** step: fences.2
+
 The second fence is at the gate of the branch: a required check in CI. The author can't step over it. But by the time it is reached, the commit is already on the server.
+
+**[ANIMATION]** step: fences.3
 
 The third fence is at the door of the server: push protection and push rulesets. It's the only one that keeps bytes from arriving.
 
@@ -117,9 +141,13 @@ Quick quiz. Which fence can the author not step over, and still acts before the 
 
 **[PAUSE]**
 
+**[ANIMATION]** step: fences.marks
+
 C. The author can step over A, and B runs after the push. Only the third fence is both.
 
 Where the picture breaks: fences are independent, and these shouldn't be. The first and second fence should run the same code, so that they can't disagree about the rules. You'll see that in the demo: one script, called by the hook and by CI.
+
+**[ANIMATION]** end
 
 And one sentence for the layout: rules first, files second. Each safeguard precedes the thing it guards, so there's no window in which a mistake can enter history.
 
@@ -413,7 +441,15 @@ tests: ok
 ```
 <!-- /snippet -->
 
-Two design points. The hook and CI run the same code, `tools/checks.py`, so they can't disagree about the rules. And the CI script checks two things: every file version the branch adds, with `--range`, which catches a file that was committed and removed again within the branch and is therefore still in history. And the final snapshot, with `--tree`. Both read blobs from Git, never the working tree, so they judge what is in history. On Asha's branch the script names the dump. On the other branch it names the key. On `main` it passes.
+Two design points.
+
+**[ANIMATION]** stores: boxes=the_local_hook:fast_feedback|*tools/checks.py:one_script|the_CI_job:the_control rows=1:B:reads_blobs_from_Git,_never_the_working_tree|2:C:--range:_every_file_version_the_branch_adds|3:C:--tree:_the_final_snapshot arrows=1:A>B:calls|1:C>B:calls title=The_hook_and_CI_run_the_same_code
+
+The hook and CI run the same code, `tools/checks.py`, so they can't disagree about the rules. And the CI script checks two things: every file version the branch adds, with `--range`, which catches a file that was committed and removed again within the branch and is therefore still in history. And the final snapshot, with `--tree`. Both read blobs from Git, never the working tree, so they judge what is in history.
+
+**[ANIMATION]** end
+
+On Asha's branch the script names the dump. On the other branch it names the key. On `main` it passes.
 
 **[TERMINAL]** Replay `labs/run ch28/project-skeleton`: `docqa`, as Lab 33.1 builds it from an empty folder.
 
@@ -615,6 +651,8 @@ Five mistakes to watch for. Every one of them is common.
 ## PRODUCTION EXAMPLE
 
 Now, out of the lab. A team starts a new retrieval project by copying an old repository and deleting what it doesn't need. Within a month the old problems are back: a checkpoint in history, a `.env` that was committed once, notebooks with outputs.
+
+**[ANIMATION]** cards: question=The_next_project,_in_the_order_of_the_history numbered=on cards=the_ignore_file_and_the_attributes_file|the_package_skeleton_and_the_lock_file|one_script_of_checks:a_hook_and_a_CI_entry_point_call_it|CI_as_a_required_check:push_protection_for_secrets|the_README_begins_with_the_setup_commands
 
 For the next project the lead builds the repository in the order of the history you saw. The first commit contains only the ignore file and the attributes file. The second contains the package skeleton and the lock file. The third adds one script of checks, a hook that calls it, and a CI entry point that calls the same script over the range a branch adds and over the final tree. The CI job is made a required check, and push protection is switched on for secrets, because CI comes too late for those. The README begins with the setup commands for a new clone, and the first thing the onboarding buddy asks a new colleague to run is the pair of `git config get` commands that show whether the filter and the hook path are set. Six months later the repository has had outputs stripped by the filter many times and has had the CI check fail three times, each time for a clone that had not been set up.
 

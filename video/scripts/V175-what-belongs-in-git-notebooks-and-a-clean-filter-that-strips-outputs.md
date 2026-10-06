@@ -13,6 +13,8 @@
 
 Both statements are true. The scanner's finding is real, and so is the engineer's protest. The source code of the notebook reads the key from an environment variable, which is the right way to handle a key. Nobody typed the key into any file.
 
+**[ANIMATION]** cards: question=The_notebook_file_stores_what_cells_print cards=a_key_that_nobody_typed|a_notebook_nobody_edited_shows_as_modified|a_merge_conflict_leaves_a_file_Jupyter_cannot_open at_1=20 at_2=45 at_3=65
+
 The key was printed by a cell, and the notebook file stores what cells print. That one fact also explains why a notebook that nobody edited shows as modified, and why two people who reran the same notebook get a merge conflict that leaves a file Jupyter can't open. Keep the notebook that nobody edited in mind. You'll count its changed lines yourself.
 
 ## INTRODUCTION
@@ -41,7 +43,13 @@ After this video you can:
 
 **What belongs in Git.** Git should hold what a human writes and reviews, plus small references to everything else. It shouldn't hold what a program produces or what is large.
 
-Three properties of Git decide the question. Every clone carries the full history, so a file committed once is downloaded by everyone, in every version, for as long as the history exists. Objects can't be recalled: removing a file adds a commit and removes nothing. And diff, merge and blame work on lines of text. On top of that the platform sets limits: GitHub warns about files larger than 50 mebibytes, blocks files larger than 100 mebibytes, recommends that repositories stay ideally under 1 gigabyte and strongly under 5 gigabytes, and states that Git isn't designed to serve as a backup tool.
+**[ANIMATION]** cards: question=Three_properties_of_Git_decide_the_question numbered=on cards=Every_clone_carries_the_full_history:every_file,_in_every_version|Objects_cannot_be_recalled:removing_a_file_adds_a_commit|Diff,_merge_and_blame_work_on_lines_of_text
+
+Three properties of Git decide the question. Every clone carries the full history, so a file committed once is downloaded by everyone, in every version, for as long as the history exists. Objects can't be recalled: removing a file adds a commit and removes nothing. And diff, merge and blame work on lines of text.
+
+**[ANIMATION]** walk: columns=on_GitHub,what_happens rows=a_file_larger_than_50_MiB:a_warning|a_file_larger_than_100_MiB:blocked|a_repository:ideally_under_1_GB,_strongly_under_5_GB|Git:not_designed_to_serve_as_a_backup_tool marks=1.2:wait,2.2:bad mono=off title=The_platform's_limits
+
+On top of that the platform sets limits: GitHub warns about files larger than 50 mebibytes, blocks files larger than 100 mebibytes, recommends that repositories stay ideally under 1 gigabyte and strongly under 5 gigabytes, and states that Git isn't designed to serve as a backup tool.
 
 **[ON SCREEN]** The split of section 28.2.
 
@@ -55,23 +63,39 @@ Three properties of Git decide the question. Every clone carries the full histor
 | notebooks **without outputs** | notebook outputs |
 | pointer and metadata files (a checksum, a model ID with a pinned revision) | secrets, in any form |
 
-Quick quiz, with the table on screen. Three files: a prompt for the model, a checkpoint of trained weights, and a lock file. Which one stays out of Git? A, the prompt. B, the checkpoint. C, the lock file. Your answer?
+Read it as two columns: what Git holds, and what Git only references.
+
+**[ANIMATION]** end
+
+Quick quiz. Three files: a prompt for the model, a checkpoint of trained weights, and a lock file. Which one stays out of Git? A, the prompt. B, the checkpoint. C, the lock file. Your answer?
 
 **[PAUSE]**
 
-B, the checkpoint. It's large, a program produced it, and Git holds a pointer to it instead. The prompt and the lock file are on the left.
+B, the checkpoint. It's large, a program produced it, and Git holds a pointer to it instead. The prompt and the lock file were on the left of the table.
 
 The textbook is careful about the status of this table: the split is the research report's inference from the limits, not a published standard. The less obvious rows are prompts and pointers. A prompt is source code for an LLM application: a one-word change alters behavior, so it deserves a diff, a review and a commit. A pointer is what makes the right-hand column reproducible: Git can't hold the data, but it can hold forty or sixty-four hexadecimal characters that identify exactly one version of it.
 
 The same split is a security boundary. The left column is what you're prepared to show every engineer, contractor and CI job with read access.
 
+**[ANIMATION]** stores: boxes=an_.ipynb_file:one_JSON_document|a_code_cell|an_output rows=1:A:metadata|1:A:nbformat,_nbformat__minor|1:A:cells@hl|2:B:source|2:B:outputs@hl|2:B:execution__count|3:C:a_stream:_what_was_printed|3:C:a_result|3:C:an_error_with_its_traceback|3:C:display_data:_a_base64_image arrows=2:A3>B:each_cell|3:B2>C:each_output mono=on id=ipynb
+
+**[ANIMATION]** step: ipynb.1
+
 **Notebooks.** An `.ipynb` file is one JSON document in which each code cell carries its source, the outputs of its last run and a counter, so running a notebook changes the file even when no code changed.
+
+**[ANIMATION]** step: ipynb.3
 
 JSON is a plain-text format of names and values. Precisely: the notebook format defines a top-level object with `metadata`, `nbformat`, `nbformat_minor` and `cells`. A code cell stores `source`, a list of `outputs` and an `execution_count`. An output can be a stream, which is what was printed, a result, an error with its traceback, or display data such as a base64-encoded image.
 
+**[ANIMATION]** cards: question=One_design_decision,_three_problems numbered=on cards=A_rerun_is_a_change|Outputs_carry_data_and_credentials_into_history|A_line-based_merge_can_produce_a_file_that_is_not_a_notebook
+
 That one design decision causes three separate problems, and the demo shows each: a rerun is a change. Outputs carry data and credentials into history. And a line-based merge can produce a file that isn't a notebook.
 
+**[ANIMATION]** trees: file=notebook.ipynb in=wt commits=none forms=with_outputs,-,- forms_add=with_outputs,no_outputs,- forms_commit=with_outputs,no_outputs,no_outputs steps=setup,add,commit versions=the_notebook,the_notebook,the_notebook title=A_clean_filter_on_the_way_in id=clean
+
 **A clean filter that strips outputs.** A clean filter rewrites a notebook on its way into the repository so that the blob has no outputs, while the file in your working tree keeps them. The blob is Git's stored copy of the file's content, and the working tree is the folder of ordinary files you edit.
+
+**[ANIMATION]** end
 
 The maintained implementation is nbstripout, version 0.9.1 of February 2026. From its documentation, not run here:
 
@@ -84,7 +108,13 @@ nbstripout --verify notebooks/*.ipynb             # exit non-zero if anything wo
 
 Its README states the limitation that shapes everything else: there's no way to have Git set up the filter automatically when someone clones a repository, by design, so that a clone never executes arbitrary code.
 
+**[ANIMATION]** cards: question=A_filter_that_cannot_run cards=optional,_the_default:not_an_error:_a_no-op_passthru|required_=_true ask=2 marks=1:bad,2:lock id=req
+
+**[ANIMATION]** step: req.2
+
 **What `required` changes.** A filter is optional by default. The manual says a missing driver definition, or a driver that exits with an error, "is not an error but makes the filter a no-op passthru". For a filter whose purpose is to keep outputs out of history, a silent pass-through is the worst possible failure.
+
+**[ANIMATION]** end
 
 **The complementary tools.** They're complementary, not alternatives.
 
@@ -116,11 +146,19 @@ The last row is the durable fix. A function in `src/docqa/` has tests, a diff an
 
 Two analogies from the textbook, one per half of the video.
 
+**[ANIMATION]** stores: boxes=the_lab_notebook:Git|the_freezer:storage_outside_Git rows=1:A:the_protocol_and_the_settings|1:A:the_label_of_every_sample|2:B:the_samples|3:A:a_checksum_of_the_contents@hl arrows=3:A3>B1:verifies title=A_lab_notebook_and_a_freezer
+
 For what belongs in Git: a lab notebook and a freezer. The notebook records the protocol, the settings and the label of every sample. The samples live in the freezer. Nobody tapes a sample into the notebook, and nobody runs a lab from the freezer alone. The analogy breaks in one useful way: a Git "notebook" can verify the freezer, because the label it records can be a checksum of the contents.
+
+**[ANIMATION]** replay: clean
 
 For the filter: a mail room that removes attachments from outgoing letters and files the plain letter. Your desk copy still has the attachments. Where it breaks: every desk has its own mail room, and a new employee's desk has none until somebody sets it up.
 
+**[ANIMATION]** stores: boxes=your_clone|the_repository|a_new_clone rows=1:A:.gitattributes:_the_attribute|1:A:.git/config:_the_driver|2:B:.gitattributes@ok|3:C:.gitattributes@ok|3:C:no_driver_in_.git/config@bad arrows=2:A1>B1:push|3:B1>C1:clone title=The_attribute_travels._The_driver_does_not id=travel
+
 That last sentence is the whole second half of the video. The attribute travels with the repository. The mail room does not. So the filter is a convenience, and the control is something else.
+
+**[ANIMATION]** end
 
 Try it now, on paper, for thirty seconds. Write down the three things a code cell stores, and put a tick beside the one a human writes. I'll wait.
 
@@ -159,6 +197,8 @@ Correct fix       : keep outputs out of the blob (a clean filter, section 28.4),
 Prevention        : enforce the choice in CI, because the filter lives in each clone's
                     configuration and a clone does not have it.
 ```
+
+And the root-cause box of section 28.3. Read the root cause line: one file mixes what a human wrote with what a program produced.
 
 ## LIVE TERMINAL DEMO
 
@@ -485,7 +525,13 @@ $ git cat-file -p :notebooks/01-error-analysis.ipynb | grep -c output_type
 ```
 <!-- /snippet -->
 
-With `required = true`, `git add` fails with status 128 and nothing is staged. With it unset, the same three error lines appear, the exit status is 0, and the notebook is staged with its three outputs. nbstripout declares its filter required for this reason.
+With `required = true`, `git add` fails with status 128 and nothing is staged. With it unset, the same three error lines appear, the exit status is 0, and the notebook is staged with its three outputs.
+
+**[ANIMATION]** step: req.marks
+
+nbstripout declares its filter required for this reason.
+
+**[ANIMATION]** end
 
 **Step 10: what a clone has.** Predict: Asha clones. Which of the two halves does she get, the attribute or the driver?
 
@@ -514,7 +560,13 @@ $ git cat-file -p HEAD:notebooks/01-error-analysis.ipynb | grep -c output_type
 ```
 <!-- /snippet -->
 
-The attribute travelled, because `.gitattributes` is a tracked file. The driver did not, because it lives in `.git/config`, and Git never copies configuration from a clone source: if it did, cloning a repository would let its author run commands on your machine. `required = true` didn't help either, since that setting is part of the same missing configuration. Asha's notebook went in with outputs and nothing warned her. She did nothing wrong. Her clone was never told.
+The attribute travelled, because `.gitattributes` is a tracked file.
+
+**[ANIMATION]** step: travel.3
+
+The driver did not, because it lives in `.git/config`, and Git never copies configuration from a clone source: if it did, cloning a repository would let its author run commands on your machine. `required = true` didn't help either, since that setting is part of the same missing configuration. Asha's notebook went in with outputs and nothing warned her. She did nothing wrong. Her clone was never told.
+
+**[ANIMATION]** end
 
 **Step 11: the check that does travel.**
 
@@ -536,7 +588,11 @@ $ python3 tools/nbstrip.py --verify $(git ls-files "*.ipynb")
 ```
 <!-- /snippet -->
 
-`--verify` strips each committed notebook in memory and fails if the result differs from the file. On a fresh checkout the files are the blobs, so this is a check of what is in history. It fails on Asha's commit and passes on the one before. Run as a required check in CI, the automation that tests every change on a server, it's the control. The filter on each laptop is a convenience that keeps people from tripping it.
+`--verify` strips each committed notebook in memory and fails if the result differs from the file. On a fresh checkout the files are the blobs, so this is a check of what is in history. It fails on Asha's commit and passes on the one before.
+
+**[ANIMATION]** gates: packet=a_notebook_with_outputs gates=the_clean_filter:skip:each_laptop:a_convenience,_missing_in_a_new_clone|--verify_in_CI:stop:a_required_check:on_a_fresh_checkout zones=your_machine,the_server split=1 result=not_stripped:_exit_status_1 title=The_check_that_does_travel
+
+Run as a required check in CI, the automation that tests every change on a server, it's the control. The filter on each laptop is a convenience that keeps people from tripping it.
 
 ## COMMON MISTAKES
 
@@ -551,6 +607,8 @@ Five mistakes to watch for.
 ## PRODUCTION EXAMPLE
 
 Now, out of the lab. A team that builds a retrieval pipeline keeps its error-analysis notebooks in the repository. A scanner reports a provider key on `main`. The response follows video 166: the key is revoked first. Then the lead asks the assessment question, how did it get there, and the answer is not "somebody committed a key". A debugging cell printed the client configuration.
+
+**[ANIMATION]** cards: question=The_team_already_"used_nbstripout" cards=three_of_seven_clones:had_the_filter_installed|two_contractors:cloned_later_and_never_ran_the_install|the_verify_form:a_required_check,_on_a_fresh_checkout|the_filter_on_laptops:stays,_as_a_convenience marks=1:ring,2:bad,3:ok at_2=30 at_3=50 at_4=62
 
 The team already "used nbstripout". The lead checks what that means: three of seven clones had the filter installed. Two contractors had cloned later and never ran the install. So the change isn't a reminder to install it. The verify form of the tool becomes a required check on pull requests, on a fresh checkout. The filter stays on laptops as a convenience. And because stripping outputs is also a data-protection control, the team decides what to do with the two notebooks whose charts are the deliverable: the figures are exported to a tracked report file, and the notebooks are stripped like the rest.
 

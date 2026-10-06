@@ -15,9 +15,15 @@ Ravi's pull request had three commits and two files, and it was approved. A comm
 
 And one detail that he mentions last, as if it were good news: the approval still stands. Is that good news? Hold that question.
 
+**[ANIMATION]** cards: id=quiz question=Which_record_would_test_a_rewritten_main? cards=A:the_reflog_of_origin/main|B:the_pull_request_page|C:git_status marks=1:ok title=Quick_quiz at_1=45 at_2=75 at_3=82
+
+**[ANIMATION]** step: 3
+
 Quick quiz, before any cause is named. Which record would test Ravi's first suspect, a rewritten `main`? A, the reflog of `origin/main`, Git's local record of where the server's `main` has been. B, the pull request page. C, `git status`. Your answer?
 
 **[PAUSE]**
+
+**[ANIMATION]** step: marks
 
 A. A rewrite would stand in that reflog as a forced update. Whether one does, we find out later.
 
@@ -45,29 +51,51 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** cards: id=cand cards=the_wrong_base_branch|the_head_branch_reused_after_a_squash_merge|the_branch_rebased_or_force-pushed,_or_its_base_rewritten|every_line_changed:line_endings_or_a_formatter|a_lock_file_or_generated_file|a_merge_of_the_wrong_branch_into_the_head numbered=on title=A_pull_request_shows_hundreds_of_changes at_1=48 at_2=54 at_3=62 at_4=74 at_5=82 at_6=86
+
 **The candidates.** The page shows a three-dot diff: either an endpoint or the merge base isn't what the author thinks. The catalog of video 184 lists the mechanisms for "a pull request shows hundreds of changes". The wrong base branch. The head branch reused after a squash merge. The branch rebased or force-pushed, or its base rewritten. Every line changed, by line endings or a formatter. A lock file or generated file. And a merge of the wrong branch into the head.
 
+**[ANIMATION]** walk: id=tests columns=mechanism,local_test rows=a_rewritten_main:the_reflog_of_origin/main,_and_the_merge_base|a_force-pushed_head:the_reflog_of_the_pushing_clone|a_merge:git_log_--merges_over_the_pull_request's_range|reformatting:git_diff_--ignore-cr-at-eol_--stat_against_the_plain_diff|a_wrong_base:the_range_from_each_candidate_base title=Each_has_a_local_test at_1=8 at_2=30 at_3=48 at_4=62 at_5=85
+
 Each has a local test. A rewritten `main`: the reflog of `origin/main` and the merge base. A force-pushed head: the reflog of the pushing clone. A merge: `git log --merges` over the pull request's range. Reformatting: `git diff --ignore-cr-at-eol --stat` against the plain diff. A wrong base: the range from each candidate base.
+
+**[ANIMATION]** end
 
 **The root cause here.** A topic branch, a branch for one piece of work, was aimed at `main` and updated from `develop`, an unreleased long-running branch. A merge makes every commit of the merged branch an ancestor of the result, and a pull request lists everything reachable from the head and not from the base. Layer: Git. GitHub displayed the branch correctly.
 
 **Why "one small commit" felt true.** `git log --first-parent` shows the branch as Ravi experienced it: his commits and one merge. A merge commit has two parents, and the five hundred files came in through the second parent of that merge.
 
+**[ANIMATION]** cards: id=revert question=git_revert_-m_1_of_the_merge:_wrong_here,_for_two_reasons cards=the_commits_of_develop_stay_ancestors_of_the_branch:so_the_commit_list_stays_long|once_merged,_main_has_those_commits_and_a_commit_that_undoes_them:so_the_later_release_of_develop_brings_nothing numbered=on title=A_reverted_merge_isn't_a_removed_merge at_1=38 at_2=55
+
 **The tempting fix, and why it is wrong.** `git revert -m 1` of the merge commit, which adds a commit that undoes the merge: no forced push, and the diff shrinks. It's wrong here for two reasons. The commits of `develop` stay ancestors of the branch, so the commit list stays long. And once this branch is merged, `main` contains those commits together with a commit that undoes them, so the later release of `develop` brings nothing: the re-merge problem. The textbook's sentence for it: a reverted merge isn't a removed merge.
+
+**[ANIMATION]** end
 
 **The repair.** The branch has one author, so it's rebuilt: anchor the current tip, replay what came after the merge onto the merge's first parent, and publish with a lease, a forced push that's refused if the server's branch has moved.
 
+**[ANIMATION]** bars: bars=approved_on:2|standing_on:504 unit=files title=The_approval at_1=45 at_2=55
+
 **GitHub, not Git: the approval.** Whether an approval survives a push depends on the rules: "dismiss stale pull request approvals" removes it when the diff changes. Here an approval given to two files stood on 504. Treat it as void and review again. So that detail from the opening wasn't good news.
+
+**[ANIMATION]** end
 
 **Severity.** SEV 3. Nothing was merged. The near miss is the standing approval, not the file count.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** graph: *1-A-B topic; *1 main; *1-X-Y-Z develop; HEAD=topic => + B-M topic; Z-M; note:M:a_door; range:X,Y,Z:walks_in_with_it; say:Everything_behind_the_second_parent_walks_in => + M-R topic; note:R:a_revert; say:A_revert_changes_the_content_back_and_leaves_the_ancestry_in_place id=door at_state_2=62
+
+**[ANIMATION]** step: state-2
+
 Picture the pull request as the answer to one question: "what would arrive in the base if this were merged now?" Everything the head can reach and the base can't. A merge commit is a door: whatever is behind its second parent walks in with it.
 
 Ravi opened a door to `develop` to get one thing he wanted from it. Everything else on `develop` came through the same door, and the page showed it faithfully.
 
+**[ANIMATION]** step: state-3
+
 Where the picture breaks: you can close a door, and you can't un-open a merge by adding a commit. A revert changes the content back and leaves the ancestry in place. Only a branch that never contained the merge is a branch without the door, which is why the repair is a rebuild.
+
+**[ANIMATION]** end
 
 For the method, one habit: read the commit list, not only the files. The files said "something large changed". The commit list, with its authors, said what.
 
@@ -78,6 +106,8 @@ Try it now. Thirty seconds, read-only. In any repository you have, run `git log 
 A merge's subject usually names the branch that came in, as "Merge branch 'develop'" does here. That reading found today's cause.
 
 ## DIAGRAM
+
+**[ANIMATION]** cards: id=sofar question=What_we_know_so_far:_what_the_page_shows cards=yesterday:three_commits,_two_files,_approved|today:more_than_five_hundred_files,_and_commits_by_a_colleague|and:the_approval_still_stands title=Before_the_demo pace=quick
 
 **[DIAGRAM]** A new drawing: the pull request's two endpoints and merge base on the graph, before and after the rebuild. IDs are from the transcript.
 
@@ -102,7 +132,7 @@ A merge's subject usually names the branch that came in, as "Merge branch 'devel
     diff         main...head : 2 files
 ```
 
-Neither the base nor the merge base moved. The head grew a second line of ancestors. After the rebuild the last commit has a new ID, because its parent changed.
+Before the demo, what we know so far is what the page shows: yesterday three commits and two files, today more than five hundred files. The graph of the branch, before and after the rebuild, is drawn in the demo.
 
 ## LIVE TERMINAL DEMO
 
@@ -227,9 +257,13 @@ The file count belongs to the commits behind the second parent, and Ravi's reflo
 
 Root cause, with its layer: Git. A topic branch aimed at `main` was updated from `develop`. GitHub displayed the branch correctly.
 
-**[ANIMATION]** graph: 88eab01-bdb4a59-6d230a6-f94e7f0-461c3ea-5dc3109 feature/snippet-highlight; 88eab01 main origin/main; 88eab01-796fd96-5f0c2ae-069daa8 origin/develop; 069daa8-461c3ea; HEAD=feature/snippet-highlight => 88eab01-bdb4a59-6d230a6-f94e7f0-461c3ea-5dc3109 rescue/with-develop; 88eab01 main origin/main; 88eab01-796fd96-5f0c2ae-069daa8 origin/develop; 069daa8-461c3ea; ^f94e7f0-1981450 feature/snippet-highlight; HEAD=feature/snippet-highlight title=A_branch_that_never_contained_the_merge
+**[ANIMATION]** graph: 88eab01-bdb4a59-6d230a6-f94e7f0-461c3ea-5dc3109 feature/snippet-highlight; 88eab01 main origin/main; 88eab01-796fd96-5f0c2ae-069daa8 origin/develop; 069daa8-461c3ea; HEAD=feature/snippet-highlight; say:8_commits_in_main..head,_504_files_in_main...head => 88eab01-bdb4a59-6d230a6-f94e7f0-461c3ea-5dc3109 rescue/with-develop; 88eab01 main origin/main; 88eab01-796fd96-5f0c2ae-069daa8 origin/develop; 069daa8-461c3ea; ^f94e7f0-1981450 feature/snippet-highlight; HEAD=feature/snippet-highlight; say:4_commits_in_main..head,_2_files_in_main...head title=A_branch_that_never_contained_the_merge id=rebuild
 
 **[ANIMATION]** step: state-1
+
+Here's the branch as a graph. Neither the base nor the merge base moved. The head grew a second line of ancestors.
+
+**[ANIMATION]** end
 
 **Rebuild, in Ravi's clone.** 🟢 for the anchor. 🟡 CAUTION: `git rebase --onto` replaces the commits after the merge with new ones. The two arguments: the merge's first parent as the new base, and the merge itself as the boundary.
 
@@ -257,9 +291,9 @@ $ git log --oneline --graph main..feature/snippet-highlight
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** step: state-2
+**[ANIMATION]** step: rebuild.state-2
 
-One commit replayed. Four commits in a line, no merge. The last one is now `1981450`.
+One commit replayed. Four commits in a line, no merge. The last one is now `1981450`: a new ID, because its parent changed.
 
 **Check the result before publishing.**
 
@@ -384,7 +418,11 @@ NOT YET: 3 check(s) failed.
 
 Now, out of the lab. A search team keeps a long-running `develop` branch for a tokenizer migration that regenerates five hundred golden test fixtures. An engineer working on snippet highlighting, on a branch aimed at `main`, needs one helper that exists only on `develop`, and pulls `develop` into his branch to get it.
 
+**[ANIMATION]** gates: id=review gates=the_commit_list:done:-:a_colleague's_name,_a_merge_subject|git_log_--merges:done:-:over_the_pull_request's_range|no_revert:done:-:she_asks_him_not_to_revert_the_merge|the_rebuild:done:-:an_anchor,_one_rebase_--onto,_three_checks,_a_push_with_a_lease title=His_reviewer_doesn't_approve_again at_1=12 at_2=38 at_3=55 at_4=65
+
 His reviewer, the next morning, doesn't approve again. She reads the commit list and sees a colleague's name on three commits and a merge subject that names `develop`. She runs `git log --merges` over the pull request's range in her clone, sends him the one line, and asks him not to revert the merge. They rebuild the branch together: an anchor, one `rebase --onto`, three checks, a push with a lease. The helper he needed is cherry-picked as its own reviewed commit instead.
+
+**[ANIMATION]** cards: id=guide cards=Update_a_topic_branch_from_the_branch_it_will_be_merged_into:and_name_that_branch_in_the_command|Dismiss_stale_approvals_when_the_diff_changes:an_approval_for_two_files_had_stood_on_504 title=Two_lines_in_the_contribution_guide at_1=15 at_2=50
 
 The team adds two lines to its contribution guide. Update a topic branch from the branch it will be merged into, and name that branch in the command. And the repository's ruleset gets the option that dismisses stale approvals when the diff changes, because an approval for two files had stood on five hundred and four.
 

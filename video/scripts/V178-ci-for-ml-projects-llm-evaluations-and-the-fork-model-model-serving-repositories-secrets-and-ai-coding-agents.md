@@ -39,13 +39,23 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** stores: boxes=a_GPU|a_multi-gigabyte_model|a_paid_API_key rows=1:A:hosted_GPU_runners:_one_shape,_4_vCPU_and_a_single_T4|1:A:larger_runners:_billed_per_minute|2:B:caches:_free_up_to_10_GB_per_repository|2:B:readable_by_anyone_who_can_open_a_pull_request@bad|3:C:an_LLM_evaluation_needs_the_key_in_CI|3:C:non-deterministic,_costs_money,_needs_secrets title=Three_collisions_with_a_default_of_GitHub_Actions id=press
+
+**[ANIMATION]** step: press.boxes
+
 **CI for ML, in one sentence.** The CI of an ML repository is ordinary until it needs a GPU, a multi-gigabyte model or a paid API key, and each of those three collides with a default of GitHub Actions.
 
 **The ordinary part.** A Python version matrix, installs driven by the lock file, and a dependency cache. A matrix runs the same job once for each version you list. uv's guide pins its setup action to a full commit SHA and installs with `uv sync --locked`. The course's workflow 4, Python tests, is that job. Video 147 went through it line by line. For `docqa`, one more step runs `sh ci/check.sh` with the base of the pull request, and the checkout needs `fetch-depth: 0` so that the range exists.
 
+**[ANIMATION]** step: press.1
+
 **GPU capacity.** A runner is the machine that runs one job. GitHub-hosted GPU runners come in one shape: a 4-vCPU machine with a single T4. Larger runners, GPU included, are available only to organizations on Team and Enterprise Cloud plans and are always billed per minute, with no included minutes. That's enough for a smoke test of a small model, not for training. Teams that need more run self-hosted GPU runners, on machines they operate themselves, which is a security decision before it is a capacity decision.
 
+**[ANIMATION]** step: press.2
+
 **Caches.** A cache is a stored directory that a later run can restore. Caches are free up to 10 gigabytes per repository, and anyone who can open a pull request can read them, so a cache isn't a place for anything sensitive. They suit package caches and small test models, not multi-gigabyte checkpoints. Fetch large models by pinned reference from the model store inside the job, or bake them into a runner image.
+
+**[ANIMATION]** step: press.3
 
 **LLM evaluations.** An evaluation scores a model's answers on a set of examples. An evaluation that calls a model provider needs an API key in CI. The textbook names the maintained tools: promptfoo's GitHub Action runs a before-and-after evaluation of edited prompts on pull requests. DeepEval integrates with pytest and fails the build when a metric falls below a threshold. Inspect AI, Ragas and the LangSmith SDK are also maintained. CML, once the usual way to post model metrics on pull requests, has had no release since October 2024. The report infers from repository activity that it is dormant, and no official statement says so.
 
@@ -57,29 +67,57 @@ Such evaluations differ from unit tests in three ways: they're non-deterministic
 | Costs money per run | trigger on paths that matter (`prompts/**`, `configs/**`, `evals/**`), cap the data set for pull requests, run the full suite on a schedule or on `main` |
 | Needs secrets | the collision with the fork model |
 
-**The collision.** If this is new to you, slow down here, because it's the center of the video. Secrets aren't passed to workflows triggered by `pull_request` from a fork. So the evaluation job fails on exactly the contributions an open-source LLM project most wants to evaluate. The tempting repair is to switch the trigger, the event that starts the workflow, to `pull_request_target`, which runs with the base repository's secrets, and then check out the contributor's code. That combination executes untrusted code with your API keys and your token. The report identifies it as the pattern behind several compromises, some of them in ML projects: PyTorch's self-hosted runners, Ultralytics, LiteLLM. Chapter 21A takes it apart.
+**The collision.** If this is new to you, slow down here, because it's the center of the video.
+
+**[ANIMATION]** stores: boxes=pull__request_from_a_fork:what_GitHub_does_by_default|pull__request__target_+_checkout_of_the_fork's_code:the_tempting_repair rows=1:A:contributor's_code_runs|1:A:no_secrets,_read-only_token@ok|2:A:the_evaluation_cannot_call_the_model_provider|3:B:contributor's_code_runs|3:B:WITH_the_base_repository's_secrets_and_token@bad|4:B:the_evaluation_works,_and_so_does_"print_the_API_key"_in_a_changed_test_file@bad id=coll
+
+Secrets aren't passed to workflows triggered by `pull_request` from a fork. So the evaluation job fails on exactly the contributions an open-source LLM project most wants to evaluate. The tempting repair is to switch the trigger, the event that starts the workflow, to `pull_request_target`, which runs with the base repository's secrets, and then check out the contributor's code. That combination executes untrusted code with your API keys and your token. The report identifies it as the pattern behind several compromises, some of them in ML projects: PyTorch's self-hosted runners, Ultralytics, LiteLLM. Chapter 21A takes it apart.
+
+**[ANIMATION]** cards: question=Defensible_designs,_from_least_to_most_machinery numbered=on cards=Do_not_evaluate_fork_pull_requests_automatically:a_maintainer_triggers_the_paid_evaluation|Evaluate_after_merge:on_main;_alert_or_revert_on_regression|Separate_data_from_code:safe_only_if_nothing_from_the_pull_request_is_executed id=designs
+
+**[ANIMATION]** step: designs.1
 
 **Defensible designs,** from least to most machinery.
 
 One: don't evaluate fork pull requests automatically. Run cheap, secret-free checks on `pull_request`: lint, unit tests, `ci/check.sh`, evaluation against a local stub or recorded responses. A maintainer triggers the paid evaluation after reading the diff.
 
+**[ANIMATION]** step: designs.2
+
 Two: evaluate after merge. Run the evaluation on `main` and alert or revert on regression.
+
+**[ANIMATION]** step: designs.3
 
 Three: separate data from code. If the change is only to prompts or configuration, a trusted workflow can read those files as data and run the base repository's own evaluation code on them. This is safe only if nothing from the pull request is executed, which includes test files, `conftest.py`, package scripts and anything a prompt template can make the harness import.
 
+**[ANIMATION]** cards: question=Self-hosted_GPU_runners:_the_configuration_the_report_calls_defensible cards=private_repositories:or_approval_for_all_outside_contributors|ephemeral_runners:each_performs_one_job|runner_groups:scoped_to_named_repositories|OIDC:a_short-lived_credential,_no_long-lived_keys_on_the_host
+
 **Self-hosted GPU runners.** They concentrate risk because they're expensive, long-lived and hold cached models and cloud credentials. The configuration the report calls defensible: private repositories or approval for all outside contributors. Ephemeral runners that perform one job. Runner groups scoped to named repositories. And OIDC, where a job asks for a short-lived credential, instead of long-lived keys on the host. GitHub's own guidance is that self-hosted runners should almost never be used for public repositories. That's the case against. The case for is the first pressure point: a single T4 doesn't train a model.
 
+**[ANIMATION]** end
+
 And one production rule for the key itself: give the evaluation job its own provider key with a spend cap, separate from production's. When that key leaks through a log or a compromised action, the damage is a bill with a ceiling, not production traffic.
+
+**[ANIMATION]** cards: question=A_model-serving_repository:_three_sourced_building_blocks,_and_the_link_back_to_Git numbered=on cards=Secrets_never_enter_the_image:not_through_build_arguments_or_environment_variables|Weights_are_fetched_by_pinned_reference:never_committed|The_base_image_is_pinned_by_digest:.dockerignore_keeps_.git,_.env_and_data_out|The_image_label_records_the_commit:so_"which_code_is_serving"_has_one_answer id=serving
+
+**[ANIMATION]** step: serving.1
 
 **Model-serving repositories.** The report found no authoritative layout. It found three sourced building blocks.
 
 Secrets never enter the image through build arguments or environment variables. Docker's documentation says both persist in the final image, and provides secret mounts for the purpose.
 
+**[ANIMATION]** step: serving.2
+
 Weights are fetched by pinned reference, never committed. At build or start time the image downloads the revision or checksum recorded in the repository.
+
+**[ANIMATION]** step: serving.3
 
 The base image is pinned by digest, and `.dockerignore` keeps `.git`, `.env`, data and run outputs out of the build context. It's the Docker analogue of `.gitignore` and matters for the same reason: a `COPY . .` with a credential file in the context bakes it into a layer.
 
+**[ANIMATION]** step: serving.4
+
 The link back to Git is the image label. Record the commit in the image and tag images by commit ID or release tag, so that "which code is serving" has one answer. One caveat: the textbook names the OCI annotation `org.opencontainers.image.revision` for this and marks the name as unverified. It's given from the author's knowledge of the specification and isn't in the research report or its notes. Confirm it in the specification before you depend on it.
+
+**[ANIMATION]** end
 
 **The Java and backend side.** An ML platform is rarely Python alone. Three facts. GitHub's ignore templates treat the two build wrappers differently: the Maven wrapper JAR is ignored, while the Gradle template explicitly un-ignores `gradle-wrapper.jar`, which Gradle's documentation says is expected to be committed. The committed JAR is a review blind spot: the one place in a typical Java repository where a pull request can change executable code that a reviewer can't read in a diff, which is why wrapper validation exists. And Dependabot needs one entry per ecosystem. `uv` has had version updates since the thirteenth of March 2025 and security updates since the sixteenth of December 2025, and `docker` and `pre-commit` receive version updates only. One more unverified note from the textbook: Maven's own documentation on distributing the wrapper wasn't fetched. The statement rests on GitHub's template.
 
@@ -130,11 +168,21 @@ Quick quiz, before I answer it myself. A `pull_request_target` job checks out th
 
 C. Now the whole list, one case at a time.
 
-An ordinary CI job on a team pull request: the team's code, with the team's credentials. Fine. A `pull_request` job from a fork: a stranger's code, with no credentials. Safe, and unable to call the provider. A `pull_request_target` job that checks out the fork: a stranger's code, with the team's credentials. That's the collision. A self-hosted GPU runner on a public repository: a stranger's code, on a machine that keeps state and holds cached models and cloud credentials. An agent triggered by an issue comment: instructions from a stranger, executed by something that holds a token.
+**[ANIMATION]** walk: columns=the_job,whose_code,whose_credentials rows=CI_on_a_team_pull_request:the_team's:the_team's|pull__request_from_a_fork:a_stranger's:none|pull__request__target_that_checks_out_the_fork:a_stranger's:the_team's|a_self-hosted_GPU_runner_on_a_public_repository:a_stranger's:a_machine_that_keeps_state_and_credentials|an_agent_triggered_by_an_issue_comment:instructions_from_a_stranger:a_token marks=1.3:ok,2.3:ok,3.3:bad,4.3:bad,5.3:bad mono=off title=Whose_code_runs,_with_whose_credentials? id=whose
+
+**[ANIMATION]** step: whose.3
+
+An ordinary CI job on a team pull request: the team's code, with the team's credentials. Fine. A `pull_request` job from a fork: a stranger's code, with no credentials. Safe, and unable to call the provider. A `pull_request_target` job that checks out the fork: a stranger's code, with the team's credentials. That's the collision.
+
+**[ANIMATION]** step: whose.5
+
+A self-hosted GPU runner on a public repository: a stranger's code, on a machine that keeps state and holds cached models and cloud credentials. An agent triggered by an issue comment: instructions from a stranger, executed by something that holds a token.
 
 Each defensible design changes one of the two halves. Either the stranger's code doesn't run in the privileged job, or the job that runs it holds nothing worth taking.
 
 Where this model is too coarse: "code" has to be read widely. A test file, a `conftest.py`, a package script and a prompt template that the harness imports are all code for this purpose, and for an agent, text is code.
+
+**[ANIMATION]** end
 
 Try it now, on paper, for thirty seconds. Think of one automated job you know, at work or in a project you follow. Write one line: whose code runs, with whose credentials? I'll wait.
 
@@ -143,6 +191,8 @@ Try it now, on paper, for thirty seconds. Think of one automated job you know, a
 If your line says "anyone's code" and "our credentials" together, you have found something worth raising with your team. If you couldn't tell, that's worth knowing too.
 
 ## DIAGRAM
+
+**[ANIMATION]** step: coll.4
 
 **[DIAGRAM]** The diagram of section 28.11: two boxes side by side. Left, what GitHub does by default for a pull request from a fork. Right, the tempting repair.
 
@@ -263,7 +313,13 @@ Five mistakes to watch for. Each one usually starts as a wish to be helpful.
 
 Now, out of the lab. An open-source project that maintains an LLM evaluation harness receives most of its prompt improvements from outside contributors. Its evaluation job fails on every one of them. A contributor proposes the two-line change from the opening.
 
-The maintainer answers with the two boxes of the diagram and then with a design. On `pull_request`, every contribution gets the secret-free checks: lint, unit tests, the repository's own check script, and the evaluation against recorded responses. The paid evaluation runs in a separate workflow that a maintainer triggers after reading the diff, with a provider key that belongs to the evaluation alone and has a spend cap. The full suite runs on `main` on a schedule. The project's GPU machine isn't registered as a runner for the public repository at all.
+The maintainer answers with the two boxes of the diagram and then with a design.
+
+**[ANIMATION]** cards: question=The_maintainer's_design cards=On_pull__request:secret-free_checks_for_every_contribution|The_paid_evaluation:a_maintainer_triggers_it;_its_own_key_with_a_spend_cap|The_full_suite:on_main,_on_a_schedule|The_GPU_machine:not_a_runner_for_the_public_repository
+
+On `pull_request`, every contribution gets the secret-free checks: lint, unit tests, the repository's own check script, and the evaluation against recorded responses. The paid evaluation runs in a separate workflow that a maintainer triggers after reading the diff, with a provider key that belongs to the evaluation alone and has a spend cap. The full suite runs on `main` on a schedule. The project's GPU machine isn't registered as a runner for the public repository at all.
+
+**[ANIMATION]** end
 
 The same maintainers later add an AI coding agent. They apply the table: the agent's pull requests are small by instruction and by a size check, they pass the same required checks, a human approval is required by ruleset, the agent's token can't write to workflows, and its commits carry a `Co-authored-by` trailer so that they can be listed with one `git log` query.
 

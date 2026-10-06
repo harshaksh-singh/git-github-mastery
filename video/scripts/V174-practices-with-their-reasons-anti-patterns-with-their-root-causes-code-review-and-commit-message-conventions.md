@@ -13,6 +13,8 @@
 
 A deadline is close, and a senior engineer proposes to suspend three team rules for two weeks: small commits, the required check, and the ban on force pushes to shared branches. Somebody answers "those are best practices". That answer loses the argument, because it gives no reason, and a rule without a reason is the first thing to go under pressure.
 
+**[ANIMATION]** cards: question=Suspend_three_team_rules_for_two_weeks? cards=small_commits|the_required_check|no_force_pushes_to_shared_branches title="Those_are_best_practices"_gives_no_reason
+
 The textbook puts it in one line: a practice you can't justify is a superstition, and it will be dropped under pressure. Today each practice gets its mechanism, and each anti-pattern gets the wrong mental model that produces it. Hold on to the question on screen. One revert, in one line of output, will answer it.
 
 ## INTRODUCTION
@@ -79,9 +81,19 @@ The teaching point is in the middle column. When a colleague force-pushes blindl
 
 **Code review as a practice.** Review is where a team's knowledge of its code is exchanged. Finding defects is the smaller part of its value, and a review that takes days costs more than it finds.
 
+**[ANIMATION]** cards: question=Four_points_from_section_27.17 numbered=on cards=Size_decides_everything_else:flags,_stacks_and_small_commits_are_review_techniques|Speed_is_part_of_quality:agree_on_a_time_to_first_response|Say_what_kind_of_comment_it_is:blocking,_a_question,_or_a_preference|Ship_/_Show_/_Ask:presupposes_trust,_good_CI_and_feature_flags
+
 Four points from section 27.17. Size decides everything else: every technique that shortens branches, flags, stacks and small commits, is also a review technique. Speed is part of quality: DORA lists heavyweight and slow review as a pitfall, and a change that waits two days makes its author start something else, so agree on a time to first response. Say what kind of comment it is: blocking, a question, or a preference. Rouan Wilsenach's "Ship / Show / Ask" lets the author choose per change whether to merge directly, to open a pull request and merge without waiting, or to wait for discussion. It presupposes trust, good CI and feature flags.
 
-And review the right things. A human reviewer's attention is best spent on what a machine can't check: whether the change does what the issue asked, whether it is in the right place, what it does on failure, what it does to data. Formatting and import order belong to a tool. In an ML repository add three questions. Which data and which evaluation support the claim in the description? Was a prompt or configuration change evaluated, or only edited? And does the pull request change anything under `.github/workflows/`, a lock file or a `Dockerfile`, which deserve a second reader?
+**[ANIMATION]** end
+
+And review the right things. A human reviewer's attention is best spent on what a machine can't check: whether the change does what the issue asked, whether it is in the right place, what it does on failure, what it does to data. Formatting and import order belong to a tool.
+
+**[ANIMATION]** cards: question=In_an_ML_repository,_add_three_questions numbered=on cards=Which_data_and_which_evaluation_support_the_claim?|Was_a_prompt_or_configuration_change_evaluated,_or_only_edited?|Does_it_change_.github/workflows/,_a_lock_file_or_a_Dockerfile?
+
+In an ML repository add three questions. Which data and which evaluation support the claim in the description? Was a prompt or configuration change evaluated, or only edited? And does the pull request change anything under `.github/workflows/`, a lock file or a `Dockerfile`, which deserve a second reader?
+
+**[ANIMATION]** end
 
 Quick quiz. A reviewer clicks "Request changes" on a pull request. Does that alone block the merge? A, yes. B, no. Your answer?
 
@@ -91,9 +103,17 @@ B, and here is why.
 
 What review doesn't replace: tests, required checks and rules. "Request changes" doesn't block a merge, and `CODEOWNERS` doesn't enforce review, unless a ruleset says so.
 
+**[ANIMATION]** walk: columns=part,what_it_carries rows=the_subject_line:what_the_commit_does|the_body:why|trailers:facts_that_tools_read mono=off title=A_commit_message id=msg
+
 **Commit message conventions.** The subject line says what the commit does, the body says why, and trailers carry facts that tools read.
 
-Git itself imposes one piece of structure: the first line, up to the first blank line, is the subject, which is what `git log --oneline`, `git shortlog` and `git format-patch` use. Everything else is convention. The most cited one is Chris Beams's seven rules: separate subject from body with a blank line. Limit the subject to about 50 characters. Capitalize it. Don't end it with a period. Use the imperative mood. Wrap the body at 72 characters. Use the body to explain what and why, not how.
+Git itself imposes one piece of structure: the first line, up to the first blank line, is the subject, which is what `git log --oneline`, `git shortlog` and `git format-patch` use. Everything else is convention.
+
+**[ANIMATION]** cards: question=Chris_Beams's_seven_rules numbered=on cards=a_blank_line_between_subject_and_body|a_subject_of_about_50_characters|capitalize_the_subject|no_period_at_its_end|the_imperative_mood|wrap_the_body_at_72_characters|the_body_explains_what_and_why,_not_how
+
+The most cited one is Chris Beams's seven rules: separate subject from body with a blank line. Limit the subject to about 50 characters. Capitalize it. Don't end it with a period. Use the imperative mood. Wrap the body at 72 characters. Use the body to explain what and why, not how.
+
+**[ANIMATION]** end
 
 Try it now, for thirty seconds. In any repository of yours, type `git log --oneline --graph -6`. It only reads. For each of the six subjects, ask one question: would a stranger know what this commit does? I'll wait.
 
@@ -101,9 +121,15 @@ Try it now, for thirty seconds. In any repository of yours, type `git log --onel
 
 If one of them says `wip` or `fix`, you're in good company. Almost every history has some. And you know the cost now: the message is the only part of a commit that records why.
 
+**[ANIMATION]** walk: columns=in_the_message,release_in_Semantic_Versioning rows=fix:PATCH|feat:MINOR|a_BREAKING_CHANGE_footer,_or_!_after_the_type:MAJOR|docs,_chore:other_types_are_allowed title=Conventional_Commits_1.0.0 marks=4.2:dim
+
 Conventional Commits 1.0.0 adds a machine-readable prefix: type, optional scope, a colon, a description. `fix` corresponds to a PATCH release in Semantic Versioning, `feat` to a MINOR one, and a `BREAKING CHANGE` footer, or an exclamation mark after the type, to a MAJOR one. Other types such as `docs` or `chore` are allowed. The point is that release tooling can compute the next version number and a changelog from the history.
 
+**[ANIMATION]** cards: question=Trailers:_lines_of_the_form_Key:_value_at_the_end_of_the_message cards=Co-authored-by|Signed-off-by:git_commit_-s_adds_it|Reviewed-by|an_issue_reference
+
 Trailers are lines of the form `Key: value` at the end of the message: `Co-authored-by`, `Signed-off-by`, which `git commit -s` adds, `Reviewed-by`, or an issue reference. `git interpret-trailers` parses them, and `git log --format='%(trailers:key=Co-authored-by)'` prints them.
+
+**[ANIMATION]** gates: packet=fix:_typo gates=a_commit-msg_hook:pass:your_machine:fast_feedback|a_required_check:pass:the_server:the_guarantee result=passes,_and_is_not_true title=What_the_convention_cannot_do
 
 **What the convention cannot do.** It doesn't make a message true. `fix: typo` on a commit that changes a rate limit passes every commit-message linter. A convention is enforced the same way as any other local check: a `commit-msg` hook for fast feedback, and a required check or the squash-merge title for the guarantee.
 
@@ -111,9 +137,15 @@ Trailers are lines of the form `Key: value` at the end of the message: `Co-autho
 
 A picture helps. Think of each practice as an insurance policy with a named risk. If you can name the risk and the day it pays out, the policy survives a budget discussion. If you cannot, it's cancelled the first time money is short.
 
+**[ANIMATION]** cards: question=Each_practice_is_a_policy_with_a_pay-out_day cards=Small_commits:the_day_of_a_revert,_a_backport_or_a_bisect|A_protected_main:the_day_somebody's_push_would_have_rewound_it|The_message:the_day_somebody_asks_why_a_line_exists
+
 Small commits pay out on the day of a revert, a backport or a bisect. A protected `main` pays out on the day somebody's push would have rewound it. The message pays out the day somebody asks why a line exists and the author has left.
 
+**[ANIMATION]** end
+
 Where the picture breaks: an insurance policy costs the same whether or not you understand it, and a practice does not. A team that follows a rule without its reason follows it badly: commits that are small in lines and still mix three changes, messages that satisfy the linter and say nothing.
+
+**[ANIMATION]** walk: columns=the_root-cause_box,applied_to_people rows=Observed_behavior:the_anti-pattern|Root_cause:a_sentence_the_person_believes|Correct_fix:the_missing_fact mono=off
 
 For anti-patterns, the model is the root-cause box you have used since video 4, applied to people. Observed behavior: the anti-pattern. Root cause: a sentence the person believes. Correct fix: the missing fact.
 
@@ -134,7 +166,7 @@ For anti-patterns, the model is the root-cause box you have used since video 4, 
   inspect before merging             commits you did not have in mind arrive on main
 ```
 
-The second has the columns "anti-pattern" and "root cause", from section 27.16. Write the root cause as the sentence the person believes, in quotation marks.
+The first table turns each reason around: what breaks without the practice.
 
 ```text
   Anti-pattern                       Root cause: the model behind it
@@ -147,6 +179,8 @@ The second has the columns "anti-pattern" and "root cause", from section 27.16. 
   merging without inspecting         "merging a branch brings my change"
   treating GitHub as Git             "it is on GitHub, so it is backed up and it is the truth"
 ```
+
+The second has the columns "anti-pattern" and "root cause", from section 27.16. Write the root cause as the sentence the person believes, in quotation marks.
 
 ## LIVE TERMINAL DEMO
 
@@ -212,7 +246,9 @@ $ git log --oneline --graph -6
 
 A merge commit that preserves the three commits.
 
-**[ANIMATION]** merge: three-way feature/fallback into main common=b6e2f58 main_only=f09559c feature_only=8df1ca6,4ea69d0,dd57a51 merge_id=590ed81 cmd_merge=git_merge_--no-ff_feature/fallback title=What_this_merge_brings say_merge=The_merge_590ed81_brings_all_three_commits
+**[ANIMATION]** graph: ...older-b6e2f58-f09559c-590ed81 main; b6e2f58-8df1ca6-4ea69d0-dd57a51 feature/fallback; dd57a51-590ed81; HEAD=main; cmd:git_merge_--no-ff_feature/fallback; say:The_merge_590ed81_brings_all_three_commits; note:dd57a51:raise_default_limit_for_load_test; name:merge => + 590ed81-f3624e2 main; cmd:git_revert_--no-edit_dd57a51; say:One_commit_undone,_the_feature_intact; note:f3624e2:Revert_of_dd57a51; name:revert title=What_this_merge_brings id=brings
+
+**[ANIMATION]** step: brings.merge
 
 Here's that merge as a graph. Three commits sit on the branch, and the merge brings all three: the two you had in mind, and `dd57a51`.
 
@@ -245,7 +281,13 @@ LIMITS = {"default": 60}
 ```
 <!-- /snippet -->
 
-One commit undone, one file touched, the feature intact. That's the answer to the question from the opening: this is what small commits buy.
+One commit undone, one file touched, the feature intact.
+
+**[ANIMATION]** step: brings.revert
+
+That's the answer to the question from the opening: this is what small commits buy.
+
+**[ANIMATION]** end
 
 **Step 4: the same branch as one squashed commit.** A squash folds the commits of a branch into one. Predict: what does the only available revert remove? Say it out loud.
 
@@ -283,7 +325,13 @@ $ git show --stat --format="%h %s" HEAD
 ```
 <!-- /snippet -->
 
-Three files, and `gateway/fallback.py` is deleted. The only revert available removes the fallback feature together with the mistake. Squash merging is a legitimate choice, and this is its price: the unit of undo becomes the pull request. The practice that follows is not "never squash". It is "keep pull requests as small as the commits you would have wanted".
+Three files, and `gateway/fallback.py` is deleted. The only revert available removes the fallback feature together with the mistake.
+
+**[ANIMATION]** graph: ...older-b6e2f58-f09559c-9a0bfe3-108204a main; HEAD=main; note:9a0bfe3:the_squashed_commit:_three_files; note:108204a:the_only_revert:_all_three_files; say:The_unit_of_undo_becomes_the_pull_request title=The_same_branch_as_one_squashed_commit dx=260 at_state_1=10
+
+Squash merging is a legitimate choice, and this is its price: the unit of undo becomes the pull request. The practice that follows is not "never squash". It is "keep pull requests as small as the commits you would have wanted".
+
+**[ANIMATION]** end
 
 **Step 5: messages as data.**
 
@@ -479,7 +527,11 @@ $ git rev-parse "main^{tree}"
 ```
 <!-- /snippet -->
 
-Merging the branch would produce exactly the tree `main` already has: the two IDs are equal. Nothing is left to merge. This is the root cause from video 170, seen from the maintainer's side.
+Merging the branch would produce exactly the tree `main` already has: the two IDs are equal.
+
+**[ANIMATION]** walk: columns=the_question,asked_of,the_answer rows=Is_feature/calibration_merged?:commits:no,_three_checks_agree|Would_merging_it_change_main?:content:no,_the_same_tree_9daa883 marks=1.3:bad,2.3:ok mono=off title=Compare_content,_not_commits
+
+Nothing is left to merge. This is the root cause from video 170, seen from the maintainer's side.
 
 **Step 8: your configuration.** Replay `labs/run ref/professional-config` and show the file again.
 
@@ -553,7 +605,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A fraud-model team inherits a scoring repository. The new lead has to tell the CTO what state it is in, and she doesn't want to deliver impressions. She runs the read-only commands of the lab: branch ages and distances, tag positions, the fix-direction check on each release branch, the largest blobs in history, the short subjects, the signature status.
 
-Her report has one line per finding, each with the command that produced it and the practice it relates to. She doesn't write "the history is messy". She writes three things. A fix exists on one release branch with no equivalent on `main`, and she gives the commit ID. One branch reported as unmerged has its content on `main` already and can be deleted. And a file of two megabytes is in history although it is no longer tracked. Each finding ends with a control and the layer that would enforce it. The CTO reads it in five minutes and approves two of the controls the same day, because each came with its reason.
+Her report has one line per finding, each with the command that produced it and the practice it relates to. She doesn't write "the history is messy".
+
+**[ANIMATION]** cards: question=One_line_per_finding,_each_with_its_command numbered=on cards=A_fix_on_one_release_branch:no_equivalent_on_main;_she_gives_the_commit_ID|One_branch_reported_as_unmerged:its_content_is_on_main_already|A_file_of_two_megabytes_in_history:although_it_is_no_longer_tracked at_2=40 at_3=62
+
+She writes three things. A fix exists on one release branch with no equivalent on `main`, and she gives the commit ID. One branch reported as unmerged has its content on `main` already and can be deleted. And a file of two megabytes is in history although it is no longer tracked. Each finding ends with a control and the layer that would enforce it. The CTO reads it in five minutes and approves two of the controls the same day, because each came with its reason.
 
 ## PRACTICE EXERCISE
 

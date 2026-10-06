@@ -1,0 +1,914 @@
+1
+00:00:04,500 --> 00:00:09,278
+That's a CTO's question in the hour after
+something went wrong, and it has two
+
+2
+00:00:09,318 --> 00:00:14,404
+halves. Most engineers can answer the first
+half. The second half, what must nobody
+
+3
+00:00:14,444 --> 00:00:18,419
+run, is where the damage comes
+from. Hold on to that second half.
+
+4
+00:00:18,759 --> 00:00:23,885
+Undo is where Git costs its users the most
+time. The textbook records that on the
+
+5
+00:00:23,925 --> 00:00:29,242
+first of October 2026, the highest-voted
+question under Stack Overflow's git tag was
+
+6
+00:00:29,282 --> 00:00:34,472
+"How do I undo the most recent local commits
+in Git?", and six more undo questions
+
+7
+00:00:34,512 --> 00:00:37,916
+were in the top 25. The cause
+isn't that undo is hard.
+
+8
+00:00:37,956 --> 00:00:40,020
+It's that Git has no single undo.
+
+9
+00:00:41,860 --> 00:00:46,971
+Welcome back to Git and GitHub Deep Mastery.
+Pull up a chair: this is Part 3, and
+
+10
+00:00:47,011 --> 00:00:52,185
+the module on undoing changes. The commit
+IDs in these recordings equal the IDs in
+
+11
+00:00:52,225 --> 00:00:55,110
+the book, because replays
+use the fixed clock.
+
+12
+00:00:55,450 --> 00:01:00,606
+Git has five commands for undoing work:
+restore, reset, revert, clean and stash.
+
+13
+00:01:00,646 --> 00:01:05,997
+Each is defined by the places it writes to.
+So before any command, this video gives
+
+14
+00:01:06,037 --> 00:01:11,128
+you the map: four places, and one question
+that decides between two families of
+
+15
+00:01:11,168 --> 00:01:11,453
+undo.
+
+16
+00:01:11,793 --> 00:01:16,317
+Then you take the first command, git
+restore, which you met in the working-tree
+
+17
+00:01:16,357 --> 00:01:20,823
+chapter. Today you see every form of it,
+against one file that has a different
+
+18
+00:01:20,863 --> 00:01:24,925
+version in each place. That way the
+direction of every copy is visible.
+
+19
+00:01:25,265 --> 00:01:28,397
+Everything on screen is Git,
+with one callout to GitHub.
+
+20
+00:01:30,237 --> 00:01:31,650
+After this video you can:
+
+21
+00:01:31,990 --> 00:01:36,746
+Name the four places an undo can act on,
+and the one question that decides between
+
+22
+00:01:36,786 --> 00:01:37,975
+rewriting and adding.
+
+23
+00:01:38,315 --> 00:01:42,465
+Say for each form of git restore where
+the content comes from and where it goes.
+
+24
+00:01:42,805 --> 00:01:47,206
+Restore a path from an older commit into
+the index, the working tree, or both.
+
+25
+00:01:47,546 --> 00:01:51,425
+State which forms of git restore
+destroy work that no object holds.
+
+26
+00:01:53,265 --> 00:01:58,179
+The four places. Every undo command writes
+to one or more of these, and to nothing
+
+27
+00:01:58,219 --> 00:01:58,481
+else.
+
+28
+00:01:58,821 --> 00:02:03,683
+Read the rows with me: your files on disk,
+the proposed next commit, the one commit
+
+29
+00:02:03,723 --> 00:02:07,286
+ID your branch name holds, and
+the commits reachable from it.
+
+30
+00:02:07,626 --> 00:02:11,739
+Git's own manual draws the same lines
+between the three main commands.
+
+31
+00:02:11,779 --> 00:02:16,723
+git restore "does not update your branch".
+git reset is about "updating your branch,
+
+32
+00:02:16,763 --> 00:02:21,588
+moving the tip". git revert is about "making
+a new commit that reverts the changes
+
+33
+00:02:21,628 --> 00:02:22,953
+made by other commits".
+
+34
+00:02:23,293 --> 00:02:26,766
+The deciding question: is this
+history private or shared?
+
+35
+00:02:26,806 --> 00:02:31,882
+A commit, one saved snapshot of the project,
+is shared when a ref that other people
+
+36
+00:02:31,922 --> 00:02:37,059
+can fetch reaches it. Everything else is
+private: it exists only in your repository.
+
+37
+00:02:37,099 --> 00:02:41,435
+On screen, the label origin/main is
+your record of the server's branch.
+
+38
+00:02:41,475 --> 00:02:43,901
+A and B are shared. C and D are private.
+
+39
+00:02:44,241 --> 00:02:49,180
+Private history may be rewritten. git
+reset, git commit --amend and git rebase
+
+40
+00:02:49,220 --> 00:02:53,010
+replace commits with new ones,
+or drop them from the branch.
+
+41
+00:02:53,050 --> 00:02:57,095
+Nobody else can notice, because
+nobody else has the old commits.
+
+42
+00:02:57,435 --> 00:03:02,256
+Shared history is corrected by adding commits.
+git revert records the inverse change
+
+43
+00:03:02,296 --> 00:03:06,192
+on top, and everyone's next pull
+brings it in like any other commit.
+
+44
+00:03:06,532 --> 00:03:10,289
+The textbook insists that the reason
+is mechanical, not etiquette.
+
+45
+00:03:10,329 --> 00:03:13,914
+A branch in a teammate's clone
+is a ref that holds a commit ID.
+
+46
+00:03:13,954 --> 00:03:18,575
+If you move your branch backwards, their
+ref still names the commits you removed.
+
+47
+00:03:18,615 --> 00:03:23,408
+The server rejects your plain push as a
+non-fast-forward, because your new tip isn't
+
+48
+00:03:23,448 --> 00:03:28,011
+a descendant of its old one. If you force
+the push, the next teammate who pushes
+
+49
+00:03:28,051 --> 00:03:32,671
+from a clone that still has those commits
+puts them straight back, or merges them
+
+50
+00:03:32,711 --> 00:03:33,995
+with your replacements.
+
+51
+00:03:34,335 --> 00:03:38,615
+So, the CTO's second half: on a
+shared main, nobody rewrites.
+
+52
+00:03:38,655 --> 00:03:39,182
+You add.
+
+53
+00:03:39,522 --> 00:03:44,022
+So before any undo that touches commits,
+check which side of the line you're on.
+
+54
+00:03:44,362 --> 00:03:48,679
+The last two read remote-tracking branches,
+which record the state of the last
+
+55
+00:03:48,719 --> 00:03:52,645
+fetch. Without the git fetch in front,
+they answer for an older moment.
+
+56
+00:03:52,685 --> 00:03:54,154
+The last module showed why.
+
+57
+00:03:54,494 --> 00:03:59,841
+git restore. In one sentence: it copies a
+stored version of the named paths into the
+
+58
+00:03:59,881 --> 00:04:03,753
+working tree, into the index,
+or into both, and moves no ref.
+
+59
+00:04:04,093 --> 00:04:10,065
+Two choices define every form of it. The
+destination: the working tree by default,
+
+60
+00:04:10,105 --> 00:04:14,097
+the index with --staged, both
+with --staged --worktree.
+
+61
+00:04:14,137 --> 00:04:18,203
+And the source, which you can
+name with --source=<tree>.
+
+62
+00:04:18,243 --> 00:04:24,362
+Without it, the source is the index when
+only the working tree is written, and HEAD,
+
+63
+00:04:24,402 --> 00:04:28,028
+your current commit, as
+soon as --staged is given.
+
+64
+00:04:28,368 --> 00:04:33,126
+Inside .git: a restore rewrites
+files, or blob IDs in index entries.
+
+65
+00:04:33,166 --> 00:04:36,937
+A blob is the object that
+holds the bytes of one file.
+
+66
+00:04:36,977 --> 00:04:41,665
+No object is created, no ref moves,
+and no reflog entry is written.
+
+67
+00:04:41,705 --> 00:04:47,592
+The reflog is the local list of the values
+a ref has had, so there's no record to go
+
+68
+00:04:47,632 --> 00:04:48,157
+back to.
+
+69
+00:04:48,497 --> 00:04:53,725
+That last sentence gives the risk labels.
+Every form that writes the working tree is
+
+70
+00:04:53,765 --> 00:04:56,296
+🔴 DANGEROUS. --staged alone is 🟡 CAUTION.
+
+71
+00:04:56,636 --> 00:05:02,240
+Quick quiz. You staged a change by mistake,
+and you want it out of the index with
+
+72
+00:05:02,280 --> 00:05:06,978
+your edits untouched. A, plain git
+restore. B, git restore --staged.
+
+73
+00:05:07,018 --> 00:05:07,815
+Your answer?
+
+74
+00:05:12,655 --> 00:05:16,365
+B. With --staged alone, the
+destination is the index.
+
+75
+00:05:16,405 --> 00:05:18,559
+A overwrites your file instead.
+
+76
+00:05:20,399 --> 00:05:25,070
+A picture helps. The textbook's analogy
+for git restore is a photocopier with two
+
+77
+00:05:25,110 --> 00:05:29,782
+output trays. You pick the original and
+the tray, and whatever lay in the tray is
+
+78
+00:05:29,822 --> 00:05:30,305
+replaced.
+
+79
+00:05:30,645 --> 00:05:34,006
+It breaks at the replaced
+sheet. You don't get it back.
+
+80
+00:05:34,046 --> 00:05:39,138
+A photocopier leaves the old sheet on the
+floor. git restore leaves nothing, unless
+
+81
+00:05:39,178 --> 00:05:44,332
+that content had been staged or committed
+at some point, and so exists as an object.
+
+82
+00:05:44,672 --> 00:05:49,402
+For the whole module, hold this second
+model. Ask two questions, in this order.
+
+83
+00:05:49,442 --> 00:05:52,482
+One: is the thing I want
+to undo private or shared?
+
+84
+00:05:52,522 --> 00:05:57,131
+That chooses between rewriting and adding.
+Two: which of the four places must
+
+85
+00:05:57,171 --> 00:05:59,124
+change? That chooses the command.
+
+86
+00:06:00,964 --> 00:06:05,930
+Every arrow of git restore points left:
+from a stored version toward your files.
+
+87
+00:06:05,970 --> 00:06:07,932
+No arrow touches the label main.
+
+88
+00:06:08,272 --> 00:06:13,670
+Watch the first arrow move. Start
+with 0.70 in all three places.
+
+89
+00:06:14,010 --> 00:06:17,911
+You edit the file to 0.80,
+and add it to the index.
+
+90
+00:06:18,251 --> 00:06:22,390
+You edit again, to 0.90,
+and run plain git restore.
+
+91
+00:06:22,430 --> 00:06:27,388
+The index is copied over the
+file, and 0.90 is gone for good.
+
+92
+00:06:29,228 --> 00:06:35,473
+0.70 in HEAD, 0.80 staged,
+0.90 on disk, and status MM.
+
+93
+00:06:35,513 --> 00:06:40,614
+Two commits further back,
+the value was 0.50.
+
+94
+00:06:40,954 --> 00:06:45,892
+Try it now, thirty seconds, on paper: draw
+those three boxes with today's values in
+
+95
+00:06:45,932 --> 00:06:50,929
+them. That's a three-tree strip. Before each
+variant, fill in a new one: which value
+
+96
+00:06:50,969 --> 00:06:52,848
+will each place hold afterwards?
+
+97
+00:06:55,188 --> 00:07:00,089
+Variant 1: plain restore. Because this is
+the first 🔴 command of the module, the
+
+98
+00:07:00,129 --> 00:07:04,227
+five answers. What it changes: the
+named files in the working tree.
+
+99
+00:07:04,267 --> 00:07:08,611
+What it can destroy: unstaged edits
+in the named paths, without asking.
+
+100
+00:07:08,651 --> 00:07:13,613
+Preview: git diff -- <path>. Recovery:
+nothing brings back content that was never
+
+101
+00:07:13,653 --> 00:07:18,430
+staged. Appropriate: when you have looked
+at that diff and want to discard it.
+
+102
+00:07:18,470 --> 00:07:21,271
+Predict the three values,
+out loud. I'll wait.
+
+103
+00:07:26,111 --> 00:07:32,564
+The index was copied over the file. The
+edit to 0.90 is destroyed, and the staged
+
+104
+00:07:32,604 --> 00:07:36,332
+0.80 stays. Status: M in
+the first column only.
+
+105
+00:07:36,672 --> 00:07:41,179
+Variant 2: --staged. 🟡
+CAUTION. Predict the strip.
+
+106
+00:07:46,019 --> 00:07:51,732
+HEAD was copied over the index
+entry, and the file was left alone.
+
+107
+00:07:51,772 --> 00:07:55,306
+This is "unstage". Index 0.70, file 0.90.
+
+108
+00:07:55,646 --> 00:07:59,129
+git reset -- <path> is the older
+spelling of the same operation.
+
+109
+00:07:59,469 --> 00:08:02,376
+Identical result, and
+reset adds a status line.
+
+110
+00:08:02,716 --> 00:08:08,698
+Now ask: where is 0.80? It's no longer in
+the index, and it's not on disk, because
+
+111
+00:08:08,738 --> 00:08:14,573
+the file had moved on to 0.90. A version
+that existed only in the index is now a
+
+112
+00:08:14,613 --> 00:08:19,126
+blob that nothing names. The next
+video shows how to find one.
+
+113
+00:08:19,466 --> 00:08:21,708
+Variant 3: both, from HEAD.
+
+114
+00:08:22,048 --> 00:08:26,343
+Both places are set to HEAD's
+version, and the status is empty.
+
+115
+00:08:26,683 --> 00:08:33,049
+Variant 4: --source. The content comes from
+a commit, here HEAD~2, two commits back.
+
+116
+00:08:33,089 --> 00:08:37,548
+Predict the three values and
+the status. Say them out loud.
+
+117
+00:08:42,388 --> 00:08:49,327
+Without --staged, only the file is written:
+0.50 on disk, the index still holds
+
+118
+00:08:49,367 --> 00:08:51,977
+0.80, and the status stays MM.
+
+119
+00:08:52,317 --> 00:08:56,094
+Variant 5: --source
+with both destinations.
+
+120
+00:08:56,434 --> 00:09:01,380
+Both places receive the old version. And
+the last command proves that HEAD didn't
+
+121
+00:09:01,420 --> 00:09:06,427
+move: it's still 9d940ca. This is an old
+version of one file, placed on top of the
+
+122
+00:09:06,467 --> 00:09:09,751
+current commit, ready to be
+committed as a new change.
+
+123
+00:09:10,091 --> 00:09:12,645
+The older spelling. You'll
+read it in scripts.
+
+124
+00:09:12,985 --> 00:09:17,749
+git checkout <commit> -- <path> does what
+the last variant did, index included.
+
+125
+00:09:17,789 --> 00:09:22,858
+Likewise, older scripts write git checkout
+-- <path> for git restore <path>, and git
+
+126
+00:09:22,898 --> 00:09:25,898
+reset HEAD <path> for git
+restore --staged <path>.
+
+127
+00:09:26,238 --> 00:09:31,790
+Part of a file. git restore -p walks through
+the differences hunk by hunk, and asks
+
+128
+00:09:31,830 --> 00:09:35,360
+about each one. A hunk is
+one block of changed lines.
+
+129
+00:09:35,400 --> 00:09:39,941
+Here score.py has two unstaged
+changes, a debug line and a real fix.
+
+130
+00:09:39,981 --> 00:09:45,398
+The demo pipes the answers y and n in, so
+each prompt is followed directly by the
+
+131
+00:09:45,438 --> 00:09:46,206
+next output.
+
+132
+00:09:54,546 --> 00:09:59,255
+Only the fix is left in the diff.
+The debug line was discarded.
+
+133
+00:09:59,295 --> 00:10:02,949
+-p also combines with
+--staged and with --source.
+
+134
+00:10:04,789 --> 00:10:06,437
+Five mistakes to watch for.
+
+135
+00:10:06,777 --> 00:10:11,841
+Rewriting a shared branch to remove a bad
+commit. Root cause: teammates' refs still
+
+136
+00:10:11,881 --> 00:10:16,945
+name the removed commits, so a plain push
+is rejected and a forced one is undone or
+
+137
+00:10:16,985 --> 00:10:19,220
+merged by the next person who pushes.
+
+138
+00:10:19,560 --> 00:10:24,629
+Checking "is it pushed?" without fetching
+first. Root cause: @{u} and git branch -r
+
+139
+00:10:24,669 --> 00:10:28,938
+--contains read remote-tracking
+branches, which record the last fetch.
+
+140
+00:10:29,278 --> 00:10:33,658
+Running git restore <path> to "unstage".
+Root cause: without --staged the
+
+141
+00:10:33,698 --> 00:10:38,623
+destination is the working tree and the
+source is the index, so the unstaged edits
+
+142
+00:10:38,663 --> 00:10:41,226
+are destroyed and the
+staged version stays.
+
+143
+00:10:41,566 --> 00:10:47,114
+Expecting git restore --source=<commit>
+<path> to leave a clean, staged change.
+
+144
+00:10:47,154 --> 00:10:52,984
+Root cause: without --staged only the file
+is written; the index keeps what it had.
+
+145
+00:10:53,324 --> 00:10:56,758
+Looking in the reflog for
+the state before a restore.
+
+146
+00:10:56,798 --> 00:11:00,821
+Root cause: a restore moves no
+ref and writes no reflog entry.
+
+147
+00:11:02,661 --> 00:11:07,956
+Now, out of the lab. An evaluation regressed
+after someone tuned prompts/system.txt
+
+148
+00:11:07,996 --> 00:11:12,006
+three commits ago, and those
+commits also contain good changes.
+
+149
+00:11:12,046 --> 00:11:15,798
+Reverting the commits would
+throw the good changes out too.
+
+150
+00:11:16,138 --> 00:11:21,584
+git restore --source=<good commit>
+prompts/system.txt, followed by an ordinary
+
+151
+00:11:21,624 --> 00:11:25,311
+commit, puts one file back
+and leaves history intact.
+
+152
+00:11:25,351 --> 00:11:29,531
+It's safe on shared branches,
+because it only adds a commit.
+
+153
+00:11:29,571 --> 00:11:33,610
+That's the map applied. The
+history is shared, so you add.
+
+154
+00:11:33,650 --> 00:11:38,674
+The place that must change is one
+path, so you restore it from a source.
+
+155
+00:11:39,014 --> 00:11:44,228
+And the platform side of the deciding
+question. According to GitHub's documentation,
+
+156
+00:11:44,268 --> 00:11:49,482
+a new ruleset, GitHub's named list of branch
+rules, has "Block force pushes" enabled
+
+157
+00:11:49,522 --> 00:11:54,486
+by default, and classic branch protection
+rules disable force pushes by default.
+
+158
+00:11:54,526 --> 00:11:59,615
+On a protected main, rewriting is normally
+not even available, and a revert commit
+
+159
+00:11:59,655 --> 00:12:00,741
+is the only route.
+
+160
+00:12:02,581 --> 00:12:09,610
+Your turn. Do Lab 8.4, "Restore
+variants", in lab-manual/m08-undo.md.
+
+161
+00:12:09,950 --> 00:12:14,524
+Before each command of the lab, draw the
+three-tree strip, and write the value you
+
+162
+00:12:14,564 --> 00:12:17,844
+expect in each box afterwards,
+plus the two status letters.
+
+163
+00:12:17,884 --> 00:12:21,614
+Compare with the output only after
+you've written all three values.
+
+164
+00:12:21,954 --> 00:12:26,126
+One more prediction for the lab's failure
+scenario: which of the versions you
+
+165
+00:12:26,166 --> 00:12:29,353
+destroy could still exist as
+an object, and which couldn't?
+
+166
+00:12:29,693 --> 00:12:35,644
+The challenge is Exercise 8.7, Level
+3, "the commit that came back", in
+
+167
+00:12:35,684 --> 00:12:38,428
+exercises/m06-m10-integration.md.
+
+168
+00:12:40,268 --> 00:12:45,547
+Q170: "A colleague asks for "the undo
+command". Name the five commands that Git
+
+169
+00:12:45,587 --> 00:12:50,730
+offers for undoing work, and say which
+of working tree, index, branch ref and
+
+170
+00:12:50,770 --> 00:12:52,413
+history each one writes."
+
+171
+00:12:54,753 --> 00:12:59,874
+Answer out loud first. A strong answer
+refuses the premise politely in one sentence,
+
+172
+00:12:59,914 --> 00:13:03,745
+and then builds a grid: five
+commands down, four places across.
+
+173
+00:13:03,785 --> 00:13:07,492
+It fills the grid from the
+definitions, not from typical use.
+
+174
+00:13:07,532 --> 00:13:12,530
+Then it adds the one question that has to
+be asked before choosing a row, and says
+
+175
+00:13:12,570 --> 00:13:17,323
+which commands are on which side of it.
+If you can draw that grid in under two
+
+176
+00:13:17,363 --> 00:13:19,473
+minutes, you own this module's map.
+
+177
+00:13:21,313 --> 00:13:24,240
+Let's land this. You
+should now be able to say:
+
+178
+00:13:24,580 --> 00:13:29,605
+An undo acts on four places: the working
+tree, the index, the current branch ref,
+
+179
+00:13:29,645 --> 00:13:34,858
+and history. Private history may be rewritten.
+Shared history is corrected by adding
+
+180
+00:13:34,898 --> 00:13:39,735
+a commit, and I fetch before I decide
+which it is. git restore copies a stored
+
+181
+00:13:39,775 --> 00:13:43,425
+version over files or index
+entries, and never moves a ref.
+
+182
+00:13:43,765 --> 00:13:49,371
+--staged reads HEAD and writes the index,
+the default reads the index and writes the
+
+183
+00:13:49,411 --> 00:13:54,950
+working tree, and --source changes what is
+read. Every form that writes the working
+
+184
+00:13:54,990 --> 00:13:57,907
+tree can destroy edits
+that no object holds.
+
+185
+00:13:59,747 --> 00:14:03,855
+Read sections 11.1 to 11.3 of Chapter 11.
+
+186
+00:14:04,195 --> 00:14:09,126
+You now have the map: four places, one
+question, and every form of git restore.
+
+187
+00:14:09,166 --> 00:14:14,349
+Practise it with a paper strip. Next time:
+git reset, the three modes, and why hard
+
+188
+00:14:14,389 --> 00:14:18,502
+is dangerous. Until then, look at
+the state first and type second.
+
+189
+00:14:18,542 --> 00:14:20,012
+See you in the next one.

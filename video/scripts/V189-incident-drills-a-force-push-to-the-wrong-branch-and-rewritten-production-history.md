@@ -19,6 +19,8 @@ A first question, before any cause is named. By default, Git on the server keeps
 
 **[PAUSE]**
 
+**[ANIMATION]** cards: id=who question=Who_could_still_know_the_old_position? cards=a_teammate's_clone_that_hasn't_fetched_since|a_clone_that_has_fetched:its_reflog_keeps_the_previous_value title=The_server_keeps_no_record at_1=2 at_2=22
+
 A teammate's clone that hasn't fetched since. And a clone that has fetched: its reflog, Git's local record of where a ref has been, keeps the previous value. A clone is each person's own copy of the repository.
 
 ## INTRODUCTION
@@ -45,13 +47,23 @@ After this video you can:
 
 ## CONCEPT
 
+**[ANIMATION]** cards: id=witnesses cards=a_clone_that_hasn't_fetched_since:its_remote-tracking_branch_still_holds_the_old_value|a_clone_that_has_fetched:its_reflog_has_the_entry_before_the_forced_update|anything_that_recorded_the_commit_by_ID:a_tag,_or_a_deployment_record numbered=on title=Three_kinds_of_witness at_1=22 at_2=48 at_3=74
+
+**[ANIMATION]** step: 3
+
 **Witnesses.** When a server branch has been replaced, the old value is known to three kinds of witness. A clone that hasn't fetched since: its remote-tracking branch, the clone's record of the server's branch, still holds the old value. A clone that has fetched: the reflog of its remote-tracking branch holds the previous value as the entry before the forced update. And anything that recorded the commit by ID: a tag, which is a fixed name for one commit, or a deployment record.
 
 `git status` isn't a witness of the present. It reports on `origin/main`, your clone's memory. `git ls-remote origin` asks the server.
 
+**[ANIMATION]** gates: id=cause2 packet=git_push_--force gates=the_upstream:done:one_clone:feature_branch_follows_origin/main|push.default=upstream:done:one_clone:a_bare_push_updates_the_upstream|--force:bypass:one_clone:no_fast-forward_check|the_server:pass:GitHub:no_rule_refused_it result=main_is_replaced title=Incident_2:_the_root_cause at_1=5 at_2=28 at_3=50 at_4=62 at_result=68
+
+**[ANIMATION]** step: result
+
 **Incident 2: the root cause.** The feature branch was created from `origin/main` and so has `origin/main` as its upstream, the server branch it follows. With `push.default=upstream`, a bare `git push` updates the upstream branch whatever its name. `--force` removed the fast-forward check, the rule that a push may only add to a branch. The server accepted a forced update of `main`. The default, `simple`, would have refused. Layers: Git configuration in one clone, and a missing GitHub rule.
 
 You met the first half of this in video 181: a branch created from a remote-tracking branch follows it. There it made a pull useless. Here, with one configuration value and one flag, it sent a feature branch's commits to `main`.
+
+**[ANIMATION]** end
 
 Try it now. Thirty seconds, read-only. In the lab shell, or in a repository of your own with a recent Git, run `git config get push.default`. Say what it prints.
 
@@ -59,15 +71,25 @@ Try it now. Thirty seconds, read-only. In the lab shell, or in a repository of y
 
 If it prints nothing, the setting is unset and Git uses the default, `simple`. If it prints `upstream`, you've found the first half of Incident 2 on your own machine.
 
+**[ANIMATION]** gates: id=cause4 gates=an_interactive_rebase:done:-:new_commits,_and_one_lost|--force:done:-:replaced_the_server's_ref|"reset_to_the_server":done:-:a_second_clone_adopts_the_rewrite|a_legitimate_commit:done:-:shipped_on_top title=Incident_4:_the_root_cause at_1=22 at_2=50 at_3=60 at_4=85
+
 **Incident 4: the root cause.** A branch that deployment records refer to by commit ID accepted a forced update. An interactive rebase, which rewrites a series of commits from an editable list, was meant to "tidy" history. It created new commits and lost one. `--force` replaced the server's ref. Then "reset to the server", given as advice to a confused colleague, made a second clone adopt the rewrite, and a legitimate commit was shipped on top. Layers: Git, and a missing GitHub rule.
+
+**[ANIMATION]** end
 
 **"Same code, fewer commits" is a claim about trees.** A tree is the complete snapshot of files that a commit records. So the claim can be tested: compare the tree of the old tip with the tree of the new one.
 
 **Who did it.** In rewritten history, read the committer and the reflogs, not the author. The author wrote the change, and the committer created this commit. A folded commit keeps its original author and names the person who rewrote it as committer.
 
+**[ANIMATION]** cards: id=checks cards=What_has_been_built_on_the_new_tip?:a_legitimate_commit_there_has_to_be_carried_over|Who_has_fetched_the_new_tip?:every_clone_that_adopted_it_has_to_be_realigned numbered=on title=The_two_checks_before_restoring at_1=18 at_2=55
+
+**[ANIMATION]** step: 2
+
 **The two checks before restoring.** Here are the two checks promised at the start. First: what has been built on the new tip? If a legitimate commit sits on top of the rewritten history, the restore has to carry it over. Second: who has fetched the new tip? Every clone that adopted it will be diverged after the restore and has to be realigned, with a proof that nothing of its own is lost.
 
 And one check on your own evidence: is your copy of the old value the newest good one? Another clone's unfetched value must be an ancestor of it.
+
+**[ANIMATION]** end
 
 **The restoring command.** A forced push with an explicit lease, the value you expect the server's branch to have. It names the server's current, bad value: `git push --force-with-lease=<branch>:<current-bad-id> origin <good>:<branch>`. If anyone pushed meanwhile, it's refused. Before it, an anchor for the state that's about to be replaced, and, where the removed commits are somebody's work, a branch of their own on the server first.
 
@@ -87,15 +109,25 @@ GitHub documents each instrument and not this combined procedure, publishes no r
 
 ## MENTAL MODEL
 
+**[ANIMATION]** stores: id=signpost boxes=the_signpost:the_server's_branch|the_travellers:every_clone rows=1:A:somebody_turned_it|1:A:no_camera_at_the_junction@bad|2:B:a_dated_photograph_of_the_signpost|2:B:some_have_two:_before_and_after@ok|3:B:one_has_built_something_at_the_end_of_the_new_road@hl title=A_signpost_at_a_junction at_1=40 at_2=72 at_3=55
+
+**[ANIMATION]** step: 2
+
 Think of the server's branch as a signpost at a junction, and of every clone as a traveller who photographed the signpost the last time they passed. Somebody turned the signpost. There's no camera at the junction: the server keeps no record of where the sign used to point. But every traveller's last photograph is dated, and some travellers have two photographs, before and after.
+
+**[ANIMATION]** step: 3
 
 So the investigation is a collection of photographs. And the repair, turning the sign back, has to consider the travellers who already followed the new direction: one of them has built something at the end of that road.
 
 Where the picture breaks: on GitHub there's a camera after all, the Activity view and the events, with limits and lifetimes of its own, and with the caveats you heard. In the lab's bare repository there's none.
 
+**[ANIMATION]** end
+
 The model for the restoring push: say out loud what you believe the server holds, and let the server refuse if you're wrong. That sentence is the lease.
 
 ## DIAGRAM
+
+**[ANIMATION]** cards: id=sofar question=What_we_know_so_far:_two_reports cards="main_was_force-pushed_ten_minutes_ago."|"The_release_job_refuses_to_deploy." title=Before_the_demo at_1=35 at_2=50
 
 **[DIAGRAM]** A new drawing for Incident 4: the server's branch before and after, the witnesses, and the legitimate commit made after the rewrite that the restore must keep. IDs are from the transcript.
 
@@ -120,7 +152,7 @@ The model for the restoring push: say out loud what you believe the server holds
                                                                (Asha's commit, carried over)
 ```
 
-Three records name the same old tip. One commit on the "after" line isn't part of the mistake. The "restore" line keeps it.
+Before the demo, what we know so far is two reports: `main` was force-pushed, and a release job refuses to deploy. The picture of the server's branch, before and after, with its witnesses, is drawn in the demo.
 
 ## LIVE TERMINAL DEMO
 
@@ -394,6 +426,12 @@ f2783aa Lab User, committed by Ravi Menon: Tax calculation, formatting and loggi
 
 Three times `3277739`. The ancestry test exits 1: that's the release job's refusal. And the last line shows who did what: the folded commit keeps its original author and names Ravi as committer.
 
+**[ANIMATION]** walk: id=wit columns=witness,what_it_holds rows=your_clone:production,_still_at_3277739_(not_moved)|your_clone:origin/production@{1},_the_entry_before_"forced_update"|the_tag:deploy-2026-09-07 title=Witnesses_of_the_old_tip_3277739 pace=quick
+
+Three records name the same old tip: our untouched branch, the entry before the forced update, and the deployment tag.
+
+**[ANIMATION]** end
+
 <!-- snippet: incidents/solve-04-production-history-rewritten/03-what-changed -->
 ```text
 $ git range-diff production...origin/production
@@ -496,7 +534,7 @@ To ../server.git
 
 **[ANIMATION]** step: state-2
 
-Asha's commit is now `a323df1`, on top of the real history, and the rounding commit `1d8b2fc` is in the list again.
+Asha's commit is now `a323df1`, on top of the real history, and the rounding commit `1d8b2fc` is in the list again. One commit on the rewritten line wasn't part of the mistake, and the restore keeps it.
 
 **Realign.** Each clone that adopted the rewrite proves that nothing of its own is lost before it moves. 🟡 CAUTION: `git reset --keep`.
 
@@ -572,6 +610,8 @@ The release job's own test exits 0. The tax function rounds. The difference betw
 
 **The messages.** To the team: the new tip, and the two commands, `git cherry -v`, then `git reset --keep`, with the rule for any unexpected plus sign: stop and ask. To the CTO: nothing bad was deployed because the release job refused, a dropped fix was caught, and the missing rule goes on today.
 
+**[ANIMATION]** layers: id=controls layers=a_client_default:push.default_left_at_simple|a_habit:--force-with-lease,_never_bare_--force|a_platform_rule:block_force_pushes_on_the_default_branch|a_pipeline_check:the_ancestry_test_in_the_release_job|a_line_in_the_handbook:"diverged,_and_I_made_no_commits"+stop_and_ask title=From_root_cause_to_controls_on_several_layers at_1=10 at_2=22 at_3=32 at_4=58 at_5=75
+
 **From root cause to controls on several layers.** A client default: `push.default` left at `simple`. A habit: `--force-with-lease`, never bare `--force`. A platform rule: block force pushes on the default branch. For production, also restrict deletions, require a pull request, and keep the bypass list empty. A pipeline check: the ancestry test in the release job, which is the control that worked. And a line in the handbook: "diverged, and I made no commits" means the server's history was replaced. Stop and ask.
 
 ## COMMON MISTAKES
@@ -588,7 +628,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. A billing team deploys from a branch named `production`. Its release job has one safety check that nobody remembers adding: the commit currently running must be an ancestor of the commit to be deployed. One morning the job refuses.
 
+**[ANIMATION]** cards: id=three cards=her_own_untouched_branch|the_reflog_of_her_remote-tracking_branch|the_deployment_tag marks=1:ok,2:ok,3:ok numbered=on title=Three_witnesses_of_the_old_tip at_1=20 at_2=24 at_3=28 at_marks=32
+
 The engineer on call writes one sentence in the channel, asks two colleagues not to fetch or reset, and collects three witnesses of the old tip: her own untouched branch, the reflog of her remote-tracking branch, and the deployment tag. They agree. She compares trees, finds that a tax-rounding fix is missing from the rewritten history, and connects it to a finance ticket filed the day before. She finds one legitimate commit on top of the rewrite, anchors the rewritten state, carries that commit over, and restores with a lease that names the server's current value.
+
+**[ANIMATION]** cards: id=lines cards=The_control_that_worked:an_automated_ancestry_check|The_control_that_was_missing:one_checkbox|The_advice_"reset_to_the_server":turned_one_affected_clone_into_two title=Three_lines_the_team_remembers at_1=55 at_2=70 at_3=82
 
 Her summary rates the incident SEV 2 although nothing was deployed, because the only thing between the rewritten branch and production was that one check. The postmortem has three lines the team remembers. The control that worked was an automated ancestry check. The control that was missing was one checkbox. And the advice "reset to the server" turned one affected clone into two.
 

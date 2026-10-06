@@ -1,0 +1,891 @@
+1
+00:00:04,500 --> 00:00:09,675
+A change that raised a batch size was
+merged, deployed by CI, the team's automated
+
+2
+00:00:09,715 --> 00:00:13,301
+pipeline, and now exhausts
+memory on the feature workers.
+
+3
+00:00:13,341 --> 00:00:18,643
+Three teammates have pulled it. The CTO
+wants to know what exactly you run, and what
+
+4
+00:00:18,683 --> 00:00:19,661
+nobody must run.
+
+5
+00:00:20,001 --> 00:00:24,805
+Nobody must run a reset followed by a
+forced push. The last two videos explained
+
+6
+00:00:24,845 --> 00:00:29,830
+why: three clones still name that commit.
+What you run is one command that needs no
+
+7
+00:00:29,870 --> 00:00:34,917
+force, takes the same route as any other
+commit, and reaches every clone as a normal
+
+8
+00:00:34,957 --> 00:00:40,003
+update. And when you understand what that
+command computes, you can also explain the
+
+9
+00:00:40,043 --> 00:00:44,544
+day it stops with a conflict. Hold on
+to that day. It arrives in step five.
+
+10
+00:00:46,384 --> 00:00:49,906
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:49,946 --> 00:00:54,287
+This is the undo for shared history,
+the commits other people already have.
+
+12
+00:00:54,327 --> 00:00:59,192
+In the map from two videos ago, the deciding
+question was private or shared, and the
+
+13
+00:00:59,232 --> 00:01:02,171
+answer "shared" led to one
+rule: correct by adding.
+
+14
+00:01:02,211 --> 00:01:04,332
+git revert is that rule as a command.
+
+15
+00:01:04,672 --> 00:01:09,225
+Six things today. What a revert is: a
+three-way merge with unusual inputs.
+
+16
+00:01:09,265 --> 00:01:13,197
+What it writes inside .git. Three
+refusals that surprise people.
+
+17
+00:01:13,237 --> 00:01:17,604
+How to revert a range, and how to
+pack several reverts into one commit.
+
+18
+00:01:17,644 --> 00:01:22,631
+Why a revert of an old commit can conflict,
+with the three index stages as proof.
+
+19
+00:01:22,671 --> 00:01:26,106
+And what to do when a sequence
+of reverts stops halfway.
+
+20
+00:01:26,446 --> 00:01:30,159
+Reverting a merge commit is a topic
+of its own, and it's the next video.
+
+21
+00:01:31,999 --> 00:01:33,411
+After this video you can:
+
+22
+00:01:33,751 --> 00:01:37,990
+Describe a revert as a three-way merge
+and name its base, ours and theirs.
+
+23
+00:01:38,330 --> 00:01:41,517
+Revert one commit, a range,
+and several commits as one.
+
+24
+00:01:41,857 --> 00:01:44,631
+Explain why reverting an
+old commit can conflict.
+
+25
+00:01:44,971 --> 00:01:47,692
+Leave a stopped revert
+sequence in a known state.
+
+26
+00:01:49,532 --> 00:01:53,707
+In one sentence: git revert <commit> 🟡
+CAUTION adds a commit whose change is the
+
+27
+00:01:53,747 --> 00:01:56,605
+opposite of what <commit>
+changed, and removes nothing.
+
+28
+00:01:56,945 --> 00:02:01,607
+Why does it exist? Because a branch that
+other people have can only move forward
+
+29
+00:02:01,647 --> 00:02:04,429
+without hurting them. A
+revert moves it forward.
+
+30
+00:02:04,769 --> 00:02:10,688
+Precisely. A revert is a three-way merge,
+the same machinery as in the merge module,
+
+31
+00:02:10,728 --> 00:02:16,577
+with unusual inputs. A three-way merge
+combines two versions against a common base.
+
+32
+00:02:16,617 --> 00:02:21,330
+Here the base is the commit being
+reverted: on screen, say d51208b.
+
+33
+00:02:21,370 --> 00:02:27,006
+"Ours" is HEAD, 73572b2. "Theirs" is the
+parent of the reverted commit, a49e359.
+
+34
+00:02:27,346 --> 00:02:30,575
+Think it through with the rule
+table from the merge module.
+
+35
+00:02:30,615 --> 00:02:34,841
+Between base and theirs, the difference
+is the reverted commit's change, read
+
+36
+00:02:34,881 --> 00:02:39,272
+backwards. Between base and ours, the
+difference is everything that has happened
+
+37
+00:02:39,312 --> 00:02:43,704
+since. The merge applies the backwards
+change to the current files, wherever the
+
+38
+00:02:43,744 --> 00:02:46,585
+lines it touches are still
+as that commit left them.
+
+39
+00:02:46,925 --> 00:02:52,110
+Three consequences follow. Any commit in
+the history can be reverted, not only the
+
+40
+00:02:52,150 --> 00:02:57,462
+last. A revert can conflict. And the result
+is an ordinary commit on top of HEAD, so
+
+41
+00:02:57,502 --> 00:02:59,373
+the branch only moves forward.
+
+42
+00:02:59,713 --> 00:03:04,855
+Inside .git: one new commit, with the
+previous HEAD commit as its only parent and a
+
+43
+00:03:04,895 --> 00:03:09,975
+generated message. The reflog, Git's local
+list of where each ref has been, gets a
+
+44
+00:03:10,015 --> 00:03:13,409
+line that starts with revert:.
+ORIG_HEAD isn't written.
+
+45
+00:03:13,449 --> 00:03:18,092
+While a revert is stopped at a conflict,
+REVERT_HEAD names the commit being
+
+46
+00:03:18,132 --> 00:03:21,713
+reverted, and .git/sequencer/
+holds the steps still to do.
+
+47
+00:03:22,053 --> 00:03:26,608
+When not to use it? On private history,
+where you would rather the mistake never
+
+48
+00:03:26,648 --> 00:03:31,434
+appeared. There a reset or an amend is
+cleaner. And be aware of what a revert isn't:
+
+49
+00:03:31,474 --> 00:03:34,019
+it reverses one commit,
+not everything since.
+
+50
+00:03:35,859 --> 00:03:40,374
+A picture helps. The textbook's
+analogy: a reversing entry in a ledger.
+
+51
+00:03:40,414 --> 00:03:45,763
+A posted entry is never erased. A second
+entry with the opposite sign is posted, and
+
+52
+00:03:45,803 --> 00:03:46,918
+both stay visible.
+
+53
+00:03:47,258 --> 00:03:52,306
+It breaks in two places. A ledger reversal
+always nets to zero, while a revert is
+
+54
+00:03:52,346 --> 00:03:57,143
+computed against the files as they're
+now, so later changes to the same lines
+
+55
+00:03:57,183 --> 00:04:01,855
+produce a conflict. And a revert reverses
+one commit, not everything since.
+
+56
+00:04:02,195 --> 00:04:06,053
+The first break is the important one. A
+revert isn't "go back to how it was before
+
+57
+00:04:06,093 --> 00:04:09,951
+that commit". It is "apply the opposite of
+that commit's change to today's files".
+
+58
+00:04:09,991 --> 00:04:13,897
+If today's files have moved on in the same
+lines, Git has two candidates and no way
+
+59
+00:04:13,937 --> 00:04:14,373
+to choose.
+
+60
+00:04:16,213 --> 00:04:20,182
+Before: four commits, with
+main on the last, 73572b2.
+
+61
+00:04:20,522 --> 00:04:25,996
+After git revert d51208b, nothing on
+the left was removed or replaced.
+
+62
+00:04:26,036 --> 00:04:30,959
+d51208b is still in the history,
+and so is the commit after it.
+
+63
+00:04:30,999 --> 00:04:37,576
+The branch is one commit longer. The tree
+of the new commit, 124de33, is the tree of
+
+64
+00:04:37,616 --> 00:04:40,884
+73572b2 with the change of d51208b undone.
+
+65
+00:04:42,724 --> 00:04:45,400
+Step 1: revert a commit
+that is not the last.
+
+66
+00:04:45,740 --> 00:04:50,977
+Predict the log afterwards: how many
+lines, and is d51208b among them?
+
+67
+00:04:51,017 --> 00:04:55,500
+And predict the timeout line in
+serve.yaml. Say it out loud.
+
+68
+00:04:55,540 --> 00:04:56,254
+I'll wait.
+
+69
+00:05:01,094 --> 00:05:06,074
+The log grew by one commit, 124de33,
+and d51208b is still in it.
+
+70
+00:05:06,114 --> 00:05:12,427
+The cache is on again, and the timeout
+change of a49e359 is untouched: 5 seconds.
+
+71
+00:05:12,767 --> 00:05:14,849
+Step 2: inside .git.
+
+72
+00:05:15,189 --> 00:05:20,104
+One parent, the previous HEAD. A generated
+message: "This reverts commit", followed
+
+73
+00:05:20,144 --> 00:05:23,208
+by the full ID. The reflog
+line starts with revert:.
+
+74
+00:05:23,548 --> 00:05:27,823
+Step 3: three refusals. First,
+revert the same commit again.
+
+75
+00:05:28,163 --> 00:05:33,771
+Nothing to commit, exit status 1. Second,
+a habit carried over from git commit.
+
+76
+00:05:33,811 --> 00:05:37,631
+Quick quiz: what does -m
+"some text" do on git revert?
+
+77
+00:05:37,671 --> 00:05:41,563
+A, it sets the message. B,
+Git refuses it. Your answer?
+
+78
+00:05:46,403 --> 00:05:49,862
+B. "Option mainline expects
+a number greater than zero."
+
+79
+00:05:49,902 --> 00:05:55,111
+On git revert, -m isn't a message but the
+parent number for reverting a merge, which
+
+80
+00:05:55,151 --> 00:05:58,298
+is the next video. Almost
+everyone types this once.
+
+81
+00:05:58,338 --> 00:06:03,547
+The reason for a revert goes into the editor,
+which git revert opens when it runs in
+
+82
+00:06:03,587 --> 00:06:04,235
+a terminal.
+
+83
+00:06:04,575 --> 00:06:06,852
+Third, the index must match HEAD.
+
+84
+00:06:07,192 --> 00:06:12,854
+The manual asks for a clean working tree.
+Git 2.55 accepts unstaged edits in files
+
+85
+00:06:12,894 --> 00:06:17,514
+that the revert doesn't touch. The
+same change, staged, is refused.
+
+86
+00:06:17,854 --> 00:06:23,873
+Step 4: several commits. A range A..B
+excludes A and is reverted newest first, one
+
+87
+00:06:23,913 --> 00:06:25,869
+revert commit per original.
+
+88
+00:06:26,209 --> 00:06:30,852
+Two revert commits, the cache one
+first because it's the newer original.
+
+89
+00:06:30,892 --> 00:06:32,609
+Timeout 30 again, cache on.
+
+90
+00:06:32,949 --> 00:06:37,966
+With -n, long form --no-commit, the
+inverse changes go into the index and the
+
+91
+00:06:38,006 --> 00:06:43,221
+working tree, and nothing is committed.
+So one commit of your own can carry them
+
+92
+00:06:43,261 --> 00:06:43,484
+all.
+
+93
+00:06:43,824 --> 00:06:47,566
+One commit, with a message that says
+what the two reverts have in common.
+
+94
+00:06:47,906 --> 00:06:52,706
+Step 5: a conflict. a49e359
+changed the timeout from 30 to 5.
+
+95
+00:06:52,746 --> 00:06:58,100
+A later commit, fe1b93a, changed it
+from 5 to 8. You revert a49e359.
+
+96
+00:06:58,140 --> 00:07:04,685
+Try it now, thirty seconds, on paper: write
+base, ours and theirs, with the timeout
+
+97
+00:07:04,725 --> 00:07:07,700
+value in each. Then say them out loud.
+
+98
+00:07:20,040 --> 00:07:25,322
+Base 5, ours 8, theirs 30. Both sides
+changed the line relative to the base: a
+
+99
+00:07:25,362 --> 00:07:30,849
+conflict. The revert wants to turn 5 back
+into 30, and the line no longer says 5.
+
+100
+00:07:30,889 --> 00:07:34,534
+That's the day from the start
+of the video, explained.
+
+101
+00:07:34,874 --> 00:07:39,672
+Read the marker labels: HEAD above,
+and below, "parent of a49e359".
+
+102
+00:07:39,712 --> 00:07:45,520
+Then the proof. git ls-files -s prints
+three stages, the three versions the index
+
+103
+00:07:45,560 --> 00:07:51,514
+holds during a conflict. The git rev-parse
+below it prints the blob IDs of the file
+
+104
+00:07:51,554 --> 00:07:57,435
+in three commits, in the same order: in
+a49e359 itself, in HEAD, and in the parent
+
+105
+00:07:57,475 --> 00:08:02,922
+of a49e359. They match line for line.
+Stage 1, the base, is the commit being
+
+106
+00:08:02,962 --> 00:08:07,471
+reverted. Stage 3 is its parent.
+And REVERT_HEAD names a49e359.
+
+107
+00:08:07,811 --> 00:08:12,895
+Git can't know whether 8 or 30 is right
+today. You decide, stage the result, and
+
+108
+00:08:12,935 --> 00:08:13,471
+continue.
+
+109
+00:08:13,811 --> 00:08:18,728
+Step 6: a range that stops halfway.
+labs/run ch11/revert-sequence.
+
+110
+00:08:18,768 --> 00:08:22,482
+A two-step range, and the
+second revert conflicts.
+
+111
+00:08:33,822 --> 00:08:39,768
+When the second revert of a range conflicts,
+the first is already committed: the log
+
+112
+00:08:39,808 --> 00:08:45,753
+shows 407f639, a revert, on top. git status
+says "You are currently reverting commit
+
+113
+00:08:45,793 --> 00:08:51,738
+a49e359". .git/sequencer/ has four files:
+todo holds the steps still to do, and head
+
+114
+00:08:51,778 --> 00:08:55,514
+holds the commit where the
+sequence started, f6c769e.
+
+115
+00:08:55,854 --> 00:08:59,125
+Four exits, one per row:
+continue, skip, abort and quit.
+
+116
+00:08:59,465 --> 00:09:03,366
+Predict the top of the log
+after --abort. Say it out loud.
+
+117
+00:09:08,206 --> 00:09:13,436
+Back at f6c769e. The revert commit that
+had already been made left the branch.
+
+118
+00:09:13,476 --> 00:09:18,976
+It's still in the reflog, one line down.
+The abort is recorded as a reset, and the
+
+119
+00:09:19,016 --> 00:09:20,868
+sequencer directory is gone.
+
+120
+00:09:21,208 --> 00:09:23,987
+From the same stopped state, --quit:
+
+121
+00:09:24,327 --> 00:09:25,622
+And --skip:
+
+122
+00:09:25,962 --> 00:09:29,976
+Compare each with its row of the table:
+what stayed on the branch, and whether a
+
+123
+00:09:30,016 --> 00:09:31,547
+conflict is still in the index.
+
+124
+00:09:33,387 --> 00:09:35,035
+Five mistakes to watch for.
+
+125
+00:09:35,375 --> 00:09:39,418
+Expecting a revert of an old commit
+to restore the file "as it was".
+
+126
+00:09:39,458 --> 00:09:44,462
+Root cause: a revert merges the inverse
+change into today's files, with the reverted
+
+127
+00:09:44,502 --> 00:09:47,945
+commit as base, so later edits
+to the same lines conflict.
+
+128
+00:09:48,285 --> 00:09:53,104
+Typing git revert -m "reason" <commit>.
+Root cause: on git revert, -m is the
+
+129
+00:09:53,144 --> 00:09:56,941
+mainline parent number for
+reverting a merge, not a message.
+
+130
+00:09:57,281 --> 00:10:02,365
+Thinking a range revert is atomic. Root
+cause: a range produces one revert commit
+
+131
+00:10:02,405 --> 00:10:07,172
+per original, newest first, so a stop
+at step two leaves step one committed.
+
+132
+00:10:07,512 --> 00:10:12,595
+Using --quit to back out of a stopped
+sequence. Root cause: --quit forgets the
+
+133
+00:10:12,635 --> 00:10:18,112
+sequence but keeps the reverts already made
+and leaves the conflict in the index and
+
+134
+00:10:18,152 --> 00:10:21,658
+the files; --abort is the
+one that returns the branch.
+
+135
+00:10:21,998 --> 00:10:27,733
+Reverting with staged changes. Root cause:
+the index must match HEAD before a revert
+
+136
+00:10:27,773 --> 00:10:28,214
+starts.
+
+137
+00:10:30,054 --> 00:10:35,908
+Now, out of the lab. Back to the batch size.
+The change was merged, deployed by CI,
+
+138
+00:10:35,948 --> 00:10:41,234
+and exhausts memory on the feature
+workers. Three teammates have pulled it.
+
+139
+00:10:41,574 --> 00:10:46,651
+git revert <commit> followed by git push
+needs no force, takes the same route as any
+
+140
+00:10:46,691 --> 00:10:51,463
+other commit, a pull request if main
+requires one, and reaches every clone as a
+
+141
+00:10:51,503 --> 00:10:56,519
+normal update. The textbook notes that the
+Git FAQ names this as the usual way, and
+
+142
+00:10:56,559 --> 00:11:00,905
+that the revert manual strongly
+recommends that the message explain why.
+
+143
+00:11:01,245 --> 00:11:06,257
+That last point is where teams
+save themselves a second incident.
+
+144
+00:11:06,297 --> 00:11:10,221
+A generated message says
+which commit was reverted.
+
+145
+00:11:10,261 --> 00:11:16,595
+It doesn't say that the workers ran out of
+memory at batch size 64, or under which
+
+146
+00:11:16,635 --> 00:11:22,891
+conditions the change could come back. Six
+weeks later someone will want to raise
+
+147
+00:11:22,931 --> 00:11:27,710
+the batch size again. The revert
+commit is where they'll look.
+
+148
+00:11:28,050 --> 00:11:32,356
+Lab 8.2 runs this incident,
+including the teammate's side.
+
+149
+00:11:34,196 --> 00:11:41,427
+Your turn. Do Lab 8.2, "Revert a pushed
+commit", in lab-manual/m08-undo.md.
+
+150
+00:11:41,767 --> 00:11:42,964
+Predict before you type:
+
+151
+00:11:43,304 --> 00:11:47,746
+Which commands tell you that the bad commit
+is shared, and what must you run before
+
+152
+00:11:47,786 --> 00:11:48,502
+trusting them?
+
+153
+00:11:48,842 --> 00:11:54,033
+After the revert, how many commits does
+git log show, and what does git status -sb
+
+154
+00:11:54,073 --> 00:11:55,564
+say about your upstream?
+
+155
+00:11:55,904 --> 00:12:00,800
+Will the push need force? What will the
+teammate's next pull print: a fast-forward,
+
+156
+00:12:00,840 --> 00:12:02,168
+a merge, or a conflict?
+
+157
+00:12:02,508 --> 00:12:08,246
+The challenge is Exercise 8.5,
+Level 2, "revert a range", in
+
+158
+00:12:08,286 --> 00:12:11,424
+exercises/m06-m10-integration.md.
+
+159
+00:12:13,264 --> 00:12:18,477
+Q180: "Describe git revert as a three-way
+merge: what are base, ours and theirs?
+
+160
+00:12:18,517 --> 00:12:22,941
+Use the answer to explain why
+reverting an old commit can conflict."
+
+161
+00:12:25,281 --> 00:12:30,147
+Answer out loud first. A strong answer
+names the three inputs without hesitation,
+
+162
+00:12:30,187 --> 00:12:33,842
+and says why that choice of base
+produces the inverse change.
+
+163
+00:12:33,882 --> 00:12:38,688
+For the second half it constructs a concrete
+case with three values of one line,
+
+164
+00:12:38,728 --> 00:12:43,775
+places each value in base, ours and theirs,
+and reads the conflict off the three-way
+
+165
+00:12:43,815 --> 00:12:48,560
+rule. If you can also say what the conflict
+markers will be labelled, and which
+
+166
+00:12:48,600 --> 00:12:53,466
+index stage holds which version, you have
+shown that the model is operational and
+
+167
+00:12:53,506 --> 00:12:54,193
+not recited.
+
+168
+00:12:56,033 --> 00:12:58,960
+Let's land this. You
+should now be able to say:
+
+169
+00:12:59,300 --> 00:13:03,685
+git revert adds a commit that applies
+the opposite of one commit's change, and
+
+170
+00:13:03,725 --> 00:13:07,599
+removes nothing, so it's the undo
+for history that other people have.
+
+171
+00:13:07,939 --> 00:13:12,336
+It's a three-way merge with the reverted
+commit as base, HEAD as ours and the
+
+172
+00:13:12,376 --> 00:13:17,176
+reverted commit's parent as theirs. It
+conflicts when later commits changed the same
+
+173
+00:13:17,216 --> 00:13:17,522
+lines.
+
+174
+00:13:17,862 --> 00:13:23,327
+A range is reverted newest first, one
+commit per original, and -n lets me combine
+
+175
+00:13:23,367 --> 00:13:24,279
+them into one.
+
+176
+00:13:24,619 --> 00:13:29,290
+A stopped sequence has four exits: continue,
+skip, abort and quit, and only abort
+
+177
+00:13:29,330 --> 00:13:32,139
+returns the branch to where
+the sequence started.
+
+178
+00:13:33,979 --> 00:13:36,817
+Read section 11.8 of Chapter 11.
+
+179
+00:13:37,157 --> 00:13:43,255
+Do Exercise 8.2, Level 1, "revert a
+commit that is not the last one", in
+
+180
+00:13:43,295 --> 00:13:46,069
+exercises/m06-m10-integration.md.
+
+181
+00:13:46,409 --> 00:13:51,429
+You can now undo a commit that three people
+have pulled, with no force, and explain
+
+182
+00:13:51,469 --> 00:13:55,575
+the conflict on the day it comes.
+Run the lab before the next video.
+
+183
+00:13:55,615 --> 00:13:58,928
+Next time: reverting a merge,
+and the re-merge problem.
+
+184
+00:13:58,968 --> 00:14:02,099
+Until then, look at the
+state first and type second.
+
+185
+00:14:02,139 --> 00:14:03,562
+See you in the next one.

@@ -13,7 +13,11 @@
 
 You check out the commit. You run the evaluation. You get 0.80.
 
+**[ANIMATION]** walk: columns=,the_run_in_the_tracker,the_commit,_checked_out rows=the_commit:one_commit_ID:the_same_commit_ID|the_working_tree:an_uncommitted_change,_not_recorded:clean|accuracy:0.90:0.80 marks=2.2:bad,3.2:hl,3.3:hl mono=off title=Two_code_states,_one_commit_ID
+
 The commit is intact. Nothing was rewritten. The tracker didn't lie either: the run really was started at that commit. But the run was made from a working tree with an uncommitted change, and the tracker recorded only the commit. Two different code states shared one commit ID, and one of them is gone.
+
+**[ANIMATION]** end
 
 By the end of this video you can say exactly what a run record has to contain so that this can't happen, and you'll see a past result reproduced from its recorded identifiers. Remember the two numbers, 0.90 and 0.80. You'll watch one commit carry two results.
 
@@ -73,6 +77,10 @@ Git then versions the pointer. `git log`, `git diff`, branches, tags and pull re
 
 Two flags are carried from the report. The Hugging Face "all repositories migrated" claim dates from October 2025 and wasn't independently verified for 2026. And no statement of DVC's roadmap was found.
 
+**[ANIMATION]** stores: boxes=Git_repository:cloned_by_everyone|*data_store:a_bucket;_access-controlled|working_tree rows=1:A:data/raw/tickets.csv.ref|1:A:{_"sha256":_"2226b23c45...",_"size":_432_}@hl|2:B:sha256/22/26b23c45..._(432_bytes)|2:B:sha256/4e/fbc43184..._(606_bytes)|2:B:one_object_per_version,_named_by_hash@dim|3:C:data/raw/tickets.csv|3:C:present,_ignored,_checked_against_the_pointer@dim|4:A:.gitignore:_/data/**_!*.ref arrows=2:A2>B1:names mono=on id=ptr
+
+**[ANIMATION]** step: ptr.3
+
 What they have in common: a hash, a store, a pointer in Git. Where they differ: how the second step happens when you move between commits. With the hand-made pointer and with DVC, going back is two steps: Git moves the pointer, the tool moves the bytes. Git LFS hides the second step inside a smudge filter, which is more convenient, and is why a clone without the LFS client silently gets pointers.
 
 **[ON SCREEN]** DVC from its documentation; not run here.
@@ -90,6 +98,8 @@ dvc checkout                                # ... then make the data match it
 
 The DVC guide says of itself that DVC "is technically not a version control system": it manipulates metafiles that Git versions.
 
+**[ANIMATION]** pin: ?the_commit_you_evaluated main; HEAD=none; say:org/name_names_whatever_the_default_branch_points_at_today; name:today => + ?the_commit_you_evaluated-?a_later_commit main; note:?the_commit_you_evaluated:revision:_the_full_commit_hash; say:A_branch_or_tag_in_revision_is_a_moving_reference; name:moved title=Pinning_a_model_from_a_hub dx=420 at_moved=45
+
 **Pinning a model from a hub.** A model ID such as `org/name` names whatever the publisher's default branch points at today. The Hugging Face download guide documents a `revision` parameter that accepts a branch, a tag or a commit hash, and says a commit hash must be the full-length hash, not a seven-character abbreviation. A branch or tag in `revision` is a moving reference, exactly as a Git branch is. Commit the hash you evaluated. That line of configuration is the model's pointer file. Registry aliases such as `champion` are mutable by design, which is what makes promotion a one-step operation and what makes an alias useless as a record. Deploy by alias if you like. Log the resolved version number and the Git commit of the training code beside it.
 
 **[ANIMATION]** trees: file=configs/eval.json steps=setup,edit commits=aa18ad2 versions=as_committed,one_more_keyword title=What_ran,_and_what_the_commit_says say_edit=Python_runs_the_files_on_disk._The_tracker_wrote_down_HEAD.
@@ -102,11 +112,17 @@ The DVC guide says of itself that DVC "is technically not a version control syst
 
 The tools capture less than people assume. Picture one tracked file, edited and not committed: the working tree has the new version, and the last commit does not. A tree in that state is called dirty. The textbook gives three tools, from the report.
 
+**[ANIMATION]** walk: columns=tool,records,but rows=MLflow:commit,_branch,_repository_URL:not_uncommitted_changes_(classic_run_context)|Weights_and_Biases:a_patch_of_uncommitted_changes:code_saving_is_disabled_by_default|Hydra:resolved_configuration_and_overrides:- marks=1.3:bad,2.3:bad mono=off title=What_the_tools_capture,_from_the_report id=tools at_1=10
+
+**[ANIMATION]** step: tools.1
+
 MLflow: the classic run context sets the commit, the branch and the repository URL when the entry point is inside a Git repository, and doesn't inspect or record uncommitted changes. A newer, opt-in function marked experimental records the dirty state and the diff.
 
-**[ANIMATION]** end
+**[ANIMATION]** step: tools.2
 
 Weights and Biases: it generates a patch of uncommitted changes when code is logged, but code saving is disabled by default for all teams.
+
+**[ANIMATION]** step: tools.3
 
 Hydra: it writes the resolved configuration and the command-line overrides into a `.hydra` directory for every run.
 
@@ -116,13 +132,23 @@ Four caveats are attached to these statements, and they stay attached. The repor
 
 The consequence, in the report's words: with classic tracking, two different code states can share one commit ID.
 
+**[ANIMATION]** cards: question=Three_rules_from_section_28.8 numbered=on cards=Lock_files_are_committed:an_input_to_every_later_build|Container_images_are_pinned_by_digest:tag_is_to_digest_as_branch_is_to_commit_ID|Configuration_is_recorded_resolved:its_final_form_exists_only_at_run_time id=rules
+
+**[ANIMATION]** step: rules.1
+
 **Lock files, digests, resolved configuration.** Three rules from section 28.8.
 
 Lock files are committed. A lock file lists the exact version of every dependency. A dependency range is resolved to exact versions at install time, so two installs a month apart differ. uv, version 0.12.21, documents `uv.lock` as a cross-platform lock file that should be checked into version control, and `--locked` as the option that raises an error instead of updating a lock file that is out of date. A lock file is generated, and it's still committed, because it's an input to every later build. The test for "generated files do not belong in Git" is whether the file can be regenerated identically from what is in Git. A lock file cannot, since the package index changes.
 
+**[ANIMATION]** step: rules.2
+
 Container images are pinned by digest. An image tag is a mutable reference, like a branch. The parallel with Git is exact: tag is to digest as branch is to commit ID.
 
+**[ANIMATION]** step: rules.3
+
 Configuration is recorded resolved. A configuration built from defaults, files, environment variables and command-line overrides exists in its final form only at run time.
+
+**[ANIMATION]** end
 
 And one consequence for CI: versions derived from tags need the tags. `git describe` names a commit by the most recent reachable annotated tag, and packaging plugins derive the package version from it. The default `actions/checkout` fetches one commit and no tags, so the derived version fails or falls back. Set `fetch-depth: 0` in the jobs that need it.
 
@@ -137,21 +163,31 @@ And one consequence for CI: versions derived from tags need the tags. `git descr
 | Model | model name, registry alias, hub branch | registry version number; hub commit hash |
 | Configuration | defaults plus overrides | the resolved configuration |
 
-Quick quiz, with the table on screen. Which of these may go into a run record as the identity of the model? A, the model name. B, the registry alias `champion`. C, the hub commit hash. Your answer?
+Read it as three columns: the identifier, the reference that can move, and the one that cannot.
+
+**[ANIMATION]** end
+
+Quick quiz. Which of these may go into a run record as the identity of the model? A, the model name. B, the registry alias `champion`. C, the hub commit hash. Your answer?
 
 **[PAUSE]**
 
-C. A name and an alias can point at something else tomorrow. The commit hash is in the right-hand column: it can't move.
+C. A name and an alias can point at something else tomorrow. The commit hash was in the right-hand column of the table: it can't move.
 
 ## MENTAL MODEL
 
+**[ANIMATION]** step: ptr.3
+
 Two pictures, one for each half. For the pointer, the textbook's analogy is a coat-check ticket. The ticket is small and travels with you. The coat stays in the cloakroom. The analogy breaks in two places that matter. This ticket is derived from the coat: it's a hash of the contents, so a different coat can never be handed back for it. And a ticket is worthless if the cloakroom has been emptied.
+
+**[ANIMATION]** end
 
 For reproducibility, a chain of custody. A sealed evidence bag with a label is evidence. An open bag with the same label is not. The commit ID is the label. The dirty flag says whether the bag was open. Where it breaks: unlike a seal, a dirty tree can be reconstructed exactly if you also keep the patch.
 
 Put the two together and you have the sentence for the CTO: every row of the last table has a left column that can move and a right column that cannot. A record made of left-column values is a guess.
 
 ## DIAGRAM
+
+**[ANIMATION]** step: ptr.4
 
 **[DIAGRAM]** Two boxes. On the left the Git repository, cloned by everyone. On the right the data store. Draw the pointer file in the left box, then the arrow, then the objects in the store, one per version.
 
@@ -167,22 +203,6 @@ Put the two together and you have the sentence for the CTO: every row of the las
 ```
 
 Look at the bottom line: the real file is in the working tree, ignored, and it's the tool, not Git, that checks it against the pointer. Now the ignore rule: everything under `data` is ignored except the pointer files.
-
-**[ON SCREEN]** The root-cause box of section 28.7, shown after the "two results, one commit" step.
-
-```text
-Observed behavior : checking out the commit named by a run gives a different metric.
-Git state         : the commit is intact. The run's working tree had a modified tracked file.
-Mechanism         : "git rev-parse HEAD" names the last commit; it says nothing about the
-                    index or the working tree. Python imported the files on disk.
-Root cause        : the tracker recorded HEAD and not the difference between HEAD and what ran.
-Why Git does this : a commit is a snapshot that was taken; uncommitted work is, by definition,
-                    in no snapshot.
-Correct fix       : if the patch was saved, apply it to the commit and rerun (Lab 33.3). If
-                    not, the result cannot be reproduced; say so and rerun from a commit.
-Prevention        : refuse tracked runs from a dirty tree, or record status and diff; treat
-                    untracked files the same way.
-```
 
 ## LIVE TERMINAL DEMO
 
@@ -465,7 +485,25 @@ $ git diff HEAD --binary | shasum -a 256
 ```
 <!-- /snippet -->
 
-Accuracy 0.8 and accuracy 0.9, both at commit `aa18ad2`. There are the two numbers from the opening, on one commit. A tracker that stores only the commit shows two runs of the same code with different results. This record tells them apart: `dirty: true`, a hash of the uncommitted diff, and the diff itself saved as `uncommitted.patch`. The last command proves the hash is of that diff. That's the second defensible policy: if dirty runs are allowed, log the status and the diff as artifacts. The root-cause box from the diagram section sums it up.
+Accuracy 0.8 and accuracy 0.9, both at commit `aa18ad2`. There are the two numbers from the opening, on one commit. A tracker that stores only the commit shows two runs of the same code with different results. This record tells them apart: `dirty: true`, a hash of the uncommitted diff, and the diff itself saved as `uncommitted.patch`. The last command proves the hash is of that diff. That's the second defensible policy: if dirty runs are allowed, log the status and the diff as artifacts.
+
+**[ON SCREEN]** The root-cause box of section 28.7, shown after the "two results, one commit" step.
+
+```text
+Observed behavior : checking out the commit named by a run gives a different metric.
+Git state         : the commit is intact. The run's working tree had a modified tracked file.
+Mechanism         : "git rev-parse HEAD" names the last commit; it says nothing about the
+                    index or the working tree. Python imported the files on disk.
+Root cause        : the tracker recorded HEAD and not the difference between HEAD and what ran.
+Why Git does this : a commit is a snapshot that was taken; uncommitted work is, by definition,
+                    in no snapshot.
+Correct fix       : if the patch was saved, apply it to the commit and rerun (Lab 33.3). If
+                    not, the result cannot be reproduced; say so and rerun from a commit.
+Prevention        : refuse tracked runs from a dirty tree, or record status and diff; treat
+                    untracked files the same way.
+```
+
+The root-cause box of section 28.7 sums it up: the tracker recorded HEAD, and not the difference between HEAD and what ran.
 
 **Step 8: untracked files are a third state.**
 
@@ -575,7 +613,11 @@ Five mistakes to watch for.
 
 Now, out of the lab. An evaluation team reports a ranking metric to a customer every quarter. A new engineer is asked to reproduce last quarter's number and cannot: the tracker names a commit, and the commit gives a different result.
 
+**[ANIMATION]** walk: columns=identifier,what_was_recorded,verdict rows=Code:the_commit;_no_dirty_flag:the_tree_is_unknown|Dependencies:a_committed_lock_file:fine|Data:a_path,_not_a_checksum:replaced_twice_since|Model:a_registry_alias:promoted_once_since marks=1.3:wait,2.3:ok,3.3:bad,4.3:bad mono=off title=Down_the_table_of_identifiers
+
 The lead goes down the table of identifiers in order. Code: the commit exists. The tracker has no dirty flag, so the state of the tree is unknown. Dependencies: the repository has a lock file, committed. Data: the path is recorded, not a checksum, and the file at that path has been replaced twice since. Model: recorded as a registry alias, which has been promoted once since. Three of the rows were recorded as mutable references. The honest report to the customer is the one the root-cause box prescribes: the result can't be reproduced. Here's why. Here's the rerun from a commit with every identifier recorded.
+
+**[ANIMATION]** end
 
 The team then changes the evaluation entry point. It refuses to start a tracked run from a tree that is dirty or has untracked files, and it writes the commit, the data checksum from the pointer, the resolved model version and the resolved configuration into the run record.
 

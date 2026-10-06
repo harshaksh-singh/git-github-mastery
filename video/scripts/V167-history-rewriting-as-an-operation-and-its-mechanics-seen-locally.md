@@ -166,7 +166,7 @@ So the model to carry is this. A rewrite does three separate things, and only th
 
 **[ANIMATION]** graph: dfd59fd-0c55276-6388058-987a49d-0805fd8-64b9b89-b509fe3-d4b8762 main; b509fe3-7fae871 feature/streaming; 987a49d tag:v0.1.0; 64b9b89 tag:v0.2.0; HEAD=none; note:0805fd8:.env_added; name:before; title:before => + range:dfd59fd,0c55276,6388058,987a49d:shared,_unchanged; name:shared => + 987a49d-0ac4257-66a99cc-51e2d95-c8ce738; 51e2d95-ba9f0e0; note:0ac4257:no_.env; name:replaced; title:after; say:Replaced:_everything_from_the_first_changed_commit_on => + c8ce738 main; 66a99cc tag:v0.2.0; ba9f0e0 feature/streaming; ghost:0805fd8,64b9b89,b509fe3,d4b8762,7fae871; name:after => + title:server.git,_after_the_forced_push; say:No_ref_leads_to_the_five_old_commits._They_are_still_there; name:server id=rw
 
-**[DIAGRAM]** Build the "before" line first, left to right: eight commits on `main`. Mark the fifth, where `.env` was added. Hang `v0.1.0` below the commit before it and `v0.2.0` above the commit after it. Branch `feature/streaming` off the sixth commit.
+**[DIAGRAM]** Build the "before" line first, left to right: eight commits on `main`. Mark the fifth, where `.env` was added. Hang `v0.1.0` below the commit before it and `v0.2.0` above the commit after it. Branch `feature/streaming` off the seventh commit.
 
 ```text
  before                                              v0.2.0

@@ -525,7 +525,7 @@ Five mistakes to watch for.
 
 **[ANIMATION]** step: stacks.lands
 
-Now, out of the lab. A data-pipeline team works in stacks: a loader branch, a cleaner branch on top of it, a chunker on top of that. Their host squash-merges pull requests. Every time the bottom of a stack lands, the branch above it's in the state of Case 1.
+Now, out of the lab. A data-pipeline team works in stacks: a loader branch, a cleaner branch on top of it, a chunker on top of that. Their host squash-merges pull requests. Every time the bottom of a stack lands, the branch above it is in the state of Case 1.
 
 **[ANIMATION]** say: The_rule:_rebase_with_--onto,_naming_the_old_base
 

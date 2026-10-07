@@ -78,7 +78,7 @@ Inside `.git` that is one commit object. No flag and no separate storage disting
 
 `git log --first-parent` follows only parent 1 at every merge. On a main branch that receives work through merges, that is the list of integrations, one line each. Here it skips the two branch commits.
 
-**[ANIMATION]** graph: 6ae3c51-adad948-5ab7b4d-6cd1b13 main; adad948-f18e761 topic/prompt; adad948-6e9e321 topic/deps; adad948-436e24c topic/docs; f18e761-6cd1b13; 6e9e321-6cd1b13; 436e24c-6cd1b13; HEAD=main id=octo title=An_octopus_merge
+**[ANIMATION]** graph: 6ae3c51-adad948-5ab7b4d-6cd1b13 main; ^adad948-f18e761 topic/prompt; ^adad948-6e9e321 topic/deps; adad948-436e24c topic/docs; f18e761-6cd1b13; 6e9e321-6cd1b13; 436e24c-6cd1b13; HEAD=main id=octo title=An_octopus_merge dx=300
 
 And the octopus: naming several branches in one `git merge` creates a single commit with three or more parents, made by a separate strategy that refuses any conflict.
 
@@ -93,6 +93,8 @@ When not to use which? `--squash` on a branch that lives on. `--no-commit` alone
 First, one sentence to carry with you.
 
 **[ANIMATION]** graph: A-M main; A-B-C feature; C-M; HEAD=main title=A_river_and_a_tributary
+
+**[ANIMATION]** step: state-1
 
 The textbook's analogy for a merge commit is a river and a tributary. Downstream of the confluence there is one river, and the map still shows which channel was the main stream. First-parent history is following the main stream upstream and ignoring every tributary. On screen, `M` is the confluence and `feature` is the tributary.
 

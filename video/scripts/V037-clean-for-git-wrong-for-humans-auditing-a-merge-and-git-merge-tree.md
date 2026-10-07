@@ -472,7 +472,7 @@ $ git log --oneline --graph -4 main
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: 6ae3c51-5397d5f main; 6ae3c51-7c974a2 docs/readme; 6ae3c51-640bfe1-45a7a67 feature/creative-judge; HEAD=main => 6ae3c51-5397d5f-40fb5aa main; 6ae3c51-7c974a2 docs/readme; 7c974a2-40fb5aa; 6ae3c51-640bfe1-45a7a67 feature/creative-judge; HEAD=main title=A_merge_without_a_working_tree
+**[ANIMATION]** graph: 6ae3c51-5397d5f main; ^6ae3c51-7c974a2 docs/readme; 6ae3c51-640bfe1-45a7a67 feature/creative-judge; HEAD=main => 6ae3c51-5397d5f-40fb5aa main; 6ae3c51-7c974a2 docs/readme; 7c974a2-40fb5aa; 6ae3c51-640bfe1-45a7a67 feature/creative-judge; HEAD=main title=A_merge_without_a_working_tree dx=260
 
 **[ANIMATION]** step: state-2
 
@@ -551,7 +551,7 @@ Answer with PASS or FAIL.
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: 6ae3c51-c089834-821b8ff main; 6ae3c51-5aec6e0-58a5e60 feature/rationale; 58a5e60-821b8ff; HEAD=main => 6ae3c51-c089834-821b8ff-504ae98 main; 6ae3c51-5aec6e0-58a5e60-b752dc4 feature/rationale; 58a5e60-821b8ff; HEAD=main => + 504ae98-?second_merge main; b752dc4-?second_merge; note:58a5e60:the_merge_base title=Content_undone,_ancestry_kept id=revert
+**[ANIMATION]** graph: 6ae3c51-c089834-821b8ff main; ^6ae3c51-5aec6e0-58a5e60 feature/rationale; 58a5e60-821b8ff; HEAD=main => 6ae3c51-c089834-821b8ff-504ae98 main; 6ae3c51-5aec6e0-58a5e60-b752dc4 feature/rationale; 58a5e60-821b8ff; HEAD=main => + 504ae98-?second_merge main; b752dc4-?second_merge; note:58a5e60:the_merge_base title=Content_undone,_ancestry_kept id=revert dx=260
 
 **[ANIMATION]** step: state-1
 

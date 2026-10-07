@@ -1,0 +1,886 @@
+1
+00:00:04,500 --> 00:00:08,817
+An engineer cherry-picks the wrong
+commit onto a release branch.
+
+2
+00:00:08,857 --> 00:00:13,243
+A cherry-pick copies one commit's
+change onto the current branch.
+
+3
+00:00:13,283 --> 00:00:18,417
+He remembers a recipe: git reset --hard
+ORIG_HEAD undoes the last operation.
+
+4
+00:00:18,457 --> 00:00:23,932
+He runs it. Git answers with a commit
+subject that is exactly the fix he meant to
+
+5
+00:00:23,972 --> 00:00:25,838
+pick. It looks like success.
+
+6
+00:00:26,178 --> 00:00:30,587
+It's not. The release branch
+now shows the history of main.
+
+7
+00:00:30,627 --> 00:00:35,866
+The commit that pins the dependencies
+for the release is gone from it.
+
+8
+00:00:35,906 --> 00:00:42,200
+The only visible sign is one missing file.
+If nobody notices, the next release build
+
+9
+00:00:42,240 --> 00:00:46,649
+resolves unpinned dependencies.
+Remember that missing file.
+
+10
+00:00:46,989 --> 00:00:52,029
+The command did what it says. The engineer
+believed that ORIG_HEAD means "before the
+
+11
+00:00:52,069 --> 00:00:56,927
+last command". It means "before the last
+reset, merge, rebase or am", on whatever
+
+12
+00:00:56,967 --> 00:00:57,895
+branch that was.
+
+13
+00:00:59,735 --> 00:01:03,315
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:03,355 --> 00:01:07,826
+In the previous video you learned the
+eight-step method and used it on three
+
+15
+00:01:07,866 --> 00:01:11,980
+accidents. Today, five more, all with
+committed work, all recoverable.
+
+16
+00:01:12,020 --> 00:01:15,304
+Each is the same method with
+a different ref to consult.
+
+17
+00:01:15,644 --> 00:01:20,040
+A wrong rebase: the entry in the
+branch reflog below "rebase (finish)".
+
+18
+00:01:20,080 --> 00:01:25,226
+A reflog is the local log of where a name
+pointed. A bad merge: the entry below the
+
+19
+00:01:25,266 --> 00:01:29,725
+merge line. Commits on the wrong
+branch: the difference between main and
+
+20
+00:01:29,765 --> 00:01:34,848
+origin/main. Detached HEAD, where you commit
+on no branch: the HEAD reflog, or git
+
+21
+00:01:34,888 --> 00:01:38,035
+fsck. A wrong cherry-pick:
+the branch reflog again.
+
+22
+00:01:38,375 --> 00:01:43,198
+Two of the five have a root-cause box, and
+both boxes are about recipes that work in
+
+23
+00:01:43,238 --> 00:01:45,514
+one situation and do damage in the next.
+
+24
+00:01:47,354 --> 00:01:52,026
+return a branch to its state before
+a rebase when ORIG_HEAD is stale;
+
+25
+00:01:52,366 --> 00:01:55,012
+undo a merge that was not
+pushed and one that was;
+
+26
+00:01:55,352 --> 00:01:57,966
+move commits made on the wrong
+branch to the right one;
+
+27
+00:01:58,306 --> 00:02:00,136
+rescue commits left in detached HEAD;
+
+28
+00:02:00,476 --> 00:02:03,526
+remove a wrong cherry-pick without
+touching the commits around it.
+
+29
+00:02:05,366 --> 00:02:07,680
+Three ideas decide every case today.
+
+30
+00:02:08,020 --> 00:02:12,017
+First: which log. The branch reflog has
+one line per operation on that branch.
+
+31
+00:02:12,057 --> 00:02:16,157
+A whole rebase is one entry, "rebase
+(finish)", and the line below it is the tip
+
+32
+00:02:16,197 --> 00:02:20,297
+from before the rebase. A merge is one
+entry, and the line below it is where the
+
+33
+00:02:20,337 --> 00:02:24,489
+branch was. That's the log you read when
+the question is "where was this branch".
+
+34
+00:02:24,529 --> 00:02:27,388
+The HEAD reflog is the only
+log that sees detached HEAD.
+
+35
+00:02:27,728 --> 00:02:31,247
+Second: published or not. Before a
+push, you may move the branch back.
+
+36
+00:02:31,287 --> 00:02:34,654
+After a push to a branch that others
+have pulled, you don't rewind.
+
+37
+00:02:34,694 --> 00:02:38,009
+You add commits, such as a revert,
+which undoes an earlier commit.
+
+38
+00:02:38,049 --> 00:02:40,501
+For a merge the textbook
+gives a three-row table.
+
+39
+00:02:40,841 --> 00:02:45,446
+The same split applies to a wrong cherry-pick
+and to commits on the wrong branch:
+
+40
+00:02:45,486 --> 00:02:47,510
+reset before the push, revert after.
+
+41
+00:02:47,850 --> 00:02:52,995
+Third: the lowest-risk move. 🟡 CAUTION:
+git reset --keep <id> moves the branch and
+
+42
+00:02:53,035 --> 00:02:57,737
+the files in the same way as --hard,
+and refuses if that would overwrite an
+
+43
+00:02:57,777 --> 00:03:01,784
+uncommitted change. Use it wherever
+you would have typed --hard.
+
+44
+00:03:01,824 --> 00:03:06,969
+And prefer copying to moving: with commits
+on the wrong branch, copy first, remove
+
+45
+00:03:07,009 --> 00:03:07,412
+second.
+
+46
+00:03:07,752 --> 00:03:12,736
+When is ORIG_HEAD acceptable? Only as the
+very next command after the operation you
+
+47
+00:03:12,776 --> 00:03:15,823
+want to undo, and only if
+that operation writes it.
+
+48
+00:03:15,863 --> 00:03:20,848
+git cherry-pick doesn't. A commit doesn't.
+So a rebase followed by one commit, or a
+
+49
+00:03:20,888 --> 00:03:25,630
+cherry-pick at any time, leaves ORIG_HEAD
+pointing somewhere you didn't intend.
+
+50
+00:03:25,970 --> 00:03:30,782
+Failure modes: recipes that count parents,
+such as git reset --hard HEAD~1 to "undo
+
+51
+00:03:30,822 --> 00:03:35,341
+the last merge". After a true merge,
+HEAD~1 is the previous tip of the branch.
+
+52
+00:03:35,381 --> 00:03:40,250
+After a fast-forward, there is no merge
+commit, and HEAD~1 is the previous commit of
+
+53
+00:03:40,290 --> 00:03:41,829
+the branch that was merged.
+
+54
+00:03:43,669 --> 00:03:48,105
+Keep the picture from last time: the commits
+are boxes that never left the vault,
+
+55
+00:03:48,145 --> 00:03:50,757
+and each accident put a
+card in the wrong place.
+
+56
+00:03:51,097 --> 00:03:55,955
+Today add one refinement. Each branch has
+its own ledger page, and HEAD has a diary.
+
+57
+00:03:55,995 --> 00:03:59,920
+The ledger page of a branch answers
+"where was this card yesterday".
+
+58
+00:03:59,960 --> 00:04:04,818
+The diary answers "where did I walk".
+ORIG_HEAD is a sticky note with one box number
+
+59
+00:04:04,858 --> 00:04:08,899
+and no heading: it doesn't say which
+card it was copied from, or when.
+
+60
+00:04:09,239 --> 00:04:14,259
+Try it now, on paper. Thirty seconds: draw
+a branch of three commits, then the same
+
+61
+00:04:14,299 --> 00:04:18,344
+branch after a rebase. Do three of
+those commits exist now, or six?
+
+62
+00:04:18,384 --> 00:04:19,320
+Say it out loud.
+
+63
+00:04:24,160 --> 00:04:29,850
+Six. The model breaks in one place worth
+saying: a rebase doesn't move boxes.
+
+64
+00:04:29,890 --> 00:04:34,911
+It builds new boxes with new numbers
+and leaves the old ones behind.
+
+65
+00:04:34,951 --> 00:04:40,568
+Undoing a rebase means pointing the card
+back at the old boxes, and anything
+
+66
+00:04:40,608 --> 00:04:44,140
+committed after the rebase
+sits on the new ones.
+
+67
+00:04:45,980 --> 00:04:50,707
+In four of the five, the repair line
+contains commits that existed all along.
+
+68
+00:04:50,747 --> 00:04:52,008
+Only the names moved.
+
+69
+00:04:53,848 --> 00:04:55,338
+Six commits ahead of the release
+branch where three belong.
+
+70
+00:04:55,678 --> 00:04:59,673
+A commit was added after the rebase,
+so ORIG_HEAD isn't the answer.
+
+71
+00:04:59,713 --> 00:05:04,372
+Read the branch reflog. Predict which
+entry is the tip from before the rebase.
+
+72
+00:05:04,412 --> 00:05:05,998
+Say it out loud. I'll wait.
+
+73
+00:05:10,838 --> 00:05:19,856
+The entry below "rebase (finish)":
+hotfix/judge-timeout@{2}, which is eb1f140.
+
+74
+00:05:19,896 --> 00:05:24,966
+Anchor it, and anchor
+the present state too.
+
+75
+00:05:29,506 --> 00:05:34,150
+Two refs now hold the two versions of
+the branch. Nothing can be lost by what
+
+76
+00:05:34,190 --> 00:05:38,895
+follows. Move only the commit that was
+made after the rebase onto the old tip.
+
+77
+00:05:44,035 --> 00:05:50,112
+Three commits on release/1.4 again: the
+two old ones with their old IDs, and "Log
+
+78
+00:05:50,152 --> 00:05:55,851
+judge latency" as 13305ef. A wrong rebase
+is repaired with a correct rebase.
+
+79
+00:05:56,191 --> 00:05:57,012
+Read the word "Fast-forward".
+
+80
+00:05:57,352 --> 00:06:00,965
+Three work-in-progress commits are on
+main, and there is no merge commit.
+
+81
+00:06:01,305 --> 00:06:09,857
+ORIG_HEAD..HEAD lists what the merge brought
+in. The merge was the last command and
+
+82
+00:06:09,897 --> 00:06:15,033
+merge writes the slot, so
+ORIG_HEAD is valid here.
+
+83
+00:06:20,573 --> 00:06:25,282
+--keep and not --hard. The
+experiment branch still exists.
+
+84
+00:06:25,322 --> 00:06:27,001
+Only main moved back.
+
+85
+00:06:27,341 --> 00:06:32,527
+Now the recipe from a tutorial,
+in a second copy of the incident.
+
+86
+00:06:32,567 --> 00:06:39,279
+Quick quiz, two options. Does main end up
+at 0529d31, where it was before the merge,
+
+87
+00:06:39,319 --> 00:06:41,772
+or at df44d03? Say it out loud.
+
+88
+00:06:54,612 --> 00:07:05,253
+Option two, df44d03. After a fast-forward,
+HEAD~1 is one commit back along the
+
+89
+00:07:05,293 --> 00:07:12,237
+merged branch. Almost
+everyone expects the old tip.
+
+90
+00:07:12,577 --> 00:07:17,288
+The second recipe, git reset --hard
+ORIG_HEAD, brings the third commit back: the
+
+91
+00:07:17,328 --> 00:07:19,248
+first reset had written the slot.
+
+92
+00:07:27,788 --> 00:07:31,544
+The line "merge exp/few-shot:
+Fast-forward" is the accident.
+
+93
+00:07:31,884 --> 00:07:35,708
+The line below it, main@{3},
+is where main was before.
+
+94
+00:07:36,048 --> 00:07:48,345
+origin/main..main is the precise name of
+the misplaced work: the commits on main
+
+95
+00:07:48,385 --> 00:07:52,817
+that the server doesn't have.
+
+96
+00:07:53,157 --> 00:07:57,492
+Nothing is lost here. The commits
+have the wrong name on them.
+
+97
+00:07:57,532 --> 00:07:59,327
+Copy first, remove second.
+
+98
+00:08:10,967 --> 00:08:16,679
+The order matters. If you reset main first,
+the two commits are held by the reflog
+
+99
+00:08:16,719 --> 00:08:20,327
+only, and you recover them
+as origin/main..main@{1}.
+
+100
+00:08:20,367 --> 00:08:26,219
+The lab does it in that order on purpose.
+If the target branch doesn't exist yet, no
+
+101
+00:08:26,259 --> 00:08:31,621
+copy is needed: create the branch at the
+current commit, then move main back.
+
+102
+00:08:31,661 --> 00:08:36,742
+And if the commits were already pushed
+to a shared main, don't rewind it:
+
+103
+00:08:36,782 --> 00:08:41,161
+cherry-pick them to the feature
+branch and revert them on main.
+
+104
+00:08:41,501 --> 00:08:46,052
+The marks of a detached session: a
+"checkout: moving from main to" a tag or a
+
+105
+00:08:46,092 --> 00:08:51,060
+commit, commits above it, and a "checkout:
+moving from" forty hexadecimal digits "to
+
+106
+00:08:51,100 --> 00:08:54,339
+main" that ends it. There are
+two sessions in this log.
+
+107
+00:08:54,379 --> 00:08:57,738
+Reading reflogs of real length
+for such patterns is slow.
+
+108
+00:08:57,778 --> 00:09:00,302
+Predict what git fsck
+--no-reflogs reports.
+
+109
+00:09:00,642 --> 00:09:05,174
+Two dangling commits, tips that no ref
+names, and the graph shows what hangs on
+
+110
+00:09:05,214 --> 00:09:05,463
+each.
+
+111
+00:09:05,803 --> 00:09:08,977
+A line of two hotfix commits,
+and a single experiment.
+
+112
+00:09:15,517 --> 00:09:20,613
+Each line has a name now. What happens to
+the hotfixes next is an ordinary decision,
+
+113
+00:09:20,653 --> 00:09:22,264
+made without time pressure.
+
+114
+00:09:22,604 --> 00:09:26,455
+-x recorded the source, which makes
+the mistake visible in review.
+
+115
+00:09:26,495 --> 00:09:30,937
+The pick itself was clean, and that is
+the dangerous case: a wrong pick that
+
+116
+00:09:30,977 --> 00:09:33,767
+conflicts gets attention,
+and a clean one ships.
+
+117
+00:09:34,107 --> 00:09:38,640
+After it has finished and before a push,
+step the branch back by one reflog entry
+
+118
+00:09:38,680 --> 00:09:40,108
+and pick the right commit.
+
+119
+00:09:45,448 --> 00:09:49,685
+One step back, then the right pick,
+5564cff. After a push to a shared release
+
+120
+00:09:49,725 --> 00:09:54,239
+branch, revert the wrong commit instead.
+And now the reflex from the opening, in a
+
+121
+00:09:54,279 --> 00:09:55,794
+second copy of the incident.
+
+122
+00:10:03,334 --> 00:10:07,770
+There's the opening again. The release
+branch lands on the history of main, the
+
+123
+00:10:07,810 --> 00:10:11,453
+pinning commit turns dashed, and
+the reset writes the slot again.
+
+124
+00:10:19,293 --> 00:10:24,805
+In the branch reflog, release/2.1@{2} is
+the state before the wrong pick: e30eec3,
+
+125
+00:10:24,845 --> 00:10:30,358
+"Pin dependencies for 2.1". The result of
+the bad reset looked plausible, which is
+
+126
+00:10:30,398 --> 00:10:35,504
+what makes this failure expensive. That's
+the missing file from the opening.
+
+127
+00:10:37,344 --> 00:10:38,992
+Five mistakes to watch for.
+
+128
+00:10:39,332 --> 00:10:45,387
+git reset --hard ORIG_HEAD after a
+cherry-pick, or a few commands after a rebase.
+
+129
+00:10:45,427 --> 00:10:51,709
+Root cause: ORIG_HEAD is one slot written
+by reset, merge, rebase and am; it holds a
+
+130
+00:10:51,749 --> 00:10:56,224
+value from an earlier operation,
+possibly on another branch.
+
+131
+00:10:56,564 --> 00:11:02,157
+"Undo the last merge" with HEAD~1. Root
+cause: a fast-forward creates no merge
+
+132
+00:11:02,197 --> 00:11:07,428
+commit, so HEAD~1 is a commit of the
+merged branch, not the previous tip.
+
+133
+00:11:07,768 --> 00:11:12,381
+Resetting a rebased branch to its old
+tip when work was added afterwards.
+
+134
+00:11:12,421 --> 00:11:17,226
+Root cause: the new commit sits on the
+rebased commits; anchor both tips and
+
+135
+00:11:17,266 --> 00:11:19,648
+transplant the new commit with --onto.
+
+136
+00:11:19,988 --> 00:11:23,301
+Moving main back before
+copying the misplaced commits.
+
+137
+00:11:23,341 --> 00:11:28,394
+Root cause: after the reset only the reflog
+names them; copy first, remove second.
+
+138
+00:11:28,734 --> 00:11:32,240
+Rewinding a shared branch to
+remove a pushed merge or pick.
+
+139
+00:11:32,280 --> 00:11:36,927
+Root cause: others have the commits and
+will bring them back or diverge; add a
+
+140
+00:11:36,967 --> 00:11:37,829
+revert instead.
+
+141
+00:11:39,669 --> 00:11:44,322
+Now, out of the lab. A platform team maintains
+a release branch for an API gateway.
+
+142
+00:11:44,362 --> 00:11:49,015
+On a Friday an engineer backports "the rate
+limit fix" by cherry-picking the tip of
+
+143
+00:11:49,055 --> 00:11:53,313
+main. The tip is a feature, per-tenant
+quotas, and the pick applies cleanly.
+
+144
+00:11:53,353 --> 00:11:54,443
+It's not pushed yet.
+
+145
+00:11:54,783 --> 00:11:59,575
+A reviewer notices the -x line in the
+message, which names a source commit that
+
+146
+00:11:59,615 --> 00:12:04,469
+isn't the fix. The engineer opens the
+reflog of the release branch, not of HEAD,
+
+147
+00:12:04,509 --> 00:12:09,545
+takes the entry below the cherry-pick line,
+and moves the branch there with --keep.
+
+148
+00:12:09,885 --> 00:12:13,687
+Then he picks the right commit, again
+with -x. Before pushing he compares the
+
+149
+00:12:13,727 --> 00:12:17,679
+release branch with its state on the server
+and sees exactly one new commit that
+
+150
+00:12:17,719 --> 00:12:21,771
+changes one line. The whole incident is
+four commands, and none of them could have
+
+151
+00:12:21,811 --> 00:12:23,218
+overwritten uncommitted work.
+
+152
+00:12:23,558 --> 00:12:28,428
+Had the pick already been pushed, the same
+team's rule says: revert on the release
+
+153
+00:12:28,468 --> 00:12:32,321
+branch, and explain in the revert
+message which commit was meant.
+
+154
+00:12:34,161 --> 00:12:40,832
+Your turn. Do Lab 12.4, "A wrong
+rebase", in lab-manual/m12-recovery.md.
+
+155
+00:12:41,172 --> 00:12:45,286
+Start from the symptom. Before you read
+the reflog, predict how many entries the
+
+156
+00:12:45,326 --> 00:12:48,972
+branch reflog has for the rebase, and
+which selector names the old tip.
+
+157
+00:12:49,012 --> 00:12:53,281
+Before the repair, draw the graph you expect
+afterwards, with the number of commits
+
+158
+00:12:53,321 --> 00:12:54,734
+ahead of the release branch.
+
+159
+00:12:55,074 --> 00:12:59,271
+The challenge is Lab 12.6, "Commits on
+the wrong branch", in the same file.
+
+160
+00:12:59,311 --> 00:13:03,790
+It resets main first on purpose. Predict
+the range expression that names the two
+
+161
+00:13:03,830 --> 00:13:04,863
+commits afterwards.
+
+162
+00:13:06,703 --> 00:13:07,970
+Pause and answer out loud.
+
+163
+00:13:12,810 --> 00:13:17,707
+A strong answer starts with what ORIG_HEAD
+is on disk and which commands write it,
+
+164
+00:13:17,747 --> 00:13:22,765
+and names at least two common commands that
+don't. From that it derives how the slot
+
+165
+00:13:22,805 --> 00:13:26,257
+can hold a value from another
+operation or another branch.
+
+166
+00:13:26,297 --> 00:13:31,315
+It then gives the procedure, not a replacement
+recipe: which log to read, which line
+
+167
+00:13:31,355 --> 00:13:36,252
+to take, how to anchor before moving, and
+which form of reset refuses to overwrite
+
+168
+00:13:36,292 --> 00:13:40,768
+uncommitted changes. It closes with the
+check that would have prevented the
+
+169
+00:13:40,808 --> 00:13:43,237
+incident, which is one read-only command.
+
+170
+00:13:45,077 --> 00:13:48,004
+Let's land this. You
+should now be able to say:
+
+171
+00:13:48,344 --> 00:13:53,426
+After a rebase, the old tip is the entry
+below "rebase (finish)" in the branch
+
+172
+00:13:53,466 --> 00:13:56,905
+reflog; work added later is
+transplanted with --onto.
+
+173
+00:13:57,245 --> 00:14:01,594
+An unpushed merge is undone by reflog entry
+or by ORIG_HEAD immediately; a pushed
+
+174
+00:14:01,634 --> 00:14:02,569
+merge is reverted.
+
+175
+00:14:02,909 --> 00:14:06,194
+Commits on the wrong branch are
+copied first and removed second.
+
+176
+00:14:06,534 --> 00:14:12,829
+Detached work is in the HEAD reflog, and
+git fsck --no-reflogs lists its tips.
+
+177
+00:14:13,169 --> 00:14:19,645
+I check git log -1 ORIG_HEAD before every
+use of it, and I prefer git reset --keep.
+
+178
+00:14:21,485 --> 00:14:28,593
+Read the rest of section 13.8 in Chapter
+13. Do Lab 12.5, "A bad merge", Lab 12.7,
+
+179
+00:14:28,633 --> 00:14:34,608
+"Lost work in detached HEAD", and
+Lab 12.9, "A wrong cherry-pick", in
+
+180
+00:14:34,648 --> 00:14:36,962
+lab-manual/m12-recovery.md.
+
+181
+00:14:37,302 --> 00:14:41,264
+Today you undid five accidents
+by reading the right log.
+
+182
+00:14:41,304 --> 00:14:47,194
+Do the wrong rebase lab before the next
+video. Next time: uncommitted work, and the
+
+183
+00:14:47,234 --> 00:14:51,839
+remote side. Until then, look at
+the state first and type second.
+
+184
+00:14:51,879 --> 00:14:53,554
+See you in the next one.

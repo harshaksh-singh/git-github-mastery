@@ -1,0 +1,994 @@
+1
+00:00:04,500 --> 00:00:08,732
+Read the CTO's question once more,
+and notice what isn't in it.
+
+2
+00:00:08,772 --> 00:00:14,361
+No conflict. No error. No red check. The
+second merge said "Merge made by the 'ort'
+
+3
+00:00:14,401 --> 00:00:17,955
+strategy", listed one file,
+and exited with status 0.
+
+4
+00:00:17,995 --> 00:00:22,431
+main now contains the fix for a
+feature that main doesn't contain.
+
+5
+00:00:22,471 --> 00:00:26,025
+Keep that sentence. In step
+four you watch it happen.
+
+6
+00:00:26,365 --> 00:00:29,648
+You saw this once as a pointer
+at the end of the merge module.
+
+7
+00:00:29,688 --> 00:00:34,043
+Today you get the mechanism, the root cause
+in one line, and two correct ways out.
+
+8
+00:00:35,883 --> 00:00:39,389
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+9
+00:00:39,429 --> 00:00:44,214
+In the last video you reverted ordinary
+commits. A merge commit is different in one
+
+10
+00:00:44,254 --> 00:00:47,412
+respect: it has two parents,
+the two commits it joined.
+
+11
+00:00:47,452 --> 00:00:52,237
+So "the change it made" has two meanings,
+and you must tell Git which one you mean.
+
+12
+00:00:52,577 --> 00:00:56,721
+That part takes five minutes. The rest
+of the video is about what happens
+
+13
+00:00:56,761 --> 00:01:01,307
+afterwards, because reverting a merge
+changes what every later merge of the same
+
+14
+00:01:01,347 --> 00:01:05,893
+branch does. You'll merge a branch, revert
+the merge, try to merge it again, and
+
+15
+00:01:05,933 --> 00:01:07,900
+watch Git say "Already up to date".
+
+16
+00:01:08,240 --> 00:01:12,291
+Then you'll watch the dangerous
+variant, which looks like a success.
+
+17
+00:01:12,331 --> 00:01:17,043
+Then the two repairs: revert the revert,
+or recreate the branch as new commits.
+
+18
+00:01:17,083 --> 00:01:22,097
+And last, why a squash merge, which packs
+a branch into one ordinary commit, doesn't
+
+19
+00:01:22,137 --> 00:01:23,601
+have this problem at all.
+
+20
+00:01:23,941 --> 00:01:28,809
+The project is a ranker for a retrieval
+service, and the branch is feature/reranker.
+
+21
+00:01:30,649 --> 00:01:32,062
+After this video you can:
+
+22
+00:01:32,402 --> 00:01:36,172
+Revert a merge commit with -m 1
+and say what that choice means.
+
+23
+00:01:36,512 --> 00:01:40,698
+Explain why merging the repaired branch
+again brings only the new commits.
+
+24
+00:01:41,038 --> 00:01:45,146
+Repair the situation by reverting the
+revert or by recreating the branch.
+
+25
+00:01:45,486 --> 00:01:47,915
+Contrast the behavior
+after a squash merge.
+
+26
+00:01:49,755 --> 00:01:54,193
+In one sentence: git revert -m 1 <merge>
+undoes the content that a merge brought
+
+27
+00:01:54,233 --> 00:01:58,895
+into the branch, and leaves the merge itself
+in the commit graph, which changes what
+
+28
+00:01:58,935 --> 00:02:01,246
+every later merge of the same branch does.
+
+29
+00:02:01,586 --> 00:02:03,101
+Take the two halves separately.
+
+30
+00:02:03,441 --> 00:02:09,261
+First half, the option. A merge commit
+has two parents, so the inverse has to be
+
+31
+00:02:09,301 --> 00:02:15,414
+computed relative to one of them. -m
+<parent-number>, long form --mainline, chooses.
+
+32
+00:02:15,454 --> 00:02:21,274
+On a branch that receives feature branches,
+the first parent is the branch's own
+
+33
+00:02:21,314 --> 00:02:25,009
+previous tip, as the video
+on merge commits showed.
+
+34
+00:02:25,049 --> 00:02:30,649
+So -m 1 takes out what the merge brought
+in. On screen, the merge is 27bb9f5.
+
+35
+00:02:30,689 --> 00:02:36,289
+Parent one is 31a221c, on main. Parent
+two is c3762df, the tip of the branch.
+
+36
+00:02:36,629 --> 00:02:41,074
+Second half, the consequence. The revert
+commit is an ordinary commit on top of the
+
+37
+00:02:41,114 --> 00:02:45,019
+merge. It changed content. It didn't
+change the graph, and no commit can.
+
+38
+00:02:45,059 --> 00:02:49,504
+The merge commit is still an ancestor of
+main, and through its second parent so are
+
+39
+00:02:49,544 --> 00:02:54,043
+all the commits of the feature branch. Git's
+how-to on this situation says the same:
+
+40
+00:02:54,083 --> 00:02:58,150
+a revert undoes the data a merge brought,
+and none of its effect on history.
+
+41
+00:02:58,490 --> 00:03:03,684
+Now recall what a merge is: it combines what
+each side changed since the merge base,
+
+42
+00:03:03,724 --> 00:03:08,793
+the best common ancestor of the two sides.
+The branch has now gained one commit, a
+
+43
+00:03:08,833 --> 00:03:13,778
+fix. Try it now, thirty seconds: point at
+the merge base of main and the branch.
+
+44
+00:03:13,818 --> 00:03:15,024
+Say its ID out loud.
+
+45
+00:03:19,864 --> 00:03:25,122
+It's c3762df. After the first merge, the
+merge base of main and the branch is the
+
+46
+00:03:25,162 --> 00:03:30,420
+old tip of the branch. So at the next
+merge, only commits after that tip count as
+
+47
+00:03:30,460 --> 00:03:35,325
+the branch's change. On main's side,
+the revert is a change since the base.
+
+48
+00:03:35,365 --> 00:03:39,053
+It deletes the feature, nothing
+opposes it, and it stays.
+
+49
+00:03:39,393 --> 00:03:42,601
+The manual states the rule bluntly: reverting
+a merge "declares that you will never
+
+50
+00:03:42,641 --> 00:03:44,440
+want the tree changes
+brought in by the merge".
+
+51
+00:03:44,780 --> 00:03:48,270
+There are two ways out. Way one:
+revert the revert, and then merge.
+
+52
+00:03:48,310 --> 00:03:52,590
+Way two: recreate the branch as new commits,
+which aren't ancestors of main, so an
+
+53
+00:03:52,630 --> 00:03:54,382
+ordinary merge brings all of them.
+
+54
+00:03:54,722 --> 00:03:59,445
+When not to revert a merge at all? The
+how-to advises finding and reverting the
+
+55
+00:03:59,485 --> 00:04:04,390
+single faulty commit, or fixing forward,
+and reverting a whole merge only when the
+
+56
+00:04:04,430 --> 00:04:07,585
+merge as such was the mistake.
+There's a second cost.
+
+57
+00:04:07,625 --> 00:04:12,590
+For git bisect, the binary search over
+commits, the revert is one large commit that
+
+58
+00:04:12,630 --> 00:04:16,509
+undoes many small ones, and so is
+the later revert of the revert.
+
+59
+00:04:18,349 --> 00:04:23,062
+Go back to the ledger from the last video.
+A merge posted a whole batch of entries
+
+60
+00:04:23,102 --> 00:04:26,249
+from another department, with
+a note: "batch received".
+
+61
+00:04:26,289 --> 00:04:29,205
+The revert posts one reversing
+entry for the batch.
+
+62
+00:04:29,245 --> 00:04:32,451
+The books now balance as if
+the batch had never arrived.
+
+63
+00:04:32,491 --> 00:04:37,203
+But the note "batch received" is still
+there, and the clerk who processes the next
+
+64
+00:04:37,243 --> 00:04:40,159
+delivery from that department
+reads the note first.
+
+65
+00:04:40,199 --> 00:04:43,347
+Everything listed on it is
+skipped as already received.
+
+66
+00:04:43,687 --> 00:04:48,130
+Where the picture breaks: a clerk could
+be told "that batch was reversed, take it
+
+67
+00:04:48,170 --> 00:04:51,729
+again". Git can't be told. Merge
+reads the graph, not intentions.
+
+68
+00:04:51,769 --> 00:04:56,379
+The only ways to say it are in the graph's
+own language: post an entry that reverses
+
+69
+00:04:56,419 --> 00:05:00,088
+the reversal, or deliver the same
+goods under new delivery numbers.
+
+70
+00:05:01,928 --> 00:05:07,629
+Read it left to right along main: the
+fork, the first merge 27bb9f5, the revert
+
+71
+00:05:07,669 --> 00:05:12,861
+7e5a38e, the revert of the revert
+4b3560c, and the second merge 018849f.
+
+72
+00:05:13,201 --> 00:05:18,381
+Put your finger on c3762df. After the first
+merge it's an ancestor of main, and it
+
+73
+00:05:18,421 --> 00:05:23,665
+stays one whatever is committed afterwards.
+The second merge can only bring what is
+
+74
+00:05:23,705 --> 00:05:26,338
+to the right of it on the branch: 6b4e788.
+
+75
+00:05:28,178 --> 00:05:28,538
+Step 1: the merge.
+
+76
+00:05:28,484 --> 00:05:34,185
+A true merge, 27bb9f5, two branch
+commits. rerank.py is in the listing.
+
+77
+00:05:34,525 --> 00:05:35,182
+Step 2: revert it. git revert 🟡 CAUTION.
+
+78
+00:05:35,522 --> 00:05:40,769
+Without -m, Git refuses: the commit is
+a merge but no -m option was given.
+
+79
+00:05:40,809 --> 00:05:46,342
+The parents are 31a221c, the previous
+tip of main, and c3762df, the tip of the
+
+80
+00:05:46,382 --> 00:05:51,701
+branch. With -m 1 the revert goes
+through, and rerank.py is gone from main.
+
+81
+00:05:52,041 --> 00:05:57,614
+The generated message records which parent
+was treated as the mainline: "reversing
+
+82
+00:05:57,654 --> 00:06:02,816
+changes made to", followed by the ID of
+parent 1. And the graph: the revert,
+
+83
+00:06:02,856 --> 00:06:06,923
+7e5a38e, sits on top of the
+merge. The merge is still there.
+
+84
+00:06:07,263 --> 00:06:12,566
+Step 3: merge the branch again.
+Nothing has changed on the branch.
+
+85
+00:06:12,606 --> 00:06:17,908
+Predict the output of git merge
+feature/reranker. Say it out loud.
+
+86
+00:06:17,948 --> 00:06:18,717
+I'll wait.
+
+87
+00:06:23,557 --> 00:06:28,515
+"Already up to date." And the two IDs below
+it are the same: the merge base of main
+
+88
+00:06:28,555 --> 00:06:32,851
+and the branch is the branch tip. For
+Git, the branch is already merged.
+
+89
+00:06:33,191 --> 00:06:40,440
+Step 4: the dangerous variant. The team
+fixes the bug with one more commit on the
+
+90
+00:06:40,480 --> 00:06:46,110
+branch, and merges. Quick quiz:
+what does main have afterwards?
+
+91
+00:06:46,150 --> 00:06:50,700
+A, the whole feature plus
+the fix. B, only the fix.
+
+92
+00:06:50,740 --> 00:06:53,130
+C, a conflict. Your answer?
+
+93
+00:06:57,970 --> 00:07:03,410
+B, only the fix. No conflict, no warning.
+One file changed: serve.yaml gained
+
+94
+00:07:03,450 --> 00:07:08,108
+rerank_top_k: 50. There's no
+rerank.py, and rank.py has no import.
+
+95
+00:07:08,148 --> 00:07:12,022
+main received the fix for a
+feature it doesn't contain.
+
+96
+00:07:12,062 --> 00:07:16,862
+That's the sentence from the start
+of the video, on your own screen.
+
+97
+00:07:17,202 --> 00:07:21,466
+Here's the mechanism as a root-cause box.
+The revert removed the content of the
+
+98
+00:07:21,506 --> 00:07:25,716
+merge and left the merge in the graph.
+The fix is one of two ways out, and the
+
+99
+00:07:25,756 --> 00:07:30,292
+prevention is to write the re-merge procedure
+into the message of the revert commit.
+
+100
+00:07:30,632 --> 00:07:35,883
+Step 5: way out 1, revert the revert. The
+demo first takes the half-working merge
+
+101
+00:07:35,923 --> 00:07:41,370
+away with git reset --hard ORIG_HEAD 🔴
+DANGEROUS. The five answers, briefly, because
+
+102
+00:07:41,410 --> 00:07:46,791
+you met them two videos ago. It moves the
+branch and rewrites the index and tracked
+
+103
+00:07:46,831 --> 00:07:52,147
+files. It destroys uncommitted changes.
+Preview with git status -s, and by reading
+
+104
+00:07:52,187 --> 00:07:56,001
+what ORIG_HEAD names. Commits
+come back through the reflog.
+
+105
+00:07:56,041 --> 00:08:01,357
+And it's appropriate here because the tree
+is clean, the merge is unpublished, and
+
+106
+00:08:01,397 --> 00:08:04,166
+it's the very next
+command after the merge.
+
+107
+00:08:04,506 --> 00:08:09,934
+git revert 7e5a38e reverts the revert and
+brings the content of the first merge
+
+108
+00:08:09,974 --> 00:08:15,609
+back. Git 2.55 names such a commit Reapply
+"...". Then the merge adds the fix, and
+
+109
+00:08:15,649 --> 00:08:17,547
+rerank.py is in the listing.
+
+110
+00:08:17,887 --> 00:08:22,854
+This is the graph of today's diagram.
+Merge, revert, reapply, second merge.
+
+111
+00:08:22,894 --> 00:08:24,990
+And rank.py has its import line.
+
+112
+00:08:25,330 --> 00:08:30,579
+Step 6: way out 2, recreate the branch.
+labs/run ch11/revert-merge-rebuild.
+
+113
+00:08:30,619 --> 00:08:36,291
+The idea: new commits aren't ancestors of
+main. The obvious command is git rebase
+
+114
+00:08:36,331 --> 00:08:40,945
+main, which replays a branch's
+commits as new ones on top of main.
+
+115
+00:08:40,985 --> 00:08:45,247
+Predict how many commits it
+replays. Say the number out loud.
+
+116
+00:08:50,087 --> 00:08:55,113
+One. A plain rebase replays only what
+main lacks, and main lacks only the fix.
+
+117
+00:08:55,153 --> 00:08:59,790
+The feature is still missing. If you
+said three, you're in good company.
+
+118
+00:09:00,130 --> 00:09:05,319
+What works is git rebase --no-ff 🟡 from
+the commit where the branch started, an
+
+119
+00:09:05,359 --> 00:09:08,629
+option the manual documents
+for exactly this case.
+
+120
+00:09:16,969 --> 00:09:20,208
+Where did the branch start? At the merge
+base of the two parents of the reverted
+
+121
+00:09:20,248 --> 00:09:22,503
+merge: fbb8230. "Rebase forced",
+three commits replayed.
+
+122
+00:09:22,543 --> 00:09:25,741
+In the graph the three commits have new
+IDs and hang off fbb8230 beside the old
+
+123
+00:09:25,781 --> 00:09:25,946
+ones.
+
+124
+00:09:26,286 --> 00:09:30,161
+An ordinary merge now brings
+rerank.py, the import and the fix.
+
+125
+00:09:30,201 --> 00:09:35,257
+The price is a rewritten feature branch,
+which is the subject of the rebase module
+
+126
+00:09:35,297 --> 00:09:36,997
+that starts in three videos.
+
+127
+00:09:37,337 --> 00:09:42,171
+Step 7: the squash contrast.
+labs/run ch11/revert-squash-remerge.
+
+128
+00:09:42,211 --> 00:09:48,245
+The branch went in as one ordinary commit,
+made with git merge --squash, and that
+
+129
+00:09:48,285 --> 00:09:49,745
+commit was reverted.
+
+130
+00:09:50,085 --> 00:09:53,350
+No -m was needed: the squashed
+commit has one parent.
+
+131
+00:09:53,390 --> 00:09:57,403
+Now merge the branch, with its
+fix. Predict the merge base first.
+
+132
+00:10:05,243 --> 00:10:09,440
+The merge base is still fbb8230,
+where the branch started.
+
+133
+00:10:09,780 --> 00:10:15,052
+There's no second parent, the branch commits
+never became ancestors of main, and so
+
+134
+00:10:15,092 --> 00:10:20,236
+the merge brings the whole branch: three
+files. Recall the squash trap from video
+
+135
+00:10:20,276 --> 00:10:23,884
+36: content without ancestry.
+There it caused a conflict.
+
+136
+00:10:23,924 --> 00:10:27,020
+Here the same property is
+why the re-merge works.
+
+137
+00:10:28,860 --> 00:10:30,508
+Five mistakes to watch for.
+
+138
+00:10:30,848 --> 00:10:34,325
+Merging the repaired branch again
+and trusting a clean result.
+
+139
+00:10:34,365 --> 00:10:38,921
+Root cause: the revert removed the content
+of the merge and left the merge in the
+
+140
+00:10:38,961 --> 00:10:43,289
+graph, so the merge base is the old
+branch tip and only newer commits arrive.
+
+141
+00:10:43,629 --> 00:10:47,878
+Running git rebase main on the branch
+to "refresh" it before re-merging.
+
+142
+00:10:47,918 --> 00:10:52,286
+Root cause: a plain rebase replays only
+commits that main does not have as
+
+143
+00:10:52,326 --> 00:10:55,384
+ancestors, and the old branch
+commits are ancestors.
+
+144
+00:10:55,724 --> 00:11:00,351
+Choosing the parent number by guessing.
+Root cause: -m selects the parent that
+
+145
+00:11:00,391 --> 00:11:05,257
+counts as the mainline; on a branch that
+receives merges that is parent 1, and the
+
+146
+00:11:05,297 --> 00:11:07,770
+other number computes a different inverse.
+
+147
+00:11:08,110 --> 00:11:11,588
+Reverting a whole merge because
+one commit in it was faulty.
+
+148
+00:11:11,628 --> 00:11:16,395
+Root cause: the revert, and later the revert
+of the revert, are large commits that
+
+149
+00:11:16,435 --> 00:11:18,506
+hide the small ones from git bisect.
+
+150
+00:11:18,846 --> 00:11:23,915
+Assuming the same problem after a squash
+merge. Root cause: a squash commit has one
+
+151
+00:11:23,955 --> 00:11:28,039
+parent, so no ancestry was recorded
+and the merge base never moved.
+
+152
+00:11:29,879 --> 00:11:34,991
+Now, out of the lab. A search team merges
+a cross-encoder reranker on Tuesday.
+
+153
+00:11:35,031 --> 00:11:40,473
+Latency doubles. On Wednesday the on-call
+engineer reverts the merge with -m 1, and
+
+154
+00:11:40,513 --> 00:11:43,182
+production recovers. That part goes well.
+
+155
+00:11:43,522 --> 00:11:48,552
+The following Monday the branch has one
+more commit, a cap on reranker candidates.
+
+156
+00:11:48,592 --> 00:11:51,890
+Someone opens a new pull
+request from the same branch.
+
+157
+00:11:51,930 --> 00:11:55,662
+The diff shows one line. Reviewers
+approve a one-line change.
+
+158
+00:11:55,702 --> 00:11:59,804
+It merges cleanly, and the release
+notes say "reranker re-enabled".
+
+159
+00:11:59,844 --> 00:12:03,452
+It isn't. And nobody was careless:
+every step looked right.
+
+160
+00:12:03,792 --> 00:12:08,195
+The prevention from the root-cause box
+costs one paragraph: write the re-merge
+
+161
+00:12:08,235 --> 00:12:12,923
+procedure into the message of the revert
+commit. "Before merging this branch again,
+
+162
+00:12:12,963 --> 00:12:17,594
+revert this commit first." The person who
+needs that sentence will be reading that
+
+163
+00:12:17,634 --> 00:12:17,992
+commit.
+
+164
+00:12:18,332 --> 00:12:22,995
+On GitHub, the Revert button on a merged
+pull request "creates a new pull request
+
+165
+00:12:23,035 --> 00:12:27,640
+that reverts the original merge commit",
+and gh pr revert <number> does the same
+
+166
+00:12:27,680 --> 00:12:32,168
+from the command line. This is described
+from the documentation, not run here.
+
+167
+00:12:32,208 --> 00:12:37,045
+The page says nothing about a later re-merge.
+By the mechanics you have seen, a pull
+
+168
+00:12:37,085 --> 00:12:41,806
+request that was merged with a merge commit
+and then reverted needs one of the two
+
+169
+00:12:41,846 --> 00:12:44,303
+ways out before its
+branch is merged again.
+
+170
+00:12:46,143 --> 00:12:52,366
+Your turn. Do Lab 8.3, "Revert a merge,
+then re-merge", in lab-manual/m08-undo.md.
+
+171
+00:12:52,706 --> 00:12:54,590
+Predict at three points, in writing:
+
+172
+00:12:54,930 --> 00:12:59,710
+Before the revert: what are the two parents
+of the merge, and what will the tree
+
+173
+00:12:59,750 --> 00:13:00,976
+look like after -m 1?
+
+174
+00:13:01,316 --> 00:13:06,071
+Before the second merge: what does git
+merge-base main <branch> print, and therefore
+
+175
+00:13:06,111 --> 00:13:08,069
+which commits will the merge bring?
+
+176
+00:13:08,409 --> 00:13:13,401
+Before each repair: what will the graph look
+like afterwards, and which IDs, if any,
+
+177
+00:13:13,441 --> 00:13:14,120
+will be new?
+
+178
+00:13:14,460 --> 00:13:20,783
+The challenge is Exercise 8.10, Level 5,
+"a feature that was merged twice and is
+
+179
+00:13:20,823 --> 00:13:24,839
+half missing", in
+exercises/m06-m10-integration.md.
+
+180
+00:13:26,679 --> 00:13:31,796
+Q182: "You reverted a merge with -m 1 last
+week. Today the fixed branch was merged
+
+181
+00:13:31,836 --> 00:13:36,953
+again and the feature is incomplete. Explain
+the mechanism with the merge base and
+
+182
+00:13:36,993 --> 00:13:41,921
+give two correct procedures. What would
+-m 2 have undone, and why does a squash
+
+183
+00:13:41,961 --> 00:13:43,682
+merge not show the problem?"
+
+184
+00:13:46,022 --> 00:13:49,116
+Answer out loud first. This
+is a four-part question.
+
+185
+00:13:49,156 --> 00:13:54,118
+A strong answer takes the parts in order,
+and keeps one idea running through all of
+
+186
+00:13:54,158 --> 00:13:58,819
+them: content against ancestry. It states
+where the merge base is and why, and
+
+187
+00:13:58,859 --> 00:14:03,881
+derives the missing half from that. It gives
+both procedures, with the cost of each.
+
+188
+00:14:03,921 --> 00:14:08,703
+For -m 2 it reasons from what "relative
+to that parent" means and doesn't guess.
+
+189
+00:14:08,743 --> 00:14:12,138
+And for the squash it says
+what is absent from the graph.
+
+190
+00:14:12,178 --> 00:14:14,006
+Draw the graph while you speak.
+
+191
+00:14:15,846 --> 00:14:18,773
+Let's land this. You
+should now be able to say:
+
+192
+00:14:19,113 --> 00:14:24,185
+A merge commit has two parents, so git
+revert needs -m to know which one is the
+
+193
+00:14:24,225 --> 00:14:27,744
+mainline, and -m 1 takes out
+what the merge brought in.
+
+194
+00:14:27,784 --> 00:14:32,986
+The revert changes content and leaves the
+merge in the graph, so the branch's old
+
+195
+00:14:33,026 --> 00:14:37,904
+commits stay ancestors of main, and a
+later merge brings only newer commits.
+
+196
+00:14:38,244 --> 00:14:43,419
+The two repairs are to revert the revert
+and then merge, or to recreate the branch
+
+197
+00:14:43,459 --> 00:14:47,299
+as new commits with git rebase
+--no-ff from where it started.
+
+198
+00:14:47,639 --> 00:14:52,441
+After a squash merge no ancestry was
+recorded, so a later merge brings the whole
+
+199
+00:14:52,481 --> 00:14:56,860
+branch. Where possible I revert the
+one faulty commit and keep the merge.
+
+200
+00:14:58,700 --> 00:15:06,925
+Read section 11.9 of Chapter 11.
+
+201
+00:15:07,265 --> 00:15:12,402
+A clean merge that loses half a feature is
+no longer a mystery to you: you can point
+
+202
+00:15:12,442 --> 00:15:17,332
+at the merge base and say why. Do the lab,
+and write your three predictions down
+
+203
+00:15:17,372 --> 00:15:21,954
+first. Next time: git clean, and stash,
+uncommitted work parked as commits.
+
+204
+00:15:21,994 --> 00:15:25,159
+Until then, look at the
+state first and type second.
+
+205
+00:15:25,199 --> 00:15:26,638
+See you in the next one.

@@ -328,7 +328,7 @@ README.md
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** remotes: [server] f56c1bb-95671d3-510ee94 main tag:v0.1.0; 510ee94-336d5ee feature/reranker; HEAD=main || [by-hand] HEAD=none; cmd:git_init,_git_remote_add => || [by-hand] f56c1bb-95671d3-510ee94 origin/main origin/HEAD tag:v0.1.0; 510ee94-336d5ee origin/feature/reranker; HEAD=none; cmd:git_fetch_origin; name:fetch => || + 510ee94 main; HEAD=main; cmd:git_switch_main; name:switch title=A_clone_by_hand id=byhand
+**[ANIMATION]** remotes: [server] f56c1bb-95671d3-510ee94 main tag:v0.1.0; 510ee94-336d5ee feature/reranker; HEAD=main || [by-hand] HEAD=none; cmd:git_init,_git_remote_add => || [by-hand] f56c1bb-95671d3-510ee94 origin/main origin/HEAD tag:v0.1.0; 510ee94-336d5ee origin/feature/reranker; HEAD=none; cmd:git_fetch_origin; name:fetch => || + 510ee94 main; HEAD=main; cmd:git_switch_main; name:switch title=A_clone_by_hand id=byhand captions=room
 
 **[ANIMATION]** step: switch
 

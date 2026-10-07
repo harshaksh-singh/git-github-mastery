@@ -104,7 +104,7 @@ Two consequences to carry around. A fetch cannot hurt your work, because your fl
 
 ## DIAGRAM
 
-**[ANIMATION]** fetch: [server] ...older-510ee94-ef22149 main; HEAD=none || [you] ...older-510ee94 main origin/main; HEAD=main => || [you] ...older-510ee94-ef22149 origin/main tag:v0.1.0; 510ee94 main; HEAD=main; cmd:git_fetch title=Before_and_after_git_fetch
+**[ANIMATION]** fetch: [server] ...older-510ee94-ef22149 main; HEAD=none || [you] ...older-510ee94 main origin/main; HEAD=main => || [you] ...older-510ee94-ef22149 origin/main tag:v0.1.0; 510ee94 main; HEAD=main; cmd:git_fetch title=Before_and_after_git_fetch dx=330 at_state_1=12 at_state_2=30
 
 **[DIAGRAM]** Two columns, before and after. On the left, draw the server with two commits and your repository with one, `main` and `origin/main` on the same commit. On the right, add the commit to your repository and move only the `origin/main` label and the tag.
 

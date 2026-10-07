@@ -378,7 +378,7 @@ This reverts commit 4f885421c38859bdc722fa1961433160eca5ab6a.
 
 The predicted tree, the tree of the revert commit, and the tree of the commit before the backport are one and the same.
 
-**[ANIMATION]** merge: three-way as=revert main=release/1.4 common=93787ec,3056255,4f88542 target=4f88542 merge_id=57c5a52 cmd_merge_base=git_revert_--no-edit_HEAD cmd_merge=git_revert_--no-edit_HEAD title=A_revert_is_the_same_merge,_inputs_exchanged id=revert
+**[ANIMATION]** merge: three-way as=revert main=release/1.4 common=93787ec,3056255,4f88542 target=4f88542 merge_id=57c5a52 cmd_merge_base=git_revert_--no-edit_HEAD cmd_merge=git_revert_--no-edit_HEAD title=A_revert_is_the_same_merge,_inputs_exchanged id=revert say_merge=The_result_is_a_new_commit_with_ONE_parent:_the_change_of_4f88542_is_undone
 
 A revert is a new commit like any other. It uses the same sequencer, with `REVERT_HEAD` in place of `CHERRY_PICK_HEAD` and the same four ways out, and it needs `-m` for a merge commit for the same reason.
 

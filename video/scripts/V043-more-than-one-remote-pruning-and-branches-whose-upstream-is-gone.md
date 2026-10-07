@@ -54,7 +54,7 @@ By convention `origin` is the repository you push to and `upstream` is the share
 
 A triangular workflow fetches from one repository and pushes to another. Which remote a bare `git push` uses is decided by settings in a fixed order: `branch.<name>.pushRemote`, then `remote.pushDefault`, then `branch.<name>.remote`, then `origin`. Which branch name it uses is decided by `push.default`, from the video before last.
 
-**[ANIMATION]** prune: [Asha's clone] 510ee94 main origin/main; 510ee94-5176652 feature/reranker origin/feature/reranker; HEAD=main || [origin] 510ee94-52d3c1a main; 510ee94-5176652; 5176652-52d3c1a; HEAD=none => [Asha's clone] 510ee94-52d3c1a origin/main; 510ee94-5176652 feature/reranker; 5176652-52d3c1a; 510ee94 main; HEAD=main; note:5176652:its_upstream_is_gone; cmd:git_fetch_--prune; name:pruned || => [Asha's clone] 510ee94-52d3c1a origin/main; 510ee94-5176652 feature/reranker; 5176652-52d3c1a; 510ee94 main; HEAD=feature/reranker; cmd:git_push; name:zombie || [origin] 510ee94-52d3c1a main; 510ee94-5176652 feature/reranker; 5176652-52d3c1a; HEAD=none title=A_branch_the_server_deleted id=prune
+**[ANIMATION]** prune: [Asha's clone] 510ee94 main origin/main; ^510ee94-5176652 feature/reranker origin/feature/reranker; HEAD=main || [origin] 510ee94-52d3c1a main; ^510ee94-5176652; 5176652-52d3c1a; HEAD=none => [Asha's clone] 510ee94-52d3c1a origin/main; 510ee94-5176652 feature/reranker; 5176652-52d3c1a; 510ee94 main; HEAD=main; note:5176652:its_upstream_is_gone; cmd:git_fetch_--prune; name:pruned || => [Asha's clone] 510ee94-52d3c1a origin/main; 510ee94-5176652 feature/reranker; 5176652-52d3c1a; 510ee94 main; HEAD=feature/reranker; cmd:git_push; name:zombie || [origin] 510ee94-52d3c1a main; 510ee94-5176652 feature/reranker; 5176652-52d3c1a; HEAD=none title=A_branch_the_server_deleted id=prune captions=room dx=230
 
 **[ANIMATION]** step: state-1
 
@@ -601,7 +601,7 @@ $ git branch -vv
 
 With `fetch.prune=true` every fetch prunes.
 
-**[ANIMATION]** graph: 95671d3-510ee94 main origin/main; 510ee94-249e18e-509f067 origin/spike/hybrid-search; HEAD=main => + drop:origin/spike/hybrid-search; ghost:249e18e,509f067; cmd:git_fetch_--prune; name:pruned => 95671d3-510ee94 main origin/main; 510ee94-249e18e-509f067 rescue/hybrid-search; HEAD=main; cmd:git_branch_rescue/hybrid-search_509f067; name:rescued title=Pruning_is_forgetting id=forget
+**[ANIMATION]** graph: 95671d3-510ee94 main origin/main; ^510ee94-249e18e-509f067 origin/spike/hybrid-search; HEAD=main => + drop:origin/spike/hybrid-search; ghost:249e18e,509f067; cmd:git_fetch_--prune; name:pruned => 95671d3-510ee94 main origin/main; 510ee94-249e18e-509f067 rescue/hybrid-search; HEAD=main; cmd:git_branch_rescue/hybrid-search_509f067; name:rescued title=Pruning_is_forgetting id=forget dx=260
 
 **[ANIMATION]** step: state-1
 

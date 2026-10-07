@@ -108,7 +108,7 @@ Try it now. Thirty seconds, on paper. You and Asha each added one commit on top 
 
 **[PAUSE]**
 
-**[ANIMATION]** graph: [after the fetch half] ef22149-c498de8 main; ef22149-527a708 origin/main; HEAD=main; name:input || [git pull --no-rebase] || [git pull --rebase] => || [git pull --no-rebase] ef22149-c498de8-7044e06 main; ef22149-527a708 origin/main; 527a708-7044e06; HEAD=main; name:merge || => || || [git pull --rebase] ef22149-527a708-45eec24 main; 527a708 origin/main; ef22149-c498de8; reflog:c498de8; HEAD=main; name:rebase title=Same_input,_three_outcomes id=three
+**[ANIMATION]** graph: [after the fetch half] ef22149-c498de8 main; ^ef22149-527a708 origin/main; HEAD=main; name:input || [git pull --no-rebase] || [git pull --rebase] => || [git pull --no-rebase] ef22149-c498de8-7044e06 main; ^ef22149-527a708 origin/main; 527a708-7044e06; HEAD=main; name:merge || => || || [git pull --rebase] ef22149-527a708-45eec24 main; 527a708 origin/main; ^ef22149-c498de8; reflog:c498de8; HEAD=main; name:rebase title=Same_input,_three_outcomes id=three
 
 **[DIAGRAM]** Three panels, built left to right. First the diverged state after the fetch half. Then the same state integrated by merge. Then by rebase. Last, the caption for `--ff-only`.
 
@@ -386,7 +386,7 @@ $ git log --oneline --graph --decorate --all -4
 
 `[ahead 1, behind 1]`. A pull that ends in this error is not a no-op.
 
-**[ANIMATION]** graph: 510ee94-ef22149-c498de8 main; ef22149-527a708 origin/main origin/HEAD; HEAD=main title=After_the_fatal_message
+**[ANIMATION]** graph: 510ee94-ef22149-c498de8 main; ef22149-527a708 origin/main origin/HEAD; HEAD=main title=After_the_fatal_message dx=260
 
 Your remote-tracking ref moved, and status now tells the truth. Your branch, index and working tree are untouched. The fatal error is not a network failure and not damage. Git fetched successfully and then declined to pick one of two possible histories on your behalf.
 

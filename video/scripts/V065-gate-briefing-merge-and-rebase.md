@@ -11,7 +11,9 @@
 
 **[ON SCREEN]** An empty table: four rows (merge, rebase step, cherry-pick, revert), three columns (base, ours, theirs).
 
-**[ANIMATION]** walk: columns=operation,base,ours,theirs rows=merge:?:?:?|rebase_step:?:?:?|cherry-pick:?:?:?|revert:?:?:? mono=off title=Twelve_empty_cells id=empty
+**[ANIMATION]** walk: columns=operation,base,ours,theirs rows=merge:?:?:?|rebase_step:?:?:?|cherry-pick:?:?:?|revert:?:?:? mono=off title=Twelve_empty_cells id=empty at_1=0 at_2=4 at_3=8 at_4=12
+
+**[ANIMATION]** step: 4
 
 Twelve empty cells. If you can fill them from memory, with the reason for each, you can explain every conflict you've seen in the last thirty videos, and most of Gate 3.
 

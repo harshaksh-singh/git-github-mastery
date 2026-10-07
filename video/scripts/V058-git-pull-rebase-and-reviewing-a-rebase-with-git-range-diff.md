@@ -35,14 +35,14 @@ After this video you can:
 
 - Explain `git pull --rebase` as fetch followed by a rebase onto the upstream.
 - Compare the old and the new version of a branch with `git range-diff`.
-- Read the `=`, `!`, `<` and `>` markers.
+- Read the `=`, `!`, `<`, and `>` markers.
 - Show a reviewer what changed in a force-pushed branch.
 
 ## CONCEPT
 
 **Pull with rebase.** In one sentence: `git pull --rebase` 🟡 CAUTION is `git fetch` followed by a rebase of your unpushed commits onto the fetched upstream branch.
 
-**[ANIMATION]** remotes: [your clone] 8afc6bd-139c7e6 main; 8afc6bd origin/main; HEAD=main || [origin] 8afc6bd-eb7188f main; HEAD=none => + 8afc6bd-eb7188f origin/main; name:fetch; say:First_half:_the_fetch_moves_only_origin/main || => [your clone] 8afc6bd-eb7188f-ad181ff main; eb7188f origin/main; 8afc6bd-139c7e6; reflog:139c7e6; HEAD=main; name:rebase; say:Second_half:_your_commit_is_copied_onto_origin/main || => + ad181ff origin/main; name:push; cmd:git_push; say:A_fast-forward_for_the_server:_no_force || [origin] 8afc6bd-eb7188f-ad181ff main; HEAD=none title=git_pull_--rebase id=pull
+**[ANIMATION]** remotes: [your clone] 8afc6bd-139c7e6 main; 8afc6bd origin/main; HEAD=main || [origin] 8afc6bd-eb7188f main; HEAD=none => + 8afc6bd-eb7188f origin/main; name:fetch; say:First_half:_the_fetch_moves_only_origin/main || => [your clone] 8afc6bd-eb7188f-ad181ff main; eb7188f origin/main; 8afc6bd-139c7e6; reflog:139c7e6; HEAD=main; name:rebase; say:Second_half:_your_commit_is_copied_onto_origin/main || => + ad181ff origin/main; name:push; cmd:git_push; say:A_fast-forward_for_the_server:_no_force || [origin] 8afc6bd-eb7188f-ad181ff main; HEAD=none title=git_pull_--rebase id=pull at_state_1=12 at_fetch=40
 
 **[ANIMATION]** step: fetch
 
@@ -76,7 +76,7 @@ One more fact, which you met from the receiving end in the video on forced pushe
 
 **Range-diff.** In one sentence: `git range-diff` 🟢 SAFE compares two versions of a series of commits: it pairs each old commit with its new counterpart and shows how the two patches differ. A patch is the change one commit makes, written as a diff.
 
-**[ANIMATION]** graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-bad8965-1388956 ORIG_HEAD; 439e4c6-1c9f69a-54541c3-2468748 feat/rerank; HEAD=feat/rerank; title:Old_series_and_new_series => + same:5ee19f0; same:1c9f69a; mark:!:bad8965; mark:!:54541c3; same:1388956; same:2468748; name:marks; say:Old_patch:_TOP__K_5_to_20._New_patch:_TOP__K_8_to_12; title:Same_titles,_one_changed_patch id=series
+**[ANIMATION]** graph: 8afc6bd-439e4c6 main; ^8afc6bd-5ee19f0-bad8965-1388956 ORIG_HEAD; 439e4c6-1c9f69a-54541c3-2468748 feat/rerank; HEAD=feat/rerank; title:Old_series_and_new_series => + same:5ee19f0; same:1c9f69a; mark:!:bad8965; mark:!:54541c3; same:1388956; same:2468748; name:marks; say:Old_patch:_TOP__K_5_to_20._New_patch:_TOP__K_8_to_12; title:Same_titles,_one_changed_patch id=series dx=240
 
 **[ANIMATION]** step: state-1
 
@@ -327,7 +327,7 @@ $ git range-diff origin/main "origin/feat/ingest@{1}" origin/feat/ingest
 
 Two equals lines: nothing changed except the base, and the earlier review still stands.
 
-**[ANIMATION]** graph: 8afc6bd-589d18b origin/main; 589d18b-5859371-321b338 origin/feat/ingest; 8afc6bd-1279adf-dc5df93 special:origin/feat/ingest@{1}; HEAD=none; reflog:1279adf,dc5df93; title:In_the_reviewer's_clone,_after_the_fetch => + same:1279adf; same:5859371; same:dc5df93; same:321b338; name:marks; say:Two_equals_lines:_only_the_base_changed id=review
+**[ANIMATION]** graph: 8afc6bd-589d18b origin/main; 589d18b-5859371-321b338 origin/feat/ingest; ^8afc6bd-1279adf-dc5df93 special:origin/feat/ingest@{1}; HEAD=none; reflog:1279adf,dc5df93; title:In_the_reviewer's_clone,_after_the_fetch => + same:1279adf; same:5859371; same:dc5df93; same:321b338; name:marks; say:Two_equals_lines:_only_the_base_changed id=review dx=240
 
 In this case "rebased, no functional change" was true, and now it's evidence instead of a claim.
 
@@ -381,7 +381,7 @@ Five mistakes to watch for.
 1. **Reviewing a force-pushed branch by its commit titles.** Root cause: a rebase keeps messages by default, so a patch that changed during conflict resolution carries the same title.
 2. **Using `git diff <old tip> <new tip>` to see what a rebase changed.** Root cause: that compares two snapshots, which also differ by everything that arrived from the new base.
 3. **Believing the reviewer needs the author's `ORIG_HEAD`.** Root cause: the reviewer's fetch recorded the previous tip in the reflog of their own remote-tracking branch, as `@{1}`.
-4. **Reading `<` and `>` under one subject as a lost and a new commit.** Root cause: pairing is a similarity heuristic; a small patch with changed context may not be paired until the creation factor is raised.
+4. **Reading `<`, then `>`, under one subject as a lost and a new commit.** Root cause: pairing is a similarity heuristic; a small patch with changed context may not be paired until the creation factor is raised.
 5. **Treating `git pull --rebase` as free of risk on any branch.** Root cause: it rewrites your unpushed commits, which is harmless only because nobody else has them; on a branch whose upstream was rewritten, its fork-point logic can drop commits.
 
 ## PRODUCTION EXAMPLE

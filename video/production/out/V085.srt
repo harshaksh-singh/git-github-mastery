@@ -1,0 +1,777 @@
+1
+00:00:04,500 --> 00:00:09,610
+She had spent twenty minutes with git add
+-p, staging exactly the hunks, the blocks
+
+2
+00:00:09,650 --> 00:00:14,761
+of changed lines, that belonged in the next
+commit, and leaving the debugging lines
+
+3
+00:00:14,801 --> 00:00:19,849
+unstaged. Then an interruption, git stash,
+which parks uncommitted work and resets
+
+4
+00:00:19,889 --> 00:00:23,076
+the files. A branch switch,
+and later git stash pop.
+
+5
+00:00:23,116 --> 00:00:28,102
+Every change came back as unstaged. The
+separation she had built is gone from git
+
+6
+00:00:28,142 --> 00:00:28,536
+status.
+
+7
+00:00:28,876 --> 00:00:33,966
+The short answer for the CTO is: nothing
+was lost. A stash entry is a commit with
+
+8
+00:00:34,006 --> 00:00:39,286
+two or three parents, and the second parent
+holds the index, the staging area, as it
+
+9
+00:00:39,326 --> 00:00:44,225
+was. A plain git stash pop ignores it.
+And pop printed the ID of the commit it
+
+10
+00:00:44,265 --> 00:00:44,732
+dropped.
+
+11
+00:00:45,072 --> 00:00:49,397
+To give that answer with confidence you
+have to know what a stash entry is made of.
+
+12
+00:00:51,237 --> 00:00:54,956
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:54,996 --> 00:00:59,885
+You learned the stash commands in the undo
+module: push, list, apply, pop, drop.
+
+14
+00:00:59,925 --> 00:01:04,999
+In the recovery module you rescued a dropped
+entry by treating it as an unreachable
+
+15
+00:01:05,039 --> 00:01:07,217
+merge commit. Today you open one up.
+
+16
+00:01:07,557 --> 00:01:12,743
+This chapter has a theme that will come
+back in every video of this module.
+
+17
+00:01:12,783 --> 00:01:18,597
+A repository holds content that is versioned
+and travels with clone, fetch and push.
+
+18
+00:01:18,637 --> 00:01:24,172
+And it holds machinery that is local and
+never travels: .git/config, .git/hooks,
+
+19
+00:01:24,212 --> 00:01:29,119
+.git/rr-cache, refs/stash. The stash
+is on the local side of that line.
+
+20
+00:01:30,959 --> 00:01:34,676
+draw the commits of a stash entry made
+with and without untracked files;
+
+21
+00:01:35,016 --> 00:01:38,993
+say which tree holds the staged
+state and which the unstaged state;
+
+22
+00:01:39,333 --> 00:01:42,166
+show that the stash list
+is the reflog of one ref;
+
+23
+00:01:42,506 --> 00:01:45,874
+create a stash commit without
+touching the list, and store it;
+
+24
+00:01:46,214 --> 00:01:48,064
+recover a dropped entry by ID.
+
+25
+00:01:49,904 --> 00:01:54,533
+In one sentence: a stash entry is a
+commit W that records your tracked files.
+
+26
+00:01:54,573 --> 00:01:59,383
+Its first parent is H, the commit that
+was HEAD. Its second parent is a commit I
+
+27
+00:01:59,423 --> 00:02:04,476
+that records the index. And when you stash
+untracked files, a parentless commit U is
+
+28
+00:02:04,516 --> 00:02:08,235
+its third. A parent is the commit
+another commit was built on.
+
+29
+00:02:08,575 --> 00:02:13,853
+refs/stash points at the newest W, and the
+stash list is the reflog of that ref: the
+
+30
+00:02:13,893 --> 00:02:16,196
+local list of values the ref has had.
+
+31
+00:02:16,536 --> 00:02:21,482
+Precisely, in the manual's words: W is "a
+commit whose tree records the state of the
+
+32
+00:02:21,522 --> 00:02:26,230
+working directory", its first parent is
+the commit at HEAD, and "the tree of the
+
+33
+00:02:26,270 --> 00:02:30,978
+second parent records the state of the
+index". The manual doesn't name the third
+
+34
+00:02:31,018 --> 00:02:35,252
+parent. git stash show --include-untracked
+and --only-untracked read it.
+
+35
+00:02:35,592 --> 00:02:37,318
+Three consequences of the shape.
+
+36
+00:02:37,658 --> 00:02:43,576
+git stash show -p is the diff from H to W.
+The staged and the unstaged part appear
+
+37
+00:02:43,616 --> 00:02:44,593
+as one change.
+
+38
+00:02:44,933 --> 00:02:49,006
+git stash apply merges W into
+your files with H as the base.
+
+39
+00:02:49,046 --> 00:02:54,491
+Only --index also reads I. That's the
+whole explanation of the hook: a plain pop
+
+40
+00:02:54,531 --> 00:02:57,987
+restores the files and
+doesn't restore the staging.
+
+41
+00:02:58,327 --> 00:03:04,133
+Revision syntax works on an entry.
+stash@{1}^2 is the index commit of the second
+
+42
+00:03:04,173 --> 00:03:08,152
+entry. stash@{0}:config.yaml
+is one file of the newest.
+
+43
+00:03:08,192 --> 00:03:11,732
+And stash@{n} is reflog
+syntax. There is one ref.
+
+44
+00:03:12,072 --> 00:03:17,694
+Inside the dot git folder: new objects
+for W, I and, with -u or -a, U.
+
+45
+00:03:17,734 --> 00:03:23,195
+The ref refs/stash. And the log
+logs/refs/stash, one line per entry.
+
+46
+00:03:23,535 --> 00:03:26,884
+Two plumbing subcommands
+split push into its halves.
+
+47
+00:03:26,924 --> 00:03:30,730
+git stash create builds the
+commits and prints the ID of W.
+
+48
+00:03:30,770 --> 00:03:36,075
+No ref is written and the files stay as
+they are. git stash store puts an existing
+
+49
+00:03:36,115 --> 00:03:41,355
+stash commit on the list. Scripts use them,
+and so does Git: the autostash of git
+
+50
+00:03:41,395 --> 00:03:45,722
+rebase --autostash is a stash commit
+that is never put on the list.
+
+51
+00:03:46,062 --> 00:03:50,334
+What drop does: it deletes one line
+from the log and adjusts the ref.
+
+52
+00:03:50,374 --> 00:03:55,146
+No object is deleted. The commit is
+unreachable until unreachable objects are
+
+53
+00:03:55,186 --> 00:03:56,959
+pruned, two weeks by default.
+
+54
+00:03:57,299 --> 00:04:02,627
+And travel: nothing fetches or pushes
+refs/stash. Since Git 2.51, git stash export
+
+55
+00:04:02,667 --> 00:04:07,799
+writes all entries into one chain of
+ordinary commits that can be pushed like a
+
+56
+00:04:07,839 --> 00:04:12,121
+branch, and git stash import turns
+such a chain back into entries.
+
+57
+00:04:12,461 --> 00:04:17,527
+When not to stash: for anything long-lived.
+You saw in the recovery module that only
+
+58
+00:04:17,567 --> 00:04:21,843
+the newest entry is held by a ref.
+Long-lived work belongs on a branch.
+
+59
+00:04:23,683 --> 00:04:27,735
+The textbook's analogy: a labelled
+envelope with two or three sheets.
+
+60
+00:04:27,775 --> 00:04:32,539
+A photocopy of the bench, which is the
+files. A photocopy of the outbox, which is
+
+61
+00:04:32,579 --> 00:04:36,987
+the index. And the loose notes that
+were lying around, the untracked files.
+
+62
+00:04:37,327 --> 00:04:41,534
+The analogy breaks in one place:
+there is no drawer for the envelopes.
+
+63
+00:04:41,574 --> 00:04:46,267
+They are ordinary commits in the object
+database, held by one ref and its log.
+
+64
+00:04:46,307 --> 00:04:51,365
+That's why a dropped stash can be found
+again, and also why an expired log loses the
+
+65
+00:04:51,405 --> 00:04:51,668
+list.
+
+66
+00:04:53,508 --> 00:04:58,736
+Try it now, on paper, from memory. Draw H,
+I, W and U with their parent edges, and
+
+67
+00:04:58,776 --> 00:05:03,683
+put refs/stash on the right commit. Pause
+me for thirty seconds and draw your
+
+68
+00:05:03,723 --> 00:05:04,133
+answer.
+
+69
+00:05:08,973 --> 00:05:14,000
+Compare with yours. Without -u, erase U
+and its edge: W then has two parents.
+
+70
+00:05:14,040 --> 00:05:19,528
+In both forms, the difference between H and
+I is what was staged, and the difference
+
+71
+00:05:19,568 --> 00:05:21,634
+between I and W is what was not.
+
+72
+00:05:25,974 --> 00:05:31,081
+The entry exists. Predict the shape of the
+graph: how many parents does the stash
+
+73
+00:05:31,121 --> 00:05:33,622
+commit have? Say it out loud. I'll wait.
+
+74
+00:05:38,462 --> 00:05:44,208
+Three. 962e38f is W. In its brackets:
+8f8672d, the commit you were on.
+
+75
+00:05:44,248 --> 00:05:50,324
+Then 7ee160e, which is I, a child of
+that commit. And 8fb87d5, which is U.
+
+76
+00:05:50,364 --> 00:05:56,936
+Look at U's own brackets: empty. It has
+no parent. The raw commit shows the same
+
+77
+00:05:56,976 --> 00:05:57,432
+thing.
+
+78
+00:05:57,772 --> 00:06:02,043
+An ordinary commit object with
+three parent lines. Now the trees.
+
+79
+00:06:02,083 --> 00:06:04,564
+Compare the blob IDs column by column.
+
+80
+00:06:11,704 --> 00:06:16,784
+score.py changes between H and
+I: 2c9e3f4 becomes 6ba285d.
+
+81
+00:06:16,824 --> 00:06:23,671
+That's the staged change. config.yaml
+changes between I and W: 464dad1 becomes
+
+82
+00:06:23,711 --> 00:06:29,498
+b571eab. That's the unstaged one.
+U holds only the untracked file.
+
+83
+00:06:29,538 --> 00:06:35,855
+No tree mixes the three kinds of work,
+so they can be taken apart again.
+
+84
+00:06:39,195 --> 00:06:44,071
+git stash show -p prints both tracked
+changes together, because it compares H with
+
+85
+00:06:44,111 --> 00:06:48,986
+W. The two git diff commands at the end of
+the snippet separate them, because each
+
+86
+00:06:49,026 --> 00:06:51,084
+compares the right pair of commits.
+
+87
+00:06:51,424 --> 00:06:54,694
+Now the ref and its log.
+A second entry is pushed.
+
+88
+00:06:55,034 --> 00:07:00,036
+The ref holds the ID of the newest entry.
+The log has one line per entry, oldest
+
+89
+00:07:00,076 --> 00:07:05,141
+first, in the reflog format you know. git
+stash list prints the message column of
+
+90
+00:07:05,181 --> 00:07:05,772
+this file.
+
+91
+00:07:06,112 --> 00:07:11,643
+Build an entry without touching anything.
+🟢 SAFE: git stash create, then store.
+
+92
+00:07:11,983 --> 00:07:17,763
+create printed the ID of W, 4bd62aa. The
+list didn't change and the file is still
+
+93
+00:07:17,803 --> 00:07:21,859
+modified. store appended a
+reflog line with your message.
+
+94
+00:07:21,899 --> 00:07:26,457
+The commit's own subject is still
+"On main: wip: threshold 0.8".
+
+95
+00:07:26,497 --> 00:07:30,624
+The list shows the reflog
+message, not the commit subject.
+
+96
+00:07:30,964 --> 00:07:35,764
+Quick quiz, two options. After the
+drop, the commit object is deleted.
+
+97
+00:07:35,804 --> 00:07:38,252
+Or it still exists. Say it out loud.
+
+98
+00:07:43,092 --> 00:07:46,540
+It still exists. "Dropped
+stash@{1}" and the full ID.
+
+99
+00:07:46,580 --> 00:07:51,936
+The line is gone from the log, and the next
+line was rewritten to follow the entry
+
+100
+00:07:51,976 --> 00:07:57,332
+before it. git cat-file -t still says
+commit. That ID, with git stash store or git
+
+101
+00:07:57,372 --> 00:07:59,241
+stash apply, is the recovery.
+
+102
+00:07:59,581 --> 00:08:01,281
+Last, stashes that travel.
+
+103
+00:08:01,621 --> 00:08:06,573
+Each "git stash:" commit has two parents:
+the previous commit of the chain and one
+
+104
+00:08:06,613 --> 00:08:11,321
+stash commit. After a push of that ref
+and a fetch elsewhere, git stash import
+
+105
+00:08:11,361 --> 00:08:12,417
+rebuilds the list.
+
+106
+00:08:12,757 --> 00:08:17,862
+Imported entries show their commit subjects,
+because messages such as "stored by
+
+107
+00:08:17,902 --> 00:08:22,042
+hand" exist only in the reflog of
+the repository that wrote them.
+
+108
+00:08:23,882 --> 00:08:28,021
+Five mistakes to watch for. Almost
+everyone makes the first one.
+
+109
+00:08:28,361 --> 00:08:32,086
+Expecting git stash pop to
+restore what was staged.
+
+110
+00:08:32,126 --> 00:08:38,286
+Root cause: apply and pop merge W with H as
+the base; only --index also reads I, the
+
+111
+00:08:38,326 --> 00:08:39,320
+second parent.
+
+112
+00:08:39,660 --> 00:08:43,219
+Reading git stash show -p
+as "what I had unstaged".
+
+113
+00:08:43,259 --> 00:08:49,005
+Root cause: it is the diff from H to W, so
+the staged and unstaged parts appear as
+
+114
+00:08:49,045 --> 00:08:49,782
+one change.
+
+115
+00:08:50,122 --> 00:08:54,996
+Treating a dropped stash as deleted. Root
+cause: drop removes a reflog line; the
+
+116
+00:08:55,036 --> 00:08:58,928
+commits stay in the object database,
+unreachable, until a prune.
+
+117
+00:08:59,268 --> 00:09:04,705
+Expecting stashes on another machine after
+a push. Root cause: nothing fetches or
+
+118
+00:09:04,745 --> 00:09:09,776
+pushes refs/stash; export and import
+exist since Git 2.51 for that purpose.
+
+119
+00:09:10,116 --> 00:09:13,151
+Searching for a stash by the
+message shown in the list.
+
+120
+00:09:13,191 --> 00:09:17,736
+Root cause: the list prints the reflog
+message, which can differ from the commit's
+
+121
+00:09:17,776 --> 00:09:18,184
+subject.
+
+122
+00:09:20,024 --> 00:09:24,412
+Now, out of the lab, and back to the
+engineer whose staging disappeared.
+
+123
+00:09:24,452 --> 00:09:29,516
+Her terminal still shows the line that pop
+printed: "Dropped refs/stash@{0}" and an
+
+124
+00:09:29,556 --> 00:09:34,559
+ID. The lead asks her to change nothing
+else and reads the dropped commit's second
+
+125
+00:09:34,599 --> 00:09:37,695
+parent: that tree is the
+index as she had built it.
+
+126
+00:09:37,735 --> 00:09:42,615
+The staged hunks are restored from it,
+and the debugging lines stay unstaged, as
+
+127
+00:09:42,655 --> 00:09:43,230
+they were.
+
+128
+00:09:43,570 --> 00:09:47,231
+The team's note afterwards is
+two lines from the textbook.
+
+129
+00:09:47,271 --> 00:09:51,697
+When the staging mattered, bring work
+back with git stash pop --index.
+
+130
+00:09:51,737 --> 00:09:57,057
+And when you need one file from an entry,
+read it with git show on the entry and the
+
+131
+00:09:57,097 --> 00:10:01,650
+path, or git restore --source from
+the entry, and leave the entry alone.
+
+132
+00:10:03,490 --> 00:10:07,449
+Your turn. Do Lab 14.6,
+"Stash anatomy", in
+
+133
+00:10:07,489 --> 00:10:11,354
+lab-manual/m14-hooks-rerere-attributes.md.
+
+134
+00:10:11,694 --> 00:10:16,240
+Before you look at the graph of your
+entry, draw it: how many commits, which
+
+135
+00:10:16,280 --> 00:10:21,128
+parents, which one has none. Before each
+git ls-tree, predict which blob IDs will
+
+136
+00:10:21,168 --> 00:10:25,956
+differ from the previous listing. In the
+recovery part, predict what a plain pop
+
+137
+00:10:25,996 --> 00:10:28,008
+will restore and what it will not.
+
+138
+00:10:28,348 --> 00:10:34,660
+The challenge is Exercise 14.4, Level 2,
+draw the graph, "The shape of a stash
+
+139
+00:10:34,700 --> 00:10:39,139
+entry", in
+exercises/m11-m15-investigation-recovery.md.
+
+140
+00:10:40,979 --> 00:10:44,453
+Pause, draw it on paper, and
+answer out loud. I'll wait.
+
+141
+00:10:49,293 --> 00:10:54,125
+A strong answer draws four commits with
+the right parent edges and says which one
+
+142
+00:10:54,165 --> 00:10:59,117
+has no parent and why that is unusual. It
+locates each kind of work as a difference
+
+143
+00:10:59,157 --> 00:11:04,048
+between two named trees, not as "in the
+stash". It states the pair of commits that
+
+144
+00:11:04,088 --> 00:11:08,739
+show -p compares, and from that explains
+a behavior the interviewer didn't ask
+
+145
+00:11:08,779 --> 00:11:13,791
+about, such as what a plain pop restores.
+It also says what holds the entry: one ref
+
+146
+00:11:13,831 --> 00:11:14,393
+and a log.
+
+147
+00:11:16,233 --> 00:11:19,160
+Let's land this. You
+should now be able to say:
+
+148
+00:11:19,500 --> 00:11:24,163
+A stash entry is a merge commit W with
+parents H and I, and a third parentless
+
+149
+00:11:24,203 --> 00:11:26,756
+parent U when untracked
+files are included.
+
+150
+00:11:27,096 --> 00:11:31,597
+The staged change is the difference between
+H and I; the unstaged change is the
+
+151
+00:11:31,637 --> 00:11:33,149
+difference between I and W.
+
+152
+00:11:33,489 --> 00:11:38,070
+refs/stash names the newest entry and
+the stash list is that ref's reflog.
+
+153
+00:11:38,410 --> 00:11:43,339
+git stash create builds an entry without
+touching anything, and git stash store
+
+154
+00:11:43,379 --> 00:11:44,723
+lists an existing one.
+
+155
+00:11:45,063 --> 00:11:50,060
+A dropped entry is still a commit; with
+its ID I can store or apply it until it is
+
+156
+00:11:50,100 --> 00:11:50,490
+pruned.
+
+157
+00:11:52,330 --> 00:11:55,622
+Read section 14C.2 of Chapter 14C.
+
+158
+00:11:55,962 --> 00:11:59,934
+Today you opened a stash entry and
+found ordinary commits inside.
+
+159
+00:11:59,974 --> 00:12:04,810
+Before the next video, stash something
+in the lab and draw its graph before you
+
+160
+00:12:04,850 --> 00:12:09,007
+print it. Next time: rerere, which
+lets you resolve a conflict once.
+
+161
+00:12:09,047 --> 00:12:12,217
+Until then, look at the
+state first and type second.
+
+162
+00:12:12,257 --> 00:12:13,698
+See you in the next one.

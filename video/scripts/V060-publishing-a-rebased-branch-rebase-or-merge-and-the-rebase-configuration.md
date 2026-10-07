@@ -141,7 +141,7 @@ The second is an edited account, and edited accounts are fine as long as every p
 
 ## DIAGRAM
 
-**[ANIMATION]** graph: 8afc6bd-589d18b-82f1fbb main; ^8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 82f1fbb-9d34396 demo/merged; bd62876-9d34396; 82f1fbb-bbbc3e4-60fc46f-668e89e demo/rebased; HEAD=none; tree:9d34396:273096f; tree:668e89e:273096f => + tree:5ee19f0:bff5bbd; tree:af65a92:ece63c5; tree:bd62876:96ba5b8; tree:bbbc3e4:8cc3ece; tree:60fc46f:9b070ab; mark:never_run:bbbc3e4,60fc46f; name:trees dy=200 title=The_same_work,_integrated_twice id=both
+**[ANIMATION]** graph: 8afc6bd-589d18b-82f1fbb main; ^8afc6bd-5ee19f0-af65a92-bd62876 feat/rerank; 82f1fbb-9d34396 demo/merged; bd62876-9d34396; 82f1fbb-bbbc3e4-60fc46f-668e89e demo/rebased; HEAD=none; tree:9d34396:273096f; tree:668e89e:273096f => + tree:5ee19f0:bff5bbd; tree:af65a92:ece63c5; tree:bd62876:96ba5b8; tree:bbbc3e4:8cc3ece; tree:60fc46f:9b070ab; mark:never_run:bbbc3e4,60fc46f; name:trees dy=200 dx=300 title=The_same_work,_integrated_twice id=both
 
 **[DIAGRAM]** New diagram. The same diverged pair of branches, integrated twice, one above the other. Write the tree ID of the final commit under both results.
 
@@ -403,7 +403,7 @@ c60bc13f871297055fb1d2e19bd6a39f7a4f1f62
 ```
 <!-- /snippet -->
 
-The reflog of her `origin/feat/ingest` holds `c60bc13`, "update by push", below the forced update. The fork point is that commit, her own.
+The reflog of her `origin/feat/ingest` holds `c60bc13`, "update by push", below the forced update.
 
 **[ON SCREEN]** The root-cause box of section 9.17.
 
@@ -427,13 +427,13 @@ Prevention        : No plain --force on a branch that anyone else pushes to. The
                     --force-if-includes refused in exactly this situation.
 ```
 
-So where is it?
+The fork point is that commit, her own.
 
-**[ANIMATION]** graph: 8afc6bd-589d18b-0fbfd81-8aca274 feat/ingest origin/feat/ingest; HEAD=feat/ingest; title:Asha's_clone => + 8afc6bd-1279adf-dc5df93-c60bc13 special:feat/ingest@{1}; reflog:1279adf,dc5df93,c60bc13; name:found; say:In_the_reflog_of_her_branch,_and_only_there => + 8aca274-82659ee feat/ingest origin/feat/ingest; drop:feat/ingest@{1}; name:back; say:Cherry-picked_as_82659ee,_then_pushed id=found
+**[ANIMATION]** graph: 8afc6bd-589d18b-0fbfd81-8aca274 feat/ingest origin/feat/ingest; HEAD=feat/ingest; title:Asha's_clone => + 8afc6bd-1279adf-dc5df93-c60bc13 special:feat/ingest@{1}; reflog:1279adf,dc5df93,c60bc13; name:found; say:In_the_reflog_of_her_branch,_and_only_there => + 8aca274-82659ee feat/ingest origin/feat/ingest; drop:feat/ingest@{1}; name:back; say:Cherry-picked_as_82659ee,_then_pushed id=found at_state_1=2 at_found=25
 
 **[ANIMATION]** step: found
 
-In the reflog of her branch, and only there. Was that your guess?
+So where is it? In the reflog of her branch, and only there. Was that your guess?
 
 <!-- snippet: ch09/force-damage/06-asha-recovers -->
 ```text

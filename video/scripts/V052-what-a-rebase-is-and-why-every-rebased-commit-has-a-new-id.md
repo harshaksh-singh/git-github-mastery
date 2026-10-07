@@ -453,6 +453,8 @@ The copies are new objects: parent, committer and usually tree differ, so the ID
 
 **[ANIMATION]** step: ba.state-2
 
+**[ANIMATION]** say: The_originals:_still_reachable_through_ORIG__HEAD_and_the_reflog
+
 The originals are still in the object database, reachable through `ORIG_HEAD` and the reflog.
 
 **[ANIMATION]** step: hand.resets

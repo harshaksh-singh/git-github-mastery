@@ -1,0 +1,1137 @@
+1
+00:00:04,500 --> 00:00:08,263
+That's the second of the four
+questions that open Chapter 14A.
+
+2
+00:00:08,303 --> 00:00:13,354
+Look at what you're given. Not a commit,
+one of the saved snapshots of the project.
+
+3
+00:00:13,394 --> 00:00:17,954
+Not a file name you can be sure of,
+because the file may have been renamed.
+
+4
+00:00:17,994 --> 00:00:22,922
+Not a line number, because the line is
+gone. You have a string that used to be in
+
+5
+00:00:22,962 --> 00:00:24,701
+the code and isn't there now.
+
+6
+00:00:25,041 --> 00:00:29,746
+You can't open what is missing. You can't
+blame it, which means asking who last
+
+7
+00:00:29,786 --> 00:00:34,492
+changed each line. And you can't grep for
+it in the working tree, the files you
+
+8
+00:00:34,532 --> 00:00:39,358
+edit. The history still has it. This video
+gives you four ways to ask the history
+
+9
+00:00:39,398 --> 00:00:44,104
+about content: follow a file through its
+renames, search for the commit where a
+
+10
+00:00:44,144 --> 00:00:48,970
+string appeared or vanished, trace a
+function line by line, and bring back a file
+
+11
+00:00:49,010 --> 00:00:52,093
+that was deleted. Keep that
+vanished string in mind.
+
+12
+00:00:52,133 --> 00:00:52,934
+It comes back.
+
+13
+00:00:54,774 --> 00:00:58,269
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:00:58,309 --> 00:01:02,789
+In the previous two videos your queries
+were about commits as members of sets.
+
+15
+00:01:02,829 --> 00:01:05,802
+Today the query is about
+content inside the commits.
+
+16
+00:01:05,842 --> 00:01:10,553
+All four tools are still git log. They're
+stage-one and stage-two options from the
+
+17
+00:01:10,593 --> 00:01:15,246
+model you already have: stage one decides
+which commits are walked, and stage two
+
+18
+00:01:15,286 --> 00:01:16,637
+which of them are shown.
+
+19
+00:01:16,977 --> 00:01:21,827
+Hold on to the fact that carries the
+chapter. History stores snapshots and parent
+
+20
+00:01:21,867 --> 00:01:26,597
+links, nothing else. Git records no renames
+and no "this line came from there".
+
+21
+00:01:26,637 --> 00:01:31,607
+Every answer you get today is computed by
+comparing snapshots, with heuristics that
+
+22
+00:01:31,647 --> 00:01:36,558
+have thresholds and blind spots. For each
+tool, I'll tell you what it computes, so
+
+23
+00:01:36,598 --> 00:01:40,603
+that you know when its answer is a
+fact and when it's an inference.
+
+24
+00:01:40,943 --> 00:01:45,801
+The repository is scorekit again.
+One detail matters today: the file
+
+25
+00:01:45,841 --> 00:01:51,779
+scorekit/metrics.py began life as scorer.py
+at the top level and was renamed twice.
+
+26
+00:01:53,619 --> 00:01:57,920
+follow one file across a rename
+and state the limits of --follow;
+
+27
+00:01:58,260 --> 00:02:03,423
+choose between -S and -G, and construct
+a commit that only one of them reports;
+
+28
+00:02:03,763 --> 00:02:07,870
+trace the history of a function
+or a line range with git log -L;
+
+29
+00:02:08,210 --> 00:02:12,186
+find the commit that deleted a file
+and restore the file from its parent;
+
+30
+00:02:12,526 --> 00:02:15,429
+find a file that exists
+only on another branch.
+
+31
+00:02:17,269 --> 00:02:20,944
+Following a file. git log --
+<path> matches a path, not a file.
+
+32
+00:02:20,984 --> 00:02:25,662
+When the file had another name, the history
+stops at the commit that gave it the
+
+33
+00:02:25,702 --> 00:02:26,429
+current name.
+
+34
+00:02:26,769 --> 00:02:31,560
+--follow runs rename detection at each
+step and continues under the old name.
+
+35
+00:02:31,900 --> 00:02:35,941
+Its limits are all consequences
+of how rename detection works.
+
+36
+00:02:35,981 --> 00:02:41,076
+First, one path only: the manual says
+--follow "works only for a single file".
+
+37
+00:02:41,116 --> 00:02:45,947
+Second, the heuristic can miss: a rename
+combined with a rewrite below the
+
+38
+00:02:45,987 --> 00:02:51,082
+similarity threshold ends the trail.
+Third, it's not git log with full history
+
+39
+00:02:51,122 --> 00:02:51,740
+semantics.
+
+40
+00:02:52,080 --> 00:02:57,135
+The manual says of the log.follow setting
+that it "does not work well on non-linear
+
+41
+00:02:57,175 --> 00:03:02,290
+history". The release notes of Git 2.56
+record an improvement for histories in which
+
+42
+00:03:02,330 --> 00:03:06,464
+the tracked path is renamed differently
+in several lines of history.
+
+43
+00:03:06,504 --> 00:03:11,558
+That version was not run here. If you know
+the old names, plain path limiting takes
+
+44
+00:03:11,598 --> 00:03:13,829
+several paths and needs no heuristic.
+
+45
+00:03:14,169 --> 00:03:18,903
+The pickaxe. In one sentence: -S with a
+string finds commits that changed how many
+
+46
+00:03:18,943 --> 00:03:23,736
+times that string occurs in a file, and -G
+with a regular expression, a pattern for
+
+47
+00:03:23,776 --> 00:03:28,510
+matching text, finds commits whose patch
+has an added or removed line matching the
+
+48
+00:03:28,550 --> 00:03:31,945
+pattern. The patch is the
+commit's diff against its parent.
+
+49
+00:03:32,285 --> 00:03:37,232
+Precisely, both are stage-two filters.
+The documentation says that -S "detects
+
+50
+00:03:37,272 --> 00:03:42,474
+filepairs whose preimage and postimage have
+different number of occurrences of the
+
+51
+00:03:42,514 --> 00:03:47,204
+specified block of text. By definition,
+it will not detect in-file moves."
+
+52
+00:03:47,244 --> 00:03:52,319
+And -G "detects filepairs whose textual
+diff has an added or a deleted line that
+
+53
+00:03:52,359 --> 00:03:57,689
+matches the given regular expression." The
+argument of -S is a literal string unless
+
+54
+00:03:57,729 --> 00:04:02,547
+you give --pickaxe-regex. The argument
+of -G is always a regular expression.
+
+55
+00:04:02,887 --> 00:04:07,345
+When to use which: -S for "when was
+this introduced, when was it removed".
+
+56
+00:04:07,385 --> 00:04:10,688
+-G for "which commits touched
+lines that mention this".
+
+57
+00:04:10,728 --> 00:04:14,457
+-S is cheap. -G costs more,
+because every candidate is diffed.
+
+58
+00:04:14,797 --> 00:04:19,949
+Line history. git log -L follows a range
+of lines backwards and prints, for each
+
+59
+00:04:19,989 --> 00:04:24,752
+commit that touched those lines, the
+part of its patch that concerns them.
+
+60
+00:04:24,792 --> 00:04:30,009
+The range is start, end, colon, file. Or
+colon, function name, colon, file, for a
+
+61
+00:04:30,049 --> 00:04:30,983
+whole function.
+
+62
+00:04:31,323 --> 00:04:36,431
+How the range is found matters. A number
+is a line number in the starting revision,
+
+63
+00:04:36,471 --> 00:04:41,207
+HEAD, your current commit, unless you
+name another, not in your working tree.
+
+64
+00:04:41,247 --> 00:04:45,920
+The function name is a regular expression
+matched against the lines that Git
+
+65
+00:04:45,960 --> 00:04:51,006
+considers function headers, the same lines
+it prints after the @@ in hunk headers.
+
+66
+00:04:51,346 --> 00:04:55,738
+A hunk is one block of changed lines in
+a diff. The range runs to the next such
+
+67
+00:04:55,778 --> 00:05:00,169
+line. For languages where the default
+guess is poor, a diff attribute selects a
+
+68
+00:05:00,209 --> 00:05:04,376
+language-specific pattern. You meet
+that attribute in the attributes video.
+
+69
+00:05:04,716 --> 00:05:09,807
+A deleted file. A file that isn't in the
+working tree can't be opened, blamed or
+
+70
+00:05:09,847 --> 00:05:14,296
+grepped. Its history is still there.
+You find the deleting commit with
+
+71
+00:05:14,336 --> 00:05:19,234
+--diff-filter=D. On screen, today's
+deleting commit, d9d075d, and its parent.
+
+72
+00:05:19,274 --> 00:05:24,492
+The content lives in the parent of the
+deleting commit, not in the deleting commit
+
+73
+00:05:24,532 --> 00:05:24,941
+itself.
+
+74
+00:05:26,781 --> 00:05:31,641
+Now a picture to keep. The textbook gives
+the pickaxe an analogy from a warehouse.
+
+75
+00:05:31,981 --> 00:05:36,784
+-S is an inventory count. It compares
+the number of items before and after and
+
+76
+00:05:36,824 --> 00:05:40,013
+reports a difference. -G is
+a goods-movement ledger.
+
+77
+00:05:40,053 --> 00:05:45,229
+It reports every delivery and every removal,
+including the day one crate left and an
+
+78
+00:05:45,269 --> 00:05:46,719
+identical crate arrived.
+
+79
+00:05:47,059 --> 00:05:53,087
+Try it now, on paper. Thirty seconds: the
+pass mark changes from 0.7 to 0.75, and
+
+80
+00:05:53,127 --> 00:05:59,305
+the name PASS_MARK stays. Write down what
+the count sees, and what the ledger sees.
+
+81
+00:05:59,345 --> 00:06:00,878
+Then say your answer.
+
+82
+00:06:05,718 --> 00:06:11,056
+Here's the answer. The name PASS_MARK is
+on the shelf once before and once after.
+
+83
+00:06:11,096 --> 00:06:13,247
+The inventory count sees nothing.
+
+84
+00:06:13,587 --> 00:06:16,050
+The ledger sees a line
+removed and a line added.
+
+85
+00:06:16,390 --> 00:06:20,907
+The analogy breaks at files. Both
+options look at one file at a time.
+
+86
+00:06:20,947 --> 00:06:26,389
+A string that moves from one file to another
+is reported by -S as well, because one
+
+87
+00:06:26,429 --> 00:06:29,493
+file lost an occurrence
+and another gained one.
+
+88
+00:06:31,833 --> 00:06:36,052
+Before the demonstration, decide: your
+question is "who removed the call".
+
+89
+00:06:36,092 --> 00:06:37,030
+Count, or ledger?
+
+90
+00:06:39,370 --> 00:06:44,204
+Count. A removal changes the number of
+occurrences, so -S is the right tool.
+
+91
+00:06:44,244 --> 00:06:46,192
+You'll use it in a few minutes.
+
+92
+00:06:48,032 --> 00:06:53,607
+Row one: the call is added. Both report it.
+Row two: the line is edited and the call
+
+93
+00:06:53,647 --> 00:06:57,149
+stays. The count is unchanged,
+so only -G reports it.
+
+94
+00:06:57,189 --> 00:07:01,360
+Row three is the one almost
+everyone gets wrong the first time.
+
+95
+00:07:01,400 --> 00:07:05,370
+The total across the repository
+is one before and one after.
+
+96
+00:07:05,410 --> 00:07:10,984
+But the count is per file: metrics.py goes
+from one to zero and text.py from zero to
+
+97
+00:07:11,024 --> 00:07:15,529
+one. Both options report it. Row
+four: the call is removed for good.
+
+98
+00:07:25,569 --> 00:07:30,099
+Six commits, and the oldest is "Rename
+the scorer module to metrics".
+
+99
+00:07:30,139 --> 00:07:33,874
+The history of the path ends
+where the path got its name.
+
+100
+00:07:33,914 --> 00:07:38,311
+Predict: how many more commits will
+--follow show? Say it out loud.
+
+101
+00:07:38,351 --> 00:07:38,974
+I'll wait.
+
+102
+00:07:43,814 --> 00:07:49,025
+Three more: the move into the package, and
+the two commits from the time the file
+
+103
+00:07:49,065 --> 00:07:54,407
+was scorer.py. Now ask for the chain of
+names. --diff-filter=AR keeps additions and
+
+104
+00:07:54,447 --> 00:07:54,925
+renames.
+
+105
+00:07:55,265 --> 00:08:02,640
+Read it from the bottom: added as scorer.py
+in b250238, moved to scorekit/scorer.py
+
+106
+00:08:02,680 --> 00:08:07,463
+in d38a5aa, renamed to
+scorekit/metrics.py in 18bb23e.
+
+107
+00:08:07,503 --> 00:08:13,538
+The R100 is a similarity score of
+100 percent, computed, not stored.
+
+108
+00:08:13,878 --> 00:08:15,144
+Now the first limit.
+
+109
+00:08:15,484 --> 00:08:20,949
+Exactly one pathspec, one path pattern. And
+the alternative that needs no heuristic,
+
+110
+00:08:20,989 --> 00:08:22,522
+when you know the names:
+
+111
+00:08:22,862 --> 00:08:24,077
+The same nine commits.
+
+112
+00:08:28,417 --> 00:08:34,362
+Three against five. -G reports two commits
+that -S doesn't, and the first of them,
+
+113
+00:08:34,402 --> 00:08:39,836
+389337a, is the one a person asking
+"who changed the pass mark" wants most.
+
+114
+00:08:39,876 --> 00:08:41,587
+Here's why -S missed it.
+
+115
+00:08:41,927 --> 00:08:47,980
+The value changed and the name stayed. Point
+at the counts from git grep -c: one in
+
+116
+00:08:48,020 --> 00:08:51,871
+config.py before, one after.
+For -S nothing happened.
+
+117
+00:08:51,911 --> 00:08:55,982
+The line was removed and added:
+for -G it matches twice.
+
+118
+00:08:56,022 --> 00:09:01,928
+The second extra commit, 9c8df98, is the
+formatter, which re-indented a line that
+
+119
+00:09:01,968 --> 00:09:05,378
+mentions PASS_MARK. That's
+the noise -G brings.
+
+120
+00:09:05,718 --> 00:09:10,839
+Now the regression of this chapter, the
+change that broke something that worked.
+
+121
+00:09:10,879 --> 00:09:16,129
+It's a removal, so -S is the right tool.
+The call .lower() no longer exists in the
+
+122
+00:09:16,169 --> 00:09:16,645
+sources.
+
+123
+00:09:16,985 --> 00:09:21,917
+This is the diagram, as output. Three
+commits changed the count: the one that
+
+124
+00:09:21,957 --> 00:09:27,211
+introduced the call, the one that moved
+the function to another file, and d926d3c,
+
+125
+00:09:27,251 --> 00:09:32,570
+where it disappeared for good. -G adds a
+fourth, 8e2cac1, which edited the line and
+
+126
+00:09:32,610 --> 00:09:36,638
+kept the call. Add -p to read the
+evidence in the same command.
+
+127
+00:09:36,978 --> 00:09:41,367
+"Speed up normalize with a precompiled
+pattern", by Ravi Menon on the tenth.
+
+128
+00:09:41,407 --> 00:09:46,203
+A string vanished, and now you have its
+commit. The patch shows only the files that
+
+129
+00:09:46,243 --> 00:09:51,097
+matched, and --pickaxe-all shows the whole
+commit. Don't conclude anything about the
+
+130
+00:09:51,137 --> 00:09:55,701
+person yet. You have a commit to read,
+and the method for reading it's the next
+
+131
+00:09:55,741 --> 00:09:56,050
+video.
+
+132
+00:09:56,390 --> 00:10:00,194
+One more property: the pickaxe searches
+only the commits of stage one.
+
+133
+00:10:00,534 --> 00:10:06,494
+Nothing from HEAD, and two commits with
+--all. Use --all when the code may live on
+
+134
+00:10:06,534 --> 00:10:12,348
+another branch, and --reflog when it may
+have been rebased away, replaced by new
+
+135
+00:10:12,388 --> 00:10:12,860
+copies.
+
+136
+00:10:13,200 --> 00:10:18,639
+-s suppresses the patches and leaves the
+list. Nine commits touched the file.
+
+137
+00:10:18,679 --> 00:10:24,332
+Four touched this function. The oldest,
+bb5eb57, predates both renames, which -L
+
+138
+00:10:24,372 --> 00:10:25,755
+followed on its own.
+
+139
+00:10:26,095 --> 00:10:27,819
+One line works the same way.
+
+140
+00:10:28,159 --> 00:10:33,213
+Line 2 of config.py: the pass mark, with
+the hunk of each commit that changed it.
+
+141
+00:10:33,253 --> 00:10:38,243
+And the function at the centre of the
+regression, limited to its two most recent
+
+142
+00:10:38,283 --> 00:10:38,746
+changes.
+
+143
+00:10:42,086 --> 00:10:46,820
+Read from the bottom. Ravi's commit
+replaced the line that lowercased the text.
+
+144
+00:10:46,860 --> 00:10:51,896
+The formatter then changed quotes and
+indentation. -L shows deleted lines, which git
+
+145
+00:10:51,936 --> 00:10:55,522
+blame can't. The errors are
+explicit, and worth seeing once.
+
+146
+00:10:55,862 --> 00:11:00,748
+A range beyond the end of the file, a
+function name that matches no header, and -L
+
+147
+00:11:00,788 --> 00:11:03,512
+combined with a pathspec,
+which isn't allowed.
+
+148
+00:11:03,852 --> 00:11:10,305
+One deletion: scorekit/bleu.py, in d9d075d.
+If you remember only part of the name,
+
+149
+00:11:10,345 --> 00:11:12,759
+use a pathspec with a wildcard.
+
+150
+00:11:13,099 --> 00:11:18,278
+The first command shows the history under
+the last name, with the deletion on top.
+
+151
+00:11:18,318 --> 00:11:23,560
+The second also reaches d369eac, the commit
+that created the file as bleu.py at the
+
+152
+00:11:23,600 --> 00:11:28,651
+top level. The two dashes are required:
+without them Git must decide whether the
+
+153
+00:11:28,691 --> 00:11:33,933
+word is a revision or a path, and for a
+file that no longer exists it gives up with
+
+154
+00:11:33,973 --> 00:11:37,179
+"ambiguous argument". The
+deleting commit says why.
+
+155
+00:11:37,519 --> 00:11:42,409
+A reason in the message: nothing imports
+it, and ROUGE-L covers the use case.
+
+156
+00:11:42,449 --> 00:11:45,930
+Now predict: does this print
+the file? Say it out loud.
+
+157
+00:11:50,770 --> 00:11:55,606
+No. The path doesn't exist in the deleting
+commit. That's what deleting means.
+
+158
+00:11:55,646 --> 00:11:57,419
+The content is in its parent.
+
+159
+00:11:57,759 --> 00:12:02,629
+This is the first state-changing command of
+the video, and it carries the label that
+
+160
+00:12:02,669 --> 00:12:06,428
+Chapter 11 gives it. Answer the
+five questions before running it.
+
+161
+00:12:06,468 --> 00:12:09,818
+What it changes: it writes the
+file into the working tree.
+
+162
+00:12:09,858 --> 00:12:14,728
+What it can destroy: it overwrites an existing
+file of that name without asking, and
+
+163
+00:12:14,768 --> 00:12:18,001
+uncommitted content in the
+working tree is in no object.
+
+164
+00:12:18,341 --> 00:12:23,321
+How to preview: git show <commit>~1:<path>
+prints the content, and git status tells
+
+165
+00:12:23,361 --> 00:12:28,280
+you whether a file of that name exists.
+How to recover: an overwritten uncommitted
+
+166
+00:12:28,320 --> 00:12:33,240
+file can't be recovered from Git. When it's
+appropriate: when no such file exists,
+
+167
+00:12:33,280 --> 00:12:36,688
+or when you have decided to
+replace it. Here none exists.
+
+168
+00:12:37,028 --> 00:12:41,665
+The file comes back untracked: it's in the
+working tree, and Git doesn't track it
+
+169
+00:12:41,705 --> 00:12:46,285
+yet. Git hasn't undone the deletion. You
+have a copy of old content to add or to
+
+170
+00:12:46,325 --> 00:12:46,747
+discard.
+
+171
+00:12:47,087 --> 00:12:50,808
+A file can also be "missing" because
+it was never on this branch.
+
+172
+00:12:51,148 --> 00:12:56,556
+--all -- <path> searches the history of
+every ref, every branch and tag, for the
+
+173
+00:12:56,596 --> 00:13:01,867
+path. git branch --contains, with -a to
+include remote-tracking branches, your
+
+174
+00:13:01,907 --> 00:13:07,110
+records of branches in other repositories,
+then says where that commit lives:
+
+175
+00:13:07,150 --> 00:13:07,927
+feat/report.
+
+176
+00:13:09,767 --> 00:13:11,415
+Five mistakes to watch for.
+
+177
+00:13:11,755 --> 00:13:16,861
+"The file has only six commits of history."
+Root cause: git log -- <path> matches a
+
+178
+00:13:16,901 --> 00:13:21,821
+path, and the file had other names before;
+without --follow or the old names the
+
+179
+00:13:21,861 --> 00:13:23,557
+history stops at the rename.
+
+180
+00:13:23,897 --> 00:13:29,217
+Using -S to find who changed a value. Root
+cause: the name occurs once before and
+
+181
+00:13:29,257 --> 00:13:34,512
+once after, so the occurrence count did
+not change; -G matches the changed line.
+
+182
+00:13:34,852 --> 00:13:38,439
+Searching for a whole statement
+copied from an old file.
+
+183
+00:13:38,479 --> 00:13:43,816
+Root cause: the string stops matching as
+soon as anyone edits its tail, and -S then
+
+184
+00:13:43,856 --> 00:13:49,128
+reports that edit as the removal. Search
+for the shortest string that is specific.
+
+185
+00:13:49,468 --> 00:13:54,132
+git show <deleting-commit>:<path> fails.
+Root cause: the file is absent from the
+
+186
+00:13:54,172 --> 00:13:58,190
+snapshot of the commit that deleted
+it; the content is in the parent.
+
+187
+00:13:58,530 --> 00:14:03,358
+Giving -L a line number from the editor.
+Root cause: the number is a line in the
+
+188
+00:14:03,398 --> 00:14:08,287
+starting revision, HEAD by default, not
+in a working tree with uncommitted edits.
+
+189
+00:14:10,127 --> 00:14:14,668
+Now, out of the lab. An LLM application
+team has an alert that counts a warning
+
+190
+00:14:14,708 --> 00:14:19,364
+string in the service logs. The alert has
+been silent for a week, and the on-call
+
+191
+00:14:19,404 --> 00:14:23,829
+engineer wants to know whether the
+condition stopped occurring or the warning
+
+192
+00:14:23,869 --> 00:14:25,105
+stopped being printed.
+
+193
+00:14:25,445 --> 00:14:30,288
+She searches the history for the warning
+text with -S, across all branches, with a
+
+194
+00:14:30,328 --> 00:14:35,172
+short specific fragment and not the whole
+message. The newest commit in the result
+
+195
+00:14:35,212 --> 00:14:40,115
+is the one where the count dropped to zero.
+She reads its patch in the same command
+
+196
+00:14:40,155 --> 00:14:44,701
+with -p, and the message explains that
+warnings were consolidated under a new
+
+197
+00:14:44,741 --> 00:14:45,177
+wording.
+
+198
+00:14:45,517 --> 00:14:48,620
+The alert was matching a
+string that no longer exists.
+
+199
+00:14:48,660 --> 00:14:52,635
+The fix is in the alert rule, and
+the incident note cites the commit.
+
+200
+00:14:52,675 --> 00:14:57,407
+It took one query, because the question
+was a transition and she asked a tool that
+
+201
+00:14:57,447 --> 00:15:00,899
+searches transitions. That's
+the opening question, answered.
+
+202
+00:15:02,739 --> 00:15:09,885
+Your turn. Do Lab 11.2, "Find when a string
+was removed, with -S and then with -G",
+
+203
+00:15:09,925 --> 00:15:13,261
+in lab-manual/m11-history-forensics.md.
+
+204
+00:15:13,601 --> 00:15:18,139
+Before each of the two searches, predict
+how many commits it will report and which
+
+205
+00:15:18,179 --> 00:15:22,717
+commit will be the newest. The lab's failure
+scenario has you search with a string
+
+206
+00:15:22,757 --> 00:15:27,239
+that is too long. Predict what -S will
+report as "the removal" before you run it.
+
+207
+00:15:27,579 --> 00:15:33,459
+The challenge is Lab 11.7, "Line history
+with git log -L", in the same file.
+
+208
+00:15:35,299 --> 00:15:36,565
+Pause and answer out loud.
+
+209
+00:15:41,405 --> 00:15:45,992
+A strong answer defines each option by what
+it computes, a change in the number of
+
+210
+00:15:46,032 --> 00:15:50,731
+occurrences per file against a match on
+added or removed lines, and doesn't describe
+
+211
+00:15:50,771 --> 00:15:55,245
+them as "a string search and a regex
+search". It gives a concrete commit for the
+
+212
+00:15:55,285 --> 00:15:58,123
+gap, and can say why the
+count didn't change in it.
+
+213
+00:15:58,463 --> 00:16:02,371
+It names a realistic source of noise
+and what it costs the investigator.
+
+214
+00:16:02,411 --> 00:16:06,813
+It adds the scope rule, that both search
+only the walked commits, and it finishes
+
+215
+00:16:06,853 --> 00:16:11,090
+with the choice: which of the two fits
+"introduced or removed", and which fits
+
+216
+00:16:11,130 --> 00:16:11,639
+"touched".
+
+217
+00:16:13,479 --> 00:16:16,406
+Let's land this. You
+should now be able to say:
+
+218
+00:16:16,746 --> 00:16:21,799
+git log -- <path> follows a path; --follow
+follows one file through renames by a
+
+219
+00:16:21,839 --> 00:16:23,326
+heuristic that can miss.
+
+220
+00:16:23,666 --> 00:16:29,075
+-S reports a change in the number of
+occurrences in a file; -G reports any added or
+
+221
+00:16:29,115 --> 00:16:30,782
+removed line that matches.
+
+222
+00:16:31,122 --> 00:16:35,947
+git log -L gives the history of a function
+or a line range, including lines that
+
+223
+00:16:35,987 --> 00:16:36,737
+were deleted.
+
+224
+00:16:37,077 --> 00:16:42,521
+A deleted file is found with --diff-filter=D
+and its content is in the parent of the
+
+225
+00:16:42,561 --> 00:16:43,565
+deleting commit.
+
+226
+00:16:43,905 --> 00:16:50,690
+A search from HEAD does not see other
+branches; --all and --reflog widen the walk.
+
+227
+00:16:52,530 --> 00:17:00,178
+Read sections 14A.10 to 14A.13 of Chapter
+14A. Do Lab 11.1, "Trace a line across a
+
+228
+00:17:00,218 --> 00:17:04,678
+rename", and Lab 11.3,
+"Find a deleted file", in
+
+229
+00:17:04,718 --> 00:17:12,367
+lab-manual/m11-history-forensics.md. Then
+do Exercise 11.2, Level 1, "The pickaxe,
+
+230
+00:17:12,407 --> 00:17:18,086
+twice", and Exercise 11.5, Level
+2, "A file that is gone", in
+
+231
+00:17:18,126 --> 00:17:22,211
+exercises/m11-m15-investigation-recovery.md.
+
+232
+00:17:22,551 --> 00:17:27,413
+Today you asked the history about content:
+a renamed file, a vanished string, one
+
+233
+00:17:27,453 --> 00:17:31,709
+function, and a deleted file. Do one
+of the labs before the next video.
+
+234
+00:17:31,749 --> 00:17:35,339
+Next time: git blame, and what
+one row of it really asserts.
+
+235
+00:17:35,379 --> 00:17:38,486
+Until then, look at the
+state first and type second.
+
+236
+00:17:38,526 --> 00:17:39,938
+See you in the next one.

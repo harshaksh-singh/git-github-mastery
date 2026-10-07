@@ -79,7 +79,7 @@ Try it now, thirty seconds. Find the row for `git revert`, and read its Branch c
 
 "Advanced by one". So yes, it's safe: the branch only moves forward.
 
-**[ANIMATION]** decide: nodes=q1:What_do_you_want_to_undo?|u:restore,_stash_or_clean|q2:Can_anyone_else_already_have_them?|n:private_history:_rewriting_is_allowed|y:shared_history:_add_commits edges=q1>u:not_committed|q1>q2:commits|q2>n:NO|q2>y:YES title=The_undo_decision_tree id=tree
+**[ANIMATION]** decide: nodes=q1:What_do_you_want_to_undo?|u:restore,_stash_or_clean|q2:Can_anyone_else_already_have_them?|n:private_history:_rewriting_is_allowed|y:shared_history:_add_commits edges=q1>u:changes|q1>q2:commits|q2>n:NO|q2>y:YES title=The_undo_decision_tree id=tree
 
 **[ANIMATION]** step: tree.level-3
 

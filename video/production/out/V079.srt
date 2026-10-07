@@ -1,0 +1,1091 @@
+1
+00:00:04,500 --> 00:00:09,106
+These two commands appear in blog posts
+under headings like "clean up your
+
+2
+00:00:09,146 --> 00:00:14,255
+repository" and "make Git smaller". They're
+also the documented way to destroy the
+
+3
+00:00:14,295 --> 00:00:19,026
+safety net that the last six videos
+relied on. After them, git reflog prints
+
+4
+00:00:19,066 --> 00:00:24,175
+nothing, git fsck --lost-found prints
+nothing, and a commit that was recoverable a
+
+5
+00:00:24,215 --> 00:00:25,745
+minute ago doesn't exist.
+
+6
+00:00:26,085 --> 00:00:29,119
+There is one situation in
+which you want exactly that.
+
+7
+00:00:29,159 --> 00:00:33,618
+A secret was committed and never pushed,
+and it must not survive in that clone.
+
+8
+00:00:33,658 --> 00:00:38,230
+And there's every other situation, where
+someone runs the pair during an incident
+
+9
+00:00:38,270 --> 00:00:41,362
+and turns a five-minute
+recovery into a permanent loss.
+
+10
+00:00:41,702 --> 00:00:46,663
+A senior engineer has to know both: how to
+reach the point of no return on purpose,
+
+11
+00:00:46,703 --> 00:00:49,736
+and how to make sure nobody
+reaches it by accident.
+
+12
+00:00:49,776 --> 00:00:54,677
+One question to carry with you: after those
+two commands, can anything still bring
+
+13
+00:00:54,717 --> 00:00:55,641
+the commit back?
+
+14
+00:00:57,481 --> 00:01:01,175
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+15
+00:01:01,215 --> 00:01:04,481
+This is the last content
+video of the recovery module.
+
+16
+00:01:04,521 --> 00:01:08,889
+You've recovered commits from reflogs,
+from git fsck, from other clones.
+
+17
+00:01:08,929 --> 00:01:12,745
+A reflog is your clone's own list
+of the values a name has had.
+
+18
+00:01:12,785 --> 00:01:17,765
+Today you walk the ladder in the other
+direction, from "a reflog names it" down to
+
+19
+00:01:17,805 --> 00:01:22,602
+"the object is deleted", one command per
+step, so that you can show each state.
+
+20
+00:01:22,942 --> 00:01:27,828
+Then prevention, which is cheaper than
+any recovery: a backup ref before a risky
+
+21
+00:01:27,868 --> 00:01:33,000
+operation, and a bundle as an offline backup.
+And last, the server side: what GitHub
+
+22
+00:01:33,040 --> 00:01:36,571
+adds, described from its
+documentation and not from a run.
+
+23
+00:01:36,911 --> 00:01:41,648
+You'll hear layer two, three and four today.
+Those are the four layers of protection
+
+24
+00:01:41,688 --> 00:01:45,800
+from the start of this module: refs,
+reflogs, the grace period, and other
+
+25
+00:01:45,840 --> 00:01:46,540
+repositories.
+
+26
+00:01:48,380 --> 00:01:52,380
+describe the sequence that destroys the
+safety net, and when it is appropriate;
+
+27
+00:01:52,720 --> 00:01:55,798
+show each step from "reflog
+protects it" to "pruned";
+
+28
+00:01:56,138 --> 00:01:59,232
+protect work before a risky
+operation with a backup ref;
+
+29
+00:01:59,572 --> 00:02:02,878
+create, verify and use a
+bundle as an offline backup;
+
+30
+00:02:03,218 --> 00:02:08,279
+say which evidence GitHub keeps on the
+server side, as the cited section states it.
+
+31
+00:02:10,119 --> 00:02:14,453
+In one sentence: a lost commit
+becomes unrecoverable in two steps.
+
+32
+00:02:14,493 --> 00:02:17,966
+First the last reflog entry
+that names it is removed.
+
+33
+00:02:18,006 --> 00:02:22,074
+Then a collection, Git's housekeeping
+run, deletes the object.
+
+34
+00:02:22,114 --> 00:02:27,376
+And two commands can force both steps at
+once. On screen is today's lost commit,
+
+35
+00:02:27,416 --> 00:02:31,684
+dbe6ec8: a hard reset moved main
+off it, so no branch reaches it.
+
+36
+00:02:32,024 --> 00:02:36,359
+Precisely. The destructive pair is the
+documented procedure for shrinking a
+
+37
+00:02:36,399 --> 00:02:41,085
+repository after a history rewrite. The
+manual of git filter-branch lists it in a
+
+38
+00:02:41,125 --> 00:02:44,177
+checklist and calls it "a
+very destructive approach".
+
+39
+00:02:44,217 --> 00:02:48,261
+For the same reason it's the documented
+way to destroy the safety net.
+
+40
+00:02:48,601 --> 00:02:53,195
+Inside the dot git folder, step one
+truncates files in the logs folder.
+
+41
+00:02:53,235 --> 00:02:58,416
+Step two rewrites the pack folder under
+objects, and removes loose object files.
+
+42
+00:02:58,456 --> 00:03:03,572
+The working tree, the index, HEAD and the
+current branch are unchanged by both.
+
+43
+00:03:03,912 --> 00:03:10,300
+git reflog expire --expire=now --all. What
+it changes: it empties every reflog, the
+
+44
+00:03:10,340 --> 00:03:16,650
+stash list included. What it can destroy:
+every layer-two protection, and the list
+
+45
+00:03:16,690 --> 00:03:22,536
+of all stash entries except the newest.
+Preview: git reflog expire --dry-run
+
+46
+00:03:22,576 --> 00:03:28,189
+--verbose. Recovery: the objects still
+exist, so git fsck, until a prune.
+
+47
+00:03:28,229 --> 00:03:33,301
+Appropriate when: a secret must be
+purged after a history rewrite.
+
+48
+00:03:33,641 --> 00:03:39,402
+git gc --prune=now. What it changes: it
+repacks and deletes all unreachable objects.
+
+49
+00:03:39,442 --> 00:03:45,133
+What it can destroy: everything on layer
+three. Preview: git prune -n, and git fsck
+
+50
+00:03:45,173 --> 00:03:49,691
+--unreachable. Recovery: none in
+this repository, only layer four.
+
+51
+00:03:49,731 --> 00:03:55,009
+Appropriate when: the same purge, with
+no other process using the repository.
+
+52
+00:03:55,049 --> 00:04:00,741
+The manual attaches a second warning:
+--prune=now "increases the risk of corruption
+
+53
+00:04:00,781 --> 00:04:05,022
+if another process is writing to
+the repository concurrently".
+
+54
+00:04:05,062 --> 00:04:10,547
+An object that a running command has
+written and not yet attached to a ref looks
+
+55
+00:04:10,587 --> 00:04:11,376
+unreachable.
+
+56
+00:04:11,716 --> 00:04:17,626
+git prune: deletes unreachable loose objects
+with no grace period unless --expire is
+
+57
+00:04:17,666 --> 00:04:20,814
+given. The manual says
+to run git gc instead.
+
+58
+00:04:21,154 --> 00:04:26,492
+And for contrast, plain git gc is 🟡
+CAUTION: it repacks, expires reflogs by the
+
+59
+00:04:26,532 --> 00:04:31,461
+configured periods, and deletes
+unreachable objects older than two weeks.
+
+60
+00:04:31,501 --> 00:04:32,890
+Routine housekeeping.
+
+61
+00:04:33,230 --> 00:04:36,880
+Automatic maintenance. You
+rarely run git gc yourself.
+
+62
+00:04:36,920 --> 00:04:42,552
+Some commands start maintenance when they
+finish. Since Git 2.54 that automatic run
+
+63
+00:04:42,592 --> 00:04:48,156
+uses the geometric strategy and not the gc
+task. It expires data in the reflog and
+
+64
+00:04:48,196 --> 00:04:53,692
+puts unreachable objects into a cruft pack,
+a pack for unreachable objects with a
+
+65
+00:04:53,732 --> 00:04:56,152
+file that records each object's age.
+
+66
+00:04:56,492 --> 00:05:01,779
+Cruft packs are the default from Git 2.41.
+The retention periods you learned hold
+
+67
+00:05:01,819 --> 00:05:07,107
+under either strategy. The manual of git
+gc still describes the older trigger, so
+
+68
+00:05:07,147 --> 00:05:11,185
+read "automatic gc" in older
+texts as "automatic maintenance".
+
+69
+00:05:11,525 --> 00:05:15,855
+Prevention, part one: a backup ref.
+A branch costs one small file.
+
+70
+00:05:15,895 --> 00:05:21,418
+Here's a branch from today's demo, three
+commits ahead of main, about to be squashed
+
+71
+00:05:21,458 --> 00:05:22,212
+by a rebase.
+
+72
+00:05:22,552 --> 00:05:28,050
+Created before a rebase, a history filter,
+a large merge or a reset, a backup branch
+
+73
+00:05:28,090 --> 00:05:33,325
+turns recovery into one command that needs
+no reflog, no search and no deadline.
+
+74
+00:05:33,665 --> 00:05:38,523
+After the rebase, the branch ends in a new
+commit, and the backup still names the
+
+75
+00:05:38,563 --> 00:05:43,299
+old ones. You compare against a name, not
+against a reflog position that moves.
+
+76
+00:05:43,639 --> 00:05:48,796
+Prevention, part two: a bundle. In one
+sentence: git bundle writes refs and the
+
+77
+00:05:48,836 --> 00:05:53,204
+objects they reach into one file
+that Git can clone and fetch from.
+
+78
+00:05:53,244 --> 00:05:57,480
+Precisely, a bundle is a pack file
+with a header that lists refs.
+
+79
+00:05:57,520 --> 00:06:02,545
+🟢 SAFE: git bundle create <file> --all
+includes every ref and writes one file
+
+80
+00:06:02,585 --> 00:06:03,401
+outside .git.
+
+81
+00:06:03,741 --> 00:06:09,409
+What a bundle doesn't hold: reflogs, the
+index, hooks, the configuration, untracked
+
+82
+00:06:09,449 --> 00:06:14,980
+files, and of the stash at most the newest
+entry. For stashes, Git 2.51 added git
+
+83
+00:06:15,020 --> 00:06:20,689
+stash export and git stash import. A copy
+of the whole directory, made while no Git
+
+84
+00:06:20,729 --> 00:06:24,334
+command runs, holds everything,
+and verifies nothing.
+
+85
+00:06:24,374 --> 00:06:29,974
+For a repository you can't afford to lose,
+use both kinds, and run git fsck on the
+
+86
+00:06:30,014 --> 00:06:30,318
+copy.
+
+87
+00:06:32,158 --> 00:06:36,079
+Return to the vault one last time, and
+picture a ladder with three rungs.
+
+88
+00:06:36,419 --> 00:06:40,788
+On the top rung, the ledger mentions
+the box. You recover it by name.
+
+89
+00:06:40,828 --> 00:06:44,110
+On the middle rung, the
+ledger line has been erased.
+
+90
+00:06:44,150 --> 00:06:48,135
+The box is on the shelf, unmentioned.
+You recover it by search.
+
+91
+00:06:48,475 --> 00:06:51,603
+On the bottom rung, the
+clear-out has emptied the box.
+
+92
+00:06:51,643 --> 00:06:53,832
+There's nothing in this vault to find.
+
+93
+00:06:54,172 --> 00:06:59,169
+Normally time and maintenance take a box
+down the ladder slowly: 30 or 90 days for
+
+94
+00:06:59,209 --> 00:07:03,593
+the first step, two weeks of object
+age and a collection for the second.
+
+95
+00:07:03,633 --> 00:07:06,910
+The destructive pair kicks
+it down both steps at once.
+
+96
+00:07:07,250 --> 00:07:12,582
+A backup ref is an index card you write
+before the risky operation, so the box never
+
+97
+00:07:12,622 --> 00:07:17,825
+leaves the front desk. A bundle is a sealed
+copy of the boxes and cards, stored in
+
+98
+00:07:17,865 --> 00:07:22,813
+another building. The analogy breaks at
+one point: the sealed copy contains no
+
+99
+00:07:22,853 --> 00:07:24,860
+ledger. A bundle has no reflogs.
+
+100
+00:07:26,700 --> 00:07:31,842
+Try it now, on paper. Pause me for thirty
+seconds and draw the ladder from memory:
+
+101
+00:07:31,882 --> 00:07:35,255
+three states, two arrows
+down. Then check your answer.
+
+102
+00:07:40,095 --> 00:07:45,079
+Each arrow down has two labels: the command
+that forces the step, and the slow path
+
+103
+00:07:45,119 --> 00:07:49,983
+that takes it by default. Each state has,
+on its right, the tool that still works
+
+104
+00:07:50,023 --> 00:07:50,346
+there.
+
+105
+00:07:52,186 --> 00:07:57,988
+Top rung. Now the first step down,
+in a second copy of the repository.
+
+106
+00:07:58,028 --> 00:08:03,997
+The five answers for git reflog expire
+--expire=now --all are on screen.
+
+107
+00:08:04,037 --> 00:08:07,169
+git prune -n is 🟢 SAFE: it only lists.
+
+108
+00:08:07,509 --> 00:08:12,099
+Predict how many objects an immediate
+prune would delete for one lost commit.
+
+109
+00:08:12,139 --> 00:08:13,723
+Say it out loud. I'll wait.
+
+110
+00:08:23,563 --> 00:08:27,833
+Three: the commit, its tree, and the
+one blob that no other commit shares.
+
+111
+00:08:27,873 --> 00:08:32,725
+git fsck now reports the commit as dangling.
+Middle rung: it's still fully readable.
+
+112
+00:08:33,065 --> 00:08:37,650
+A collection that respects a grace
+period doesn't delete such objects.
+
+113
+00:08:37,690 --> 00:08:42,342
+The transcript uses --prune=never so
+that it doesn't depend on a clock.
+
+114
+00:08:42,382 --> 00:08:47,033
+A plain git gc behaves the same way
+for objects younger than two weeks.
+
+115
+00:08:47,373 --> 00:08:52,064
+Twelve objects in two packs. One of the
+packs has a file with the extension mtimes:
+
+116
+00:08:52,104 --> 00:08:54,857
+that's the cruft pack. The
+commit is still there.
+
+117
+00:08:57,197 --> 00:09:02,764
+Before the next command, the five answers
+for git gc --prune=now once more, aloud.
+
+118
+00:09:02,804 --> 00:09:07,825
+It deletes all unreachable objects. It
+destroys everything on layer three.
+
+119
+00:09:07,865 --> 00:09:13,227
+The preview was git prune -n, which you
+have read. Recovery in this repository:
+
+120
+00:09:13,267 --> 00:09:18,835
+none. Appropriate: a deliberate purge, with
+no other process using the repository.
+
+121
+00:09:18,875 --> 00:09:21,570
+This is a sandbox built for the purpose.
+
+122
+00:09:21,910 --> 00:09:25,467
+Nine objects in one pack.
+"Not a valid object name".
+
+123
+00:09:25,507 --> 00:09:30,931
+And git fsck reports nothing: the repository
+is healthy, and the commit doesn't
+
+124
+00:09:30,971 --> 00:09:32,245
+exist. Bottom rung.
+
+125
+00:09:43,885 --> 00:09:48,747
+833b96f went from a reflog entry,
+to a dangling commit, to nothing.
+
+126
+00:09:48,787 --> 00:09:54,015
+Now the proof. Quick quiz first. The
+file ORIG_HEAD still holds that ID.
+
+127
+00:09:54,055 --> 00:09:59,721
+Option one: so Git can still read the
+commit. Option two: the ID is there, the
+
+128
+00:09:59,761 --> 00:10:01,916
+object isn't. Say it out loud.
+
+129
+00:10:06,756 --> 00:10:10,295
+Option two. The reflog is
+empty. git fsck finds nothing.
+
+130
+00:10:10,335 --> 00:10:15,535
+ORIG_HEAD still holds the ID of the deleted
+commit and resolves to nothing: it's a
+
+131
+00:10:15,575 --> 00:10:20,647
+file, not a starting point for reachability.
+And you can't create a branch at an
+
+132
+00:10:20,687 --> 00:10:22,309
+object that doesn't exist.
+
+133
+00:10:22,649 --> 00:10:27,546
+What can still bring the commit back? That
+was the opening question, and the answer
+
+134
+00:10:27,586 --> 00:10:30,818
+is: only layer four. The lab
+kept a bundle from before.
+
+135
+00:10:38,358 --> 00:10:43,305
+A fetch from a file. The commit is back,
+with the same ID, because the ID is
+
+136
+00:10:43,345 --> 00:10:45,011
+computed from the content.
+
+137
+00:10:45,351 --> 00:10:49,497
+One command before the rebase. Now
+use the name to check the result.
+
+138
+00:10:49,837 --> 00:10:54,890
+The empty git diff --stat proves that the
+squashed branch has the same content as
+
+139
+00:10:54,930 --> 00:10:58,349
+the original. git range-diff
+shows how the commits map.
+
+140
+00:10:58,389 --> 00:11:03,254
+Had the result been wrong, one reset to
+the backup name would undo it, with no
+
+141
+00:11:03,294 --> 00:11:08,473
+reflog involved. The script runs it to show
+that. Delete the backup when the result
+
+142
+00:11:08,513 --> 00:11:09,919
+is pushed and verified.
+
+143
+00:11:10,259 --> 00:11:13,550
+"is okay", five refs,
+"records a complete history".
+
+144
+00:11:13,590 --> 00:11:16,293
+Verify every bundle you intend to rely on.
+
+145
+00:11:16,633 --> 00:11:18,815
+A clone from a file, with the full graph.
+
+146
+00:11:19,155 --> 00:11:24,619
+Git gives a server no reflog by default,
+and you can't run git reflog or git fsck on
+
+147
+00:11:24,659 --> 00:11:29,666
+GitHub's copy of your repository. The
+section lists GitHub's own instruments.
+
+148
+00:11:29,706 --> 00:11:33,925
+Open your own practice repository
+and find each one as I name it.
+
+149
+00:11:34,265 --> 00:11:39,119
+The Activity view of a repository: pushes,
+force pushes, merges, branch creations
+
+150
+00:11:39,159 --> 00:11:44,073
+and deletions, with the user and a comparison.
+A force push is a push that removes
+
+151
+00:11:44,113 --> 00:11:49,027
+commits from a branch on the server. "Restore
+branch" on a closed pull request: it
+
+152
+00:11:49,067 --> 00:11:53,678
+recreates the deleted head branch, only
+for branches that had a pull request.
+
+153
+00:11:54,018 --> 00:11:59,493
+The Events API: PushEvent records whose
+before and head fields are the IDs on both
+
+154
+00:11:59,533 --> 00:12:04,940
+sides of a push. The section gives its
+limits as the last 300 events and 30 days,
+
+155
+00:12:04,980 --> 00:12:10,454
+with a delivery lag of 30 seconds to 6
+hours. The Git references API: it creates a
+
+156
+00:12:10,494 --> 00:12:15,834
+ref at a commit ID you supply, and works
+only while GitHub still has the commit.
+
+157
+00:12:15,874 --> 00:12:21,012
+And the audit log: organization events
+for 180 days, while Git events such as
+
+158
+00:12:21,052 --> 00:12:24,778
+git.push are in the enterprise
+log only, for seven days.
+
+159
+00:12:25,118 --> 00:12:29,815
+The recipe these pieces suggest is to read
+the ID from before the force push and
+
+160
+00:12:29,855 --> 00:12:31,118
+create a branch at it:
+
+161
+00:12:33,958 --> 00:12:39,011
+GitHub's own advice for a deleted or
+force-pushed branch is the plain Git route: ask
+
+162
+00:12:39,051 --> 00:12:43,073
+a collaborator who still has the
+commit to push it to a new branch.
+
+163
+00:12:43,113 --> 00:12:47,924
+The same persistence means that a force
+push doesn't remove a leaked secret from
+
+164
+00:12:47,964 --> 00:12:52,956
+GitHub. Rotation is the remedy. Prevention
+on this layer is a ruleset, a named list
+
+165
+00:12:52,996 --> 00:12:57,685
+of rules on GitHub, that blocks force
+pushes and deletions on shared branches.
+
+166
+00:12:59,525 --> 00:13:01,173
+Five mistakes to watch for.
+
+167
+00:13:01,513 --> 00:13:06,296
+Running the destructive pair as "clean-up".
+Root cause: step one removes every
+
+168
+00:13:06,336 --> 00:13:11,489
+reflog entry and step two deletes every
+object that nothing names; together they are
+
+169
+00:13:11,529 --> 00:13:14,209
+the documented way to
+remove the safety net.
+
+170
+00:13:14,549 --> 00:13:19,456
+Relying on ORIG_HEAD to keep a commit alive.
+Root cause: it is one file with one ID
+
+171
+00:13:19,496 --> 00:13:22,495
+and is not a starting point
+for garbage collection.
+
+172
+00:13:22,835 --> 00:13:26,884
+Running git gc --prune=now while
+another Git process is working.
+
+173
+00:13:26,924 --> 00:13:32,123
+Root cause: an object that a running command
+has written and not yet attached to a
+
+174
+00:13:32,163 --> 00:13:35,829
+ref looks unreachable, and the
+manual warns of corruption.
+
+175
+00:13:36,169 --> 00:13:39,379
+Treating a bundle as a full
+copy of the repository.
+
+176
+00:13:39,419 --> 00:13:44,477
+Root cause: a bundle holds what its refs
+reach; it has no reflogs, index, hooks,
+
+177
+00:13:44,517 --> 00:13:46,579
+configuration or untracked files.
+
+178
+00:13:46,919 --> 00:13:49,951
+Assuming a force push removed
+a commit from GitHub.
+
+179
+00:13:49,991 --> 00:13:54,650
+Root cause: the server's retention of
+unreferenced commits is not published; a
+
+180
+00:13:54,690 --> 00:13:57,963
+leaked secret is handled by
+rotation, not by rewriting.
+
+181
+00:13:59,803 --> 00:14:04,285
+Now, out of the lab. An ML team is
+about to rewrite the history of a model
+
+182
+00:14:04,325 --> 00:14:08,563
+repository to remove a large checkpoint
+that was committed by mistake.
+
+183
+00:14:08,603 --> 00:14:12,903
+Experiment logs and model cards refer
+to commit IDs of the old history.
+
+184
+00:14:13,243 --> 00:14:17,152
+Before the rewrite, the lead does
+two things from section 13.14.
+
+185
+00:14:17,192 --> 00:14:22,212
+She creates a backup ref at the old tip.
+And she stores a bundle of the old state,
+
+186
+00:14:22,252 --> 00:14:27,272
+verified, with the incident record: it
+preserves every old commit ID that the logs
+
+187
+00:14:27,312 --> 00:14:32,394
+and cards refer to. Only after the rewrite
+is pushed and verified does the team run
+
+188
+00:14:32,434 --> 00:14:37,577
+the destructive pair in each clone.
+Deliberately, with no other Git process running,
+
+189
+00:14:37,617 --> 00:14:40,663
+because here shrinking the
+repository is the goal.
+
+190
+00:14:41,003 --> 00:14:45,705
+The team's rule for everyday work is
+shorter: experiment branches that live for
+
+191
+00:14:45,745 --> 00:14:49,067
+months are pushed, not left
+to the reflog of one laptop.
+
+192
+00:14:50,907 --> 00:14:56,203
+Your turn. Do Lab 12.12, "Prove
+the point of no return", in
+
+193
+00:14:56,243 --> 00:14:58,645
+lab-manual/m12-recovery.md.
+
+194
+00:14:58,985 --> 00:15:03,853
+At each rung, before you run the command
+that takes the commit one step down,
+
+195
+00:15:03,893 --> 00:15:09,080
+predict the output of git reflog, of git
+fsck, and of git cat-file -t for the lost
+
+196
+00:15:09,120 --> 00:15:14,180
+commit. At the bottom, list every tool of
+this module and predict what each will
+
+197
+00:15:14,220 --> 00:15:15,646
+say, then try them all.
+
+198
+00:15:15,986 --> 00:15:22,469
+The challenge is Exercise 12.11, Level
+5, "Deleted, then cleaned up", in
+
+199
+00:15:22,509 --> 00:15:26,456
+exercises/m11-m15-investigation-recovery.md.
+
+200
+00:15:28,296 --> 00:15:30,226
+Answer out loud. I'll wait.
+
+201
+00:15:35,066 --> 00:15:39,721
+A strong answer takes the two commands
+separately and says for each what is removed
+
+202
+00:15:39,761 --> 00:15:44,302
+and what is left untouched, including refs,
+the working tree and the newest stash
+
+203
+00:15:44,342 --> 00:15:48,884
+entry. It places the result on the four
+layers. It gives a legitimate use and the
+
+204
+00:15:48,924 --> 00:15:51,995
+precondition the manual
+attaches to the second command.
+
+205
+00:15:52,035 --> 00:15:56,633
+For "what can still bring it back" it lists
+sources outside the repository, and is
+
+206
+00:15:56,673 --> 00:16:00,988
+careful about the hosting side: what is
+documented and what is only observed.
+
+207
+00:16:01,028 --> 00:16:03,760
+It also knows which previews
+exist for each step.
+
+208
+00:16:05,600 --> 00:16:08,527
+Let's land this. You
+should now be able to say:
+
+209
+00:16:08,867 --> 00:16:13,659
+A commit becomes unrecoverable when its
+last reflog entry is removed and then a
+
+210
+00:16:13,699 --> 00:16:17,390
+collection deletes the object;
+two commands force both steps.
+
+211
+00:16:17,730 --> 00:16:22,002
+Between the steps the object still
+exists and git fsck finds it.
+
+212
+00:16:22,342 --> 00:16:26,614
+A backup ref before a risky operation
+makes the operation reversible with one
+
+213
+00:16:26,654 --> 00:16:27,958
+command and no deadline.
+
+214
+00:16:28,298 --> 00:16:33,157
+A bundle is refs and objects in one file;
+I verify it, and I know it holds no
+
+215
+00:16:33,197 --> 00:16:33,666
+reflogs.
+
+216
+00:16:34,006 --> 00:16:38,811
+GitHub has its own instruments for the
+server side; none of them is a reflog, and
+
+217
+00:16:38,851 --> 00:16:42,519
+their combined use for recovery
+is not a documented procedure.
+
+218
+00:16:44,359 --> 00:16:51,503
+Read sections 13.13 to 13.18 of Chapter
+13 and do the Practice section, 13.20.
+
+219
+00:16:51,543 --> 00:16:55,924
+Read
+playbooks/disaster-recovery-playbook.md and
+
+220
+00:16:55,964 --> 00:16:59,885
+cheatsheets/emergency-recovery-one-page.md.
+
+221
+00:17:00,225 --> 00:17:05,253
+That's the recovery module. You can walk a
+commit down the ladder, and you know how
+
+222
+00:17:05,293 --> 00:17:09,955
+to keep one from getting there. Make a
+backup branch before your next rebase.
+
+223
+00:17:09,995 --> 00:17:13,986
+Next time: tags, three kinds, two
+mechanisms, and how tags travel.
+
+224
+00:17:14,026 --> 00:17:17,161
+Until then, look at the
+state first and type second.
+
+225
+00:17:17,201 --> 00:17:18,627
+See you in the next one.

@@ -65,7 +65,7 @@ Form                                 Names                                      
 
 Read the third column. It tells you how far to trust each name. Names read from the graph and from objects mean the same in every clone. Names read from your reflog, the local list of where each ref has been, mean something only in your repository. `@{u}` depends on your configuration.
 
-**[ANIMATION]** graph: ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; note:ca7e2b7:merge_base title=One_graph_for_log_and_for_diff id=plain
+**[ANIMATION]** graph: ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; note:ca7e2b7:merge_base title=One_graph_for_log_and_for_diff id=plain dx=260
 
 **[ANIMATION]** step: state-1
 
@@ -118,7 +118,7 @@ Inside `.git`, none of this writes anything. Every command in this video is 🟢
 
 The textbook's analogy for ranges: colour every commit reachable from B green, then colour every commit reachable from A red, red winning. `A..B` is what stays green.
 
-**[ANIMATION]** graph: ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; note:ca7e2b7:merge_base; title:One_graph_for_log_and_for_diff => + range:a8e8550,f37a7d8,a10f9a1:main..feat/report; cmd:git_log_main..feat/report; name:two => + range:2652768,e376e5b:feat/report..main; cmd:git_log_feat/report..main; name:mirror => + range:a8e8550,f37a7d8,a10f9a1:main...feat/report; range2:2652768,e376e5b; left:2652768; left:e376e5b; right:a8e8550; right:f37a7d8; right:a10f9a1; cmd:git_log_--left-right_main...feat/report; name:three => ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; role:e376e5b:left_tree; role:a10f9a1:right_tree; cmd:git_diff_main..feat/report; say:In_git_diff,_two_dots_compare_the_two_tips; name:diff2 => ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; role:ca7e2b7:left_tree; role:a10f9a1:right_tree; note:f37a7d8:the_README_paragraph; note:e376e5b:its_copy; cmd:git_diff_main...feat/report; say:In_git_diff,_three_dots_compare_the_merge_base_with_the_right_tip; name:diff3 id=g
+**[ANIMATION]** graph: ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; note:ca7e2b7:merge_base; title:One_graph_for_log_and_for_diff => + range:a8e8550,f37a7d8,a10f9a1:main..feat/report; cmd:git_log_main..feat/report; name:two => + range:2652768,e376e5b:feat/report..main; cmd:git_log_feat/report..main; name:mirror => + range:a8e8550,f37a7d8,a10f9a1:main...feat/report; range2:2652768,e376e5b; left:2652768; left:e376e5b; right:a8e8550; right:f37a7d8; right:a10f9a1; cmd:git_log_--left-right_main...feat/report; name:three => ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; role:e376e5b:left_tree; role:a10f9a1:right_tree; cmd:git_diff_main..feat/report; say:In_git_diff,_two_dots_compare_the_two_tips; name:diff2 => ...older-ca7e2b7-2652768-e376e5b main; ca7e2b7-a8e8550-f37a7d8-a10f9a1 feat/report; HEAD=main; role:ca7e2b7:left_tree; role:a10f9a1:right_tree; note:f37a7d8:the_README_paragraph; note:e376e5b:its_copy; cmd:git_diff_main...feat/report; say:In_git_diff,_three_dots_compare_the_merge_base_with_the_right_tip; name:diff3 id=g dx=260 at_three=20 at_state_1=5 at_two=25
 
 **[ANIMATION]** step: two
 
@@ -187,7 +187,7 @@ dd70d9e Move normalize into scorekit/text.py
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: 389337a-8657273; dd70d9e-c0d33a5; c0d33a5-8657273; HEAD=none; role:389337a:^1_and_~1; role:c0d33a5:^2; role:dd70d9e:^2~1 title=The_two_parents_of_a_merge dy=210 id=parents
+**[ANIMATION]** graph: 389337a-8657273; dd70d9e-c0d33a5; c0d33a5-8657273; HEAD=none; role:389337a:^1_and_~1; role:c0d33a5:^2; role:dd70d9e:^2~1 title=The_two_parents_of_a_merge dy=180 dx=310 id=parents
 
 **[ANIMATION]** step: state-1
 
@@ -312,7 +312,7 @@ e376e5b Mention the nightly run in the README
 
 The mirror image: two commits.
 
-**[ANIMATION]** step: g.mirror
+**[ANIMATION]** step: plain.state-1
 
 Now three dots. Shade first. I'll wait.
 

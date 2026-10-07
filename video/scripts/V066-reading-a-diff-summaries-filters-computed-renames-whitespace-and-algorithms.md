@@ -64,7 +64,7 @@ U        unmerged
 
 `--diff-filter` selects by those letters. An uppercase letter includes, a lowercase letter excludes.
 
-**[ANIMATION]** hash: differs=byte steps=one,different left=run__eval.py right=scorekit/runner.py lines=import_json,import_sys,PASS__MARK_=_0.7 alt=from_scorekit.config_import_PASS__MARK ids=9f41591,d846906 fn=hash title=The_facts:_two_paths,_two_blobs diff=Different_content,_different_blob_IDs._"Renamed"_is_an_inference
+**[ANIMATION]** hash: differs=byte steps=one,different left=run__eval.py right=scorekit/runner.py lines=import_json,import_sys,PASS__MARK_=_0.7 alt=from_scorekit.config_import_PASS__MARK ids=9f41591,d846906 fn=hash title=The_facts:_two_paths,_two_blobs at_different=30 diff=Different_content,_different_blob_IDs._"Renamed"_is_an_inference
 
 **Renames and copies.** In one sentence: a commit does not say "this file was renamed". `git diff` notices that a path disappeared, another appeared, and their contents are similar enough. On screen, one stored file: `run_eval.py`, with the ID of its content, its blob ID.
 

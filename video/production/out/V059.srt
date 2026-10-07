@@ -1,0 +1,1127 @@
+1
+00:00:04,500 --> 00:00:06,412
+The CTO is looking at a branch.
+
+2
+00:00:06,752 --> 00:00:10,583
+"Add document loader" appears in
+it twice, with two different IDs.
+
+3
+00:00:10,623 --> 00:00:15,041
+So does "Add text cleaner". There's a
+merge commit on top, a commit with two
+
+4
+00:00:15,081 --> 00:00:17,328
+parents, that nobody remembers wanting.
+
+5
+00:00:17,668 --> 00:00:22,267
+Two engineers were involved. One rebased
+the branch and force-pushed it, with a
+
+6
+00:00:22,307 --> 00:00:26,964
+lease, exactly as the documentation
+recommends. The other fetched, read what git
+
+7
+00:00:27,004 --> 00:00:31,486
+status suggested, and followed the
+suggestion. Each did something reasonable.
+
+8
+00:00:31,526 --> 00:00:35,772
+Together they produced a history in
+which every change is recorded twice.
+
+9
+00:00:36,112 --> 00:00:40,721
+You're going to play both roles, watch the
+duplication happen, and then repair it.
+
+10
+00:00:40,761 --> 00:00:45,484
+After that you break a branch on your own,
+lose the obvious way back, and recover it
+
+11
+00:00:45,524 --> 00:00:48,999
+anyway. Which reasonable step
+did the damage? Hold your guess.
+
+12
+00:00:50,839 --> 00:00:53,952
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:53,992 --> 00:00:57,209
+Every tutorial has the sentence
+"never rebase a public branch".
+
+14
+00:00:57,249 --> 00:01:01,344
+You've probably repeated it. Today you
+replace the slogan with the mechanism, so
+
+15
+00:01:01,384 --> 00:01:05,634
+that you can also say when the rule doesn't
+apply, and what to do after someone has
+
+16
+00:01:05,674 --> 00:01:06,151
+broken it.
+
+17
+00:01:06,491 --> 00:01:12,841
+The mechanism is the one from the first
+video of this module: a rebase copies.
+
+18
+00:01:12,881 --> 00:01:19,722
+It makes a new copy of each of your commits,
+your saved snapshots, on a new starting
+
+19
+00:01:19,762 --> 00:01:26,521
+point, and each copy has a new ID. After
+you rebase and publish, your clone and the
+
+20
+00:01:26,561 --> 00:01:28,405
+server hold the copies.
+
+21
+00:01:28,745 --> 00:01:33,717
+Your colleague's clone, her own copy of
+the repository, still holds the originals,
+
+22
+00:01:33,757 --> 00:01:37,079
+with her own work on top. Git
+identifies commits by ID.
+
+23
+00:01:37,119 --> 00:01:42,091
+To Git, the copies and the originals are
+unrelated commits that happen to make the
+
+24
+00:01:42,131 --> 00:01:42,885
+same changes.
+
+25
+00:01:43,225 --> 00:01:45,861
+The second half of the video
+is about your own mistakes.
+
+26
+00:01:45,901 --> 00:01:49,876
+A rebase destroys nothing. There are three
+handles on the old state, and they differ
+
+27
+00:01:49,916 --> 00:01:53,794
+in how long they last. You'll see the
+shortest-lived one fail and the most durable
+
+28
+00:01:53,834 --> 00:01:54,750
+one save the branch.
+
+29
+00:01:56,590 --> 00:01:58,169
+Here's what you'll walk away with.
+
+30
+00:01:58,509 --> 00:01:59,921
+After this video you can:
+
+31
+00:02:00,261 --> 00:02:04,943
+Explain how a teammate ends up with every
+commit twice after a shared branch was
+
+32
+00:02:04,983 --> 00:02:05,415
+rebased.
+
+33
+00:02:05,755 --> 00:02:08,848
+Repair the teammate's branch
+without losing their own commit.
+
+34
+00:02:09,188 --> 00:02:13,567
+Recover the pre-rebase state through ORIG_HEAD
+and through the reflog, and say when
+
+35
+00:02:13,607 --> 00:02:14,419
+the first fails.
+
+36
+00:02:14,759 --> 00:02:17,031
+State the rule about published history
+as a consequence, not as a slogan.
+
+37
+00:02:18,871 --> 00:02:24,320
+Section 9.15, in one sentence. If you rebase
+a branch that someone else has built on
+
+38
+00:02:24,360 --> 00:02:29,744
+and publish the result, their clone holds
+the old commits, the server holds the new
+
+39
+00:02:29,784 --> 00:02:34,776
+ones, and Git sees two separate lines
+of history that happen to make the same
+
+40
+00:02:34,816 --> 00:02:35,299
+changes.
+
+41
+00:02:35,639 --> 00:02:40,439
+Follow it step by step, in your teammate's
+clone. Before: you pushed commits L and
+
+42
+00:02:40,479 --> 00:02:45,102
+C. She fetched them and committed K on
+top. origin/feat/ingest is her record of
+
+43
+00:02:45,142 --> 00:02:47,109
+where the branch is on the server.
+
+44
+00:02:47,449 --> 00:02:51,423
+You rebase: L and C become L-prime
+and C-prime, on a new base.
+
+45
+00:02:51,463 --> 00:02:56,602
+You force-push, replacing the commits on
+the server's branch: the server now has
+
+46
+00:02:56,642 --> 00:03:01,782
+L-prime and C-prime. Her clone has L, C,
+K. When she fetches, her branch and its
+
+47
+00:03:01,822 --> 00:03:07,220
+upstream have diverged. If she merges, the
+merge keeps the commits of both sides: L,
+
+48
+00:03:07,260 --> 00:03:10,263
+C, K, and L-prime, C-prime.
+Every change twice.
+
+49
+00:03:10,603 --> 00:03:14,955
+The root cause, as the textbook states
+it: Git identifies a commit by its ID.
+
+50
+00:03:14,995 --> 00:03:19,633
+Your copies have new IDs, so for Git they're
+different commits from the originals,
+
+51
+00:03:19,673 --> 00:03:22,143
+and a merge keeps the
+commits of both sides.
+
+52
+00:03:22,483 --> 00:03:27,995
+Is the content duplicated? No. The merge's
+diff is small, because both lines make
+
+53
+00:03:28,035 --> 00:03:31,011
+the same changes. The
+history is duplicated.
+
+54
+00:03:31,351 --> 00:03:36,554
+Why is that more than noise? Every later
+reader of the history meets each change
+
+55
+00:03:36,594 --> 00:03:41,665
+twice. Worse: if she pushes her merge,
+the commits you removed are back on the
+
+56
+00:03:41,705 --> 00:03:47,038
+server. When the purpose of the rewrite
+was to remove something, a credential or a
+
+57
+00:03:47,078 --> 00:03:51,625
+large file, one stale clone that
+merges and pushes undoes the cleanup.
+
+58
+00:03:51,965 --> 00:03:56,596
+The repair is on her side: go back to
+before the merge, then replay only her own
+
+59
+00:03:56,636 --> 00:03:58,290
+commit onto the new upstream.
+
+60
+00:03:58,630 --> 00:04:03,601
+Now the rule. Pro Git states it as: "Do
+not rebase commits that exist outside your
+
+61
+00:04:03,641 --> 00:04:06,718
+repository and that people
+may have based work on."
+
+62
+00:04:06,758 --> 00:04:11,729
+The textbook gives it a working form, a
+question to ask before you rebase anything
+
+63
+00:04:11,769 --> 00:04:14,968
+you have pushed: who else
+has commits on top of this?
+
+64
+00:04:15,008 --> 00:04:19,429
+If nobody, as on the branch of your
+own pull request: rebase and publish.
+
+65
+00:04:19,469 --> 00:04:24,379
+If somebody: agree on it first and send
+them the repair command, or don't rebase,
+
+66
+00:04:24,419 --> 00:04:25,479
+and merge instead.
+
+67
+00:04:25,819 --> 00:04:31,194
+Section 9.16, in one sentence. A rebase
+destroys nothing: the old tip is named by
+
+68
+00:04:31,234 --> 00:04:36,810
+ORIG_HEAD until another command overwrites
+that ref, and by the reflog of the branch
+
+69
+00:04:36,850 --> 00:04:41,958
+for weeks. The reflog is Git's local
+list of every position a branch has had.
+
+70
+00:04:42,298 --> 00:04:46,816
+How long is "until the entry expires"?
+The textbook gives the defaults.
+
+71
+00:04:46,856 --> 00:04:51,952
+A reflog entry whose commit is no longer
+reachable from the branch tip, which is
+
+72
+00:04:51,992 --> 00:04:55,226
+what a rebase leaves behind,
+expires after 30 days.
+
+73
+00:04:55,266 --> 00:04:59,142
+The unreachable objects are
+pruned after a further two weeks.
+
+74
+00:04:59,182 --> 00:05:04,214
+The lab configuration sets the reflog
+never to expire, so the transcripts don't
+
+75
+00:05:04,254 --> 00:05:05,433
+depend on the date.
+
+76
+00:05:07,273 --> 00:05:11,921
+The textbook's analogy: you reprint chapters
+1 and 2 of a shared manuscript with
+
+77
+00:05:11,961 --> 00:05:16,608
+corrections and replace the copies in the
+office. Your co-author is at home with
+
+78
+00:05:16,648 --> 00:05:21,354
+chapter 3 stapled to the old chapters 1
+and 2. If she staples the new print on as
+
+79
+00:05:21,394 --> 00:05:24,459
+well, the manuscript contains
+chapters 1 and 2 twice.
+
+80
+00:05:24,799 --> 00:05:29,280
+It breaks at one point: a person
+would recognise the duplicate text.
+
+81
+00:05:29,320 --> 00:05:34,865
+Git, which identifies commits by ID, does
+not, unless you ask it to compare patches.
+
+82
+00:05:34,905 --> 00:05:40,450
+That "unless" is the tool for diagnosis:
+--cherry-mark compares patch IDs, hashes of
+
+83
+00:05:40,490 --> 00:05:43,375
+the changes themselves,
+and marks the pairs.
+
+84
+00:05:43,715 --> 00:05:48,817
+For recovery, the model is a ladder with
+three rungs, and each rung lasts longer
+
+85
+00:05:48,857 --> 00:05:52,738
+than the one above it. --abort
+exists only during the rebase.
+
+86
+00:05:52,778 --> 00:05:56,273
+ORIG_HEAD exists until the
+next command that writes it.
+
+87
+00:05:56,313 --> 00:06:01,287
+The reflog entry exists for weeks. When
+a rung is gone, step down to the next.
+
+88
+00:06:03,127 --> 00:06:07,563
+Three repositories, and after your push
+the originals L and C exist as branch
+
+89
+00:06:07,603 --> 00:06:09,714
+history in exactly one of them: hers.
+
+90
+00:06:11,554 --> 00:06:13,730
+Part 1: you rebase and publish.
+
+91
+00:06:14,070 --> 00:06:18,387
+git rebase main 🟡 CAUTION. Two
+commits replayed. Then a plain push.
+
+92
+00:06:18,727 --> 00:06:23,234
+Rejected, non-fast-forward: the server's
+tip is not an ancestor of yours.
+
+93
+00:06:23,274 --> 00:06:28,218
+Read the hint: it recommends git pull.
+After a rebase of your own that advice is
+
+94
+00:06:28,258 --> 00:06:33,388
+wrong. A pull would bring the old commits
+back, merged next to your copies or, with
+
+95
+00:06:33,428 --> 00:06:35,070
+--rebase, in place of them.
+
+96
+00:06:35,410 --> 00:06:39,172
+The second command is a forced push
+🔴 DANGEROUS, with both guards.
+
+97
+00:06:39,212 --> 00:06:43,549
+The lease means: only if the server's
+branch is still where you last saw it.
+
+98
+00:06:43,589 --> 00:06:46,544
+The five answers are in the
+video on forcing a push.
+
+99
+00:06:46,584 --> 00:06:50,979
+The one that matters most today is "what
+can it destroy": every commit on the
+
+100
+00:06:51,019 --> 00:06:55,817
+server's branch that is not in your history.
+Here that's your own two originals, and
+
+101
+00:06:55,857 --> 00:07:00,368
+you meant to replace them. What you didn't
+check is who else had built on them.
+
+102
+00:07:00,708 --> 00:07:02,353
+Part 2: in Asha's clone.
+
+103
+00:07:02,693 --> 00:07:10,084
+Her branch: 1279adf, dc5df93,
+and her own c60bc13 on top.
+
+104
+00:07:10,424 --> 00:07:15,447
+"(forced update)" on the fetch line. And
+status: diverged, "3 and 3 different
+
+105
+00:07:15,487 --> 00:07:19,393
+commits each". Her side has the
+two old commits and her own.
+
+106
+00:07:19,433 --> 00:07:23,075
+The other side has the README
+commit and the two copies.
+
+107
+00:07:23,115 --> 00:07:26,495
+Status suggests git pull.
+She does it, with a merge.
+
+108
+00:07:26,535 --> 00:07:29,717
+Predict the graph. Draw
+it if you can. I'll wait.
+
+109
+00:07:34,557 --> 00:07:41,784
+Two parallel lines joined by a merge. "Add
+document loader" on the left as 1279adf
+
+110
+00:07:41,824 --> 00:07:48,342
+and on the right as 0fbfd81. "Add text
+cleaner" as dc5df93 and as 8aca274.
+
+111
+00:07:48,382 --> 00:07:55,520
+That's the CTO's branch from the opening,
+and the step that built it was the pull
+
+112
+00:07:55,560 --> 00:07:57,469
+that status suggested.
+
+113
+00:07:57,809 --> 00:08:03,159
+--cherry-mark puts an equals sign on four
+commits: two pairs with the same patch.
+
+114
+00:08:03,499 --> 00:08:08,256
+Her own commit is marked with a less-than
+sign and the README with a greater-than
+
+115
+00:08:08,296 --> 00:08:12,993
+sign. And the diff from before the merge
+to after it shows one file, the README.
+
+116
+00:08:13,033 --> 00:08:15,717
+The content is not
+duplicated, the history is.
+
+117
+00:08:16,057 --> 00:08:21,331
+Part 3: the repair, on her side. Go back
+to before the merge with git reset --hard
+
+118
+00:08:21,371 --> 00:08:25,284
+ORIG_HEAD 🔴. ORIG_HEAD names
+where HEAD was before the merge.
+
+119
+00:08:25,324 --> 00:08:30,533
+It's the very next state-changing command
+after the merge, her tree is clean, and
+
+120
+00:08:30,573 --> 00:08:34,550
+the merge hasn't been pushed.
+Then replay only her own commit.
+
+121
+00:08:34,890 --> 00:08:40,301
+Look at the middle command. git merge-base
+--fork-point looks into the reflog of
+
+122
+00:08:40,341 --> 00:08:45,956
+origin/feat/ingest, finds that her branch
+left that remote-tracking branch when its
+
+123
+00:08:45,996 --> 00:08:51,475
+tip was dc5df93, and so identifies "Add
+chunker" as the only commit that is hers.
+
+124
+00:08:51,515 --> 00:08:55,494
+git pull --rebase uses the same
+logic: one commit replayed.
+
+125
+00:08:55,834 --> 00:09:00,153
+Her chunker, now fbce73d, sits
+on top of your two copies.
+
+126
+00:09:00,193 --> 00:09:01,989
+One line, nothing twice.
+
+127
+00:09:02,329 --> 00:09:07,445
+You saw this fork-point logic do harm
+in the video on forced pushes, where it
+
+128
+00:09:07,485 --> 00:09:13,002
+dropped a commit the teammate had pushed.
+Here it does good, because her commit was
+
+129
+00:09:13,042 --> 00:09:18,359
+never pushed. Same rule, different history.
+The explicit form, git rebase --onto
+
+130
+00:09:18,399 --> 00:09:21,172
+origin/feat/ingest dc5df93, is in Lab 9.6.
+
+131
+00:09:21,512 --> 00:09:25,291
+Part 4: your own bad rebase.
+labs/run ch09/recover.
+
+132
+00:09:25,331 --> 00:09:31,432
+The plan was to drop two experiment commits.
+The wrong lines were deleted from the
+
+133
+00:09:31,472 --> 00:09:32,181
+todo list.
+
+134
+00:09:35,521 --> 00:09:39,406
+The saved list has three lines: the
+skeleton and the two experiments.
+
+135
+00:09:39,446 --> 00:09:43,161
+The two commits you wanted to keep
+are gone, and Git said nothing.
+
+136
+00:09:43,501 --> 00:09:47,216
+They're gone from the branch,
+not from the repository.
+
+137
+00:09:47,256 --> 00:09:52,502
+ORIG_HEAD still names the old tip,
+6ab8f55. Noticed at once, the undo is one
+
+138
+00:09:52,542 --> 00:09:53,058
+command.
+
+139
+00:09:53,398 --> 00:09:58,615
+git reset --hard ORIG_HEAD 🔴. From the
+textbook: it moves the current branch to that
+
+140
+00:09:58,655 --> 00:10:02,432
+commit and overwrites the index
+and the working tree with it.
+
+141
+00:10:02,472 --> 00:10:07,439
+It destroys uncommitted changes to tracked
+files. Preview with git status, which
+
+142
+00:10:07,479 --> 00:10:12,383
+should be clean, as it is after a finished
+rebase, and git diff ORIG_HEAD HEAD.
+
+143
+00:10:12,423 --> 00:10:17,327
+What it moves away from stays recoverable:
+the rebased tip is now <branch>@{1}.
+
+144
+00:10:17,667 --> 00:10:23,339
+Five commits again. Now the same mistake,
+not noticed, followed by a reset for
+
+145
+00:10:23,379 --> 00:10:29,270
+another reason. Quick quiz, two options.
+Afterwards, ORIG_HEAD names: option one,
+
+146
+00:10:29,310 --> 00:10:33,664
+the good tip, 6ab8f55. Option
+two, the damaged tip, e30ba74.
+
+147
+00:10:33,704 --> 00:10:34,835
+Say it out loud.
+
+148
+00:10:44,875 --> 00:10:49,992
+Option two. e30ba74: the tip before the
+reset, which is the damaged branch.
+
+149
+00:10:50,032 --> 00:10:55,768
+No name on screen points at the two good
+commits. The first rung is gone, the second
+
+150
+00:10:55,808 --> 00:10:58,862
+has been overwritten.
+Step down to the third.
+
+151
+00:10:59,202 --> 00:11:04,492
+Read it from the top: a reset, the second
+bad rebase, the reset to ORIG_HEAD, the
+
+152
+00:11:04,532 --> 00:11:08,374
+first bad rebase, and below
+that the five original commits.
+
+153
+00:11:08,414 --> 00:11:13,835
+Try it now. Thirty seconds: find the entry
+that is the last good state, and say its
+
+154
+00:11:13,875 --> 00:11:14,888
+number out loud.
+
+155
+00:11:19,728 --> 00:11:23,655
+feat/rerank@{2}: 6ab8f55,
+"reset: moving to ORIG_HEAD".
+
+156
+00:11:23,695 --> 00:11:27,911
+There is one entry per rebase,
+so you count in the listing.
+
+157
+00:11:27,951 --> 00:11:32,888
+If you picked entry 4, look at its
+ID: the same commit, further down.
+
+158
+00:11:40,428 --> 00:11:44,608
+The rescue branch comes first for a reason.
+It's a ref, a name that points at a
+
+159
+00:11:44,648 --> 00:11:48,935
+commit, so the commits stay reachable
+whatever you type next, and you can inspect
+
+160
+00:11:48,975 --> 00:11:51,927
+them before moving the real
+branch. Only then the reset.
+
+161
+00:11:52,267 --> 00:11:56,585
+The reflog of HEAD holds the same story
+in more detail, one line per step.
+
+162
+00:11:56,625 --> 00:12:01,532
+For "the branch before its last rebase",
+the branch's own reflog is the shorter list
+
+163
+00:12:01,572 --> 00:12:02,003
+to read.
+
+164
+00:12:03,843 --> 00:12:05,491
+Five mistakes to watch for.
+
+165
+00:12:05,831 --> 00:12:09,648
+Following the git pull hint after
+your own rebase was rejected on push.
+
+166
+00:12:09,688 --> 00:12:13,940
+Root cause: the server still has the
+originals; a pull merges them next to your
+
+167
+00:12:13,980 --> 00:12:16,167
+copies or replaces your copies with them.
+
+168
+00:12:16,507 --> 00:12:19,718
+Merging after a "(forced update)"
+on a branch you have built on.
+
+169
+00:12:19,758 --> 00:12:23,629
+Root cause: commits are identified by
+ID, so the copies and the originals are
+
+170
+00:12:23,669 --> 00:12:26,067
+different commits, and a
+merge keeps both lines.
+
+171
+00:12:26,407 --> 00:12:31,005
+Pushing that merge. Root cause: it makes
+the removed commits reachable on the server
+
+172
+00:12:31,045 --> 00:12:34,759
+again, which undoes a rewrite whose
+purpose was to remove something.
+
+173
+00:12:35,099 --> 00:12:40,889
+Relying on ORIG_HEAD hours after a rebase.
+Root cause: it is one slot, rewritten by
+
+174
+00:12:40,929 --> 00:12:43,699
+the next reset, merge, rebase or git am.
+
+175
+00:12:44,039 --> 00:12:47,156
+Moving the real branch before
+creating a rescue ref.
+
+176
+00:12:47,196 --> 00:12:52,014
+Root cause: until a ref points at the
+recovered commits, they are reachable only
+
+177
+00:12:52,054 --> 00:12:55,840
+through reflog entries that further
+commands keep pushing down.
+
+178
+00:12:57,680 --> 00:13:02,286
+Now, out of the lab. Picture a team that
+shares a long-running branch for an
+
+179
+00:13:02,326 --> 00:13:07,421
+ingestion pipeline. On a Friday one engineer
+rebases it onto main "to keep it fresh"
+
+180
+00:13:07,461 --> 00:13:11,822
+and force-pushes with a lease. The
+lease holds: nobody had pushed since.
+
+181
+00:13:11,862 --> 00:13:15,613
+Two colleagues had unpushed
+commits on top of the old history.
+
+182
+00:13:15,653 --> 00:13:20,259
+On Monday both pull. One gets a merge
+with every commit twice and pushes it.
+
+183
+00:13:20,299 --> 00:13:25,088
+By Tuesday the branch on the server
+contains the old line, the new line and two
+
+184
+00:13:25,128 --> 00:13:25,516
+merges.
+
+185
+00:13:25,856 --> 00:13:30,470
+Nothing in that story required a mistake
+by Git or a missing guard on the push.
+
+186
+00:13:30,510 --> 00:13:34,358
+The lease protects the server's
+ref. It says nothing about clones.
+
+187
+00:13:34,698 --> 00:13:39,623
+So the control is the textbook's working
+question, asked before the rebase: who else
+
+188
+00:13:39,663 --> 00:13:44,294
+has commits on top of this? If the answer
+is "somebody", either the team agrees
+
+189
+00:13:44,334 --> 00:13:49,260
+first and everybody receives the repair
+command, or the branch is brought up to date
+
+190
+00:13:49,300 --> 00:13:50,028
+with a merge.
+
+191
+00:13:50,368 --> 00:13:55,568
+On the platform side, according to the
+documentation, a new ruleset, GitHub's named
+
+192
+00:13:55,608 --> 00:14:00,871
+list of rules for branches, has "Block force
+pushes" enabled by default, and classic
+
+193
+00:14:00,911 --> 00:14:04,406
+branch protection rules disable
+force pushes by default.
+
+194
+00:14:04,446 --> 00:14:09,583
+The textbook's advice: use that for main
+and for release branches, and leave topic
+
+195
+00:14:09,623 --> 00:14:11,477
+branches open to their owners.
+
+196
+00:14:11,817 --> 00:14:16,438
+And for recovery: it's local. If you had
+already force-pushed a damaged branch,
+
+197
+00:14:16,478 --> 00:14:19,860
+restore it in your clone first,
+and then publish it again.
+
+198
+00:14:21,700 --> 00:14:28,098
+Your turn. Do Lab 9.5, "Break a
+branch on purpose and recover it", in
+
+199
+00:14:28,138 --> 00:14:30,430
+lab-manual/m09-rebase.md.
+
+200
+00:14:30,770 --> 00:14:32,122
+Predict before each step:
+
+201
+00:14:32,462 --> 00:14:36,836
+After the bad rebase: which commits are
+missing, and what does ORIG_HEAD name?
+
+202
+00:14:37,176 --> 00:14:41,220
+After the failure step of the lab:
+what does ORIG_HEAD name now?
+
+203
+00:14:41,560 --> 00:14:45,602
+In the branch's reflog: which entry
+number is the last good state?
+
+204
+00:14:45,642 --> 00:14:47,211
+Count before you print it.
+
+205
+00:14:47,551 --> 00:14:50,215
+Create the rescue branch
+before you move anything.
+
+206
+00:14:50,555 --> 00:14:54,205
+The challenge is Lab 9.6, "Rebase a shared
+branch and watch a teammate's history
+
+207
+00:14:54,245 --> 00:14:57,987
+duplicate", in the same file. Play both
+roles, and write down what each person saw
+
+208
+00:14:58,027 --> 00:14:58,587
+at each step.
+
+209
+00:15:00,427 --> 00:15:05,470
+Q155: "You force-pushed a rebased branch.
+A teammate now has every commit twice.
+
+210
+00:15:05,510 --> 00:15:10,235
+Explain how that happened, how they
+repair it, and what you would have done
+
+211
+00:15:10,275 --> 00:15:11,062
+differently."
+
+212
+00:15:13,402 --> 00:15:17,579
+Answer out loud first. A strong answer
+has three parts in the order asked.
+
+213
+00:15:17,619 --> 00:15:22,367
+The explanation follows the commits through
+three repositories and rests on one fact
+
+214
+00:15:22,407 --> 00:15:26,927
+about how Git identifies a commit. The
+repair is given from the teammate's seat,
+
+215
+00:15:26,967 --> 00:15:31,658
+with the state she must return to first and
+how her own commits are told apart from
+
+216
+00:15:31,698 --> 00:15:36,103
+the old copies. The third part is not "I
+would not have rebased": it names the
+
+217
+00:15:36,143 --> 00:15:40,549
+question you would have asked, and the
+two acceptable courses depending on its
+
+218
+00:15:40,589 --> 00:15:40,948
+answer.
+
+219
+00:15:42,788 --> 00:15:46,915
+Let's land this. You should now be
+able to say, in your own words:
+
+220
+00:15:47,255 --> 00:15:52,254
+A rebase copies. So after I publish a
+rebased branch, a teammate who built on the
+
+221
+00:15:52,294 --> 00:15:56,609
+old commits holds originals that Git
+treats as unrelated to my copies.
+
+222
+00:15:56,649 --> 00:16:01,586
+A merge then keeps both lines, and pushing
+it brings the old commits back to the
+
+223
+00:16:01,626 --> 00:16:06,500
+server. The repair is on their side:
+return to before the merge and replay only
+
+224
+00:16:06,540 --> 00:16:11,663
+their own commits onto the new tip. Before
+rebasing anything pushed, I ask who else
+
+225
+00:16:11,703 --> 00:16:13,219
+has commits on top of it.
+
+226
+00:16:13,559 --> 00:16:19,161
+My own bad rebase destroys nothing: --abort
+works while it runs, ORIG_HEAD until the
+
+227
+00:16:19,201 --> 00:16:23,392
+next command that writes it, and
+the branch's reflog for weeks.
+
+228
+00:16:23,432 --> 00:16:26,885
+I create a rescue branch
+before I move the real one.
+
+229
+00:16:28,725 --> 00:16:33,150
+Read sections 9.15 and 9.16 of Chapter 9.
+
+230
+00:16:33,490 --> 00:16:38,842
+Today you played both sides of a duplicated
+history, and you recovered a branch from
+
+231
+00:16:38,882 --> 00:16:43,078
+its reflog. Break one on purpose
+in Lab 9.5 before the next video.
+
+232
+00:16:43,118 --> 00:16:47,635
+Next time: publishing a rebased branch,
+rebase or merge, and the rebase
+
+233
+00:16:47,675 --> 00:16:51,936
+configuration. Until then, look at
+the state first and type second.
+
+234
+00:16:51,976 --> 00:16:53,476
+See you in the next one.

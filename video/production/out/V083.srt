@@ -1,0 +1,879 @@
+1
+00:00:04,500 --> 00:00:08,656
+That question reaches you from a team
+lead. Two more arrive the same week.
+
+2
+00:00:08,696 --> 00:00:13,193
+"Production falls over on an empty question;
+I need a fix in ten minutes", while
+
+3
+00:00:13,233 --> 00:00:17,786
+you're in the middle of a rebase that has
+stopped at a conflict, where git switch
+
+4
+00:00:17,826 --> 00:00:22,436
+main is refused and git stash fails. And
+"can you look at Asha's pull request now,
+
+5
+00:00:22,476 --> 00:00:27,142
+she is blocked", while your working tree
+holds two hours of half-finished edits and
+
+6
+00:00:27,182 --> 00:00:28,220
+a warm build cache.
+
+7
+00:00:28,560 --> 00:00:32,609
+The usual answers are a second clone,
+or a stash and a branch switch.
+
+8
+00:00:32,649 --> 00:00:37,410
+A second clone costs a full copy of the
+object database and has to be fetched and
+
+9
+00:00:37,450 --> 00:00:42,388
+kept in sync separately. A stash and a switch
+disturb the one working tree you have,
+
+10
+00:00:42,428 --> 00:00:45,944
+and during a conflicted rebase
+they aren't available at all.
+
+11
+00:00:46,284 --> 00:00:51,086
+Git's own answer is a linked worktree: one
+more working tree, a directory of files
+
+12
+00:00:51,126 --> 00:00:55,633
+you edit, with its own HEAD and its own
+index, attached to the repository you
+
+13
+00:00:55,673 --> 00:01:00,121
+already have. HEAD says where you are,
+and the index holds your next commit.
+
+14
+00:01:00,161 --> 00:01:01,834
+Keep the four agents in mind.
+
+15
+00:01:03,674 --> 00:01:07,444
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+16
+00:01:07,484 --> 00:01:12,628
+You used a worktree twice already without
+studying it: once to show a detached HEAD
+
+17
+00:01:12,668 --> 00:01:17,125
+on a tag, and once to test a suspect
+commit and its parent side by side.
+
+18
+00:01:17,165 --> 00:01:22,059
+Today you learn the mechanism. What is
+created on disk, what is shared, what is
+
+19
+00:01:22,099 --> 00:01:26,057
+private, and the one rule that
+keeps the whole arrangement safe.
+
+20
+00:01:26,097 --> 00:01:28,118
+The next video is about using it.
+
+21
+00:01:28,458 --> 00:01:32,626
+The project is rag-api, a retrieval-augmented
+question-answering service.
+
+22
+00:01:32,666 --> 00:01:36,372
+main is the release line and
+feature/rerank is your topic branch.
+
+23
+00:01:38,212 --> 00:01:42,552
+say what git worktree add creates in the
+new directory and in the repository;
+
+24
+00:01:42,892 --> 00:01:45,965
+list what worktrees share and
+what each has for itself;
+
+25
+00:01:46,305 --> 00:01:51,126
+find the real location of a per-worktree
+file with git rev-parse --git-path;
+
+26
+00:01:51,466 --> 00:01:56,529
+explain why Git refuses to check out one
+branch in two worktrees, and what forcing
+
+27
+00:01:56,569 --> 00:01:57,151
+it breaks.
+
+28
+00:01:58,991 --> 00:02:04,130
+In one sentence: 🟢 SAFE, git worktree add
+<path> <branch> creates a second directory
+
+29
+00:02:04,170 --> 00:02:09,186
+of checked-out files that belongs to the
+same repository: the same objects and the
+
+30
+00:02:09,226 --> 00:02:12,084
+same refs, with a HEAD
+and an index of its own.
+
+31
+00:02:12,424 --> 00:02:17,531
+Precisely. The manual distinguishes the
+main worktree, the one created by git init
+
+32
+00:02:17,571 --> 00:02:21,549
+or git clone, from linked worktrees
+created by git worktree add.
+
+33
+00:02:21,589 --> 00:02:26,508
+A repository has one main worktree, unless
+it is bare, and any number of linked
+
+34
+00:02:26,548 --> 00:02:31,467
+ones. The word "worktree" means the working
+tree together with its per-worktree
+
+35
+00:02:31,507 --> 00:02:32,032
+metadata.
+
+36
+00:02:32,372 --> 00:02:37,535
+Inside the dot git folder, two things are
+created. In the new directory there is a
+
+37
+00:02:37,575 --> 00:02:42,168
+.git file, not a directory, that
+contains one line pointing back into the
+
+38
+00:02:42,208 --> 00:02:47,308
+repository. In the repository there is a
+private directory, .git/worktrees/<id>/,
+
+39
+00:02:47,348 --> 00:02:52,448
+that holds what belongs to this worktree
+alone: HEAD, index, logs/HEAD, ORIG_HEAD
+
+40
+00:02:52,488 --> 00:02:57,589
+and the other root refs, plus two small
+files. gitdir says where the working tree
+
+41
+00:02:57,629 --> 00:03:02,158
+is. commondir says where the shared
+part is, relative to this directory.
+
+42
+00:03:02,498 --> 00:03:06,534
+So inside a linked worktree Git
+works with two directories.
+
+43
+00:03:06,574 --> 00:03:11,371
+$GIT_DIR is the private one.
+$GIT_COMMON_DIR is the repository's .git.
+
+44
+00:03:11,411 --> 00:03:15,724
+Every path under "the Git directory"
+belongs to one of the two.
+
+45
+00:03:16,064 --> 00:03:20,016
+Try it now, on paper. Per
+worktree, or shared? HEAD.
+
+46
+00:03:20,056 --> 00:03:26,311
+The index. The objects. Branches. The stash.
+Pause me for thirty seconds and write
+
+47
+00:03:26,351 --> 00:03:27,232
+your answer.
+
+48
+00:03:32,072 --> 00:03:37,178
+HEAD and the index are on the left, per
+worktree. Objects, branches and the stash
+
+49
+00:03:37,218 --> 00:03:38,766
+are on the right, shared.
+
+50
+00:03:39,106 --> 00:03:44,402
+The manual's rule is short: refs that start
+with refs/ are shared, with the three
+
+51
+00:03:44,442 --> 00:03:49,739
+exceptions in the last row of the left
+column, and root refs such as HEAD are per
+
+52
+00:03:49,779 --> 00:03:54,153
+worktree. It also warns not to
+guess. Ask git rev-parse --git-path.
+
+53
+00:03:54,493 --> 00:03:59,593
+Now the rule. In one sentence: a branch can
+be checked out in at most one worktree,
+
+54
+00:03:59,633 --> 00:04:02,814
+and Git refuses every command
+that would break this.
+
+55
+00:04:03,154 --> 00:04:07,880
+Why? A branch is one ref. A worktree that
+has the branch checked out assumes that
+
+56
+00:04:07,920 --> 00:04:11,588
+its index and its files correspond
+to the commit the ref names.
+
+57
+00:04:11,628 --> 00:04:16,531
+If two worktrees shared the ref, a commit
+in one would move the ref under the other,
+
+58
+00:04:16,571 --> 00:04:21,474
+whose index and files would stay where they
+were. On screen is that second worktree,
+
+59
+00:04:21,514 --> 00:04:23,652
+with the IDs you'll meet in the demo.
+
+60
+00:04:23,992 --> 00:04:28,331
+When you need the files of a branch that
+is checked out elsewhere, and you don't
+
+61
+00:04:28,371 --> 00:04:32,930
+intend to commit to it, detach. A detached
+worktree holds a commit, not a branch, so
+
+62
+00:04:32,970 --> 00:04:35,448
+any number of them can
+sit on the same commit.
+
+63
+00:04:35,788 --> 00:04:39,168
+Two things count as "checked
+out" that are often missed.
+
+64
+00:04:39,208 --> 00:04:44,297
+A branch that is in the middle of a rebase
+or a bisect in some worktree is in use by
+
+65
+00:04:44,337 --> 00:04:48,816
+that worktree, although git worktree
+list shows that worktree as detached.
+
+66
+00:04:48,856 --> 00:04:53,641
+And git rebase --update-refs skips branches
+that are checked out in a worktree.
+
+67
+00:04:55,481 --> 00:04:58,380
+The textbook's analogy: one
+library, several desks.
+
+68
+00:04:58,420 --> 00:05:03,164
+Every desk has its own open book and its
+own bookmark: the checked-out files, HEAD,
+
+69
+00:05:03,204 --> 00:05:08,006
+the index. The shelves, which are the objects,
+and the catalogue, which is the refs,
+
+70
+00:05:08,046 --> 00:05:12,675
+are shared. A book that one desk adds to
+the shelves is on the shelves for all of
+
+71
+00:05:12,715 --> 00:05:12,963
+them.
+
+72
+00:05:13,303 --> 00:05:18,206
+The analogy breaks at one rule that libraries
+don't have: Git allows a given branch
+
+73
+00:05:18,246 --> 00:05:19,873
+to be open at one desk only.
+
+74
+00:05:20,213 --> 00:05:23,259
+Hold on to the two halves
+when you predict behavior.
+
+75
+00:05:23,299 --> 00:05:27,651
+Anything that is an object or a ref
+under refs/ is visible from every desk
+
+76
+00:05:27,691 --> 00:05:32,577
+immediately, with no fetch and no push. On
+screen, a commit made at the other desk:
+
+77
+00:05:32,617 --> 00:05:37,562
+feature/rerank moves here too. Anything that
+is "where I am" or "what I have staged"
+
+78
+00:05:37,602 --> 00:05:38,749
+belongs to one desk.
+
+79
+00:05:40,589 --> 00:05:45,133
+Read the three small files as a pair of
+pointers. The .git file in the linked
+
+80
+00:05:45,173 --> 00:05:49,003
+working tree says where this
+worktree's private Git directory is.
+
+81
+00:05:49,043 --> 00:05:52,635
+gitdir inside that directory
+points back at the working tree.
+
+82
+00:05:52,675 --> 00:05:57,397
+That's how git worktree list and git
+worktree prune find out whether the working
+
+83
+00:05:57,437 --> 00:06:02,339
+tree still exists. commondir contains two
+dots, slash, two dots: two levels up from
+
+84
+00:06:02,379 --> 00:06:05,137
+the private directory is
+.git, the shared part.
+
+85
+00:06:06,977 --> 00:06:12,117
+"Preparing worktree (checking out
+'feature/rerank')" is an ordinary checkout into
+
+86
+00:06:12,157 --> 00:06:17,233
+another directory. No objects were copied.
+git worktree list prints one line per
+
+87
+00:06:17,273 --> 00:06:22,093
+worktree: path, the commit its HEAD
+resolves to, and the branch in brackets.
+
+88
+00:06:22,133 --> 00:06:24,268
+The main worktree is always first.
+
+89
+00:06:24,608 --> 00:06:28,463
+Predict: in the new directory,
+is .git a directory?
+
+90
+00:06:28,503 --> 00:06:30,525
+Say it out loud. I'll wait.
+
+91
+00:06:42,865 --> 00:06:47,784
+A file, one line, beginning with gitdir:.
+And inside the repository, the private
+
+92
+00:06:47,824 --> 00:06:51,875
+directory with HEAD, index, logs,
+ORIG_HEAD, gitdir and commondir.
+
+93
+00:06:51,915 --> 00:06:53,115
+That is the diagram.
+
+94
+00:06:53,455 --> 00:06:57,281
+Now ask Git where things are,
+from inside the linked worktree.
+
+95
+00:06:57,621 --> 00:07:00,908
+The Git directory is the
+private one under worktrees.
+
+96
+00:07:00,948 --> 00:07:06,120
+The common directory is the repository's
+.git. HEAD, index, logs/HEAD and ORIG_HEAD
+
+97
+00:07:06,160 --> 00:07:11,269
+resolve into the private directory. The
+rest of the snippet shows the shared paths
+
+98
+00:07:11,309 --> 00:07:16,041
+resolving into the common one. In a
+script, never build such a path by hand.
+
+99
+00:07:16,381 --> 00:07:21,527
+First consequence. Commit in the linked
+worktree, then look from the main one.
+
+100
+00:07:21,567 --> 00:07:26,779
+Quick quiz, three options. To see that
+commit here you need a fetch, a push, or
+
+101
+00:07:26,819 --> 00:07:28,441
+nothing. Say it out loud.
+
+102
+00:07:33,281 --> 00:07:38,118
+Nothing. No fetch, no push: the branch
+ref and the new objects are already here,
+
+103
+00:07:38,158 --> 00:07:43,179
+because they are shared. In git branch -v
+the asterisk marks the branch checked out
+
+104
+00:07:43,219 --> 00:07:47,446
+here and the plus sign marks a branch
+checked out in another worktree.
+
+105
+00:07:47,786 --> 00:07:50,426
+Second consequence: staging is private.
+
+106
+00:07:50,766 --> 00:07:55,772
+A file staged in the main worktree doesn't
+appear in the status of the linked one.
+
+107
+00:07:55,812 --> 00:07:56,511
+Two indexes.
+
+108
+00:07:56,851 --> 00:08:02,071
+And because root refs are per worktree,
+the name HEAD means something different in
+
+109
+00:08:02,111 --> 00:08:05,856
+each directory. To name another
+worktree's HEAD, prefix it.
+
+110
+00:08:15,996 --> 00:08:19,142
+"'main' is already used by
+worktree at" and the path.
+
+111
+00:08:19,182 --> 00:08:23,772
+Both ways are refused. The same rule
+protects a checked-out branch from being
+
+112
+00:08:23,812 --> 00:08:25,696
+deleted or moved from elsewhere.
+
+113
+00:08:26,036 --> 00:08:28,993
+The supported way to get the
+same files without the branch:
+
+114
+00:08:29,333 --> 00:08:33,740
+Two worktrees on commit 323e8f1,
+one on the branch and one detached.
+
+115
+00:08:34,080 --> 00:08:37,504
+Now see once, in a sandbox,
+what the rule prevents.
+
+116
+00:08:37,544 --> 00:08:40,627
+--force lets you build
+exactly that situation.
+
+117
+00:08:42,967 --> 00:08:47,345
+You force a second checkout of main,
+then commit in the first worktree.
+
+118
+00:08:47,385 --> 00:08:51,390
+Nobody touches the second. Predict
+what git status reports there.
+
+119
+00:08:51,730 --> 00:08:54,948
+"Changes to be committed", in
+a directory nobody edited.
+
+120
+00:08:54,988 --> 00:08:55,763
+Which changes?
+
+121
+00:08:56,103 --> 00:08:59,357
+The staged diff removes the lines
+that the latest commit added.
+
+122
+00:08:59,697 --> 00:09:04,441
+A git commit in the stale worktree at this
+point would record the old tree on top of
+
+123
+00:09:04,481 --> 00:09:08,256
+the new commit: a silent revert of
+a colleague's work, or your own.
+
+124
+00:09:08,296 --> 00:09:10,876
+That's the failure the
+rule exists to prevent.
+
+125
+00:09:11,216 --> 00:09:16,374
+The repair. 🔴 DANGEROUS: git reset --hard
+overwrites the index and the working tree
+
+126
+00:09:16,414 --> 00:09:21,072
+and destroys uncommitted changes to
+tracked files. Preview with git status.
+
+127
+00:09:21,112 --> 00:09:25,269
+It's appropriate here because this
+worktree had no work of its own.
+
+128
+00:09:31,609 --> 00:09:33,257
+Five mistakes to watch for.
+
+129
+00:09:33,597 --> 00:09:38,642
+Expecting to fetch or push between two
+worktrees. Root cause: objects and all refs
+
+130
+00:09:38,682 --> 00:09:43,168
+under refs/ are shared; a commit made
+in one exists in the other at once.
+
+131
+00:09:43,508 --> 00:09:49,207
+Building a path such as .git/index by
+hand in a script that runs in a linked
+
+132
+00:09:49,247 --> 00:09:54,341
+worktree. Root cause: there .git is
+a file and the index lives under
+
+133
+00:09:54,381 --> 00:09:59,702
+.git/worktrees/<id>/; git rev-parse
+--git-path gives the real location.
+
+134
+00:10:00,042 --> 00:10:04,125
+git worktree add --force to get
+a second checkout of a branch.
+
+135
+00:10:04,165 --> 00:10:09,446
+Root cause: one ref and two indexes; a
+commit in one worktree leaves the other's
+
+136
+00:10:09,486 --> 00:10:11,442
+index describing the old tree.
+
+137
+00:10:11,782 --> 00:10:16,862
+Committing in the stale worktree. Root cause:
+the index still holds the old tree, so
+
+138
+00:10:16,902 --> 00:10:20,946
+the commit records the inverse of
+the commit that moved the branch.
+
+139
+00:10:21,286 --> 00:10:25,162
+"The branch is not checked out
+anywhere, why can I not delete it?"
+
+140
+00:10:25,202 --> 00:10:30,086
+Root cause: a branch in the middle of a
+rebase or bisect in some worktree is in use
+
+141
+00:10:30,126 --> 00:10:33,467
+by that worktree, although the
+list shows it as detached.
+
+142
+00:10:35,307 --> 00:10:41,575
+Now, out of the lab. A model-evaluation job
+runs for forty minutes against the files
+
+143
+00:10:41,615 --> 00:10:47,582
+of a release tag. With one working tree
+nobody can touch the repository until it
+
+144
+00:10:47,622 --> 00:10:53,589
+finishes. With git worktree add --detach
+../rag-api-v1.3.0 v1.3.0 the job gets a
+
+145
+00:10:53,629 --> 00:10:56,818
+directory of its own,
+and you keep working.
+
+146
+00:10:57,158 --> 00:11:01,109
+The same shape answers the team
+lead's question about four agents.
+
+147
+00:11:01,149 --> 00:11:06,067
+No, you don't need four clones. Four linked
+worktrees, each on its own new branch,
+
+148
+00:11:06,107 --> 00:11:10,966
+share one object database. Each agent has
+its own files, its own HEAD and its own
+
+149
+00:11:11,006 --> 00:11:15,743
+index, and the one-branch rule guarantees
+that no two of them can move the same
+
+150
+00:11:15,783 --> 00:11:20,762
+branch under each other. What they do share,
+and must be told about, is the subject
+
+151
+00:11:20,802 --> 00:11:21,850
+of the next video.
+
+152
+00:11:23,690 --> 00:11:30,802
+Your turn. Do Exercise 14.1, Level 1, "A
+second working tree for a hotfix", in
+
+153
+00:11:30,842 --> 00:11:34,836
+exercises/m11-m15-investigation-recovery.md.
+
+154
+00:11:35,176 --> 00:11:40,183
+Before you create the worktree, write down
+which files and directories will exist in
+
+155
+00:11:40,223 --> 00:11:43,428
+the new directory and under
+.git/worktrees afterwards.
+
+156
+00:11:43,468 --> 00:11:48,415
+After you commit in the new worktree, predict
+what git branch -v shows in the first
+
+157
+00:11:48,455 --> 00:11:51,179
+one, including the markers,
+before you run it.
+
+158
+00:11:51,519 --> 00:11:57,350
+The challenge is Exercise 14.9, Level 4,
+"Two fixes in a worktree that no longer
+
+159
+00:11:57,390 --> 00:11:59,258
+exists", in the same file.
+
+160
+00:12:01,098 --> 00:12:03,029
+Answer out loud. I'll wait.
+
+161
+00:12:07,869 --> 00:12:12,262
+A strong answer has two lists and keeps
+them apart: what appears in the new
+
+162
+00:12:12,302 --> 00:12:17,228
+directory, including the nature of its .git,
+and what appears inside the repository,
+
+163
+00:12:17,268 --> 00:12:21,543
+by file name. It explains the two small
+pointer files and what uses them.
+
+164
+00:12:21,583 --> 00:12:26,154
+It says explicitly what isn't created or
+copied. And it connects the layout to
+
+165
+00:12:26,194 --> 00:12:31,119
+behavior: which state is therefore private,
+which is shared, and how you ask Git for
+
+166
+00:12:31,159 --> 00:12:33,897
+the real path of a file
+instead of assuming it.
+
+167
+00:12:35,737 --> 00:12:38,664
+Let's land this. You
+should now be able to say:
+
+168
+00:12:39,004 --> 00:12:44,291
+A linked worktree is a second working tree
+with its own HEAD, index and HEAD reflog,
+
+169
+00:12:44,331 --> 00:12:46,130
+on the same objects and refs.
+
+170
+00:12:46,470 --> 00:12:52,011
+Its .git is a file that points at
+.git/worktrees/<id>/ in the repository.
+
+171
+00:12:52,351 --> 00:12:57,515
+Refs under refs/ are shared, with three
+exceptions; root refs such as HEAD are per
+
+172
+00:12:57,555 --> 00:13:01,259
+worktree; git rev-parse --git-path
+tells me which is which.
+
+173
+00:13:01,599 --> 00:13:06,492
+A branch can be checked out in one worktree
+only, because one ref with two indexes
+
+174
+00:13:06,532 --> 00:13:07,996
+produces a silent revert.
+
+175
+00:13:08,336 --> 00:13:13,468
+For the files of a branch that is in use
+elsewhere, I add a detached worktree or a
+
+176
+00:13:13,508 --> 00:13:15,107
+new branch, never --force.
+
+177
+00:13:16,947 --> 00:13:21,972
+Read sections 25.1 to 25.4 of Chapter 25.
+
+178
+00:13:22,312 --> 00:13:27,614
+Today you saw what a worktree is on disk,
+what it shares, and why one branch lives
+
+179
+00:13:27,654 --> 00:13:33,022
+in one worktree. Before the next video, add
+a worktree in the lab and read its .git
+
+180
+00:13:33,062 --> 00:13:38,494
+file. Next time: worktrees in use, with a
+hotfix during a rebase, a review, the life
+
+181
+00:13:38,534 --> 00:13:43,446
+cycle and the pitfalls. Until then, look
+at the state first and type second.
+
+182
+00:13:43,486 --> 00:13:45,010
+See you in the next one.

@@ -321,7 +321,7 @@ Look at the column "Current branch ref". Unchanged, unchanged, unchanged. And lo
 
 **[ANIMATION]** step: logs.3
 
-When a rebase runs to the end, the two reflogs record it differently, as you saw in the last video. The HEAD reflog has one line per step. The branch reflog has one line for the whole rebase, and the line below it's the old tip. So `<branch>@{1}` means "this branch before its last rebase", and that's the most reliable undo handle you have.
+When a rebase runs to the end, the two reflogs record it differently, as you saw in the last video. The HEAD reflog has one line per step. The branch reflog has one line for the whole rebase, and the line below it is the old tip. So `<branch>@{1}` means "this branch before its last rebase", and that's the most reliable undo handle you have.
 
 **Step 8: the other backend.** `labs/run ch09/apply-backend`. Until Git 2.26 the default implementation turned each commit into a patch and applied the patches. It's still there, as `git rebase --apply`.
 

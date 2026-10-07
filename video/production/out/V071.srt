@@ -1,0 +1,860 @@
+1
+00:00:04,500 --> 00:00:08,993
+In the previous video you answered this by
+reading commits, the saved snapshots of
+
+2
+00:00:09,033 --> 00:00:13,193
+the project. You guessed that the fault
+was in normalization, you blamed the
+
+3
+00:00:13,233 --> 00:00:17,726
+function, you looked through the formatter.
+That worked because you had an idea of
+
+4
+00:00:17,766 --> 00:00:18,500
+where to look.
+
+5
+00:00:18,840 --> 00:00:23,615
+Now remove the idea. The fault is in a file
+nobody suspects, or the diff between the
+
+6
+00:00:23,655 --> 00:00:27,571
+last good release and today is four
+thousand commits by sixty people.
+
+7
+00:00:27,611 --> 00:00:32,329
+Reading doesn't scale. What you do have is
+a test: one command that says yes or no.
+
+8
+00:00:32,369 --> 00:00:36,915
+With a test and two endpoints, Git can
+find the commit in about twelve steps for
+
+9
+00:00:36,955 --> 00:00:40,642
+four thousand commits, without you
+understanding the code at all.
+
+10
+00:00:42,482 --> 00:00:46,318
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:46,358 --> 00:00:50,703
+This is step 6 of the method from
+the last video: search by behavior.
+
+12
+00:00:50,743 --> 00:00:55,977
+The tool is git bisect. Today you run one
+bisection by hand, verdict by verdict, so
+
+13
+00:00:56,017 --> 00:01:00,807
+that you see every piece of state it
+creates. In the next video you hand the
+
+14
+00:01:00,847 --> 00:01:02,142
+verdicts to a script.
+
+15
+00:01:02,482 --> 00:01:07,971
+You need two things from earlier in the
+course. From the detached HEAD video: what
+
+16
+00:01:08,011 --> 00:01:13,299
+it means that HEAD, Git's name for where
+you are, names a commit and no branch.
+
+17
+00:01:13,339 --> 00:01:18,221
+From the git log video: the range
+v0.1.0..main, which had twenty commits.
+
+18
+00:01:18,261 --> 00:01:22,200
+You were told to keep that
+number. Here's where it's spent.
+
+19
+00:01:24,040 --> 00:01:29,176
+explain why a bisection over n commits
+needs about log2(n) tests, and what it
+
+20
+00:01:29,216 --> 00:01:29,714
+assumes;
+
+21
+00:01:30,054 --> 00:01:32,952
+run a manual bisection with
+a good and a bad commit;
+
+22
+00:01:33,292 --> 00:01:36,953
+skip a commit that cannot be tested,
+and read what Git reports then;
+
+23
+00:01:37,293 --> 00:01:42,074
+read the bisect state from its refs and
+its log, and end the session cleanly.
+
+24
+00:01:43,914 --> 00:01:48,241
+In one sentence: 🟡 CAUTION, git bisect
+finds the commit that changed a property by
+
+25
+00:01:48,281 --> 00:01:52,608
+checking out a commit in the middle of the
+suspects, asking you for a verdict, and
+
+26
+00:01:52,648 --> 00:01:54,685
+halving the suspects until one is left.
+
+27
+00:01:55,025 --> 00:02:00,195
+The label is CAUTION and not SAFE because
+bisect detaches HEAD and checks out other
+
+28
+00:02:00,235 --> 00:02:04,651
+commits into your working tree, and
+it writes refs and files into .git.
+
+29
+00:02:04,691 --> 00:02:09,547
+A ref is a name that holds a commit ID.
+It's recoverable with one command, git
+
+30
+00:02:09,587 --> 00:02:10,363
+bisect reset.
+
+31
+00:02:10,703 --> 00:02:15,318
+Precisely. You give one commit that has the
+property, called "bad" or "new", and at
+
+32
+00:02:15,358 --> 00:02:19,917
+least one ancestor, an earlier commit in
+its history, that lacks it, called "good"
+
+33
+00:02:19,957 --> 00:02:24,628
+or "old". The candidates are the commits
+reachable from the bad one and not from any
+
+34
+00:02:24,668 --> 00:02:25,133
+good one.
+
+35
+00:02:25,473 --> 00:02:28,577
+That's a range, the same
+two-dot range you already know.
+
+36
+00:02:28,617 --> 00:02:33,014
+Git assumes there is a single first bad
+commit: in the manual's words, "all its
+
+37
+00:02:33,054 --> 00:02:36,383
+descendants are 'bad' and all
+the other commits are 'good'".
+
+38
+00:02:36,423 --> 00:02:40,707
+At each step it picks the candidate that
+splits the remaining candidates most
+
+39
+00:02:40,747 --> 00:02:41,100
+evenly.
+
+40
+00:02:41,440 --> 00:02:44,588
+The arithmetic. Every verdict
+halves the candidates.
+
+41
+00:02:44,628 --> 00:02:49,432
+So k verdicts can separate two to the
+power k candidates, and N candidates need
+
+42
+00:02:49,472 --> 00:02:50,965
+about log2 of N verdicts.
+
+43
+00:02:51,305 --> 00:02:56,671
+Try it now, on paper. Thirty seconds: start
+from 4,000 and keep halving until one is
+
+44
+00:02:56,711 --> 00:02:59,695
+left. Count the halvings,
+then say your answer.
+
+45
+00:03:04,535 --> 00:03:07,230
+About twelve. That's the
+number from the opening.
+
+46
+00:03:07,570 --> 00:03:12,053
+Doubling the history adds one test. This
+is why "it worked in the last release" is
+
+47
+00:03:12,093 --> 00:03:15,032
+enough of a starting point,
+however long ago that was.
+
+48
+00:03:15,372 --> 00:03:19,385
+Inside .git, a bisection is
+state, kept until you end it.
+
+49
+00:03:19,425 --> 00:03:25,357
+Every verdict is a ref under refs/bisect/.
+A file BISECT_START holds where to return
+
+50
+00:03:25,397 --> 00:03:31,045
+to, BISECT_TERMS holds the two words in
+use, and BISECT_LOG holds the session so
+
+51
+00:03:31,085 --> 00:03:31,330
+far.
+
+52
+00:03:31,670 --> 00:03:35,028
+When to use it: when reading
+gives no suspect, or several.
+
+53
+00:03:35,068 --> 00:03:39,598
+When not to: don't bisect what you can
+read. If the pickaxe or blame names one
+
+54
+00:03:39,638 --> 00:03:43,933
+commit, and a test at that commit and
+its parent confirms it, you're done.
+
+55
+00:03:43,973 --> 00:03:48,854
+And don't bisect before you have checked
+that the known-good commit is still good in
+
+56
+00:03:48,894 --> 00:03:53,717
+today's environment. If the cause is a
+dependency that floated to a new version, or
+
+57
+00:03:53,757 --> 00:03:58,638
+a data file outside Git, every commit may
+be bad and bisect will report whatever the
+
+58
+00:03:58,678 --> 00:03:59,458
+noise selects.
+
+59
+00:03:59,798 --> 00:04:03,976
+One more requirement. Bisect needs
+commits that can be tested one by one.
+
+60
+00:04:04,016 --> 00:04:08,829
+A history of small commits that each build
+gives an answer you can read in a minute.
+
+61
+00:04:08,869 --> 00:04:13,278
+A history of large squashes gives an
+answer that is a two-thousand-line diff.
+
+62
+00:04:15,118 --> 00:04:19,685
+Now a picture to keep. The textbook's
+analogy is looking up a word in a printed
+
+63
+00:04:19,725 --> 00:04:24,525
+dictionary. Open in the middle, see whether
+your word comes before or after, repeat
+
+64
+00:04:24,565 --> 00:04:25,400
+with that half.
+
+65
+00:04:25,740 --> 00:04:29,949
+The analogy breaks in two places, and
+both are where bisections go wrong.
+
+66
+00:04:30,289 --> 00:04:34,447
+First, history is a graph, not a list.
+"The middle" has to be computed.
+
+67
+00:04:34,487 --> 00:04:39,177
+With a merge in the range, a commit that
+joins two lines of work, the commit Git
+
+68
+00:04:39,217 --> 00:04:42,961
+picks isn't the one you would pick
+by counting lines of git log.
+
+69
+00:04:43,301 --> 00:04:47,771
+Second, a dictionary is sorted by
+construction. "Good before, bad after" is an
+
+70
+00:04:47,811 --> 00:04:51,124
+assumption about your project,
+and bisect can't verify it.
+
+71
+00:04:51,164 --> 00:04:55,923
+If the bug was introduced, fixed and
+introduced again, there is more than one first
+
+72
+00:04:55,963 --> 00:05:00,317
+bad commit. Bisect finds one transition
+and can't tell you there are others.
+
+73
+00:05:02,657 --> 00:05:06,487
+So every verdict you give is a
+statement of fact about one property.
+
+74
+00:05:06,527 --> 00:05:10,528
+"The runner crashed" is not the same
+statement as "the score is wrong".
+
+75
+00:05:10,568 --> 00:05:13,033
+Keep that distinction
+for the demonstration.
+
+76
+00:05:14,873 --> 00:05:18,518
+In the demonstration, watch
+the order in which Git asks.
+
+77
+00:05:18,558 --> 00:05:23,849
+Step 1 lands near the middle and gets no
+verdict. Step 2 jumps to the right half.
+
+78
+00:05:23,889 --> 00:05:29,377
+Step 3 jumps far left. After that, each step
+lands inside a range that is about half
+
+79
+00:05:29,417 --> 00:05:31,089
+as long as the one before.
+
+80
+00:05:35,429 --> 00:05:40,501
+Predict: twenty candidates. Roughly
+how many steps will Git announce?
+
+81
+00:05:40,541 --> 00:05:42,502
+Say it out loud. I'll wait.
+
+82
+00:05:47,342 --> 00:05:50,850
+"9 revisions left to test
+after this (roughly 3 steps)".
+
+83
+00:05:50,890 --> 00:05:56,173
+Git checked out 074d492. That commit and
+its ancestors account for ten of the twenty
+
+84
+00:05:56,213 --> 00:06:01,051
+candidates, so either verdict leaves ten
+suspects, one of which already has a
+
+85
+00:06:01,091 --> 00:06:05,994
+verdict. The step count is an estimate
+computed from the number of candidates.
+
+86
+00:06:06,334 --> 00:06:10,308
+Here are the candidates on
+the first-parent line again.
+
+87
+00:06:10,348 --> 00:06:13,592
+HEAD now points at
+074d492, and at no branch.
+
+88
+00:06:13,932 --> 00:06:19,948
+HEAD is detached at 074d492, and git status
+tells you that you're bisecting and how
+
+89
+00:06:19,988 --> 00:06:22,137
+to get back. Now run the test.
+
+90
+00:06:24,477 --> 00:06:28,579
+The output will be a KeyError. Before you
+see the next command, decide: is this
+
+91
+00:06:28,619 --> 00:06:29,575
+commit good or bad?
+
+92
+00:06:31,915 --> 00:06:36,606
+Neither. The runner crashes for a reason
+that has nothing to do with scoring.
+
+93
+00:06:36,646 --> 00:06:40,906
+Calling this "bad" would be a false
+statement about the property under
+
+94
+00:06:40,946 --> 00:06:45,759
+investigation. git bisect skip says "no
+verdict", and Git picks another commit,
+
+95
+00:06:45,799 --> 00:06:48,769
+d9d075d. If you said bad,
+you're in good company.
+
+96
+00:06:49,109 --> 00:06:54,330
+On the picture: a skip, and HEAD on
+d9d075d. From here the test answers.
+
+97
+00:06:54,670 --> 00:07:02,334
+exact_match=0.400: bad. Git moves
+to 72134f3, far to the left.
+
+98
+00:07:02,674 --> 00:07:08,117
+exact_match=0.800: good. Three
+revisions left after this one.
+
+99
+00:07:08,157 --> 00:07:09,735
+Two more verdicts.
+
+100
+00:07:10,075 --> 00:07:15,373
+On the picture so far: a skip, a bad,
+a good, and HEAD now on 9c8df98.
+
+101
+00:07:15,713 --> 00:07:20,089
+The formatter commit 9c8df98
+is bad. be9ad1b is good.
+
+102
+00:07:20,129 --> 00:07:26,672
+Git now says "0 revisions left to test
+after this" and has checked out d926d3c.
+
+103
+00:07:27,012 --> 00:07:34,302
+On the picture, two more marks: 9c8df98
+is bad, be9ad1b is good, and HEAD sits on
+
+104
+00:07:34,342 --> 00:07:35,026
+d926d3c.
+
+105
+00:07:37,366 --> 00:07:40,846
+Ask the audience: how many
+more verdicts are needed?
+
+106
+00:07:40,886 --> 00:07:46,125
+Look at the diagram. A good commit on
+the left of d926d3c, a bad commit on its
+
+107
+00:07:46,165 --> 00:07:48,629
+right, and nothing else between them.
+
+108
+00:07:48,969 --> 00:07:52,938
+One. "d926d3c5a77b586297eb25335c33fed4aee6f053
+is the first 'bad' commit", and Git
+
+109
+00:07:52,978 --> 00:07:53,817
+prints the commit.
+
+110
+00:07:54,157 --> 00:07:58,716
+Twenty candidates, five verdicts and one
+skip. That's the number twenty, spent.
+
+111
+00:07:58,756 --> 00:08:02,092
+And it's the same commit that
+blame and the pickaxe named.
+
+112
+00:08:02,132 --> 00:08:05,293
+Bisect got there without
+knowing which file to look at.
+
+113
+00:08:05,633 --> 00:08:08,146
+Don't reset yet. Look at the state.
+
+114
+00:08:08,486 --> 00:08:13,706
+One ref named refs/bisect/bad, one ref per
+good commit with the full ID in its name,
+
+115
+00:08:13,746 --> 00:08:17,338
+and one per skipped commit.
+And the BISECT_ files in .git.
+
+116
+00:08:17,378 --> 00:08:20,156
+Those refs are the labels
+you watched appear.
+
+117
+00:08:20,496 --> 00:08:24,903
+git bisect log prints the session as
+commands that would reproduce it, with
+
+118
+00:08:24,943 --> 00:08:28,638
+comments. This is evidence, so
+paste it into the incident note.
+
+119
+00:08:28,678 --> 00:08:30,535
+In the next video you replay it.
+
+120
+00:08:33,875 --> 00:08:36,542
+Back on main, no refs under refs/bisect.
+
+121
+00:08:42,882 --> 00:08:47,058
+Read the fifth column of every row:
+the current branch ref never moves.
+
+122
+00:08:47,098 --> 00:08:50,799
+A bisection is an inspection.
+Your branch is where you left it.
+
+123
+00:08:52,639 --> 00:08:54,287
+Five mistakes to watch for.
+
+124
+00:08:54,627 --> 00:08:59,324
+Marking a commit that crashes as "bad".
+Root cause: a verdict is a statement about
+
+125
+00:08:59,364 --> 00:09:04,003
+one property, and a crash for another
+reason is "no verdict"; the false statement
+
+126
+00:09:04,043 --> 00:09:06,140
+sends the search into the wrong half.
+
+127
+00:09:06,480 --> 00:09:11,471
+Starting a bisection with uncommitted
+changes. Root cause: Git refuses to check out
+
+128
+00:09:11,511 --> 00:09:15,593
+the next commit over uncommitted
+changes to files it has to replace.
+
+129
+00:09:15,933 --> 00:09:20,703
+Trusting the result when the bug came and
+went. Root cause: bisect assumes a single
+
+130
+00:09:20,743 --> 00:09:25,396
+transition from good to bad and cannot
+detect that the property is not monotonic;
+
+131
+00:09:25,436 --> 00:09:28,235
+test the reported commit
+and its parent yourself.
+
+132
+00:09:28,575 --> 00:09:32,013
+Skipping commits next to the
+culprit and expecting one answer.
+
+133
+00:09:32,053 --> 00:09:36,668
+Root cause: the manual states that if you
+skip a commit adjacent to the one you are
+
+134
+00:09:36,708 --> 00:09:41,380
+looking for, Git cannot tell which of them
+was the first bad one, and it ends with a
+
+135
+00:09:41,420 --> 00:09:42,446
+list of candidates.
+
+136
+00:09:42,786 --> 00:09:47,758
+Forgetting git bisect reset. Root cause:
+until the reset, HEAD is detached, and
+
+137
+00:09:47,798 --> 00:09:50,740
+commits made in that state
+belong to no branch.
+
+138
+00:09:52,580 --> 00:09:57,684
+Now, out of the lab. A team that serves a
+retrieval model sees latency at the 95th
+
+139
+00:09:57,724 --> 00:10:01,134
+percentile rise by a third
+between two weekly releases.
+
+140
+00:10:01,174 --> 00:10:06,277
+About four hundred commits lie between the
+two release tags, from the service, the
+
+141
+00:10:06,317 --> 00:10:10,166
+tokenizer wrapper and the batching
+code. Nobody has a suspect.
+
+142
+00:10:10,506 --> 00:10:15,481
+One engineer reduces the symptom to a
+single command: replay two hundred recorded
+
+143
+00:10:15,521 --> 00:10:19,877
+requests against a local build and
+compare one number with a threshold.
+
+144
+00:10:19,917 --> 00:10:24,706
+She first runs it on last week's tag, on
+today's machine, to confirm that last
+
+145
+00:10:24,746 --> 00:10:28,854
+week's tag is still good. It is,
+so the cause is in the repository.
+
+146
+00:10:29,194 --> 00:10:33,258
+Then she bisects. Four hundred
+candidates need about nine verdicts.
+
+147
+00:10:33,298 --> 00:10:38,158
+Two commits don't build because a generated
+file is missing, and she skips them.
+
+148
+00:10:38,198 --> 00:10:41,649
+The result is a commit that
+changed a default batch size.
+
+149
+00:10:41,689 --> 00:10:46,672
+She tests that commit and its parent once
+more by hand, attaches the bisect log to
+
+150
+00:10:46,712 --> 00:10:49,735
+the incident note, and only
+then opens the revert.
+
+151
+00:10:51,575 --> 00:10:59,270
+Your turn. Do Lab 11.4, "A manual bisect",
+in lab-manual/m11-history-forensics.md.
+
+152
+00:10:59,610 --> 00:11:04,105
+Before you start, count the candidates and
+predict how many verdicts you'll need.
+
+153
+00:11:04,145 --> 00:11:08,753
+At every step, before you run the test,
+predict whether Git has moved left or right
+
+154
+00:11:08,793 --> 00:11:13,176
+of the previous commit and why. The lab's
+failure scenario has you give a wrong
+
+155
+00:11:13,216 --> 00:11:16,983
+verdict. Predict where the search
+will end before you let it finish.
+
+156
+00:11:17,323 --> 00:11:23,768
+The challenge is Exercise 11.9, Level 4,
+"The regression among commits that cannot
+
+157
+00:11:23,808 --> 00:11:28,433
+be tested", in
+exercises/m11-m15-investigation-recovery.md.
+
+158
+00:11:30,273 --> 00:11:31,540
+Pause and answer out loud.
+
+159
+00:11:36,380 --> 00:11:40,852
+A strong answer gives the number with
+its reasoning, not from memory: what one
+
+160
+00:11:40,892 --> 00:11:45,710
+verdict does to the candidate set. It states
+the assumption in the manual's terms, a
+
+161
+00:11:45,750 --> 00:11:50,337
+single first bad commit, and names at
+least two ways a real project violates it.
+
+162
+00:11:50,677 --> 00:11:55,332
+It then describes a check that needs no
+new tool: what you test by hand, at which
+
+163
+00:11:55,372 --> 00:11:58,926
+two commits, and what you read
+to audit the verdicts you gave.
+
+164
+00:11:58,966 --> 00:12:03,447
+The best answers also ask a question back
+before they start: is the known-good
+
+165
+00:12:03,487 --> 00:12:06,229
+commit still good today,
+in today's environment?
+
+166
+00:12:08,069 --> 00:12:10,996
+Let's land this. You
+should now be able to say:
+
+167
+00:12:11,336 --> 00:12:16,200
+A bisection halves the candidates with
+every verdict, so N commits need about
+
+168
+00:12:16,240 --> 00:12:17,092
+log2(N) tests.
+
+169
+00:12:17,432 --> 00:12:21,435
+It assumes one transition from good
+to bad; it cannot verify that.
+
+170
+00:12:21,775 --> 00:12:25,087
+A commit that cannot be tested
+is skipped, never called bad.
+
+171
+00:12:25,427 --> 00:12:30,775
+The session is state: refs under refs/bisect/
+and BISECT_ files, printed by git
+
+172
+00:12:30,815 --> 00:12:33,708
+bisect log and removed
+by git bisect reset.
+
+173
+00:12:34,048 --> 00:12:37,431
+The branch I started from does
+not move during a bisection.
+
+174
+00:12:39,271 --> 00:12:42,733
+Read section 14A.20 of Chapter 14A.
+
+175
+00:12:43,073 --> 00:12:47,294
+Today you found one commit among
+twenty with five verdicts, by hand.
+
+176
+00:12:47,334 --> 00:12:52,433
+Do the manual bisect lab before the next
+video. Next time: git bisect run, where a
+
+177
+00:12:52,473 --> 00:12:57,383
+script gives the verdicts. Until then,
+look at the state first and type second.
+
+178
+00:12:57,423 --> 00:12:58,887
+See you in the next one.

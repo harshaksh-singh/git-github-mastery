@@ -225,9 +225,9 @@ From ../../server/support-bot
 ```
 <!-- /snippet -->
 
-`! [rejected] ... (non-fast-forward)`, on a fetch. Your picture of the server stays wrong. With the plus restored, the remote-tracking ref is forced: plus sign, three dots, "(forced update)".
+`! [rejected] ... (non-fast-forward)`, on `git fetch`. Your picture of the server stays wrong. With the plus restored, the remote-tracking ref is forced: plus sign, three dots, "(forced update)".
 
-One careful note from the textbook. The `git fetch` manual of 2.55 says updates outside `refs/heads/` and `refs/tags/` are accepted without the plus. This transcript shows that Git 2.55.0 rejects a non-fast-forward update of `refs/remotes/origin/release/0.1` without it. The run wins.
+One careful note from the textbook. The git fetch manual of 2.55 says updates outside refs/heads/ and refs/tags/ are accepted without the plus. This transcript shows that Git 2.55.0 rejects a non-fast-forward update of `refs/remotes/origin/release/0.1` without it. The run wins.
 
 **Part 3: a negative refspec.**
 
@@ -467,7 +467,7 @@ $ git ls-remote origin
 
 And the server, asked directly, has no ref at that ID.
 
-**[ANIMATION]** graph: 95671d3-510ee94 main origin/main; 510ee94-c19ab53 hotfix/timeout; HEAD=hotfix/timeout => 95671d3-510ee94 main origin/main; 510ee94-c19ab53 hotfix/timeout origin/hotfix/timeout; HEAD=hotfix/timeout title=Where_the_commit_is id=where
+**[ANIMATION]** graph: 95671d3-510ee94 main origin/main; ^510ee94-c19ab53 hotfix/timeout; HEAD=hotfix/timeout => 95671d3-510ee94 main origin/main; 510ee94-c19ab53 hotfix/timeout origin/hotfix/timeout; HEAD=hotfix/timeout title=Where_the_commit_is id=where dx=260
 
 **[ANIMATION]** step: state-1
 

@@ -41,7 +41,7 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank; title:A_rebase,_stopped_at_its_second_commit => 439e4c6-1c9f69a; 439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => + role:1c9f69a:ours; role:569e6c9:theirs; role:5ee19f0:base; name:roles id=who
+**[ANIMATION]** graph: 8afc6bd-439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; HEAD=feat/rerank; title:The_branch_before_the_rebase => 439e4c6-1c9f69a; title:A_rebase,_stopped_at_its_second_commit; 439e4c6 main; 8afc6bd-5ee19f0-569e6c9-ad106e3 feat/rerank; 569e6c9 REBASE_HEAD; HEAD=1c9f69a => + role:1c9f69a:ours; role:569e6c9:theirs; role:5ee19f0:base; name:roles id=who
 
 **[ANIMATION]** step: state-1
 
@@ -78,7 +78,7 @@ git rebase --show-current-patch  Show the commit being replayed; the same as git
 
 The textbook labels the first four 🟡 CAUTION and the last 🟢 SAFE. Remember from video 53 that `--abort` also discards resolution work in progress.
 
-**[ANIMATION]** graph: 8afc6bd-3b687c6-b0d0bef-b0f4913 main; 3b687c6-2c4fb0f-3667d58-cb69662 feat/ingest; HEAD=feat/ingest; title:One_change,_two_commits => + same:3667d58; same:b0f4913; say:The_same_patch_ID => 8afc6bd-3b687c6-b0d0bef-b0f4913 main; b0f4913-b0b024d-a329fe1 feat/ingest; 3b687c6-2c4fb0f-3667d58-cb69662; HEAD=feat/ingest; reflog:2c4fb0f,3667d58,cb69662; same:3667d58; same:b0f4913; title:Two_commits_replayed,_one_skipped; say:warning:_skipped_previously_applied_commit_3667d58 id=picked
+**[ANIMATION]** graph: 8afc6bd-3b687c6-b0d0bef-b0f4913 main; 3b687c6-2c4fb0f-3667d58-cb69662 feat/ingest; HEAD=feat/ingest; title:One_change,_two_commits => + same:3667d58; same:b0f4913; say:The_same_patch_ID => 8afc6bd-3b687c6-b0d0bef-b0f4913 main; ^b0f4913-b0b024d-a329fe1 feat/ingest; 3b687c6-2c4fb0f-3667d58-cb69662; HEAD=feat/ingest; reflog:2c4fb0f,3667d58,cb69662; same:3667d58; same:b0f4913; title:Two_commits_replayed,_one_skipped; say:warning:_skipped_previously_applied_commit_3667d58 id=picked dx=240
 
 **[ANIMATION]** step: state-1
 
@@ -437,7 +437,7 @@ $ git range-diff main ORIG_HEAD HEAD
 
 Two commits. "Fetch 20 candidates for the reranker" is not there.
 
-**[ANIMATION]** graph: 8afc6bd-439e4c6 main; 439e4c6-0c83908-7c7ac13 feat/rerank; 8afc6bd-5ee19f0-569e6c9-ad106e3 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,569e6c9,ad106e3; same:5ee19f0; same:0c83908; left:569e6c9; same:ad106e3; same:7c7ac13; note:569e6c9:no_counterpart title=An_empty_step,_dropped_without_a_message id=lost
+**[ANIMATION]** graph: 8afc6bd-439e4c6 main; 439e4c6-0c83908-7c7ac13 feat/rerank; ^8afc6bd-5ee19f0-569e6c9-ad106e3 ORIG_HEAD; HEAD=feat/rerank; reflog:5ee19f0,569e6c9,ad106e3; same:5ee19f0; same:0c83908; left:569e6c9; same:ad106e3; same:7c7ac13; note:569e6c9:no_counterpart title=An_empty_step,_dropped_without_a_message id=lost dx=240
 
 `git range-diff`, which the next video explains, shows it in one line: commit 2 of the old branch has no counterpart. Almost everyone falls into this once, because the word invites it.
 

@@ -1,0 +1,985 @@
+1
+00:00:04,500 --> 00:00:09,062
+A team wrote a hook: a program that Git
+runs by itself at a fixed point of a
+
+2
+00:00:09,102 --> 00:00:14,027
+command. It works. Stage a private key,
+run git commit to save a snapshot, and the
+
+3
+00:00:14,067 --> 00:00:17,599
+commit is refused. And yet a
+key is in the history of main.
+
+4
+00:00:17,939 --> 00:00:22,271
+How did it get there? Several ways,
+and none of them needs bad intent.
+
+5
+00:00:22,311 --> 00:00:27,517
+The commit was made by a rebase or a revert,
+which on Git 2.55 don't run pre-commit.
+
+6
+00:00:27,557 --> 00:00:32,762
+Or the author deleted the file from disk
+and committed again, and a hook that checks
+
+7
+00:00:32,802 --> 00:00:37,758
+the disk instead of the index was satisfied.
+Or the author's clone never had the
+
+8
+00:00:37,798 --> 00:00:41,880
+hook installed. Or the author typed
+one extra option: --no-verify.
+
+9
+00:00:42,220 --> 00:00:47,006
+Before you can answer "whose fault", you
+need to know exactly which hooks run for
+
+10
+00:00:47,046 --> 00:00:50,998
+which command, in which order, and
+which of them can stop anything.
+
+11
+00:00:51,038 --> 00:00:54,275
+That's today. The answer for
+the CTO is the next video.
+
+12
+00:00:54,315 --> 00:00:55,943
+Hold on to that word, index.
+
+13
+00:00:57,783 --> 00:01:00,766
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:00,806 --> 00:01:04,731
+Hooks belong to the local side of the line
+this chapter keeps drawing: the hooks
+
+15
+00:01:04,771 --> 00:01:08,349
+folder inside the dot git folder never
+travels with clone, fetch or push.
+
+16
+00:01:08,389 --> 00:01:12,215
+You've used the things hooks attach to:
+commit, merge, rebase, checkout, push.
+
+17
+00:01:12,255 --> 00:01:15,139
+Today you watch Git call a
+program at each of those points.
+
+18
+00:01:15,479 --> 00:01:18,932
+First the tour, with one tracing
+script installed under many names.
+
+19
+00:01:18,972 --> 00:01:23,207
+Then the worked hooks: a pre-commit that
+checks the index, Git's list of what goes
+
+20
+00:01:23,247 --> 00:01:27,587
+into the next commit. A commit-msg that
+enforces a convention, a pre-push guard, two
+
+21
+00:01:27,627 --> 00:01:31,758
+informational hooks, and a pre-rebase that
+refuses to rewrite published commits.
+
+22
+00:01:33,598 --> 00:01:38,412
+name the hooks that run for a commit, a
+checkout, a merge, a rebase and a push, in
+
+23
+00:01:38,452 --> 00:01:38,767
+order;
+
+24
+00:01:39,107 --> 00:01:42,651
+say which hooks can stop an
+operation and which only observe;
+
+25
+00:01:42,991 --> 00:01:46,865
+write a pre-commit hook that checks
+the index and not the working tree;
+
+26
+00:01:47,205 --> 00:01:49,621
+write a commit-msg hook
+and a pre-push guard;
+
+27
+00:01:49,961 --> 00:01:52,724
+explain why a hook that depends
+on tools must check for them.
+
+28
+00:01:54,564 --> 00:02:01,082
+In one sentence: a hook is an executable
+file with a fixed name in the hooks
+
+29
+00:02:01,122 --> 00:02:08,245
+directory, or, since Git 2.54, a command
+named in configuration, that Git runs at a
+
+30
+00:02:08,285 --> 00:02:15,149
+defined point of a command, passing
+information as arguments and standard input.
+
+31
+00:02:15,189 --> 00:02:19,637
+For some hooks, a non-zero
+exit status means "stop".
+
+32
+00:02:19,677 --> 00:02:26,196
+The exit status is the number a program
+returns when it ends, and zero means
+
+33
+00:02:26,236 --> 00:02:26,886
+success.
+
+34
+00:02:27,226 --> 00:02:30,616
+Now precisely. The hooks
+manual lists 28 hook names.
+
+35
+00:02:30,656 --> 00:02:36,024
+Git looks for them in $GIT_DIR/hooks, or
+in the directory named by core.hooksPath,
+
+36
+00:02:36,064 --> 00:02:41,499
+and ignores files without the executable
+bit. A hook runs at the top of the working
+
+37
+00:02:41,539 --> 00:02:46,974
+tree, the directory of files you edit, with
+GIT_DIR and related variables exported.
+
+38
+00:02:47,014 --> 00:02:50,997
+git init copies inactive samples
+from the template directory.
+
+39
+00:02:54,337 --> 00:02:58,688
+For each hook, four facts matter: which
+command runs it, what it receives as
+
+40
+00:02:58,728 --> 00:03:03,540
+arguments and on standard input, whether a
+non-zero exit stops the command, and what
+
+41
+00:03:03,580 --> 00:03:04,060
+skips it.
+
+42
+00:03:04,400 --> 00:03:09,463
+On the server side, git receive-pack runs
+pre-receive once per push before any ref
+
+43
+00:03:09,503 --> 00:03:14,691
+is updated, update once per pushed ref, and
+post-receive and post-update afterwards.
+
+44
+00:03:14,731 --> 00:03:19,296
+A ref is a name such as a branch.
+Nothing on the client skips those hooks.
+
+45
+00:03:19,336 --> 00:03:24,150
+An all-zero object ID in these inputs
+means "does not exist": the ref is being
+
+46
+00:03:24,190 --> 00:03:27,510
+created, on the old side, or
+deleted, on the new side.
+
+47
+00:03:27,850 --> 00:03:29,929
+Three design rules for hooks you write.
+
+48
+00:03:30,269 --> 00:03:35,416
+Rule one. A commit is made from the index,
+so a pre-commit hook reads the index, not
+
+49
+00:03:35,456 --> 00:03:40,541
+the files on disk. That means git diff
+--cached for content, and git cat-file -s on
+
+50
+00:03:40,581 --> 00:03:42,146
+the staged path for sizes.
+
+51
+00:03:42,486 --> 00:03:45,609
+Rule two. A "pre" hook that
+can stop should be fast.
+
+52
+00:03:45,649 --> 00:03:50,719
+The textbook's sentence is: use client-side
+hooks for fast feedback to the person at
+
+53
+00:03:50,759 --> 00:03:54,429
+the keyboard, and keep them fast,
+or people learn the bypass.
+
+54
+00:03:54,769 --> 00:03:58,417
+Rule three. A hook is a program
+on a machine you don't control.
+
+55
+00:03:58,457 --> 00:04:03,276
+If it needs a tool, it must check that the
+tool is there, and decide what a missing
+
+56
+00:04:03,316 --> 00:04:06,261
+tool means. The same care
+goes for its exit status.
+
+57
+00:04:06,301 --> 00:04:11,119
+A post-checkout hook can't undo a switch,
+but its exit status becomes the status of
+
+58
+00:04:11,159 --> 00:04:15,041
+the command, so a failing hook
+breaks scripts that test git switch.
+
+59
+00:04:15,381 --> 00:04:21,469
+And when should you not rely on a hook?
+Whenever the check must hold for everyone.
+
+60
+00:04:21,509 --> 00:04:27,373
+A hook that "checks every commit" checks
+the commits made by git commit and git
+
+61
+00:04:27,413 --> 00:04:30,661
+merge. That's the subject
+of the next video.
+
+62
+00:04:32,501 --> 00:04:35,551
+The textbook's analogy:
+tripwires in your own workshop.
+
+63
+00:04:35,591 --> 00:04:38,808
+You place them. They do nothing
+in a colleague's workshop.
+
+64
+00:04:38,848 --> 00:04:40,325
+And you can step over them.
+
+65
+00:04:40,665 --> 00:04:45,820
+The analogy fits client-side hooks. It breaks
+for server-side ones, which sit at the
+
+66
+00:04:45,860 --> 00:04:47,984
+door that every delivery must pass.
+
+67
+00:04:48,324 --> 00:04:51,983
+Keep the two kinds apart
+for the rest of the course.
+
+68
+00:04:52,023 --> 00:04:56,321
+A tripwire gives fast feedback
+to the person in the workshop.
+
+69
+00:04:56,361 --> 00:05:01,087
+A check at the door is the only
+thing that inspects every delivery.
+
+70
+00:05:02,927 --> 00:05:06,662
+On the first line, three gates can stop a
+commit and --no-verify opens two of them.
+
+71
+00:05:06,702 --> 00:05:10,254
+On the second line, the vertical bar is
+the boundary between your clone and the
+
+72
+00:05:10,294 --> 00:05:12,847
+other repository. Everything
+left of it is yours to skip.
+
+73
+00:05:12,887 --> 00:05:14,165
+Everything right of it isn't.
+
+74
+00:05:16,005 --> 00:05:19,286
+Samples, all with the suffix
+.sample, all inactive.
+
+75
+00:05:19,326 --> 00:05:24,756
+Now one tracing script is installed under
+ten client-side names and four server-side
+
+76
+00:05:24,796 --> 00:05:25,147
+names.
+
+77
+00:05:25,487 --> 00:05:31,818
+It prints its own name, its arguments and,
+for some hooks, its standard input, and
+
+78
+00:05:31,858 --> 00:05:38,267
+exits with 0. Your first prediction: how
+many hooks does a plain git commit -m run,
+
+79
+00:05:38,307 --> 00:05:41,918
+and in which order? Say
+it out loud. I'll wait.
+
+80
+00:05:46,758 --> 00:05:51,366
+Four, in this order: pre-commit,
+prepare-commit-msg, commit-msg, post-commit.
+
+81
+00:05:51,406 --> 00:05:56,435
+prepare-commit-msg received the message file
+and the word "message": it learned that
+
+82
+00:05:56,475 --> 00:05:57,944
+the message came from -m.
+
+83
+00:05:58,284 --> 00:06:02,882
+The same four, and then post-rewrite with
+the argument amend, and on standard input
+
+84
+00:06:02,922 --> 00:06:04,783
+the old commit ID and the new one.
+
+85
+00:06:05,123 --> 00:06:09,680
+Two IDs, because an amend writes a new
+commit that takes the place of the old one.
+
+86
+00:06:10,020 --> 00:06:14,821
+post-checkout receives the previous HEAD,
+meaning where you were, the new HEAD and a
+
+87
+00:06:14,861 --> 00:06:19,028
+flag. Creating a branch doesn't change
+the commit, so both IDs are equal.
+
+88
+00:06:19,068 --> 00:06:22,890
+Restoring a file from a commit is
+a "file checkout": the flag is 0.
+
+89
+00:06:23,230 --> 00:06:26,243
+A merge runs pre-merge-commit in place of
+pre-commit, and post-merge at the end.
+
+90
+00:06:26,583 --> 00:06:38,740
+Now a rebase that replays one commit,
+which means it makes a copy with a new ID.
+
+91
+00:06:38,780 --> 00:06:47,430
+Do pre-commit and commit-msg
+run for the replayed commit?
+
+92
+00:06:47,470 --> 00:06:50,327
+Predict. I'll wait.
+
+93
+00:06:55,167 --> 00:07:01,954
+They don't. pre-rebase ran
+once and post-rewrite once.
+
+94
+00:07:02,294 --> 00:07:06,208
+For the replayed commit,
+prepare-commit-msg and post-commit ran.
+
+95
+00:07:06,248 --> 00:07:10,966
+pre-commit and commit-msg didn't. If you
+expected them to run, that's normal.
+
+96
+00:07:11,006 --> 00:07:16,094
+The textbook adds that git revert, which
+adds a commit that undoes another, behaves
+
+97
+00:07:16,134 --> 00:07:20,481
+the same on Git 2.55. This is the
+first answer to our opening question.
+
+98
+00:07:20,821 --> 00:07:25,587
+pre-push ran in your clone, with the remote
+name and URL as arguments and one line
+
+99
+00:07:25,627 --> 00:07:30,452
+for the ref on standard input. The remote
+ID is all zeros because the branch is new
+
+100
+00:07:30,492 --> 00:07:30,804
+there.
+
+101
+00:07:31,144 --> 00:07:35,586
+The lines that start with "remote:" were
+printed by hooks in the other repository
+
+102
+00:07:35,626 --> 00:07:39,017
+and sent back: pre-receive,
+update, post-receive, post-update.
+
+103
+00:07:39,357 --> 00:07:44,733
+Try it now, on paper, thirty seconds.
+Write the four commit hooks in order, then
+
+104
+00:07:44,773 --> 00:07:48,050
+cross out the ones you
+predict --no-verify skips.
+
+105
+00:07:52,890 --> 00:07:57,113
+Check your paper. --no-verify
+skipped pre-commit and commit-msg.
+
+106
+00:07:57,453 --> 00:08:03,513
+prepare-commit-msg and post-commit still
+ran. Of these two, prepare-commit-msg can
+
+107
+00:08:03,553 --> 00:08:08,647
+still stop a commit by exiting
+non-zero, with or without --no-verify.
+
+108
+00:08:08,687 --> 00:08:12,441
+The textbook confirmed that
+by a run on Git 2.55.0.
+
+109
+00:08:12,781 --> 00:08:17,922
+This hook looks at what is staged: git diff
+--cached for a private-key header, and
+
+110
+00:08:17,962 --> 00:08:22,977
+the size of each staged file. Now a deploy
+key and a 600 kilobyte checkpoint are
+
+111
+00:08:23,017 --> 00:08:25,188
+staged together with a real change.
+
+112
+00:08:28,528 --> 00:08:31,814
+Two messages on standard error,
+exit status 1, no commit.
+
+113
+00:08:31,854 --> 00:08:35,665
+Now the developer deletes the two
+files from disk and tries again.
+
+114
+00:08:35,705 --> 00:08:39,574
+Quick quiz: does the commit go
+through now, or is it refused again?
+
+115
+00:08:39,614 --> 00:08:40,508
+Say it out loud.
+
+116
+00:08:45,348 --> 00:08:51,967
+Refused again. The hook reads the
+index, and the files are still staged.
+
+117
+00:08:52,007 --> 00:08:57,424
+Only after git restore --staged
+does the commit go through.
+
+118
+00:08:57,764 --> 00:09:01,196
+On disk, deploy_key is gone. In
+the index it's still staged.
+
+119
+00:09:01,236 --> 00:09:05,478
+A hook that had looked at the disk
+would have let the key into the commit.
+
+120
+00:09:05,518 --> 00:09:10,338
+That's the index, paid off. Know the limits
+of this hook, though: file names without
+
+121
+00:09:10,378 --> 00:09:13,752
+spaces only, one secret pattern,
+and one option removes it.
+
+122
+00:09:14,092 --> 00:09:16,114
+Exit status 0. The key is committed.
+
+123
+00:09:16,454 --> 00:09:20,519
+Refused, with the expected
+form and the subject it got.
+
+124
+00:09:20,559 --> 00:09:24,773
+Then look at git status -s:
+the change shows as unstaged.
+
+125
+00:09:24,813 --> 00:09:30,892
+git commit -a stages into a temporary index
+and discards it when the commit fails.
+
+126
+00:09:30,932 --> 00:09:34,773
+The lab also shows the
+classic defect of such hooks.
+
+127
+00:09:34,813 --> 00:09:40,967
+They refuse the subjects that Git writes
+itself, "Merge branch" and "fixup!", and a
+
+128
+00:09:41,007 --> 00:09:42,908
+merge then stops half-way.
+
+129
+00:09:43,248 --> 00:09:47,751
+The push is refused before anything is
+sent, and the hook names the unfinished
+
+130
+00:09:47,791 --> 00:09:49,615
+commit. main is still two ahead.
+
+131
+00:09:49,955 --> 00:09:53,828
+The hook uses its three arguments: it
+exits at once for a file checkout, and
+
+132
+00:09:53,868 --> 00:09:56,712
+compares the lock file between
+the old and the new HEAD.
+
+133
+00:10:02,252 --> 00:10:07,592
+The pull was a fast-forward, with no merge
+commit, and post-merge ran all the same.
+
+134
+00:10:07,632 --> 00:10:08,889
+Now the exit status.
+
+135
+00:10:09,229 --> 00:10:13,764
+The hook exited with 3, git switch exited
+with 1, and the branch was switched.
+
+136
+00:10:13,804 --> 00:10:17,987
+Think of a hook that calls a tool
+which isn't installed on this machine.
+
+137
+00:10:18,027 --> 00:10:22,914
+The command "fails", the switch has happened,
+and every script that tests the status
+
+138
+00:10:22,954 --> 00:10:27,723
+of git switch breaks. That's why a hook
+that depends on tools must check for them,
+
+139
+00:10:27,763 --> 00:10:30,480
+and exit 0 with a message
+when they're missing.
+
+140
+00:10:30,820 --> 00:10:34,334
+It counts the commits to be rebased, and
+the ones among them that no remote-tracking
+
+141
+00:10:34,374 --> 00:10:35,012
+branch contains.
+
+142
+00:10:35,352 --> 00:10:38,563
+A remote-tracking branch records
+where a branch was on the server.
+
+143
+00:10:38,603 --> 00:10:40,631
+If the numbers differ, some are published.
+
+144
+00:10:45,171 --> 00:10:50,061
+The local branch was rebased. The pushed
+one wasn't: "The pre-rebase hook refused to
+
+145
+00:10:50,101 --> 00:10:51,705
+rebase." And the usual door:
+
+146
+00:10:52,045 --> 00:10:55,050
+Rebased. The branch is now 2 ahead
+of and 1 behind its upstream.
+
+147
+00:10:55,390 --> 00:10:59,041
+Here it is as a picture: the state
+the rebase module warned you about.
+
+148
+00:11:00,881 --> 00:11:02,529
+Five mistakes to watch for.
+
+149
+00:11:02,869 --> 00:11:06,247
+A pre-commit hook that inspects files on
+disk. Root cause: a commit is made from the
+
+150
+00:11:06,287 --> 00:11:09,218
+index; what is staged can differ from
+what is on disk in both directions.
+
+151
+00:11:09,558 --> 00:11:13,166
+Believing a pre-commit or commit-msg
+hook checks every commit.
+
+152
+00:11:13,206 --> 00:11:17,697
+Root cause: on Git 2.55 the commits
+replayed by a rebase, and those made by a
+
+153
+00:11:17,737 --> 00:11:18,874
+revert, run neither.
+
+154
+00:11:19,214 --> 00:11:22,180
+A commit-msg pattern that
+rejects Git's own subjects.
+
+155
+00:11:22,220 --> 00:11:26,831
+Root cause: merges and fixup commits have
+generated subjects, and the hook stops a
+
+156
+00:11:26,871 --> 00:11:27,682
+merge half-way.
+
+157
+00:11:28,022 --> 00:11:31,061
+A post-checkout hook that exits
+non-zero when a tool is missing.
+
+158
+00:11:31,101 --> 00:11:35,102
+Root cause: its exit status becomes the
+status of git switch although the switch has
+
+159
+00:11:35,142 --> 00:11:35,535
+happened.
+
+160
+00:11:35,875 --> 00:11:39,218
+A slow "pre" hook. Root cause: it runs
+at every commit for the person at the
+
+161
+00:11:39,258 --> 00:11:42,155
+keyboard; people learn --no-verify,
+and then no check runs at all.
+
+162
+00:11:43,995 --> 00:11:49,781
+Now, out of the lab. An ML platform
+team installs four hooks in its service
+
+163
+00:11:49,821 --> 00:11:56,228
+repositories. A pre-commit that checks
+staged content for key headers and for files
+
+164
+00:11:56,268 --> 00:12:02,132
+above a size limit, with a message that
+points to Git LFS or the data store.
+
+165
+00:12:02,172 --> 00:12:08,502
+A commit-msg hook for the subject convention,
+which lets through the subjects that
+
+166
+00:12:08,542 --> 00:12:09,900
+Git writes itself.
+
+167
+00:12:10,240 --> 00:12:14,796
+A post-checkout and post-merge pair that
+says when the dependency lock file changed,
+
+168
+00:12:14,836 --> 00:12:18,243
+and that exits 0 with a note when
+the comparison can't be made.
+
+169
+00:12:18,283 --> 00:12:22,565
+And a pre-push guard that keeps commits
+whose subject starts with WIP off main.
+
+170
+00:12:22,905 --> 00:12:25,773
+Every one of them gives
+feedback in under a second.
+
+171
+00:12:25,813 --> 00:12:29,595
+None of them is described in the
+team's documentation as a control.
+
+172
+00:12:29,635 --> 00:12:34,386
+The team knows which commits bypass them
+and that one option skips them, so the same
+
+173
+00:12:34,426 --> 00:12:38,720
+checks run again where every push arrives.
+That placement is the next video.
+
+174
+00:12:40,560 --> 00:12:44,994
+Your turn. Do Lab 14.2,
+"A commit-msg hook", in
+
+175
+00:12:45,034 --> 00:12:48,992
+lab-manual/m14-hooks-rerere-attributes.md.
+
+176
+00:12:49,332 --> 00:12:53,922
+Before each commit in the lab, predict
+whether the hook accepts the message, and
+
+177
+00:12:53,962 --> 00:12:58,611
+what git status -s shows after a refusal.
+Before you merge and before you revert,
+
+178
+00:12:58,651 --> 00:13:02,952
+predict which hooks run. The lab's
+failure scenario stops a merge half-way.
+
+179
+00:13:02,992 --> 00:13:05,904
+Predict the state of the
+repository at that moment.
+
+180
+00:13:06,244 --> 00:13:10,674
+The challenge is Lab 14.3, "A
+pre-push guard", in the same file.
+
+181
+00:13:14,514 --> 00:13:19,282
+Answer out loud. A strong answer gives four
+names in order and says for each whether
+
+182
+00:13:19,322 --> 00:13:24,090
+it can stop the commit. It divides them by
+the --no-verify flag, and notices the one
+
+183
+00:13:24,130 --> 00:13:27,353
+hook that can still stop a
+commit when the flag is given.
+
+184
+00:13:27,393 --> 00:13:32,103
+For the second half it names commands, says
+which hooks they do run, and is careful
+
+185
+00:13:32,143 --> 00:13:36,453
+about the version. Then it draws the
+conclusion the question aims at: what a
+
+186
+00:13:36,493 --> 00:13:38,914
+client-side hook can
+and can't be used for.
+
+187
+00:13:40,754 --> 00:13:44,908
+Let's land this. One picture to
+keep: gone from disk, still staged.
+
+188
+00:13:45,248 --> 00:14:03,965
+You should now be able to say:
+
+189
+00:14:04,305 --> 00:14:08,987
+A hook is a program Git runs at a fixed
+point with defined arguments and standard
+
+190
+00:14:09,027 --> 00:14:12,310
+input; a non-zero exit from
+some hooks stops the command.
+
+191
+00:14:12,650 --> 00:14:19,172
+git commit runs pre-commit, prepare-commit-msg,
+commit-msg, post-commit; --no-verify
+
+192
+00:14:19,212 --> 00:14:21,516
+skips the first and the third.
+
+193
+00:14:21,856 --> 00:14:26,321
+A rebase and a revert create commits without
+running pre-commit or commit-msg on Git
+
+194
+00:14:26,361 --> 00:14:26,589
+2.55.
+
+195
+00:14:26,929 --> 00:14:29,575
+A pre-commit hook must read the index;
+a pre-push hook reads one line per ref.
+
+196
+00:14:29,915 --> 00:14:32,987
+post-checkout and post-merge observe,
+and a hook that needs a tool must behave
+
+197
+00:14:33,027 --> 00:14:33,786
+sensibly without it.
+
+198
+00:14:35,626 --> 00:14:42,771
+Read sections 14C.9 and 14C.10 of Chapter
+14C. Do Exercise 14.3, Level 1, "A
+
+199
+00:14:42,811 --> 00:14:50,335
+pre-commit hook, and its limit", and
+Exercise 14.6, Level 2, command prediction,
+
+200
+00:14:50,375 --> 00:14:56,575
+"Which hooks run", in
+exercises/m11-m15-investigation-recovery.md.
+
+201
+00:14:56,915 --> 00:15:04,649
+Today you watched Git call a program at
+every gate, and predicted which gates can
+
+202
+00:15:04,689 --> 00:15:12,134
+stop. Practise with the labs first. Next
+time: why hooks can't enforce policy.
+
+203
+00:15:12,174 --> 00:15:17,124
+Until then, look at the
+state first and type second.
+
+204
+00:15:17,164 --> 00:15:19,428
+See you in the next one.

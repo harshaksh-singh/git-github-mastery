@@ -36,7 +36,7 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** graph: 6cde22d-a49e359-d51208b-73572b2 main; HEAD=main => 6cde22d-a49e359-d51208b-73572b2-124de33 main; HEAD=main; say:tree_of_124de33_=_tree_of_73572b2_with_the_change_of_d51208b_undone title=A_revert_adds_a_commit id=add
+**[ANIMATION]** graph: 6cde22d-a49e359-d51208b-73572b2 main; HEAD=main => 6cde22d-a49e359-d51208b-73572b2-124de33 main; HEAD=main; say:The_tree_of_124de33_is_the_tree_of_73572b2_with_the_change_of_d51208b_undone title=A_revert_adds_a_commit id=add
 
 **[ANIMATION]** step: add.state-1
 

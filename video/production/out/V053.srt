@@ -1,0 +1,1024 @@
+1
+00:00:04,500 --> 00:00:08,999
+A colleague calls you over. Their terminal
+shows a wall of hints ending in "Could
+
+2
+00:00:09,039 --> 00:00:13,370
+not apply". git branch prints the line
+on screen. git status says "interactive
+
+3
+00:00:13,410 --> 00:00:16,788
+rebase in progress", and they're
+certain they never typed -i.
+
+4
+00:00:16,828 --> 00:00:21,439
+They ask two things: "Have I broken the
+branch?" and "Is it safe to delete whatever
+
+5
+00:00:21,479 --> 00:00:21,999
+is stuck?"
+
+6
+00:00:22,339 --> 00:00:26,619
+The answer to the first is no, and
+you can prove it with one command.
+
+7
+00:00:26,659 --> 00:00:31,814
+The answer to the second is also no, and
+the reason is a directory inside .git that
+
+8
+00:00:31,854 --> 00:00:36,384
+almost nobody has opened. Today you
+open it. Keep both questions in mind.
+
+9
+00:00:36,424 --> 00:00:38,262
+Each gets its proof on screen.
+
+10
+00:00:40,102 --> 00:00:43,734
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:43,774 --> 00:00:48,731
+A rebase, remember, copies your branch's
+commits onto a new base and then moves the
+
+12
+00:00:48,771 --> 00:00:53,607
+branch. In the last video one ran from
+start to finish in one second, and you saw
+
+13
+00:00:53,647 --> 00:00:58,603
+only the before and the after. To see the
+machinery you have to make it stop in the
+
+14
+00:00:58,643 --> 00:00:59,024
+middle.
+
+15
+00:00:59,364 --> 00:01:04,035
+So today's repository has a conflict built
+in: the second commit of the feature
+
+16
+00:01:04,075 --> 00:01:08,925
+branch changes a line that main has also
+changed, and Git can't combine the two by
+
+17
+00:01:08,965 --> 00:01:13,099
+itself. The rebase replays one commit,
+stops at the second, and waits.
+
+18
+00:01:13,139 --> 00:01:16,199
+The conflict itself is the
+subject of a later video.
+
+19
+00:01:16,239 --> 00:01:21,089
+Today you leave it alone and look around:
+where HEAD is, where the branch is, what
+
+20
+00:01:21,129 --> 00:01:25,919
+the state directory contains, and what the
+special refs ORIG_HEAD and REBASE_HEAD
+
+21
+00:01:25,959 --> 00:01:26,217
+name.
+
+22
+00:01:26,557 --> 00:01:31,496
+Then you leave with --abort, read the
+reflogs, and take a short look at the older
+
+23
+00:01:31,536 --> 00:01:36,536
+implementation, the apply backend, because
+you'll meet its messages in old scripts
+
+24
+00:01:36,576 --> 00:01:37,519
+and old answers.
+
+25
+00:01:39,359 --> 00:01:40,772
+After this video you can:
+
+26
+00:01:41,112 --> 00:01:45,995
+Say where HEAD, the branch ref, ORIG_HEAD
+and REBASE_HEAD point while a rebase is
+
+27
+00:01:46,035 --> 00:01:46,481
+stopped.
+
+28
+00:01:46,821 --> 00:01:51,507
+Read the files of .git/rebase-merge to
+learn what is done and what remains.
+
+29
+00:01:51,847 --> 00:01:56,424
+Explain when the branch ref moves, and what
+that means for commits made during the
+
+30
+00:01:56,464 --> 00:01:56,706
+stop.
+
+31
+00:01:57,046 --> 00:01:59,707
+Contrast the merge backend
+with the apply backend.
+
+32
+00:02:01,547 --> 00:02:06,541
+In one sentence: a rebase is a small
+interpreter. It writes a list of instructions
+
+33
+00:02:06,581 --> 00:02:11,635
+into a state directory inside .git, executes
+them one at a time on a detached HEAD,
+
+34
+00:02:11,675 --> 00:02:15,011
+and touches the branch ref
+only when the list is empty.
+
+35
+00:02:15,351 --> 00:02:18,581
+Each clause of that sentence
+is something you can check.
+
+36
+00:02:18,621 --> 00:02:23,486
+On screen is today's repository before the
+rebase: three commits on feat/rerank, and
+
+37
+00:02:23,526 --> 00:02:24,829
+one new commit on main.
+
+38
+00:02:25,169 --> 00:02:29,360
+"A list of instructions": one line
+per commit, each beginning with pick.
+
+39
+00:02:29,400 --> 00:02:32,885
+Git calls it the todo list, and
+the file is git-rebase-todo.
+
+40
+00:02:33,225 --> 00:02:38,414
+"A state directory": .git/rebase-merge/. It
+exists exactly as long as a rebase is in
+
+41
+00:02:38,454 --> 00:02:43,517
+progress. It records which ref will be
+moved at the end, where that ref pointed at
+
+42
+00:02:43,557 --> 00:02:48,248
+the start, which commit the copies are
+built on, what has been done and what
+
+43
+00:02:48,288 --> 00:02:48,746
+remains.
+
+44
+00:02:49,086 --> 00:02:54,324
+"On a detached HEAD": while the rebase
+runs, .git/HEAD holds a raw commit ID, not
+
+45
+00:02:54,364 --> 00:02:58,950
+the name of a branch. HEAD walks along
+the new commits as they're made.
+
+46
+00:02:59,290 --> 00:03:04,288
+"Touches the branch ref only when the list
+is empty": this is the clause people get
+
+47
+00:03:04,328 --> 00:03:07,808
+wrong. While a rebase is stopped,
+the branch hasn't moved.
+
+48
+00:03:07,848 --> 00:03:12,603
+It still names the old tip. The new commits
+made so far are reachable only from
+
+49
+00:03:12,643 --> 00:03:12,906
+HEAD.
+
+50
+00:03:13,246 --> 00:03:18,226
+Two consequences. First, --abort is cheap
+and safe: it only has to attach HEAD to
+
+51
+00:03:18,266 --> 00:03:22,255
+the branch again, and restore the
+index and working tree from it.
+
+52
+00:03:22,295 --> 00:03:26,965
+Second, if you make commits of your own
+during the stop, they're made on the
+
+53
+00:03:27,005 --> 00:03:31,551
+detached HEAD. They become part of the
+branch only if the rebase finishes.
+
+54
+00:03:31,891 --> 00:03:36,374
+The special names. ORIG_HEAD is the tip
+of the branch before the rebase began.
+
+55
+00:03:36,414 --> 00:03:41,187
+REBASE_HEAD is the commit that's being
+replayed right now, and it exists only while
+
+56
+00:03:41,227 --> 00:03:42,347
+a rebase is stopped.
+
+57
+00:03:42,687 --> 00:03:45,948
+The textbook attaches a
+version note to those names.
+
+58
+00:03:45,988 --> 00:03:50,900
+Older behavior: the glossary called every
+such file, ORIG_HEAD and REBASE_HEAD
+
+59
+00:03:50,940 --> 00:03:54,138
+included, a pseudoref, and
+most tutorials still do.
+
+60
+00:03:54,178 --> 00:03:59,407
+Current behavior, since Git 2.46: "pseudoref"
+means only FETCH_HEAD and MERGE_HEAD,
+
+61
+00:03:59,447 --> 00:04:04,232
+and the others are ordinary refs that
+live at the root of the ref namespace.
+
+62
+00:04:04,272 --> 00:04:09,057
+Recommended: say "root ref", and read
+them with git rev-parse, not with cat.
+
+63
+00:04:09,397 --> 00:04:12,735
+And the failure mode: deleting
+the state directory by hand.
+
+64
+00:04:12,775 --> 00:04:15,599
+That leaves HEAD detached
+on a half-built history.
+
+65
+00:04:17,439 --> 00:04:21,131
+A picture helps. Think of a tiny
+interpreter running a script.
+
+66
+00:04:21,171 --> 00:04:26,127
+The script is the todo list. done is the
+part already executed, git-rebase-todo the
+
+67
+00:04:26,167 --> 00:04:31,064
+part still to run, and msgnum and end are
+the program counter: instruction 2 of 3.
+
+68
+00:04:31,104 --> 00:04:33,953
+A conflict is the interpreter
+pausing for input.
+
+69
+00:04:34,293 --> 00:04:37,679
+The move of the branch isn't
+something that happens along the way.
+
+70
+00:04:37,719 --> 00:04:40,482
+It's the last step of the
+script, after the last pick.
+
+71
+00:04:40,822 --> 00:04:45,617
+Where the picture breaks: a paused program
+usually holds its state in memory, and
+
+72
+00:04:45,657 --> 00:04:49,139
+killing the process loses it.
+Git holds the state in files.
+
+73
+00:04:49,179 --> 00:04:53,914
+You can close the terminal, restart the
+machine, come back the next day, and git
+
+74
+00:04:53,954 --> 00:04:57,138
+status will read the same
+state directory back to you.
+
+75
+00:04:57,178 --> 00:05:01,913
+That's also why a rebase left half done
+by somebody else is still sitting there,
+
+76
+00:05:01,953 --> 00:05:02,391
+waiting.
+
+77
+00:05:04,231 --> 00:05:10,714
+This is the picture to keep. HEAD is detached
+on 1c9f69a, the one copy made so far.
+
+78
+00:05:10,754 --> 00:05:15,351
+feat/rerank and ORIG_HEAD are
+both on the old tip, ad106e3.
+
+79
+00:05:15,391 --> 00:05:19,831
+And REBASE_HEAD marks 569e6c9,
+the commit being replayed.
+
+80
+00:05:20,171 --> 00:05:24,721
+Try it now, thirty seconds, on paper:
+copy this graph with its four labels.
+
+81
+00:05:24,761 --> 00:05:28,149
+You'll check each one against
+the terminal in step five.
+
+82
+00:05:28,189 --> 00:05:30,352
+Say the labels out loud as you draw.
+
+83
+00:05:35,192 --> 00:05:38,227
+And this is what the files
+of the state directory mean.
+
+84
+00:05:38,267 --> 00:05:40,071
+The demo opens the ones you need.
+
+85
+00:05:41,911 --> 00:05:43,407
+Step 1: before.
+
+86
+00:05:43,747 --> 00:05:46,919
+Three commits on feat/rerank,
+one new commit on main.
+
+87
+00:05:46,959 --> 00:05:51,769
+The middle commit, "Fetch 20 candidates
+for the reranker", touches the line that
+
+88
+00:05:51,809 --> 00:05:52,557
+main changed.
+
+89
+00:05:52,897 --> 00:05:55,857
+Step 2: the stop. git rebase 🟡 CAUTION.
+
+90
+00:05:56,197 --> 00:06:01,136
+One commit replayed, the second stopped
+with a conflict, exit status 1.
+
+91
+00:06:01,176 --> 00:06:06,957
+Now the question of this video, as a quick
+quiz. Where does feat/rerank point right
+
+92
+00:06:06,997 --> 00:06:10,954
+now? A, at the old tip. B, at
+the one copy that was made.
+
+93
+00:06:10,994 --> 00:06:13,129
+C, somewhere else. Your answer?
+
+94
+00:06:17,969 --> 00:06:19,215
+Step 3: HEAD.
+
+95
+00:06:19,555 --> 00:06:24,206
+.git/HEAD holds a raw commit
+ID, not ref: refs/heads/....
+
+96
+00:06:24,246 --> 00:06:30,791
+HEAD is detached. It sits on 1c9f69a, the
+copy of "Add reranker skeleton", which
+
+97
+00:06:30,831 --> 00:06:37,622
+sits on the tip of main. git branch describes
+the situation as "no branch, rebasing
+
+98
+00:06:37,662 --> 00:06:38,692
+feat/rerank".
+
+99
+00:06:39,032 --> 00:06:41,098
+Step 4: the state directory.
+
+100
+00:06:41,438 --> 00:06:43,977
+Sixteen files. You need six of them.
+
+101
+00:06:44,317 --> 00:06:48,798
+head-name: the ref that will be moved at
+the end. orig-head: where it pointed at the
+
+102
+00:06:48,838 --> 00:06:53,211
+start. onto: what the copies are built on.
+done: two picks, the one that succeeded
+
+103
+00:06:53,251 --> 00:06:56,279
+and the one that stopped.
+git-rebase-todo: one pick left.
+
+104
+00:06:56,319 --> 00:07:00,639
+msgnum and end: 2 of 3. And author-script:
+the author name, email and date of the
+
+105
+00:07:00,679 --> 00:07:04,998
+commit being replayed, to be reused for
+its copy. That file is how a rebase keeps
+
+106
+00:07:05,038 --> 00:07:07,151
+the author while changing the committer.
+
+107
+00:07:07,491 --> 00:07:12,150
+Step 5: the four names. HEAD, the
+branch, ORIG_HEAD and REBASE_HEAD.
+
+108
+00:07:12,190 --> 00:07:15,951
+Take out your drawing, and
+predict which two are equal.
+
+109
+00:07:15,991 --> 00:07:17,817
+Say it out loud. I'll wait.
+
+110
+00:07:22,657 --> 00:07:28,246
+Four names, three commits. ORIG_HEAD
+is ad106e3, the tip before the rebase.
+
+111
+00:07:28,286 --> 00:07:34,324
+REBASE_HEAD is 569e6c9, the commit being
+replayed. HEAD is 1c9f69a, the last copy
+
+112
+00:07:34,364 --> 00:07:38,827
+made. And feat/rerank is ad106e3:
+it still equals ORIG_HEAD.
+
+113
+00:07:38,867 --> 00:07:44,980
+The branch hasn't moved. That's the answer
+to the quiz, A, and to your colleague's
+
+114
+00:07:45,020 --> 00:07:50,083
+first question: no, the branch isn't
+broken. It hasn't been touched.
+
+115
+00:07:50,423 --> 00:07:52,326
+Step 6: status.
+
+116
+00:07:52,666 --> 00:07:57,413
+git status reads the state directory back
+to you: what was done, what remains, and
+
+117
+00:07:57,453 --> 00:08:01,908
+the three ways out. And the first line
+says "interactive rebase in progress",
+
+118
+00:08:01,948 --> 00:08:06,753
+although no -i was typed. The root cause,
+from the textbook: the default backend of
+
+119
+00:08:06,793 --> 00:08:10,840
+git rebase is the machinery that once
+served only interactive rebases.
+
+120
+00:08:10,880 --> 00:08:15,685
+It always writes the marker file interactive,
+and git status reports what it finds.
+
+121
+00:08:16,025 --> 00:08:20,983
+Step 7: leave the way you came. git rebase
+--abort 🟡 CAUTION in the textbook's
+
+122
+00:08:21,023 --> 00:08:24,764
+table, with one thing it can't
+give back. The five answers.
+
+123
+00:08:24,804 --> 00:08:29,570
+It changes HEAD, the index and the
+working tree: all return to the old tip.
+
+124
+00:08:29,610 --> 00:08:34,696
+It destroys resolution work in progress,
+the edits you made to conflicted files.
+
+125
+00:08:35,036 --> 00:08:39,904
+Preview with git status. There's no recovery
+for unstaged resolution edits, and the
+
+126
+00:08:39,944 --> 00:08:44,871
+copies already made stay in the reflog. It's
+appropriate whenever you want the state
+
+127
+00:08:44,911 --> 00:08:48,420
+before the rebase and have no
+resolution work worth keeping.
+
+128
+00:08:48,460 --> 00:08:50,253
+Here nothing has been resolved.
+
+129
+00:08:50,593 --> 00:08:55,191
+On the branch again, clean. The
+reflog shows start, one pick, abort.
+
+130
+00:08:55,231 --> 00:08:59,624
+The copy 1c9f69a is now reachable
+from nothing except the reflog.
+
+131
+00:08:59,964 --> 00:09:04,638
+Look at the column "Current branch
+ref". Unchanged, unchanged, unchanged.
+
+132
+00:09:04,678 --> 00:09:10,062
+And look at --quit: it removes the state
+directory and leaves HEAD detached where it
+
+133
+00:09:10,102 --> 00:09:15,357
+is. That's what deleting the directory by
+hand does, except that --quit does it on
+
+134
+00:09:15,397 --> 00:09:20,781
+purpose. So that's your colleague's second
+question: no, don't delete what is stuck.
+
+135
+00:09:20,821 --> 00:09:21,169
+Abort.
+
+136
+00:09:21,509 --> 00:09:26,788
+When a rebase runs to the end, the two
+reflogs record it differently, as you saw in
+
+137
+00:09:26,828 --> 00:09:30,249
+the last video. The HEAD
+reflog has one line per step.
+
+138
+00:09:30,289 --> 00:09:35,441
+The branch reflog has one line for the
+whole rebase, and the line below it is the
+
+139
+00:09:35,481 --> 00:09:40,761
+old tip. So <branch>@{1} means "this branch
+before its last rebase", and that's the
+
+140
+00:09:40,801 --> 00:09:43,004
+most reliable undo handle you have.
+
+141
+00:09:43,344 --> 00:09:47,534
+Step 8: the other backend.
+labs/run ch09/apply-backend.
+
+142
+00:09:47,574 --> 00:09:53,457
+Until Git 2.26 the default implementation
+turned each commit into a patch and
+
+143
+00:09:53,497 --> 00:09:58,148
+applied the patches. It's still
+there, as git rebase --apply.
+
+144
+00:09:58,488 --> 00:10:04,061
+Different words: "rewinding head",
+"Applying", "Patch failed at 0002".
+
+145
+00:10:04,401 --> 00:10:09,227
+A different state directory, .git/rebase-apply,
+with one numbered patch file per
+
+146
+00:10:09,267 --> 00:10:12,755
+commit. "Rebase in progress"
+without the word interactive.
+
+147
+00:10:12,795 --> 00:10:17,500
+And a conflict label that carries only
+the subject of your commit, not its ID.
+
+148
+00:10:17,840 --> 00:10:19,479
+The way out is the same command.
+
+149
+00:10:19,819 --> 00:10:24,703
+The manual lists what the apply backend
+does worse: it works from patch context and
+
+150
+00:10:24,743 --> 00:10:29,508
+can apply a hunk in the wrong place without
+reporting a conflict, it can't detect
+
+151
+00:10:29,548 --> 00:10:34,431
+directory renames, and it drops empty
+commits. The textbook's advice is four words:
+
+152
+00:10:34,471 --> 00:10:36,033
+leave rebase.backend alone.
+
+153
+00:10:37,873 --> 00:10:39,521
+Five mistakes to watch for.
+
+154
+00:10:39,861 --> 00:10:43,401
+Believing the branch has already
+moved when a rebase stops.
+
+155
+00:10:43,441 --> 00:10:48,377
+Root cause: the branch ref is touched only
+when the todo list is empty; until then
+
+156
+00:10:48,417 --> 00:10:51,351
+HEAD is detached and the
+branch equals ORIG_HEAD.
+
+157
+00:10:51,691 --> 00:10:56,301
+Deleting .git/rebase-merge to "get
+out". Root cause: the directory is the
+
+158
+00:10:56,341 --> 00:11:01,653
+interpreter's state; removing it leaves HEAD
+detached on a half-built history, which
+
+159
+00:11:01,693 --> 00:11:03,755
+is what --quit does deliberately.
+
+160
+00:11:04,095 --> 00:11:08,560
+Panicking at "interactive rebase in
+progress". Root cause: the default backend
+
+161
+00:11:08,600 --> 00:11:13,411
+always writes the marker file interactive,
+and git status reports the file, not what
+
+162
+00:11:13,451 --> 00:11:13,988
+you typed.
+
+163
+00:11:14,328 --> 00:11:19,512
+Reading ORIG_HEAD or REBASE_HEAD with
+cat. Root cause: since Git 2.46 they are
+
+164
+00:11:19,552 --> 00:11:25,138
+ordinary root refs, not pseudorefs, and
+their storage depends on the ref format; git
+
+165
+00:11:25,178 --> 00:11:27,214
+rev-parse reads them correctly.
+
+166
+00:11:27,554 --> 00:11:31,090
+Aborting after an hour of conflict
+resolution to "start clean".
+
+167
+00:11:31,130 --> 00:11:35,460
+Root cause: --abort resets the working
+tree and the index to the old tip, and
+
+168
+00:11:35,500 --> 00:11:38,071
+unstaged resolution edits
+are objects nowhere.
+
+169
+00:11:39,911 --> 00:11:44,801
+Now, out of the lab. A shared build machine
+for nightly evaluations starts failing
+
+170
+00:11:44,841 --> 00:11:49,611
+with a strange message about a detached
+HEAD. Someone logs in and finds that the
+
+171
+00:11:49,651 --> 00:11:54,600
+workspace was left in the middle of a rebase
+by an interrupted job, three days ago.
+
+172
+00:11:54,940 --> 00:11:59,736
+The textbook's routine for this is
+short. "Is a rebase in progress here?"
+
+173
+00:11:59,776 --> 00:12:04,703
+The first line of git status answers
+it, and so does ls .git | grep rebase.
+
+174
+00:12:04,743 --> 00:12:10,135
+If the answer is yes, nothing is lost: the
+branch ref hasn't moved, and git rebase
+
+175
+00:12:10,175 --> 00:12:14,374
+--abort returns to it. Don't delete
+the state directory by hand.
+
+176
+00:12:14,714 --> 00:12:19,514
+The second lesson from that incident is
+for the pipeline, not for the person: an
+
+177
+00:12:19,554 --> 00:12:24,475
+automated job that rebases must handle a
+non-zero exit status by aborting, so that
+
+178
+00:12:24,515 --> 00:12:28,468
+it never leaves a state directory
+behind for the next job to find.
+
+179
+00:12:30,308 --> 00:12:37,520
+Your turn. Do Exercise 9.3, Level 1, "a
+conflict, a look around, and the way back",
+
+180
+00:12:37,560 --> 00:12:40,665
+in exercises/m06-m10-integration.md.
+
+181
+00:12:41,005 --> 00:12:45,907
+When the rebase stops, don't resolve
+anything. First write down your predictions
+
+182
+00:12:45,947 --> 00:12:46,154
+for:
+
+183
+00:12:46,494 --> 00:12:48,393
+The content of .git/HEAD.
+
+184
+00:12:48,733 --> 00:12:52,324
+The four values: HEAD, the
+branch, ORIG_HEAD, REBASE_HEAD.
+
+185
+00:12:52,364 --> 00:12:53,826
+Which of them are equal?
+
+186
+00:12:54,166 --> 00:12:56,293
+The content of done and
+of git-rebase-todo.
+
+187
+00:12:56,633 --> 00:12:59,819
+Then check each one with a
+command, and only then leave.
+
+188
+00:13:00,159 --> 00:13:06,137
+The challenge is Exercise 9.7, Level 3, "a
+rebase that stopped at an exec line", in
+
+189
+00:13:06,177 --> 00:13:07,152
+the same file.
+
+190
+00:13:08,992 --> 00:13:15,199
+Q147: "A rebase is stopped at a conflict.
+Where do the branch ref, HEAD, ORIG_HEAD
+
+191
+00:13:15,239 --> 00:13:19,541
+and REBASE_HEAD point? What
+does that imply for --abort?"
+
+192
+00:13:21,881 --> 00:13:27,026
+Answer out loud first. A strong answer gives
+four positions without hesitation, and
+
+193
+00:13:27,066 --> 00:13:32,085
+says which two are equal and why. It then
+derives the second half from the first:
+
+194
+00:13:32,125 --> 00:13:35,957
+what --abort has to do, and what
+it therefore can't give back.
+
+195
+00:13:35,997 --> 00:13:39,580
+It mentions where the information
+for the abort is stored.
+
+196
+00:13:39,620 --> 00:13:44,764
+If the follow-up asks what happens to a
+commit you made by hand during the stop, be
+
+197
+00:13:44,804 --> 00:13:47,263
+ready to reason from "HEAD is detached".
+
+198
+00:13:49,103 --> 00:13:52,030
+Let's land this. You
+should now be able to say:
+
+199
+00:13:52,370 --> 00:13:57,774
+A rebase writes a todo list into
+.git/rebase-merge, runs it on a detached HEAD, and
+
+200
+00:13:57,814 --> 00:14:03,153
+moves the branch only when the list is
+empty. While it's stopped, the branch still
+
+201
+00:14:03,193 --> 00:14:08,532
+equals ORIG_HEAD, HEAD is on the last copy,
+and REBASE_HEAD names the commit being
+
+202
+00:14:08,572 --> 00:14:09,122
+replayed.
+
+203
+00:14:09,462 --> 00:14:13,720
+git status reads the state directory
+back: done, remaining, and the ways out.
+
+204
+00:14:14,060 --> 00:14:16,867
+--abort returns to the branch and
+discards resolution work in progress.
+
+205
+00:14:16,907 --> 00:14:18,872
+--quit removes the state
+and leaves HEAD detached.
+
+206
+00:14:19,212 --> 00:14:24,484
+The apply backend uses .git/rebase-apply
+and patch files, and the default merge
+
+207
+00:14:24,524 --> 00:14:26,300
+backend is the one to keep.
+
+208
+00:14:28,140 --> 00:14:30,651
+Read section 9.4 of Chapter 9.
+
+209
+00:14:30,991 --> 00:14:34,048
+A stopped rebase used to
+look like a broken branch.
+
+210
+00:14:34,088 --> 00:14:38,722
+Now you can open the state directory,
+name all four labels, and leave safely.
+
+211
+00:14:38,762 --> 00:14:42,547
+Stop a rebase in the lab and look
+around before the next video.
+
+212
+00:14:42,587 --> 00:14:47,465
+Next time: choosing what moves and where
+it lands, with upstream, onto, keep-base
+
+213
+00:14:47,505 --> 00:14:51,229
+and root. Until then, look at
+the state first and type second.
+
+214
+00:14:51,269 --> 00:14:52,687
+See you in the next one.

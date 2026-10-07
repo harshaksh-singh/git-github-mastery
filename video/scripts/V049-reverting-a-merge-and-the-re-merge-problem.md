@@ -40,7 +40,7 @@ In one sentence: `git revert -m 1 <merge>` undoes the content that a merge broug
 
 Take the two halves separately.
 
-**[ANIMATION]** graph: fbb8230-31a221c-27bb9f5 main; fbb8230-719cc13-c3762df feature/reranker; c3762df-27bb9f5; HEAD=main => + role:31a221c:parent_1; role:c3762df:parent_2; name:parent-one => + 27bb9f5-7e5a38e main; cmd:git_revert_-m_1_27bb9f5; name:revert => + c3762df-6b4e788 feature/reranker; drop:parent_1,parent_2; cmd:git_log_--oneline_main..feature/reranker; name:fix => + note:c3762df:merge_base; range:6b4e788:what_the_next_merge_brings; cmd:git_merge-base_main_feature/reranker; name:base => + 7e5a38e-4b3560c main; range:; drop:c3762df; cmd:git_revert_7e5a38e; name:revert-the-revert => + 4b3560c-018849f main; 6b4e788-018849f; cmd:git_merge_feature/reranker; name:then-merge title=Merge,_revert,_and_merge_again id=rm
+**[ANIMATION]** graph: fbb8230-31a221c-27bb9f5 main; ^fbb8230-719cc13-c3762df feature/reranker; c3762df-27bb9f5; HEAD=main => + role:31a221c:parent_1; role:c3762df:parent_2; name:parent-one => + 27bb9f5-7e5a38e main; cmd:git_revert_-m_1_27bb9f5; name:revert => + c3762df-6b4e788 feature/reranker; drop:parent_1,parent_2; cmd:git_log_--oneline_main..feature/reranker; name:fix => + note:c3762df:merge_base; range:6b4e788:what_the_next_merge_brings; cmd:git_merge-base_main_feature/reranker; name:base => + 7e5a38e-4b3560c main; range:; drop:c3762df; cmd:git_revert_7e5a38e; name:revert-the-revert => + 4b3560c-018849f main; 6b4e788-018849f; cmd:git_merge_feature/reranker; name:then-merge title=Merge,_revert,_and_merge_again id=rm dx=240
 
 **[ANIMATION]** step: rm.parent-one
 
@@ -74,9 +74,9 @@ When not to revert a merge at all? The how-to advises finding and reverting the 
 
 **[ON SCREEN]** "A revert takes the content out. It cannot take the merge out of the graph."
 
-Go back to the ledger from the last video. A merge posted a whole batch of entries from another department, with a note: "batch received". The revert posts one reversing entry for the batch. The books now balance as if the batch had never arrived. But the note "batch received" is still there, and the clerk who processes the next delivery from that department reads the note first. Everything listed on it's skipped as already received.
+Go back to the ledger from the last video. A merge posted a whole batch of entries from another department, with a note: "batch received". The revert posts one reversing entry for the batch. The books now balance as if the batch had never arrived. But the note "batch received" is still there, and the clerk who processes the next delivery from that department reads the note first. Everything listed on it is skipped as already received.
 
-**[ANIMATION]** graph: *1-*2-?batch_received-?reversing_entry; *1-*3-*4; *4-?batch_received; HEAD=none; say:The_note_is_still_there:_merge_reads_the_graph,_not_intentions title=The_ledger,_one_more_time id=clerk
+**[ANIMATION]** graph: *1-*2-?batch_received-?reversing_entry; ^*1-*3-*4; *4-?batch_received; HEAD=none; say:The_note_is_still_there:_merge_reads_the_graph,_not_intentions title=The_ledger,_one_more_time id=clerk
 
 **[ANIMATION]** step: clerk.state-1
 

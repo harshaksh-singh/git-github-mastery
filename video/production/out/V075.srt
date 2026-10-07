@@ -1,0 +1,996 @@
+1
+00:00:04,500 --> 00:00:09,070
+The plan was to drop the last commit,
+the last saved snapshot on the branch.
+
+2
+00:00:09,110 --> 00:00:12,770
+A hard reset moves the branch
+back and overwrites your files.
+
+3
+00:00:12,810 --> 00:00:17,804
+The typo was a 3 where a 1 was meant. Three
+commits and their changes are gone from
+
+4
+00:00:17,844 --> 00:00:20,048
+the branch and from the working tree.
+
+5
+00:00:20,388 --> 00:00:24,290
+What the engineer does in the next
+sixty seconds decides the outcome.
+
+6
+00:00:24,330 --> 00:00:29,088
+One option is to search the web, find a
+command that "cleans up the repository", and
+
+7
+00:00:29,128 --> 00:00:32,459
+run it. Another is to delete
+the directory and clone again.
+
+8
+00:00:32,499 --> 00:00:36,800
+Both destroy the thing that would have
+saved the work: the first removes the
+
+9
+00:00:36,840 --> 00:00:41,484
+evidence, and the second produces a clone
+with no reflog, Git's local log of where
+
+10
+00:00:41,524 --> 00:00:44,683
+each name has pointed, and
+none of the unpushed objects.
+
+11
+00:00:44,723 --> 00:00:47,654
+The textbook calls re-cloning
+"the classic non-fix".
+
+12
+00:00:47,994 --> 00:00:52,704
+The correct first step is one word.
+Stop. Keep those three commits in mind.
+
+13
+00:00:54,544 --> 00:00:58,020
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:00:58,060 --> 00:01:01,882
+In the last two videos you learned
+what Git keeps and for how long.
+
+15
+00:01:01,922 --> 00:01:06,436
+Today that knowledge becomes a procedure
+of eight steps, and you apply it three
+
+16
+00:01:06,476 --> 00:01:11,221
+times: to a hard reset, to a deleted branch,
+and to a commit that vanished from the
+
+17
+00:01:11,261 --> 00:01:12,316
+middle of a branch.
+
+18
+00:01:12,656 --> 00:01:17,181
+This is the guided pass. For each incident
+I read the symptom, ask the three
+
+19
+00:01:17,221 --> 00:01:21,445
+questions, show the evidence command,
+then the anchor, then the repair.
+
+20
+00:01:21,485 --> 00:01:24,869
+In the labs you repeat all
+three from the symptoms alone.
+
+21
+00:01:25,209 --> 00:01:30,184
+The curriculum summary for this video
+describes the method in five words: stop,
+
+22
+00:01:30,224 --> 00:01:33,421
+don't run maintenance, find
+the ID, anchor, repair.
+
+23
+00:01:33,461 --> 00:01:38,563
+The textbook's section 13.7 has eight
+numbered steps, and that is the version you
+
+24
+00:01:38,603 --> 00:01:39,134
+get here.
+
+25
+00:01:40,974 --> 00:01:44,403
+ask the three questions that come
+before any recovery command;
+
+26
+00:01:44,743 --> 00:01:47,986
+recover the commits lost
+to git reset --hard;
+
+27
+00:01:48,326 --> 00:01:52,421
+recreate a deleted branch at its last
+tip, with and without its reflog;
+
+28
+00:01:52,761 --> 00:01:54,870
+bring back a commit dropped from history;
+
+29
+00:01:55,210 --> 00:01:58,885
+anchor every recovered commit with
+a ref before doing anything else.
+
+30
+00:02:00,725 --> 00:02:04,192
+The three questions come from
+the first page of the chapter.
+
+31
+00:02:04,232 --> 00:02:07,172
+Was the work ever written
+into the object database?
+
+32
+00:02:07,212 --> 00:02:10,152
+Does anything still name
+it? Has the clock run out?
+
+33
+00:02:10,192 --> 00:02:13,250
+The first answer decides
+whether Git can help at all.
+
+34
+00:02:13,290 --> 00:02:17,048
+The second tells you the layer.
+The third tells you the deadline.
+
+35
+00:02:17,388 --> 00:02:21,008
+Then the method. Every recovery
+follows the same eight steps.
+
+36
+00:02:27,348 --> 00:02:33,208
+One. Stop. Don't run another command that
+moves refs or deletes files, and don't run
+
+37
+00:02:33,248 --> 00:02:38,196
+git gc, git prune, git clean or git
+stash clear. Waiting loses nothing.
+
+38
+00:02:38,236 --> 00:02:39,530
+A second "fix" can.
+
+39
+00:02:39,870 --> 00:02:44,858
+Two. Record the symptom and the last
+commands. Copy the terminal scrollback if you
+
+40
+00:02:44,898 --> 00:02:49,824
+have it. Git prints the ID you need in
+more places than people remember: "Deleted
+
+41
+00:02:49,864 --> 00:02:54,668
+branch x (was ...)", "Dropped refs/stash@{0}",
+"HEAD is now at", the warning on
+
+42
+00:02:54,708 --> 00:02:57,672
+leaving detached HEAD,
+when you are on no branch.
+
+43
+00:02:58,012 --> 00:03:02,749
+Three. Classify. Was the work committed,
+stashed, staged, or only saved?
+
+44
+00:03:02,789 --> 00:03:06,994
+That decides the layer, and whether
+to continue with Git at all.
+
+45
+00:03:07,334 --> 00:03:13,246
+Four. Find the ID. From the scrollback,
+the branch reflog, the HEAD reflog,
+
+46
+00:03:13,286 --> 00:03:17,848
+ORIG_HEAD, git fsck, or another
+repository, in that order.
+
+47
+00:03:18,188 --> 00:03:23,227
+Five. Anchor it. git branch rescue/<what>
+<id>. A branch is a name for a commit, and
+
+48
+00:03:23,267 --> 00:03:25,161
+an anchored commit can't expire.
+
+49
+00:03:25,501 --> 00:03:30,702
+Six. Inspect before you move anything.
+git log, git show --stat, git diff, git
+
+50
+00:03:30,742 --> 00:03:33,524
+range-diff, git cherry against the anchor.
+
+51
+00:03:33,864 --> 00:03:39,790
+Seven. Integrate with the lowest-risk move.
+Prefer adding, a branch, a cherry-pick
+
+52
+00:03:39,830 --> 00:03:45,465
+or a merge, over rewinding. And prefer
+git reset --keep over git reset --hard.
+
+53
+00:03:45,805 --> 00:03:51,162
+Eight. Verify, then clean up. Prove that
+the result holds what was lost, and only
+
+54
+00:03:51,202 --> 00:03:53,160
+then delete the rescue branch.
+
+55
+00:03:53,500 --> 00:03:56,857
+Why is the anchor a separate
+step, before any repair?
+
+56
+00:03:56,897 --> 00:04:02,111
+Because of what it costs and what it buys.
+🟢 SAFE: git branch rescue/x <id> leaves
+
+57
+00:04:02,151 --> 00:04:06,405
+the working tree, the index, HEAD
+and the current branch unchanged.
+
+58
+00:04:06,445 --> 00:04:11,660
+It adds one ref with a new reflog. In
+exchange, the commit moves from layer two or
+
+59
+00:04:11,700 --> 00:04:15,569
+three to layer one, and no expiry
+or collection can touch it.
+
+60
+00:04:15,609 --> 00:04:18,837
+After that, every repair
+you attempt is reversible.
+
+61
+00:04:19,177 --> 00:04:22,841
+When not to follow the method
+to its end, from section 13.17.
+
+62
+00:04:22,881 --> 00:04:27,699
+Don't recover a secret: if the "lost"
+commit contains a credential, restoring it
+
+63
+00:04:27,739 --> 00:04:30,978
+puts the credential back on
+a branch, so rotate first.
+
+64
+00:04:31,018 --> 00:04:35,837
+Don't rewind shared history to recover:
+on a branch that others have pulled, add
+
+65
+00:04:35,877 --> 00:04:40,634
+commits. And recovered isn't verified: a
+branch that points at the right commit
+
+66
+00:04:40,674 --> 00:04:43,731
+proves nothing about the
+working tree you now have.
+
+67
+00:04:43,771 --> 00:04:44,581
+Run the tests.
+
+68
+00:04:46,421 --> 00:04:50,940
+Think of a recovery as moving a box in
+the vault back under an index card.
+
+69
+00:04:50,980 --> 00:04:54,636
+In all the accidents of today,
+the box never left the vault.
+
+70
+00:04:54,676 --> 00:04:59,626
+The commit never stopped existing. What
+was lost was the card: the ref that named
+
+71
+00:04:59,666 --> 00:04:59,811
+it.
+
+72
+00:05:00,151 --> 00:05:04,670
+So every one of these recoveries ends
+with the same act: a ref is pointed at a
+
+73
+00:05:04,710 --> 00:05:08,587
+commit that never stopped existing.
+The hard part isn't the repair.
+
+74
+00:05:08,627 --> 00:05:13,321
+It's finding the right box number, and not
+ordering a clear-out while you search.
+
+75
+00:05:13,661 --> 00:05:17,054
+Where this picture breaks: it
+covers committed work only.
+
+76
+00:05:17,094 --> 00:05:21,873
+Uncommitted work that a hard reset overwrote
+was never in a box, or was a single
+
+77
+00:05:21,913 --> 00:05:24,644
+blob without a card.
+That's a different video.
+
+78
+00:05:26,484 --> 00:05:30,476
+Today's three incidents are three
+branches of the "committed" subtree.
+
+79
+00:05:30,516 --> 00:05:35,258
+Try it now, thirty seconds: point at the
+branch of this tree for each of the three.
+
+80
+00:05:35,298 --> 00:05:36,467
+Then say your answer.
+
+81
+00:05:41,307 --> 00:05:45,917
+The hard reset: a branch moved. The
+deleted branch: the branch itself is gone.
+
+82
+00:05:45,957 --> 00:05:49,077
+The dropped commit: a branch
+moved, through a rebase.
+
+83
+00:05:53,417 --> 00:05:58,123
+"HEAD is now at 798cb66".
+Three commits shorter.
+
+84
+00:05:58,463 --> 00:06:02,170
+Stop, and ask the three questions.
+Was the work an object?
+
+85
+00:06:02,210 --> 00:06:06,951
+Yes, three commits. On the picture they
+turn dashed, and they still exist.
+
+86
+00:06:06,991 --> 00:06:11,279
+Does anything name it? Predict which
+three places. Say it out loud.
+
+87
+00:06:11,319 --> 00:06:11,925
+I'll wait.
+
+88
+00:06:16,765 --> 00:06:22,904
+The HEAD reflog, ORIG_HEAD and the branch
+reflog, and they agree: the old tip is
+
+89
+00:06:22,944 --> 00:06:23,522
+495f3a9.
+
+90
+00:06:23,862 --> 00:06:29,335
+ORIG_HEAD is safe to use here, because git
+reset wrote it and nothing has run since.
+
+91
+00:06:29,375 --> 00:06:30,581
+Anchor, look, move.
+
+92
+00:06:37,921 --> 00:06:42,517
+The rescue branch lists all six
+commits. The branch is back at 495f3a9.
+
+93
+00:06:42,557 --> 00:06:46,369
+ORIG_HEAD moves as well, because
+this reset wrote it again.
+
+94
+00:06:46,409 --> 00:06:50,809
+The lost commits were on layer two,
+the reflogs, for the whole time.
+
+95
+00:06:50,849 --> 00:06:53,747
+Those are the three
+commits from the opening.
+
+96
+00:06:54,087 --> 00:06:58,406
+The usual complication, said now so that
+you recognise it in the lab: if you
+
+97
+00:06:58,446 --> 00:07:03,109
+committed new work on the shortened branch
+before you noticed, a reset back to the
+
+98
+00:07:03,149 --> 00:07:07,869
+old tip trades one loss for another. Anchor
+both tips, reset to the one you want as
+
+99
+00:07:07,909 --> 00:07:10,909
+the base, and cherry-pick
+the commits from the other.
+
+100
+00:07:11,249 --> 00:07:14,086
+The same slip without --hard is milder.
+
+101
+00:07:14,426 --> 00:07:19,253
+A mixed reset moves the branch and the
+index and leaves the working tree alone.
+
+102
+00:07:19,293 --> 00:07:23,751
+The content of the two "missing" commits
+is still in your files, shown as
+
+103
+00:07:23,791 --> 00:07:28,864
+modifications. A second mixed reset to
+HEAD@{1} puts the branch and the index back,
+
+104
+00:07:28,904 --> 00:07:30,343
+and the status is clean.
+
+105
+00:07:30,683 --> 00:07:35,592
+Git refused the safe form, -d, because
+the branch was "not fully merged".
+
+106
+00:07:35,632 --> 00:07:39,456
+That refusal is the first
+safety net. -D skips the check.
+
+107
+00:07:39,496 --> 00:07:44,270
+It is 🔴 DANGEROUS, because it deletes
+the ref together with its reflog.
+
+108
+00:07:44,310 --> 00:07:47,930
+It also prints the one fact
+you need: "(was 2f65488)".
+
+109
+00:07:47,970 --> 00:07:50,913
+Step two of the method:
+copy the scrollback.
+
+110
+00:07:51,253 --> 00:07:55,154
+On the picture, the label is gone
+and three commits have no name.
+
+111
+00:07:55,194 --> 00:07:58,912
+A branch is a ref, so recreating
+the ref recreates the branch.
+
+112
+00:07:59,252 --> 00:08:03,212
+Predict: how many lines will the
+reflog of the recreated branch have?
+
+113
+00:08:03,552 --> 00:08:09,090
+The three commits are back. The reflog isn't:
+it has one line, "branch: Created from
+
+114
+00:08:09,130 --> 00:08:14,535
+2f65488". The record of how the branch
+moved over its life was deleted with it and
+
+115
+00:08:14,575 --> 00:08:15,731
+can't be restored.
+
+116
+00:08:16,071 --> 00:08:19,271
+On the picture, the label is back,
+and the chain is solid again.
+
+117
+00:08:19,611 --> 00:08:25,179
+And without the printed ID? The branch
+reflog is gone, so ask the HEAD reflog.
+
+118
+00:08:25,519 --> 00:08:29,945
+"checkout: moving from feature/cross-encoder
+to main" records where HEAD went.
+
+119
+00:08:29,985 --> 00:08:34,698
+The entry below it, HEAD@{2}, is the last
+thing HEAD pointed at while it was on the
+
+120
+00:08:34,738 --> 00:08:39,509
+branch. That's the tip, unless the branch
+was moved afterwards without being checked
+
+121
+00:08:39,549 --> 00:08:43,288
+out. In a long reflog, search for
+the message instead of counting.
+
+122
+00:08:43,628 --> 00:08:48,026
+Now the hard variant: no reflog knows the
+commits. A teammate's branch that you
+
+123
+00:08:48,066 --> 00:08:52,689
+fetched and never checked out is held by a
+remote-tracking ref only, your record of
+
+124
+00:08:52,729 --> 00:08:53,981
+a branch on the server.
+
+125
+00:08:54,321 --> 00:08:57,973
+Git printed "(none)" where a
+local deletion prints the old ID.
+
+126
+00:08:58,312 --> 00:09:03,056
+The commits are on layer three
+now. Quick quiz, two options.
+
+127
+00:09:03,096 --> 00:09:08,237
+Does plain git fsck, without
+--no-reflogs, find them: yes, or no?
+
+128
+00:09:08,277 --> 00:09:09,513
+Say it out loud.
+
+129
+00:09:14,353 --> 00:09:18,273
+Yes, without any option, because
+no reflog entry competes.
+
+130
+00:09:18,313 --> 00:09:23,735
+--not --all limits the listing to commits
+that no ref reaches, which is the lost
+
+131
+00:09:23,775 --> 00:09:25,237
+work and nothing else.
+
+132
+00:09:30,577 --> 00:09:33,825
+Anchored, and pushed, which
+puts it on layer four as well.
+
+133
+00:09:33,865 --> 00:09:38,530
+In a repository with default settings this
+rescue has a deadline: the grace period,
+
+134
+00:09:38,570 --> 00:09:43,065
+counted from the day the objects were
+written into your repository, and then the
+
+135
+00:09:43,105 --> 00:09:43,972
+next collection.
+
+136
+00:09:44,312 --> 00:09:49,810
+git log --all knows one commit for that
+file. The timeout commit is on no branch.
+
+137
+00:09:49,850 --> 00:09:55,552
+Commits leave a branch through three commands:
+git reset, git rebase, and git commit
+
+138
+00:09:55,592 --> 00:09:59,176
+--amend. The reflog of the
+branch says which one ran.
+
+139
+00:09:59,516 --> 00:10:04,657
+One "rebase (finish)" line, with the old
+tip 76a49ed directly below it and the lost
+
+140
+00:10:04,697 --> 00:10:09,777
+commit 2ebd700 two lines further down.
+Anchor the old tip, and compare by content.
+
+141
+00:10:09,817 --> 00:10:15,021
+git cherry marks with a plus the commits
+whose change has no equivalent on the other
+
+142
+00:10:15,061 --> 00:10:15,333
+side.
+
+143
+00:10:15,673 --> 00:10:19,721
+Here's what that reflog describes.
+A branch of four commits.
+
+144
+00:10:19,761 --> 00:10:24,422
+Then a rebase, which copies commits:
+it rebuilt two and left one out.
+
+145
+00:10:24,462 --> 00:10:29,396
+Then one new commit on top. The old
+ones turn dashed, 2ebd700 among them.
+
+146
+00:10:29,736 --> 00:10:33,909
+Two commits were rebuilt with new
+IDs and the same change: minus.
+
+147
+00:10:33,949 --> 00:10:35,400
+One was left out: plus.
+
+148
+00:10:37,740 --> 00:10:41,580
+Which repair? You could reset
+the branch to the rescue branch.
+
+149
+00:10:41,620 --> 00:10:46,586
+Look at the reflog again before you answer:
+a commit was added after the rebase.
+
+150
+00:10:46,626 --> 00:10:50,841
+A reset would lose it. Step seven
+says prefer adding over rewinding.
+
+151
+00:10:57,181 --> 00:11:01,540
+The setting is back, as a new commit on
+top, and nothing after the rebase was
+
+152
+00:11:01,580 --> 00:11:04,454
+disturbed. A cherry-pick
+copied the change forward.
+
+153
+00:11:06,295 --> 00:11:07,943
+Five mistakes to watch for.
+
+154
+00:11:08,283 --> 00:11:13,315
+Running a clean-up command during the
+incident. Root cause: git gc, git prune, git
+
+155
+00:11:13,355 --> 00:11:18,263
+stash clear and git reflog expire remove
+the names and objects that the recovery
+
+156
+00:11:18,303 --> 00:11:18,944
+depends on.
+
+157
+00:11:19,284 --> 00:11:24,045
+Deleting the repository and cloning again.
+Root cause: reflogs are local and start
+
+158
+00:11:24,085 --> 00:11:27,734
+with the clone, and the clone has
+none of the unpushed objects.
+
+159
+00:11:28,074 --> 00:11:33,710
+Using HEAD@{1} some commands later. Root
+cause: any later movement, even a switch,
+
+160
+00:11:33,750 --> 00:11:38,416
+shifts the positions; search with
+--grep-reflog and use the full ID.
+
+161
+00:11:38,756 --> 00:11:43,762
+Repairing before anchoring. Root cause:
+a found commit is still unreachable from
+
+162
+00:11:43,802 --> 00:11:48,681
+refs; until a branch names it, a failed
+repair or an expiry can lose it again.
+
+163
+00:11:49,021 --> 00:11:53,553
+Resetting a branch back to recover one
+commit. Root cause: the reset discards
+
+164
+00:11:53,593 --> 00:11:57,115
+commits made since; copy the
+missing commit forward instead.
+
+165
+00:11:58,955 --> 00:12:03,474
+Now, out of the lab. A search team keeps
+an experiment branch on the server for
+
+166
+00:12:03,514 --> 00:12:08,032
+hard-negative mining. Its author deletes
+it after the experiment is written up.
+
+167
+00:12:08,072 --> 00:12:12,245
+A week later a colleague needs two of
+its commits for a new training run.
+
+168
+00:12:12,285 --> 00:12:17,034
+He had fetched the branch and never checked
+it out, and his nightly fetch runs with
+
+169
+00:12:17,074 --> 00:12:17,495
+pruning.
+
+170
+00:12:17,835 --> 00:12:23,731
+He classifies first: committed work, no
+ref, no reflog entry in his clone, so layer
+
+171
+00:12:23,771 --> 00:12:29,451
+three, with a deadline. He doesn't run
+anything that might trigger a collection.
+
+172
+00:12:29,491 --> 00:12:35,387
+git fsck --lost-found gives one dangling
+commit. A log of that tip with --not --all
+
+173
+00:12:35,427 --> 00:12:38,748
+shows exactly the two
+commits and their author.
+
+174
+00:12:39,088 --> 00:12:43,931
+He anchors the tip, pushes the branch so
+that a second repository holds it, and only
+
+175
+00:12:43,971 --> 00:12:48,233
+then tells the author that the experiment
+is back under a new branch name.
+
+176
+00:12:48,273 --> 00:12:51,663
+The incident note gives the
+full commit ID, not a selector.
+
+177
+00:12:53,503 --> 00:13:00,913
+Your turn. Do Lab 12.1, "An accidental hard
+reset", in lab-manual/m12-recovery.md.
+
+178
+00:13:01,253 --> 00:13:05,868
+Work from the symptom only. Before you
+run an evidence command, write down the
+
+179
+00:13:05,908 --> 00:13:10,702
+answers to the three questions and name
+the three places that should hold the old
+
+180
+00:13:10,742 --> 00:13:15,477
+tip. In the lab's failure scenario, new
+work has been committed on the shortened
+
+181
+00:13:15,517 --> 00:13:20,371
+branch. Predict what a plain reset to the
+old tip would cost before you choose the
+
+182
+00:13:20,411 --> 00:13:20,789
+repair.
+
+183
+00:13:21,129 --> 00:13:25,440
+The challenge is Lab 12.2, "A
+deleted branch", in the same file.
+
+184
+00:13:27,280 --> 00:13:28,546
+Pause and answer out loud.
+
+185
+00:13:33,386 --> 00:13:38,141
+A strong answer gives the three questions
+in an order that narrows the search, and
+
+186
+00:13:38,181 --> 00:13:42,818
+for each one says what a "no" means in
+practice. It ties the answers to the four
+
+187
+00:13:42,858 --> 00:13:47,730
+layers by name. It mentions the instruction
+that precedes all three: what the person
+
+188
+00:13:47,770 --> 00:13:52,407
+must not run while you think. And it ends
+with what you'll say to the person who
+
+189
+00:13:52,447 --> 00:13:56,442
+asked, in terms of confidence and
+deadline, not in terms of commands.
+
+190
+00:13:58,282 --> 00:14:01,209
+Let's land this. You
+should now be able to say:
+
+191
+00:14:01,549 --> 00:14:06,368
+Before any command I ask: was it an object,
+does anything name it, has the clock run
+
+192
+00:14:06,408 --> 00:14:06,600
+out.
+
+193
+00:14:06,940 --> 00:14:11,837
+The method is stop, record, classify, find
+the ID, anchor, inspect, integrate with
+
+194
+00:14:11,877 --> 00:14:13,583
+the lowest-risk move, verify.
+
+195
+00:14:13,923 --> 00:14:18,805
+After a hard reset the old tip is in
+the branch reflog, the HEAD reflog and
+
+196
+00:14:18,845 --> 00:14:19,461
+ORIG_HEAD.
+
+197
+00:14:19,801 --> 00:14:24,319
+A deleted branch is recreated at its
+tip; its own reflog is gone for good.
+
+198
+00:14:24,659 --> 00:14:29,332
+A commit dropped by a rebase is copied
+forward with a cherry-pick, not recovered by
+
+199
+00:14:29,372 --> 00:14:29,899
+rewinding.
+
+200
+00:14:31,739 --> 00:14:38,688
+Read section 13.7 and the first three
+recoveries of section 13.8 in Chapter 13.
+
+201
+00:14:38,728 --> 00:14:44,261
+Do Lab 12.3, "A deleted commit",
+in lab-manual/m12-recovery.md.
+
+202
+00:14:44,601 --> 00:14:48,180
+Today you brought back commits
+three times with one method.
+
+203
+00:14:48,220 --> 00:14:52,290
+Do the hard reset lab from the
+symptom alone before the next video.
+
+204
+00:14:52,330 --> 00:14:56,952
+Next time: five more recoveries, from
+a wrong rebase to a wrong cherry-pick.
+
+205
+00:14:56,992 --> 00:15:00,142
+Until then, look at the
+state first and type second.
+
+206
+00:15:00,182 --> 00:15:01,614
+See you in the next one.

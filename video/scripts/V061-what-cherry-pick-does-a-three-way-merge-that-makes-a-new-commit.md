@@ -45,7 +45,7 @@ After this video you can:
 
 In one sentence: `git cherry-pick <commit>` 🟡 CAUTION takes the difference between a commit and its parent, merges that difference into your current branch with a three-way merge, and commits the result.
 
-**[ANIMATION]** graph: 93787ec-6db3c0c-ca6dd48-f98ffd3-0cca736 main; 93787ec-3056255 release/1.4; HEAD=release/1.4; role:ca6dd48:P; role:f98ffd3:C; title:A_cherry-pick_onto_release/1.4 => + drop:P,C; role:ca6dd48:base_P; role:3056255:ours; role:f98ffd3:theirs_C; name:roles => + 3056255-3c81466 release/1.4; say:The_new_commit_has_one_parent,_and_no_link_to_C; name:picked dy=230 id=pick
+**[ANIMATION]** graph: 93787ec-6db3c0c-ca6dd48-f98ffd3-0cca736 main; 93787ec-3056255 release/1.4; HEAD=release/1.4; role:ca6dd48:P; role:f98ffd3:C; title:A_cherry-pick_onto_release/1.4 => + drop:P,C; role:ca6dd48:base_P; role:3056255:ours; role:f98ffd3:theirs_C; name:roles => + 3056255-3c81466 release/1.4; say:The_new_commit_has_one_parent,_and_no_link_to_C; name:picked dy=180 dx=310 id=pick
 
 **[ANIMATION]** step: state-1
 

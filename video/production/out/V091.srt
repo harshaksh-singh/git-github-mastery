@@ -1,0 +1,942 @@
+1
+00:00:04,500 --> 00:00:08,628
+"I cloned the service and the
+vendor/textsplit directory is empty.
+
+2
+00:00:08,668 --> 00:00:09,764
+The imports fail."
+
+3
+00:00:10,104 --> 00:00:14,111
+"git pull worked for everyone yesterday.
+Today it dies with not our ref."
+
+4
+00:00:14,451 --> 00:00:19,496
+"I pulled, changed one line in ingest.py,
+committed, and the reviewer says my commit
+
+5
+00:00:19,536 --> 00:00:20,949
+downgrades the library."
+
+6
+00:00:21,289 --> 00:00:26,113
+"CI is green on my branch and red on main,
+and the only difference is a directory I
+
+7
+00:00:26,153 --> 00:00:26,992
+never touched."
+
+8
+00:00:27,332 --> 00:00:32,573
+All four are about a submodule: another
+repository checked out in a subdirectory of
+
+9
+00:00:32,613 --> 00:00:37,919
+yours. A CTO who hears these asks two things.
+Why does this mechanism fail so often?
+
+10
+00:00:37,959 --> 00:00:40,019
+And should we be using it at all?
+
+11
+00:00:40,359 --> 00:00:44,347
+Both questions have precise answers,
+and both start from one fact.
+
+12
+00:00:44,387 --> 00:00:49,351
+The superproject, the repository that
+contains the submodule, records a commit ID,
+
+13
+00:00:49,391 --> 00:00:54,294
+not a branch, and Git's defaults don't
+keep the nested checkout in sync with that
+
+14
+00:00:54,334 --> 00:00:54,721
+record.
+
+15
+00:00:55,061 --> 00:00:59,472
+Every standard submodule failure is a gap
+between three things that should agree:
+
+16
+00:00:59,512 --> 00:01:03,483
+the commit ID recorded in the superproject,
+the commit checked out in the
+
+17
+00:01:03,523 --> 00:01:07,769
+submodule's working tree, and the commits
+that exist in the submodule's shared
+
+18
+00:01:07,809 --> 00:01:08,374
+repository.
+
+19
+00:01:10,214 --> 00:01:14,098
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+20
+00:01:14,138 --> 00:01:19,437
+This video opens the last module of this
+part: three ways to bring something into a
+
+21
+00:01:19,477 --> 00:01:23,361
+repository that doesn't live in
+its history the ordinary way.
+
+22
+00:01:23,401 --> 00:01:25,548
+Submodules, subtrees, and Git LFS.
+
+23
+00:01:25,888 --> 00:01:30,742
+Today you answer the first report, the empty
+directory, and you build the model that
+
+24
+00:01:30,782 --> 00:01:34,121
+explains the other three. Hold
+on to that empty directory.
+
+25
+00:01:34,161 --> 00:01:38,898
+You need two things from earlier: the tree
+object, Git's listing of one directory,
+
+26
+00:01:38,938 --> 00:01:41,869
+with its entry modes, and
+what git clone transfers.
+
+27
+00:01:42,209 --> 00:01:46,949
+The projects are doc-qa, a document
+question-answering service owned by your team,
+
+28
+00:01:46,989 --> 00:01:51,787
+and textsplit, a small text-chunking library
+that Asha maintains in a repository of
+
+29
+00:01:51,827 --> 00:01:54,177
+its own. Ravi is your teammate on doc-qa.
+
+30
+00:01:56,017 --> 00:02:00,243
+say what a superproject stores about
+a submodule and where each piece is;
+
+31
+00:02:00,583 --> 00:02:05,577
+read a gitlink entry in a tree and explain
+why git cat-file cannot show its target;
+
+32
+00:02:05,917 --> 00:02:09,479
+take a plain clone through init and
+update and say what each writes;
+
+33
+00:02:09,819 --> 00:02:14,598
+explain why a recursive clone of an
+untrusted repository is a security decision.
+
+34
+00:02:16,438 --> 00:02:20,984
+In one sentence: a submodule is another
+repository checked out in a subdirectory of
+
+35
+00:02:21,024 --> 00:02:25,570
+yours. Your repository records exactly one
+thing about it in its history: the ID of
+
+36
+00:02:25,610 --> 00:02:28,001
+the commit that should
+be checked out there.
+
+37
+00:02:28,341 --> 00:02:31,915
+Precisely, there are three pieces,
+in three different places.
+
+38
+00:02:32,255 --> 00:02:37,462
+A fourth, local piece connects them.
+git submodule init copies the URL from
+
+39
+00:02:37,502 --> 00:02:43,058
+.gitmodules into the superproject's
+.git/config. From then on Git uses the copy.
+
+40
+00:02:43,098 --> 00:02:47,605
+That's why a changed URL doesn't
+reach existing clones by itself.
+
+41
+00:02:47,945 --> 00:02:52,862
+The point that the rest of the module depends
+on: the superproject's object database
+
+42
+00:02:52,902 --> 00:02:57,643
+doesn't contain the commit that the gitlink
+names. A tree entry of mode 160000 is
+
+43
+00:02:57,683 --> 00:03:02,483
+the only place in Git where an object ID
+names something that the repository isn't
+
+44
+00:03:02,523 --> 00:03:07,322
+required to have. Git doesn't check that
+the ID exists anywhere when you commit it
+
+45
+00:03:07,362 --> 00:03:11,867
+or when you push it. Everything that
+makes the entry useful, where to get the
+
+46
+00:03:11,907 --> 00:03:16,706
+object, whether it has been fetched, whether
+it's checked out, is arranged outside
+
+47
+00:03:16,746 --> 00:03:17,356
+the commit.
+
+48
+00:03:17,696 --> 00:03:22,496
+What a teammate receives. A plain clone
+transfers the superproject's objects.
+
+49
+00:03:22,536 --> 00:03:27,463
+The gitlink arrives. The commit it names
+doesn't. Two steps fill the directory.
+
+50
+00:03:27,803 --> 00:03:32,919
+🟢 SAFE: git submodule init registers
+the submodule by copying the URL into
+
+51
+00:03:32,959 --> 00:03:38,215
+.git/config. 🟡 CAUTION: git submodule
+update then clones the repository into
+
+52
+00:03:38,255 --> 00:03:43,928
+.git/modules/ and checks out the recorded
+commit. git submodule update --init does
+
+53
+00:03:43,968 --> 00:03:48,666
+both, and --recursive repeats them
+for submodules inside submodules.
+
+54
+00:03:48,706 --> 00:03:53,196
+git clone --recurse-submodules
+does everything for a fresh clone.
+
+55
+00:03:53,536 --> 00:03:59,267
+The security side. Git has a per-transport
+policy, protocol.<name>.allow, with three
+
+56
+00:03:59,307 --> 00:04:03,526
+values: always, never and user.
+The manual gives the defaults.
+
+57
+00:04:03,566 --> 00:04:08,748
+http, https, git and ssh are always.
+ext is never. Everything else, the file
+
+58
+00:04:08,788 --> 00:04:14,451
+transport included, is user. Under user, a
+transport may be used only when a person
+
+59
+00:04:14,491 --> 00:04:20,222
+typed the clone, fetch or push. The git
+submodule command marks its transfers as not
+
+60
+00:04:20,262 --> 00:04:25,512
+typed by the user, because the URLs it
+will use come from .gitmodules, a file
+
+61
+00:04:25,552 --> 00:04:28,466
+written by whoever
+authored the repository.
+
+62
+00:04:28,806 --> 00:04:35,082
+The value user for file dates from the
+fix for CVE-2022-39253, shipped in Git
+
+63
+00:04:35,122 --> 00:04:41,807
+2.38.1. The lab's "servers" are bare
+repositories in a directory, so the submodule
+
+64
+00:04:41,847 --> 00:04:48,368
+URL is a file path, and each command that
+makes Git clone a submodule on its own
+
+65
+00:04:48,408 --> 00:04:54,520
+initiative is run with -c
+protocol.file.allow=always, for that one command.
+
+66
+00:04:54,560 --> 00:04:59,687
+With a real remote over HTTPS or
+SSH you never need the option.
+
+67
+00:05:00,027 --> 00:05:03,773
+When not to use a recursive clone:
+on a repository you don't trust.
+
+68
+00:05:03,813 --> 00:05:08,465
+A recursive clone is the one common Git
+operation in which a repository you haven't
+
+69
+00:05:08,505 --> 00:05:12,082
+inspected decides what else gets
+cloned and where it is written.
+
+70
+00:05:13,922 --> 00:05:19,203
+The textbook's analogy: a recipe that says
+"use the stock from page 212 of the other
+
+71
+00:05:19,243 --> 00:05:23,384
+book, third printing". Your book
+doesn't contain the stock recipe.
+
+72
+00:05:23,424 --> 00:05:26,742
+It contains a precise reference
+to one version of it.
+
+73
+00:05:26,782 --> 00:05:31,809
+Anyone cooking from your book needs the
+other book as well, opened at that page.
+
+74
+00:05:32,149 --> 00:05:36,462
+Where the analogy breaks: the other book
+keeps being reprinted, and your reference
+
+75
+00:05:36,502 --> 00:05:40,814
+doesn't update itself. And the reader can
+scribble in their copy of the other book
+
+76
+00:05:40,854 --> 00:05:43,308
+without your book noticing,
+until they compare.
+
+77
+00:05:43,648 --> 00:05:48,524
+From this, three values that you'll compare
+in every submodule diagnosis: the page
+
+78
+00:05:48,564 --> 00:05:53,500
+your book cites, the page the reader's copy
+is open at, and the pages that exist in
+
+79
+00:05:53,540 --> 00:05:54,879
+the bookshop's edition.
+
+80
+00:05:55,219 --> 00:05:59,890
+Try it now, on paper, thirty seconds.
+Draw two boxes, doc-qa and textsplit.
+
+81
+00:05:59,930 --> 00:06:04,978
+Then draw the two arrows that leave doc-qa,
+and write on each what you predict it
+
+82
+00:06:05,018 --> 00:06:05,481
+carries.
+
+83
+00:06:11,821 --> 00:06:15,574
+Check your drawing. Two arrows
+leave the superproject's box.
+
+84
+00:06:15,614 --> 00:06:20,885
+One carries a URL, from a versioned file.
+The other carries a commit ID, from a tree
+
+85
+00:06:20,925 --> 00:06:26,196
+entry. Neither carries any content of the
+library. The three lines at the bottom are
+
+86
+00:06:26,236 --> 00:06:28,598
+local: a plain clone has none of them.
+
+87
+00:06:30,438 --> 00:06:35,173
+"transport 'file' not allowed". That's the
+transport policy, and you'll return to
+
+88
+00:06:35,213 --> 00:06:39,417
+it. For the lab's directory remotes,
+the option goes on the one command.
+
+89
+00:06:39,757 --> 00:06:44,568
+The command cloned the library into
+vendor/textsplit and staged two things.
+
+90
+00:06:44,608 --> 00:06:44,957
+First:
+
+91
+00:06:45,297 --> 00:06:49,505
+The versioned file holds the
+relative URL ../textsplit.git.
+
+92
+00:06:49,545 --> 00:06:55,338
+A URL that starts with one or two dots is
+resolved against the superproject's own
+
+93
+00:06:55,378 --> 00:07:00,235
+remote. The local configuration
+holds the resolved, absolute result.
+
+94
+00:07:00,275 --> 00:07:06,211
+Relative URLs are worth using when both
+repositories live on the same host: a clone
+
+95
+00:07:06,251 --> 00:07:12,044
+made over HTTPS fetches the submodule over
+HTTPS, a clone made over SSH uses SSH,
+
+96
+00:07:12,084 --> 00:07:15,573
+and no protocol is written
+into a versioned file.
+
+97
+00:07:15,913 --> 00:07:20,564
+Second, the gitlink. Predict the mode
+of the entry for vendor/textsplit.
+
+98
+00:07:20,604 --> 00:07:22,324
+Say it out loud. I'll wait.
+
+99
+00:07:27,164 --> 00:07:32,242
+Four blobs with mode 100644 and
+one entry with mode 160000.
+
+100
+00:07:32,282 --> 00:07:34,758
+That last one is the gitlink.
+
+101
+00:07:35,098 --> 00:07:40,327
+This is the library's own history. The ID
+in the entry, e216665, is the commit that
+
+102
+00:07:40,367 --> 00:07:43,819
+the library's main pointed
+at when you ran the command.
+
+103
+00:07:43,859 --> 00:07:45,914
+Nothing in the entry says "main".
+
+104
+00:07:46,254 --> 00:07:51,067
+The submodule's working tree has a .git
+file, the same device a linked worktree
+
+105
+00:07:51,107 --> 00:07:51,374
+uses.
+
+106
+00:07:51,714 --> 00:07:55,665
+The real Git directory sits under
+the superproject's .git/modules/.
+
+107
+00:07:55,705 --> 00:08:00,312
+Keeping it there means the repository
+survives when the working tree directory
+
+108
+00:08:00,352 --> 00:08:05,257
+disappears, for example when you switch to
+a commit of the superproject from before
+
+109
+00:08:05,297 --> 00:08:06,568
+the submodule existed.
+
+110
+00:08:06,908 --> 00:08:11,432
+To the superproject a submodule is a
+one-line file whose content is "Subproject
+
+111
+00:08:11,472 --> 00:08:15,939
+commit" and an ID. That's how every later
+change to it appears in diffs and in
+
+112
+00:08:15,979 --> 00:08:16,343
+review.
+
+113
+00:08:16,683 --> 00:08:19,425
+git ls-tree prints the
+type commit for the entry.
+
+114
+00:08:19,765 --> 00:08:25,138
+The tree entry names commit e216665.
+Predict: can the superproject show you that
+
+115
+00:08:25,178 --> 00:08:26,356
+object? I'll wait.
+
+116
+00:08:31,196 --> 00:08:32,648
+"could not get object info".
+
+117
+00:08:32,988 --> 00:08:37,525
+The commit object isn't in this repository.
+It lives in the object database of the
+
+118
+00:08:37,565 --> 00:08:38,083
+submodule.
+
+119
+00:08:43,423 --> 00:08:46,999
+Read the three together. The
+directory exists and is empty.
+
+120
+00:08:47,039 --> 00:08:52,086
+git status says "nothing to commit, working
+tree clean": an uninitialized submodule
+
+121
+00:08:52,126 --> 00:08:57,050
+isn't a modification, so nothing warns
+Ravi. Only git submodule status tells him,
+
+122
+00:08:57,090 --> 00:09:01,769
+with the leading minus sign. That's
+report 1, the empty directory, explained.
+
+123
+00:09:02,109 --> 00:09:06,807
+init copied the URL into
+.git/config. Nothing was downloaded.
+
+124
+00:09:07,147 --> 00:09:08,512
+"checked out" and the full ID.
+
+125
+00:09:08,852 --> 00:09:12,953
+The directory is populated, and the
+status line now starts with a space.
+
+126
+00:09:13,293 --> 00:09:18,552
+One step we skip today. The lab's snippet
+named 04-detached shows that HEAD in the
+
+127
+00:09:18,592 --> 00:09:23,529
+submodule is detached after update.
+That's the first topic of the next video.
+
+128
+00:09:23,869 --> 00:09:28,843
+Now the recursive clone, without the option.
+A quick quiz: after this command, is
+
+129
+00:09:28,883 --> 00:09:32,063
+the superproject there, or
+is nothing cloned at all?
+
+130
+00:09:32,103 --> 00:09:33,053
+Say it out loud.
+
+131
+00:09:37,893 --> 00:09:42,801
+The superproject is there. Its clone
+worked. Only the clone that Git started by
+
+132
+00:09:42,841 --> 00:09:43,991
+itself was refused.
+
+133
+00:09:44,331 --> 00:09:46,656
+The second command
+reproduces the mechanism.
+
+134
+00:09:46,996 --> 00:09:52,238
+With the variable set to 0, Git treats even
+a clone you typed as one the user didn't
+
+135
+00:09:52,278 --> 00:09:54,753
+type, and the file transport is refused.
+
+136
+00:09:55,093 --> 00:09:58,331
+With the option on the one command,
+the recursive clone completes:
+
+137
+00:10:08,871 --> 00:10:14,017
+Both are fixed in the Git 2.55.0 this
+course uses. The second advisory's own
+
+138
+00:10:14,057 --> 00:10:19,681
+workaround is the durable rule: do not
+recursively clone submodules of repositories
+
+139
+00:10:19,721 --> 00:10:24,935
+you do not trust. Clone without recursion,
+read .gitmodules, and then decide.
+
+140
+00:10:26,775 --> 00:10:28,423
+Five mistakes to watch for.
+
+141
+00:10:28,763 --> 00:10:31,991
+"The clone is broken, the
+vendor directory is empty."
+
+142
+00:10:32,031 --> 00:10:36,924
+Root cause: a plain clone transfers the
+gitlink and not the commit it names; the
+
+143
+00:10:36,964 --> 00:10:39,637
+submodule has to be
+initialized and updated.
+
+144
+00:10:39,977 --> 00:10:44,959
+Trusting git status to report it. Root
+cause: an uninitialized submodule is not a
+
+145
+00:10:44,999 --> 00:10:48,927
+modification; only git submodule
+status shows the leading minus.
+
+146
+00:10:49,267 --> 00:10:54,117
+Believing the submodule follows a branch.
+Root cause: the gitlink is a commit ID;
+
+147
+00:10:54,157 --> 00:10:56,290
+nothing in the entry names a branch.
+
+148
+00:10:56,630 --> 00:11:01,972
+Setting protocol.file.allow=always
+globally. Root cause: it removes, for every
+
+149
+00:11:02,012 --> 00:11:07,423
+repository, the default that stops Git
+from using the file transport on its own
+
+150
+00:11:07,463 --> 00:11:08,182
+initiative.
+
+151
+00:11:08,522 --> 00:11:11,974
+git clone --recurse-submodules
+on an unknown repository.
+
+152
+00:11:12,014 --> 00:11:17,150
+Root cause: the repository's .gitmodules
+then decides what else is cloned and where
+
+153
+00:11:17,190 --> 00:11:21,514
+it is written, which is where recent
+client vulnerabilities have been.
+
+154
+00:11:23,354 --> 00:11:28,229
+Now, out of the lab. A team keeps prompt
+templates, a tokenizer vocabulary and
+
+155
+00:11:28,269 --> 00:11:32,388
+protocol definitions in one repository
+that five services consume.
+
+156
+00:11:32,428 --> 00:11:35,916
+A submodule gives each service
+an exact, reviewable pin.
+
+157
+00:11:35,956 --> 00:11:41,146
+The pull request that moves the pin shows
+one line removed and one line added, each
+
+158
+00:11:41,186 --> 00:11:46,249
+"Subproject commit" with an ID. A release
+of the service is reproducible from one
+
+159
+00:11:46,289 --> 00:11:48,140
+commit ID of the superproject.
+
+160
+00:11:48,480 --> 00:11:51,935
+The price is the set of
+failures on the first slide.
+
+161
+00:11:51,975 --> 00:11:56,236
+So the team's onboarding page has
+three lines for new engineers.
+
+162
+00:11:56,276 --> 00:12:01,747
+Clone with --recurse-submodules. If a vendor
+directory is empty, run git submodule
+
+163
+00:12:01,787 --> 00:12:07,124
+update --init. And read git submodule
+status before you ask why an import fails.
+
+164
+00:12:08,964 --> 00:12:16,144
+Your turn. Do Exercise 15.1, Level 1, "Add
+a submodule and read what was recorded",
+
+165
+00:12:16,184 --> 00:12:20,233
+in
+exercises/m11-m15-investigation-recovery.md.
+
+166
+00:12:20,573 --> 00:12:24,915
+Before you look, write down the three places
+where something was recorded and what
+
+167
+00:12:24,955 --> 00:12:29,136
+each holds. Predict the mode and type
+that git ls-tree prints for the submodule
+
+168
+00:12:29,176 --> 00:12:33,465
+path, and predict the result of asking the
+superproject for the object behind it.
+
+169
+00:12:33,805 --> 00:12:39,332
+The challenge is Exercise 15.7, Level 3,
+"An empty directory on the build machine",
+
+170
+00:12:39,372 --> 00:12:40,472
+in the same file.
+
+171
+00:12:44,312 --> 00:12:49,289
+Answer out loud. A strong answer separates
+what is versioned from what is local and
+
+172
+00:12:49,329 --> 00:12:54,185
+gives a location for each piece: a tree
+entry with its mode, a file at the top of
+
+173
+00:12:54,225 --> 00:12:58,960
+the working tree, a directory under the
+Git directory, and a configuration key.
+
+174
+00:12:59,000 --> 00:13:03,856
+It says in so many words what the
+superproject's object database doesn't contain,
+
+175
+00:13:03,896 --> 00:13:07,543
+and what Git doesn't check when
+you commit or push the entry.
+
+176
+00:13:07,583 --> 00:13:12,621
+And it draws one consequence for a teammate's
+fresh clone and one for a changed URL.
+
+177
+00:13:14,461 --> 00:13:19,755
+Let's land this. One commit in the library's
+own history, e216665: that's all your
+
+178
+00:13:19,795 --> 00:13:25,154
+repository records about it. You explained
+the first report, and you have the model
+
+179
+00:13:25,194 --> 00:13:26,454
+for the other three.
+
+180
+00:13:26,794 --> 00:13:45,511
+You should now be able to say:
+
+181
+00:13:45,851 --> 00:13:51,856
+A submodule is a gitlink, a tree entry of
+mode 160000 that holds a commit ID; a URL
+
+182
+00:13:51,896 --> 00:13:56,299
+in .gitmodules; and a separate
+repository under .git/modules.
+
+183
+00:13:56,639 --> 00:14:01,123
+The superproject does not contain the
+submodule's objects and does not check that
+
+184
+00:14:01,163 --> 00:14:02,631
+the recorded commit exists.
+
+185
+00:14:02,971 --> 00:14:07,802
+A plain clone leaves the directory empty
+and git status clean; init copies the URL
+
+186
+00:14:07,842 --> 00:14:10,950
+and update clones and checks
+out the recorded commit.
+
+187
+00:14:11,290 --> 00:14:16,497
+The first character of git submodule status
+is the diagnosis: space, minus, plus or
+
+188
+00:14:16,537 --> 00:14:16,623
+U.
+
+189
+00:14:16,963 --> 00:14:22,039
+A recursive clone lets the cloned repository
+decide what else is fetched, so for
+
+190
+00:14:22,079 --> 00:14:25,555
+untrusted repositories I clone
+without recursion first.
+
+191
+00:14:27,395 --> 00:14:32,073
+Read sections 23.1 to 23.4 of Chapter 23.
+
+192
+00:14:32,413 --> 00:14:36,787
+Today you read a gitlink and filled an
+empty directory, one step at a time.
+
+193
+00:14:36,827 --> 00:14:41,672
+If the three places still blur, that's
+normal. Draw the two arrows once more before
+
+194
+00:14:41,712 --> 00:14:45,674
+you move on. Next time: submodules
+in motion, and the detached HEAD.
+
+195
+00:14:45,714 --> 00:14:48,735
+Until then, look at the
+state first and type second.
+
+196
+00:14:48,775 --> 00:14:50,147
+See you in the next one.

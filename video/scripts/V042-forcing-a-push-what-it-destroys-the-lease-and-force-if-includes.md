@@ -518,7 +518,7 @@ Five mistakes to watch for.
 
 **[ON SCREEN]** The five-step routine.
 
-**[ANIMATION]** cards: cards=fetch:and_read_git_status_-sb|mark_the_old_tip:git_branch_backup/<name>|rewrite|push_with_the_explicit_lease:<name>:backup/<name>|tell_everyone:who_has_the_branch,_what_to_do_next numbered=on marks=5:ring title=Rewriting_a_published_branch at_1=22 at_2=35 at_3=48 at_4=55 at_5=70 at_marks=45
+**[ANIMATION]** cards: cards=fetch:and_read_git_status_-sb|mark_the_old_tip:git_branch_backup/<name>|rewrite|push_with_the_explicit_lease:<name>:backup/<name>|tell_everyone:who_has_the_branch,_what_to_do_next numbered=on marks=5:ring title=Rewriting_a_published_branch at_1=5 at_2=35 at_3=48 at_4=55 at_5=70 at_marks=45
 
 **[ANIMATION]** step: 5
 

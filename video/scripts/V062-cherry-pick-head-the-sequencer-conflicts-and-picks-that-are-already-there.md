@@ -43,7 +43,7 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** graph: 93787ec-6db3c0c-1a6b393-08f4771-ebcee16-c3a7a9f main; 93787ec release/1.4; HEAD=release/1.4 => 93787ec-e0c8403 release/1.4; ebcee16 CHERRY_PICK_HEAD; c3a7a9f main; HEAD=release/1.4 => + role:08f4771:base; role:ebcee16:theirs; role:e0c8403:ours; note:93787ec:the_merge_base; name:roles title=A_range_pick,_stopped_at_its_second_commit dy=210 id=stop
+**[ANIMATION]** graph: 93787ec-6db3c0c-1a6b393-08f4771-ebcee16-c3a7a9f main; 93787ec release/1.4; HEAD=release/1.4 => 93787ec-e0c8403 release/1.4; ebcee16 CHERRY_PICK_HEAD; c3a7a9f main; HEAD=release/1.4 => + role:08f4771:base; role:ebcee16:theirs; role:e0c8403:ours; note:93787ec:the_merge_base; name:roles title=A_range_pick,_stopped_at_its_second_commit dy=180 dx=310 id=stop
 
 **[ANIMATION]** step: state-2
 

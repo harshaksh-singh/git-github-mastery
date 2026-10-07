@@ -240,7 +240,7 @@ $ git diff --stat ORIG_HEAD HEAD
 
 `--cherry-mark` puts an equals sign on four commits: two pairs with the same patch.
 
-**[ANIMATION]** graph: 8afc6bd-1279adf-dc5df93-c60bc13-f0c9542 feat/ingest; 8afc6bd-589d18b-0fbfd81-8aca274 origin/feat/ingest; 8aca274-f0c9542; c60bc13 ORIG_HEAD; HEAD=feat/ingest; same:1279adf; same:dc5df93; same:0fbfd81; same:8aca274; left:c60bc13; right:589d18b; title:Two_pairs_with_the_same_patch; name:marked => 8afc6bd-589d18b-0fbfd81-8aca274-fbce73d feat/ingest; 8aca274 origin/feat/ingest; 8afc6bd-1279adf-dc5df93-c60bc13-f0c9542; 8aca274-f0c9542; reflog:1279adf,dc5df93,c60bc13,f0c9542; HEAD=feat/ingest; name:repair; title:After_the_repair id=dup
+**[ANIMATION]** graph: 8afc6bd-1279adf-dc5df93-c60bc13-f0c9542 feat/ingest; ^8afc6bd-589d18b-0fbfd81-8aca274 origin/feat/ingest; 8aca274-f0c9542; c60bc13 ORIG_HEAD; HEAD=feat/ingest; same:1279adf; same:dc5df93; same:0fbfd81; same:8aca274; left:c60bc13; right:589d18b; title:Two_pairs_with_the_same_patch; name:marked => 8afc6bd-589d18b-0fbfd81-8aca274-fbce73d feat/ingest; 8aca274 origin/feat/ingest; 8afc6bd-1279adf-dc5df93-c60bc13-f0c9542; 8aca274-f0c9542; reflog:1279adf,dc5df93,c60bc13,f0c9542; HEAD=feat/ingest; name:repair; title:After_the_repair id=dup
 
 **[ANIMATION]** step: marked
 
@@ -308,7 +308,7 @@ e30ba74 (HEAD -> feat/rerank) Experiment: cache cross-encoder scores
 
 The saved list has three lines: the skeleton and the two experiments. The two commits you wanted to keep are gone, and Git said nothing.
 
-**[ANIMATION]** graph: 8afc6bd-5ee19f0-195f8d0-e30ba74-45f4f23-6ab8f55 feat/rerank; 8afc6bd main; HEAD=feat/rerank => e30ba74 feat/rerank; 6ab8f55 ORIG_HEAD; 8afc6bd main; HEAD=feat/rerank; reflog:45f4f23,6ab8f55 => 195f8d0 feat/rerank; e30ba74 ORIG_HEAD; 8afc6bd main; HEAD=feat/rerank; reflog:e30ba74,45f4f23,6ab8f55 => + 6ab8f55 special:feat/rerank@{2}; name:found => 6ab8f55 rescue/rerank special:feat/rerank@{2}; 195f8d0 feat/rerank; e30ba74 ORIG_HEAD; 8afc6bd main; HEAD=feat/rerank; name:rescue => 6ab8f55 feat/rerank rescue/rerank; 8afc6bd main; HEAD=feat/rerank; name:reset title=A_bad_rebase,_and_the_way_back id=bad
+**[ANIMATION]** graph: 8afc6bd-5ee19f0-195f8d0-e30ba74-45f4f23-6ab8f55 feat/rerank; 8afc6bd main; HEAD=feat/rerank => e30ba74 feat/rerank; 6ab8f55 ORIG_HEAD; 8afc6bd main; HEAD=feat/rerank; reflog:45f4f23,6ab8f55 => 195f8d0 feat/rerank; e30ba74 ORIG_HEAD; 8afc6bd main; HEAD=feat/rerank; reflog:e30ba74,45f4f23,6ab8f55 => + 6ab8f55 special:feat/rerank@{2}; name:found => 6ab8f55 rescue/rerank special:feat/rerank@{2}; 195f8d0 feat/rerank; e30ba74 ORIG_HEAD; 8afc6bd main; HEAD=feat/rerank; name:rescue => 6ab8f55 feat/rerank rescue/rerank; 8afc6bd main; HEAD=feat/rerank; name:reset title=A_bad_rebase,_and_the_way_back id=bad at_state_2=30
 
 **[ANIMATION]** step: state-2
 

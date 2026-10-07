@@ -1,0 +1,877 @@
+1
+00:00:04,500 --> 00:00:09,138
+That question comes from a CTO in a release
+week, and it sounds like a question
+
+2
+00:00:09,178 --> 00:00:11,803
+about containers. It's
+a question about tags.
+
+3
+00:00:12,143 --> 00:00:17,736
+To answer it you need three facts that
+most engineers have never had to state.
+
+4
+00:00:17,776 --> 00:00:23,657
+A tag is a ref, a name that holds an object
+ID, and every clone holds its own copy
+
+5
+00:00:23,697 --> 00:00:28,496
+of it. Some tags are only a ref,
+and some are a ref plus an object.
+
+6
+00:00:28,536 --> 00:00:34,056
+And tags don't travel the way branches
+do. A push, which sends your work to a
+
+7
+00:00:34,096 --> 00:00:39,761
+server, doesn't send them unless asked.
+A fetch, which downloads from it, never
+
+8
+00:00:39,801 --> 00:00:41,855
+updates one you already have.
+
+9
+00:00:42,195 --> 00:00:47,235
+This video gives you those three facts.
+The next one uses them to answer the CTO.
+
+10
+00:00:49,075 --> 00:00:54,020
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:54,060 --> 00:01:00,150
+You met the lightweight tag in the
+branches part of the course: a ref under
+
+12
+00:01:00,190 --> 00:01:05,871
+refs/tags/ that points at a commit,
+one saved snapshot of the project.
+
+13
+00:01:05,911 --> 00:01:12,572
+And you met the four object types, of which
+the fourth, the tag object, has had no
+
+14
+00:01:12,612 --> 00:01:15,024
+use so far. Today it gets one.
+
+15
+00:01:15,364 --> 00:01:19,430
+The idea that runs through this chapter
+is: Git records what it is told.
+
+16
+00:01:19,470 --> 00:01:24,164
+A tag is a name that every clone holds
+separately. Nothing synchronises those names
+
+17
+00:01:24,204 --> 00:01:28,784
+behind your back. One puzzle to keep in
+mind: later, a single tag shows up as two
+
+18
+00:01:28,824 --> 00:01:30,152
+lines in a listing. Why?
+
+19
+00:01:30,492 --> 00:01:34,268
+The project in the demonstrations is
+inference-gateway, a small service with rate
+
+20
+00:01:34,308 --> 00:01:34,597
+limits.
+
+21
+00:01:36,437 --> 00:01:41,153
+describe the refs and objects created by
+a lightweight, an annotated and a signed
+
+22
+00:01:41,193 --> 00:01:41,388
+tag;
+
+23
+00:01:41,728 --> 00:01:43,632
+peel a tag to its commit with ^{};
+
+24
+00:01:43,972 --> 00:01:47,497
+list tags in version order and
+filter them by what they contain;
+
+25
+00:01:47,837 --> 00:01:50,541
+explain which tags a
+fetch and a push carry;
+
+26
+00:01:50,881 --> 00:01:53,677
+delete a tag and say why
+other clones keep it.
+
+27
+00:01:55,517 --> 00:02:00,585
+In one sentence: a tag is a ref under
+refs/tags/ that isn't expected to move.
+
+28
+00:02:00,625 --> 00:02:05,826
+A lightweight tag points straight at a
+commit. An annotated tag points at a tag
+
+29
+00:02:05,866 --> 00:02:10,403
+object that names the commit and
+records who tagged it, when and why.
+
+30
+00:02:10,443 --> 00:02:14,117
+On screen, two tags from
+today's demo sit on one commit.
+
+31
+00:02:14,157 --> 00:02:16,240
+What differs is behind the name.
+
+32
+00:02:16,580 --> 00:02:20,102
+Precisely. A tag object has four
+header lines and a message.
+
+33
+00:02:27,942 --> 00:02:31,931
+A signed tag is an annotated tag
+whose text ends in a signature.
+
+34
+00:02:31,971 --> 00:02:37,031
+So there are three kinds and two mechanisms:
+a bare ref, or a ref plus an object.
+
+35
+00:02:37,071 --> 00:02:42,130
+Signatures have their own videos later.
+Today the signed tag is "an annotated tag
+
+36
+00:02:42,170 --> 00:02:44,585
+with a signature block in its message".
+
+37
+00:02:44,925 --> 00:02:49,501
+Getting from the tag object to
+the commit is called peeling.
+
+38
+00:02:49,541 --> 00:02:54,272
+v1.0.0^{commit} follows tag
+objects until it reaches a commit.
+
+39
+00:02:54,312 --> 00:03:00,505
+v1.0.0^{}, with empty braces, follows them
+until it reaches anything that isn't a
+
+40
+00:03:00,545 --> 00:03:05,968
+tag. Commands that want a commit,
+such as git log v1.0.0, peel for you.
+
+41
+00:03:06,308 --> 00:03:11,111
+Inside the dot git folder, git tag
+-a writes one object and one ref.
+
+42
+00:03:11,151 --> 00:03:16,026
+No reflog is written for tags unless
+core.logAllRefUpdates is always.
+
+43
+00:03:16,066 --> 00:03:19,802
+HEAD, the index and the
+working tree aren't involved.
+
+44
+00:03:20,142 --> 00:03:25,468
+Which kind when? The manual's rule: annotated
+tags for releases, lightweight tags
+
+45
+00:03:25,508 --> 00:03:30,835
+for private or temporary labels. git
+describe ignores lightweight tags by default
+
+46
+00:03:30,875 --> 00:03:36,334
+for that reason. An annotated tag also
+answers "who released this, and when", which
+
+47
+00:03:36,374 --> 00:03:38,719
+the last commit's author line can't.
+
+48
+00:03:39,059 --> 00:03:43,686
+Listing. git tag lists in byte order,
+which is wrong for version numbers.
+
+49
+00:03:43,726 --> 00:03:47,585
+--sort=version:refname compares
+the numeric parts as numbers.
+
+50
+00:03:47,625 --> 00:03:52,763
+It still lists a pre-release after its
+release, because the suffix makes a longer
+
+51
+00:03:52,803 --> 00:03:57,877
+string. versionsort.suffix names the
+suffixes that sort before the bare version.
+
+52
+00:03:58,217 --> 00:04:03,024
+Filters select by history, not by name. On
+screen, the tags of the second demo, each
+
+53
+00:04:03,064 --> 00:04:07,698
+on its commit. --contains answers "which
+releases include this fix", and --merged
+
+54
+00:04:07,738 --> 00:04:11,102
+answers "which releases are in
+the history of this commit".
+
+55
+00:04:11,442 --> 00:04:13,671
+How tags travel. Three rules.
+
+56
+00:04:14,011 --> 00:04:19,685
+Push sends tags only when asked. git
+push origin <tag> publishes one.
+
+57
+00:04:19,725 --> 00:04:26,558
+git push --follow-tags sends, with the
+branch, every annotated tag that points into
+
+58
+00:04:26,598 --> 00:04:31,030
+the commits being pushed and
+is missing on the server.
+
+59
+00:04:31,070 --> 00:04:36,744
+git push --tags sends every tag you
+have, including the private ones.
+
+60
+00:04:37,084 --> 00:04:41,394
+Fetch follows tags. A fetch brings every
+tag that points into the history it
+
+61
+00:04:41,434 --> 00:04:45,287
+downloads, of either kind, and never
+updates a tag you already have.
+
+62
+00:04:45,627 --> 00:04:50,866
+Deleting is per place. A tag lives in
+three places: your clone, the server, and
+
+63
+00:04:50,906 --> 00:04:53,940
+every other clone. Each
+needs its own command.
+
+64
+00:04:54,280 --> 00:04:58,724
+When not to use a tag: as something that
+moves. A name that's meant to move is a
+
+65
+00:04:58,764 --> 00:05:02,703
+branch. Watch a new commit arrive:
+main moves to it, and the tag stays.
+
+66
+00:05:03,043 --> 00:05:08,253
+And avoid a nested tag, a tag of a tag.
+The textbook calls it almost always a
+
+67
+00:05:08,293 --> 00:05:12,072
+mistake, and Git 2.55 prints
+a hint when you create one.
+
+68
+00:05:13,912 --> 00:05:20,086
+The textbook's analogy uses the ledger. A
+lightweight tag is a sticky note on a page
+
+69
+00:05:20,126 --> 00:05:26,151
+of the ledger. An annotated tag is a
+certificate that cites the page number and is
+
+70
+00:05:26,191 --> 00:05:29,850
+filed in the ledger with
+a page number of its own.
+
+71
+00:05:30,190 --> 00:05:34,211
+That's why an annotated tag has two IDs
+to keep apart: the ID of the certificate,
+
+72
+00:05:34,251 --> 00:05:37,870
+which is what the ref holds, and the
+ID of the page it cites, the commit.
+
+73
+00:05:38,210 --> 00:05:43,424
+The analogy breaks because nobody certifies
+anything unless the tag is also signed.
+
+74
+00:05:43,464 --> 00:05:48,740
+The tagger line of an annotated tag is text
+supplied by whoever created it, the same
+
+75
+00:05:48,780 --> 00:05:49,880
+as an author line.
+
+76
+00:05:50,220 --> 00:05:54,839
+Add one thing for travel: every clone has
+its own set of sticky notes and its own
+
+77
+00:05:54,879 --> 00:05:59,613
+copies of the certificates. Handing someone
+the ledger doesn't hand over your notes
+
+78
+00:05:59,653 --> 00:06:04,272
+unless you say so, and once they have a
+note with a given name, they keep theirs.
+
+79
+00:06:06,112 --> 00:06:11,217
+Try it now, on paper. Pause me for thirty
+seconds and draw your answer: a commit, a
+
+80
+00:06:11,257 --> 00:06:13,510
+lightweight tag and an annotated tag.
+
+81
+00:06:18,350 --> 00:06:24,130
+The top arrow is the lightweight
+tag: ref to commit, nothing between.
+
+82
+00:06:24,170 --> 00:06:31,130
+The lower path is the annotated tag: the
+ref holds b696248, the tag object, and the
+
+83
+00:06:31,170 --> 00:06:38,215
+tag object's object line holds the commit
+eb112a5. Peeling is walking the lower path
+
+84
+00:06:38,255 --> 00:06:39,143
+to its end.
+
+85
+00:06:40,983 --> 00:06:44,584
+The ref file holds the commit
+ID. The type is commit.
+
+86
+00:06:44,624 --> 00:06:48,981
+Eleven objects. Predict the object
+count after an annotated tag.
+
+87
+00:06:49,021 --> 00:06:50,836
+Say it out loud. I'll wait.
+
+88
+00:06:55,676 --> 00:07:03,401
+Twelve. The ref holds b696248,
+and that object's type is tag.
+
+89
+00:07:03,441 --> 00:07:10,785
+Read its four header lines
+against the table. Now peel it.
+
+90
+00:07:11,125 --> 00:07:16,933
+The name alone and ^{tag} give the tag
+object. ^{commit} and ^{} give eb112a5.
+
+91
+00:07:16,973 --> 00:07:23,081
+In git show-ref --dereference, and in git
+ls-remote, the line ending in ^{} is the
+
+92
+00:07:23,121 --> 00:07:28,629
+peeled value of the line above. You'll
+read that pair of lines many times.
+
+93
+00:07:28,969 --> 00:07:33,127
+A tag can name an older commit,
+and -m alone implies -a.
+
+94
+00:07:33,467 --> 00:07:38,639
+Look at the dates: v0.9.0 names an older
+commit and carries a later date than
+
+95
+00:07:38,679 --> 00:07:43,243
+v1.0.0. The tagger date is the moment
+of tagging, not of the commit.
+
+96
+00:07:43,583 --> 00:07:46,979
+A tag can also name a blob,
+a tree or another tag.
+
+97
+00:07:47,319 --> 00:07:52,244
+"type blob" in the first. And for the second,
+Git's hint: you have created a nested
+
+98
+00:07:52,284 --> 00:07:52,483
+tag.
+
+99
+00:07:52,823 --> 00:07:54,514
+Names obey the ref-name rules.
+
+100
+00:07:54,854 --> 00:07:58,503
+No spaces, no tilde, caret or colon. The
+plus sign of a build-metadata suffix is
+
+101
+00:07:58,543 --> 00:08:02,145
+allowed. And an existing tag name is
+refused: Git doesn't move a tag unless you
+
+102
+00:08:02,185 --> 00:08:02,560
+force it.
+
+103
+00:08:02,900 --> 00:08:11,066
+Byte order: v1.10.0 before v1.2.0. Predict
+where v2.0.0-rc.1 lands with a version
+
+104
+00:08:11,106 --> 00:08:13,295
+sort. Say it out loud.
+
+105
+00:08:13,635 --> 00:08:19,893
+After v2.0.0, which is wrong for a release
+candidate, until versionsort.suffix names
+
+106
+00:08:19,933 --> 00:08:26,117
+the suffix. Both settings can be made the
+default. 🟡 CAUTION: git config set writes
+
+107
+00:08:26,157 --> 00:08:30,690
+a key into .git/config and changes
+what later commands print.
+
+108
+00:08:30,730 --> 00:08:32,715
+It needs Git 2.46 or later.
+
+109
+00:08:33,055 --> 00:08:44,417
+The last command is the usual scripted
+answer to "what is the newest release".
+
+110
+00:08:44,457 --> 00:08:46,756
+Now the filters.
+
+111
+00:08:47,096 --> 00:08:51,909
+--contains is the one you'll use in incidents:
+which releases include this commit.
+
+112
+00:08:57,049 --> 00:09:02,724
+Nothing. The branch went. The tag didn't.
+Almost everyone is caught by this once.
+
+113
+00:09:07,564 --> 00:09:12,813
+Two lines for one tag: the tag object
+3caaa39, and the peeled line with the commit
+
+114
+00:09:12,853 --> 00:09:16,038
+d20ef7a. That's the puzzle
+from the start, solved.
+
+115
+00:09:16,378 --> 00:09:22,918
+Now one annotated tag and two
+lightweight ones, and --follow-tags.
+
+116
+00:09:22,958 --> 00:09:28,601
+Quick quiz: which of the three
+go? Option one: all three.
+
+117
+00:09:28,641 --> 00:09:34,084
+Option two: only the annotated
+one. Option three: none.
+
+118
+00:09:34,124 --> 00:09:35,679
+Say it out loud.
+
+119
+00:09:47,019 --> 00:09:53,197
+Option two. v1.0.1 went. The lightweight
+tags canary-ok and wip-retry-header stayed,
+
+120
+00:09:53,237 --> 00:09:55,862
+which is the point of --follow-tags.
+
+121
+00:09:56,202 --> 00:09:57,120
+Asha fetches.
+
+122
+00:09:57,460 --> 00:10:02,234
+Both tags arrived without being asked for,
+because they point into the history she
+
+123
+00:10:02,274 --> 00:10:02,880
+downloaded.
+
+124
+00:10:03,220 --> 00:10:04,889
+Deleting. Three places.
+
+125
+00:10:05,229 --> 00:10:11,406
+The server no longer has v1.0.1.
+Your local v1.0.1 is still there.
+
+126
+00:10:11,446 --> 00:10:12,442
+And Asha's?
+
+127
+00:10:18,982 --> 00:10:23,931
+git fetch --prune doesn't
+touch tags: Asha keeps v1.0.1.
+
+128
+00:10:23,971 --> 00:10:31,058
+--prune-tags deleted it, and deleted her
+private bisect-good-2026-09-07 with it.
+
+129
+00:10:31,098 --> 00:10:35,869
+Note the "(none)" in the
+output: no old ID is printed.
+
+130
+00:10:35,909 --> 00:10:43,264
+And remember the other direction: a deleted
+tag that someone still holds comes back
+
+131
+00:10:43,304 --> 00:10:46,114
+with their next git push --tags.
+
+132
+00:10:47,954 --> 00:10:49,602
+Five mistakes to watch for.
+
+133
+00:10:49,942 --> 00:10:54,497
+"I pushed, so the release tag is on the
+server." Root cause: a push sends tags only
+
+134
+00:10:54,537 --> 00:10:57,264
+when asked; the branch
+update does not carry them.
+
+135
+00:10:57,604 --> 00:11:01,485
+Comparing a tag's ID with a
+commit ID and finding a mismatch.
+
+136
+00:11:01,525 --> 00:11:06,755
+Root cause: the ref of an annotated tag
+holds the ID of the tag object; the commit
+
+137
+00:11:06,795 --> 00:11:08,362
+is the peeled value, ^{}.
+
+138
+00:11:08,702 --> 00:11:13,421
+Finding the newest release
+with plain git tag | tail -1.
+
+139
+00:11:13,461 --> 00:11:20,391
+Root cause: the default order is byte order,
+in which v1.10.0 sorts before v1.2.0.
+
+140
+00:11:20,731 --> 00:11:27,765
+git push --tags from a working clone.
+Root cause: it sends every tag you have,
+
+141
+00:11:27,805 --> 00:11:31,121
+including private and temporary ones.
+
+142
+00:11:31,461 --> 00:11:35,172
+Deleting a tag on the server
+and assuming it is gone.
+
+143
+00:11:35,212 --> 00:11:40,764
+Root cause: every clone holds its own
+copy, a plain fetch never removes it, and
+
+144
+00:11:40,804 --> 00:11:43,595
+anyone's git push --tags brings it back.
+
+145
+00:11:45,435 --> 00:11:53,238
+Now, out of the lab. An ML team tags the
+commit that produced each published model
+
+146
+00:11:53,278 --> 00:12:01,081
+with an annotated tag such as
+model/reranker/2026-09-07, and writes the evaluation
+
+147
+00:12:01,121 --> 00:12:09,115
+run ID into the message. Two years later
+git show on that tag still says which code,
+
+148
+00:12:09,155 --> 00:12:13,897
+who released it and which
+evaluation justified it.
+
+149
+00:12:14,237 --> 00:12:19,299
+The team's release script uses git push
+--follow-tags, so the annotated release tag
+
+150
+00:12:19,339 --> 00:12:24,401
+goes with the branch and the engineers'
+private lightweight tags, for bisecting and
+
+151
+00:12:24,441 --> 00:12:29,196
+for marking a canary, stay on their
+machines. Nobody in the team runs git push
+
+152
+00:12:29,236 --> 00:12:29,626
+--tags.
+
+153
+00:12:31,466 --> 00:12:42,242
+Your turn. Do Lab 13.1, "Three kinds of
+tag", in lab-manual/m13-tags-versions.md.
+
+154
+00:12:42,582 --> 00:12:46,964
+Before you create each tag, predict how
+many objects the repository will have
+
+155
+00:12:47,004 --> 00:12:51,616
+afterwards, what the ref file will contain,
+and what git cat-file -t will say for
+
+156
+00:12:51,656 --> 00:12:56,383
+the tag name. Before you peel, predict which
+of the five revision expressions print
+
+157
+00:12:56,423 --> 00:12:57,072
+the same ID.
+
+158
+00:12:57,412 --> 00:13:03,831
+The challenge is Exercise 13.5, Level
+2, command prediction, "What a tag name
+
+159
+00:13:03,871 --> 00:13:08,948
+resolves to", in
+exercises/m11-m15-investigation-recovery.md.
+
+160
+00:13:10,788 --> 00:13:12,719
+Answer out loud. I'll wait.
+
+161
+00:13:17,559 --> 00:13:22,602
+A strong answer counts: how many refs and
+how many new objects each command writes,
+
+162
+00:13:22,642 --> 00:13:27,563
+and what each ref holds. It names the
+fields of the tag object and says where the
+
+163
+00:13:27,603 --> 00:13:32,584
+signature of a signed tag lives. It defines
+peeling in one sentence and applies it
+
+164
+00:13:32,624 --> 00:13:36,810
+to all three cases, including the
+one where there is nothing to peel.
+
+165
+00:13:36,850 --> 00:13:41,771
+And it adds one consequence that shows
+understanding, for example what you see in
+
+166
+00:13:41,811 --> 00:13:46,854
+git ls-remote for each kind, or why one
+kind is ignored by git describe by default.
+
+167
+00:13:48,694 --> 00:13:51,621
+Let's land this. You
+should now be able to say:
+
+168
+00:13:51,961 --> 00:13:56,949
+A lightweight tag is a ref to a commit;
+an annotated tag is a ref to a tag object
+
+169
+00:13:56,989 --> 00:14:01,728
+that names the commit, the tagger, the
+date and a message; a signed tag is an
+
+170
+00:14:01,768 --> 00:14:03,652
+annotated tag with a signature.
+
+171
+00:14:03,992 --> 00:14:07,518
+^{} peels a tag to the
+object it finally names.
+
+172
+00:14:07,858 --> 00:14:13,971
+--sort=version:refname with versionsort.suffix
+lists versions in the right order,
+
+173
+00:14:14,011 --> 00:14:18,224
+and --contains tells me which
+releases include a commit.
+
+174
+00:14:18,564 --> 00:14:23,287
+A push sends tags only when asked; a
+fetch brings tags that point into fetched
+
+175
+00:14:23,327 --> 00:14:25,547
+history and never updates one I have.
+
+176
+00:14:25,887 --> 00:14:30,016
+A tag lives in three places, and
+deleting it in one leaves the others.
+
+177
+00:14:31,856 --> 00:14:38,082
+Read sections 14B.8 to 14B.10 of Chapter
+14B. Do Exercises 13.1 to 13.3, Level 1,
+
+178
+00:14:38,122 --> 00:14:44,039
+"Two kinds of tag, counted in objects",
+"Listing and sorting" and "Which tags
+
+179
+00:14:44,079 --> 00:14:48,371
+travel", in
+exercises/m11-m15-investigation-recovery.md.
+
+180
+00:14:48,711 --> 00:14:55,397
+Today you took a tag apart: one ref,
+sometimes one object, and three places it
+
+181
+00:14:55,437 --> 00:15:01,865
+lives. Create a lightweight and an
+annotated tag in the lab, and peel both.
+
+182
+00:15:01,905 --> 00:15:08,850
+Next time: why a published tag must not
+move. Until then, look at the state first
+
+183
+00:15:08,890 --> 00:15:12,385
+and type second. See you in the next one.

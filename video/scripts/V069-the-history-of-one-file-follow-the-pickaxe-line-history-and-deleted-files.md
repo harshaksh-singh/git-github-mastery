@@ -349,7 +349,7 @@ index 48081af..3075545 100644
 ```
 <!-- /snippet -->
 
-"Speed up normalize with a precompiled pattern", by Ravi Menon on the tenth. A string vanished, and now you have its commit. The patch shows only the files that matched, and `--pickaxe-all` shows the whole commit. Don't conclude anything about the person yet. You have a commit to read, and the method for reading it's the next video.
+"Speed up normalize with a precompiled pattern", by Ravi Menon on the tenth. A string vanished, and now you have its commit. The patch shows only the files that matched, and `--pickaxe-all` shows the whole commit. Don't conclude anything about the person yet. You have a commit to read, and the method for reading it is the next video.
 
 One more property: the pickaxe searches only the commits of stage one.
 

@@ -99,7 +99,7 @@ Try it now, on paper, from memory. Draw H, I, W and U with their parent edges, a
 
 **[PAUSE]**
 
-**[ANIMATION]** graph: id=anat title=With_-u,_and_without 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f special:refs/stash; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; note:7ee160e:the_index_as_it_was; note:962e38f:tracked_files_as_on_disk; note:8fb87d5:untracked_files,_no_parent; say:Staged:_H_to_I._Not_staged:_I_to_W => 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f special:refs/stash; 7ee160e-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; note:7ee160e:the_index_as_it_was; note:962e38f:tracked_files_as_on_disk; gone:8fb87d5; say:Without_-u_there_is_no_U:_W_has_two_parents; name:without
+**[ANIMATION]** graph: id=anat title=With_-u,_and_without 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f special:refs/stash; 7ee160e-962e38f; ^8fb87d5-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; role:8fb87d5:U; note:7ee160e:the_index_as_it_was; note:962e38f:tracked_files_as_on_disk; note:8fb87d5:untracked_files,_no_parent; say:Staged:_H_to_I._Not_staged:_I_to_W => 8f8672d main; 8f8672d-7ee160e; 8f8672d-962e38f special:refs/stash; 7ee160e-962e38f; HEAD=main; role:8f8672d:H; role:7ee160e:I; role:962e38f:W; note:7ee160e:the_index_as_it_was; note:962e38f:tracked_files_as_on_disk; gone:8fb87d5; say:Without_-u_there_is_no_U:_W_has_two_parents; name:without at_state_1=3 at_without=45
 
 **[DIAGRAM]** The picture of section 14C.2, with the IDs of the transcript. Draw H first, then I as its child, then W as a merge of the two, and last U floating with no parent.
 
@@ -205,7 +205,7 @@ $ git ls-tree -r 'stash@{0}^3'
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** walk: id=trees columns=commit,config.yaml,score.py,notes.md rows=H__8f8672d:464dad1:2c9e3f4:-|I__7ee160e:464dad1:6ba285d:-|W__962e38f:b571eab:6ba285d:-|U__8fb87d5:-:-:8b2489b marks=2.3:hl,3.2:hl,4.4:hl title=Four_trees,_compared_by_blob_ID
+**[ANIMATION]** walk: id=trees columns=commit,config.yaml,score.py,notes.md rows=H_8f8672d:464dad1:2c9e3f4:-|I_7ee160e:464dad1:6ba285d:-|W_962e38f:b571eab:6ba285d:-|U_8fb87d5:-:-:8b2489b marks=2.3:hl,3.2:hl,4.4:hl title=Four_trees,_compared_by_blob_ID
 
 `score.py` changes between H and I: `2c9e3f4` becomes `6ba285d`. That's the staged change. `config.yaml` changes between I and W: `464dad1` becomes `b571eab`. That's the unstaged one. U holds only the untracked file. No tree mixes the three kinds of work, so they can be taken apart again.
 

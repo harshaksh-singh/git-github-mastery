@@ -1,0 +1,843 @@
+1
+00:00:04,500 --> 00:00:09,501
+A CI job restores its workspace from a
+cache, and git status reports every tracked
+
+2
+00:00:09,541 --> 00:00:14,604
+file as modified. A second job copies the
+repository into a container with COPY and
+
+3
+00:00:14,644 --> 00:00:19,092
+sees the same thing. An engineer
+restores a laptop from backup: the same.
+
+4
+00:00:19,132 --> 00:00:20,507
+Nobody edited anything.
+
+5
+00:00:20,847 --> 00:00:28,399
+And one more, from the first page of Chapter
+3: a laptop lost power during a commit,
+
+6
+00:00:28,439 --> 00:00:35,629
+and Git now says fatal: index file corrupt.
+Your CTO asks: what did we lose, the
+
+7
+00:00:35,669 --> 00:00:42,228
+history, the work in progress, or
+nothing? Pick one, and say it out loud.
+
+8
+00:00:47,067 --> 00:00:52,156
+Both questions are about one file, .git/index,
+and both have a one-command answer
+
+9
+00:00:52,196 --> 00:00:55,955
+once you know what that file
+contains. Hold on to your pick.
+
+10
+00:00:55,995 --> 00:00:56,905
+We'll check it.
+
+11
+00:00:58,745 --> 00:01:02,420
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:01:02,460 --> 00:01:07,535
+You've used the index, also called the
+staging area, as a concept since the start of
+
+13
+00:01:07,575 --> 00:01:11,555
+the course: the proposed next
+commit. Today it's a data structure.
+
+14
+00:01:11,595 --> 00:01:16,487
+You'll read its header with xxd, decode
+its entries, watch its cache at work, see
+
+15
+00:01:16,527 --> 00:01:19,898
+its flags and its stage numbers,
+and change its version.
+
+16
+00:01:20,238 --> 00:01:27,633
+Two replays from labs/ch03, index-file.sh
+and index-debug.sh, then the replay of Lab
+
+17
+00:01:27,673 --> 00:01:33,651
+17.1 up to its checkpoint. A sixty-line
+Python script in the course,
+
+18
+00:01:33,691 --> 00:01:39,935
+labs/ch03/read-index.py, decodes the
+file by following the manual page.
+
+19
+00:01:39,975 --> 00:01:41,882
+You'll see its output.
+
+20
+00:01:42,222 --> 00:01:48,547
+Labels: git ls-files is 🟢 SAFE. git
+update-index --index-version 4 is 🟢: it changes
+
+21
+00:01:48,587 --> 00:01:51,768
+the storage of the index, not its content.
+
+22
+00:01:53,608 --> 00:01:55,020
+After this video you can:
+
+23
+00:01:55,360 --> 00:01:57,330
+List the fields of an index entry.
+
+24
+00:01:57,670 --> 00:02:03,043
+Explain why every file shows as modified
+after a repository is copied, and repair it
+
+25
+00:02:03,083 --> 00:02:04,139
+with one command.
+
+26
+00:02:04,479 --> 00:02:10,400
+Read flags and stage numbers in git
+ls-files --debug and --stage output.
+
+27
+00:02:10,740 --> 00:02:12,835
+Say what the index version changes.
+
+28
+00:02:13,175 --> 00:02:17,787
+Create a commit without using the index.
+This last objective is practised in the
+
+29
+00:02:17,827 --> 00:02:21,335
+homework exercise; the cited
+section does not demonstrate it.
+
+30
+00:02:23,175 --> 00:02:28,265
+Why look inside? Because the index does two
+jobs, and incidents come from confusing
+
+31
+00:02:28,305 --> 00:02:28,574
+them.
+
+32
+00:02:28,914 --> 00:02:34,038
+In one sentence: the index is one binary
+file that records, for every tracked path,
+
+33
+00:02:34,078 --> 00:02:39,078
+a mode, a blob ID, a stage number and a
+copy of the file's stat data, followed by
+
+34
+00:02:39,118 --> 00:02:44,055
+extensions that let Git skip work. It's
+at once the proposed next commit and the
+
+35
+00:02:44,095 --> 00:02:49,282
+cache that makes git status fast. The stat
+data is what the filesystem reports about
+
+36
+00:02:49,322 --> 00:02:51,708
+a file, such as its size and its times.
+
+37
+00:02:52,048 --> 00:02:55,741
+The format is specified in
+git help gitformat-index.
+
+38
+00:02:55,781 --> 00:03:01,698
+A 12-byte header: the signature DIRC, a
+version, which is 2, 3 or 4, and the number
+
+39
+00:03:01,738 --> 00:03:06,866
+of entries. Then the entries, sorted
+by path as bytes and then by stage.
+
+40
+00:03:07,206 --> 00:03:12,661
+Each entry has three parts before its
+path. First, 40 bytes of stat data: change
+
+41
+00:03:12,701 --> 00:03:18,431
+time and modification time with nanoseconds,
+device, inode, mode, user, group, size.
+
+42
+00:03:18,471 --> 00:03:24,063
+Second, the object ID. Third, 16 bits of
+flags: an assume-valid bit, an "extended"
+
+43
+00:03:24,103 --> 00:03:27,566
+bit, the two-bit stage, and
+the length of the path.
+
+44
+00:03:27,606 --> 00:03:32,787
+Version 3 adds 16 more bits, with the
+skip-worktree and intent-to-add flags.
+
+45
+00:03:32,827 --> 00:03:37,114
+The path follows, padded with NUL
+bytes to a multiple of eight.
+
+46
+00:03:37,154 --> 00:03:42,471
+Version 4 compresses each path against
+the previous one and drops the padding.
+
+47
+00:03:42,811 --> 00:03:47,196
+After the entries come the extensions,
+each a four-letter signature, a length and
+
+48
+00:03:47,236 --> 00:03:51,729
+data. TREE caches the tree IDs that unchanged
+parts of the index already correspond
+
+49
+00:03:51,769 --> 00:03:55,935
+to. REUC keeps the stages of a resolved
+conflict, so that git checkout -m can
+
+50
+00:03:55,975 --> 00:04:00,359
+recreate it. Others serve the split index,
+the untracked cache and the filesystem
+
+51
+00:04:00,399 --> 00:04:04,892
+monitor. The file ends with a checksum,
+unless index.skipHash replaces it by zeros.
+
+52
+00:04:05,232 --> 00:04:10,441
+Inside .git: one file, index, rewritten as
+a whole by every command that changes it.
+
+53
+00:04:10,481 --> 00:04:15,627
+That includes git status, which refreshes
+the stat data and writes the result back.
+
+54
+00:04:15,967 --> 00:04:20,973
+Now the mechanism behind the hook. Git
+trusts the cached stat data to skip reading
+
+55
+00:04:21,013 --> 00:04:26,082
+files. If the size, the times, the inode
+and the rest still match, Git doesn't open
+
+56
+00:04:26,122 --> 00:04:30,574
+the file. A copy of a repository gives
+every file a new inode number, the
+
+57
+00:04:30,614 --> 00:04:34,144
+filesystem's own number for a
+file, and a new change time.
+
+58
+00:04:34,184 --> 00:04:37,713
+The content is identical, and
+every cached entry is stale.
+
+59
+00:04:37,753 --> 00:04:39,621
+Nothing is wrong with the data.
+
+60
+00:04:39,961 --> 00:04:45,383
+And the failure mode of the second question.
+The index is derived data, with one
+
+61
+00:04:45,423 --> 00:04:50,504
+exception: content that was staged and
+never committed is named only there.
+
+62
+00:04:50,544 --> 00:04:56,239
+So fatal: index file corrupt is repaired by
+deleting the file and running git reset.
+
+63
+00:04:56,279 --> 00:05:01,837
+History and working tree are untouched,
+and only what was staged and not committed
+
+64
+00:05:01,877 --> 00:05:07,504
+must be staged again. If you picked nothing,
+you were close: that staged content is
+
+65
+00:05:07,544 --> 00:05:09,006
+the one thing to redo.
+
+66
+00:05:10,846 --> 00:05:15,733
+The textbook's analogy is a packing list
+for the next shipment, with an inspection
+
+67
+00:05:15,773 --> 00:05:20,481
+sticker on every line saying when the
+item was last checked and how big it was.
+
+68
+00:05:20,521 --> 00:05:25,288
+The list becomes the commit's tree. The
+stickers let the clerk skip boxes nobody
+
+69
+00:05:25,328 --> 00:05:25,768
+touched.
+
+70
+00:05:26,108 --> 00:05:30,457
+The analogy breaks during a conflict,
+when the list carries three lines for one
+
+71
+00:05:30,497 --> 00:05:32,567
+item: the merge base, ours and theirs.
+
+72
+00:05:32,907 --> 00:05:37,468
+Keep the two halves of each line apart.
+The left half, mode, ID, path, is content:
+
+73
+00:05:37,508 --> 00:05:41,844
+it's the next commit. The right half,
+the sticker, is a cache: it can be wrong
+
+74
+00:05:41,884 --> 00:05:45,995
+without anything being lost, and it's
+refreshed by reading the file again.
+
+75
+00:05:47,835 --> 00:05:52,044
+Read the header first: twelve
+bytes. Then one entry, opened up.
+
+76
+00:05:52,084 --> 00:05:55,753
+Its first row is the sticker:
+forty bytes of stat data.
+
+77
+00:05:55,793 --> 00:06:01,351
+Its second row is the object ID, twenty
+bytes. The third is two bytes of flags, and
+
+78
+00:06:01,391 --> 00:06:04,386
+inside them the two-bit
+stage. Then the path.
+
+79
+00:06:04,726 --> 00:06:08,628
+Below: one entry per path, and
+per stage during a conflict.
+
+80
+00:06:08,668 --> 00:06:12,770
+Then the tail of extensions, TREE
+and REUC. Then the checksum.
+
+81
+00:06:17,110 --> 00:06:22,204
+Eight tracked paths. Predict the twelve
+bytes: what are the first four as text, and
+
+82
+00:06:22,244 --> 00:06:24,369
+what is the last number? I'll wait.
+
+83
+00:06:29,209 --> 00:06:32,517
+4449 5243 is DIRC, then
+version 2, then eight entries.
+
+84
+00:06:32,557 --> 00:06:36,920
+In the listing above it, the columns
+are mode, blob ID, stage and path.
+
+85
+00:06:36,960 --> 00:06:38,904
+Stage 0 everywhere: no conflict.
+
+86
+00:06:39,244 --> 00:06:44,672
+Try it now, thirty seconds, in a repository
+in the lab shell: run git ls-files
+
+87
+00:06:44,712 --> 00:06:47,826
+--stage and read the
+third column. I'll wait.
+
+88
+00:06:52,666 --> 00:06:56,831
+That column is the stage, and zero
+on every line means no conflict.
+
+89
+00:06:57,171 --> 00:07:02,344
+The decoded file: the header, eight entries,
+a TREE extension, a valid checksum.
+
+90
+00:07:05,184 --> 00:07:11,054
+git ls-files --debug prints the sticker:
+change time, modification time, device,
+
+91
+00:07:11,094 --> 00:07:16,743
+inode, user, group, size and flags. Below
+it, the same numbers asked from the
+
+92
+00:07:16,783 --> 00:07:22,358
+filesystem with stat. They match. That
+match is what lets Git skip the file.
+
+93
+00:07:22,698 --> 00:07:27,724
+The content is unchanged. What does the
+plumbing command git diff-files print the
+
+94
+00:07:27,764 --> 00:07:30,789
+first time, and the second
+time? Say it out loud.
+
+95
+00:07:35,629 --> 00:07:40,555
+The first time it reports the path as
+possibly changed, with an all-zero ID that
+
+96
+00:07:40,595 --> 00:07:45,148
+means "look at the working tree".
+Plumbing compares cached stat data only.
+
+97
+00:07:45,188 --> 00:07:50,239
+Then git status reads the file, hashes it,
+finds the blob the index already names,
+
+98
+00:07:50,279 --> 00:07:54,273
+and writes fresh stat data back.
+The second diff-files is silent.
+
+99
+00:07:54,613 --> 00:07:56,431
+Now copy a whole repository.
+
+100
+00:07:56,771 --> 00:08:01,813
+Every entry is stale, and no file has
+changed. One refresh repairs it: git
+
+101
+00:08:01,853 --> 00:08:07,101
+update-index --refresh. This is the whole
+explanation of "every file shows as
+
+102
+00:08:07,141 --> 00:08:12,458
+modified" after a restore from backup,
+a CI cache, or a COPY into a container.
+
+103
+00:08:12,498 --> 00:08:14,243
+It's never a data problem.
+
+104
+00:08:14,583 --> 00:08:15,186
+The flags.
+
+105
+00:08:15,526 --> 00:08:20,430
+Look at the header line when it appears.
+Which field changed without anyone asking?
+
+106
+00:08:20,470 --> 00:08:21,680
+Make your prediction.
+
+107
+00:08:26,520 --> 00:08:32,053
+The version. Setting a version-3 flag
+upgraded the file from version 2 to version 3
+
+108
+00:08:32,093 --> 00:08:36,215
+on the spot. And the intent-to-add
+entry names the empty blob.
+
+109
+00:08:36,255 --> 00:08:38,968
+Chapter 5 explains what each flag is for.
+
+110
+00:08:39,308 --> 00:08:45,320
+Stages. A quick quiz first: during a
+conflict, how many entries does the one path
+
+111
+00:08:45,360 --> 00:08:48,981
+config.toml have: one, two
+or three? Your answer?
+
+112
+00:08:53,821 --> 00:08:59,615
+Three. One path, three entries. Stage 1 is
+the merge base, 2 is ours, 3 is theirs.
+
+113
+00:08:59,655 --> 00:09:03,955
+The colon syntax from the rev-parse
+video reads each of them.
+
+114
+00:09:04,295 --> 00:09:10,142
+git add replaced the three entries by one
+stage-0 entry and moved them into the REUC
+
+115
+00:09:10,182 --> 00:09:12,595
+extension, the resolve-undo record.
+
+116
+00:09:12,935 --> 00:09:13,967
+The version field.
+
+117
+00:09:14,307 --> 00:09:18,052
+Version 4 saved 38 bytes here
+by sharing path prefixes.
+
+118
+00:09:18,092 --> 00:09:23,008
+In a repository with a hundred thousand
+paths, that saving is what makes
+
+119
+00:09:23,048 --> 00:09:25,555
+feature.manyFiles worth switching on.
+
+120
+00:09:28,395 --> 00:09:31,741
+The lab repeats these steps
+on its own small repository.
+
+121
+00:09:31,781 --> 00:09:36,638
+Notice one thing here: after git add, the
+entry already names a blob that exists.
+
+122
+00:09:36,678 --> 00:09:41,717
+git add wrote the object. The lab continues
+through the stat cache and a conflict to
+
+123
+00:09:41,757 --> 00:09:46,675
+its checkpoint. The failure scenario, a
+corrupt index, and its recovery are yours.
+
+124
+00:09:48,515 --> 00:09:50,163
+Five mistakes to watch for.
+
+125
+00:09:50,503 --> 00:09:54,480
+Treating "everything is modified"
+after a copy as changed files.
+
+126
+00:09:54,520 --> 00:09:59,752
+Root cause: the copy has new inode numbers
+and change times, so the cached stat data
+
+127
+00:09:59,792 --> 00:10:02,263
+is stale while the content is identical.
+
+128
+00:10:02,603 --> 00:10:05,706
+Treating fatal: index file
+corrupt as lost history.
+
+129
+00:10:05,746 --> 00:10:10,450
+Root cause: the index is derived data;
+only content that was staged and never
+
+130
+00:10:10,490 --> 00:10:12,422
+committed is named nowhere else.
+
+131
+00:10:12,762 --> 00:10:15,845
+Reading git diff-files
+output as proof of a change.
+
+132
+00:10:15,885 --> 00:10:20,682
+Root cause: plumbing compares cached stat
+data only and does not read the file.
+
+133
+00:10:21,022 --> 00:10:25,928
+Being surprised that the index version
+changed. Root cause: skip-worktree and
+
+134
+00:10:25,968 --> 00:10:30,361
+intent-to-add are version-3 flags,
+and setting one upgrades the file.
+
+135
+00:10:30,701 --> 00:10:36,148
+Expecting one entry per path at all times.
+Root cause: during a conflict a path has
+
+136
+00:10:36,188 --> 00:10:37,405
+an entry per stage.
+
+137
+00:10:39,245 --> 00:10:43,768
+Now, out of the lab. Three illustrative
+incidents for one backend team, and the
+
+138
+00:10:43,808 --> 00:10:45,096
+first command for each.
+
+139
+00:10:45,436 --> 00:10:48,905
+"Everything is modified after the
+restore": git update-index --refresh.
+
+140
+00:10:48,945 --> 00:10:52,958
+The CI job that restores a cached workspace
+now runs it, or any git status, before
+
+141
+00:10:52,998 --> 00:10:54,639
+it asks whether the tree is clean.
+
+142
+00:10:54,979 --> 00:10:59,603
+"git status takes a minute on the monorepo":
+the stat cache already does its job.
+
+143
+00:10:59,643 --> 00:11:04,382
+The next steps are core.untrackedCache,
+core.fsmonitor and feature.manyFiles, which
+
+144
+00:11:04,422 --> 00:11:05,418
+Chapter 26 covers.
+
+145
+00:11:05,758 --> 00:11:09,579
+"fatal: index file corrupt" after the power
+loss: move the file aside, so that you
+
+146
+00:11:09,619 --> 00:11:13,534
+can put it back, and run git reset. History
+and working tree are untouched, and only
+
+147
+00:11:13,574 --> 00:11:16,124
+what was staged and not
+committed must be staged again.
+
+148
+00:11:16,164 --> 00:11:19,326
+That's the failure scenario of Lab
+17.1, and the answer for the CTO.
+
+149
+00:11:21,166 --> 00:11:25,531
+Your turn. Do Lab 17.1, "Read the
+index as a data structure", in
+
+150
+00:11:25,571 --> 00:11:30,968
+lab-manual/m17-index-refs-gitdir.md.
+Before each step, predict the header line:
+
+151
+00:11:31,008 --> 00:11:36,612
+version and entry count. Before the conflict,
+predict how many entries config.toml
+
+152
+00:11:36,652 --> 00:11:42,393
+will have and what each stage holds. Before
+the recovery, write down what you expect
+
+153
+00:11:42,433 --> 00:11:43,288
+to have lost.
+
+154
+00:11:43,628 --> 00:11:49,548
+The challenge is Exercise 17.8, "An
+edit that Git does not see", in
+
+155
+00:11:49,588 --> 00:11:52,305
+exercises/m16-m18-internals.md.
+
+156
+00:11:54,145 --> 00:11:56,905
+Question 74 of the CTO question bank:
+
+157
+00:11:57,245 --> 00:12:01,718
+A strong answer says what the index caches
+for each entry and why, names which of
+
+158
+00:12:01,758 --> 00:12:06,398
+those values a copy changes, and distinguishes
+the command that compares cached data
+
+159
+00:12:06,438 --> 00:12:11,023
+from the command that reads the file. It
+gives the fix and adds, unprompted, why no
+
+160
+00:12:11,063 --> 00:12:11,970
+data was at risk.
+
+161
+00:12:13,810 --> 00:12:18,836
+Let's land this. One file, two jobs: the
+next commit, and a cache that can be stale
+
+162
+00:12:18,876 --> 00:12:20,545
+without anything being lost.
+
+163
+00:12:20,885 --> 00:12:39,601
+You should now be able to say:
+
+164
+00:12:39,941 --> 00:12:43,722
+The index is a header, sorted
+entries, extensions and a checksum.
+
+165
+00:12:44,062 --> 00:12:49,423
+An entry is stat data, an object ID,
+flags with a two-bit stage, and a path.
+
+166
+00:12:49,763 --> 00:12:55,216
+Git trusts the stat data to skip reading
+files; a copy makes it stale, and git
+
+167
+00:12:55,256 --> 00:12:57,610
+update-index --refresh repairs it.
+
+168
+00:12:57,950 --> 00:13:02,731
+A conflict puts three entries for one path
+into the index; resolving moves them into
+
+169
+00:13:02,771 --> 00:13:03,018
+REUC.
+
+170
+00:13:03,358 --> 00:13:06,896
+Version 3 adds flags;
+version 4 compresses paths.
+
+171
+00:13:08,736 --> 00:13:16,208
+Read section 3.12 of Chapter 3. Do Exercise
+17.1, "The index as a table", Exercise
+
+172
+00:13:16,248 --> 00:13:23,262
+17.4, "The index during a conflict", and
+Exercise 17.6, "A commit without the
+
+173
+00:13:23,302 --> 00:13:27,109
+index", in exercises/m16-m18-internals.md.
+
+174
+00:13:27,449 --> 00:13:32,970
+Today you read the index byte by byte, and
+you can calm a room that sees every file
+
+175
+00:13:33,010 --> 00:13:38,465
+modified. Do the lab before the next video:
+the reftable backend, and SHA-1 versus
+
+176
+00:13:38,505 --> 00:13:42,552
+SHA-256. Until then, look at the
+state first and type second.
+
+177
+00:13:42,592 --> 00:13:44,160
+See you in the next one.

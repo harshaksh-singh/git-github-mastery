@@ -116,6 +116,9 @@ def file_sha1(path):
 
 def find_tool(name):
     """ffmpeg / ffprobe may be installed after the shell started: look in the usual Homebrew places too."""
+    own = pathlib.Path(__file__).resolve().parent / "bin" / name     # low-priority wrapper (see tools/bin): the voice must never be starved
+    if own.exists() and pathlib.Path("/opt/homebrew/bin", name).exists():
+        return str(own)
     p = shutil.which(name)
     if p:
         return p

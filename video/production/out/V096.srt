@@ -1,0 +1,1003 @@
+1
+00:00:04,500 --> 00:00:07,069
+The job cloned the repository.
+The clone succeeded.
+
+2
+00:00:07,109 --> 00:00:11,315
+git status in the job's checkout is clean.
+The model file is where the code expects
+
+3
+00:00:11,355 --> 00:00:15,561
+it, with the right name. And the loader
+fails with a parse error on the first bytes
+
+4
+00:00:15,601 --> 00:00:16,175
+of the file.
+
+5
+00:00:16,515 --> 00:00:19,992
+Open the file and you can
+read it: three lines of text.
+
+6
+00:00:20,032 --> 00:00:23,702
+A version URL, a line that
+begins oid sha256:, and a size.
+
+7
+00:00:23,742 --> 00:00:27,986
+It's a ticket for a coat, on a
+machine with no cloakroom attendant.
+
+8
+00:00:28,326 --> 00:00:32,445
+Nothing is wrong from Git's point of view.
+That's what makes this failure slow to
+
+9
+00:00:32,485 --> 00:00:35,988
+diagnose the first time, and a
+ten-second diagnosis every time after.
+
+10
+00:00:36,028 --> 00:00:38,761
+By the end of this video,
+those ten seconds are yours.
+
+11
+00:00:40,601 --> 00:00:43,631
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:43,671 --> 00:00:47,858
+A reminder: Git LFS keeps large files outside
+Git and leaves a small pointer file in
+
+13
+00:00:47,898 --> 00:00:51,934
+their place. In the last video you saw the
+two stores on one machine: Git objects
+
+14
+00:00:51,974 --> 00:00:55,205
+with a small pointer blob, and the
+LFS store with the real bytes.
+
+15
+00:00:55,245 --> 00:00:58,024
+Today the two stores travel,
+and they travel separately.
+
+16
+00:00:58,064 --> 00:01:00,540
+Git objects by Git. LFS
+objects by the LFS client.
+
+17
+00:01:00,880 --> 00:01:04,073
+You'll watch a push put content
+into a remote's LFS store.
+
+18
+00:01:04,113 --> 00:01:07,473
+Then a clone on a machine without
+the client, and the repair.
+
+19
+00:01:07,513 --> 00:01:12,155
+Then downloads on demand and how to skip
+them. And last the local store, which grows
+
+20
+00:01:12,195 --> 00:01:16,838
+with every version until you prune it, with
+one warning about what the reflog, Git's
+
+21
+00:01:16,878 --> 00:01:20,405
+local journal of where your branches
+have been, doesn't protect.
+
+22
+00:01:20,745 --> 00:01:25,354
+Say this on screen now, before the first
+replay: the push demonstration is a
+
+23
+00:01:25,394 --> 00:01:30,493
+volatile script. Its transcript isn't compared
+byte for byte with a fresh run, for a
+
+24
+00:01:30,533 --> 00:01:31,594
+reason you'll see.
+
+25
+00:01:33,434 --> 00:01:35,444
+read git lfs status and say
+what a push will upload;
+
+26
+00:01:35,784 --> 00:01:40,057
+say where LFS objects go on push
+and how the endpoint is derived;
+
+27
+00:01:40,398 --> 00:01:44,415
+recognize a clone made without the client
+by the size of its files, and repair it;
+
+28
+00:01:44,755 --> 00:01:46,688
+fetch on demand and skip the
+smudge filter for speed;
+
+29
+00:01:47,028 --> 00:01:51,364
+explain how git lfs prune decides what
+to delete and when that is unsafe.
+
+30
+00:01:53,204 --> 00:01:57,977
+Day to day. git status reports a modified
+LFS file as usual: Git ran the clean
+
+31
+00:01:58,017 --> 00:02:03,037
+filter on the working tree file, got a
+different pointer, and compared it with the
+
+32
+00:02:03,077 --> 00:02:08,035
+index. git diff shows the change between
+the two pointers, which tells a reviewer
+
+33
+00:02:08,075 --> 00:02:12,786
+that the file changed and by how much
+it grew, and nothing about its content.
+
+34
+00:02:12,826 --> 00:02:17,970
+🟢 SAFE: git lfs status adds the LFS view:
+which objects a push would upload, and for
+
+35
+00:02:18,010 --> 00:02:22,043
+changed files whether the index
+and working tree hold LFS content.
+
+36
+00:02:22,383 --> 00:02:28,661
+The hooks. git lfs install wrote four hooks.
+pre-push is the important one: git lfs
+
+37
+00:02:28,701 --> 00:02:34,599
+pre-push uploads the LFS objects referenced
+by the commits about to be pushed,
+
+38
+00:02:34,639 --> 00:02:39,852
+before Git sends the commits. The
+other three exist for file locking.
+
+39
+00:02:39,892 --> 00:02:46,171
+Two consequences of the upload living in a
+hook, both of which you can predict from
+
+40
+00:02:46,211 --> 00:02:51,576
+the hooks videos: git push --no-verify
+skips it, and a repository whose
+
+41
+00:02:51,616 --> 00:02:57,667
+core.hooksPath points elsewhere doesn't
+run it unless the LFS hook was installed
+
+42
+00:02:57,707 --> 00:02:58,123
+there.
+
+43
+00:02:58,463 --> 00:03:03,688
+Where the objects go. The LFS client
+derives its server from the Git remote.
+
+44
+00:03:03,728 --> 00:03:09,369
+For an HTTPS or SSH remote it appends
+/info/lfs to the repository URL and talks to
+
+45
+00:03:09,409 --> 00:03:15,119
+an HTTP API there. lfs.url, or a committed
+.lfsconfig file, can point it elsewhere.
+
+46
+00:03:15,159 --> 00:03:20,384
+For the lab's path remote it resolves
+a file:// endpoint and uses a built-in
+
+47
+00:03:20,424 --> 00:03:26,065
+standalone file adapter, which copies
+objects into an lfs/objects directory inside
+
+48
+00:03:26,105 --> 00:03:27,450
+the bare repository.
+
+49
+00:03:27,790 --> 00:03:31,742
+Cloning without the client.
+.gitattributes names a filter called lfs.
+
+50
+00:03:31,782 --> 00:03:36,196
+On a machine where no such filter is
+defined, an undefined filter is a no-op.
+
+51
+00:03:36,236 --> 00:03:40,824
+The clone succeeds, git status is clean,
+and the file in the working tree is the
+
+52
+00:03:40,864 --> 00:03:45,452
+pointer. The textbook quotes GitHub's
+documentation on collaborators without the
+
+53
+00:03:45,492 --> 00:03:50,311
+client: they "will only fetch the pointer
+files, and won't have access to any of the
+
+54
+00:03:50,351 --> 00:03:51,063
+actual data".
+
+55
+00:03:51,403 --> 00:03:55,230
+The repair, in two halves. 🟢 SAFE: git
+lfs fetch downloads the objects that the
+
+56
+00:03:55,270 --> 00:03:59,341
+current commit needs into the local store.
+🟢 SAFE: git lfs checkout replaces pointer
+
+57
+00:03:59,381 --> 00:04:03,404
+files in the working tree with content from
+the local store, and never overwrites a
+
+58
+00:04:03,444 --> 00:04:05,900
+modified file, so nothing
+is lost and no ref moves.
+
+59
+00:04:05,940 --> 00:04:07,515
+git lfs pull is the two together.
+
+60
+00:04:07,855 --> 00:04:13,451
+On a machine where the filter is configured
+before the clone, none of these commands
+
+61
+00:04:13,491 --> 00:04:18,685
+is needed. The smudge filter, the step
+that swaps a pointer for the real file,
+
+62
+00:04:18,725 --> 00:04:23,918
+downloads each object as the checkout
+writes each file, and again on any later
+
+63
+00:04:23,958 --> 00:04:27,742
+checkout that needs a version
+not yet in the local store.
+
+64
+00:04:28,082 --> 00:04:34,090
+Skipping. With the environment variable
+GIT_LFS_SKIP_SMUDGE set to 1, the smudge
+
+65
+00:04:34,130 --> 00:04:40,289
+filter passes pointers through untouched.
+git lfs install --skip-smudge makes this
+
+66
+00:04:40,329 --> 00:04:46,111
+the permanent behavior of a configuration,
+and git lfs pull --include, or the
+
+67
+00:04:46,151 --> 00:04:50,873
+settings lfs.fetchinclude and
+lfs.fetchexclude, fetch a subset.
+
+68
+00:04:51,213 --> 00:04:55,382
+The local store. Every version you
+have added or checked out stays in
+
+69
+00:04:55,422 --> 00:05:00,323
+.git/lfs/objects. git gc doesn't touch it.
+🟡 CAUTION: git lfs prune deletes local
+
+70
+00:05:00,363 --> 00:05:05,386
+objects that the current checkout doesn't
+need, that aren't "recent", and that have
+
+71
+00:05:05,426 --> 00:05:10,387
+been pushed. --dry-run --verbose previews.
+--verify-remote asks the remote whether
+
+72
+00:05:10,427 --> 00:05:13,864
+it really has each object
+before deleting the local copy.
+
+73
+00:05:14,204 --> 00:05:19,411
+"Recent" is defined by settings such as
+lfs.fetchrecentrefsdays, 7 days, plus
+
+74
+00:05:19,451 --> 00:05:23,567
+lfs.pruneoffsetdays, 3 days,
+measured against the real clock.
+
+75
+00:05:23,607 --> 00:05:28,813
+The lab's commits are dated 7 September
+2026, so in the replay they are never
+
+76
+00:05:28,853 --> 00:05:34,264
+recent. In a repository with fresh commits,
+prune keeps more than the transcript
+
+77
+00:05:34,304 --> 00:05:34,877
+suggests.
+
+78
+00:05:35,217 --> 00:05:39,558
+And the warning. The help text of git
+lfs prune states: "The reflog is not
+
+79
+00:05:39,598 --> 00:05:44,531
+considered, only commits. Therefore LFS
+objects that are only referenced by orphaned
+
+80
+00:05:44,571 --> 00:05:49,504
+commits are always deleted." A model version
+that only an abandoned commit refers to
+
+81
+00:05:49,544 --> 00:05:52,049
+isn't protected by Git's
+reflog safety net.
+
+82
+00:05:53,889 --> 00:05:58,960
+Keep the coat check. Today there are two
+buildings, your laptop and the server, and
+
+83
+00:05:59,000 --> 00:06:01,361
+each has a ticket desk and a cloakroom.
+
+84
+00:06:01,701 --> 00:06:05,676
+Tickets move between the ticket desks
+whenever Git pushes or fetches.
+
+85
+00:06:05,716 --> 00:06:09,866
+Coats move between the cloakrooms only
+when the LFS client carries them.
+
+86
+00:06:09,906 --> 00:06:14,405
+On a push, the client carries the coats
+first and Git sends the tickets after.
+
+87
+00:06:14,445 --> 00:06:19,060
+On a checkout, the smudge filter reads a
+ticket and fetches that one coat if the
+
+88
+00:06:19,100 --> 00:06:20,922
+local cloakroom doesn't have it.
+
+89
+00:06:21,262 --> 00:06:24,175
+A machine without the client has a
+ticket desk and no cloakroom staff.
+
+90
+00:06:24,215 --> 00:06:26,706
+It receives every ticket and no
+coat, and nothing complains.
+
+91
+00:06:27,046 --> 00:06:31,488
+The analogy needs one correction for pruning.
+A cloakroom clears out coats that are
+
+92
+00:06:31,528 --> 00:06:34,783
+also stored at the other building
+and that nobody is wearing.
+
+93
+00:06:34,823 --> 00:06:39,319
+It doesn't look at your old ticket stubs in
+the wastepaper basket: commits that only
+
+94
+00:06:39,359 --> 00:06:42,397
+the reflog remembers don't
+count as "someone needs this".
+
+95
+00:06:44,237 --> 00:06:50,269
+The top pair of arrows is Git. The bottom
+pair is the LFS client: the pre-push hook
+
+96
+00:06:50,309 --> 00:06:55,096
+on the way up, the smudge filter
+or git lfs fetch on the way down.
+
+97
+00:06:55,136 --> 00:06:59,120
+The last line of the diagram
+is the hook of this video.
+
+98
+00:07:03,460 --> 00:07:08,500
+The endpoint is derived from the remote:
+here a file:// URL, with the transfer
+
+99
+00:07:08,540 --> 00:07:13,906
+adapter lfs-standalone-file in the list.
+For an HTTPS or SSH remote it would be the
+
+100
+00:07:13,946 --> 00:07:16,446
+repository URL with /info/lfs appended.
+
+101
+00:07:16,786 --> 00:07:21,100
+The line "Uploading LFS objects" is printed
+by the pre-push hook, before Git's own
+
+102
+00:07:21,140 --> 00:07:25,401
+output. The "0 B" is an artifact of the
+file adapter, which doesn't report bytes.
+
+103
+00:07:25,741 --> 00:07:31,707
+The remote now has two stores, like your
+clone. Git objects, with a 132-byte blob
+
+104
+00:07:31,747 --> 00:07:37,934
+for the path. And an LFS directory with one
+full file per version, named by SHA-256.
+
+105
+00:07:38,274 --> 00:07:44,389
+One thing a file remote can't do.
+Replay labs/run ch22/lfs-lock.
+
+106
+00:07:44,729 --> 00:07:47,860
+Locking is a server feature
+and wasn't run for the book.
+
+107
+00:07:47,900 --> 00:07:52,505
+It exists because binary files can't be
+merged: two people who edit the same model
+
+108
+00:07:52,545 --> 00:07:55,960
+in parallel produce a conflict
+that only one of them can win.
+
+109
+00:07:56,300 --> 00:08:01,126
+Predict three things about this clone:
+whether it succeeds, what git status says,
+
+110
+00:08:01,166 --> 00:08:04,070
+and how many bytes the
+model file has. I'll wait.
+
+111
+00:08:08,910 --> 00:08:14,215
+The clone succeeds. The model file is the
+pointer: three lines of text, 132 bytes,
+
+112
+00:08:14,255 --> 00:08:19,689
+where the model should be. git status is
+clean. If you expected an error, that's the
+
+113
+00:08:19,729 --> 00:08:24,382
+natural guess, and it's exactly why
+this failure is slow the first time.
+
+114
+00:08:24,722 --> 00:08:33,282
+Try it now, on paper, thirty seconds. The
+broken CI job from the opening is in front
+
+115
+00:08:33,322 --> 00:08:39,016
+of you. Write down the first
+two commands you would run.
+
+116
+00:08:39,056 --> 00:08:40,040
+I'll wait.
+
+117
+00:08:44,880 --> 00:08:53,781
+Here's the textbook's answer. Look at
+the first two hundred bytes of the file.
+
+118
+00:08:53,821 --> 00:09:00,315
+Then ask git lfs ls-files which
+paths are still pointers.
+
+119
+00:09:00,355 --> 00:09:05,932
+That's the ten-second
+diagnosis from the opening.
+
+120
+00:09:06,272 --> 00:09:11,375
+A minus sign. And look at what git lfs pull
+did: it downloaded the object into the
+
+121
+00:09:11,415 --> 00:09:16,580
+local store, and then declined to touch the
+working tree, "Git LFS is not installed
+
+122
+00:09:16,620 --> 00:09:20,217
+for this repository". Now the
+repair, one piece at a time.
+
+123
+00:09:20,257 --> 00:09:25,485
+A quick quiz first: after git lfs fetch
+alone, is the model file still 132 bytes, or
+
+124
+00:09:25,525 --> 00:09:27,931
+already its real size? Say it out loud.
+
+125
+00:09:32,771 --> 00:09:33,131
+Still 132 bytes.
+
+126
+00:09:33,076 --> 00:09:37,131
+After fetch, the object is in the
+store and the file hasn't changed.
+
+127
+00:09:37,171 --> 00:09:41,527
+After checkout, the file has its real
+size and the marker is an asterisk.
+
+128
+00:09:41,867 --> 00:09:54,865
+With the filter configured, a checkout
+that needs another version downloads it.
+
+129
+00:09:55,205 --> 00:10:02,978
+The older version, 0269885262, arrived in
+the local store at the moment the checkout
+
+130
+00:10:03,018 --> 00:10:06,140
+needed it. Now skip it on purpose.
+
+131
+00:10:13,680 --> 00:10:18,248
+A pointer in the working tree, a minus in
+the listing, and a clean status: the clean
+
+132
+00:10:18,288 --> 00:10:22,856
+filter recognises a pointer and passes it
+through unchanged, so the file matches the
+
+133
+00:10:22,896 --> 00:10:27,410
+index. This is how a job that doesn't need
+the large files avoids downloading them.
+
+134
+00:10:32,750 --> 00:10:34,684
+Two versions in the store,
+and one is checked out.
+
+135
+00:10:35,024 --> 00:10:39,955
+Two local objects, one retained, one
+verified with the remote and deleted.
+
+136
+00:10:39,995 --> 00:10:43,716
+A pruned object isn't lost as
+long as the remote has it.
+
+137
+00:10:44,056 --> 00:10:48,958
+git lfs fetch --all downloads every object
+referenced by any commit, which is what a
+
+138
+00:10:48,998 --> 00:10:53,899
+backup or a migration to another host needs.
+git lfs fsck verifies that the files in
+
+139
+00:10:53,939 --> 00:10:55,957
+the local store match their hashes.
+
+140
+00:10:56,297 --> 00:11:01,145
+Now two more versions, committed and
+not pushed. Predict what prune deletes.
+
+141
+00:11:01,185 --> 00:11:02,881
+Say it out loud. I'll wait.
+
+142
+00:11:07,721 --> 00:11:11,177
+The two pushed versions were deleted. The
+two unpushed ones stayed, including the
+
+143
+00:11:11,217 --> 00:11:12,342
+one that isn't checked out.
+
+144
+00:11:12,682 --> 00:11:20,235
+prune refuses to delete what exists only
+on your machine, as long as a commit on a
+
+145
+00:11:20,275 --> 00:11:27,365
+ref refers to it. Remember the exception
+from the help text: the reflog isn't
+
+146
+00:11:27,405 --> 00:11:28,384
+considered.
+
+147
+00:11:30,224 --> 00:11:31,872
+Five mistakes to watch for.
+
+148
+00:11:32,212 --> 00:11:35,548
+Debugging the model loader
+when the file is 132 bytes.
+
+149
+00:11:35,588 --> 00:11:40,613
+Root cause: the checkout ran without an
+LFS filter, so the working tree holds the
+
+150
+00:11:40,653 --> 00:11:44,239
+pointer; head -c 200 and git
+lfs ls-files show it at once.
+
+151
+00:11:44,579 --> 00:11:50,373
+git push --no-verify in an LFS repository.
+Root cause: the upload of LFS objects is
+
+152
+00:11:50,413 --> 00:11:56,207
+done by the pre-push hook, which that option
+skips; the pointers go and the content
+
+153
+00:11:56,247 --> 00:11:57,121
+stays behind.
+
+154
+00:11:57,461 --> 00:12:01,682
+Expecting git lfs pull to fix a
+clone that has no filter configured.
+
+155
+00:12:01,722 --> 00:12:06,945
+Root cause: it downloads into the local
+store and declines to touch the working tree
+
+156
+00:12:06,985 --> 00:12:10,078
+until git lfs install has
+run for that repository.
+
+157
+00:12:10,418 --> 00:12:16,361
+Treating git gc as cleanup for model versions.
+Root cause: the LFS store is not part
+
+158
+00:12:16,401 --> 00:12:20,564
+of the object database; only
+git lfs prune removes from it.
+
+159
+00:12:20,904 --> 00:12:25,971
+Pruning after a reset or an amend and
+expecting the reflog to save the old model
+
+160
+00:12:26,011 --> 00:12:30,696
+version. Root cause: git lfs prune
+considers commits on refs only; objects
+
+161
+00:12:30,736 --> 00:12:34,335
+referenced solely by orphaned
+commits are always deleted.
+
+162
+00:12:36,175 --> 00:12:38,216
+Now, out of the lab. A speech
+team's CI has two kinds of job.
+
+163
+00:12:38,256 --> 00:12:40,194
+The lint and unit-test jobs
+don't load the acoustic model.
+
+164
+00:12:40,234 --> 00:12:42,990
+They run with the default checkout and see
+pointers, which costs no LFS bandwidth.
+
+165
+00:12:43,030 --> 00:12:45,514
+The evaluation job loads the model,
+and its checkout asks for LFS content.
+
+166
+00:12:45,854 --> 00:12:50,645
+One week the evaluation job fails with
+a parse error in the model loader.
+
+167
+00:12:50,685 --> 00:12:55,940
+The engineer on call runs two commands in
+the job's workspace before reading any
+
+168
+00:12:55,980 --> 00:13:00,970
+Python: the first two hundred bytes of
+the model file, and git lfs ls-files.
+
+169
+00:13:01,010 --> 00:13:05,934
+The file starts with the word "version"
+and the listing shows a minus sign.
+
+170
+00:13:06,274 --> 00:13:12,549
+Somebody had copied the lint job's
+checkout step into the evaluation job.
+
+171
+00:13:12,589 --> 00:13:19,556
+The fix is one line in the workflow. The
+team then adds a guard to the evaluation
+
+172
+00:13:19,596 --> 00:13:26,477
+script itself: it refuses to start if the
+model file begins with the LFS version
+
+173
+00:13:26,517 --> 00:13:28,121
+line, and says why.
+
+174
+00:13:29,961 --> 00:13:33,476
+Your turn. Do Exercise 15.8, Level
+3, "A model file of 131 bytes", in
+
+175
+00:13:33,516 --> 00:13:35,743
+exercises/m11-m15-investigation-recovery.md.
+
+176
+00:13:36,083 --> 00:13:41,221
+Before you run a diagnostic, write down
+what you expect each of these to print in
+
+177
+00:13:41,261 --> 00:13:46,527
+the broken checkout: the first bytes of the
+file, git status, git lfs ls-files, and
+
+178
+00:13:46,567 --> 00:13:51,770
+git config get filter.lfs.smudge. Then
+repair it in two separate steps and predict
+
+179
+00:13:51,810 --> 00:13:53,368
+the file size after each.
+
+180
+00:13:53,708 --> 00:13:59,127
+The challenge is Exercise 15.9, Level 4,
+"It works on your machine", in the same
+
+181
+00:13:59,167 --> 00:13:59,469
+file.
+
+182
+00:14:03,309 --> 00:14:08,588
+Answer out loud. A strong answer names what
+the 132 bytes are and explains, from how
+
+183
+00:14:08,628 --> 00:14:13,717
+filters behave when undefined, why the
+clone succeeded and nothing warned anyone.
+
+184
+00:14:13,757 --> 00:14:18,783
+The two diagnostics are cheap, read-only,
+and each says what output confirms the
+
+185
+00:14:18,823 --> 00:14:23,912
+cause. The fix names the layer it belongs
+to, GitHub Actions and not Git, and the
+
+186
+00:14:23,952 --> 00:14:28,598
+specific input of the checkout step,
+and it mentions the cost that the fix
+
+187
+00:14:28,638 --> 00:14:32,461
+introduces and how jobs that
+don't need the content avoid it.
+
+188
+00:14:32,801 --> 00:14:37,256
+A complete answer also proposes a guard
+so that the next occurrence fails with a
+
+189
+00:14:37,296 --> 00:14:38,042
+clear message.
+
+190
+00:14:39,882 --> 00:14:49,409
+Let's land this. One picture to keep: when
+no smudge filter runs, the working tree,
+
+191
+00:14:49,449 --> 00:14:58,745
+the index and the commit all hold the same
+pointer, so Git reports nothing wrong.
+
+192
+00:14:59,085 --> 00:15:17,802
+You should now be able to say:
+
+193
+00:15:18,142 --> 00:15:22,432
+git lfs status shows what a push will
+upload; the upload is done by the pre-push
+
+194
+00:15:22,472 --> 00:15:24,272
+hook before Git sends the commits.
+
+195
+00:15:24,612 --> 00:15:28,068
+The LFS endpoint is derived from the Git
+remote, and the remote has two stores as my
+
+196
+00:15:28,108 --> 00:15:28,526
+clone does.
+
+197
+00:15:28,866 --> 00:15:34,248
+A checkout without the LFS filter holds
+pointer files, and Git reports nothing
+
+198
+00:15:34,288 --> 00:15:37,584
+wrong; git lfs ls-files
+marks them with a minus.
+
+199
+00:15:37,924 --> 00:15:41,368
+git lfs fetch fills the local store and
+git lfs checkout replaces pointers;
+
+200
+00:15:41,408 --> 00:15:43,133
+GIT_LFS_SKIP_SMUDGE=1 skips downloads.
+
+201
+00:15:43,473 --> 00:15:46,202
+git lfs prune deletes pushed, non-recent
+objects that the checkout does not need,
+
+202
+00:15:46,242 --> 00:15:47,432
+and it does not consider the reflog.
+
+203
+00:15:49,272 --> 00:15:53,852
+Read sections 22.5 to 22.8 of Chapter 22.
+
+204
+00:15:54,192 --> 00:15:59,880
+Today you turned a slow, confusing
+failure into a ten-second diagnosis.
+
+205
+00:15:59,920 --> 00:16:06,172
+Practise with the exercise before you
+move on. Next time: git lfs migrate, the
+
+206
+00:16:06,212 --> 00:16:12,625
+common LFS errors, and when LFS is the
+wrong tool. Until then, look at the state
+
+207
+00:16:12,665 --> 00:16:16,416
+first and type second.
+See you in the next one.

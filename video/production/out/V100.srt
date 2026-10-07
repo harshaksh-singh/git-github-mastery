@@ -1,0 +1,1123 @@
+1
+00:00:04,500 --> 00:00:09,087
+A deploy step fails on the server
+with "permission denied" on run.sh.
+
+2
+00:00:09,127 --> 00:00:14,183
+The same script runs on every laptop in
+the team. Nobody changed the server.
+
+3
+00:00:14,223 --> 00:00:19,681
+Your CTO asks one calm question: is this
+a server problem or a repository problem,
+
+4
+00:00:19,721 --> 00:00:21,492
+and how do you prove which?
+
+5
+00:00:21,832 --> 00:00:26,277
+You can answer in one command, if you
+know what a tree, Git's listing of one
+
+6
+00:00:26,317 --> 00:00:29,699
+directory, records for each
+entry, and what it leaves out.
+
+7
+00:00:29,739 --> 00:00:34,656
+The answer is in the object store, and by
+the end of this video you'll read it there
+
+8
+00:00:34,696 --> 00:00:39,318
+with plumbing, the low-level commands
+with stable output: from a commit, to its
+
+9
+00:00:39,358 --> 00:00:43,980
+tree, to one entry, to the bytes of one
+file. Keep that failing deploy in mind.
+
+10
+00:00:44,020 --> 00:00:44,807
+It comes back.
+
+11
+00:00:46,647 --> 00:00:50,381
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:50,421 --> 00:00:55,455
+Last time you opened the .git directory
+and recomputed the ID of a loose object by
+
+13
+00:00:55,495 --> 00:01:00,219
+hand. An object is one unit of Git's
+storage, named by a hash of its type and
+
+14
+00:01:00,259 --> 00:01:05,169
+content, and a hash is a fixed-length
+fingerprint. Today: what the four types of
+
+15
+00:01:05,209 --> 00:01:10,367
+object contain, and the three commands that
+read them, git cat-file, git ls-tree and
+
+16
+00:01:10,407 --> 00:01:10,923
+git show.
+
+17
+00:01:11,263 --> 00:01:16,382
+All three commands only read. Everything
+you see me run in this video carries the 🟢
+
+18
+00:01:16,422 --> 00:01:19,303
+SAFE label: it reads state
+and changes nothing.
+
+19
+00:01:19,643 --> 00:01:25,409
+We replay two scripts from labs/ch03:
+object-types.sh and read-objects.sh.
+
+20
+00:01:25,449 --> 00:01:31,921
+They use the fixed lab clock, so the object
+IDs on my screen are the IDs printed in
+
+21
+00:01:31,961 --> 00:01:35,451
+Chapter 3 of the book.
+Compare them as we go.
+
+22
+00:01:37,291 --> 00:01:38,704
+After this video you can:
+
+23
+00:01:39,044 --> 00:01:42,373
+Read the raw form of a tree entry
+and list the modes Git uses.
+
+24
+00:01:42,713 --> 00:01:46,830
+Explain why changing a message three
+commits back changes the ID of HEAD.
+
+25
+00:01:47,170 --> 00:01:48,950
+Read an annotated tag object.
+
+26
+00:01:49,290 --> 00:01:52,593
+List every object of a repository
+with its type and size.
+
+27
+00:01:52,933 --> 00:01:56,285
+Walk from a commit to the bytes
+of one file with plumbing only.
+
+28
+00:01:58,125 --> 00:02:03,160
+Start with why. Every question about what
+Git has stored comes down to four kinds of
+
+29
+00:02:03,200 --> 00:02:07,812
+object. If you can read each of them in
+its raw form, no report from Git is a
+
+30
+00:02:07,852 --> 00:02:11,498
+mystery, and no claim about
+history has to be taken on trust.
+
+31
+00:02:11,838 --> 00:02:16,838
+In one sentence: a blob is the bytes of one
+file, a tree is one directory listing, a
+
+32
+00:02:16,878 --> 00:02:21,518
+commit is a snapshot with its ancestry
+and its metadata, and a tag object is a
+
+33
+00:02:21,558 --> 00:02:26,378
+named, dated pointer to another object. A
+snapshot is the complete state of every
+
+34
+00:02:26,418 --> 00:02:27,998
+tracked file at one moment.
+
+35
+00:02:28,338 --> 00:02:31,998
+What each type leaves out matters
+as much as what it holds.
+
+36
+00:02:32,038 --> 00:02:37,266
+A blob holds the bytes of a file, or the
+target path of a symbolic link, a file that
+
+37
+00:02:37,306 --> 00:02:41,719
+only points at another path. It has
+no name, no mode and no timestamps.
+
+38
+00:02:42,059 --> 00:02:46,123
+A tree holds entries of mode, name
+and object ID, sorted by name.
+
+39
+00:02:46,163 --> 00:02:49,470
+It doesn't know its own path
+and it holds no history.
+
+40
+00:02:49,510 --> 00:02:54,269
+A commit holds the headers tree, parent,
+author and committer, some optional
+
+41
+00:02:54,309 --> 00:02:56,732
+headers, a blank line, and the message.
+
+42
+00:02:57,072 --> 00:03:02,520
+It holds no diff and no branch name. A tag
+object holds the headers object, type,
+
+43
+00:03:02,560 --> 00:03:07,263
+tag and tagger, a blank line, the
+message, and optionally a signature.
+
+44
+00:03:07,303 --> 00:03:12,074
+It gives no guarantee that the ref
+of the same name still points at it.
+
+45
+00:03:12,114 --> 00:03:14,785
+A ref is a name that holds an object ID.
+
+46
+00:03:15,125 --> 00:03:19,810
+Now how. Each of the four is one entry in
+the object database, loose in a file of
+
+47
+00:03:19,850 --> 00:03:24,593
+its own or packed with others, stored and
+named exactly as you saw in the previous
+
+48
+00:03:24,633 --> 00:03:27,393
+video. The type is the
+first word of the header.
+
+49
+00:03:27,733 --> 00:03:32,596
+Trees first. A tree entry has a
+mode, and Git uses five of them.
+
+50
+00:03:32,636 --> 00:03:39,030
+100644 is a regular file, and the ID names
+a blob. 100755 is an executable file, and
+
+51
+00:03:39,070 --> 00:03:44,929
+the ID names a blob. 120000 is a symbolic
+link, and the ID names a blob whose
+
+52
+00:03:44,969 --> 00:03:46,997
+content is the link target.
+
+53
+00:03:47,337 --> 00:03:49,564
+040000 is a directory, and
+the ID names another tree.
+
+54
+00:03:49,604 --> 00:03:53,113
+160000 is a gitlink, the record of a
+submodule, which is another repository checked
+
+55
+00:03:53,153 --> 00:03:56,064
+out inside yours, and the ID names
+a commit in that other repository.
+
+56
+00:03:56,104 --> 00:03:57,475
+These five are the complete list.
+
+57
+00:03:57,815 --> 00:04:00,942
+The modes look like Unix
+permissions, and they're not.
+
+58
+00:04:00,982 --> 00:04:04,110
+The executable bit is the
+only permission Git records.
+
+59
+00:04:04,150 --> 00:04:08,451
+Owner, group, the other bits and every
+timestamp aren't in the repository.
+
+60
+00:04:08,491 --> 00:04:13,085
+A directory exists only as a tree with
+entries, which is why an empty directory
+
+61
+00:04:13,125 --> 00:04:14,199
+can't be committed.
+
+62
+00:04:14,539 --> 00:04:19,349
+Commits next. A commit has exactly one
+tree header: the ID of the top-level tree,
+
+63
+00:04:19,389 --> 00:04:23,780
+the complete snapshot. It has no parent
+header, one, or several, in order.
+
+64
+00:04:23,820 --> 00:04:28,750
+A parent is a commit this one was built on.
+The first parent is the commit you were
+
+65
+00:04:28,790 --> 00:04:33,361
+on, the second is the one you merged.
+On screen is today's demo history: four
+
+66
+00:04:33,401 --> 00:04:35,457
+commits, the last with two parents.
+
+67
+00:04:35,797 --> 00:04:41,269
+A commit also has one author and one
+committer, each with a name, an email, seconds
+
+68
+00:04:41,309 --> 00:04:46,581
+since 1 January 1970 UTC, and a time-zone
+offset. The committer differs from the
+
+69
+00:04:46,621 --> 00:04:51,031
+author after an amend, a rebase, a
+cherry-pick or an applied patch.
+
+70
+00:04:51,071 --> 00:04:55,945
+Three headers are optional. encoding
+appears when the message isn't UTF-8.
+
+71
+00:04:55,985 --> 00:05:01,391
+gpgsig is a signature over the rest of the
+commit, with that name for OpenPGP, SSH
+
+72
+00:05:01,431 --> 00:05:06,969
+and X.509 signatures alike. And mergetag is
+the complete signed tag object that this
+
+73
+00:05:07,009 --> 00:05:07,899
+commit merged.
+
+74
+00:05:08,239 --> 00:05:13,259
+The consequence is the centre of this
+video. A commit ID is the hash of the word
+
+75
+00:05:13,299 --> 00:05:18,509
+commit, the size, a NUL byte, which is a
+byte of value zero, and exactly that text.
+
+76
+00:05:18,549 --> 00:05:23,443
+The text contains the ID of the tree,
+which contains the IDs of every blob and
+
+77
+00:05:23,483 --> 00:05:23,949
+subtree.
+
+78
+00:05:24,289 --> 00:05:28,301
+It contains the IDs of the parents,
+which contain the IDs of theirs.
+
+79
+00:05:28,341 --> 00:05:33,307
+One commit ID therefore fixes every file in
+the snapshot and every commit behind it.
+
+80
+00:05:33,347 --> 00:05:38,075
+Nothing in a commit can be edited. A
+different message, timestamp or parent is a
+
+81
+00:05:38,115 --> 00:05:42,902
+different text with a different hash.
+"Amending" and "rebasing" always create new
+
+82
+00:05:42,942 --> 00:05:43,379
+commits.
+
+83
+00:05:43,719 --> 00:05:48,637
+Tags last. A lightweight tag is a ref
+that holds a commit ID and nothing else.
+
+84
+00:05:48,677 --> 00:05:53,658
+An annotated tag is a ref that holds the
+ID of a tag object, and the tag object
+
+85
+00:05:53,698 --> 00:05:57,980
+names the commit, its type, the
+tag's own name, who tagged and when.
+
+86
+00:05:58,320 --> 00:06:03,116
+When do you read objects this way? When
+you need proof: of a file mode, of what a
+
+87
+00:06:03,156 --> 00:06:06,162
+release contains, of what
+makes a repository large.
+
+88
+00:06:06,202 --> 00:06:11,117
+And when not? For everyday reading, git
+show and git log format the same data for a
+
+89
+00:06:11,157 --> 00:06:13,506
+person, and you don't need the raw form.
+
+90
+00:06:15,346 --> 00:06:18,433
+The textbook's analogy is
+a filesystem taken apart.
+
+91
+00:06:18,473 --> 00:06:23,463
+Blobs are file contents with the name torn
+off. Trees are the directory pages that
+
+92
+00:06:23,503 --> 00:06:28,492
+put names back. A commit is a dated cover
+sheet stapled to the top directory page,
+
+93
+00:06:28,532 --> 00:06:30,822
+noting which cover sheets came before.
+
+94
+00:06:31,162 --> 00:06:36,027
+Here's where the analogy breaks: at
+mutation. A directory entry in a filesystem
+
+95
+00:06:36,067 --> 00:06:39,753
+points at a place, and the
+content of that place can change.
+
+96
+00:06:39,793 --> 00:06:44,906
+A tree entry points at content. Change one
+file, and its blob, every tree above it,
+
+97
+00:06:44,946 --> 00:06:47,638
+and the commit are new
+objects with new IDs.
+
+98
+00:06:47,978 --> 00:06:51,189
+Hold that in mind for the
+interview question at the end.
+
+99
+00:06:51,229 --> 00:06:55,776
+A change anywhere propagates upward through
+the trees and forward through every
+
+100
+00:06:55,816 --> 00:06:59,898
+descendant commit, because each
+object's ID covers the IDs it contains.
+
+101
+00:07:01,738 --> 00:07:08,351
+Start on the left with the ref refs/tags/v1.0.0.
+It's a name, and it holds one ID:
+
+102
+00:07:08,391 --> 00:07:13,543
+the tag object 0b624ed. The tag
+object points at commit 0c2cf43.
+
+103
+00:07:13,583 --> 00:07:20,033
+That commit has one arrow marked "tree",
+to tree 31fc0d3, and the six entries of
+
+104
+00:07:20,073 --> 00:07:24,171
+that tree are listed on the
+right with their modes.
+
+105
+00:07:24,211 --> 00:07:30,499
+Then two parent arrows go down: the first
+parent 4f2cc0c and the second parent
+
+106
+00:07:30,539 --> 00:07:34,717
+62001eb, which both lead to
+the root commit b602c1f.
+
+107
+00:07:35,057 --> 00:07:40,714
+Look at the last tree entry. Mode 160000,
+type commit, ID 9eb542d, and the note "in
+
+108
+00:07:40,754 --> 00:07:44,764
+another repository". That commit
+is not stored here at all.
+
+109
+00:07:45,104 --> 00:07:48,997
+Every arrow is an object ID stored
+inside the object at its tail.
+
+110
+00:07:49,037 --> 00:07:53,959
+There are none in the other direction. A
+blob doesn't know which trees contain it.
+
+111
+00:07:53,999 --> 00:07:57,045
+A commit doesn't know its
+children or its branches.
+
+112
+00:07:58,885 --> 00:08:03,749
+The demo repository is a small inference
+service. Its top-level directory contains
+
+113
+00:08:03,789 --> 00:08:05,843
+every kind of entry Git can record.
+
+114
+00:08:06,183 --> 00:08:11,015
+Predict before I show it. Six entries in
+the working tree, the files you edit.
+
+115
+00:08:11,055 --> 00:08:15,763
+How many different modes will git ls-tree
+HEAD print, and what type will the
+
+116
+00:08:15,803 --> 00:08:19,074
+tokenizer line show? HEAD
+means the commit you're on.
+
+117
+00:08:19,114 --> 00:08:19,698
+I'll wait.
+
+118
+00:08:24,538 --> 00:08:30,519
+Five modes. Look at run.sh: mode
+100755. That's the answer to the hook.
+
+119
+00:08:30,559 --> 00:08:37,472
+If this line said 100644, the executable
+bit was never recorded, and the server is
+
+120
+00:08:37,512 --> 00:08:43,577
+innocent. Now current-model: mode
+120000, and its blob contains the text
+
+121
+00:08:43,617 --> 00:08:49,683
+models/v2.bin, the link target. And
+tokenizer: mode 160000, type commit.
+
+122
+00:08:49,723 --> 00:08:53,159
+If you said blob, you're in good company.
+
+123
+00:08:53,499 --> 00:08:55,138
+Now the stored form of a tree.
+
+124
+00:08:55,478 --> 00:09:00,558
+Read the hex dump, the raw bytes written as
+hexadecimal digits, against the listing.
+
+125
+00:09:00,598 --> 00:09:05,252
+Each entry is the mode in ASCII, here
+40000 without the leading zero that the
+
+126
+00:09:05,292 --> 00:09:10,312
+listing prints, then a space, the name, a
+NUL byte, and the object ID as twenty raw
+
+127
+00:09:10,352 --> 00:09:13,421
+bytes. The type column of
+the listing isn't stored.
+
+128
+00:09:13,461 --> 00:09:15,189
+Git derives it from the mode.
+
+129
+00:09:15,529 --> 00:09:16,054
+Commits.
+
+130
+00:09:16,394 --> 00:09:19,667
+HEAD is a merge, a commit
+with more than one parent.
+
+131
+00:09:19,707 --> 00:09:25,017
+How many tree headers and how many parent
+headers? And HEAD~2 is the first commit of
+
+132
+00:09:25,057 --> 00:09:28,648
+the repository: how many parent
+headers there? I'll wait.
+
+133
+00:09:33,488 --> 00:09:38,905
+One tree, two parents for the merge. No
+parent header at all for the root commit,
+
+134
+00:09:38,945 --> 00:09:43,216
+the first one. Notice what isn't
+there: no diff, no branch name.
+
+135
+00:09:43,556 --> 00:09:49,218
+Try it now, thirty seconds, in a repository
+in the lab shell: run git cat-file -p
+
+136
+00:09:49,258 --> 00:09:52,245
+HEAD and count the
+parent lines. I'll wait.
+
+137
+00:09:57,085 --> 00:10:02,385
+One parent line for an ordinary commit,
+several for a merge, none for the very first
+
+138
+00:10:02,425 --> 00:10:02,830
+commit.
+
+139
+00:10:03,170 --> 00:10:08,308
+The two IDs are equal. The commit ID is the
+hash of the header and exactly the text
+
+140
+00:10:08,348 --> 00:10:11,053
+you read a moment ago.
+Nothing else goes in.
+
+141
+00:10:11,393 --> 00:10:17,310
+Same text in, same ID out: 0c2cf43,
+from shasum and from Git alike.
+
+142
+00:10:17,650 --> 00:10:18,697
+The annotated tag.
+
+143
+00:10:19,037 --> 00:10:22,512
+One of these two tags is
+annotated and one is lightweight.
+
+144
+00:10:22,552 --> 00:10:25,422
+What type will each one
+report? Say it out loud.
+
+145
+00:10:30,262 --> 00:10:37,060
+v1.0.0 is type tag. v1.0.0-rc1 is type
+commit, because a lightweight tag is a ref
+
+146
+00:10:37,100 --> 00:10:43,983
+that holds a commit ID. In the last command,
+the first line is the tag object, and
+
+147
+00:10:44,023 --> 00:10:50,991
+v1.0.0^{} peels it: it follows the tag until
+it reaches something that isn't a tag.
+
+148
+00:10:51,031 --> 00:10:53,186
+The peeled ID equals HEAD.
+
+149
+00:10:53,526 --> 00:10:56,270
+One optional header,
+because it's deterministic.
+
+150
+00:10:56,610 --> 00:11:01,280
+This is the one state-changing command of
+the video: git commit adds a commit and
+
+151
+00:11:01,320 --> 00:11:04,129
+moves the branch. The demo
+makes it in a sandbox.
+
+152
+00:11:04,469 --> 00:11:08,273
+Look at the encoding line between
+the committer and the blank line.
+
+153
+00:11:08,313 --> 00:11:12,805
+The gpgsig and mergetag headers aren't
+printed in the book, because a signature
+
+154
+00:11:12,845 --> 00:11:14,010
+differs on every run.
+
+155
+00:11:16,850 --> 00:11:21,499
+Three names, three types. -s gives the
+size of the content without the header.
+
+156
+00:11:21,539 --> 00:11:26,488
+-e prints nothing: it answers with the exit
+status only, the number a command hands
+
+157
+00:11:26,528 --> 00:11:30,756
+back when it ends, zero when the
+object exists and one when it doesn't.
+
+158
+00:11:31,096 --> 00:11:34,348
+Starting one process per
+object is slow in a script.
+
+159
+00:11:34,388 --> 00:11:38,970
+The batch modes read names from standard
+input and answer in one process.
+
+160
+00:11:39,310 --> 00:11:43,290
+A quick quiz. Five names go in,
+and one of them doesn't exist.
+
+161
+00:11:43,330 --> 00:11:47,051
+Does the command stop there,
+or carry on? Say it out loud.
+
+162
+00:11:51,891 --> 00:11:55,306
+It carries on: the line reads
+no-such-branch missing.
+
+163
+00:11:55,346 --> 00:12:00,717
+The default line is ID, type, size. In the
+second command, %(rest) repeats whatever
+
+164
+00:12:00,757 --> 00:12:05,867
+followed the name on the input line, which
+is how each path reaches the output.
+
+165
+00:12:05,907 --> 00:12:10,822
+The last line is the gitlink: the tree
+names commit 9eb542d, and this object
+
+166
+00:12:10,862 --> 00:12:14,408
+database doesn't contain it.
+"Missing" here is correct.
+
+167
+00:12:14,748 --> 00:12:19,732
+Twenty-two objects for four commits.
+--batch-all-objects visits loose and packed
+
+168
+00:12:19,772 --> 00:12:24,819
+objects without walking any history, so
+it also finds objects that nothing refers
+
+169
+00:12:24,859 --> 00:12:29,844
+to. The second pipeline is the first one
+to run when a repository is larger than
+
+170
+00:12:29,884 --> 00:12:30,409
+expected.
+
+171
+00:12:33,749 --> 00:12:37,785
+Without -r you see one directory
+level, with trees as entries.
+
+172
+00:12:37,825 --> 00:12:43,044
+With -r you see only the leaves: the flat
+list of paths a checkout would create.
+
+173
+00:12:43,084 --> 00:12:48,238
+-t adds the trees passed on the way. -l
+prints sizes, and a dash where an entry
+
+174
+00:12:48,278 --> 00:12:52,379
+isn't a blob. -d keeps the
+directories, the gitlink among them.
+
+175
+00:12:58,719 --> 00:13:02,318
+git show is the porcelain on
+top, the user-facing layer.
+
+176
+00:13:02,358 --> 00:13:07,712
+It picks a presentation by object type: the
+content of a blob, the names in a tree,
+
+177
+00:13:07,752 --> 00:13:13,170
+the tag object followed by its commit, and
+with --format=raw the headers of a commit
+
+178
+00:13:13,210 --> 00:13:13,820
+as stored.
+
+179
+00:13:15,660 --> 00:13:17,308
+Five mistakes to watch for.
+
+180
+00:13:17,648 --> 00:13:22,778
+Reading a mode as Unix permissions. Root
+cause: Git records only the executable bit;
+
+181
+00:13:22,818 --> 00:13:27,086
+owner, group, the other bits and
+timestamps are not in the repository.
+
+182
+00:13:27,426 --> 00:13:32,030
+Treating "missing" for a gitlink as
+corruption. Root cause: the commit a gitlink
+
+183
+00:13:32,070 --> 00:13:36,616
+names lives in another repository, so
+this object database does not contain it.
+
+184
+00:13:36,956 --> 00:13:41,818
+Believing a commit can be edited in place.
+Root cause: the commit ID is the hash of
+
+185
+00:13:41,858 --> 00:13:46,661
+the commit's text, so any change produces
+a different object, and every descendant
+
+186
+00:13:46,701 --> 00:13:47,606
+changes with it.
+
+187
+00:13:47,946 --> 00:13:51,164
+Assuming an annotated tag
+ref points at the commit.
+
+188
+00:13:51,204 --> 00:13:56,338
+Root cause: the ref holds the ID of the
+tag object; you peel it with ^{} to reach
+
+189
+00:13:56,378 --> 00:13:57,041
+the commit.
+
+190
+00:13:57,381 --> 00:14:02,542
+Trying to commit an empty directory. Root
+cause: a directory exists only as a tree
+
+191
+00:14:02,582 --> 00:14:03,367
+with entries.
+
+192
+00:14:05,207 --> 00:14:10,622
+Now, out of the lab, and back to the deploy
+that fails with "permission denied" on
+
+193
+00:14:10,662 --> 00:14:15,878
+run.sh. On the build machine you run git
+ls-tree HEAD run.sh and read the mode.
+
+194
+00:14:15,918 --> 00:14:21,134
+It shows 100644. The executable bit was
+never recorded, so every fresh checkout
+
+195
+00:14:21,174 --> 00:14:26,456
+creates the file without it. The laptops
+work only because their files were made
+
+196
+00:14:26,496 --> 00:14:31,978
+executable by hand. So the CTO has an answer:
+a repository problem, proved with one
+
+197
+00:14:32,018 --> 00:14:36,968
+command. The fix is a commit that changes
+the mode, which Chapter 4 covers.
+
+198
+00:14:37,308 --> 00:14:42,718
+A second case from the same team. The
+release notes say a new release is "the same
+
+199
+00:14:42,758 --> 00:14:48,235
+code" as the last one. You compare git
+rev-parse v1.0.0^{tree} with the tree of the
+
+200
+00:14:48,275 --> 00:14:52,422
+other tag. Equal tree IDs mean
+identical content in every file.
+
+201
+00:14:52,462 --> 00:14:57,805
+And in CI, before deploying a commit ID
+that arrived as a parameter, the pipeline
+
+202
+00:14:57,845 --> 00:15:03,322
+runs git cat-file -e "$id^{commit}", which
+fails for a missing object and for an ID
+
+203
+00:15:03,362 --> 00:15:05,980
+that names anything other than a commit.
+
+204
+00:15:07,820 --> 00:15:13,337
+Your turn. Do Exercise 16.2, "From a
+commit to the bytes of a file", in
+
+205
+00:15:13,377 --> 00:15:18,658
+exercises/m16-m18-internals.md. You
+walk from HEAD to the content of
+
+206
+00:15:18,698 --> 00:15:23,980
+config/shards.yaml with git cat-file,
+git rev-parse and git ls-tree.
+
+207
+00:15:24,320 --> 00:15:28,918
+Before you type anything, write down your
+predictions: how many objects you'll read
+
+208
+00:15:28,958 --> 00:15:33,557
+on the way, the type of each, and which
+mode a subdirectory, an executable file and
+
+209
+00:15:33,597 --> 00:15:37,189
+a submodule would have. Then run
+the commands and check yourself.
+
+210
+00:15:37,529 --> 00:15:41,929
+The challenge is Exercise 16.4, "Count
+the objects", in the same file.
+
+211
+00:15:41,969 --> 00:15:44,910
+Predict the counts per
+type before you ask Git.
+
+212
+00:15:46,750 --> 00:15:49,466
+Question 72 of the CTO question bank:
+
+213
+00:15:49,806 --> 00:15:53,707
+A strong answer starts from what
+is hashed: the commit's own text.
+
+214
+00:15:53,747 --> 00:15:58,604
+It then names what that text contains, the
+tree ID and the parent IDs, and follows
+
+215
+00:15:58,644 --> 00:16:03,560
+the chain in both directions: down into
+every file of the snapshot and back through
+
+216
+00:16:03,600 --> 00:16:08,576
+every ancestor. It ends with the practical
+consequence for rewriting history and for
+
+217
+00:16:08,616 --> 00:16:12,457
+trust in an ID. Say it out loud
+before you open the answers file.
+
+218
+00:16:18,797 --> 00:16:23,623
+Let's land this. One commit ID fixes
+every file and every commit behind it.
+
+219
+00:16:23,963 --> 00:16:42,679
+You should now be able to say:
+
+220
+00:16:43,019 --> 00:16:48,111
+A blob has content and no name; a tree gives
+names and modes to IDs; a commit names
+
+221
+00:16:48,151 --> 00:16:51,820
+one tree and its parents; a tag
+object names another object.
+
+222
+00:16:52,160 --> 00:16:56,694
+Git uses five tree entry modes, and the
+executable bit is the only permission it
+
+223
+00:16:56,734 --> 00:16:57,151
+records.
+
+224
+00:16:57,491 --> 00:17:11,176
+A commit ID covers its tree and its parents,
+so one ID fixes every file and every
+
+225
+00:17:11,216 --> 00:17:14,057
+commit behind it.
+
+226
+00:17:14,397 --> 00:17:19,843
+git cat-file answers type, size, content
+and existence, for one object or for all of
+
+227
+00:17:19,883 --> 00:17:21,149
+them in one process.
+
+228
+00:17:21,489 --> 00:17:25,780
+git ls-tree lists a tree; git show
+formats any object for a person.
+
+229
+00:17:27,620 --> 00:17:31,229
+Read sections 3.4 and 3.5 of Chapter 3.
+
+230
+00:17:31,569 --> 00:17:34,865
+Today you read all four object
+types in their raw form.
+
+231
+00:17:34,905 --> 00:17:39,657
+Practise that before the next video:
+turning names into IDs with git rev-parse.
+
+232
+00:17:39,697 --> 00:17:42,811
+Until then, look at the
+state first and type second.
+
+233
+00:17:42,851 --> 00:17:44,267
+See you in the next one.

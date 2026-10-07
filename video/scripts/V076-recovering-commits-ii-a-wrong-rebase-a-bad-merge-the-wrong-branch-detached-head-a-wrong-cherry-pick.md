@@ -13,7 +13,7 @@
 
 An engineer cherry-picks the wrong commit onto a release branch. A cherry-pick copies one commit's change onto the current branch. He remembers a recipe: `git reset --hard ORIG_HEAD` undoes the last operation. He runs it. Git answers with a commit subject that is exactly the fix he meant to pick. It looks like success.
 
-**[ANIMATION]** graph: 239cf05-3171b7b-f028350-cad5d75 main; 3171b7b-e30eec3-48b4def release/2.1; f028350 ORIG_HEAD; HEAD=release/2.1; title:A_stale_ORIG__HEAD => 239cf05-3171b7b-f028350-cad5d75 main; 3171b7b-e30eec3-48b4def ORIG_HEAD; f028350 release/2.1; reflog:e30eec3,48b4def; HEAD=release/2.1; cmd:!git_reset_--hard_ORIG__HEAD; say:HEAD_is_now_at_f028350:_the_release_branch_shows_the_history_of_main id=stale
+**[ANIMATION]** graph: 239cf05-3171b7b-f028350-cad5d75 main; 3171b7b-e30eec3-48b4def release/2.1; f028350 ORIG_HEAD; HEAD=release/2.1; title:A_stale_ORIG__HEAD => 239cf05-3171b7b-f028350-cad5d75 main; 3171b7b-e30eec3-48b4def ORIG_HEAD; f028350 release/2.1; reflog:e30eec3,48b4def; HEAD=release/2.1; cmd:!git_reset_--hard_ORIG__HEAD; say:HEAD_is_now_at_f028350:_the_release_branch_shows_the_history_of_main id=stale dx=260 at_state_1=4 at_state_2=15
 
 **[ANIMATION]** step: state-2
 
@@ -150,7 +150,7 @@ $ git log --oneline --graph --all
 
 Six commits ahead of the release branch where three belong.
 
-**[ANIMATION]** graph: 1d7a7cc-9288f20-5783ca4 main; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140 hotfix/judge-timeout; HEAD=hotfix/judge-timeout; title:1._A_wrong_rebase => 1d7a7cc-9288f20-5783ca4 main; 5783ca4-7213db9-262dc41-6ef447a-37bb577 hotfix/judge-timeout; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140; reflog:c5f4fb7,eb1f140; HEAD=hotfix/judge-timeout; cmd:git_rebase_main; say:Six_commits_ahead_of_release/1.4_where_three_belong; name:wrong => 1d7a7cc-9288f20-5783ca4 main; 5783ca4-7213db9-262dc41-6ef447a-37bb577 hotfix/judge-timeout backup/rebased-hotfix; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140 rescue/pre-rebase; HEAD=hotfix/judge-timeout; cmd:git_branch_rescue/pre-rebase_'hotfix/judge-timeout@{2}'; say:Two_refs_hold_the_two_versions_of_the_branch; name:anchors => 1d7a7cc-9288f20-5783ca4 main; 5783ca4-7213db9-262dc41-6ef447a-37bb577 backup/rebased-hotfix; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140 rescue/pre-rebase; eb1f140-13305ef hotfix/judge-timeout; HEAD=hotfix/judge-timeout; cmd:git_rebase_--onto_rescue/pre-rebase_HEAD~1; say:The_two_old_commits,_and_Log_judge_latency_as_13305ef; name:fixed id=rb
+**[ANIMATION]** graph: 1d7a7cc-9288f20-5783ca4 main; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140 hotfix/judge-timeout; HEAD=hotfix/judge-timeout; title:1._A_wrong_rebase => 1d7a7cc-9288f20-5783ca4 main; 5783ca4-7213db9-262dc41-6ef447a-37bb577 hotfix/judge-timeout; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140; reflog:c5f4fb7,eb1f140; HEAD=hotfix/judge-timeout; cmd:git_rebase_main; say:Six_commits_ahead_of_release/1.4_where_three_belong; name:wrong => 1d7a7cc-9288f20-5783ca4 main; 5783ca4-7213db9-262dc41-6ef447a-37bb577 hotfix/judge-timeout backup/rebased-hotfix; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140 rescue/pre-rebase; HEAD=hotfix/judge-timeout; cmd:git_branch_rescue/pre-rebase_'hotfix/judge-timeout@{2}'; say:Two_refs_hold_the_two_versions_of_the_branch; name:anchors => 1d7a7cc-9288f20-5783ca4 main; 5783ca4-7213db9-262dc41-6ef447a-37bb577 backup/rebased-hotfix; 1d7a7cc-dc1ff44 release/1.4; dc1ff44-c5f4fb7-eb1f140 rescue/pre-rebase; eb1f140-13305ef hotfix/judge-timeout; HEAD=hotfix/judge-timeout; cmd:git_rebase_--onto_rescue/pre-rebase_HEAD~1; say:The_two_old_commits,_and_Log_judge_latency_as_13305ef; name:fixed id=rb dx=260
 
 **[ANIMATION]** step: wrong
 
@@ -248,11 +248,13 @@ You answer questions about our product documentation.
 
 Read the word "Fast-forward".
 
-**[ANIMATION]** graph: 5aab090-0529d31 main; 0529d31-efee0cd-df44d03-deec1c6 exp/few-shot; ^0529d31-3aae83f feature/citations; HEAD=main; title:2._A_bad_merge,_fast-forward => + deec1c6 main; cmd:git_merge_exp/few-shot; say:Fast-forward:_no_merge_commit; name:ff => + 0529d31 main; cmd:git_reset_--keep_ORIG__HEAD; say:Only_main_moved_back; name:back => + deec1c6 main; cmd:git_merge_exp/few-shot; say:A_second_copy_of_the_incident; name:again => + df44d03 main; deec1c6 ORIG_HEAD; cmd:!git_reset_--hard_HEAD~1; say:HEAD~1_is_one_commit_back_along_the_merged_branch; name:recipe => + deec1c6 main; df44d03 ORIG_HEAD; cmd:!git_reset_--hard_ORIG__HEAD; say:Two_commands_late:_back_in_the_merged_state; name:late => + 0529d31 main@{3}; cmd:git_reflog_show_main; say:The_entry_below_the_merge_line_is_where_main_was; name:found id=mg
+**[ANIMATION]** graph: 5aab090-0529d31 main; 0529d31-efee0cd-df44d03-deec1c6 exp/few-shot; ^0529d31-3aae83f feature/citations; HEAD=main; title:2._A_bad_merge,_fast-forward => + deec1c6 main; cmd:git_merge_exp/few-shot; say:Fast-forward:_no_merge_commit; name:ff => + 0529d31 main; cmd:git_reset_--keep_ORIG__HEAD; say:Only_main_moved_back; name:back => + deec1c6 main; cmd:git_merge_exp/few-shot; say:A_second_copy_of_the_incident; name:again => + df44d03 main; deec1c6 ORIG_HEAD; cmd:!git_reset_--hard_HEAD~1; say:HEAD~1_is_one_commit_back_along_the_merged_branch; name:recipe => + deec1c6 main; df44d03 ORIG_HEAD; cmd:!git_reset_--hard_ORIG__HEAD; say:Two_commands_late:_back_in_the_merged_state; name:late => + 0529d31 main@{3}; cmd:git_reflog_show_main; say:The_entry_below_the_merge_line_is_where_main_was; name:found id=mg dx=260 at_state_1=8 at_ff=25
 
 **[ANIMATION]** step: ff
 
 Three work-in-progress commits are on `main`, and there is no merge commit.
+
+**[PAUSE]**
 
 ```bash
 git reflog -2
@@ -367,6 +369,8 @@ Correct fix       : read "git reflog show main" and reset to the entry below the
 Prevention        : undo a merge with ORIG_HEAD immediately, or by reflog entry; never by counting parents
 ```
 
+The root cause: the recipe assumes a merge commit, and `ORIG_HEAD` was used two commands late.
+
 ```bash
 git reflog show main
 ```
@@ -416,7 +420,7 @@ c8fec4d Add a table fixture for tests
 
 `origin/main..main` is the precise name of the misplaced work: the commits on `main` that the server doesn't have.
 
-**[ANIMATION]** graph: 5a80a30-4711dcc origin/main; 4711dcc-0eece93-c8fec4d main; 4711dcc-fb8cb6c feature/pdf-tables; HEAD=main; title:3._Commits_on_the_wrong_branch => + fb8cb6c-c7f48b2-ed2177f feature/pdf-tables; HEAD=feature/pdf-tables; cmd:git_cherry-pick_origin/main..main; say:Copy_first; name:copy => + 4711dcc main; reflog:0eece93,c8fec4d; HEAD=main; cmd:git_reset_--keep_origin/main; say:Remove_second; name:remove id=wb
+**[ANIMATION]** graph: 5a80a30-4711dcc origin/main; 4711dcc-0eece93-c8fec4d main; ^4711dcc-fb8cb6c feature/pdf-tables; HEAD=main; title:3._Commits_on_the_wrong_branch => + fb8cb6c-c7f48b2-ed2177f feature/pdf-tables; HEAD=feature/pdf-tables; cmd:git_cherry-pick_origin/main..main; say:Copy_first; name:copy => + 4711dcc main; reflog:0eece93,c8fec4d; HEAD=main; cmd:git_reset_--keep_origin/main; say:Remove_second; name:remove id=wb dx=260 at_state_1=30
 
 **[ANIMATION]** step: state-1
 
@@ -514,11 +518,13 @@ $ git log --oneline --graph 266d3b2 852224f --not --all
 
 Two dangling commits, tips that no ref names, and the graph shows what hangs on each.
 
-**[ANIMATION]** graph: 3838324-be53ce8-f6f6bbb-20459b3-f4a81dc main; be53ce8 v1.2.0; be53ce8-ba8c3d9-266d3b2; ^f6f6bbb-852224f; HEAD=main; reflog:ba8c3d9,266d3b2,852224f; dangling:266d3b2,852224f; cmd:git_fsck_--no-reflogs; title:4._Detached_HEAD => 3838324-be53ce8-f6f6bbb-20459b3-f4a81dc main; be53ce8 v1.2.0; be53ce8-ba8c3d9-266d3b2 hotfix/1.2.1; ^f6f6bbb-852224f exp/no-response-cache; HEAD=main; cmd:git_branch_hotfix/1.2.1_266d3b2; say:Each_line_has_a_name_now; name:anchored id=dh
+**[ANIMATION]** graph: 3838324-be53ce8-f6f6bbb-20459b3-f4a81dc main; be53ce8 v1.2.0; be53ce8-ba8c3d9-266d3b2; ^f6f6bbb-852224f; HEAD=main; reflog:ba8c3d9,266d3b2,852224f; dangling:266d3b2,852224f; cmd:git_fsck_--no-reflogs; title:4._Detached_HEAD => 3838324-be53ce8-f6f6bbb-20459b3-f4a81dc main; be53ce8 v1.2.0; be53ce8-ba8c3d9-266d3b2 hotfix/1.2.1; ^f6f6bbb-852224f exp/no-response-cache; HEAD=main; cmd:git_branch_hotfix/1.2.1_266d3b2; say:Each_line_has_a_name_now; name:anchored id=dh dx=260 at_state_1=15
 
 **[ANIMATION]** step: state-1
 
 A line of two hotfix commits, and a single experiment.
+
+**[PAUSE]**
 
 ```bash
 git branch hotfix/1.2.1 266d3b2
@@ -581,7 +587,7 @@ Add per-tenant quotas
 
 `-x` recorded the source, which makes the mistake visible in review. The pick itself was clean, and that is the dangerous case: a wrong pick that conflicts gets attention, and a clean one ships.
 
-**[ANIMATION]** graph: 239cf05-3171b7b-f028350-cad5d75 main; 3171b7b-e30eec3 release/2.1; HEAD=release/2.1; title:5._A_wrong_cherry-pick => + e30eec3-1bccf8e release/2.1; cmd:git_cherry-pick_-x_main; say:1bccf8e_is_a_copy_of_cad5d75:_a_feature,_not_the_fix; name:wrong => + e30eec3 release/2.1; reflog:1bccf8e; cmd:git_reset_--keep_'HEAD@{1}'; say:One_step_back,_by_reflog_entry; name:back => + e30eec3-5564cff release/2.1; cmd:git_cherry-pick_-x_main~1; say:The_right_pick:_5564cff,_a_copy_of_f028350; name:right id=cp
+**[ANIMATION]** graph: 239cf05-3171b7b-f028350-cad5d75 main; 3171b7b-e30eec3 release/2.1; HEAD=release/2.1; title:5._A_wrong_cherry-pick => + e30eec3-1bccf8e release/2.1; cmd:git_cherry-pick_-x_main; say:1bccf8e_is_a_copy_of_cad5d75:_a_feature,_not_the_fix; name:wrong => + e30eec3 release/2.1; reflog:1bccf8e; cmd:git_reset_--keep_'HEAD@{1}'; say:One_step_back,_by_reflog_entry; name:back => + e30eec3-5564cff release/2.1; cmd:git_cherry-pick_-x_main~1; say:The_right_pick:_5564cff,_a_copy_of_f028350; name:right id=cp dx=260 at_state_1=8 at_wrong=35
 
 **[ANIMATION]** step: wrong
 
@@ -655,6 +661,8 @@ Why Git does this : ORIG_HEAD is one file with no notion of which branch or whic
 Correct fix       : git reflog show release/2.1, then reset --keep to the entry below the cherry-pick
 Prevention        : undo by reflog entry; check "git log -1 ORIG_HEAD" before every use of ORIG_HEAD
 ```
+
+The root cause: `ORIG_HEAD` was used as "undo the last command". It means "before the last reset, merge, rebase or am".
 
 ```bash
 git reflog show release/2.1

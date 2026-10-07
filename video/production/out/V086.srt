@@ -1,868 +1,901 @@
 1
-00:00:04,500 --> 00:00:10,360
+00:00:04,500 --> 00:00:09,454
 The team did something reasonable. A
 long-lived branch conflicted with main on the
 
 2
-00:00:10,400 --> 00:00:14,389
+00:00:09,494 --> 00:00:12,864
 same two lines of a configuration
 file, at every rebase.
 
 3
-00:00:14,429 --> 00:00:19,353
+00:00:12,904 --> 00:00:17,066
 A conflict is Git stopping because
 both sides changed the same lines.
 
 4
-00:00:19,393 --> 00:00:24,749
+00:00:17,106 --> 00:00:21,633
 Resolving the same one by hand for the
 tenth time is how mistakes are made.
 
 5
-00:00:24,789 --> 00:00:26,548
+00:00:21,673 --> 00:00:23,156
 Rerere removes that work.
 
 6
-00:00:26,888 --> 00:00:30,803
+00:00:23,496 --> 00:00:27,753
 Then one day somebody resolved that
 conflict in a hurry, and wrongly.
 
 7
-00:00:30,843 --> 00:00:35,388
+00:00:27,793 --> 00:00:32,736
 From that moment Git wrote the wrong answer
 into the file at every later rebase,
 
 8
-00:00:35,428 --> 00:00:38,540
+00:00:32,776 --> 00:00:36,161
 with the same calm output it
 prints for a right answer.
 
 9
-00:00:38,580 --> 00:00:42,781
+00:00:36,201 --> 00:00:40,770
 With one extra setting it also staged
 it. A wrong value was one git rebase
 
 10
-00:00:42,821 --> 00:00:46,048
+00:00:40,810 --> 00:00:44,320
 --continue away from being a
 commit, and nobody typed it.
 
 11
-00:00:46,388 --> 00:00:51,167
+00:00:44,660 --> 00:00:49,438
 Rerere replays a recorded resolution
 whenever the same conflict text appears, a
 
 12
-00:00:51,207 --> 00:00:53,545
+00:00:49,478 --> 00:00:51,817
 wrong one as faithfully as a right one.
 
 13
-00:00:55,385 --> 00:00:59,156
+00:00:53,657 --> 00:00:57,428
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 14
-00:00:59,196 --> 00:01:04,215
+00:00:57,468 --> 00:01:02,487
 You know conflicts from the merge module,
 and you know that in a rebase the sides
 
 15
-00:01:04,255 --> 00:01:09,212
+00:01:02,527 --> 00:01:07,484
 are swapped. Today you add a feature that
 sits beside conflict resolution and is
 
 16
-00:01:09,252 --> 00:01:14,459
+00:01:07,524 --> 00:01:12,731
 entirely local: it lives in .git/rr-cache,
 which is never pushed, fetched or cloned.
 
 17
-00:01:14,799 --> 00:01:18,380
+00:01:13,071 --> 00:01:16,652
 You'll watch one resolution being
 recorded in a throw-away test merge.
 
 18
-00:01:18,720 --> 00:01:23,435
+00:01:16,992 --> 00:01:21,702
 Then the test merge is thrown away, and the
 record is replayed in the real merge, in
 
 19
-00:01:23,475 --> 00:01:26,548
+00:01:21,742 --> 00:01:24,813
 the opposite direction. And
 replayed again in a rebase.
 
 20
-00:01:26,888 --> 00:01:31,799
+00:01:25,153 --> 00:01:30,080
 Then the wrong-resolution case and its
 repair. And last, a failure that the authors
 
 21
-00:01:31,839 --> 00:01:36,631
+00:01:30,120 --> 00:01:34,927
 of this course ran into while writing the
 chapter: a lock race between rerere and
 
 22
-00:01:36,671 --> 00:01:38,660
+00:01:34,967 --> 00:01:36,962
 automatic maintenance on Git 2.55.
 
 23
-00:01:40,500 --> 00:01:42,780
+00:01:38,802 --> 00:01:41,083
 say what rerere records
 and at which moment;
 
 24
-00:01:43,120 --> 00:01:45,199
+00:01:41,423 --> 00:01:45,529
 show a recorded resolution being replayed
 in a later merge and in a rebase;
 
 25
-00:01:45,539 --> 00:01:48,872
+00:01:45,869 --> 00:01:49,202
 forget a wrong recorded resolution
 and record a correct one;
 
 26
-00:01:49,212 --> 00:01:52,388
+00:01:49,542 --> 00:01:53,577
 explain why a replayed resolution
 still has to be reviewed and tested;
 
 27
-00:01:52,728 --> 00:01:55,753
+00:01:53,917 --> 00:01:58,650
 explain the lock failure on Git 2.55
 and the setting that prevents it.
 
 28
-00:01:57,593 --> 00:02:01,595
+00:02:00,490 --> 00:02:05,242
 In one sentence: with rerere.enabled set,
 Git records the text of every conflict
 
 29
-00:02:01,635 --> 00:02:05,688
+00:02:05,282 --> 00:02:10,093
 together with what you made of it, and
 when a conflict with the same text appears
 
 30
-00:02:05,728 --> 00:02:09,579
+00:02:10,133 --> 00:02:14,706
 again, in any merge, rebase, cherry-pick,
 revert or git am -3, it writes your
 
 31
-00:02:09,619 --> 00:02:12,863
+00:02:14,746 --> 00:02:18,599
 earlier resolution into the file
 instead of the conflict markers.
 
 32
-00:02:13,203 --> 00:02:17,495
+00:02:18,939 --> 00:02:23,738
 "Rerere" stands for "reuse recorded
 resolution". The commands that can stop on a
 
 33
-00:02:17,535 --> 00:02:20,528
+00:02:23,778 --> 00:02:27,125
 conflict call git rerere for
 you, so you rarely type it.
 
 34
-00:02:20,568 --> 00:02:21,828
+00:02:27,165 --> 00:02:28,576
 It works in two moments.
 
 35
-00:02:22,168 --> 00:02:26,975
+00:02:28,916 --> 00:02:33,724
 Moment one: when a conflict appears. Git
 normalizes the conflict in each file.
 
 36
-00:02:27,015 --> 00:02:32,196
+00:02:33,764 --> 00:02:38,944
 Labels are stripped from the markers, the
 two sides are sorted, and the base part of
 
 37
-00:02:32,236 --> 00:02:33,687
+00:02:38,984 --> 00:02:40,436
 diff3 output is removed.
 
 38
-00:02:34,027 --> 00:02:38,821
+00:02:40,776 --> 00:02:45,659
 It hashes the conflict hunks and uses
 the hash as the name of a directory in
 
 39
-00:02:38,861 --> 00:02:43,973
+00:02:45,699 --> 00:02:50,907
 .git/rr-cache. If there is no recorded
 resolution there, it stores the normalized
 
 40
-00:02:44,013 --> 00:02:47,280
+00:02:50,947 --> 00:02:54,276
 conflict as preimage and
 prints "Recorded preimage".
 
 41
-00:02:47,620 --> 00:02:52,128
+00:02:54,616 --> 00:02:58,804
 If there is one, it merges the old
 conflict, the old resolution and the new
 
 42
-00:02:52,168 --> 00:02:56,857
+00:02:58,844 --> 00:03:03,201
 conflict, and when that merge is clean
 it writes the result into your file and
 
 43
-00:02:56,897 --> 00:02:59,767
+00:03:03,241 --> 00:03:05,906
 prints "Resolved ... using
 previous resolution".
 
 44
-00:03:00,107 --> 00:03:08,163
+00:03:06,246 --> 00:03:11,026
 Moment two: when you conclude. At the
 commit, or at git rebase --continue, Git
 
 45
-00:03:08,203 --> 00:03:15,531
+00:03:11,066 --> 00:03:15,412
 stores the resolved file as postimage
 and prints "Recorded resolution".
 
 46
-00:03:15,871 --> 00:03:20,631
+00:03:15,752 --> 00:03:20,512
 The normalization is why one record serves
 both directions of a merge, and a merge
 
 47
-00:03:20,671 --> 00:03:24,435
+00:03:20,552 --> 00:03:24,316
 as well as a rebase. The name
 depends on the two competing texts.
 
 48
-00:03:24,475 --> 00:03:28,415
+00:03:24,356 --> 00:03:28,296
 It doesn't depend on branch names,
 on who is "ours", or on the path.
 
 49
-00:03:28,755 --> 00:03:33,119
+00:03:28,636 --> 00:03:33,754
 One property decides how safe the feature
 is. Rerere leaves the index alone.
 
 50
-00:03:33,159 --> 00:03:37,812
+00:03:33,794 --> 00:03:39,252
 A replayed file stays unmerged, with three
 versions still in the index, until you
 
 51
-00:03:37,852 --> 00:03:40,419
+00:03:39,292 --> 00:03:42,306
 git add it, unless
 rerere.autoUpdate is true.
 
 52
-00:03:40,759 --> 00:03:47,067
+00:03:42,646 --> 00:03:47,985
 Inside the dot git folder:
 rr-cache/<conflict-id>/preimage and postimage.
 
 53
-00:03:47,107 --> 00:03:54,023
+00:03:48,025 --> 00:03:53,880
 A file MERGE_RR, which maps the conflicted
 paths of the operation in progress to
 
 54
-00:03:54,063 --> 00:04:01,153
+00:03:53,920 --> 00:03:59,923
 conflict IDs. And, briefly, MERGE_RR.lock.
 git rerere gc prunes unresolved records
 
 55
-00:04:01,193 --> 00:04:04,718
+00:03:59,963 --> 00:04:02,944
 after 15 days and resolved ones after 60.
 
 56
-00:04:05,058 --> 00:04:10,434
+00:04:03,284 --> 00:04:08,683
 When to use it: for people who rebase long
 branches or rebuild integration branches.
 
 57
-00:04:10,474 --> 00:04:15,787
+00:04:08,723 --> 00:04:14,056
 When not: don't turn on rerere.autoUpdate
 unless tests run before every --continue.
 
 58
-00:04:15,827 --> 00:04:21,139
+00:04:14,096 --> 00:04:19,430
 The stop with UU is the only review a replay
 gets. And know the limits: records are
 
 59
-00:04:21,179 --> 00:04:26,297
+00:04:19,470 --> 00:04:24,609
 per clone, they expire, and a conflict
 whose text has changed is a new conflict.
 
 60
-00:04:28,137 --> 00:04:33,292
+00:04:26,449 --> 00:04:31,604
 The textbook's analogy: a notebook next to
 the merge desk, each page with a conflict
 
 61
-00:04:33,332 --> 00:04:38,177
+00:04:31,644 --> 00:04:36,489
 on the left and your answer on the right.
 When the same left side turns up, Git
 
 62
-00:04:38,217 --> 00:04:40,404
+00:04:36,529 --> 00:04:38,715
 copies the right side into the file.
 
 63
-00:04:40,744 --> 00:04:45,478
+00:04:39,055 --> 00:04:43,790
 The analogy breaks where the danger is.
 The notebook matches text, not intent, and
 
 64
-00:04:45,518 --> 00:04:47,284
+00:04:43,830 --> 00:04:45,595
 it never asks before it copies.
 
 65
-00:04:47,624 --> 00:04:51,944
+00:04:45,935 --> 00:04:50,579
 Two refinements. The left side of each
 page is written in a canonical form: no
 
 66
-00:04:51,984 --> 00:04:56,361
+00:04:50,619 --> 00:04:55,322
 branch labels, the two sides in sorted
 order. That is why the same page matches
 
 67
-00:04:56,401 --> 00:05:00,274
+00:04:55,362 --> 00:04:59,525
 whichever branch you happen to be
 on. And the notebook is yours alone.
 
 68
-00:05:00,314 --> 00:05:03,293
+00:04:59,565 --> 00:05:02,768
 A colleague's clone has a
 different notebook, or none.
 
 69
-00:05:05,133 --> 00:05:13,718
+00:05:04,608 --> 00:05:09,558
 Try it now, on paper. Write the two
 moments, and next to each, the file rerere
 
 70
-00:05:13,758 --> 00:05:20,131
+00:05:09,598 --> 00:05:13,269
 writes. Pause me for thirty
 seconds and write your answer.
 
 71
-00:05:24,971 --> 00:05:30,048
+00:05:18,109 --> 00:05:23,324
 Column one writes the left page, the preimage.
 Column two writes the right page, the
 
 72
-00:05:30,088 --> 00:05:35,044
+00:05:23,364 --> 00:05:28,454
 postimage. Column three finds the same page
 by its hash and copies the answer into
 
 73
-00:05:35,084 --> 00:05:39,979
+00:05:28,494 --> 00:05:33,521
 the file. Read the last line of column
 three twice: the file is resolved, and the
 
 74
-00:05:40,019 --> 00:05:41,441
+00:05:33,561 --> 00:05:35,022
 index is still unmerged.
 
 75
-00:05:41,781 --> 00:05:47,944
+00:05:35,362 --> 00:05:38,909
 One record, written in the test
 merge and read in the real merge.
 
 76
-00:05:47,984 --> 00:05:52,142
+00:05:38,949 --> 00:05:41,336
 In a moment you'll see
 a rebase read it too.
 
 77
-00:05:56,482 --> 00:06:02,161
+00:05:45,676 --> 00:05:51,356
 An ordinary conflict, plus one new line:
 "Recorded preimage for 'retrieval.yaml'".
 
 78
-00:06:02,201 --> 00:06:03,975
+00:05:51,396 --> 00:05:53,169
 Look at what was recorded.
 
 79
-00:06:07,315 --> 00:06:11,791
+00:05:56,509 --> 00:06:01,651
 The directory name is the conflict ID.
 The preimage has bare markers and the two
 
 80
-00:06:11,831 --> 00:06:16,082
+00:06:01,691 --> 00:06:06,574
 sides in sorted order, top_k: 20 first,
 although your file shows HEAD first.
 
 81
-00:06:16,122 --> 00:06:17,042
+00:06:06,614 --> 00:06:07,675
 Resolve as usual.
 
 82
-00:06:17,382 --> 00:06:20,805
+00:06:08,015 --> 00:06:11,538
 git rerere diff compares the
 recorded conflict with your file.
 
 83
-00:06:20,845 --> 00:06:24,490
+00:06:11,578 --> 00:06:15,331
 The commit at the end of the snippet
 prints "Recorded resolution".
 
 84
-00:06:24,530 --> 00:06:26,892
+00:06:15,371 --> 00:06:17,802
 The test merge has done
 its job. Remove it.
 
 85
-00:06:30,232 --> 00:06:33,711
+00:06:21,142 --> 00:06:24,620
 The merge is gone. The record
 stays, with both halves.
 
 86
-00:06:33,751 --> 00:06:38,859
+00:06:24,660 --> 00:06:29,766
 A week later the branch is merged into
 main, in the opposite direction from the
 
 87
-00:06:38,899 --> 00:06:42,639
+00:06:29,806 --> 00:06:33,544
 test. Predict the exit status.
 Say it out loud. I'll wait.
 
 88
-00:06:49,479 --> 00:06:52,995
+00:06:40,384 --> 00:06:44,309
 Read this output with care. The
 merge still reports CONFLICT.
 
 89
-00:06:53,035 --> 00:06:57,017
+00:06:44,349 --> 00:06:48,795
 It still says "Automatic merge
 failed". It still exits with status 1.
 
 90
-00:06:57,057 --> 00:07:01,680
+00:06:48,835 --> 00:06:53,995
 Only one line, "Resolved 'retrieval.yaml'
 using previous resolution.", tells you
 
 91
-00:07:01,720 --> 00:07:04,070
+00:06:54,035 --> 00:06:56,660
 that the file no longer contains markers.
 
 92
-00:07:04,410 --> 00:07:09,429
+00:06:57,000 --> 00:07:02,019
 The file holds your resolution. git status
 says UU, and the index still has three
 
 93
-00:07:09,469 --> 00:07:12,864
+00:07:02,059 --> 00:07:05,455
 stages, because rerere wrote
 the file and nothing else.
 
 94
-00:07:12,904 --> 00:07:17,362
+00:07:05,495 --> 00:07:09,952
 git rerere remaining prints nothing:
 no path is left to resolve by hand.
 
 95
-00:07:17,402 --> 00:07:22,109
+00:07:09,992 --> 00:07:14,699
 This stop is your review point. Read
 the file, run the tests, then stage and
 
 96
-00:07:22,149 --> 00:07:22,671
+00:07:14,739 --> 00:07:15,261
 conclude.
 
 97
-00:07:28,811 --> 00:07:33,450
+00:07:21,401 --> 00:07:26,481
 The rebase stops as usual. In a rebase the
 sides are swapped, and the normalization
 
 98
-00:07:33,490 --> 00:07:34,690
+00:07:26,521 --> 00:07:27,838
 makes that irrelevant.
 
 99
-00:07:35,030 --> 00:07:38,669
+00:07:28,178 --> 00:07:32,108
 UU, and a file without markers.
 You add it and continue.
 
 100
-00:07:38,709 --> 00:07:42,086
+00:07:32,148 --> 00:07:35,795
 Now with rerere.autoUpdate.
 Quick quiz, two options.
 
 101
-00:07:42,126 --> 00:07:46,882
+00:07:35,835 --> 00:07:40,970
 With auto-update on, the rebase still
 stops. Or it runs straight through.
 
 102
-00:07:46,922 --> 00:07:47,933
+00:07:41,010 --> 00:07:42,104
 Say it out loud.
 
 103
-00:07:52,773 --> 00:07:57,926
+00:07:46,944 --> 00:07:51,642
 It still stops. "Staged 'retrieval.yaml'
 using previous resolution."
 
 104
-00:07:57,966 --> 00:08:04,111
+00:07:51,682 --> 00:07:57,285
 Only git rebase --continue is left to do.
 Nothing forces you to look at the file.
 
 105
-00:08:04,451 --> 00:08:09,597
+00:07:57,625 --> 00:08:01,879
 Apart from the file content, the output
 is identical to the correct case.
 
 106
-00:08:09,637 --> 00:08:14,072
+00:08:01,919 --> 00:08:05,585
 That's how a wrong value reaches
 main without anyone typing it.
 
 107
-00:08:14,112 --> 00:08:20,038
+00:08:05,625 --> 00:08:10,526
 The correction has three steps: make rerere
 forget, bring the conflict back, resolve
 
 108
-00:08:20,078 --> 00:08:20,464
+00:08:10,566 --> 00:08:10,879
 again.
 
 109
-00:08:20,804 --> 00:08:26,906
+00:08:11,219 --> 00:08:15,987
 "Forgot resolution". The postimage is gone,
 and the markers are back in the file.
 
 110
-00:08:27,246 --> 00:08:29,282
+00:08:16,327 --> 00:08:19,797
 "Recorded resolution", and the
 postimage now has top_k: 50.
 
 111
-00:08:29,322 --> 00:08:32,204
+00:08:19,837 --> 00:08:24,736
 If the wrong merge is already committed and
 not pushed: undo it first, merge again,
 
 112
-00:08:32,244 --> 00:08:35,160
+00:08:24,776 --> 00:08:29,734
 and then forget. If it is pushed: fix forward
 with a new commit and still forget, or
 
 113
-00:08:35,200 --> 00:08:36,568
+00:08:29,774 --> 00:08:32,114
 the next rebase brings the mistake back.
 
 114
-00:08:36,908 --> 00:08:42,189
+00:08:32,454 --> 00:08:38,281
 Replay labs/run ch14c/rerere-lock. It
 produces the failure on demand: an exec line
 
 115
-00:08:42,229 --> 00:08:47,445
+00:08:38,321 --> 00:08:44,077
 of the rebase creates the lock file after
 each replayed commit, as a stand-in for
 
 116
-00:08:47,485 --> 00:08:48,742
+00:08:44,117 --> 00:08:45,507
 the background task.
 
 117
-00:08:57,082 --> 00:09:02,135
+00:08:53,847 --> 00:08:58,671
 After the failure git rerere status prints
 nothing: rerere never saw this conflict,
 
 118
-00:09:02,175 --> 00:09:07,229
+00:08:58,711 --> 00:09:03,535
 so a resolution made now would not be
 recorded. One manual git rerere repairs that:
 
 119
-00:09:07,269 --> 00:09:12,261
+00:09:03,575 --> 00:09:08,340
 "Recorded preimage". Removing the lock file
 by hand is right here only because the
 
 120
-00:09:12,301 --> 00:09:17,170
+00:09:08,380 --> 00:09:13,028
 stand-in created it. The real background
 task removes its own lock when it ends.
 
 121
-00:09:17,510 --> 00:09:22,666
+00:09:13,368 --> 00:09:19,265
 How often does the real race occur?
 Replay labs/run ch14c/rerere-lock-race.
 
 122
-00:09:22,706 --> 00:09:26,476
+00:09:19,305 --> 00:09:23,618
 It runs the same rebase twenty
 times per configuration.
 
 123
-00:09:42,116 --> 00:09:43,764
-Five mistakes to watch for.
+00:09:27,758 --> 00:09:32,633
+This snippet is volatile. The first number
+depends on timing: it varied between 1
 
 124
-00:09:44,104 --> 00:09:47,977
+00:09:32,673 --> 00:09:37,244
+and 10 in the runs made for the chapter,
+and it will differ on your machine.
+
+125
+00:09:37,284 --> 00:09:38,700
+The second was always 0.
+
+126
+00:09:39,040 --> 00:09:44,077
+This is unverified. The race was
+observed on Git 2.55.0 on macOS only.
+
+127
+00:09:44,117 --> 00:09:49,951
+No manual or release note read for this
+course describes it, and Git 2.56 was not
+
+128
+00:09:49,991 --> 00:09:55,535
+tested. The mechanism is inferred from
+the maintenance configuration and that
+
+129
+00:09:55,575 --> 00:09:56,406
+measurement.
+
+130
+00:09:58,246 --> 00:09:59,894
+Five mistakes to watch for.
+
+131
+00:10:00,234 --> 00:10:04,259
 Reading "CONFLICT" and exit status
 1 as "rerere did not work".
 
-125
-00:09:48,017 --> 00:09:53,277
+132
+00:10:04,299 --> 00:10:09,768
 Root cause: a replay writes the file and
 leaves the index unmerged, so the operation
 
-126
-00:09:53,317 --> 00:09:58,326
+133
+00:10:09,808 --> 00:10:15,014
 still stops; the line "Resolved ... using
 previous resolution" is the only sign.
 
-127
-00:09:58,666 --> 00:10:03,121
+134
+00:10:15,354 --> 00:10:20,450
 Turning on rerere.autoUpdate to save a
 step. Root cause: it stages the replayed
 
-128
-00:10:03,161 --> 00:10:07,104
+135
+00:10:20,490 --> 00:10:25,000
 file, which removes the UU stop that
 is the only review a replay gets.
 
-129
-00:10:07,444 --> 00:10:11,696
+136
+00:10:25,340 --> 00:10:29,594
 Fixing a wrong replay in the file and
 committing, without git rerere forget.
 
-130
-00:10:11,736 --> 00:10:16,440
+137
+00:10:29,634 --> 00:10:34,340
 Root cause: the wrong postimage is still
 recorded for that conflict text and will be
 
-131
-00:10:16,480 --> 00:10:18,248
+138
+00:10:34,380 --> 00:10:36,148
 replayed at the next occurrence.
 
-132
-00:10:18,588 --> 00:10:24,547
+139
+00:10:36,488 --> 00:10:39,894
 Expecting a colleague's clone
 to replay your resolutions.
 
-133
-00:10:24,587 --> 00:10:31,600
+140
+00:10:39,934 --> 00:10:43,943
 Root cause: rr-cache is local and
 is not pushed, fetched or cloned.
 
-134
-00:10:31,940 --> 00:10:38,060
+141
+00:10:44,283 --> 00:10:50,347
 Treating the MERGE_RR.lock failure as
 corruption. Root cause: a background rerere-gc
 
-135
-00:10:38,100 --> 00:10:42,826
+142
+00:10:50,387 --> 00:10:55,071
 task and the rebase wanted the
 same lock; nothing is damaged, and
 
-136
-00:10:42,866 --> 00:10:45,833
+143
+00:10:55,111 --> 00:10:58,050
 maintenance.rerere-gc.auto=0 prevents it.
 
-137
-00:10:47,673 --> 00:10:53,300
+144
+00:10:59,890 --> 00:11:05,498
 Now, out of the lab. A retrieval team keeps
 a reranking branch alive for six weeks.
 
-138
-00:10:53,340 --> 00:10:58,625
+145
+00:11:05,538 --> 00:11:10,805
 It conflicts with main on the same
 configuration lines at every weekly rebase.
 
-139
-00:10:58,665 --> 00:11:04,223
+146
+00:11:10,845 --> 00:11:16,385
 The branch owner enables rerere in her
 clone, sets maintenance.rerere-gc.auto to 0
 
-140
-00:11:04,263 --> 00:11:06,954
+147
+00:11:16,425 --> 00:11:19,107
 there, and leaves rerere.autoUpdate off.
 
-141
-00:11:07,294 --> 00:11:12,051
+148
+00:11:19,447 --> 00:11:24,352
 In week three she resolves the conflict
 carelessly, keeping the old candidate count.
 
-142
-00:11:12,091 --> 00:11:16,620
+149
+00:11:24,392 --> 00:11:29,062
 In week four the rebase stops, prints
 "using previous resolution", and shows UU.
 
-143
-00:11:16,660 --> 00:11:21,189
+150
+00:11:29,102 --> 00:11:33,772
 Because she treats that stop as a review
 point, she reads the file, sees the old
 
-144
-00:11:21,229 --> 00:11:25,700
+151
+00:11:33,812 --> 00:11:38,423
 count next to the enabled reranker, and
 runs the evaluation, which confirms the
 
-145
-00:11:25,740 --> 00:11:30,269
+152
+00:11:38,463 --> 00:11:43,133
 regression. She makes rerere forget the
 path, restores the conflict, resolves it
 
-146
-00:11:30,309 --> 00:11:33,924
+153
+00:11:43,173 --> 00:11:46,901
 correctly, and continues. The
 wrong value never became a commit.
 
-147
-00:11:33,964 --> 00:11:37,807
+154
+00:11:46,941 --> 00:11:50,904
 With auto-update on, and without
 the evaluation step, it would have.
 
-148
-00:11:39,647 --> 00:11:44,752
+155
+00:11:52,744 --> 00:11:57,485
 Your turn. Do Lab 14.5,
 "Rerere, resolve once", in
 
-149
-00:11:44,792 --> 00:11:49,074
+156
+00:11:57,525 --> 00:12:01,501
 lab-manual/m14-hooks-rerere-attributes.md.
 
-150
-00:11:49,414 --> 00:11:54,127
+157
+00:12:01,841 --> 00:12:06,424
 Before the second merge, predict three
 things: the exit status, the output of git
 
-151
-00:11:54,167 --> 00:11:58,880
+158
+00:12:06,464 --> 00:12:11,046
 status -s, and whether the file contains
 markers. The lab's failure scenario is a
 
-152
-00:11:58,920 --> 00:12:03,750
+159
+00:12:11,086 --> 00:12:15,783
 wrong resolution with auto-update in a
 rebase. Before you repair it, write down the
 
-153
-00:12:03,790 --> 00:12:07,858
+160
+00:12:15,823 --> 00:12:19,778
 order of the three correction steps
 and what each one changes on disk.
 
-154
-00:12:08,198 --> 00:12:14,845
+161
+00:12:20,118 --> 00:12:26,898
 The challenge is Exercise 14.8, Level
 3, "A resolution that nobody typed", in
 
-155
-00:12:14,885 --> 00:12:18,667
+162
+00:12:26,938 --> 00:12:30,795
 exercises/m11-m15-investigation-recovery.md.
 
-156
-00:12:20,507 --> 00:12:22,438
+163
+00:12:32,635 --> 00:12:34,566
 Answer out loud. I'll wait.
 
-157
-00:12:27,278 --> 00:12:34,161
+164
+00:12:39,406 --> 00:12:44,013
 A strong answer names the two files and
 the two moments at which they are written,
 
-158
-00:12:34,201 --> 00:12:40,915
+165
+00:12:44,053 --> 00:12:48,547
 and says what keys the record. It explains
 the normalization concretely, what is
 
-159
-00:12:40,955 --> 00:12:47,332
+166
+00:12:48,587 --> 00:12:52,855
 stripped and what is sorted, and derives
 the direction-independence from it.
 
-160
-00:12:47,372 --> 00:12:54,255
+167
+00:12:52,895 --> 00:12:57,503
 It states what rerere does and doesn't
 touch when it replays, and what the setting
 
-161
-00:12:54,295 --> 00:13:01,348
+168
+00:12:57,543 --> 00:13:02,264
 that changes this costs. And it shows
 awareness of the risk: what happens to a wrong
 
-162
-00:13:01,388 --> 00:13:05,063
+169
+00:13:02,304 --> 00:13:04,757
 resolution, and the
 procedure to replace it.
 
-163
-00:13:06,903 --> 00:13:09,830
+170
+00:13:06,597 --> 00:13:09,525
 Let's land this. You
 should now be able to say:
 
-164
-00:13:10,170 --> 00:13:15,164
+171
+00:13:09,865 --> 00:13:14,681
 Rerere stores a normalized conflict as a
 preimage when the conflict appears and my
 
-165
-00:13:15,204 --> 00:13:19,462
+172
+00:13:14,721 --> 00:13:18,827
 resolution as a postimage when I
 conclude, keyed by the conflict text.
 
-166
-00:13:19,802 --> 00:13:26,168
+173
+00:13:19,167 --> 00:13:23,772
 Because labels are stripped and the sides
 sorted, one record serves both merge
 
-167
-00:13:26,208 --> 00:13:28,139
+174
+00:13:23,812 --> 00:13:25,201
 directions and a rebase.
 
-168
-00:13:28,479 --> 00:13:35,717
+175
+00:13:25,541 --> 00:13:30,671
 A replay writes the file only; the operation
 still stops with UU, and that stop is
 
-169
-00:13:35,757 --> 00:13:36,604
+176
+00:13:30,711 --> 00:13:31,301
 my review.
 
-170
-00:13:36,944 --> 00:13:41,790
+177
+00:13:31,641 --> 00:13:36,871
 A wrong record is replaced by git rerere
 forget, git restore --merge, and a new
 
-171
-00:13:41,830 --> 00:13:42,471
+178
+00:13:36,911 --> 00:13:37,605
 resolution.
 
-172
-00:13:42,811 --> 00:13:48,639
+179
+00:13:37,945 --> 00:13:43,723
 On Git 2.55 a background rerere-gc
 task can collide with a rebase over
 
-173
-00:13:48,679 --> 00:13:55,514
+180
+00:13:43,763 --> 00:13:50,537
 MERGE_RR.lock; this was observed, not
 documented, and maintenance.rerere-gc.auto=0
 
-174
-00:13:55,554 --> 00:13:56,352
+181
+00:13:50,577 --> 00:13:51,368
 avoids it.
 
-175
-00:13:58,192 --> 00:14:08,156
+182
+00:13:53,208 --> 00:13:56,691
 Read section 14C.3 of Chapter 14C.
 
-176
-00:14:08,496 --> 00:14:16,029
+183
+00:13:57,031 --> 00:14:01,636
 Today you watched Git reuse your own
 resolution, and you know to review every
 
-177
-00:14:16,069 --> 00:14:23,897
+184
+00:14:01,676 --> 00:14:06,461
 replay. Do the rerere lab before the next
 video, and read the file at each stop.
 
-178
-00:14:23,937 --> 00:14:31,568
+185
+00:14:06,501 --> 00:14:11,167
 Next time: the dot gitattributes file,
 per-path settings that travel, and line
 
-179
-00:14:31,608 --> 00:14:37,567
+186
+00:14:11,207 --> 00:14:14,846
 endings. Until then, look at the
 state first and type second.
 
-180
-00:14:37,607 --> 00:14:39,927
+187
+00:14:14,886 --> 00:14:16,294
 See you in the next one.

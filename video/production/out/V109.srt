@@ -1,0 +1,1167 @@
+1
+00:00:04,500 --> 00:00:10,136
+CI, the automation that builds and tests
+every change, clones 3 GB for every job.
+
+2
+00:00:10,176 --> 00:00:14,481
+A clone is your own copy of a
+repository, made with git clone.
+
+3
+00:00:14,521 --> 00:00:19,596
+Someone proposes --depth 1 everywhere,
+and the pipeline gets much faster.
+
+4
+00:00:19,636 --> 00:00:23,800
+Your CTO asks one question before
+approving it: what breaks?
+
+5
+00:00:23,840 --> 00:00:25,622
+Make your guess, out loud.
+
+6
+00:00:30,462 --> 00:00:35,429
+The uncomfortable answer from Chapter
+26: history questions break, silently.
+
+7
+00:00:35,469 --> 00:00:40,897
+Versions, blame, merge bases. The commands
+exit with status 0 and print a plausible
+
+8
+00:00:40,937 --> 00:00:45,442
+answer that is wrong. And a partial
+clone is usually what was wanted.
+
+9
+00:00:45,482 --> 00:00:49,065
+Hold on to that word, silently.
+You'll watch it happen.
+
+10
+00:00:50,905 --> 00:00:54,750
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:54,790 --> 00:00:59,463
+This is the longest video of the part,
+and it has one thread: a fetch is a
+
+12
+00:00:59,503 --> 00:01:04,304
+conversation, and every special clone
+is one more line in that conversation.
+
+13
+00:01:04,344 --> 00:01:08,507
+A fetch is how a clone downloads
+what the server has and it lacks.
+
+14
+00:01:08,547 --> 00:01:13,666
+Once you see the line, you can reason about
+what the clone holds and what it will
+
+15
+00:01:13,706 --> 00:01:14,366
+cost later.
+
+16
+00:01:14,706 --> 00:01:23,721
+Four replays from labs/ch26:
+fetch-conversation.sh, shallow-limits.sh,
+
+17
+00:01:23,761 --> 00:01:33,423
+partial-clone.sh and clone-shapes.sh.
+The server is a bare copy of orbit, a
+
+18
+00:01:33,463 --> 00:01:44,030
+repository without a working tree, reached
+through a file:// URL, so that Git uses
+
+19
+00:01:44,070 --> 00:01:46,487
+its real transport.
+
+20
+00:01:46,827 --> 00:01:52,666
+Labels: git clone with --depth or --filter,
+git fetch --unshallow and git backfill
+
+21
+00:01:52,706 --> 00:01:56,537
+are 🟢 SAFE. They add objects
+and read from the remote.
+
+22
+00:01:56,577 --> 00:02:01,341
+A shallow or partial clone holds
+fewer objects, not different ones.
+
+23
+00:02:03,181 --> 00:02:04,593
+After this video you can:
+
+24
+00:02:04,933 --> 00:02:10,368
+Describe a fetch as a conversation of
+wants and haves and say where --depth and
+
+25
+00:02:10,408 --> 00:02:11,615
+--filter enter it.
+
+26
+00:02:11,955 --> 00:02:13,658
+Say what a shallow, a blobless, a treeless
+and a single-branch clone each hold.
+
+27
+00:02:13,998 --> 00:02:17,917
+Name the commands that give wrong or
+failing answers in a shallow clone.
+
+28
+00:02:18,257 --> 00:02:22,230
+Explain on-demand fetching in a
+partial clone and what fails offline.
+
+29
+00:02:22,570 --> 00:02:26,305
+Choose a clone shape for a developer,
+for CI and for a one-off build.
+
+30
+00:02:28,145 --> 00:02:32,657
+The fetch conversation. In one sentence:
+a fetch is a short dialogue in which the
+
+31
+00:02:32,697 --> 00:02:37,153
+server advertises what it has, the client
+says what it wants and what it already
+
+32
+00:02:37,193 --> 00:02:40,524
+has, and the server answers with
+one pack of the difference.
+
+33
+00:02:40,564 --> 00:02:45,020
+On screen is today's example: a clone
+before a fetch, and after it, with two new
+
+34
+00:02:45,060 --> 00:02:45,470
+commits.
+
+35
+00:02:45,810 --> 00:02:49,126
+Four steps are enough to reason
+about every clone shape.
+
+36
+00:02:49,466 --> 00:02:54,916
+One, advertise. The server names the protocol
+version and its capabilities, and the
+
+37
+00:02:54,956 --> 00:02:59,678
+client asks for refs, the names such
+as branches and tags, with ls-refs.
+
+38
+00:03:00,018 --> 00:03:05,170
+Two, want. The client names the tips it
+wants, the newest commits of those branches.
+
+39
+00:03:05,210 --> 00:03:10,239
+Three, have. The client names commits it
+has, and the server acknowledges those it
+
+40
+00:03:10,279 --> 00:03:14,071
+knows. This negotiation finds
+the common boundary. Four, pack.
+
+41
+00:03:14,111 --> 00:03:19,202
+The server enumerates the objects on its
+side of the boundary and sends them as one
+
+42
+00:03:19,242 --> 00:03:22,169
+packfile, a single file
+that holds many objects.
+
+43
+00:03:22,509 --> 00:03:26,122
+A clone has nothing to offer,
+so it sends wants and done.
+
+44
+00:03:26,162 --> 00:03:31,313
+Each special clone adds one line. deepen
+1 makes the server stop after one commit
+
+45
+00:03:31,353 --> 00:03:36,440
+per tip. filter blob:none makes the server
+leave out objects the filter rejects.
+
+46
+00:03:36,480 --> 00:03:41,824
+Both are decisions of the server's enumeration.
+The client receives an ordinary pack
+
+47
+00:03:41,864 --> 00:03:42,529
+either way.
+
+48
+00:03:42,869 --> 00:03:47,578
+Shallow clones. In one sentence: a shallow
+clone contains the commits within a given
+
+49
+00:03:47,618 --> 00:03:52,326
+distance of the requested tips and a file
+that tells Git to pretend the history ends
+
+50
+00:03:52,366 --> 00:03:52,665
+there.
+
+51
+00:03:53,005 --> 00:03:56,876
+Now precisely: git clone
+--depth <n> sends deepen <n>.
+
+52
+00:03:56,916 --> 00:04:02,598
+The server sends the commits within that
+distance with their complete trees and
+
+53
+00:04:02,638 --> 00:04:08,609
+blobs. The client writes the IDs of the
+boundary commits into $GIT_DIR/shallow, and
+
+54
+00:04:08,649 --> 00:04:12,303
+Git treats those commits
+as if they had no parents.
+
+55
+00:04:12,343 --> 00:04:17,518
+Two side effects matter. --depth
+implies --single-branch unless you give
+
+56
+00:04:17,558 --> 00:04:22,805
+--no-single-branch. And tags that point
+behind the boundary don't arrive.
+
+57
+00:04:22,845 --> 00:04:28,888
+Related options: --shallow-since and
+--shallow-exclude on clone and fetch, git fetch
+
+58
+00:04:28,928 --> 00:04:31,496
+--deepen, and git fetch --unshallow.
+
+59
+00:04:31,836 --> 00:04:36,619
+Partial clones. In one sentence: a partial
+clone has all of the history's structure
+
+60
+00:04:36,659 --> 00:04:41,385
+and leaves out objects of a chosen kind,
+which a designated remote has promised to
+
+61
+00:04:41,425 --> 00:04:43,361
+deliver when a command needs them.
+
+62
+00:04:43,701 --> 00:04:47,897
+git clone --filter=<spec> sends
+filter <spec>. Three forms.
+
+63
+00:04:47,937 --> 00:04:53,353
+blob:none, called blobless: all commits
+and trees, no blobs except those the
+
+64
+00:04:53,393 --> 00:04:59,311
+checkout needs. A blob is the content of
+one file, and a tree is the listing of one
+
+65
+00:04:59,351 --> 00:05:05,270
+directory. tree:0, called treeless: all
+commits, no trees or blobs except those the
+
+66
+00:05:05,310 --> 00:05:10,223
+checkout needs. And blob:limit=<n>:
+omit blobs of at least that size.
+
+67
+00:05:10,563 --> 00:05:14,453
+Inside .git, the clone records
+remote.<name>.promisor=true and
+
+68
+00:05:14,493 --> 00:05:19,778
+remote.<name>.partialclonefilter. Packs from
+that remote get a .promisor file beside
+
+69
+00:05:19,818 --> 00:05:24,658
+them, and an object that is missing but
+referenced from such a pack counts as
+
+70
+00:05:24,698 --> 00:05:29,856
+promised, not as corruption. When a command
+needs a missing object, Git fetches it
+
+71
+00:05:29,896 --> 00:05:32,708
+from the promisor remote,
+without asking you.
+
+72
+00:05:33,048 --> 00:05:36,440
+Whether a filter is honoured
+is the server's decision.
+
+73
+00:05:36,480 --> 00:05:41,587
+GitHub supports partial clone. A self-hosted
+server needs uploadpack.allowFilter.
+
+74
+00:05:41,927 --> 00:05:49,989
+--single-branch is the fourth shape. It
+narrows the refspec, the rule that says
+
+75
+00:05:50,029 --> 00:05:58,605
+which branches a fetch brings, to one branch.
+It limits history by reachability, not
+
+76
+00:05:58,645 --> 00:05:59,528
+by depth.
+
+77
+00:05:59,868 --> 00:06:04,102
+Failure modes, one per shape. Shallow:
+wrong answers without a warning.
+
+78
+00:06:04,142 --> 00:06:09,098
+Partial: slowness when a command fetches
+objects one request at a time, and failure
+
+79
+00:06:09,138 --> 00:06:13,853
+when the promisor remote can't be reached.
+Single-branch: other branches aren't
+
+80
+00:06:13,893 --> 00:06:17,164
+there, and the refspec stays
+narrow until you widen it.
+
+81
+00:06:17,504 --> 00:06:22,680
+When to use which is the table at the
+end of section 26.13, and we'll end the
+
+82
+00:06:22,720 --> 00:06:24,035
+demonstration on it.
+
+83
+00:06:25,875 --> 00:06:30,084
+Two analogies from the textbook, one
+for each kind of incomplete clone.
+
+84
+00:06:30,424 --> 00:06:33,781
+A shallow clone is the last
+page of a ledger, photocopied.
+
+85
+00:06:33,821 --> 00:06:38,641
+It's enough to see today's balance and
+useless for an audit, and if you forget that
+
+86
+00:06:38,681 --> 00:06:43,384
+it's a photocopy of one page you'll conclude
+that the business started yesterday.
+
+87
+00:06:43,424 --> 00:06:48,010
+The analogy breaks in one direction:
+unlike a photocopy, a shallow clone can be
+
+88
+00:06:48,050 --> 00:06:48,889
+deepened later.
+
+89
+00:06:49,229 --> 00:06:53,015
+A partial clone is a book whose
+footnotes are kept at the publisher.
+
+90
+00:06:53,055 --> 00:06:57,685
+The text is complete, every footnote number
+is there, and when you look one up it's
+
+91
+00:06:57,725 --> 00:07:02,355
+sent to you and stays in your copy. Read
+offline, the footnotes you never looked up
+
+92
+00:07:02,395 --> 00:07:06,744
+are unavailable. The analogy breaks at
+who looks things up: here it is any Git
+
+93
+00:07:06,784 --> 00:07:08,319
+command, without asking you.
+
+94
+00:07:08,659 --> 00:07:13,087
+The difference between the two is the
+difference between not knowing and knowing
+
+95
+00:07:13,127 --> 00:07:16,550
+what you lack. A shallow clone
+has been told the history ends.
+
+96
+00:07:16,590 --> 00:07:20,571
+A partial clone knows exactly which
+objects exist and where to get them.
+
+97
+00:07:22,411 --> 00:07:27,842
+Read the commits column first. Full and
+both partial clones have all 96 commits.
+
+98
+00:07:27,882 --> 00:07:32,628
+Single-branch has 94: the two commits
+of the other branch are missing.
+
+99
+00:07:32,668 --> 00:07:33,722
+Depth 1 has one.
+
+100
+00:07:34,062 --> 00:07:37,504
+Now the blobs column.
+Thirty-three appears three times.
+
+101
+00:07:37,544 --> 00:07:40,795
+Thirty-three is the number
+of files in the checkout.
+
+102
+00:07:40,835 --> 00:07:46,049
+The shallow clone and both partial clones
+hold exactly one snapshot's worth of file
+
+103
+00:07:46,089 --> 00:07:46,555
+content.
+
+104
+00:07:46,895 --> 00:07:50,384
+So what separates --depth
+1 from --filter=blob:none?
+
+105
+00:07:50,424 --> 00:07:56,085
+The commits and the trees. The blobless
+clone has the whole structure of history and
+
+106
+00:07:56,125 --> 00:07:59,750
+can answer history questions.
+The shallow clone can't.
+
+107
+00:07:59,790 --> 00:08:05,316
+And the last column says how each treats
+what it lacks: the shallow clone pretends
+
+108
+00:08:05,356 --> 00:08:08,845
+it doesn't exist. The partial
+clones hold a promise.
+
+109
+00:08:13,185 --> 00:08:18,653
+Step one, advertise. Protocol version 2.
+The line fetch=shallow wait-for-done filter
+
+110
+00:08:18,693 --> 00:08:22,654
+is the server saying which extras
+its fetch command supports.
+
+111
+00:08:22,694 --> 00:08:27,309
+filter appears only because the lab
+server sets uploadpack.allowFilter.
+
+112
+00:08:27,649 --> 00:08:31,457
+A full clone. How many have
+lines does the client send?
+
+113
+00:08:31,497 --> 00:08:33,135
+Say a number. I'll wait.
+
+114
+00:08:37,975 --> 00:08:42,347
+Eight wants, one per ref. Zero
+haves: a clone has nothing to offer.
+
+115
+00:08:42,387 --> 00:08:44,718
+The answer is one section, the pack.
+
+116
+00:08:45,058 --> 00:08:49,728
+Here are the two extra lines. deepen 1,
+and the answer begins with a shallow-info
+
+117
+00:08:49,768 --> 00:08:53,799
+section naming the commit where
+history was cut. And filter blob:none.
+
+118
+00:08:54,139 --> 00:08:57,244
+An ordinary fetch, later.
+One wanted tip. Five haves.
+
+119
+00:08:57,284 --> 00:09:02,050
+The server acknowledges them, says ready,
+and sends a pack of the two new commits
+
+120
+00:09:02,090 --> 00:09:03,652
+with their trees and blobs.
+
+121
+00:09:03,992 --> 00:09:09,229
+On the graph, the two new commits have
+arrived, and origin/main now names 9ea7ebd.
+
+122
+00:09:17,269 --> 00:09:21,446
+The saving is the two commits of the
+other branch with their trees and blobs.
+
+123
+00:09:21,486 --> 00:09:26,046
+It pays off when a repository has long-lived
+branches with large unshared histories,
+
+124
+00:09:26,086 --> 00:09:27,579
+and hardly at all otherwise.
+
+125
+00:09:27,919 --> 00:09:32,658
+One commit, its 20 trees and 33
+blobs: one complete snapshot.
+
+126
+00:09:32,698 --> 00:09:34,226
+And one tag of five.
+
+127
+00:09:37,065 --> 00:09:42,400
+A quick quiz. The commit object of HEAD:
+does it still have a parent header, yes or
+
+128
+00:09:42,440 --> 00:09:43,436
+no? Your answer?
+
+129
+00:09:48,276 --> 00:09:53,936
+It does: it names d259a34. An object
+can't be altered without changing its ID.
+
+130
+00:09:53,976 --> 00:09:59,928
+What changed is Git's reading: the ID in
+.git/shallow makes every walk stop there,
+
+131
+00:09:59,968 --> 00:10:03,436
+%p prints no parent, and
+HEAD~1 doesn't resolve.
+
+132
+00:10:03,776 --> 00:10:09,185
+Try it now, thirty seconds, in a repository
+in the lab shell: run git rev-parse
+
+133
+00:10:09,225 --> 00:10:11,599
+--is-shallow-repository. I'll wait.
+
+134
+00:10:16,439 --> 00:10:21,501
+A repository you created yourself prints
+false. In a CI checkout, that one word is
+
+135
+00:10:21,541 --> 00:10:23,181
+the first thing to look at.
+
+136
+00:10:23,521 --> 00:10:28,787
+Before each answer appears, say what the
+full repository would answer: 94 commits,
+
+137
+00:10:28,827 --> 00:10:33,835
+13 commits on the ranker. What will this
+clone say, and with what exit status?
+
+138
+00:10:33,875 --> 00:10:34,482
+I'll wait.
+
+139
+00:10:39,322 --> 00:10:42,477
+This is the danger, and it's
+the silently of the hook.
+
+140
+00:10:42,517 --> 00:10:47,447
+Every command exits with status 0 and a
+plausible answer: one commit in history, one
+
+141
+00:10:47,487 --> 00:10:52,299
+commit that ever touched the ranker, every
+line of the file blamed on the boundary
+
+142
+00:10:52,339 --> 00:10:56,915
+commit, which the caret marks, and one
+author. Only git describe fails loudly,
+
+143
+00:10:56,955 --> 00:11:01,826
+because the gateway tags lie behind the
+boundary. And git commit-graph write writes
+
+144
+00:11:01,866 --> 00:11:03,424
+nothing, without a message.
+
+145
+00:11:15,763 --> 00:11:21,606
+--deepen=5 moved the boundary five commits
+back. --unshallow removed it and brought
+
+146
+00:11:21,646 --> 00:11:27,560
+the tags: 94 commits, and git describe
+answers. One thing didn't change: the refspec
+
+147
+00:11:27,600 --> 00:11:33,230
+is still the narrow one that --depth
+implied. The clone still follows main only.
+
+148
+00:11:33,570 --> 00:11:39,869
+All 96 commits, all 284 trees, and 33 blobs.
+git cat-file warns that it lists only
+
+149
+00:11:39,909 --> 00:11:40,951
+what is local.
+
+150
+00:11:43,791 --> 00:11:49,270
+Eighty-nine objects that the history refers
+to are absent, and git fsck exits 0.
+
+151
+00:11:49,310 --> 00:11:53,546
+Git doesn't call that damage.
+The packs carry .promisor files.
+
+152
+00:11:53,886 --> 00:11:59,068
+A quick quiz. Three commands: git show of
+an old file version, git log on a path,
+
+153
+00:11:59,108 --> 00:12:03,388
+git diff --stat. Which of them
+contact the server? Say it out loud.
+
+154
+00:12:08,228 --> 00:12:13,278
+git show of an old version triggered a git
+fetch for one object, with negotiation
+
+155
+00:12:13,318 --> 00:12:18,432
+switched off. Commands that read only
+commits and trees, git log on a path and git
+
+156
+00:12:18,472 --> 00:12:22,643
+diff --name-status, fetched nothing:
+the pack count stays at three.
+
+157
+00:12:22,683 --> 00:12:26,665
+git diff --stat needed contents
+and fetched them in one request.
+
+158
+00:12:27,005 --> 00:12:32,287
+This is the cost. git log -p on one file
+made 11 separate requests and git blame
+
+159
+00:12:32,327 --> 00:12:37,609
+made 12, each a round trip to the server,
+and the repository now holds 27 packs.
+
+160
+00:12:37,649 --> 00:12:42,930
+The manual of git backfill describes it
+in the same terms: such commands "become
+
+161
+00:12:42,970 --> 00:12:47,587
+very slow as they download the missing
+blobs in single-blob requests".
+
+162
+00:12:56,427 --> 00:13:00,161
+git backfill is experimental
+and needs Git 2.49 or later.
+
+163
+00:13:00,201 --> 00:13:03,803
+It fetched everything reachable
+from HEAD in one batch.
+
+164
+00:13:03,843 --> 00:13:07,577
+The two objects still missing
+belong to the other branch.
+
+165
+00:13:07,617 --> 00:13:11,285
+Maintenance then merged 28
+packs into one promisor pack.
+
+166
+00:13:11,625 --> 00:13:13,001
+Now take the server away.
+
+167
+00:13:13,341 --> 00:13:18,440
+The server is unreachable. Does git log
+work? Does git switch to a branch whose
+
+168
+00:13:18,480 --> 00:13:23,774
+files were never fetched? And if it fails,
+in what state does it leave the working
+
+169
+00:13:23,814 --> 00:13:26,312
+tree? Make your predictions. I'll wait.
+
+170
+00:13:37,152 --> 00:13:42,088
+Everything local works. Anything that
+needs a missing blob fails with "could not
+
+171
+00:13:42,128 --> 00:13:47,314
+fetch ... from promisor remote". git switch
+failed before touching the working tree:
+
+172
+00:13:47,354 --> 00:13:50,175
+git status afterwards
+still shows main, clean.
+
+173
+00:13:50,515 --> 00:13:56,065
+Treeless: only the 20 trees of the checkout
+are present, so a walk that looks at
+
+174
+00:13:56,105 --> 00:14:01,655
+paths must fetch trees. One git log on a
+path sent 93 requests and left 96 packs
+
+175
+00:14:01,695 --> 00:14:02,144
+behind.
+
+176
+00:14:05,484 --> 00:14:11,014
+Two traps. A local path makes git clone
+copy files, so the filter is ignored.
+
+177
+00:14:11,054 --> 00:14:16,947
+Use a file:// URL. And a server without
+uploadpack.allowFilter ignores the filter.
+
+178
+00:14:16,987 --> 00:14:22,807
+In both cases you get a warning, a complete
+clone, and a repository that is still
+
+179
+00:14:22,847 --> 00:14:24,398
+configured as partial.
+
+180
+00:14:24,738 --> 00:14:29,837
+A developer on a large repository: blobless,
+with sparse-checkout if the tree is
+
+181
+00:14:29,877 --> 00:14:34,076
+wide. A CI job that builds one
+snapshot and is discarded: shallow.
+
+182
+00:14:34,116 --> 00:14:39,408
+A CI job that computes versions, changelogs
+or affected projects: blobless, or full
+
+183
+00:14:39,448 --> 00:14:44,739
+depth. A mirror, a backup, a server: full.
+A machine without a route to the server:
+
+184
+00:14:44,779 --> 00:14:47,501
+full, or a bundle, which
+is the next video.
+
+185
+00:14:49,341 --> 00:14:50,989
+Five mistakes to watch for.
+
+186
+00:14:51,329 --> 00:14:55,473
+Using --depth 1 for a job that
+computes a version or a changelog.
+
+187
+00:14:55,513 --> 00:15:00,494
+Root cause: the job needed history and
+was given a snapshot; walks stop at the
+
+188
+00:15:00,534 --> 00:15:02,683
+boundary and report what they saw.
+
+189
+00:15:03,023 --> 00:15:08,606
+Expecting all branches and tags after
+--depth. Root cause: --depth implies
+
+190
+00:15:08,646 --> 00:15:13,165
+--single-branch, and tags behind
+the boundary do not arrive.
+
+191
+00:15:13,505 --> 00:15:18,893
+Running git log -p or git blame across
+history in a fresh blobless clone and blaming
+
+192
+00:15:18,933 --> 00:15:24,321
+the network. Root cause: these commands
+fetch missing blobs in single-blob requests.
+
+193
+00:15:24,661 --> 00:15:29,592
+Using a treeless clone for development.
+Root cause: any walk that looks at paths
+
+194
+00:15:29,632 --> 00:15:32,016
+must fetch trees, one commit at a time.
+
+195
+00:15:32,356 --> 00:15:38,513
+Testing a filter with a local path. Root
+cause: the local transport copies files and
+
+196
+00:15:38,553 --> 00:15:42,792
+ignores the filter; a file://
+URL uses the real transport.
+
+197
+00:15:44,632 --> 00:15:50,109
+Now, out of the lab. A backend team's release
+job tags builds with git describe and
+
+198
+00:15:50,149 --> 00:15:55,294
+generates a changelog from git log. After
+the switch to --depth 1, the version
+
+199
+00:15:55,334 --> 00:15:59,283
+string is empty on some days
+and the changelog has one line.
+
+200
+00:15:59,323 --> 00:16:04,800
+On laptops the same commands are right. The
+diagnosis is one command: git rev-parse
+
+201
+00:16:04,840 --> 00:16:07,193
+--is-shallow-repository prints true.
+
+202
+00:16:07,533 --> 00:16:12,352
+Their fix follows the table. Jobs that
+build one snapshot and are thrown away stay
+
+203
+00:16:12,392 --> 00:16:17,330
+shallow. The release job, which computes
+versions and changelogs, becomes a blobless
+
+204
+00:16:17,370 --> 00:16:22,248
+clone. That matches GitHub's own guidance,
+which the textbook cites: shallow clones
+
+205
+00:16:22,288 --> 00:16:26,692
+belong in builds that are thrown away,
+because later fetches into a shallow
+
+206
+00:16:26,732 --> 00:16:31,611
+repository are expensive for the server and
+history commands break; blobless clones
+
+207
+00:16:31,651 --> 00:16:36,411
+are recommended for developers, and treeless
+clones only for builds that need the
+
+208
+00:16:36,451 --> 00:16:38,307
+commit history and nothing else.
+
+209
+00:16:38,647 --> 00:16:43,811
+Note also from the chapter that actions/checkout
+produces a shallow, tagless clone
+
+210
+00:16:43,851 --> 00:16:44,509
+by default.
+
+211
+00:16:46,349 --> 00:16:51,958
+Your turn. Do Lab 18.1, "Clone one repository
+three ways and compare what arrived",
+
+212
+00:16:51,998 --> 00:16:57,674
+in lab-manual/m18-transfer-scale.md. Before
+you count, write down for each clone how
+
+213
+00:16:57,714 --> 00:17:02,369
+many commits, trees and blobs you
+expect, as "all" or "one snapshot".
+
+214
+00:17:02,409 --> 00:17:07,881
+Before each history question, predict
+whether the answer will be right, wrong, or
+
+215
+00:17:07,921 --> 00:17:09,106
+fetched on demand.
+
+216
+00:17:09,446 --> 00:17:15,559
+The challenge is Exercise 18.7, "A
+merge base that is not there", in
+
+217
+00:17:15,599 --> 00:17:18,364
+exercises/m16-m18-internals.md.
+
+218
+00:17:20,204 --> 00:17:23,483
+Question 448 of the CTO question bank:
+
+219
+00:17:23,823 --> 00:17:28,940
+A strong answer is organised as the question
+is: holds, answers, costs, for each of
+
+220
+00:17:28,980 --> 00:17:32,233
+the three. It's exact about
+commits, trees and blobs.
+
+221
+00:17:32,273 --> 00:17:36,707
+For "answers correctly" it distinguishes
+a wrong answer from a slow one.
+
+222
+00:17:36,747 --> 00:17:41,677
+For "costs later" it covers the server as
+well as the client, and it ends with a
+
+223
+00:17:41,717 --> 00:17:43,604
+recommendation per kind of job.
+
+224
+00:17:45,444 --> 00:17:50,274
+Let's land this. Every clone shape is one
+more line in the same conversation, and
+
+225
+00:17:50,314 --> 00:17:52,438
+you can now say what each one lacks.
+
+226
+00:17:52,778 --> 00:17:54,438
+You should now be able to say:
+
+227
+00:17:54,778 --> 00:18:01,843
+A fetch is advertise, want, have, pack;
+--depth adds deepen, --filter adds filter.
+
+228
+00:18:02,183 --> 00:18:06,773
+A shallow clone has a boundary recorded
+in .git/shallow and answers history
+
+229
+00:18:06,813 --> 00:18:08,871
+questions wrongly without warning.
+
+230
+00:18:09,211 --> 00:18:14,041
+A blobless clone has every commit and
+tree and fetches blobs on demand from its
+
+231
+00:18:14,081 --> 00:18:17,184
+promisor remote; a treeless
+clone also lacks trees.
+
+232
+00:18:17,524 --> 00:18:22,281
+A partial clone fails only where a missing
+object is needed and the remote cannot be
+
+233
+00:18:22,321 --> 00:18:22,737
+reached.
+
+234
+00:18:23,077 --> 00:18:27,843
+Shallow for a discarded snapshot build;
+blobless for developers and for jobs that
+
+235
+00:18:27,883 --> 00:18:30,928
+read history; full for
+mirrors, backups and servers.
+
+236
+00:18:32,768 --> 00:18:40,699
+Read sections 26.10 to 26.13 of Chapter 26.
+Do Exercise 18.1, "A shallow clone, and
+
+237
+00:18:40,739 --> 00:18:48,669
+what it lacks", Exercise 18.2, "A blobless
+clone fetches on demand", Exercise 18.4,
+
+238
+00:18:48,709 --> 00:18:55,199
+"A clone of depth 2", and Exercise
+18.5, "A single-branch clone", in
+
+239
+00:18:55,239 --> 00:18:58,176
+exercises/m16-m18-internals.md.
+
+240
+00:18:58,516 --> 00:19:03,671
+Today you read the conversation behind every
+clone, and you can answer the CTO: with
+
+241
+00:19:03,711 --> 00:19:08,433
+depth 1, history questions break, silently.
+Do the lab before the next video:
+
+242
+00:19:08,473 --> 00:19:13,442
+bundles, and when each scale feature
+matters. Until then, look at the state first
+
+243
+00:19:13,482 --> 00:19:15,978
+and type second. See you in the next one.

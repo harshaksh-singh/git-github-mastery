@@ -21,7 +21,7 @@ Git's own answer is a linked worktree: one more working tree, a directory of fil
 
 Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You used a worktree twice already without studying it: once to show a detached HEAD on a tag, and once to test a suspect commit and its parent side by side. Today you learn the mechanism. What is created on disk, what is shared, what is private, and the one rule that keeps the whole arrangement safe. The next video is about using it.
 
-**[ANIMATION]** graph: 6f8ad00-168d50a-0a09820-323e8f1 main origin/main; 168d50a v1.3.0; 168d50a-6dd09ed-6c9c90c-110124a feature/rerank; HEAD=main => 110124a-ab93222 feature/rerank; 323e8f1 main origin/main; 168d50a v1.3.0; HEAD=main title=rag-api,_seen_from_the_main_worktree
+**[ANIMATION]** graph: 6f8ad00-168d50a-0a09820-323e8f1 main origin/main; 168d50a v1.3.0; 168d50a-6dd09ed-6c9c90c-110124a feature/rerank; HEAD=main => 110124a-ab93222 feature/rerank; 323e8f1 main origin/main; 168d50a v1.3.0; HEAD=main title=rag-api,_seen_from_the_main_worktree dx=250 at_state_1=35
 
 **[ANIMATION]** step: state-1
 

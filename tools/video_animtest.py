@@ -474,6 +474,10 @@ def main():
     check("the pronunciation table: dot git, dash dash, tilde, two dots, slash, read me, yammel, shah", not wrong, str(wrong)[:300] if wrong else f"{len(cases)} sentences")
     check("an object ID is read as 'commit' and four characters", sp("The base is 6ae3c51.") == "The base is commit 6 a e 3.", sp("The base is 6ae3c51."))
     check("'Root cause:' is set off by pauses", video_build.PAUSE in sp('It failed. Root cause: the tip moved.'))
+    # how symbols are spoken (video/NARRATION_STYLE.md): text only, also run alone by  python3 tools/video_build.py --speech-selftest
+    bad = video_build.speech_selftest()
+    check("symbols are spoken as words, prose is untouched, and the voice cache key follows the spoken text", not bad,
+          " | ".join(bad)[:400] if bad else f"{len(video_build.SPEECH_CASES)} sentences")
     srt = (OUT / "V000.srt").read_text(encoding="utf-8") if (OUT / "V000.srt").exists() else ""
     check("subtitles keep the script's spelling (only the voice is changed)", "git status --short" in srt and "dash dash" not in srt)
 

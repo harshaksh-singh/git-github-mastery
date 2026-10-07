@@ -534,6 +534,8 @@ Git checks that every good commit is an ancestor of the bad one, and says so whe
 
 **[ON SCREEN]** The version note of section 14A.22. On Git 2.55 a finished bisection leaves you on the last tested commit until you run `git bisect reset`. Git 2.56 teaches `git bisect` an option `--reset-when-found`, which runs the reset automatically; that was not run here, and the textbook says its exact usage was not checked against the 2.56 manual. On 2.55, end every `git bisect run` in a script with an explicit `git bisect reset`.
 
+A version note. On Git 2.55 a finished bisection leaves you on the last tested commit until you run `git bisect reset`. Git 2.56 teaches `git bisect` an option, `--reset-when-found`, which runs the reset automatically. That was not run here, and the textbook says its exact usage was not checked against the 2.56 manual. On 2.55, end every `git bisect run` in a script with an explicit `git bisect reset`.
+
 ## COMMON MISTAKES
 
 Five mistakes to watch for.

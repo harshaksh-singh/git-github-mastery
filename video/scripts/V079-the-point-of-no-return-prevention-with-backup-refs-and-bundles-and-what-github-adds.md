@@ -42,7 +42,7 @@ You'll hear layer two, three and four today. Those are the four layers of protec
 
 ## CONCEPT
 
-**[ANIMATION]** graph: id=lost title=A_lost_commit_is_still_an_object ...older-da62b60-dbe6ec8 main; HEAD=main => ...older-da62b60 main; da62b60-dbe6ec8 HEAD@{1}; HEAD=main; reflog:dbe6ec8; cmd:git_reset_--hard_HEAD~1; say:No_branch_reaches_dbe6ec8,_but_a_reflog_entry_names_it => + drop:HEAD@{1}; ghost:dbe6ec8; dangling:dbe6ec8; cmd:!git_reflog_expire_--expire=now_--all; say:Step_one,_destructive:_nothing_names_it,_the_object_still_exists; name:expire => + gone:dbe6ec8; cmd:!git_gc_--prune=now; say:Step_two,_destructive:_the_object_is_deleted; name:prune twig_expire=worried twig_prune=worried
+**[ANIMATION]** graph: id=lost title=A_lost_commit_is_still_an_object ...older-da62b60-dbe6ec8 main; HEAD=main => ...older-da62b60 main; da62b60-dbe6ec8 HEAD@{1}; HEAD=main; reflog:dbe6ec8; cmd:!git_reset_--hard_HEAD~1; say:No_branch_reaches_dbe6ec8,_but_a_reflog_entry_names_it => + drop:HEAD@{1}; ghost:dbe6ec8; dangling:dbe6ec8; cmd:!git_reflog_expire_--expire=now_--all; say:Step_one,_destructive:_nothing_names_it,_the_object_still_exists; name:expire => + gone:dbe6ec8; cmd:!git_gc_--prune=now; say:Step_two,_destructive:_the_object_is_deleted; name:prune twig_expire=worried twig_prune=worried
 
 **[ANIMATION]** step: state-2
 
@@ -66,7 +66,7 @@ And for contrast, plain `git gc` is 🟡 CAUTION: it repacks, expires reflogs by
 
 **Automatic maintenance.** You rarely run `git gc` yourself. Some commands start maintenance when they finish. Since Git 2.54 that automatic run uses the geometric strategy and not the `gc` task. It expires data in the reflog and puts unreachable objects into a cruft pack, a pack for unreachable objects with a file that records each object's age. Cruft packs are the default from Git 2.41. The retention periods you learned hold under either strategy. The manual of `git gc` still describes the older trigger, so read "automatic gc" in older texts as "automatic maintenance".
 
-**[ANIMATION]** graph: da62b60-155d4ba-68e6fff-72b1150 feature/rerank; da62b60 main; HEAD=feature/rerank => da62b60 main; 72b1150 feature/rerank backup/rerank-before-squash; HEAD=feature/rerank => da62b60 main; 155d4ba-120120d feature/rerank; 72b1150 backup/rerank-before-squash; HEAD=feature/rerank title=A_backup_ref_before_a_risky_rebase
+**[ANIMATION]** graph: da62b60-155d4ba-68e6fff-72b1150 feature/rerank; da62b60 main; HEAD=feature/rerank => da62b60 main; 72b1150 feature/rerank backup/rerank-before-squash; HEAD=feature/rerank => da62b60 main; 155d4ba-120120d feature/rerank; 72b1150 backup/rerank-before-squash; HEAD=feature/rerank title=A_backup_ref_before_a_risky_rebase dx=260
 
 **[ANIMATION]** step: state-1
 
@@ -479,6 +479,8 @@ gh api repos/OWNER/REPO/git/refs -f ref=refs/heads/recovered -f sha=<commit ID f
 ```
 
 **[ON SCREEN]** "Unverified." Say it as the textbook does. GitHub documents each instrument, not this combined procedure, and it publishes no retention period for commits that no ref reaches. One group of researchers observed that such commits appear to be kept indefinitely; that is their observation, not a statement by GitHub.
+
+That recipe is unverified. GitHub documents each instrument, not this combined procedure, and it publishes no retention period for commits that no ref reaches. One group of researchers observed that such commits appear to be kept indefinitely. That is their observation, not a statement by GitHub.
 
 GitHub's own advice for a deleted or force-pushed branch is the plain Git route: ask a collaborator who still has the commit to push it to a new branch. The same persistence means that a force push doesn't remove a leaked secret from GitHub. Rotation is the remedy. Prevention on this layer is a ruleset, a named list of rules on GitHub, that blocks force pushes and deletions on shared branches.
 

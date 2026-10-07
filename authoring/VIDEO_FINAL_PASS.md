@@ -1,0 +1,10 @@
+# Final pass before the last uploads (keep until all 201 are on GitHub)
+
+1. When every queue has finished: `video/production/make.sh qc all`; every FAIL is rebuilt (`make.sh voice VNNN`, or storyboard+slides+animate+voice if I2/I3 failed) and checked again until PASS.
+2. Known items: V004 (built by the old builder during the fix), V109 (two bad clips), V110 (old builder failed it), V076 and V083 (scripts changed after their build; the V067–V088 inspector re-voices its range). V001–V003, V072, V082, V085, V107, V108 pass but have the older peak level (−1.1 to −1.3 dBTP): rebuild for consistency (cached clips, cheap).
+3. C3 flags V133 b56 ("n/a") and V157 b34 ("read/write") as raw symbols although the wording is intended: decide and either reword the narration or accept in the QC tool.
+4. Re-upload batches 1 and 2 (V001–V066) with the re-voiced files (`upload.sh` uses --clobber), verify sizes, delete local MP4s.
+5. Every batch: QC PASS + frame inspection report before upload.
+- V134: its slide render timed out once (Chrome, 120 s) during the main render; slides and animation are re-run after the render queue (log out/render-V134.log). Check before voicing.
+- 7 Oct 16:45: `tts()` also rejects takes that are too loud or clipped (39 such clips were in the verified cache), too quiet, or have more than 1.5 s of silence inside (one clip with 11.5 s, V007 beat 62). Videos voiced before 16:45 (V001–V009 in the main run; the inspector's V067–V088) may contain such clips: V001–V009 are voiced again automatically after the main voice run (log `out/voice2.log`); the inspector repairs its range. In the final pass run `make.sh qc all`: every FAIL is rebuilt.
+- 7 Oct 16:40: by my mistake all `.ok` marks were removed once; 2,148 were restored from the clips written after the voice fix that pass the sound checks, about 60 were not and are simply spoken again.

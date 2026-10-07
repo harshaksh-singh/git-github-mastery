@@ -71,6 +71,44 @@ Every fact, command, flag, number, version, caveat and "Unverified" note stays a
 - Keep a command, flag, variable or object ID as inline code when it is on screen at that moment: in the snippet being shown, in the table on screen, or in the first sentence of the paragraph. Elsewhere prefer words, unless the exact spelling is the fact being taught.
 - One idea per sentence. A list of more than three items becomes several sentences.
 
+### How symbols are spoken
+
+Code that stays in the narration is turned into words by `speakable()` in `tools/video_build.py` before it reaches the voice. Slides and subtitles keep the script's spelling: only the spoken text changes. The table is the whole rule set; `python3 tools/video_build.py --speech-selftest` holds one test sentence for each row (pure text, nothing is spoken or rendered). Write a symbol inside a code span: there every mark is code, so `git add .` ends in "dot" and `remote:` ends in "colon".
+
+| In the script | The voice is given |
+|---|---|
+| `main..topic`, `main...topic`, `..`, `...` | main two dots topic, main three dots topic, two dots, three dots |
+| `HEAD~2`, `main~`, `HEAD^`, `HEAD^2`, `HEAD^^` | HEAD tilde two, main tilde, HEAD caret, HEAD caret two, HEAD caret caret |
+| `HEAD@{1}`, `@{upstream}`, `@{-1}` | HEAD at one, at upstream, at minus one |
+| `HEAD^{tree}`, `^{}`, `^@`, `^!`, `^-` | HEAD caret, tree in curly braces; caret, empty curly braces; caret at; caret exclamation mark; caret dash |
+| `--force-with-lease`, `--sort=x`, `--` | dash dash force with lease, dash dash sort equals x, dash dash |
+| `-m`, `-X`, `-fdx`, `-M40%`, `-text`, `-` | dash m, dash capital X, dash f d x, dash capital M 40%, dash text, dash |
+| `*`, `**`, `*.log`, `refs/heads/*`, `core.*` | star, star star, star dot log, refs heads star, core dot star |
+| `\|`, `+`, `#`, `##`, `@@`, `~`, `^`, `\` | pipe, plus, hash, hash hash, at at, tilde, caret, backslash |
+| `=`, `key=value`, `==` | equals sign (alone) or equals, key equals value, equals equals |
+| `<`, `>` | less-than sign, greater-than sign. Never dropped |
+| `a > b`, `2 <= 3` (a comparison, with spaces) | a greater than b, 2 less than or equal to 3 |
+| `<path>` (a placeholder) | path: a placeholder is spoken as its name |
+| `<<<<<<<`, `=======`, `>>>>>>>`, `\|\|\|\|\|\|\|` | seven less-than signs, seven equals signs, seven greater-than signs, seven pipes |
+| `!` in code: `! [rejected]`, `!cancelled()`, `fixup!`, `!!` | exclamation mark; two exclamation marks |
+| `[rejected]`, `[remote "origin"]`, `[0-9]`, `[]` | rejected in square brackets, remote "origin" in square brackets, 0 to 9 in square brackets, empty square brackets |
+| `${{ github.sha }}` | dollar, git hub dot sha in double curly braces |
+| `$GIT_DIR`, `$1`, `$?`, `$@`; `$LAB`, `$HOME` | dollar GIT DIR, dollar 1, dollar question mark, dollar at; lab, home |
+| `%gd`, `%GS`, `%G?`, `%(refname:short)` | percent g d, percent capital G capital S, percent capital G question mark, percent, refname colon short in parentheses |
+| `labs/shell`, `/dev/null`, `data/`, `./run`, `../x`, `~/work` | labs slash shell, slash dev slash null, data slash, dot slash run, dot dot slash x, home slash work |
+| `origin/main`, `refs/heads/main` (a ref) | origin main, refs heads main |
+| `README.md`, `.gitignore`, `user.name`, `git add .` | read me dot M D, dot git ignore, user dot name, git add dot |
+| `HEAD:path`, `:1:path`, `blob:none`, `remote:` | HEAD colon path, colon 1 colon path, blob colon none, remote colon. A time such as 10:27 is left to the voice |
+| `git@github.com:acme/x.git`, `https://`, `@v4` | git at git hub dot com colon acme slash x dot git, H T T P S colon slash slash, at v4 |
+| `GIT_DIR`, `ghp_`, `MERGE_*`, `__git_ps1` | GIT DIR, ghp underscore, MERGE underscore star, underscore underscore git ps1 |
+| `v0.2.0`, `2.55.0`, `Git 2.55`, `2.x`, `v1.1.0-2-g57c8425` | v 0 point 2 point 0, 2 point 55 point 0, Git 2 point 55, 2 point x, v 1 point 1 point 0 dash 2 dash g 5 7 c 8 |
+| `14A.14` (a section), `m06`, `ch14a` (course folders) | 14 A point 14, M 6, C H 14 A |
+| `6ae3c51` (an object ID) | commit 6 a e 3 |
+| `.lower()`, `log2(n)`, `(1/3)`, `W&B`, `#12` | dot lower, log2 (n), (1 of 3), W and B, number 12 |
+| 🟢, 🟡, 🔴 without the word after it | SAFE, CAUTION, DANGEROUS |
+
+Left alone, because the voice reads them as prose: commas, full stops, question marks, colons and semicolons that end a clause, apostrophes, quotation marks, parentheses around words, hyphens inside words (`fast-forward`, `lab-26-7-artifact`), a percent sign or a currency sign next to a number (`61%`, `$5`), times and plain decimals (`10:27`, `Lab 6.1`), the slash of `and/or` and of `3/4`, and a dash that stands between two spaces outside a code span. Any other symbol that no row covers is given its plain name, so nothing reaches the voice raw.
+
 ## 6. Phrases to avoid
 
 "In this video we will", "let's dive in", "without further ado", "ultimate", "insane", "game-changer", "mind-blowing", "simply", "just" as a minimizer, "obviously", "as everyone knows", "easy", "trust me", "smash that like button", "you will never ... again", "master Git in N minutes". No exclamation marks. No jokes about people who make the mistake being described.

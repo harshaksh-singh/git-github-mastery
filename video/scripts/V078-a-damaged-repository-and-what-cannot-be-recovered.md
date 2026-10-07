@@ -72,7 +72,7 @@ The blunt route: `git fetch --refetch`, which in the manual's words "fetches all
 
 **The limit.** `--refetch` can only bring back what the server has. Commits that exist only in your clone and lost an object are repaired from your own working tree, the files you edit, if the file is still there, with `git hash-object -w`. Otherwise they're lost from that point of history on.
 
-**[ANIMATION]** trees: file=any__file state=3,2,1 steps=setup,reset-mixed history=off versions=committed,staged,edited_since title=A_corrupt_index,_rebuilt say_setup=The_index_file_is_corrupt:_move_it_away cmd_setup=off cmd_reset_mixed=git_reset say_reset_mixed=A_new_index_from_HEAD:_your_edits_stay,_"staged"_is_forgotten safe=reset-mixed
+**[ANIMATION]** trees: file=any_file at_reset_mixed=60 state=3,2,1 steps=setup,reset-mixed history=off versions=committed,staged,edited_since title=A_corrupt_index,_rebuilt say_setup=The_index_file_is_corrupt:_move_it_away cmd_setup=off cmd_reset_mixed=git_reset say_reset_mixed=A_new_index_from_HEAD:_your_edits_stay,_"staged"_is_forgotten safe=reset-mixed
 
 **A corrupt index** is the mild case. Every command that looks at the working tree fails with "bad signature" and "index file corrupt". History commands still work. The index is derived data, except for one thing: the record of what you had staged. Move the file away, and `git reset` builds a new index from HEAD without touching the working tree. Your edits are still in the files. What's gone is the distinction between staged and unstaged.
 

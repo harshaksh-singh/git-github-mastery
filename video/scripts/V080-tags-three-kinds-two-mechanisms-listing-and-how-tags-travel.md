@@ -45,7 +45,7 @@ In one sentence: a tag is a ref under `refs/tags/` that isn't expected to move. 
 
 **[ANIMATION]** end
 
-Precisely. A tag object has four header lines and a message.
+Precisely.
 
 **[ON SCREEN]** The field table of section 14B.8.
 
@@ -56,6 +56,8 @@ Precisely. A tag object has four header lines and a message.
 | `tag` | the tag's name, repeated inside the object |
 | `tagger` | name, email, time and offset of the person who created the tag |
 | message | free text; in a signed tag the signature block is appended to it |
+
+A tag object has four header lines and a message: `object`, `type`, `tag` and `tagger`, then the message.
 
 **[ANIMATION]** objects: id=tagobj cards=tag:b696248:object_eb112a5+type_commit+tag_v1.0.0+tagger_Lab_User+inference-gateway_1.0.0,commit:eb112a5:tree_406c029+parent_516c4c3+Add_rate_limits,tree:406c029 refs=tag:v1.0.0>b696248,tag:staging-2026-09-07>eb112a5,main>eb112a5 title=A_ref,_or_a_ref_plus_an_object say_level_1=The_ref_v1.0.0_holds_b696248,_a_tag_object say_level_2=Peeling:_follow_the_object_line_to_the_commit_eb112a5 say_level_3=v1.0.0^{tree}_goes_one_step_further
 

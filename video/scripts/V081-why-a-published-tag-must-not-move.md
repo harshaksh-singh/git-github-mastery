@@ -33,7 +33,7 @@ Then you detect the disagreement, repair it with the lowest-risk action, and loo
 
 ## CONCEPT
 
-**[ANIMATION]** remotes: id=moved title=One_name,_two_commits [the server] ...older-d20ef7a main; d20ef7a atag:v1.2.0#5b231b5; HEAD=none || [Asha's clone] ...older-d20ef7a main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main => [the server] ...older-d20ef7a-2518733 main; 2518733 atag:v1.2.0#5a0dc77; HEAD=none; cmd:git_push_--force_origin_v1.2.0; say:The_fix_lands_on_main,_and_v1.2.0_is_moved_onto_it; name:forced || => || [Asha's clone] ...older-d20ef7a-2518733 main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main; cmd:git_pull; say:Her_pull_moves_main,_and_her_tag_stays; name:kept => [the server] ...older-d20ef7a-2518733 main; d20ef7a atag:v1.2.0#5b231b5; 2518733 atag:v1.2.1; HEAD=none; cmd:git_tag_-a_v1.2.1; say:Put_v1.2.0_back_where_it_was_published,_release_the_fix_as_v1.2.1; name:repair ||
+**[ANIMATION]** remotes: id=moved title=One_name,_two_commits [the server] ...older-d20ef7a main; d20ef7a atag:v1.2.0#5b231b5; HEAD=none || [Asha's clone] ...older-d20ef7a main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main => [the server] ...older-d20ef7a-2518733 main; 2518733 atag:v1.2.0#5a0dc77; HEAD=none; cmd:!git_push_--force_origin_v1.2.0; say:The_fix_lands_on_main,_and_v1.2.0_is_moved_onto_it; name:forced || => || [Asha's clone] ...older-d20ef7a-2518733 main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main; cmd:git_pull; say:Her_pull_moves_main,_and_her_tag_stays; name:kept => [the server] ...older-d20ef7a-2518733 main; d20ef7a atag:v1.2.0#5b231b5; 2518733 atag:v1.2.1; HEAD=none; cmd:git_tag_-a_v1.2.1; say:Put_v1.2.0_back_where_it_was_published,_release_the_fix_as_v1.2.1; name:repair ||
 
 **[ANIMATION]** step: forced
 
@@ -69,7 +69,7 @@ When is a forced tag push appropriate at all? The safety table gives one case: p
 
 ## MENTAL MODEL
 
-**[ANIMATION]** remotes: id=three dx=150 title=Three_repositories,_one_tag_name [the server] ...older-d20ef7a main; d20ef7a atag:v1.2.0#5b231b5; HEAD=none || [Asha's clone] ...older-d20ef7a main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main || [CI clone] HEAD=none => [the server] ...older-d20ef7a-2518733 main; 2518733 atag:v1.2.0#5a0dc77; HEAD=none; say:A_new_certificate_with_the_same_title,_filed_in_one_office; name:forced || || => || [Asha's clone] ...older-d20ef7a-2518733 main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main; say:An_office_that_already_holds_one_keeps_it; name:kept || => || || [CI clone] ...older-d20ef7a-2518733 main origin/main; 2518733 atag:v1.2.0#5a0dc77; HEAD=main; say:An_office_that_opens_after_the_change_gets_the_new_one; name:opened => [the server] ...older-d20ef7a-2518733 main; d20ef7a atag:v1.2.0#5b231b5; 2518733 atag:v1.2.1; HEAD=none; say:v1.2.0_is_back_on_d20ef7a,_and_the_fix_is_v1.2.1; name:repair || || => || || [CI clone] ...older-d20ef7a-2518733 main origin/main; 2518733 atag:v1.2.0#5a0dc77 atag:v1.2.1; HEAD=main; cmd:git_fetch; say:A_plain_fetch_brings_v1.2.1_and_keeps_the_wrong_v1.2.0; name:plain => || || [CI clone] ...older-d20ef7a-2518733 main origin/main; d20ef7a atag:v1.2.0#5b231b5; 2518733 atag:v1.2.1; HEAD=main; cmd:git_fetch_--tags_--force; say:Only_a_forced_tag_fetch_corrects_this_clone; name:corrected
+**[ANIMATION]** remotes: id=three dx=150 title=Three_repositories,_one_tag_name [the server] ...older-d20ef7a main; d20ef7a atag:v1.2.0#5b231b5; HEAD=none || [Asha's clone] ...older-d20ef7a main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main || [CI clone] HEAD=none => [the server] ...older-d20ef7a-2518733 main; 2518733 atag:v1.2.0#5a0dc77; HEAD=none; say:A_new_certificate_with_the_same_title,_filed_in_one_office; name:forced || || => || [Asha's clone] ...older-d20ef7a-2518733 main origin/main; d20ef7a atag:v1.2.0#5b231b5; HEAD=main; say:An_office_that_already_holds_one_keeps_it; name:kept || => || || [CI clone] ...older-d20ef7a-2518733 main origin/main; 2518733 atag:v1.2.0#5a0dc77; HEAD=main; say:An_office_that_opens_after_the_change_gets_the_new_one; name:opened => [the server] ...older-d20ef7a-2518733 main; d20ef7a atag:v1.2.0#5b231b5; 2518733 atag:v1.2.1; HEAD=none; say:v1.2.0_is_back_on_d20ef7a,_and_the_fix_is_v1.2.1; name:repair || || => || || [CI clone] ...older-d20ef7a-2518733 main origin/main; 2518733 atag:v1.2.0#5a0dc77 atag:v1.2.1; HEAD=main; cmd:git_fetch; say:A_plain_fetch_brings_v1.2.1_and_keeps_the_wrong_v1.2.0; name:plain => || || [CI clone] ...older-d20ef7a-2518733 main origin/main; d20ef7a atag:v1.2.0#5b231b5; 2518733 atag:v1.2.1; HEAD=main; cmd:git_fetch_--tags_--force; say:Only_a_forced_tag_fetch_corrects_this_clone; name:corrected at_corrected=40
 
 **[ANIMATION]** step: forced
 
@@ -157,7 +157,7 @@ Count the refusals. `git tag` needed `-f` and printed "(was 5b231b5)". The push 
 
 Now Asha pulls.
 
-**[PAUSE]** Ask the audience: after this pull, what does Asha's clone report for `v1.2.0`? Her `main` will have the fix.
+**[PAUSE]** Predict: after this pull, what does Asha's clone report for `v1.2.0`? Her `main` will have the fix.
 
 ```bash
 git pull
@@ -288,11 +288,9 @@ dfbc830 Add README
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** step: three.repair
-
 The first command runs in Asha's clone and puts `5b231b5` back on the server. The rest run in yours: you take the server's tag by force, and release the fix as `v1.2.1`. If nobody had kept the original ref, the tag object is usually still in someone's object database as a "dangling tag". The lab does that search.
 
-**[ANIMATION]** end
+**[ANIMATION]** step: three.repair
 
 Is everyone right now? Predict what the CI clone shows after an ordinary fetch. Say it out loud. I'll wait.
 
@@ -323,9 +321,11 @@ d20ef7a (tag: v1.2.0) Add rate limits
 ```
 <!-- /snippet -->
 
+After the plain fetch, the CI clone has `v1.2.1` and `v1.2.0` on the same commit. It received the new tag and kept its wrong copy of the old one.
+
 **[ANIMATION]** step: three.corrected
 
-After the plain fetch, the CI clone has `v1.2.1` and `v1.2.0` on the same commit. It received the new tag and kept its wrong copy of the old one. Only `git fetch --tags --force` corrects it. Every clone and cache that fetched in the bad interval needs this by hand.
+Only `git fetch --tags --force` corrects it. Every clone and cache that fetched in the bad interval needs this by hand.
 
 **[ANIMATION]** end
 

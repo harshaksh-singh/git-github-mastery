@@ -43,6 +43,7 @@ Open the Terminal app. Go to the course folder once (drag the folder onto the Te
 | `video/production/make.sh animate V008` | Adds motion to video 8: typing terminals, lists and tables that reveal, animated diagrams, the mascot (section 12) |
 | `video/production/make.sh voice V008` | A finished video narrated by the computer voice "Tara" instead of a recording |
 | `video/production/make.sh demo` | A video of about twelve minutes that plays every animated scene of the library once |
+| `video/production/make.sh qc V008` | Measures a finished video against `QC_CHECKLIST.md` (file, sound, voice clips, subtitles, chapters, thumbnail, build record). Reads only; the report is `out/qc/V008.qc.json`, the table `out/QC-SUMMARY.md` |
 
 Instead of one number you can write several (`V008 V009`), a range (`V010-V020`) or `all`. `all` skips what is already up to date.
 

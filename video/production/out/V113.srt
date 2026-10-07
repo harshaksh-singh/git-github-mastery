@@ -1,0 +1,1087 @@
+1
+00:00:04,500 --> 00:00:09,456
+A monorepo's CI computes which projects a
+pull request affects and runs only their
+
+2
+00:00:09,496 --> 00:00:14,331
+tests. A monorepo is one repository that
+keeps many projects together, CI is its
+
+3
+00:00:14,371 --> 00:00:19,449
+automated checks, and a pull request is a
+proposal to merge one branch into another.
+
+4
+00:00:19,489 --> 00:00:24,567
+One day a pull request that changes the
+ranker reports zero affected projects, skips
+
+5
+00:00:24,607 --> 00:00:27,797
+every test, and merges. main
+is broken an hour later.
+
+6
+00:00:28,137 --> 00:00:31,905
+The script that computes the list
+hadn't changed. The clone had.
+
+7
+00:00:31,945 --> 00:00:36,785
+Someone made the CI clone shallow to save
+time: a clone that holds only the newest
+
+8
+00:00:36,825 --> 00:00:41,724
+commits and pretends history ends there.
+The "what changed" step now fails with "no
+
+9
+00:00:41,764 --> 00:00:46,664
+merge base", and the script swallowed the
+error and concluded that nothing changed.
+
+10
+00:00:47,004 --> 00:00:52,664
+Your CTO asks: what was wrong, and what is
+the smallest clone that gives the right
+
+11
+00:00:52,704 --> 00:00:57,670
+answer? You'll be able to say exactly
+which objects that question needs.
+
+12
+00:00:57,710 --> 00:01:01,910
+Hold on to "the smallest clone".
+You'll build it in the demo.
+
+13
+00:01:03,750 --> 00:01:07,532
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:07,572 --> 00:01:12,418
+This video closes the monorepo topic and
+the scale topic by putting the pieces
+
+15
+00:01:12,458 --> 00:01:12,982
+together.
+
+16
+00:01:13,322 --> 00:01:18,138
+First, the combination: a blobless partial
+clone with a cone-mode sparse checkout,
+
+17
+00:01:18,178 --> 00:01:22,046
+and what the command scalar clone
+sets up around that combination.
+
+18
+00:01:22,086 --> 00:01:26,902
+Then three things a monorepo needs beyond
+a small working tree: ownership by path,
+
+19
+00:01:26,942 --> 00:01:31,462
+CI that computes affected projects, and
+releases of several projects from one
+
+20
+00:01:31,502 --> 00:01:32,114
+repository.
+
+21
+00:01:32,454 --> 00:01:40,169
+Replays from labs/ch24: sparse-partial.sh,
+affected-projects.sh, project-tags.sh,
+
+22
+00:01:40,209 --> 00:01:44,765
+and the replay of Lab 18.4
+up to its checkpoint.
+
+23
+00:01:45,105 --> 00:01:50,246
+There's no scalar clone on screen. The
+lab rules forbid demos that install
+
+24
+00:01:50,286 --> 00:01:54,166
+schedulers or start daemons,
+and scalar clone does both.
+
+25
+00:01:54,206 --> 00:01:59,067
+It is labelled 🟡 CAUTION in the
+chapter's table: it also writes global
+
+26
+00:01:59,107 --> 00:02:04,738
+configuration, installs a scheduler unless
+--no-maintenance, and starts a monitor
+
+27
+00:02:04,778 --> 00:02:09,499
+daemon. The lab builds the same
+clone by hand and registers nothing.
+
+28
+00:02:09,539 --> 00:02:15,310
+The commands we do run, git clone
+--filter=blob:none --sparse, git backfill and git
+
+29
+00:02:15,350 --> 00:02:20,631
+maintenance run --task=prefetch, are 🟢
+SAFE: they add objects and refs under
+
+30
+00:02:20,671 --> 00:02:21,682
+refs/prefetch/.
+
+31
+00:02:23,522 --> 00:02:24,934
+After this video you can:
+
+32
+00:02:25,274 --> 00:02:28,607
+Combine a blobless clone with a
+cone and say what is fetched when.
+
+33
+00:02:28,947 --> 00:02:33,068
+List what scalar clone sets up and which
+parts live outside the repository.
+
+34
+00:02:33,408 --> 00:02:38,311
+Compute affected projects correctly and
+explain why the naive form fails in shallow
+
+35
+00:02:38,351 --> 00:02:39,622
+and partial CI clones.
+
+36
+00:02:39,962 --> 00:02:43,702
+Tag and describe releases of
+several projects in one repository.
+
+37
+00:02:44,042 --> 00:02:48,460
+Say how CODEOWNERS is used at this
+scale, as a pointer to Part 5.
+
+38
+00:02:50,300 --> 00:02:55,048
+In one sentence: a blobless partial clone
+leaves file contents on the server until
+
+39
+00:02:55,088 --> 00:02:59,778
+something needs them, a sparse checkout
+limits that "something" to your cone, and
+
+40
+00:02:59,818 --> 00:03:04,158
+scalar clone sets up both together with
+settings and scheduled maintenance.
+
+41
+00:03:04,498 --> 00:03:10,501
+Why combine them? A sparse checkout alone
+still downloaded every version of every
+
+42
+00:03:10,541 --> 00:03:16,469
+file. git clone --filter=blob:none asks
+the server for commits and trees without
+
+43
+00:03:16,509 --> 00:03:22,661
+blobs, the objects that hold file contents.
+Git fetches a blob when a command first
+
+44
+00:03:22,701 --> 00:03:27,957
+needs it. With --sparse, the checkout
+needs only the blobs of the cone.
+
+45
+00:03:28,297 --> 00:03:33,915
+These are two independent mechanisms in two
+files. The promise of the remote belongs
+
+46
+00:03:33,955 --> 00:03:39,572
+to the repository and is in .git/config.
+The cone belongs to the working tree and is
+
+47
+00:03:39,612 --> 00:03:41,189
+in .git/config.worktree.
+
+48
+00:03:41,529 --> 00:03:46,797
+So what does scalar clone do? scalar ships
+with Git since 2.38 and isn't labelled
+
+49
+00:03:46,837 --> 00:03:52,105
+experimental. Its manual describes scalar
+clone <url> <enlistment> in four parts.
+
+50
+00:03:52,145 --> 00:03:54,922
+The enlistment is the
+directory it creates.
+
+51
+00:03:55,262 --> 00:04:00,727
+One: a partial clone. "By default, only
+commit and tree objects are cloned", with
+
+52
+00:04:00,767 --> 00:04:03,242
+the working tree in <enlistment>/src.
+
+53
+00:04:03,582 --> 00:04:10,626
+Two: a cone-mode sparse checkout with only
+the top-level files, unless --full-clone.
+
+54
+00:04:10,666 --> 00:04:17,205
+Three: configuration "to optimize for
+large repositories", each value with its
+
+55
+00:04:17,245 --> 00:04:22,771
+reason in the manual. Among others:
+commitGraph.changedPaths=true,
+
+56
+00:04:22,811 --> 00:04:29,012
+core.untrackedCache=true, index.version=4,
+fetch.unpackLimit=1, gc.auto=0,
+
+57
+00:04:29,052 --> 00:04:36,012
+status.aheadBehind=false, fetch.showForcedUpdates=false,
+pack.useBitmaps=false, and
+
+58
+00:04:36,052 --> 00:04:43,097
+log.excludeDecoration=refs/prefetch/*. You've
+met the reason for almost every one of
+
+59
+00:04:43,137 --> 00:04:49,928
+those in the last five videos. Four:
+background maintenance, the scheduler of git
+
+60
+00:04:49,968 --> 00:04:53,555
+maintenance start,
+unless --no-maintenance.
+
+61
+00:04:53,895 --> 00:04:59,495
+Which parts live outside the repository?
+The textbook ran a contained test on Git
+
+62
+00:04:59,535 --> 00:05:04,997
+2.55.0 on macOS, in a sandbox with its
+own HOME and the scheduler replaced by a
+
+63
+00:05:05,037 --> 00:05:10,498
+logging stub. It found three things. With
+--no-maintenance the scheduler wasn't
+
+64
+00:05:10,538 --> 00:05:10,985
+called.
+
+65
+00:05:11,325 --> 00:05:16,339
+The enlistment was registered in the
+global configuration as scalar.repo.
+
+66
+00:05:16,379 --> 00:05:21,047
+And the repository received
+core.fsmonitor=true while scalar ran git
+
+67
+00:05:21,087 --> 00:05:26,655
+fsmonitor--daemon start, which left a
+daemon running, a process that stays in the
+
+68
+00:05:26,695 --> 00:05:32,401
+background. --no-maintenance doesn't prevent
+that, and the 2.55 manual page doesn't
+
+69
+00:05:32,441 --> 00:05:34,755
+list the setting. The source does.
+
+70
+00:05:35,095 --> 00:05:40,051
+So scalar clone leaves three things
+behind: a registration in your global
+
+71
+00:05:40,091 --> 00:05:45,526
+configuration, scheduler entries, on macOS
+under ~/Library/LaunchAgents, and one
+
+72
+00:05:45,566 --> 00:05:50,727
+monitor process per enlistment. scalar
+unregister undoes the first two for a
+
+73
+00:05:50,767 --> 00:05:55,244
+repository. scalar delete <enlistment>
+also removes the directory.
+
+74
+00:05:55,284 --> 00:06:00,172
+And git fsmonitor--daemon stop inside
+the working tree stops the daemon.
+
+75
+00:06:00,512 --> 00:06:05,900
+Ownership. This is GitHub, not Git: Git
+stores .github/CODEOWNERS as an ordinary
+
+76
+00:06:05,940 --> 00:06:11,397
+file and gives it no meaning. In a monorepo,
+ownership is a function of the path,
+
+77
+00:06:11,437 --> 00:06:14,857
+and on GitHub that function
+is the CODEOWNERS file.
+
+78
+00:06:14,897 --> 00:06:16,079
+Part 5 teaches it.
+
+79
+00:06:16,419 --> 00:06:20,067
+Four documented facts decide
+whether it works at this scale.
+
+80
+00:06:20,107 --> 00:06:24,800
+The last matching pattern wins. The file
+is read from the pull request's base
+
+81
+00:06:24,840 --> 00:06:29,533
+branch. The file only requests reviews.
+Requiring them is a ruleset or branch
+
+82
+00:06:29,573 --> 00:06:34,635
+protection setting. And a line with invalid
+syntax is skipped, and the pull request
+
+83
+00:06:34,675 --> 00:06:36,295
+doesn't fail because of it.
+
+84
+00:06:36,635 --> 00:06:40,961
+CI. A monorepo's CI must first answer:
+which projects does this change affect?
+
+85
+00:06:41,001 --> 00:06:45,551
+Building everything is correct and
+unaffordable. Building too little lets a broken
+
+86
+00:06:45,591 --> 00:06:50,085
+main through. Git's part of the answer is
+a diff against the merge base, the most
+
+87
+00:06:50,125 --> 00:06:53,108
+recent commit that both
+histories contain: three dots.
+
+88
+00:06:53,448 --> 00:06:57,960
+Three dots mean "from the merge base to
+the second commit": what the branch did
+
+89
+00:06:58,000 --> 00:07:02,741
+since it forked. Two dots compare the tips
+and charge the branch with what main did
+
+90
+00:07:02,781 --> 00:07:07,581
+meanwhile. A build system then extends the
+list by dependency, which Git can't know.
+
+91
+00:07:07,921 --> 00:07:13,087
+Releases. In one sentence: tags name commits
+of the whole repository, so a monorepo
+
+92
+00:07:13,127 --> 00:07:18,293
+that releases projects separately puts the
+project into the tag name and into every
+
+93
+00:07:18,333 --> 00:07:23,186
+question about "the last release". A tag
+is a ref that isn't expected to move.
+
+94
+00:07:23,226 --> 00:07:28,330
+There is one refs/tags/ namespace per
+repository. The usual convention is a prefix
+
+95
+00:07:28,370 --> 00:07:33,160
+per project. The slash is only a character
+to Git, and patterns can match it.
+
+96
+00:07:33,500 --> 00:07:39,352
+And when should you not use a monorepo
+at all? Section 24.13 gives four cases.
+
+97
+00:07:39,392 --> 00:07:45,622
+When projects have different readers, because
+Git can't restrict reading to part of
+
+98
+00:07:45,662 --> 00:07:51,666
+a repository. When lifecycles are unrelated.
+When the content is large binaries,
+
+99
+00:07:51,706 --> 00:07:57,861
+because sparse checkout and partial clone
+postpone a download and don't shrink it.
+
+100
+00:07:57,901 --> 00:08:01,109
+And when there's no one
+to own the tooling.
+
+101
+00:08:02,949 --> 00:08:08,072
+Recall the library with closed stacks from
+two videos ago: the catalogue lists every
+
+102
+00:08:08,112 --> 00:08:11,207
+book and your desk holds
+the shelves you asked for.
+
+103
+00:08:11,247 --> 00:08:15,878
+The analogy broke because in a normal
+clone the stacks are in your building.
+
+104
+00:08:15,918 --> 00:08:21,041
+A partial clone moves the stacks out. Now
+the catalogue, which is commits and trees,
+
+105
+00:08:21,081 --> 00:08:25,405
+is complete and local. The books,
+which are blobs, arrive when you ask.
+
+106
+00:08:25,445 --> 00:08:29,031
+And the desk, the cone, limits
+what you ask for by default.
+
+107
+00:08:29,371 --> 00:08:33,948
+Where does this combined model break?
+Questions about history need the catalogue,
+
+108
+00:08:33,988 --> 00:08:38,622
+not the books. A blobless clone answers
+them. A shallow clone has thrown away most
+
+109
+00:08:38,662 --> 00:08:41,928
+of the catalogue. That's the
+whole difference in the hook.
+
+110
+00:08:43,768 --> 00:08:49,681
+The merge base is d259a34. From there,
+main went on to 100bb99, which changed the
+
+111
+00:08:49,721 --> 00:08:55,854
+schemas, the gateway and the ingest worker.
+The branch made two commits that changed
+
+112
+00:08:55,894 --> 00:08:56,663
+the ranker.
+
+113
+00:08:57,003 --> 00:08:59,963
+With three dots, one project
+is affected: the ranker.
+
+114
+00:09:00,003 --> 00:09:04,605
+With two dots, four are, and three of those
+are main's work charged to the branch.
+
+115
+00:09:04,945 --> 00:09:09,957
+Try it now, thirty seconds, on paper. Copy
+the four commits, and circle the one that
+
+116
+00:09:09,997 --> 00:09:12,423
+three dots can't work without. I'll wait.
+
+117
+00:09:17,263 --> 00:09:21,401
+It's the merge base. Now cover the
+commit d259a34 with your hand.
+
+118
+00:09:21,441 --> 00:09:24,937
+That's a shallow CI clone:
+two tips with no connection.
+
+119
+00:09:24,977 --> 00:09:27,701
+Three dots has no merge
+base to start from.
+
+120
+00:09:28,041 --> 00:09:32,479
+Read the prevention line: jobs that
+build one snapshot may be shallow.
+
+121
+00:09:32,519 --> 00:09:36,061
+Jobs that compare, describe
+or compute versions may not.
+
+122
+00:09:37,901 --> 00:09:42,739
+The layout that scalar clone creates, an
+enlistment directory with the working tree
+
+123
+00:09:42,779 --> 00:09:44,032
+in src, built by hand.
+
+124
+00:09:44,372 --> 00:09:49,362
+Blobless and sparse together. How many
+commits, how many trees, how many blobs?
+
+125
+00:09:49,402 --> 00:09:52,609
+Say it out loud, at least
+for the blobs. I'll wait.
+
+126
+00:09:57,449 --> 00:10:02,309
+Three blobs for three files, and
+all 96 commits and 284 trees.
+
+127
+00:10:02,649 --> 00:10:08,004
+What makes it partial is in
+.git/config. What makes it sparse is in
+
+128
+00:10:08,044 --> 00:10:09,695
+.git/config.worktree.
+
+129
+00:10:10,035 --> 00:10:15,015
+Widening the cone fetched six more blobs,
+the current versions of six files.
+
+130
+00:10:15,055 --> 00:10:19,838
+113 objects that the history refers
+to aren't here, and nothing is wrong.
+
+131
+00:10:19,878 --> 00:10:21,159
+You can breathe out.
+
+132
+00:10:21,499 --> 00:10:26,201
+git backfill --sparse is experimental
+and needs Git 2.49 or later.
+
+133
+00:10:26,241 --> 00:10:32,021
+It downloads the historical versions of
+the files in the cone in batches, so that
+
+134
+00:10:32,061 --> 00:10:36,188
+git log -p and git blame there
+stop fetching blob by blob.
+
+135
+00:10:36,528 --> 00:10:40,034
+A few of the settings that
+scalar would write, set by hand.
+
+136
+00:10:40,074 --> 00:10:41,596
+The manual lists them all.
+
+137
+00:10:41,936 --> 00:10:45,727
+What the scheduler would run every
+hour, run once in the foreground.
+
+138
+00:10:45,767 --> 00:10:50,347
+The prefetch task fetches into refs/prefetch/.
+Your remote-tracking branches don't
+
+139
+00:10:50,387 --> 00:10:54,404
+move, and when you run git fetch
+yourself the objects are already local.
+
+140
+00:10:57,244 --> 00:11:01,076
+The diagram, measured. One project
+with three dots, four with two.
+
+141
+00:11:01,416 --> 00:11:06,552
+One commit per branch. What do the three-dot
+diff and git merge-base print, and with
+
+142
+00:11:06,592 --> 00:11:09,633
+what exit status? Make your
+prediction. I'll wait.
+
+143
+00:11:14,473 --> 00:11:19,525
+"No merge base", status 128. And git
+merge-base prints nothing with status 1.
+
+144
+00:11:19,565 --> 00:11:23,163
+A script that reads only the
+output sees an empty list.
+
+145
+00:11:23,203 --> 00:11:25,146
+That's the zero from the hook.
+
+146
+00:11:25,486 --> 00:11:30,835
+Ninety-six commits, 284 trees and no blob
+are enough for git merge-base and for git
+
+147
+00:11:30,875 --> 00:11:36,289
+diff --name-only, which compares trees. The
+job then checks out the affected project
+
+148
+00:11:36,329 --> 00:11:41,484
+and its dependencies: nine files. That's
+the smallest clone that gives the right
+
+149
+00:11:41,524 --> 00:11:43,691
+answer, the one the CTO asked for.
+
+150
+00:11:47,031 --> 00:11:51,556
+By default actions/checkout fetches one
+commit and no tags, which is the failing
+
+151
+00:11:51,596 --> 00:11:55,664
+state. Its README documents inputs
+for depth, a partial-clone filter and
+
+152
+00:11:55,704 --> 00:11:59,944
+sparse-checkout. That is described from
+the documentation and not run here.
+
+153
+00:11:59,984 --> 00:12:04,337
+And one trap that belongs to GitHub: a
+workflow that a path filter keeps from
+
+154
+00:12:04,377 --> 00:12:07,989
+starting never reports, so a
+required check on it stays pending.
+
+155
+00:12:08,029 --> 00:12:09,188
+Part 6 returns to it.
+
+156
+00:12:12,028 --> 00:12:18,655
+Five tags with project prefixes. schemas/v1.0.0
+points at a documentation commit: a
+
+157
+00:12:18,695 --> 00:12:21,628
+tag names a state of the entire tree.
+
+158
+00:12:21,968 --> 00:12:26,332
+Quick quiz. git describe main with no
+pattern, in a build of the gateway.
+
+159
+00:12:26,372 --> 00:12:30,073
+Which project's tag will it print:
+gateway, ranker or schemas?
+
+160
+00:12:30,113 --> 00:12:31,039
+Say it out loud.
+
+161
+00:12:40,879 --> 00:12:45,777
+The schemas tag: the nearest tag of any
+project. If you said gateway, that's the
+
+162
+00:12:45,817 --> 00:12:49,048
+natural guess, and it's the
+one a build script makes.
+
+163
+00:12:49,088 --> 00:12:53,246
+A build that stamps the gateway with
+it is wrong, and nothing fails.
+
+164
+00:12:53,286 --> 00:12:55,283
+--match restricts the candidates.
+
+165
+00:12:55,623 --> 00:13:00,366
+Of the 42 commits between two gateway
+releases, six concern the gateway.
+
+166
+00:13:00,406 --> 00:13:05,947
+A changelog, and the question "does this
+project need a release", must be limited to
+
+167
+00:13:05,987 --> 00:13:09,401
+the paths the project ships,
+its libraries included.
+
+168
+00:13:09,441 --> 00:13:13,852
+git diff --quiet with paths turns
+the question into an exit status.
+
+169
+00:13:16,692 --> 00:13:21,334
+At the checkpoint, the hand-built clone
+answers git log -p in the cone with zero
+
+170
+00:13:21,374 --> 00:13:24,962
+fetches, and a path-limited log
+uses the changed-path filters.
+
+171
+00:13:25,002 --> 00:13:29,878
+Then the lab cuts the connection to the
+server. What still works and what doesn't is
+
+172
+00:13:29,918 --> 00:13:30,873
+yours to predict.
+
+173
+00:13:32,713 --> 00:13:34,361
+Five mistakes to watch for.
+
+174
+00:13:34,701 --> 00:13:39,563
+Computing affected projects with two dots.
+Root cause: two dots compare the tips and
+
+175
+00:13:39,603 --> 00:13:42,305
+charge the branch with
+what main did meanwhile.
+
+176
+00:13:42,645 --> 00:13:47,517
+Running the three-dot diff in a depth-1
+clone. Root cause: the merge base is a
+
+177
+00:13:47,557 --> 00:13:52,806
+commit in the past, and each --depth 1 fetch
+delivered one commit and recorded it as
+
+178
+00:13:52,846 --> 00:13:53,498
+a boundary.
+
+179
+00:13:53,838 --> 00:13:58,420
+Stamping a build with git describe and
+no pattern. Root cause: there is one tag
+
+180
+00:13:58,460 --> 00:14:02,397
+namespace, and describe answers with
+the nearest tag of any project.
+
+181
+00:14:02,737 --> 00:14:07,062
+Running scalar clone and later finding
+a daemon and scheduler entries.
+
+182
+00:14:07,102 --> 00:14:12,237
+Root cause: it registers the enlistment
+globally, installs maintenance and starts a
+
+183
+00:14:12,277 --> 00:14:17,287
+file-system monitor; remove them with
+scalar unregister and git fsmonitor--daemon
+
+184
+00:14:17,327 --> 00:14:17,599
+stop.
+
+185
+00:14:17,939 --> 00:14:22,962
+Triggering deploys on any tag. Root cause:
+tag-triggered automation must filter on
+
+186
+00:14:23,002 --> 00:14:24,135
+the project prefix.
+
+187
+00:14:25,975 --> 00:14:31,138
+Now, out of the lab. The search platform
+team fixes the incident from the hook in
+
+188
+00:14:31,178 --> 00:14:35,955
+three changes. The affected-projects
+job becomes a blobless clone without a
+
+189
+00:14:35,995 --> 00:14:41,286
+checkout, computes git diff --name-only
+origin/main...HEAD, and then checks out the
+
+190
+00:14:41,326 --> 00:14:46,553
+affected project and its dependencies with
+a cone. The script stops swallowing the
+
+191
+00:14:46,593 --> 00:14:51,820
+exit status of the diff. And snapshot build
+jobs stay shallow, under the rule from
+
+192
+00:14:51,860 --> 00:14:56,830
+the root-cause box: jobs that build one
+snapshot may be shallow, and jobs that
+
+193
+00:14:56,870 --> 00:14:59,784
+compare, describe or
+compute versions may not.
+
+194
+00:15:00,124 --> 00:15:05,178
+For releases, each project has its own
+release script that calls git describe
+
+195
+00:15:05,218 --> 00:15:09,875
+--match '<project>/v*' and limits its
+changelog to the project's paths.
+
+196
+00:15:09,915 --> 00:15:15,365
+And they note one platform fact: on GitHub
+a release is attached to one tag, so the
+
+197
+00:15:15,405 --> 00:15:17,482
+release list mixes all projects.
+
+198
+00:15:19,322 --> 00:15:25,230
+Your turn. Do Lab 18.4, "The clone that
+scalar clone builds, made by hand", in
+
+199
+00:15:25,270 --> 00:15:31,482
+lab-manual/m18-transfer-scale.md. At each
+step, predict the object counts by type.
+
+200
+00:15:31,522 --> 00:15:37,887
+Before the failure scenario, list which of
+your next five commands will work without
+
+201
+00:15:37,927 --> 00:15:42,004
+the server and which will
+fail, and with what message.
+
+202
+00:15:42,344 --> 00:15:48,973
+The challenge is Exercise 18.9, "The
+clone that believes it is up to date", in
+
+203
+00:15:49,013 --> 00:15:51,624
+exercises/m16-m18-internals.md.
+
+204
+00:15:53,464 --> 00:15:56,742
+Question 446 of the CTO question bank:
+
+205
+00:15:59,082 --> 00:16:04,485
+Answer out loud. A strong answer explains
+what the two notations compare, with the
+
+206
+00:16:04,525 --> 00:16:09,663
+merge base named. It then says which
+object the corrected command needs that a
+
+207
+00:16:09,703 --> 00:16:15,240
+shallow clone doesn't have, and what the
+failure looks like, including the dangerous
+
+208
+00:16:15,280 --> 00:16:20,816
+silent variant. It finishes with the clone
+shape that fixes it and why that shape is
+
+209
+00:16:20,856 --> 00:16:23,803
+enough, in terms of
+commits, trees and blobs.
+
+210
+00:16:25,643 --> 00:16:26,570
+Let's land this.
+
+211
+00:16:26,910 --> 00:16:28,570
+You should now be able to say:
+
+212
+00:16:28,910 --> 00:16:33,607
+Blobless plus cone: all commits and trees
+are local, and blobs are fetched only for
+
+213
+00:16:33,647 --> 00:16:34,920
+the cone and on demand.
+
+214
+00:16:35,260 --> 00:16:39,467
+scalar clone is a partial clone, a
+cone, a set of settings and background
+
+215
+00:16:39,507 --> 00:16:44,295
+maintenance; it also registers the enlistment
+globally and starts a monitor daemon.
+
+216
+00:16:44,635 --> 00:16:49,765
+Affected projects come from a three-dot
+diff, which needs the merge base; a blobless
+
+217
+00:16:49,805 --> 00:16:52,165
+clone has it, a shallow clone does not.
+
+218
+00:16:52,505 --> 00:16:57,907
+Tags are repository-wide; prefix them per
+project and use git describe --match.
+
+219
+00:16:58,247 --> 00:17:03,064
+CODEOWNERS is GitHub's path-based ownership;
+it requests reviews and is read from
+
+220
+00:17:03,104 --> 00:17:04,023
+the base branch.
+
+221
+00:17:05,863 --> 00:17:13,956
+Read sections 24.7 to 24.14 of Chapter
+24 and do the Practice section 24.16.
+
+222
+00:17:14,296 --> 00:17:21,410
+That closes scale. You can now say which
+objects a question needs before you choose
+
+223
+00:17:21,450 --> 00:17:28,047
+a clone, and that's real progress.
+Practise it on one repository of your own.
+
+224
+00:17:28,087 --> 00:17:35,201
+Next time: the gate briefing for internals.
+Until then, look at the state first and
+
+225
+00:17:35,241 --> 00:17:38,390
+type second. See you in the next one.

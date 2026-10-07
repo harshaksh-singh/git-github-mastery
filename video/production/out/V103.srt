@@ -1,0 +1,978 @@
+1
+00:00:04,500 --> 00:00:09,380
+A scheduled job on the build server runs
+git fsck, Git's own checker, and mails the
+
+2
+00:00:09,420 --> 00:00:14,300
+output. This morning the mail has one line
+in it: "dangling commit", followed by an
+
+3
+00:00:14,340 --> 00:00:19,101
+ID. A colleague replies to the thread: the
+repository is damaged, somebody should
+
+4
+00:00:19,141 --> 00:00:19,931
+run a cleanup.
+
+5
+00:00:20,271 --> 00:00:25,459
+Your CTO asks you two things. Is data at
+risk? And should somebody run a cleanup?
+
+6
+00:00:25,799 --> 00:00:30,050
+The answer, which you'll be able to defend
+at the end of this video: "dangling"
+
+7
+00:00:30,090 --> 00:00:33,688
+describes where git fsck started
+looking, not what will be deleted.
+
+8
+00:00:33,728 --> 00:00:37,327
+And the cleanup is the risky part.
+Keep that one-line mail in mind.
+
+9
+00:00:37,367 --> 00:00:38,087
+It comes back.
+
+10
+00:00:39,927 --> 00:00:44,281
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:44,321 --> 00:00:48,602
+This video has three parts and
+three replays from labs/ch03.
+
+12
+00:00:48,642 --> 00:00:54,580
+First, reachability: which objects Git can
+arrive at, from where, and what git fsck
+
+13
+00:00:54,620 --> 00:00:55,660
+calls the rest.
+
+14
+00:00:56,000 --> 00:01:04,112
+An object is one stored unit, such
+as a commit or a file's content.
+
+15
+00:01:04,152 --> 00:01:14,089
+Second, integrity: an object ID is a
+checksum, and you'll see where Git recomputes
+
+16
+00:01:14,129 --> 00:01:23,823
+it and where it doesn't. Third, a rule
+that entered git fsck in Git 2.53.0 about
+
+17
+00:01:23,863 --> 00:01:28,081
+reflog entries dated in the future.
+
+18
+00:01:28,421 --> 00:01:35,269
+A reflog is the local journal of the values
+a ref, a name such as a branch, has had.
+
+19
+00:01:35,309 --> 00:01:41,008
+That rule is the reason the lab clock
+of this course sits in the past.
+
+20
+00:01:41,348 --> 00:01:47,267
+git fsck is 🟢 SAFE: it changes nothing. One
+command near the end is 🔴 DANGEROUS, git
+
+21
+00:01:47,307 --> 00:01:52,161
+gc --prune=now, and I'll answer the
+five questions before running it.
+
+22
+00:01:54,001 --> 00:01:55,414
+After this video you can:
+
+23
+00:01:55,754 --> 00:01:57,917
+Define reachable as Git's maintenance
+uses it and list the roots.
+
+24
+00:01:58,257 --> 00:02:02,418
+Tell a dangling object from an
+unreachable one in git fsck output.
+
+25
+00:02:02,758 --> 00:02:05,734
+Decide whether a dangling commit
+line means anything is at risk.
+
+26
+00:02:06,074 --> 00:02:10,608
+Explain why a corrupt object can pass
+local commands and fail a clone.
+
+27
+00:02:10,948 --> 00:02:18,240
+Explain the git fsck rule about future-dated
+reflog entries and the Git version it
+
+28
+00:02:18,280 --> 00:02:19,134
+came with.
+
+29
+00:02:20,974 --> 00:02:26,921
+Why this matters: garbage collection, Git's
+clean-up, deletes objects, and recovery
+
+30
+00:02:26,961 --> 00:02:30,671
+finds them. Both are defined
+by one word, reachable.
+
+31
+00:02:30,711 --> 00:02:36,658
+If you can say precisely what is reachable,
+you know what is safe and for how long.
+
+32
+00:02:36,998 --> 00:02:41,370
+In one sentence: an object is reachable
+if you can arrive at it from a starting
+
+33
+00:02:41,410 --> 00:02:46,006
+point by following the IDs stored inside
+objects. git fsck verifies that everything
+
+34
+00:02:46,046 --> 00:02:49,859
+reachable is present and well-formed,
+and lists what nothing reaches.
+
+35
+00:02:50,199 --> 00:02:54,140
+Now precisely, in the glossary's words: one
+object is reachable from another "if we
+
+36
+00:02:54,180 --> 00:02:58,122
+can reach the one from the other by a chain
+that follows tags to whatever they tag,
+
+37
+00:02:58,162 --> 00:03:01,767
+commits to their parents or trees, and
+trees to the trees or blobs that they
+
+38
+00:03:01,807 --> 00:03:02,199
+contain".
+
+39
+00:03:02,539 --> 00:03:07,154
+Two more terms. An unreachable object
+is one that no starting point reaches.
+
+40
+00:03:07,194 --> 00:03:12,176
+A dangling object is an unreachable object
+that no other unreachable object refers
+
+41
+00:03:12,216 --> 00:03:13,829
+to: the tip of a lost line.
+
+42
+00:03:14,169 --> 00:03:19,348
+The starting points. The manual of git fsck
+lists them as "the index file, all SHA-1
+
+43
+00:03:19,388 --> 00:03:24,194
+references in the refs namespace, and
+all reflogs", and HEAD is added to that.
+
+44
+00:03:24,234 --> 00:03:29,288
+Four roots, then: the index, which is the
+staging area, all refs, all reflogs, and
+
+45
+00:03:29,328 --> 00:03:31,338
+HEAD, the name for where you are.
+
+46
+00:03:31,678 --> 00:03:37,107
+Garbage collection keeps the same set alive,
+and deletes an unreachable object only
+
+47
+00:03:37,147 --> 00:03:41,786
+after a grace period: two weeks by
+default, the setting gc.pruneExpire.
+
+48
+00:03:42,126 --> 00:03:47,624
+Inside .git: git fsck changes nothing.
+git gc removes unreachable objects from
+
+49
+00:03:47,664 --> 00:03:53,303
+objects/ once they're past the grace
+period, and git reflog expire removes lines
+
+50
+00:03:53,343 --> 00:03:54,084
+from logs/.
+
+51
+00:03:54,424 --> 00:04:00,186
+The reflog is the root people forget. Reflog
+entries expire: 90 days by default, and
+
+52
+00:04:00,226 --> 00:04:05,090
+30 days when the commit is no longer
+reachable from the tip of the ref.
+
+53
+00:04:05,130 --> 00:04:10,753
+The lab configuration switches both off.
+And a deleted branch loses its own reflog
+
+54
+00:04:10,793 --> 00:04:16,486
+at once. So after you delete a branch, the
+entry that still protects its commits is
+
+55
+00:04:16,526 --> 00:04:18,006
+in the reflog of HEAD.
+
+56
+00:04:18,346 --> 00:04:22,561
+Now the second topic. An object ID is a
+checksum, and Git doesn't recompute it on
+
+57
+00:04:22,601 --> 00:04:26,606
+every read. A file under objects/ that
+is a well-formed object with the wrong
+
+58
+00:04:26,646 --> 00:04:28,025
+content is served as it is.
+
+59
+00:04:28,365 --> 00:04:33,575
+Two operations do recompute IDs from
+content. git fsck hashes what it finds and
+
+60
+00:04:33,615 --> 00:04:38,825
+compares the result with the name. And a
+transfer through Git's transport sends
+
+61
+00:04:38,865 --> 00:04:44,008
+object content without IDs. The receiving
+side computes every ID itself, so an
+
+62
+00:04:44,048 --> 00:04:48,195
+object can't arrive under a name
+that its content doesn't have.
+
+63
+00:04:48,235 --> 00:04:53,577
+A clone from a local path skips the transport
+and copies or hard-links the files.
+
+64
+00:04:53,617 --> 00:04:56,435
+The option --no-local
+forces the transport.
+
+65
+00:04:56,775 --> 00:04:59,623
+When should you not act? When
+git fsck prints dangling.
+
+66
+00:04:59,663 --> 00:05:03,719
+That line is information. The lines that
+are an incident begin with missing or
+
+67
+00:05:03,759 --> 00:05:04,086
+error:.
+
+68
+00:05:05,926 --> 00:05:09,037
+The textbook's analogy is a
+library with a catalogue.
+
+69
+00:05:09,077 --> 00:05:12,961
+A book is findable if a card names
+it or a findable book cites it.
+
+70
+00:05:13,001 --> 00:05:17,955
+A book that nothing names is still on its
+shelf, complete, until the next clear-out.
+
+71
+00:05:18,295 --> 00:05:23,449
+The analogy breaks at direction. In Git,
+citations only run from newer to older: a
+
+72
+00:05:23,489 --> 00:05:26,300
+commit names its parents,
+never its children.
+
+73
+00:05:26,640 --> 00:05:31,535
+So losing the card for the newest commit
+of a line makes the whole line unfindable
+
+74
+00:05:31,575 --> 00:05:36,589
+at once. On screen, the branch from today's
+demo is deleted, and no branch names its
+
+75
+00:05:36,629 --> 00:05:37,552
+commit any more.
+
+76
+00:05:37,892 --> 00:05:47,627
+Try it now, on paper, thirty seconds. Draw
+three commits in a line, with a branch
+
+77
+00:05:47,667 --> 00:05:57,644
+name on the newest. Erase the name. Which
+one commit must you find to get all three
+
+78
+00:05:57,684 --> 00:05:59,575
+back? I'll wait.
+
+79
+00:06:04,415 --> 00:06:09,441
+The newest. Carry two consequences from the
+model. One: "unfindable" is not "gone".
+
+80
+00:06:09,481 --> 00:06:14,202
+The objects stay on the shelf until a
+clear-out that is weeks away by default.
+
+81
+00:06:14,242 --> 00:06:19,085
+Two: find the newest commit of a lost
+line, the dangling one, and you have found
+
+82
+00:06:19,125 --> 00:06:20,367
+everything behind it.
+
+83
+00:06:22,207 --> 00:06:27,423
+First group: the branch main points at
+commit 0c2cf43, and from there you reach its
+
+84
+00:06:27,463 --> 00:06:32,489
+trees, its blobs and its parents. Tags,
+the index and HEAD are roots of the same
+
+85
+00:06:32,529 --> 00:06:32,806
+kind.
+
+86
+00:06:33,146 --> 00:06:40,829
+Second group: commit 728ac29, its
+tree 73c1ade and its blob 35376fb.
+
+87
+00:06:40,869 --> 00:06:48,893
+No branch names this commit any more.
+One reflog entry, HEAD@{1}, does.
+
+88
+00:06:48,933 --> 00:06:55,480
+These three objects are reachable
+through the reflog only.
+
+89
+00:06:55,520 --> 00:07:03,999
+One reflog entry stands between a deleted
+branch and the garbage collector.
+
+90
+00:07:04,339 --> 00:07:09,458
+Third group: blob e6773e7. Nothing
+points at it. It's dangling.
+
+91
+00:07:13,798 --> 00:07:18,037
+A healthy repository: no output, exit
+status 0. Silence is the good answer.
+
+92
+00:07:18,377 --> 00:07:20,628
+Stage a file, then change your mind.
+
+93
+00:07:20,968 --> 00:07:26,740
+A quick quiz. The file was staged and
+unstaged, and git status shows it as
+
+94
+00:07:26,780 --> 00:07:33,259
+untracked. What does git fsck print now:
+nothing, an error, or a line about a blob?
+
+95
+00:07:33,299 --> 00:07:34,201
+Your answer?
+
+96
+00:07:39,041 --> 00:07:42,940
+A dangling blob. Unstaging removed an
+index entry, not the blob that git add had
+
+97
+00:07:42,980 --> 00:07:46,436
+written. Anyone with access to this
+directory can still read the token.
+
+98
+00:07:46,476 --> 00:07:49,291
+The same fact saves you on the
+day you lose a staged file.
+
+99
+00:07:49,631 --> 00:07:52,519
+Now a commit on a branch, and
+then the branch is deleted.
+
+100
+00:07:52,559 --> 00:07:56,835
+Deleting a branch with -D was introduced
+with its risk label in the branches videos.
+
+101
+00:07:56,875 --> 00:08:00,328
+Here it runs in a sandbox, and the
+point is what remains afterwards.
+
+102
+00:08:00,668 --> 00:08:06,105
+With the reflogs excluded as starting points:
+how many objects are unreachable, and
+
+103
+00:08:06,145 --> 00:08:09,866
+how many of them are dangling?
+Say both numbers out loud.
+
+104
+00:08:09,906 --> 00:08:10,526
+I'll wait.
+
+105
+00:08:15,366 --> 00:08:20,030
+Four are unreachable: the commit, its
+tree, its new blob, and the blob from the
+
+106
+00:08:20,070 --> 00:08:24,615
+previous step. Two are dangling. The
+tree 73c1ade and the blob 35376fb aren't
+
+107
+00:08:24,655 --> 00:08:27,950
+dangling, because the unreachable
+commit refers to them.
+
+108
+00:08:27,990 --> 00:08:31,344
+If you said four and four,
+that's the usual first answer.
+
+109
+00:08:31,684 --> 00:08:35,377
+The reflog of HEAD still records commit
+728ac29. With reflog entries as starting
+
+110
+00:08:35,417 --> 00:08:37,757
+points again, plain git
+fsck reports only the blob.
+
+111
+00:08:37,797 --> 00:08:39,390
+The commit was never at risk today.
+
+112
+00:08:42,230 --> 00:08:46,579
+The script then overwrites that loose object
+file with a valid zlib stream: the same
+
+113
+00:08:46,619 --> 00:08:50,184
+header, the same length, other
+content. This substitution is crafted.
+
+114
+00:08:50,224 --> 00:08:54,311
+Random damage, such as a flipped bit,
+normally breaks the zlib stream and fails
+
+115
+00:08:54,351 --> 00:08:55,618
+loudly on the first read.
+
+116
+00:08:55,958 --> 00:09:00,340
+The content under that ID is now
+wrong. Will git cat-file complain?
+
+117
+00:09:00,380 --> 00:09:03,839
+Will git status? Yes or no
+for each. Say it out loud.
+
+118
+00:09:08,679 --> 00:09:15,038
+Neither does. Ordinary commands read the
+object by its name and don't recompute the
+
+119
+00:09:15,078 --> 00:09:15,423
+hash.
+
+120
+00:09:15,763 --> 00:09:20,331
+git fsck reports hash-path mismatch
+and missing blob, with exit status 3.
+
+121
+00:09:20,371 --> 00:09:24,939
+The clone through the transport fails:
+"did not receive expected object".
+
+122
+00:09:24,979 --> 00:09:29,168
+The clone by file copy succeeds and
+carries the bad object with it.
+
+123
+00:09:29,208 --> 00:09:34,217
+That is the fourth objective: a corrupt
+object passes local commands and fails a
+
+124
+00:09:34,257 --> 00:09:37,563
+clone, because only the
+transfer recomputes every ID.
+
+125
+00:09:37,903 --> 00:09:38,263
+The repair.
+
+126
+00:09:38,208 --> 00:09:43,319
+The working tree still holds the true
+content, and content alone determines the ID.
+
+127
+00:09:43,359 --> 00:09:48,346
+Git won't rewrite an object it believes
+it has, so the bad file is removed first.
+
+128
+00:09:48,386 --> 00:09:52,939
+Deleting a file under objects/ by hand
+is damage in every other situation.
+
+129
+00:09:52,979 --> 00:09:57,035
+Here it's the documented repair,
+for one file that git fsck named.
+
+130
+00:09:57,075 --> 00:09:59,765
+git hash-object -w is
+🟢: it adds one object.
+
+131
+00:10:00,105 --> 00:10:06,675
+True content in, true ID
+out: e2238784, as before.
+
+132
+00:10:09,515 --> 00:10:15,743
+A small script makes two commits and a reset
+that drops the second one, all recorded
+
+133
+00:10:15,783 --> 00:10:20,594
+at a given date. It runs twice:
+once dated 2001, once dated 2099.
+
+134
+00:10:20,934 --> 00:10:24,369
+The two repositories have the same shape.
+Will git fsck say the same thing about
+
+135
+00:10:24,409 --> 00:10:25,498
+both, or not? Your answer?
+
+136
+00:10:30,338 --> 00:10:36,040
+It does not. In the repository dated
+2099, the dropped commit is reported as
+
+137
+00:10:36,080 --> 00:10:38,986
+dangling, although the reflog lists it.
+
+138
+00:10:39,326 --> 00:10:42,526
+The version note: older Git treated
+every reflog entry as a starting point.
+
+139
+00:10:42,866 --> 00:10:47,843
+Since Git 2.53.0, entries dated after the
+moment fsck starts are skipped, and fsck
+
+140
+00:10:47,883 --> 00:10:52,553
+reads the system clock for this. The
+textbook verified it locally: Git 2.55.0
+
+141
+00:10:52,593 --> 00:10:57,325
+applies the rule, Apple's Git 2.50.1 does
+not. So the two Gits on your Mac can
+
+142
+00:10:57,365 --> 00:10:59,160
+disagree about one repository.
+
+143
+00:10:59,500 --> 00:11:03,686
+Last step, the 🔴 command: git gc
+--prune=now. The five answers.
+
+144
+00:11:03,726 --> 00:11:09,120
+What it changes: it packs the repository
+and deletes unreachable objects at once,
+
+145
+00:11:09,160 --> 00:11:14,621
+with no grace period. What it can destroy:
+every unreachable object, which is what
+
+146
+00:11:14,661 --> 00:11:19,854
+recovery depends on. How to preview: git
+fsck --unreachable, and git prune -n.
+
+147
+00:11:20,194 --> 00:11:23,728
+How to recover: from another
+clone or a backup only.
+
+148
+00:11:23,768 --> 00:11:29,295
+When it's appropriate: after a deliberate
+history rewrite, in a repository you've
+
+149
+00:11:29,335 --> 00:11:34,931
+copied first, never as routine maintenance.
+Here it runs on a throwaway sandbox to
+
+150
+00:11:34,971 --> 00:11:40,360
+prove one point. Twig looks worried, and
+with a red label on screen, fairly so.
+
+151
+00:11:40,700 --> 00:11:47,659
+Even with no grace period, the commit stays:
+garbage collection does not apply the
+
+152
+00:11:47,699 --> 00:11:54,829
+clock rule. And fsck still calls it dangling.
+"Dangling" is a statement about fsck's
+
+153
+00:11:54,869 --> 00:11:57,475
+starting points, not a verdict.
+
+154
+00:11:59,315 --> 00:12:00,963
+Five mistakes to watch for.
+
+155
+00:12:01,303 --> 00:12:07,019
+Running a prune because git fsck printed
+dangling. Root cause: dangling means no
+
+156
+00:12:07,059 --> 00:12:13,064
+fsck starting point reaches the object; the
+prune is what destroys recoverable work.
+
+157
+00:12:13,404 --> 00:12:20,121
+Counting on the branch's reflog
+after deleting the branch.
+
+158
+00:12:20,161 --> 00:12:29,442
+Root cause: a deleted branch loses its
+own reflog at once; the reflog of HEAD is
+
+159
+00:12:29,482 --> 00:12:32,704
+what still holds the commit.
+
+160
+00:12:33,044 --> 00:12:36,825
+Assuming that unstaging a
+file removes its content.
+
+161
+00:12:36,865 --> 00:12:42,969
+Root cause: git add wrote a blob, and
+removing the index entry does not remove the
+
+162
+00:12:43,009 --> 00:12:43,493
+object.
+
+163
+00:12:43,833 --> 00:12:52,815
+Trusting a local-path clone as an
+integrity check. Root cause: it copies or
+
+164
+00:12:52,855 --> 00:13:02,197
+hard-links object files and verifies
+nothing; --no-local forces the transport.
+
+165
+00:13:02,537 --> 00:13:08,956
+Two Git versions disagreeing about a
+repository. Root cause: the future-dated reflog
+
+166
+00:13:08,996 --> 00:13:12,108
+rule exists only in Git 2.53.0 and later.
+
+167
+00:13:13,948 --> 00:13:18,424
+Now, out of the lab. An ML platform team
+keeps a mirror of its training-code
+
+168
+00:13:18,464 --> 00:13:21,989
+repository on the build server
+and a backup on another host.
+
+169
+00:13:22,029 --> 00:13:26,980
+They run git fsck on a schedule against
+both, and their runbook has two lines: treat
+
+170
+00:13:27,020 --> 00:13:31,198
+missing and error: lines as an incident,
+and dangling lines as routine.
+
+171
+00:13:31,538 --> 00:13:35,668
+They take the backup through Git's
+transport, git clone --mirror from a URL or
+
+172
+00:13:35,708 --> 00:13:39,998
+--no-local from a path, when they want
+every hash recomputed on the way, and as a
+
+173
+00:13:40,038 --> 00:13:42,564
+file copy when they also
+need reflogs and hooks.
+
+174
+00:13:42,904 --> 00:13:47,841
+And the same reachability rule is the
+precise form of an uncomfortable fact about
+
+175
+00:13:47,881 --> 00:13:53,002
+leaked secrets: removing a commit from every
+branch leaves it in the object database
+
+176
+00:13:53,042 --> 00:13:54,661
+of every clone that has it.
+
+177
+00:13:56,501 --> 00:14:01,007
+Your turn. Do Exercise 16.7,
+"Which git fsck lines matter", in
+
+178
+00:14:01,047 --> 00:14:07,019
+exercises/m16-m18-internals.md. Before you
+look anything up, sort each line of the
+
+179
+00:14:07,059 --> 00:14:13,105
+output into "information" or "incident" and
+write down the check you would make for
+
+180
+00:14:13,145 --> 00:14:13,471
+each.
+
+181
+00:14:13,811 --> 00:14:19,180
+The challenge is Exercise 16.9, "Removed
+from history, and still there", in the same
+
+182
+00:14:19,220 --> 00:14:19,502
+file.
+
+183
+00:14:21,342 --> 00:14:24,095
+Question 78 of the CTO question bank:
+
+184
+00:14:24,435 --> 00:14:28,790
+A strong answer defines dangling against
+the starting points of git fsck before it
+
+185
+00:14:28,830 --> 00:14:33,131
+does anything else. It then names the
+checks in order: what the reflog says, what
+
+186
+00:14:33,171 --> 00:14:37,580
+the clock and the Git version could be doing
+to the result, what garbage collection
+
+187
+00:14:37,620 --> 00:14:41,814
+would and would not delete and when. It
+finishes with the action that keeps the
+
+188
+00:14:41,854 --> 00:14:45,994
+commit, and with what must not be run.
+Avoid answering with a cleanup command.
+
+189
+00:14:47,834 --> 00:14:52,436
+Let's land this. That one-line mail was
+information, and the cleanup was the risk.
+
+190
+00:14:52,776 --> 00:15:11,492
+You should now be able to say:
+
+191
+00:15:11,832 --> 00:15:15,318
+Reachable means arrived at from the
+index, a ref, a reflog entry or HEAD by
+
+192
+00:15:15,358 --> 00:15:16,682
+following IDs inside objects.
+
+193
+00:15:17,022 --> 00:15:21,137
+Unreachable objects are kept for a grace
+period; dangling ones are the tips of
+
+194
+00:15:21,177 --> 00:15:22,096
+unreachable lines.
+
+195
+00:15:22,436 --> 00:15:25,025
+A dangling line is information; missing
+and error: lines are an incident.
+
+196
+00:15:25,365 --> 00:15:30,241
+Ordinary commands do not rehash what they
+read; git fsck and Git's transport do.
+
+197
+00:15:30,581 --> 00:15:35,947
+Since Git 2.53.0, git fsck skips reflog
+entries dated in the future; git gc does not
+
+198
+00:15:35,987 --> 00:15:36,977
+apply that rule.
+
+199
+00:15:38,817 --> 00:15:50,724
+Read section 3.8 of Chapter 3. Do Exercise
+16.5, "What git gc does with unreachable
+
+200
+00:15:50,764 --> 00:15:57,057
+objects", in
+exercises/m16-m18-internals.md.
+
+201
+00:15:57,397 --> 00:16:01,190
+Today you learned to read a dangling line
+calmly. Do the exercise before the next
+
+202
+00:16:01,230 --> 00:16:04,549
+video: what makes a repository slow,
+and the two commands that tidy it.
+
+203
+00:16:04,589 --> 00:16:07,010
+Until then, look at the
+state first and type second.
+
+204
+00:16:07,050 --> 00:16:08,146
+See you in the next one.

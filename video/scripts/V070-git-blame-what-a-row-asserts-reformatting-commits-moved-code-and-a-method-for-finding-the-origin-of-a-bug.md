@@ -65,7 +65,7 @@ A reformatting commit. `-w` ignores whitespace when blame compares a commit with
 
 Moved code. `-M` looks for the origin of a line in other places of the same file. `-C` looks in files modified in the same commit. A second `-C` also looks in every file of the parent, for commits that create the blamed file. A third looks in every file of the parent, in every commit. Each rung costs more. And there are minimums: 20 alphanumeric characters for `-M`, 40 for `-C`.
 
-**[ANIMATION]** graph: ...older-9c8df98-7823232-...newer; 9c8df98-1cbe38a-80ee55f-2f2883f feat/rouge-l; HEAD=none; note:7823232:squash:_one_commit,_one_author; title:A_squash_merge; say:Nothing_links_the_two_in_the_graph id=squash
+**[ANIMATION]** graph: ...older-9c8df98-7823232-...newer; 9c8df98-1cbe38a-80ee55f-2f2883f feat/rouge-l; HEAD=none; note:7823232:squash:_one_commit,_one_author; title:A_squash_merge; say:Nothing_links_the_two_in_the_graph id=squash dx=250
 
 A squash merge. It records the content of a branch as one new commit. Blame on the target branch then knows one commit and one author.
 

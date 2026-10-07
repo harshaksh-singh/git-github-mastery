@@ -1,0 +1,1005 @@
+1
+00:00:04,500 --> 00:00:08,499
+Ravi did exactly what he says.
+He pulled. He edited one file.
+
+2
+00:00:08,539 --> 00:00:12,074
+He ran git commit -a with a
+message about chunk sizes.
+
+3
+00:00:12,114 --> 00:00:17,570
+And his commit contains two changes: his
+one line, and a second line that moves the
+
+4
+00:00:17,610 --> 00:00:20,483
+shared library back to
+last month's version.
+
+5
+00:00:20,823 --> 00:00:24,461
+He never touched the library. He
+never ran a submodule command.
+
+6
+00:00:24,501 --> 00:00:29,131
+The downgrade was sitting in his working
+tree from the moment the pull finished,
+
+7
+00:00:29,171 --> 00:00:33,626
+shown by git status as "modified", and
+git commit -a stages everything that's
+
+8
+00:00:33,666 --> 00:00:34,151
+modified.
+
+9
+00:00:34,491 --> 00:00:39,541
+After a push, that becomes the fourth report
+on the list: the service silently runs
+
+10
+00:00:39,581 --> 00:00:44,386
+the old library again, and CI on main
+goes red over a directory nobody touched.
+
+11
+00:00:44,426 --> 00:00:48,924
+So how did it get there? Today you
+watch it happen, one command at a time.
+
+12
+00:00:50,764 --> 00:00:54,305
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:54,345 --> 00:00:59,236
+In the last video you saw a submodule at
+rest: another repository checked out inside
+
+14
+00:00:59,276 --> 00:01:03,873
+yours, with a gitlink that records one
+commit ID, a URL, and a repository under
+
+15
+00:01:03,913 --> 00:01:08,452
+.git/modules. You learned to compare
+three values: the commit the superproject
+
+16
+00:01:08,492 --> 00:01:13,324
+records, the commit checked out in the
+submodule, and the commits that exist in the
+
+17
+00:01:13,364 --> 00:01:14,381
+shared repository.
+
+18
+00:01:14,721 --> 00:01:19,634
+Today those values move, and they move
+separately. First inside the submodule, where
+
+19
+00:01:19,674 --> 00:01:24,175
+HEAD is detached. Then in the superproject,
+when someone moves the pointer on
+
+20
+00:01:24,215 --> 00:01:28,833
+purpose. Then on a teammate's machine,
+where a pull moves one value and not the
+
+21
+00:01:28,873 --> 00:01:29,187
+other.
+
+22
+00:01:31,027 --> 00:01:35,680
+explain why HEAD is detached in a submodule
+after update, and why that is correct;
+
+23
+00:01:36,020 --> 00:01:38,766
+commit inside a submodule
+without losing the commit;
+
+24
+00:01:39,106 --> 00:01:43,608
+move the recorded pointer and read
+the change in git status and git diff
+
+25
+00:01:43,648 --> 00:01:44,365
+--submodule;
+
+26
+00:01:44,705 --> 00:01:49,582
+explain how a teammate's stale submodule
+leads to a commit that rolls the pointer
+
+27
+00:01:49,622 --> 00:01:49,886
+back;
+
+28
+00:01:50,226 --> 00:01:53,553
+configure a clone so that
+pulls keep submodules in step.
+
+29
+00:01:55,393 --> 00:01:58,799
+The detached HEAD. The
+superproject asked for a commit.
+
+30
+00:01:58,839 --> 00:02:03,436
+It didn't ask for a branch, and it
+can't: the gitlink has no room for one.
+
+31
+00:02:03,476 --> 00:02:08,448
+So git submodule update does what git
+switch --detach <commit> does: HEAD points
+
+32
+00:02:08,488 --> 00:02:13,649
+straight at a commit, not at a branch. A
+local main exists in the submodule because
+
+33
+00:02:13,689 --> 00:02:18,786
+the clone created it. HEAD isn't on it.
+This is the correct state for a dependency
+
+34
+00:02:18,826 --> 00:02:19,851
+you only consume.
+
+35
+00:02:20,191 --> 00:02:23,531
+It becomes a trap the moment
+you edit the library in place.
+
+36
+00:02:23,571 --> 00:02:25,536
+A commit made there's on no branch.
+
+37
+00:02:25,876 --> 00:02:30,486
+The next git submodule update checks out
+the commit the superproject records, and
+
+38
+00:02:30,526 --> 00:02:33,069
+says nothing about the
+commit it left behind.
+
+39
+00:02:33,409 --> 00:02:38,295
+The commit isn't lost: the submodule is a
+repository with its own reflog, its local
+
+40
+00:02:38,335 --> 00:02:42,391
+journal of where HEAD has been. A
+branch can anchor the commit again.
+
+41
+00:02:42,431 --> 00:02:47,258
+The prevention is a habit: before you change
+anything inside a submodule, get on a
+
+42
+00:02:47,298 --> 00:02:48,029
+branch there.
+
+43
+00:02:48,369 --> 00:02:53,732
+For people who develop the library inside
+the superproject, git submodule update
+
+44
+00:02:53,772 --> 00:02:59,269
+--merge or --rebase integrates the recorded
+commit into the submodule's branch and
+
+45
+00:02:59,309 --> 00:03:03,793
+leaves HEAD attached. For consumers,
+the default checkout is right.
+
+46
+00:03:04,133 --> 00:03:08,888
+Moving the pointer. Nothing changes in
+the superproject until someone moves the
+
+47
+00:03:08,928 --> 00:03:13,621
+gitlink. 🟡 CAUTION: git submodule update
+--remote fetches in the submodule and
+
+48
+00:03:13,661 --> 00:03:18,476
+checks out the tip of its remote-tracking
+branch instead of the recorded commit.
+
+49
+00:03:18,516 --> 00:03:22,178
+Which branch? By default the one
+the remote's HEAD points at.
+
+50
+00:03:22,218 --> 00:03:25,576
+git submodule set-branch
+records another in .gitmodules.
+
+51
+00:03:25,616 --> 00:03:29,217
+That setting is read by update
+--remote and by nothing else.
+
+52
+00:03:29,257 --> 00:03:34,193
+It doesn't make the submodule "follow" a
+branch, and the gitlink is still a commit
+
+53
+00:03:34,233 --> 00:03:34,376
+ID.
+
+54
+00:03:34,716 --> 00:03:39,264
+Recording the new pointer is an ordinary
+add and commit in the superproject.
+
+55
+00:03:39,304 --> 00:03:44,033
+Treat it like any dependency bump: one
+purpose, its own pull request, CI on the
+
+56
+00:03:44,073 --> 00:03:44,456
+result.
+
+57
+00:03:44,796 --> 00:03:49,627
+The stale submodule. git pull is fetch
+plus merge. The fetch notices that the new
+
+58
+00:03:49,667 --> 00:03:53,596
+commits change a gitlink and fetches
+inside the submodule as well.
+
+59
+00:03:53,636 --> 00:03:57,384
+That on-demand fetch is the default
+of fetch.recurseSubmodules.
+
+60
+00:03:57,424 --> 00:04:00,872
+The merge updates the gitlink
+in the superproject's index.
+
+61
+00:04:00,912 --> 00:04:04,060
+It doesn't check out the new
+commit in the submodule.
+
+62
+00:04:04,100 --> 00:04:08,750
+Checking out a superproject commit doesn't
+move the HEAD of a submodule unless
+
+63
+00:04:08,790 --> 00:04:09,712
+recursion is on.
+
+64
+00:04:10,052 --> 00:04:14,859
+Why does Git behave this way? The submodule
+may hold work in progress, and Git won't
+
+65
+00:04:14,899 --> 00:04:16,475
+move it without being asked.
+
+66
+00:04:16,815 --> 00:04:22,078
+The cure. git config set submodule.recurse
+true. With it, checkout, fetch, grep,
+
+67
+00:04:22,118 --> 00:04:27,513
+pull, push, read-tree, reset, restore and
+switch behave as if --recurse-submodules
+
+68
+00:04:27,553 --> 00:04:32,948
+were given. git clone is the exception: it
+needs its own --recurse-submodules, and
+
+69
+00:04:32,988 --> 00:04:38,118
+so does git ls-files. The manual's workflow
+section recommends the setting for
+
+70
+00:04:38,158 --> 00:04:43,619
+repositories that are split into submodules.
+It's local or global configuration, so
+
+71
+00:04:43,659 --> 00:04:49,054
+it can't be shipped with the repository:
+every clone, and every CI job, has to set
+
+72
+00:04:49,094 --> 00:04:50,512
+it or pass the option.
+
+73
+00:04:52,352 --> 00:04:56,267
+Return to the recipe that cites
+page 212 of the other book.
+
+74
+00:04:56,307 --> 00:04:58,614
+Three values, written side by side:
+
+75
+00:04:58,954 --> 00:05:03,430
+What your book cites. What page the
+reader's copy of the other book is open at.
+
+76
+00:05:03,470 --> 00:05:05,546
+What the bookshop's edition contains.
+
+77
+00:05:05,886 --> 00:05:10,526
+Every command today changes one of the
+three. git submodule update opens the
+
+78
+00:05:10,566 --> 00:05:15,515
+reader's copy at the page your book cites.
+update --remote opens it at the newest
+
+79
+00:05:15,555 --> 00:05:20,565
+page in the shop. git add on the submodule
+path rewrites the citation in your book
+
+80
+00:05:20,605 --> 00:05:25,677
+to wherever the copy is open. And git pull
+brings a new edition of your book with a
+
+81
+00:05:25,717 --> 00:05:29,433
+new citation, and leaves the
+reader's copy open where it was.
+
+82
+00:05:29,773 --> 00:05:34,526
+The dangerous step follows from that. A
+reader who then runs "write down where my
+
+83
+00:05:34,566 --> 00:05:39,259
+copy is open", which is what git commit
+-a does, puts the old page back into the
+
+84
+00:05:39,299 --> 00:05:42,691
+book. Where the analogy breaks:
+nobody decided to do that.
+
+85
+00:05:42,731 --> 00:05:45,413
+It was the default staging
+of a modified path.
+
+86
+00:05:45,753 --> 00:05:50,952
+Try it now, on paper, thirty seconds. Two
+columns: recorded in the superproject, and
+
+87
+00:05:50,992 --> 00:05:56,067
+checked out in the submodule. For Ravi's
+clone right after his git pull, write new
+
+88
+00:05:56,107 --> 00:05:58,499
+or old in each. That's your prediction.
+
+89
+00:06:04,839 --> 00:06:08,870
+Check your paper against row two:
+recorded is new, checked out is old.
+
+90
+00:06:09,210 --> 00:06:14,347
+Now read row three slowly. After the bad
+commit the two values agree again, and the
+
+91
+00:06:14,387 --> 00:06:17,778
+status prefix is a space. The
+repository looks healthy.
+
+92
+00:06:17,818 --> 00:06:21,770
+The damage is in the history: the
+recorded value went backwards.
+
+93
+00:06:31,110 --> 00:06:36,102
+"HEAD detached at e216665". A local
+main exists, and HEAD isn't on it.
+
+94
+00:06:36,442 --> 00:06:40,955
+The commit 679aa20 is decorated
+with HEAD only. No branch.
+
+95
+00:06:40,995 --> 00:06:47,158
+Meanwhile you have moved the pointer to
+the library's 0.2.0 release and pushed.
+
+96
+00:06:47,198 --> 00:06:51,868
+Ravi pulls and updates. Predict
+what Git says about 679aa20.
+
+97
+00:06:51,908 --> 00:06:53,988
+Say it out loud. I'll wait.
+
+98
+00:06:58,828 --> 00:07:03,241
+Nothing. git submodule update checked
+out the commit that the superproject now
+
+99
+00:07:03,281 --> 00:07:07,922
+records. The rescue is the one from the
+recovery module, run inside the submodule.
+
+100
+00:07:08,262 --> 00:07:12,105
+The submodule's own HEAD reflog
+has the commit at HEAD@{1}.
+
+101
+00:07:12,145 --> 00:07:15,527
+A branch anchors it. And
+the habit that prevents it:
+
+102
+00:07:15,867 --> 00:07:20,855
+On a branch inside the submodule. The
+superproject shows the path as modified, and
+
+103
+00:07:20,895 --> 00:07:25,883
+the status prefix is a plus sign: the
+checked-out commit differs from the recorded
+
+104
+00:07:25,923 --> 00:07:26,129
+one.
+
+105
+00:07:28,969 --> 00:07:31,331
+The prefix went from a space to a plus.
+
+106
+00:07:31,671 --> 00:07:40,140
+The submodule is at b3c86ce, tagged v0.2.0.
+The superproject still records e216665.
+
+107
+00:07:40,480 --> 00:07:45,703
+The words "new commits" in git status mean:
+the submodule's HEAD differs from the
+
+108
+00:07:45,743 --> 00:07:51,032
+gitlink in the index. git diff --submodule=log
+replaces the two IDs by the list of
+
+109
+00:07:51,072 --> 00:07:54,996
+commits between them, which is
+what a reviewer wants to read.
+
+110
+00:07:55,036 --> 00:07:58,570
+git config set diff.submodule
+log makes it the default.
+
+111
+00:07:58,910 --> 00:08:04,114
+One file changed, one insertion, one
+deletion: the one-line "Subproject commit"
+
+112
+00:08:04,154 --> 00:08:05,641
+file. Now Ravi's clone.
+
+113
+00:08:05,981 --> 00:08:09,316
+Ravi runs git pull. He has
+made no change of his own.
+
+114
+00:08:09,356 --> 00:08:13,327
+Predict the first character of
+git submodule status afterwards.
+
+115
+00:08:13,367 --> 00:08:13,964
+I'll wait.
+
+116
+00:08:21,804 --> 00:08:25,132
+Read the output in order. The
+superproject was fetched.
+
+117
+00:08:25,172 --> 00:08:29,848
+"Fetching submodule vendor/textsplit":
+the new library commit was downloaded.
+
+118
+00:08:29,888 --> 00:08:34,747
+Then the superproject was fast-forwarded.
+No line says the submodule was checked
+
+119
+00:08:34,787 --> 00:08:36,156
+out, because it wasn't.
+
+120
+00:08:36,496 --> 00:08:37,957
+A plus, and the word "rewind".
+
+121
+00:08:38,297 --> 00:08:43,716
+The superproject now records b3c86ce.
+The submodule's working tree is still at
+
+122
+00:08:43,756 --> 00:08:49,245
+e216665. Seen from the superproject, the
+working tree differs from the index by
+
+123
+00:08:49,285 --> 00:08:54,495
+going one library commit backwards.
+This is row two of the diagram, and the
+
+124
+00:08:54,535 --> 00:08:55,545
+root-cause box.
+
+125
+00:08:55,885 --> 00:09:01,126
+The correct next command is git submodule
+update. Ravi doesn't look closely.
+
+126
+00:09:01,166 --> 00:09:04,879
+Quick quiz: he edits ingest.py
+and runs git commit -a.
+
+127
+00:09:04,919 --> 00:09:08,841
+Will his commit change one
+file, or two? Say it out loud.
+
+128
+00:09:13,681 --> 00:09:17,243
+Two files changed: ingest.py,
+and vendor/textsplit.
+
+129
+00:09:17,583 --> 00:09:22,603
+His commit b98f829 moved the gitlink back.
+That's the downgrade from the opening.
+
+130
+00:09:22,643 --> 00:09:27,538
+A reviewer sees it only as one changed
+line in a commit that claims to be about
+
+131
+00:09:27,578 --> 00:09:28,288
+chunk sizes.
+
+132
+00:09:28,628 --> 00:09:32,501
+The commit hasn't been pushed,
+so it can be repaired in place.
+
+133
+00:09:32,541 --> 00:09:35,910
+🟡 CAUTION: git commit --amend
+replaces the tip commit.
+
+134
+00:09:35,950 --> 00:09:37,930
+The old one stays in the reflog.
+
+135
+00:09:38,270 --> 00:09:42,938
+origin/main:vendor/textsplit is the gitlink
+as the remote-tracking branch records
+
+136
+00:09:42,978 --> 00:09:47,704
+it. git rev-parse returns the ID even though
+the object isn't in the superproject.
+
+137
+00:09:48,044 --> 00:09:53,302
+After the amend, the commit changes one
+file, and 2b86667 has taken the place of
+
+138
+00:09:53,342 --> 00:09:57,209
+b98f829. The script uses git
+checkout inside the submodule.
+
+139
+00:09:57,249 --> 00:10:01,116
+git switch --detach with the
+same ID is the newer spelling.
+
+140
+00:10:01,156 --> 00:10:06,480
+If the bad commit had already been pushed,
+the fix is a new commit that moves the
+
+141
+00:10:06,520 --> 00:10:07,936
+pointer forward again.
+
+142
+00:10:08,276 --> 00:10:12,669
+And the same staleness appears with every
+command that moves the superproject's
+
+143
+00:10:12,709 --> 00:10:12,949
+HEAD.
+
+144
+00:10:13,289 --> 00:10:16,793
+An older commit of doc-qa records
+the older library commit.
+
+145
+00:10:16,833 --> 00:10:21,417
+Without recursion the submodule stays
+where it was, and the prefix is a plus.
+
+146
+00:10:21,757 --> 00:10:26,534
+With submodule.recurse set, the submodule
+follows the superproject in both
+
+147
+00:10:26,574 --> 00:10:31,806
+directions, and the prefix stays a space.
+🟡 CAUTION: this is a configuration key,
+
+148
+00:10:31,846 --> 00:10:35,647
+written with git config set,
+which needs Git 2.46 or later.
+
+149
+00:10:35,687 --> 00:10:37,469
+It lives in this clone only.
+
+150
+00:10:39,309 --> 00:10:40,957
+Five mistakes to watch for.
+
+151
+00:10:41,297 --> 00:10:46,151
+Committing inside a submodule without a
+branch. Root cause: update leaves HEAD
+
+152
+00:10:46,191 --> 00:10:51,107
+detached at the recorded commit, so the
+new commit is on no branch and the next
+
+153
+00:10:51,147 --> 00:10:53,303
+update moves away from it silently.
+
+154
+00:10:53,643 --> 00:10:56,750
+Expecting git pull to update
+the submodule's files.
+
+155
+00:10:56,790 --> 00:11:01,871
+Root cause: pull fetches in the submodule
+and updates the gitlink in the index, and
+
+156
+00:11:01,911 --> 00:11:05,450
+does not move the submodule's
+HEAD unless recursion is on.
+
+157
+00:11:05,790 --> 00:11:10,900
+git commit -a with a stale submodule.
+Root cause: the stale checkout shows as a
+
+158
+00:11:10,940 --> 00:11:16,181
+modified path, and -a stages every modified
+path, which records the old commit ID
+
+159
+00:11:16,221 --> 00:11:16,572
+again.
+
+160
+00:11:16,912 --> 00:11:21,320
+Thinking submodule.<name>.branch
+makes the submodule follow a branch.
+
+161
+00:11:21,360 --> 00:11:26,671
+Root cause: the setting is read by update
+--remote and by nothing else; the gitlink
+
+162
+00:11:26,711 --> 00:11:28,025
+is still a commit ID.
+
+163
+00:11:28,365 --> 00:11:32,143
+Setting submodule.recurse once
+and assuming the team has it.
+
+164
+00:11:32,183 --> 00:11:37,106
+Root cause: it is local or global
+configuration and cannot be shipped with the
+
+165
+00:11:37,146 --> 00:11:40,606
+repository; every clone and
+every CI job has to set it.
+
+166
+00:11:42,446 --> 00:11:47,600
+Now, out of the lab. A retrieval team
+vendors a chunking library as a submodule in
+
+167
+00:11:47,640 --> 00:11:52,288
+three services. Twice in one month a
+feature pull request has contained an
+
+168
+00:11:52,328 --> 00:11:57,229
+unexplained second changed line,
+vendor/textsplit, and once it was merged: the
+
+169
+00:11:57,269 --> 00:12:00,650
+service ran the previous
+library version for two days.
+
+170
+00:12:00,990 --> 00:12:06,129
+The team changes three things. The setup
+script that every engineer and every CI job
+
+171
+00:12:06,169 --> 00:12:11,186
+runs sets submodule.recurse to true and
+diff.submodule to log, so a pull keeps the
+
+172
+00:12:11,226 --> 00:12:14,947
+submodule in step and a pointer
+change is readable in review.
+
+173
+00:12:14,987 --> 00:12:19,387
+Pointer changes get their own pull
+request, titled as a dependency bump.
+
+174
+00:12:19,427 --> 00:12:24,135
+And reviewers are told what to look for:
+a "Subproject commit" line in a pull
+
+175
+00:12:24,175 --> 00:12:29,006
+request that isn't about the dependency,
+and the word "rewind" in the submodule
+
+176
+00:12:29,046 --> 00:12:29,314
+diff.
+
+177
+00:12:31,154 --> 00:12:37,202
+Your turn. Do Lab 15.1, "A submodule
+that breaks for a teammate", in
+
+178
+00:12:37,242 --> 00:12:40,962
+lab-manual/m15-submodules-subtrees-lfs.md.
+
+179
+00:12:41,302 --> 00:12:45,807
+Keep a three-column table as you go:
+recorded, checked out, status prefix.
+
+180
+00:12:45,847 --> 00:12:49,922
+Before every command, predict which
+of the three values it changes.
+
+181
+00:12:49,962 --> 00:12:54,160
+Before the teammate's commit, predict
+how many files it will contain.
+
+182
+00:12:54,500 --> 00:13:01,202
+The challenge is Exercise 15.4, Level 2,
+command prediction, "The first character of
+
+183
+00:13:01,242 --> 00:13:06,820
+git submodule status", in
+exercises/m11-m15-investigation-recovery.md.
+
+184
+00:13:10,660 --> 00:13:15,620
+Answer out loud. A strong answer derives
+the detached HEAD from what the gitlink can
+
+185
+00:13:15,660 --> 00:13:19,905
+and can't hold, and says why that
+state is the right one for a consumer.
+
+186
+00:13:19,945 --> 00:13:24,904
+It then describes the exact sequence in
+which work appears to vanish, and is precise
+
+187
+00:13:24,944 --> 00:13:28,356
+that the commit is unreachable
+from branches, not deleted.
+
+188
+00:13:28,696 --> 00:13:32,920
+It names where the evidence is, which
+belongs to the submodule and not to the
+
+189
+00:13:32,960 --> 00:13:36,409
+superproject, and gives the
+two-step rescue: find, then anchor.
+
+190
+00:13:36,449 --> 00:13:40,895
+It ends with the habit that prevents it,
+and with the update modes for people who
+
+191
+00:13:40,935 --> 00:13:42,888
+really develop the library in place.
+
+192
+00:13:44,728 --> 00:13:49,542
+Let's land this. One last look inside the
+submodule: a commit left behind, and the
+
+193
+00:13:49,582 --> 00:13:50,903
+branch that anchors it.
+
+194
+00:13:51,243 --> 00:14:09,960
+You should now be able to say:
+
+195
+00:14:10,300 --> 00:14:14,980
+After update, a submodule's HEAD is
+detached because the superproject records a
+
+196
+00:14:15,020 --> 00:14:16,235
+commit, not a branch.
+
+197
+00:14:16,575 --> 00:14:21,444
+Before editing inside a submodule I switch
+to a branch there; a commit left behind
+
+198
+00:14:21,484 --> 00:14:23,420
+is in the submodule's own reflog.
+
+199
+00:14:23,760 --> 00:14:28,006
+Moving the pointer is update --remote,
+then git add and a commit in the
+
+200
+00:14:28,046 --> 00:14:30,661
+superproject, reviewed
+as a dependency bump.
+
+201
+00:14:31,001 --> 00:14:36,116
+A pull updates the recorded ID and leaves
+the submodule's checkout stale; git commit
+
+202
+00:14:36,156 --> 00:14:38,571
+-a in that state rolls the pointer back.
+
+203
+00:14:38,911 --> 00:14:45,468
+submodule.recurse=true keeps the checkout
+in step, and every clone and CI job has to
+
+204
+00:14:45,508 --> 00:14:46,018
+set it.
+
+205
+00:14:47,858 --> 00:14:52,713
+Read sections 23.5 to 23.7 of Chapter 23.
+
+206
+00:14:53,053 --> 00:14:58,082
+Today you watched a silent rollback form,
+one value at a time, and you repaired it.
+
+207
+00:14:58,122 --> 00:15:02,296
+Practise with the lab and your
+three-column table before you move on.
+
+208
+00:15:02,336 --> 00:15:05,533
+Next time: submodule failures,
+from push order to CI.
+
+209
+00:15:05,573 --> 00:15:08,709
+Until then, look at the
+state first and type second.
+
+210
+00:15:08,749 --> 00:15:10,174
+See you in the next one.

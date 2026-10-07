@@ -21,13 +21,13 @@ Rerere replays a recorded resolution whenever the same conflict text appears, a 
 
 Welcome back to Git and GitHub Deep Mastery. Pull up a chair. You know conflicts from the merge module, and you know that in a rebase the sides are swapped. Today you add a feature that sits beside conflict resolution and is entirely local: it lives in `.git/rr-cache`, which is never pushed, fetched or cloned.
 
-**[ANIMATION]** graph: d9ec3c5-96196ef main; d9ec3c5-c9ca15a-62e40dc feature/rerank; HEAD=feature/rerank => 62e40dc-047a898 feature/rerank; 96196ef-047a898; 96196ef main; HEAD=feature/rerank => 62e40dc feature/rerank; 96196ef main; HEAD=feature/rerank; reflog:047a898 => 96196ef-cad2174 main; 62e40dc-cad2174; 62e40dc feature/rerank; HEAD=main; reflog:047a898 title=A_test_merge,_thrown_away,_then_the_real_merge
+**[ANIMATION]** graph: d9ec3c5-96196ef main; d9ec3c5-c9ca15a-62e40dc-047a898 feature/rerank; 96196ef-047a898; HEAD=feature/rerank => 62e40dc feature/rerank; 96196ef main; HEAD=feature/rerank; reflog:047a898 => 96196ef-cad2174 main; 62e40dc-cad2174; 62e40dc feature/rerank; HEAD=main; reflog:047a898 title=A_test_merge,_thrown_away,_then_the_real_merge dx=260 at_state_1=25 at_state_2=10 at_state_3=50
 
-**[ANIMATION]** step: state-2
+**[ANIMATION]** step: state-1
 
 You'll watch one resolution being recorded in a throw-away test merge.
 
-**[ANIMATION]** step: state-4
+**[ANIMATION]** step: state-3
 
 Then the test merge is thrown away, and the record is replayed in the real merge, in the opposite direction. And replayed again in a rebase.
 
@@ -594,7 +594,11 @@ no-rerere-gc: MERGE_RR.lock failures in 20 rebases: 0
 
 **[ON SCREEN]** "This snippet is volatile." The first number depends on timing: it varied between 1 and 10 in the runs made for the chapter, and it will differ on your machine. The second was always 0.
 
+This snippet is volatile. The first number depends on timing: it varied between 1 and 10 in the runs made for the chapter, and it will differ on your machine. The second was always 0.
+
 **[ON SCREEN]** "Unverified." Say the caveat as the textbook does. The race was observed on Git 2.55.0 on macOS only. No manual or release note read for this course describes it, and Git 2.56 was not tested. The mechanism is inferred from the maintenance configuration and the measurement you have on screen.
+
+This is unverified. The race was observed on Git 2.55.0 on macOS only. No manual or release note read for this course describes it, and Git 2.56 was not tested. The mechanism is inferred from the maintenance configuration and that measurement.
 
 ## COMMON MISTAKES
 

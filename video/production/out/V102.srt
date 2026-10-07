@@ -1,0 +1,997 @@
+1
+00:00:04,500 --> 00:00:09,031
+Your team keeps four hundred versions of
+a 16 MB evaluation set in one repository.
+
+2
+00:00:09,071 --> 00:00:13,602
+The CTO does the arithmetic on a whiteboard,
+four hundred times sixteen megabytes,
+
+3
+00:00:13,642 --> 00:00:15,275
+and asks: are we storing 6 GB?
+
+4
+00:00:15,615 --> 00:00:20,219
+You've told people for the whole course
+that Git stores snapshots, not diffs.
+
+5
+00:00:20,259 --> 00:00:24,924
+A snapshot is the complete state of every
+tracked file at one moment, so every
+
+6
+00:00:24,964 --> 00:00:29,809
+commit is a complete tree. If that's true,
+the whiteboard arithmetic looks right.
+
+7
+00:00:29,849 --> 00:00:34,695
+And yet the repository on disk is small.
+Both statements have to be true at once,
+
+8
+00:00:34,735 --> 00:00:38,012
+and this video shows how.
+Keep that whiteboard in mind.
+
+9
+00:00:38,052 --> 00:00:38,856
+It comes back.
+
+10
+00:00:40,696 --> 00:00:44,463
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:44,503 --> 00:00:49,018
+In the last two videos every object,
+every unit of Git's storage, was one
+
+12
+00:00:49,058 --> 00:00:52,513
+zlib-compressed file under
+.git/objects, a loose object.
+
+13
+00:00:52,553 --> 00:00:57,380
+That's how every object begins. It isn't
+how most objects are stored for long.
+
+14
+00:00:57,420 --> 00:01:02,372
+Maintenance, Git's housekeeping, consolidates
+loose objects into a packfile, and
+
+15
+00:01:02,412 --> 00:01:07,364
+inside a packfile an object may be stored
+as a difference from a similar object.
+
+16
+00:01:07,704 --> 00:01:14,070
+The plan: the concept, then
+four replays from labs/ch03.
+
+17
+00:01:14,110 --> 00:01:20,362
+packfiles.sh and pack-anatomy.sh
+are the demonstration.
+
+18
+00:01:20,402 --> 00:01:29,513
+lab-16-1-loose-to-pack.sh and
+lab-16-2-delta-chain.sh are the two labs you'll do
+
+19
+00:01:29,553 --> 00:01:34,089
+yourself, shown up to their checkpoints.
+
+20
+00:01:34,429 --> 00:01:39,591
+One command in this video changes state:
+git gc, labelled 🟡 CAUTION in the chapter's
+
+21
+00:01:39,631 --> 00:01:42,315
+command safety table.
+Everything else reads.
+
+22
+00:01:44,155 --> 00:01:45,567
+After this video you can:
+
+23
+00:01:45,907 --> 00:01:50,923
+Explain how a pack stores many objects
+and why that does not change the snapshot
+
+24
+00:01:50,963 --> 00:01:51,302
+model.
+
+25
+00:01:51,642 --> 00:01:54,480
+Watch loose objects become
+a pack and count both.
+
+26
+00:01:54,820 --> 00:01:59,332
+Read a git verify-pack -v listing and
+follow a delta chain to its base.
+
+27
+00:01:59,672 --> 00:02:04,177
+Say which version of the lab's file is
+stored whole and how the listing shows it.
+
+28
+00:02:04,517 --> 00:02:06,219
+Say what the pack index is for.
+
+29
+00:02:08,059 --> 00:02:12,879
+Why packs exist: a loose object is one file
+per object, and each version of a file
+
+30
+00:02:12,919 --> 00:02:17,740
+is a complete compressed copy. That's fine
+for today's work and wasteful for years
+
+31
+00:02:17,780 --> 00:02:18,392
+of history.
+
+32
+00:02:18,732 --> 00:02:23,977
+In one sentence: a packfile stores many
+objects in one file and may store an object
+
+33
+00:02:24,017 --> 00:02:29,198
+as a difference from a similar object, an
+index file beside it finds any object by
+
+34
+00:02:29,238 --> 00:02:32,191
+ID, and none of this
+changes what an object is.
+
+35
+00:02:32,531 --> 00:02:37,088
+Now precisely. Every command that
+records content writes loose objects.
+
+36
+00:02:37,128 --> 00:02:42,074
+Maintenance later consolidates them into
+a pack. In this video that's git gc.
+
+37
+00:02:42,114 --> 00:02:46,995
+The automatic strategies are the subject
+of Chapter 26 and of a later video.
+
+38
+00:02:47,035 --> 00:02:48,419
+A pack is three files.
+
+39
+00:02:48,759 --> 00:02:54,298
+The .pack file has a 12-byte header: the
+signature PACK, a version, and the number
+
+40
+00:02:54,338 --> 00:02:55,046
+of objects.
+
+41
+00:02:55,386 --> 00:02:59,610
+Then one entry per object, and at the
+end a checksum of everything before it.
+
+42
+00:02:59,650 --> 00:03:02,490
+An entry is a type, a size
+and zlib-compressed data.
+
+43
+00:03:02,530 --> 00:03:07,086
+In the deltified form, the data is a list
+of copy and insert instructions against a
+
+44
+00:03:07,126 --> 00:03:11,460
+base object, and the base is named by its
+offset in the same pack or by its ID.
+
+45
+00:03:11,800 --> 00:03:17,840
+The .idx file is the pack index. It holds
+the object IDs in sorted order, a CRC32
+
+46
+00:03:17,880 --> 00:03:23,994
+and the pack offset for each, and a 256-entry
+table saying where the IDs with each
+
+47
+00:03:24,034 --> 00:03:30,074
+first byte begin. A CRC32 is a small
+checksum, and an offset is a position in the
+
+48
+00:03:30,114 --> 00:03:35,853
+file. Finding an object is a binary
+search in the index, then one read at the
+
+49
+00:03:35,893 --> 00:03:36,378
+offset.
+
+50
+00:03:36,718 --> 00:03:39,743
+The .rev file is the reverse map, from
+position in the pack to position in the
+
+51
+00:03:39,783 --> 00:03:39,979
+index.
+
+52
+00:03:40,319 --> 00:03:50,315
+The manual states the principle in one line.
+I'll read it as written: "Conceptually
+
+53
+00:03:50,355 --> 00:03:57,691
+there are only four object types:
+commit, tree, tag and blob.
+
+54
+00:03:57,731 --> 00:04:07,244
+However to save space, an object could
+be stored as a 'delta' of another 'base'
+
+55
+00:04:07,284 --> 00:04:08,211
+object."
+
+56
+00:04:08,551 --> 00:04:13,015
+How does Git choose what to compare?
+It's a heuristic, a rule of thumb.
+
+57
+00:04:13,055 --> 00:04:18,154
+git pack-objects sorts the objects by type,
+size and name, compares each with its
+
+58
+00:04:18,194 --> 00:04:23,482
+neighbours inside a window of ten, the
+--window option, and doesn't let a chain grow
+
+59
+00:04:23,522 --> 00:04:25,893
+deeper than fifty, the --depth option.
+
+60
+00:04:26,233 --> 00:04:30,811
+Three statements keep the two levels apart,
+and you should be able to say all three.
+
+61
+00:04:31,151 --> 00:04:34,599
+First: a delta is between two
+objects chosen for similarity.
+
+62
+00:04:34,639 --> 00:04:39,250
+It's not "the change a commit made". The
+base can be another version of the same
+
+63
+00:04:39,290 --> 00:04:40,704
+file or a different file.
+
+64
+00:04:41,044 --> 00:04:46,298
+Second: IDs are computed from full content.
+So packing changes no ID, no tree and no
+
+65
+00:04:46,338 --> 00:04:51,340
+commit, and git cat-file, git show and
+git checkout always deliver full content.
+
+66
+00:04:51,380 --> 00:04:56,508
+On screen is the oldest version from today's
+demo, loose and then packed, with the
+
+67
+00:04:56,548 --> 00:04:57,012
+same ID.
+
+68
+00:04:57,352 --> 00:05:01,829
+Third: the choice of base, in the words
+of the git cat-file manual, "is arbitrary
+
+69
+00:05:01,869 --> 00:05:06,512
+and is subject to change during a repack".
+So a size on disk says little about which
+
+70
+00:05:06,552 --> 00:05:07,572
+commit "caused" it.
+
+71
+00:05:07,912 --> 00:05:12,465
+Inside .git, when git gc runs,
+loose object files disappear.
+
+72
+00:05:12,505 --> 00:05:17,058
+One .pack, one .idx and one .rev
+appear under objects/pack/.
+
+73
+00:05:17,098 --> 00:05:22,033
+And git gc also writes packed-refs
+and objects/info/commit-graph.
+
+74
+00:05:22,073 --> 00:05:25,096
+Both of those come back in later videos.
+
+75
+00:05:25,436 --> 00:05:30,769
+When does this not help? Three limits.
+Deltas need similar bytes, so compressed
+
+76
+00:05:30,809 --> 00:05:36,414
+archives and model weights gain nothing.
+Files above core.bigFileThreshold, 512 MiB
+
+77
+00:05:36,454 --> 00:05:40,019
+by default, are stored without
+any attempt at deltas.
+
+78
+00:05:40,059 --> 00:05:45,665
+And a clone transfers a pack, so everything
+reachable is downloaded however well it
+
+79
+00:05:45,705 --> 00:05:46,413
+compresses.
+
+80
+00:05:48,253 --> 00:05:53,685
+The textbook's analogy is a warehouse. It
+keeps one complete copy of a long contract
+
+81
+00:05:53,725 --> 00:05:59,026
+and, for each earlier draft, a sheet of
+instructions: copy bytes 0 to 2,400 of the
+
+82
+00:05:59,066 --> 00:06:02,674
+complete copy, insert these
+twelve bytes, copy the rest.
+
+83
+00:06:02,714 --> 00:06:07,625
+You ask for a draft by its number and
+you always receive the complete draft.
+
+84
+00:06:07,965 --> 00:06:12,671
+Where the analogy breaks is in who decides.
+The warehouse chooses which version is
+
+85
+00:06:12,711 --> 00:06:16,259
+kept whole. It may choose
+differently at every reorganisation.
+
+86
+00:06:16,299 --> 00:06:18,921
+And nothing you see
+through Git depends on it.
+
+87
+00:06:19,261 --> 00:06:24,400
+So keep two levels in your head. The object
+level is what Git promises: four types,
+
+88
+00:06:24,440 --> 00:06:29,517
+full content, an ID computed from that
+content. The storage level is how the bytes
+
+89
+00:06:29,557 --> 00:06:34,072
+happen to sit on disk today. The
+snapshot model lives at the first level.
+
+90
+00:06:34,112 --> 00:06:35,695
+Deltas live at the second.
+
+91
+00:06:36,035 --> 00:06:40,562
+Before I draw it, a quick quiz. Six
+versions of one file sit in a pack.
+
+92
+00:06:40,602 --> 00:06:44,872
+Which one is kept whole: the oldest
+or the newest? Say it out loud.
+
+93
+00:06:51,212 --> 00:06:58,742
+Six versions of one file. In the first row,
+a4e58256, stored whole: 1,372 bytes in
+
+94
+00:06:58,782 --> 00:07:06,405
+the pack for an object of 16,789 bytes.
+Then 739088cd at depth 1, stored as a delta
+
+95
+00:07:06,445 --> 00:07:13,975
+against it, 35 bytes in the pack. Then
+depth 2, 3, 4, and in the last row 0928d48c
+
+96
+00:07:14,015 --> 00:07:14,990
+at depth 5.
+
+97
+00:07:15,330 --> 00:07:19,833
+Now read the first row again. The newest
+version is the whole one, and the old
+
+98
+00:07:19,873 --> 00:07:24,142
+versions are the deltas. If you said
+the oldest, that's the natural guess.
+
+99
+00:07:24,182 --> 00:07:27,578
+It's the opposite of what "Git
+stores diffs" would suggest.
+
+100
+00:07:27,618 --> 00:07:31,713
+To read the oldest version, Git reads
+the base and applies five deltas.
+
+101
+00:07:32,053 --> 00:07:36,110
+Read the last column. As an object,
+every version has its full size.
+
+102
+00:07:36,150 --> 00:07:40,869
+That column is what Git shows you. The
+column before it is what the disk holds.
+
+103
+00:07:45,209 --> 00:07:48,945
+An evaluation harness whose
+test-case file has 200 lines.
+
+104
+00:07:48,985 --> 00:07:51,594
+Five commits each change one line of it.
+
+105
+00:07:51,934 --> 00:07:55,909
+Six commits. Predict the count
+line: how many loose objects?
+
+106
+00:07:55,949 --> 00:07:59,523
+Count the commits, the trees
+and the blobs. I'll wait.
+
+107
+00:08:04,363 --> 00:08:08,932
+Twenty-five: six commits, twelve trees,
+six versions of cases.jsonl and one small
+
+108
+00:08:08,972 --> 00:08:13,713
+configuration file. count and size describe
+loose objects, and size is disk space in
+
+109
+00:08:13,753 --> 00:08:18,323
+KiB. Every one of the 25 files occupies a
+4 KiB block, however small its content.
+
+110
+00:08:18,663 --> 00:08:24,429
+Now the 🟡 command. git gc packs objects and
+refs, expires reflog entries by age, and
+
+111
+00:08:24,469 --> 00:08:30,236
+deletes unreachable objects older than two
+weeks. A reflog is the local journal of a
+
+112
+00:08:30,276 --> 00:08:35,351
+ref's past values, and an unreachable
+object is one that no name leads to.
+
+113
+00:08:35,391 --> 00:08:39,291
+Preview what it could remove
+with git fsck --unreachable.
+
+114
+00:08:39,331 --> 00:08:42,471
+Within the retention
+periods, nothing is lost.
+
+115
+00:08:42,811 --> 00:08:45,885
+What will count say now,
+and what will in-pack say?
+
+116
+00:08:45,925 --> 00:08:46,861
+Say it out loud.
+
+117
+00:08:51,701 --> 00:08:55,872
+The same 25 objects, now in-pack,
+in 4 KiB where there were 100.
+
+118
+00:08:55,912 --> 00:08:59,951
+Look at the three pack files,
+and at commit-graph beside them.
+
+119
+00:09:00,291 --> 00:09:01,443
+Look inside the pack.
+
+120
+00:09:01,783 --> 00:09:07,078
+The columns are object ID, type,
+size, size in the pack, and offset.
+
+121
+00:09:07,118 --> 00:09:13,276
+A deltified object has two more: the depth
+of its chain and the ID of its base.
+
+122
+00:09:13,316 --> 00:09:19,631
+Find the line for a4e58256: 16,789 bytes
+that compress to 1,372, and five columns
+
+123
+00:09:19,671 --> 00:09:21,749
+only, so it's stored whole.
+
+124
+00:09:22,089 --> 00:09:26,080
+Find 739088cd: seven columns,
+depth 1, base a4e58256.
+
+125
+00:09:26,120 --> 00:09:30,186
+For a delta, the size column
+is the size of the delta.
+
+126
+00:09:30,226 --> 00:09:36,421
+The summary at the bottom counts chain
+lengths: twenty objects that aren't deltas,
+
+127
+00:09:36,461 --> 00:09:39,615
+and one object at each length from 1 to 5.
+
+128
+00:09:39,955 --> 00:09:42,548
+Is the oldest version
+still a complete file?
+
+129
+00:09:42,888 --> 00:09:47,042
+A quick quiz. The oldest version
+costs 35 bytes in the pack.
+
+130
+00:09:47,082 --> 00:09:52,356
+How many lines will git cat-file -p
+print for it: one, a handful, or all two
+
+131
+00:09:52,396 --> 00:09:53,824
+hundred? Your answer?
+
+132
+00:09:58,664 --> 00:10:04,144
+Two hundred lines. %(objectsize) is the
+size of the object, %(objectsize:disk) is
+
+133
+00:10:04,184 --> 00:10:09,732
+what its entry costs in the pack, and
+%(deltabase) is all zeros for an object that
+
+134
+00:10:09,772 --> 00:10:10,823
+is stored whole.
+
+135
+00:10:11,163 --> 00:10:14,179
+One more step. Commit
+again after the git gc.
+
+136
+00:10:14,519 --> 00:10:19,783
+Four loose objects next to the pack of 25.
+New commits are loose objects again until
+
+137
+00:10:19,823 --> 00:10:24,330
+the next consolidation. That's the
+normal state of a working repository.
+
+138
+00:10:24,670 --> 00:10:35,972
+Try it now, thirty seconds, in a repository
+in the lab shell: run git count-objects
+
+139
+00:10:36,012 --> 00:10:41,575
+-v and read count and in-pack. I'll wait.
+
+140
+00:10:46,415 --> 00:10:49,208
+count is the loose objects,
+in-pack the packed ones.
+
+141
+00:10:49,248 --> 00:10:51,878
+Now you can tell which
+storage you're looking at.
+
+142
+00:10:54,718 --> 00:10:59,717
+Twelve bytes: the signature PACK, version
+2, and hexadecimal 19, which is 25
+
+143
+00:10:59,757 --> 00:11:05,219
+objects. The last twenty bytes are the
+checksum of everything before them, and that
+
+144
+00:11:05,259 --> 00:11:07,738
+checksum is also the name of the file.
+
+145
+00:11:08,078 --> 00:11:10,740
+The index starts with a
+magic number and version 2.
+
+146
+00:11:10,780 --> 00:11:14,183
+Its entries are offset, object ID
+and CRC32, sorted by object ID.
+
+147
+00:11:14,223 --> 00:11:18,473
+Sorted by offset, the same entries give
+the order of objects inside the pack: 12,
+
+148
+00:11:18,513 --> 00:11:22,817
+175, 341, the offsets the pack listing
+showed. The index ends with the checksum of
+
+149
+00:11:22,857 --> 00:11:27,213
+its pack, then a checksum of itself. The
+index is derived data: Lab 16.1 deletes it
+
+150
+00:11:27,253 --> 00:11:28,803
+and rebuilds an identical one.
+
+151
+00:11:29,143 --> 00:11:33,878
+A vocabulary file of 400 tokens
+and three commits. After git gc:
+
+152
+00:11:42,018 --> 00:11:47,089
+Look at the three blob lines. One is
+whole, and two have seven columns, both at
+
+153
+00:11:47,129 --> 00:11:52,134
+depth 1 against the same base. The first
+version of the file still has its 400
+
+154
+00:11:52,174 --> 00:11:52,523
+lines.
+
+155
+00:12:00,863 --> 00:12:04,885
+The chain, shallowest first, and then
+the mapping from object to commit.
+
+156
+00:12:04,925 --> 00:12:07,876
+The object stored whole
+belongs to the newest commit.
+
+157
+00:12:07,916 --> 00:12:11,939
+Stop here: the rest of each lab, the
+failure and the recovery, is yours.
+
+158
+00:12:13,779 --> 00:12:15,427
+Five mistakes to watch for.
+
+159
+00:12:15,767 --> 00:12:19,111
+Saying "Git stores diffs"
+after seeing a pack listing.
+
+160
+00:12:19,151 --> 00:12:24,187
+Root cause: a delta is a storage detail
+between two similar objects; every object
+
+161
+00:12:24,227 --> 00:12:28,448
+still has its full content and its
+ID is computed from that content.
+
+162
+00:12:28,788 --> 00:12:32,852
+Blaming a commit for disk usage
+because its blob is the large entry.
+
+163
+00:12:32,892 --> 00:12:37,258
+Root cause: the choice of base is
+arbitrary and can change at any repack.
+
+164
+00:12:37,598 --> 00:12:41,482
+Expecting packs to shrink model
+weights or compressed archives.
+
+165
+00:12:41,522 --> 00:12:43,848
+Root cause: deltas need similar bytes.
+
+166
+00:12:44,188 --> 00:12:50,151
+Treating a missing .idx as lost data. Root
+cause: the pack index is derived from the
+
+167
+00:12:50,191 --> 00:12:53,296
+pack and can be rebuilt
+with git index-pack.
+
+168
+00:12:53,636 --> 00:12:58,597
+Being surprised by loose objects after
+git gc. Root cause: every command that
+
+169
+00:12:58,637 --> 00:13:02,884
+records content writes loose objects;
+consolidation happens later.
+
+170
+00:13:04,724 --> 00:13:09,172
+Now, out of the lab, and back to the
+whiteboard. Four hundred versions of a
+
+171
+00:13:09,212 --> 00:13:13,959
+line-oriented 16 MB evaluation set that
+differ in a few records cost roughly one
+
+172
+00:13:13,999 --> 00:13:18,866
+compressed copy plus four hundred small
+deltas. That's the answer for a JSON Lines
+
+173
+00:13:18,906 --> 00:13:23,773
+file of test cases. The whiteboard was
+right about the objects and wrong about the
+
+174
+00:13:23,813 --> 00:13:24,072
+disk.
+
+175
+00:13:24,412 --> 00:13:28,998
+The same team also commits a model
+checkpoint. For that file the answer is
+
+176
+00:13:29,038 --> 00:13:34,250
+different, and you can say why before you
+measure. Deltas need similar bytes, so the
+
+177
+00:13:34,290 --> 00:13:38,939
+checkpoint gains nothing. Above
+core.bigFileThreshold Git doesn't even try.
+
+178
+00:13:38,979 --> 00:13:44,065
+And whatever the compression, a clone
+transfers a pack, so everything reachable is
+
+179
+00:13:44,105 --> 00:13:47,379
+downloaded. That's where
+Chapter 22, Git LFS, begins.
+
+180
+00:13:49,219 --> 00:13:55,480
+Your turn. Do Lab 16.1, "Watch
+loose objects become a pack", in
+
+181
+00:13:55,520 --> 00:14:03,881
+lab-manual/m16-object-database.md. Before
+you run git gc, predict count, in-pack and
+
+182
+00:14:03,921 --> 00:14:12,082
+packs. Before the fourth commit, predict
+what git count-objects -v will show after
+
+183
+00:14:12,122 --> 00:14:17,283
+it. Then do the lab's failure
+scenario and recovery.
+
+184
+00:14:17,623 --> 00:14:22,685
+The challenge is Lab 16.2, "Read a pack
+listing and find a delta chain", in the same
+
+185
+00:14:22,725 --> 00:14:27,424
+file. Before you read the listing, predict
+which version of the file is stored
+
+186
+00:14:27,464 --> 00:14:27,788
+whole.
+
+187
+00:14:29,628 --> 00:14:32,453
+Question 77 of the CTO question bank:
+
+188
+00:14:32,793 --> 00:14:37,280
+A strong answer separates the object
+level from the storage level in its first
+
+189
+00:14:37,320 --> 00:14:42,098
+sentence. It says what determines whether
+deltas are possible at all, describes the
+
+190
+00:14:42,138 --> 00:14:46,857
+direction of the chain and what follows
+for every object that depends on the base,
+
+191
+00:14:46,897 --> 00:14:51,442
+and ends with how the damage is detected
+and from where the object is restored.
+
+192
+00:14:51,482 --> 00:14:55,156
+Lab 16.2 lets you produce the
+damage yourself before you answer.
+
+193
+00:14:56,996 --> 00:15:01,929
+Let's land this. Two levels: what Git
+promises, and how the bytes sit on disk today.
+
+194
+00:15:02,269 --> 00:15:20,985
+You should now be able to say:
+
+195
+00:15:21,325 --> 00:15:26,900
+New objects are loose; maintenance consolidates
+them into a .pack with an .idx and a
+
+196
+00:15:26,940 --> 00:15:27,235
+.rev.
+
+197
+00:15:27,575 --> 00:15:32,416
+In a pack, an object may be stored as a
+delta against a similar base, chosen by a
+
+198
+00:15:32,456 --> 00:15:33,019
+heuristic.
+
+199
+00:15:33,359 --> 00:15:37,744
+Packing changes no ID: every object
+reads back with its full content.
+
+200
+00:15:38,084 --> 00:15:43,235
+In a git verify-pack -v listing, seven
+columns mean a delta, and the last two are
+
+201
+00:15:43,275 --> 00:15:44,196
+depth and base.
+
+202
+00:15:44,536 --> 00:15:47,746
+The pack index maps IDs to
+offsets and can be rebuilt.
+
+203
+00:15:49,586 --> 00:15:57,726
+Read section 3.7 of Chapter 3. Do Exercise
+16.3, "Loose objects become a pack", in
+
+204
+00:15:57,766 --> 00:16:00,818
+exercises/m16-m18-internals.md.
+
+205
+00:16:01,158 --> 00:16:04,846
+Today you looked inside a pack,
+and the snapshot model survived.
+
+206
+00:16:04,886 --> 00:16:09,621
+Do the lab before the next video: reachability,
+git fsck, and where Git checks its
+
+207
+00:16:09,661 --> 00:16:13,116
+hashes. Until then, look at the
+state first and type second.
+
+208
+00:16:13,156 --> 00:16:14,514
+See you in the next one.

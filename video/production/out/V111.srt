@@ -1,0 +1,972 @@
+1
+00:00:04,500 --> 00:00:09,214
+A new engineer joins the ranking team.
+She needs four directories out of nine
+
+2
+00:00:09,254 --> 00:00:13,844
+hundred. Your CTO asks: does she have
+to download and check out everything?
+
+3
+00:00:14,184 --> 00:00:19,174
+Same planning meeting, second question.
+Every cross-service change is five pull
+
+4
+00:00:19,214 --> 00:00:24,332
+requests, five separate merge proposals,
+in forty repositories that must merge in
+
+5
+00:00:24,372 --> 00:00:29,681
+order. Should we move to one repository?
+And a third: Google and Meta run monorepos,
+
+6
+00:00:29,721 --> 00:00:32,483
+so why does git status
+take seconds in ours?
+
+7
+00:00:32,823 --> 00:00:37,565
+Three questions, and the answers start from
+one statement: a monorepo is not a Git
+
+8
+00:00:37,605 --> 00:00:42,173
+feature. It's a decision about where the
+boundary of a repository lies, and Git
+
+9
+00:00:42,213 --> 00:00:46,955
+stores it like any repository. Whether Git
+stays fast inside that boundary depends
+
+10
+00:00:46,995 --> 00:00:50,513
+on features you switch on. Hold
+on to those four directories.
+
+11
+00:00:52,353 --> 00:00:56,005
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:56,045 --> 00:01:00,968
+This video has two halves. First the
+decision: one repository against many, as the
+
+13
+00:01:01,008 --> 00:01:05,628
+textbook lists the trade-offs, and what
+Git has to carry when you choose one.
+
+14
+00:01:05,668 --> 00:01:10,591
+Then the first tool for living with that
+choice: git sparse-checkout in cone mode,
+
+15
+00:01:10,631 --> 00:01:15,553
+which writes only chosen directories into
+the working tree, the folder of ordinary
+
+16
+00:01:15,593 --> 00:01:16,461
+files you edit.
+
+17
+00:01:16,801 --> 00:01:22,137
+The repository is orbit, a small search
+platform in one repository: three services,
+
+18
+00:01:22,177 --> 00:01:27,319
+two libraries, two pipelines, documentation
+and tooling, 33 files, 94 commits on
+
+19
+00:01:27,359 --> 00:01:31,076
+main. A commit is one saved
+snapshot of the whole project.
+
+20
+00:01:31,116 --> 00:01:34,963
+It's small so that you can read
+every transcript to the end.
+
+21
+00:01:35,003 --> 00:01:38,784
+The mechanisms are the same at
+ten thousand times the size.
+
+22
+00:01:39,124 --> 00:01:46,139
+One replay: labs/ch24/sparse-cone.sh. The
+subcommands set, add, reapply, disable and
+
+23
+00:01:46,179 --> 00:01:52,270
+init --cone are 🟡 CAUTION: they add
+and remove files in the working tree.
+
+24
+00:01:52,310 --> 00:01:53,530
+list is 🟢 SAFE.
+
+25
+00:01:55,370 --> 00:01:56,782
+After this video you can:
+
+26
+00:01:57,122 --> 00:02:01,810
+State the trade-offs of one repository
+against many as the section lists them.
+
+27
+00:02:02,150 --> 00:02:04,475
+Say what Git has to carry in a monorepo.
+
+28
+00:02:04,815 --> 00:02:09,478
+Explain a cone-mode sparse checkout in
+terms of the index: what is on disk, in the
+
+29
+00:02:09,518 --> 00:02:10,511
+index and in HEAD.
+
+30
+00:02:10,851 --> 00:02:12,914
+Set, widen and disable a cone.
+
+31
+00:02:13,254 --> 00:02:17,126
+Explain the label "experimental" that
+the documentation still carries.
+
+32
+00:02:18,966 --> 00:02:25,141
+The decision first. In one sentence: a
+monorepo keeps many separately deployed
+
+33
+00:02:25,181 --> 00:02:30,639
+projects in one repository so that
+one commit can change all of them.
+
+34
+00:02:30,679 --> 00:02:36,854
+A polyrepo layout gives each project its
+own history, access rules and release
+
+35
+00:02:36,894 --> 00:02:37,491
+cadence.
+
+36
+00:02:37,831 --> 00:02:40,618
+The layouts differ in where
+a change crosses a boundary.
+
+37
+00:02:40,958 --> 00:02:45,677
+A change to a library and its users: in
+a monorepo, one commit and one review.
+
+38
+00:02:45,717 --> 00:02:50,681
+In orbit, one commit changes a schema, the
+gateway and the ingest worker together.
+
+39
+00:02:50,721 --> 00:02:55,441
+In a polyrepo, that's one pull request
+per repository, merged in order, with a
+
+40
+00:02:55,481 --> 00:03:00,384
+published version between them. Internal
+dependency versions: a monorepo has one,
+
+41
+00:03:00,424 --> 00:03:04,961
+what is in the tree. In a polyrepo each
+consumer pins, and consumers drift.
+
+42
+00:03:05,001 --> 00:03:09,843
+Access control: Git has no per-directory
+read permission, so who can clone reads
+
+43
+00:03:09,883 --> 00:03:13,016
+everything. In a polyrepo,
+access is per repository.
+
+44
+00:03:13,356 --> 00:03:16,790
+Ownership and review: a monorepo
+needs path-based rules.
+
+45
+00:03:16,830 --> 00:03:21,939
+Continuous integration, the automated build
+and tests: a monorepo must compute what
+
+46
+00:03:21,979 --> 00:03:26,964
+a change affects. In a polyrepo each
+repository builds itself, and integration is
+
+47
+00:03:27,004 --> 00:03:31,121
+tested late. Git performance degrades
+with total size unless tuned.
+
+48
+00:03:31,161 --> 00:03:36,146
+Tooling: a dependency-aware build system
+and its maintainers on one side, release
+
+49
+00:03:36,186 --> 00:03:41,109
+and dependency-update automation on the
+other. And failure radius: a broken main
+
+50
+00:03:41,149 --> 00:03:42,908
+blocks everyone, or one team.
+
+51
+00:03:43,248 --> 00:03:48,253
+Neither column wins. Google's paper on its
+monorepo lists the benefits: one source
+
+52
+00:03:48,293 --> 00:03:52,129
+of truth, shared code, atomic
+changes, large-scale refactoring.
+
+53
+00:03:52,169 --> 00:03:56,497
+And it lists the costs: heavy investment
+in tooling and in code health.
+
+54
+00:03:56,837 --> 00:04:02,207
+Now, the question about Google and Meta.
+The largest monorepos are not Git.
+
+55
+00:04:02,247 --> 00:04:07,832
+Google keeps its main codebase in Piper,
+a centralized system it built itself.
+
+56
+00:04:07,872 --> 00:04:13,675
+Meta serves its main repository from its
+own server and virtual file system, with
+
+57
+00:04:13,715 --> 00:04:19,445
+Sapling as the client. Microsoft did move
+a very large codebase to Git: Windows,
+
+58
+00:04:19,485 --> 00:04:25,431
+about 3.5 million files and 300 gigabytes
+in 2017, first with a virtual file system
+
+59
+00:04:25,471 --> 00:04:29,975
+and then with Scalar, whose
+techniques were contributed to Git.
+
+60
+00:04:30,315 --> 00:04:33,798
+The features of this video and
+the next two come from that work.
+
+61
+00:04:33,838 --> 00:04:38,420
+Every figure the textbook quotes for a
+company is that company's own measurement and
+
+62
+00:04:38,460 --> 00:04:39,136
+no benchmark.
+
+63
+00:04:39,476 --> 00:04:44,337
+So what does Git have to carry? Size has
+independent dimensions, and each slows
+
+64
+00:04:44,377 --> 00:04:49,237
+different commands. Tracked files, the
+paths that have an index entry, slow git
+
+65
+00:04:49,277 --> 00:04:54,324
+status, git add and git switch. Sparse-checkout
+and the sparse index address that.
+
+66
+00:04:54,364 --> 00:04:58,295
+Commits and trees slow path-limited
+logs, blame and merge bases.
+
+67
+00:04:58,335 --> 00:05:00,280
+The commit-graph addresses that.
+
+68
+00:05:00,620 --> 00:05:05,488
+Blobs, the stored file contents, in all
+versions cost clone, fetch and disk.
+
+69
+00:05:05,528 --> 00:05:10,333
+Partial clone addresses that. New objects
+and packs per day slow everything
+
+70
+00:05:10,373 --> 00:05:15,435
+gradually, and maintenance addresses that.
+Refs, the names such as branches and
+
+71
+00:05:15,475 --> 00:05:19,827
+tags, slow fetch and push. Narrow
+refspecs and pruning address that.
+
+72
+00:05:19,867 --> 00:05:24,477
+Sorting a complaint into the right
+row is the first step of a diagnosis.
+
+73
+00:05:24,817 --> 00:05:29,468
+Now sparse-checkout. In one sentence:
+git sparse-checkout makes Git write only
+
+74
+00:05:29,508 --> 00:05:34,460
+chosen directories into the working tree,
+while the repository, its history and its
+
+75
+00:05:34,500 --> 00:05:39,512
+index still contain every file. The index
+is Git's record of every tracked path: the
+
+76
+00:05:39,552 --> 00:05:40,775
+proposed next commit.
+
+77
+00:05:41,115 --> 00:05:44,686
+Now precisely. The definition
+is a list of patterns in
+
+78
+00:05:44,726 --> 00:05:50,237
+$GIT_DIR/info/sparse-checkout. For every
+index entry the patterns don't select, Git
+
+79
+00:05:50,277 --> 00:05:55,587
+sets the skip-worktree bit, a flag on that
+entry. It doesn't write the file, and
+
+80
+00:05:55,627 --> 00:06:00,001
+doesn't report it as deleted. You
+met that bit in the index video.
+
+81
+00:06:00,341 --> 00:06:04,981
+In cone mode, the default, you name
+directories. Each is included with everything
+
+82
+00:06:05,021 --> 00:06:08,910
+below it, and each of its parents
+with the files directly inside it.
+
+83
+00:06:08,950 --> 00:06:13,764
+The top level is always included. That
+restriction lets Git decide inclusion by hash
+
+84
+00:06:13,804 --> 00:06:17,982
+lookup instead of matching every path
+against every pattern, and it's the
+
+85
+00:06:18,022 --> 00:06:22,488
+precondition for the sparse index. The
+older pattern mode is deprecated in the
+
+86
+00:06:22,528 --> 00:06:23,586
+manual's own words.
+
+87
+00:06:23,926 --> 00:06:28,581
+The label. The manual carries this
+warning, in capitals: "THIS COMMAND IS
+
+88
+00:06:28,621 --> 00:06:33,790
+EXPERIMENTAL. ITS BEHAVIOR, AND THE BEHAVIOR
+OF OTHER COMMANDS IN THE PRESENCE OF
+
+89
+00:06:33,830 --> 00:06:37,134
+SPARSE-CHECKOUTS, WILL LIKELY
+CHANGE IN THE FUTURE."
+
+90
+00:06:37,174 --> 00:06:41,829
+The command dates from Git 2.25, and
+cone mode is the default since 2.37.
+
+91
+00:06:41,869 --> 00:06:47,231
+The label is still there in 2.56. So you
+use the feature knowing that details of how
+
+92
+00:06:47,271 --> 00:06:51,090
+other commands behave around it
+may change between versions.
+
+93
+00:06:51,430 --> 00:06:54,766
+When should you not use it?
+When the repository is small.
+
+94
+00:06:54,806 --> 00:06:59,740
+A sparse checkout is one more piece of state
+that explains why a file isn't on disk.
+
+95
+00:07:01,580 --> 00:07:06,739
+For the decision, the textbook's analogy is
+one shared kitchen against a row of food
+
+96
+00:07:06,779 --> 00:07:11,938
+stalls. In the kitchen a change to the menu
+is one conversation, and one cook's mess
+
+97
+00:07:11,978 --> 00:07:17,075
+slows everyone. The stalls never collide,
+and agreeing on anything takes a meeting.
+
+98
+00:07:17,115 --> 00:07:20,851
+The analogy breaks at cost. A
+kitchen gets crowded by people.
+
+99
+00:07:20,891 --> 00:07:25,121
+A repository gets slow by files,
+commits and refs, whoever made them.
+
+100
+00:07:25,461 --> 00:07:30,391
+For sparse-checkout: a library with closed
+stacks. The catalogue lists every book,
+
+101
+00:07:30,431 --> 00:07:35,483
+and your desk holds the shelves you asked
+for. The analogy breaks in one place: in a
+
+102
+00:07:35,523 --> 00:07:40,271
+normal clone the stacks are in your
+building too, since every object is on your
+
+103
+00:07:40,311 --> 00:07:43,907
+disk. Moving them out is partial
+clone, two videos from now.
+
+104
+00:07:44,247 --> 00:07:49,106
+The catalogue is the index. That's the
+model to keep: the index lists everything,
+
+105
+00:07:49,146 --> 00:07:51,101
+and the desk is the working tree.
+
+106
+00:07:52,941 --> 00:07:58,947
+On the left, HEAD, the ref that says where
+you are: the tree of commit 100bb99, with
+
+107
+00:07:58,987 --> 00:08:04,849
+every path. In the middle, the index: 33
+entries, the same paths, each marked H or
+
+108
+00:08:04,889 --> 00:08:10,391
+S. S is skip-worktree. On the right, the
+working tree: nine files, only the H
+
+109
+00:08:10,431 --> 00:08:10,966
+entries.
+
+110
+00:08:11,306 --> 00:08:15,091
+Read the caption under the left
+box: every commit complete.
+
+111
+00:08:15,131 --> 00:08:19,369
+A commit is made from the index,
+and the index has all 33 entries.
+
+112
+00:08:19,409 --> 00:08:23,388
+A commit from a sparse checkout
+is a commit of the whole tree.
+
+113
+00:08:27,728 --> 00:08:32,800
+Let's walk in. A full clone of orbit:
+33 tracked files, listed by project.
+
+114
+00:08:33,140 --> 00:08:37,891
+Older tutorials start with init --cone.
+The manual calls it deprecated.
+
+115
+00:08:37,931 --> 00:08:41,468
+It still works, and it shows
+where every cone starts.
+
+116
+00:08:41,808 --> 00:08:45,979
+No directory has been named yet.
+What's left in the working tree?
+
+117
+00:08:46,019 --> 00:08:47,729
+Say it out loud. I'll wait.
+
+118
+00:08:52,569 --> 00:08:57,573
+The top-level files, and nothing else. git
+status says so in words: "You are in a
+
+119
+00:08:57,613 --> 00:09:00,750
+sparse checkout with 10%
+of tracked files present."
+
+120
+00:09:00,790 --> 00:09:05,483
+And the working tree is clean: the
+missing files aren't reported as deleted.
+
+121
+00:09:05,823 --> 00:09:11,271
+Three things changed, and no object or ref
+did. The two patterns read "everything
+
+122
+00:09:11,311 --> 00:09:16,760
+directly at the top level, but no directory".
+The switches aren't in .git/config.
+
+123
+00:09:16,800 --> 00:09:22,045
+They're in .git/config.worktree, which
+applies to one working tree and is read
+
+124
+00:09:22,085 --> 00:09:27,669
+because extensions.worktreeConfig is now
+true. So each linked working tree can have
+
+125
+00:09:27,709 --> 00:09:28,550
+its own cone.
+
+126
+00:09:28,890 --> 00:09:30,998
+Now name the directories you work in.
+
+127
+00:09:31,338 --> 00:09:36,287
+Nine files, 28 percent of the tracked
+files. So the new engineer doesn't have to
+
+128
+00:09:36,327 --> 00:09:40,278
+check out everything. The download
+half waits for partial clone.
+
+129
+00:09:40,618 --> 00:09:46,250
+Quick quiz. Nine files are on disk. How
+many entries does the index have: nine,
+
+130
+00:09:46,290 --> 00:09:49,481
+twenty-four or thirty-three?
+Say it out loud.
+
+131
+00:09:54,321 --> 00:09:59,957
+Thirty-three. Nine marked H, twenty-four
+marked S. If you said nine, you counted the
+
+132
+00:09:59,997 --> 00:10:03,673
+desk, not the catalogue.
+Almost everyone does at first.
+
+133
+00:10:04,013 --> 00:10:10,368
+Read the pattern file in pairs. /libs/
+with !/libs/*/ includes libs without its
+
+134
+00:10:10,408 --> 00:10:16,520
+subdirectories, as a parent. /libs/tokenizer/
+includes one subdirectory with
+
+135
+00:10:16,560 --> 00:10:21,053
+everything below. You never
+edit this file in cone mode.
+
+136
+00:10:21,393 --> 00:10:28,084
+Try it now, thirty seconds, on paper. Draw
+three boxes: HEAD, index, working tree.
+
+137
+00:10:28,124 --> 00:10:32,435
+For services/gateway/app.py,
+write yes or no in each.
+
+138
+00:10:32,475 --> 00:10:33,255
+I'll wait.
+
+139
+00:10:38,095 --> 00:10:43,200
+Yes, yes, no. The gateway is in the index,
+in HEAD and in the object database.
+
+140
+00:10:43,240 --> 00:10:44,321
+It isn't on disk.
+
+141
+00:10:44,661 --> 00:10:48,378
+The ranker's model.py, inside
+the cone, is in all three.
+
+142
+00:10:48,718 --> 00:10:53,914
+Only docs/runbooks was requested.
+Will docs/architecture.md appear?
+
+143
+00:10:53,954 --> 00:10:55,555
+Make your prediction.
+
+144
+00:11:00,395 --> 00:11:04,440
+It does. docs became a parent, and
+parents bring their own files.
+
+145
+00:11:04,480 --> 00:11:06,136
+There's no switch for that.
+
+146
+00:11:06,476 --> 00:11:10,214
+disable writes every file back
+and sets the switches to false.
+
+147
+00:11:10,254 --> 00:11:12,590
+The pattern file stays on disk, unused.
+
+148
+00:11:26,430 --> 00:11:28,078
+Five mistakes to watch for.
+
+149
+00:11:28,418 --> 00:11:32,308
+Believing a commit from a sparse
+checkout contains only the cone.
+
+150
+00:11:32,348 --> 00:11:37,206
+Root cause: the index still has every
+entry, and a commit is made from the index.
+
+151
+00:11:37,546 --> 00:11:40,589
+Expecting a teammate to get
+your cone after a pull.
+
+152
+00:11:40,629 --> 00:11:45,667
+Root cause: a sparse checkout is a property
+of one working tree; it is not committed
+
+153
+00:11:45,707 --> 00:11:46,574
+and not pushed.
+
+154
+00:11:46,914 --> 00:11:50,556
+Editing .git/info/sparse-checkout
+by hand in cone mode.
+
+155
+00:11:50,596 --> 00:11:55,913
+Root cause: cone mode generates parent
+and recursive pattern pairs; the commands
+
+156
+00:11:55,953 --> 00:11:56,851
+maintain them.
+
+157
+00:11:57,191 --> 00:12:00,627
+Being surprised by files next
+to the requested directory.
+
+158
+00:12:00,667 --> 00:12:05,505
+Root cause: every parent of a cone directory
+is included with the files directly
+
+159
+00:12:05,545 --> 00:12:06,115
+inside it.
+
+160
+00:12:06,455 --> 00:12:10,657
+Moving to a monorepo to restrict who
+reads what. Root cause: Git has no
+
+161
+00:12:10,697 --> 00:12:14,361
+per-directory read permission;
+who can clone reads everything.
+
+162
+00:12:16,201 --> 00:12:21,179
+Now, out of the lab. An AI and ML platform
+team decides its layout by coupling, as
+
+163
+00:12:21,219 --> 00:12:26,258
+the textbook suggests. Feature code, the
+training pipeline, serving code and shared
+
+164
+00:12:26,298 --> 00:12:29,685
+schemas change together and
+benefit from one repository.
+
+165
+00:12:29,725 --> 00:12:34,397
+Components with other owners or other
+access rules are separate repositories,
+
+166
+00:12:34,437 --> 00:12:36,538
+because Git can't hide a directory.
+
+167
+00:12:36,878 --> 00:12:41,783
+Model weights and datasets belong in neither.
+The textbook adds a caveat that I'll
+
+168
+00:12:41,823 --> 00:12:46,788
+repeat: no primary study of this choice for
+ML platforms was found for this course.
+
+169
+00:12:46,828 --> 00:12:48,959
+Treat it as a trade-off, not a rule.
+
+170
+00:12:49,299 --> 00:12:54,240
+In the shared repository, the team wants
+every new member of the ranking group to
+
+171
+00:12:54,280 --> 00:12:58,791
+start with the same cone. Because a
+cone isn't committed, they put the git
+
+172
+00:12:58,831 --> 00:13:01,988
+sparse-checkout set line
+into the onboarding script.
+
+173
+00:13:02,028 --> 00:13:07,031
+For scale, the textbook cites Canva, which
+used the feature to leave out generated
+
+174
+00:13:07,071 --> 00:13:11,828
+translation files, about 70 percent of
+all files in its repository, by its own
+
+175
+00:13:11,868 --> 00:13:12,320
+account.
+
+176
+00:13:14,160 --> 00:13:18,217
+Your turn. Do Lab 18.2,
+"Cone-mode sparse-checkout", in
+
+177
+00:13:18,257 --> 00:13:24,399
+lab-manual/m18-transfer-scale.md. Before
+each set or add, write down three numbers:
+
+178
+00:13:24,439 --> 00:13:28,421
+files on disk, entries in
+the index, entries marked S.
+
+179
+00:13:28,461 --> 00:13:30,805
+Then check with git ls-files -t.
+
+180
+00:13:31,145 --> 00:13:36,988
+The challenge is Exercise 18.8,
+"A file that is not on disk", in
+
+181
+00:13:37,028 --> 00:13:39,838
+exercises/m16-m18-internals.md.
+
+182
+00:13:41,678 --> 00:13:44,928
+Question 423 of the CTO question bank:
+
+183
+00:13:47,268 --> 00:13:51,635
+Answer out loud. A strong answer takes the
+three places one at a time and gives a
+
+184
+00:13:51,675 --> 00:13:56,096
+count or a rule for each. It names the bit
+that makes the difference and says what
+
+185
+00:13:56,136 --> 00:14:00,448
+that bit tells Git to do and not to do.
+It adds what cone mode restricts and why
+
+186
+00:14:00,488 --> 00:14:04,039
+that restriction exists, and it
+draws the consequence for commits.
+
+187
+00:14:05,879 --> 00:14:06,806
+Let's land this.
+
+188
+00:14:07,146 --> 00:14:08,806
+You should now be able to say:
+
+189
+00:14:09,146 --> 00:14:14,047
+A monorepo is a decision about a repository
+boundary; it trades coordination across
+
+190
+00:14:14,087 --> 00:14:16,191
+repositories for tooling inside one.
+
+191
+00:14:16,531 --> 00:14:19,843
+Size has independent dimensions,
+and each has its own remedy.
+
+192
+00:14:20,183 --> 00:14:25,376
+In a sparse checkout, HEAD and the index
+describe every file; the working tree holds
+
+193
+00:14:25,416 --> 00:14:28,055
+only entries without
+the skip-worktree bit.
+
+194
+00:14:28,395 --> 00:14:32,819
+Cone mode selects directories, with their
+parents' own files and the top level.
+
+195
+00:14:33,159 --> 00:14:36,914
+The cone is local to one working tree,
+and the command is still labelled
+
+196
+00:14:36,954 --> 00:14:38,337
+experimental in the manual.
+
+197
+00:14:40,177 --> 00:14:48,642
+Read sections 24.1 to 24.4 of Chapter
+24. Do Exercise 18.3, "Cone-mode sparse
+
+198
+00:14:48,682 --> 00:14:53,613
+checkout", in
+exercises/m16-m18-internals.md.
+
+199
+00:14:53,953 --> 00:14:58,347
+Today you counted it yourself: nine
+files on the desk, thirty-three in the
+
+200
+00:14:58,387 --> 00:15:03,200
+catalogue. Practise that count in the lab.
+Next time we live in a sparse checkout
+
+201
+00:15:03,240 --> 00:15:07,934
+and meet the sparse index. Until then,
+look at the state first and type second.
+
+202
+00:15:07,974 --> 00:15:09,372
+See you in the next one.

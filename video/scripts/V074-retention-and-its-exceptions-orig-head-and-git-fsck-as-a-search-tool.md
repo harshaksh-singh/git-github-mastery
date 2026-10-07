@@ -97,7 +97,7 @@ The difference between "dangling" and "unreachable" is the difference between a 
 
 ## MENTAL MODEL
 
-**[ANIMATION]** graph: A-B-C main; HEAD=main; title:ORIG__HEAD_is_one_slot => + B main; C ORIG_HEAD; reflog:C; cmd:!git_reset_--hard_HEAD~1; say:A_reset_writes_ORIG__HEAD:_the_tip_from_before_the_command; name:first => + A main; B ORIG_HEAD; reflog:B,C; cmd:!git_reset_--hard_HEAD~1; say:The_next_reset_replaces_it._The_reflog_keeps_both; name:second id=slot
+**[ANIMATION]** graph: A-B-C main; HEAD=main; title:ORIG__HEAD_is_one_slot => + B main; C ORIG_HEAD; reflog:C; cmd:!git_reset_--hard_HEAD~1; say:A_reset_writes_ORIG__HEAD:_the_tip_from_before_the_command; name:first => + A main; B ORIG_HEAD; reflog:B,C; cmd:!git_reset_--hard_HEAD~1; say:The_next_reset_replaces_it._The_reflog_keeps_both; name:second id=slot at_state_1=5 at_first=30 at_second=60
 
 Now a picture to keep. For `ORIG_HEAD` the textbook's analogy is the "last number redial" button of a phone. It holds exactly one number, the newest call replaces it, and it tells you nothing about which call that was. The reflog is the full call list.
 
@@ -143,7 +143,7 @@ git reflog show main
 git reflog expire --dry-run --verbose --expire-unreachable=now refs/heads/main
 ```
 
-**[ANIMATION]** graph: 538ea2f-536f5df-da62b60 main; HEAD=main; title:Amended,_extended,_reset => 538ea2f-536f5df-dfcbd4b main; 536f5df-da62b60; reflog:da62b60; HEAD=main; cmd:git_commit_--amend; name:amend => + dfcbd4b-5c75388 main; cmd:git_commit; name:extend => + dfcbd4b main; reflog:da62b60,5c75388; cmd:!git_reset_--hard_HEAD~1; say:Two_commits_are_off_the_current_history; name:reset => 538ea2f-536f5df-dfcbd4b main; 536f5df-da62b60; dfcbd4b-5c75388; ghost:da62b60,5c75388; dangling:da62b60,5c75388; HEAD=main; cmd:!git_reflog_expire_--expire=now_--all; say:No_reflog_names_them_now:_layer_three; name:expired id=amended
+**[ANIMATION]** graph: 538ea2f-536f5df-da62b60 main; HEAD=main; title:Amended,_extended,_reset => 538ea2f-536f5df-dfcbd4b main; 536f5df-da62b60; reflog:da62b60; HEAD=main; cmd:git_commit_--amend; name:amend => + dfcbd4b-5c75388 main; cmd:git_commit; name:extend => + dfcbd4b main; reflog:da62b60,5c75388; cmd:!git_reset_--hard_HEAD~1; say:Two_commits_are_off_the_current_history; name:reset => 538ea2f-536f5df-dfcbd4b main; 536f5df-da62b60; dfcbd4b-5c75388; ghost:da62b60,5c75388; dangling:da62b60,5c75388; HEAD=main; cmd:!git_reflog_expire_--expire=now_--all; say:No_reflog_names_them_now:_layer_three; name:expired id=amended dx=260
 
 **[ANIMATION]** step: reset
 
@@ -283,6 +283,8 @@ Correct fix       : "git stash pop" still restores the newest entry (below). The
 Prevention        : do not expire reflogs with --all in a repository that holds stashes you need;
                     commit long-lived work to a branch instead of stashing it
 ```
+
+The root cause: only the newest stash entry is held by a ref. Every older entry is held by a reflog line and by nothing else.
 
 ```bash
 git stash pop
@@ -444,7 +446,7 @@ $ git reflog exists ORIG_HEAD
 
 Option two. `68e6fff`, a commit of the feature branch from before its rebase, which no branch contains any more.
 
-**[ANIMATION]** graph: da62b60-f912289 main; ^da62b60-155d4ba-68e6fff ORIG_HEAD; f912289-?copy_1-?copy_2 feature/rerank; reflog:155d4ba,68e6fff; HEAD=feature/rerank; cmd:git_rebase_main; say:The_rebase_wrote_ORIG__HEAD:_the_old_tip,_68e6fff; title:ORIG__HEAD,_some_commands_later => + f912289-?picked main; HEAD=main; cmd:git_cherry-pick_feature/rerank; say:A_cherry-pick_does_not_write_it._The_old_value_stays; name:later id=stale
+**[ANIMATION]** graph: da62b60-f912289 main; ^da62b60-155d4ba-68e6fff ORIG_HEAD; f912289-?copy_1-?copy_2 feature/rerank; reflog:155d4ba,68e6fff; HEAD=feature/rerank; cmd:git_rebase_main; say:The_rebase_wrote_ORIG__HEAD:_the_old_tip,_68e6fff; title:ORIG__HEAD,_some_commands_later => + f912289-?picked main; HEAD=main; cmd:git_cherry-pick_feature/rerank; say:A_cherry-pick_does_not_write_it._The_old_value_stays; name:later id=stale dx=260
 
 `git reset --hard ORIG_HEAD` at this moment would move `main` onto abandoned history. On the picture, `ORIG_HEAD` sits on a dashed commit that no branch contains. Almost everyone trusts it once too often.
 
@@ -459,7 +461,7 @@ git branch -D exp/hybrid
 git fsck
 ```
 
-**[ANIMATION]** graph: 538ea2f-536f5df-da62b60 main; da62b60-b997512-53c5b13-2ae0c97 exp/hybrid; HEAD=main; title:Three_lost_commits => + drop:exp/hybrid; reflog:b997512,53c5b13,2ae0c97; cmd:!git_branch_-D_exp/hybrid; say:The_branch_is_deleted,_and_its_reflog_with_it; name:deleted => + mark:unreachable:b997512,53c5b13; dangling:2ae0c97; cmd:git_fsck_--no-reflogs; say:Without_the_reflogs:_three_unreachable,_one_dangling; name:noreflogs => 538ea2f-536f5df-da62b60 main; da62b60-b997512-53c5b13-2ae0c97 rescue/hybrid; HEAD=main; cmd:git_branch_rescue/hybrid_2ae0c97; say:One_label_on_the_tip:_layer_one_again; name:anchor id=lostline
+**[ANIMATION]** graph: 538ea2f-536f5df-da62b60 main; da62b60-b997512-53c5b13-2ae0c97 exp/hybrid; HEAD=main; title:Three_lost_commits => + drop:exp/hybrid; reflog:b997512,53c5b13,2ae0c97; cmd:!git_branch_-D_exp/hybrid; say:The_branch_is_deleted,_and_its_reflog_with_it; name:deleted => + mark:unreachable:b997512,53c5b13; dangling:2ae0c97; cmd:git_fsck_--no-reflogs; say:Without_the_reflogs:_three_unreachable,_one_dangling; name:noreflogs => 538ea2f-536f5df-da62b60 main; da62b60-b997512-53c5b13-2ae0c97 rescue/hybrid; HEAD=main; cmd:git_branch_rescue/hybrid_2ae0c97; say:One_label_on_the_tip:_layer_one_again; name:anchor id=lostline dx=260
 
 **[ANIMATION]** step: deleted
 

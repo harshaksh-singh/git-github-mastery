@@ -1,0 +1,757 @@
+1
+00:00:04,500 --> 00:00:08,935
+A deploy script is supposed to record the
+commit ID it deployed, the fingerprint of
+
+2
+00:00:08,975 --> 00:00:13,247
+one exact snapshot. One morning the record
+holds the text "no-such-branch" where
+
+3
+00:00:13,287 --> 00:00:16,428
+forty hexadecimal digits should
+be. The script didn't fail.
+
+4
+00:00:16,468 --> 00:00:20,741
+It didn't warn. It carried a branch name
+that doesn't exist all the way into the
+
+5
+00:00:20,781 --> 00:00:21,496
+deploy record.
+
+6
+00:00:21,836 --> 00:00:26,255
+Your CTO asks: how can a tool ask Git
+for a commit and get back a word?
+
+7
+00:00:26,295 --> 00:00:31,467
+The answer is in how git rev-parse behaves
+when it can't resolve a name, and it's a
+
+8
+00:00:31,507 --> 00:00:34,607
+one-flag fix. Hold on to
+that word. It comes back.
+
+9
+00:00:36,447 --> 00:00:40,073
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+10
+00:00:40,113 --> 00:00:44,880
+Every Git command that takes a revision,
+git log main, git show HEAD~2, git diff
+
+11
+00:00:44,920 --> 00:00:48,004
+v1.0.0, turns that argument
+into an object ID first.
+
+12
+00:00:48,044 --> 00:00:52,931
+A revision is any expression that names an
+object. The resolver behind all of them
+
+13
+00:00:52,971 --> 00:00:57,678
+is one command, git rev-parse. Today you
+use it directly, for two jobs: turning
+
+14
+00:00:57,718 --> 00:01:01,463
+names into IDs, and asking a
+repository questions about itself.
+
+15
+00:01:01,803 --> 00:01:05,726
+git rev-parse only reads. It
+is 🟢 SAFE: it changes nothing.
+
+16
+00:01:06,066 --> 00:01:11,504
+We replay labs/ch03/rev-parse.sh, on the
+same inference-service repository as the
+
+17
+00:01:11,544 --> 00:01:16,847
+previous video, so you'll recognize the
+IDs. Here it is: four commits, with the
+
+18
+00:01:16,887 --> 00:01:19,822
+branch main and the tag
+v1.0.0 on the merge.
+
+19
+00:01:21,662 --> 00:01:23,074
+After this video you can:
+
+20
+00:01:23,414 --> 00:01:28,452
+Resolve any revision expression to an object
+ID and verify that it names a commit.
+
+21
+00:01:28,792 --> 00:01:40,743
+Ask a repository for its directory, its
+top level and its formats from a script.
+
+22
+00:01:41,083 --> 00:01:44,673
+Explain the order in which Git
+resolves an ambiguous short name.
+
+23
+00:01:45,013 --> 00:01:48,412
+Say why a tool should store
+full IDs and not abbreviations.
+
+24
+00:01:50,252 --> 00:01:54,788
+Why does this command matter? Because scripts
+that guess are the scripts that break.
+
+25
+00:01:54,828 --> 00:01:59,311
+A script that assumes where .git is, or
+that a name is a branch, or that a captured
+
+26
+00:01:59,351 --> 00:02:02,634
+string is an ID, works until the
+day the assumption is false.
+
+27
+00:02:02,674 --> 00:02:05,740
+git rev-parse replaces each
+guess with a question to Git.
+
+28
+00:02:06,080 --> 00:02:10,360
+In one sentence: git rev-parse resolves
+anything that can name an object to its
+
+29
+00:02:10,400 --> 00:02:14,900
+object ID and answers questions about the
+repository itself, by the same rules that
+
+30
+00:02:14,940 --> 00:02:17,580
+every other Git command
+applies to its arguments.
+
+31
+00:02:17,920 --> 00:02:22,180
+The revision syntax, with the
+values from the demo repository.
+
+32
+00:02:22,220 --> 00:02:28,006
+A ref is a name that holds an object ID,
+and a ref name such as main, v1.0.0 or HEAD
+
+33
+00:02:28,046 --> 00:02:33,278
+means the object the ref names. For an
+annotated tag, that's the tag object.
+
+34
+00:02:33,318 --> 00:02:37,301
+HEAD~2 means two steps back,
+following first parents only.
+
+35
+00:02:37,641 --> 00:02:45,939
+HEAD^2 means the second parent of a merge.
+HEAD^1, or HEAD^ alone, is the first.
+
+36
+00:02:45,979 --> 00:02:54,486
+HEAD^{tree} means the object of that type
+reached by following the name: here, the
+
+37
+00:02:54,526 --> 00:03:03,137
+commit's tree. v1.0.0^{commit} peels the
+tag to a commit, and v1.0.0^{} peels until
+
+38
+00:03:03,177 --> 00:03:05,326
+it's no longer a tag.
+
+39
+00:03:05,666 --> 00:03:10,089
+HEAD:src/server.py is the blob or
+tree at that path in that commit.
+
+40
+00:03:10,129 --> 00:03:15,684
+A leading colon, as in :config.toml, reads
+the entry for that path in the index, the
+
+41
+00:03:15,724 --> 00:03:19,681
+staging area, and :2:config.toml
+reads the entry at stage 2.
+
+42
+00:03:19,721 --> 00:03:25,276
+And main@{1} is the previous value of the
+ref, read from its reflog, the ref's local
+
+43
+00:03:25,316 --> 00:03:25,809
+journal.
+
+44
+00:03:26,149 --> 00:03:30,748
+Now the internals of name lookup. A bare
+name is looked up in a fixed order: first
+
+45
+00:03:30,788 --> 00:03:35,330
+$GIT_DIR/<name>, then refs/<name>, then
+refs/tags/<name>, then refs/heads/<name>,
+
+46
+00:03:35,370 --> 00:03:38,724
+then refs/remotes/<name>, and
+last refs/remotes/<name>/HEAD.
+
+47
+00:03:38,764 --> 00:03:43,307
+Tags come before branches in that list. A
+tag therefore wins over a branch of the
+
+48
+00:03:43,347 --> 00:03:46,927
+same name. Git 2.55 prints warning:
+refname 'main' is ambiguous.
+
+49
+00:03:46,967 --> 00:03:50,717
+and uses the tag. In scripts, write
+the full name, refs/heads/main.
+
+50
+00:03:51,057 --> 00:03:56,486
+The second family of options describes the
+repository: --git-dir, --show-toplevel,
+
+51
+00:03:56,526 --> 00:04:01,288
+--show-prefix, --show-cdup,
+--is-inside-work-tree, --is-bare-repository,
+
+52
+00:04:01,328 --> 00:04:04,956
+--show-object-format,
+--show-ref-format and --git-path.
+
+53
+00:04:04,996 --> 00:04:09,291
+These are what a script uses in
+place of assumptions about paths.
+
+54
+00:04:09,631 --> 00:04:14,896
+When should you not rely on it without
+care? Without --verify, the command is a
+
+55
+00:04:14,936 --> 00:04:20,537
+sorter of arguments, not a validator. That's
+the failure mode of the hook, and we'll
+
+56
+00:04:20,577 --> 00:04:21,678
+see it on screen.
+
+57
+00:04:23,518 --> 00:04:26,755
+Think of git rev-parse as the front desk
+that every other Git command passes
+
+58
+00:04:26,795 --> 00:04:30,162
+through. You hand over a name in any of
+the forms Git understands, and the desk
+
+59
+00:04:30,202 --> 00:04:32,706
+hands back the one thing that
+is unambiguous: an object ID.
+
+60
+00:04:33,046 --> 00:04:37,873
+The model breaks in one place. A front
+desk refuses a visitor it can't identify.
+
+61
+00:04:37,913 --> 00:04:42,679
+git rev-parse without --verify doesn't
+refuse: its first purpose is to sort the
+
+62
+00:04:42,719 --> 00:04:47,606
+arguments of a calling script into revisions
+and everything else, so what isn't a
+
+63
+00:04:47,646 --> 00:04:51,804
+revision is passed through. You have
+to ask for the strict behaviour.
+
+64
+00:04:52,144 --> 00:04:59,992
+One more rule belongs to the model, and
+it comes from Chapter 2: names can be
+
+65
+00:05:00,032 --> 00:05:08,494
+ambiguous, full object IDs cannot. An
+abbreviation is unique only in one repository
+
+66
+00:05:08,534 --> 00:05:16,894
+at one time. An abbreviated ID in a script
+or a ticket can become ambiguous as the
+
+67
+00:05:16,934 --> 00:05:20,274
+repository grows. Store full IDs.
+
+68
+00:05:22,114 --> 00:05:29,674
+The root commit b602c1f is on the left. Two
+commits follow it: 4f2cc0c on the lower
+
+69
+00:05:29,714 --> 00:05:35,533
+line and 62001eb on the upper
+line, the branch feature/batching.
+
+70
+00:05:35,573 --> 00:05:42,125
+They meet in the merge 0c2cf43, where
+main, the tag v1.0.0 and HEAD are.
+
+71
+00:05:42,465 --> 00:05:47,432
+Now the labels. HEAD^1 is the first parent,
+the lower line, and it's the same commit
+
+72
+00:05:47,472 --> 00:05:50,710
+as HEAD~1. HEAD^2 is the
+second parent, the upper line.
+
+73
+00:05:51,050 --> 00:05:57,063
+HEAD~2 is two generations back along first
+parents, which is HEAD^1^1, the root.
+
+74
+00:05:57,103 --> 00:06:02,511
+Say the rule out loud: tilde counts
+generations, caret chooses a parent.
+
+75
+00:06:11,351 --> 00:06:15,875
+Predict, then look. I'm about to ask for
+HEAD~2, HEAD^2 and HEAD^1, in that order.
+
+76
+00:06:15,915 --> 00:06:19,215
+Point at each commit on the
+graph and say its ID. I'll wait.
+
+77
+00:06:24,055 --> 00:06:29,032
+Quick quiz: v1.0.0, then
+v1.0.0 peeled to a commit.
+
+78
+00:06:29,072 --> 00:06:33,755
+One ID twice, or two
+different IDs? Your answer?
+
+79
+00:06:41,595 --> 00:06:45,401
+HEAD~2 is the root, HEAD^2 is the commit of
+the feature branch, HEAD^1 is the commit
+
+80
+00:06:45,441 --> 00:06:49,202
+on the first-parent line. The last command
+prints two different IDs: the tag object
+
+81
+00:06:49,242 --> 00:06:53,002
+first, then the commit it peels to, which
+is HEAD. If you said one ID twice, you're
+
+82
+00:06:53,042 --> 00:06:53,735
+in good company.
+
+83
+00:06:54,075 --> 00:06:55,008
+The other direction: from HEAD or
+a short name to a full ref name.
+
+84
+00:06:55,348 --> 00:07:00,920
+--abbrev-ref prints the short branch name.
+--symbolic-full-name prints the full ref,
+
+85
+00:07:00,960 --> 00:07:04,662
+and shows you which namespace
+a short name was found in.
+
+86
+00:07:04,702 --> 00:07:09,740
+main@{1} comes from the reflog. The last
+line reads the index, not a commit.
+
+87
+00:07:10,080 --> 00:07:11,640
+Try it now, thirty seconds, in a
+repository in the lab shell: git rev-parse
+
+88
+00:07:11,680 --> 00:07:12,793
+--abbrev-ref HEAD, then git
+rev-parse HEAD. I'll wait.
+
+89
+00:07:17,633 --> 00:07:19,078
+A short branch name first,
+then a full commit ID.
+
+90
+00:07:19,418 --> 00:07:21,098
+Questions about the repository.
+
+91
+00:07:21,438 --> 00:07:25,571
+At the top level, --git-dir prints .git.
+What will it print from two directories
+
+92
+00:07:25,611 --> 00:07:26,719
+down? Say it out loud.
+
+93
+00:07:31,559 --> 00:07:37,300
+--git-dir answers relative to where you
+are. --show-prefix and --show-cdup are the
+
+94
+00:07:37,340 --> 00:07:41,953
+path from the top level down to
+the current directory and back up.
+
+95
+00:07:41,993 --> 00:07:47,735
+--show-object-format and --show-ref-format
+name the two storage formats that later
+
+96
+00:07:47,775 --> 00:07:53,163
+videos of this part cover. --git-path
+gives the location of a file inside the
+
+97
+00:07:53,203 --> 00:07:58,381
+repository, and stays right when the
+repository is a linked worktree or an
+
+98
+00:07:58,421 --> 00:08:01,342
+environment variable relocates part of it.
+
+99
+00:08:01,682 --> 00:08:04,862
+Now the hook. Error handling
+is where scripts go wrong.
+
+100
+00:08:05,202 --> 00:08:09,871
+The first line asks for a branch that
+doesn't exist and hides the error stream.
+
+101
+00:08:09,911 --> 00:08:14,402
+What ends up in the variable: nothing,
+an error message, or the name itself?
+
+102
+00:08:14,442 --> 00:08:15,117
+Your answer?
+
+103
+00:08:19,957 --> 00:08:24,115
+The variable holds the text
+no-such-branch, and the status is 128.
+
+104
+00:08:24,155 --> 00:08:29,456
+That's the word in the deploy record,
+explained. With --verify --quiet, the variable
+
+105
+00:08:29,496 --> 00:08:34,607
+is empty and the status is 1. --short
+implies --verify, so it accepts exactly one
+
+106
+00:08:34,647 --> 00:08:38,359
+revision. And a merge with two
+parents has no third parent.
+
+107
+00:08:45,899 --> 00:08:51,620
+One limit of --verify: it accepts exactly
+one argument and prints one ID or nothing.
+
+108
+00:08:51,660 --> 00:08:57,312
+It checks that the argument can be turned
+into an ID, not that the object is in the
+
+109
+00:08:57,352 --> 00:09:02,043
+database. A full forty-digit ID
+passes even if no such object exists.
+
+110
+00:09:02,083 --> 00:09:07,324
+The peeling suffix closes that gap,
+because ^{commit} has to read the object.
+
+111
+00:09:09,164 --> 00:09:10,812
+Five mistakes to watch for.
+
+112
+00:09:11,152 --> 00:09:13,383
+Capturing the output of git
+rev-parse without --verify.
+
+113
+00:09:13,423 --> 00:09:16,851
+Root cause: an unresolvable argument is
+printed on standard output and only the exit
+
+114
+00:09:16,891 --> 00:09:17,966
+status reports the failure.
+
+115
+00:09:18,306 --> 00:09:27,512
+Trusting --verify to prove an object exists.
+Root cause: it checks that the argument
+
+116
+00:09:27,552 --> 00:09:36,208
+can be turned into an ID, and a full ID
+passes without a lookup; add ^{commit}.
+
+117
+00:09:36,548 --> 00:09:39,886
+Using a short name in a script
+when a tag and a branch share it.
+
+118
+00:09:39,926 --> 00:09:44,162
+Root cause: the lookup order puts refs/tags/
+before refs/heads/, so the tag wins.
+
+119
+00:09:44,502 --> 00:09:49,525
+Confusing ~2 with ^2. Root cause: tilde
+counts generations along first parents,
+
+120
+00:09:49,565 --> 00:09:51,704
+caret chooses a parent of a merge.
+
+121
+00:09:52,044 --> 00:09:58,855
+Storing abbreviated IDs. Root cause:
+an abbreviation is unique only in one
+
+122
+00:09:58,895 --> 00:10:00,985
+repository at one time.
+
+123
+00:10:02,825 --> 00:10:07,240
+Now, out of the lab. A backend team keeps
+a release script in a subdirectory of the
+
+124
+00:10:07,280 --> 00:10:11,588
+repository, and it's called from CI, from
+laptops and from a cron host, each time
+
+125
+00:10:11,628 --> 00:10:15,936
+from a different directory. The script
+begins with git rev-parse --show-toplevel,
+
+126
+00:10:15,976 --> 00:10:18,727
+which makes it independent
+of the calling directory.
+
+127
+00:10:19,067 --> 00:10:25,933
+To test whether the branch to release exists,
+it runs git rev-parse --verify --quiet
+
+128
+00:10:25,973 --> 00:10:32,839
+"refs/heads/$branch^{commit}", with nothing
+to parse: the exit status is the answer.
+
+129
+00:10:32,879 --> 00:10:39,498
+And when two people disagree about what a
+build contained, they run git rev-parse
+
+130
+00:10:39,538 --> 00:10:44,102
+HEAD^{tree} in both checkouts.
+Equal tree IDs settle it.
+
+131
+00:10:45,942 --> 00:10:50,779
+Your turn. Do Exercise 17.5,
+"What git rev-parse answers", in
+
+132
+00:10:50,819 --> 00:10:57,334
+exercises/m16-m18-internals.md. It's a
+command-prediction exercise: write down the
+
+133
+00:10:57,374 --> 00:11:03,809
+output of every git rev-parse call before
+you run it, and for IDs say whether two
+
+134
+00:11:03,849 --> 00:11:10,445
+outputs are equal or different. Pay attention
+to what changes when HEAD is detached
+
+135
+00:11:10,485 --> 00:11:12,523
+and when a file is staged.
+
+136
+00:11:12,863 --> 00:11:17,806
+The challenge is Exercise 16.8, "Scripts
+that read .git by hand", in the same file.
+
+137
+00:11:19,646 --> 00:11:22,310
+Question 54 of the CTO question bank:
+
+138
+00:11:22,650 --> 00:11:29,237
+A strong answer says what an abbreviation
+is unique within, and over what time.
+
+139
+00:11:29,277 --> 00:11:36,284
+It describes how the failure shows up later,
+as the repository grows, and names what
+
+140
+00:11:36,324 --> 00:11:42,911
+the tool should store and how a script
+obtains that value safely, including the
+
+141
+00:11:42,951 --> 00:11:49,371
+check that the value names a commit. The
+model answer is in the answers file.
+
+142
+00:11:49,411 --> 00:11:51,636
+Give yours first, out loud.
+
+143
+00:11:57,976 --> 00:12:01,794
+Let's land this. Names go
+in, one object ID comes out.
+
+144
+00:12:02,134 --> 00:12:20,850
+You should now be able to say:
+
+145
+00:12:21,190 --> 00:12:25,257
+git rev-parse is the resolver behind
+every command that takes a revision.
+
+146
+00:12:25,597 --> 00:12:31,333
+Tilde counts generations along first parents;
+caret chooses a parent; ^{type} peels
+
+147
+00:12:31,373 --> 00:12:35,439
+to an object of that type; a
+leading colon reads the index.
+
+148
+00:12:35,779 --> 00:12:40,161
+A short name is looked up in a fixed order,
+tags before branches, so scripts write
+
+149
+00:12:40,201 --> 00:12:40,970
+full ref names.
+
+150
+00:12:41,310 --> 00:12:48,558
+In scripts, --verify --quiet with ^{commit}
+gives one ID or a failing exit status.
+
+151
+00:12:48,898 --> 00:12:51,693
+Ask Git for the repository's directory,
+top level and formats; store full IDs.
+
+152
+00:12:53,533 --> 00:12:54,981
+Read section 3.6 of Chapter 3.
+
+153
+00:12:55,321 --> 00:12:59,507
+Today you turned names into IDs,
+and repaired a script that guessed.
+
+154
+00:12:59,547 --> 00:13:04,666
+Practise that before the next video:
+packfiles, pack indexes and delta compression.
+
+155
+00:13:04,706 --> 00:13:07,898
+Until then, look at the
+state first and type second.
+
+156
+00:13:07,938 --> 00:13:09,390
+See you in the next one.

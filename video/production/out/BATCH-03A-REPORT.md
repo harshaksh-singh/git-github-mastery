@@ -1,0 +1,126 @@
+# Batch 3A (V067 to V088): finishing report
+
+Written 2026-10-07 by the finishing inspector of V067 to V088. Voice: the macOS voice Tara at 165 words per minute, no paid service. Every video was built with `make.sh animate` followed by `make.sh voice`, so every one carries the animation layer. The form follows `BATCH-01-REPORT.md`.
+
+## 1. Result
+
+- **22 of 22 videos built.** 22 of 22 pass the technical read (ffprobe and `VNNN.build.json`): 1920x1080, 30/1 fps, H.264 video and AAC audio, picture and sound equal within a tenth of a second (largest difference 0.007 s), built with the animation layer, and built from the script as it is now. 22 of 22 have **PASS** from the QC tool (`make.sh qc`), run after the last voice build of each.
+- Total length 5 h 32 min, 1.49 GB. Files: `video/production/out/VNNN.mp4`, with `.srt`, `.chapters.txt` and `.build.json` beside each; QC reports in `video/production/out/qc/`.
+- **All 22 were built again in this pass**: 20 because a script changed, and all 22 a last time for the voice, after the voice step was repaired during the day (section 7).
+- **How they were inspected.** From frames of the finished MP4s, with the script and the storyboard open: the last moment of every beat that shows an explainer scene, the middle of every long scene, every hand-drawn (ASCII) drawing, every silent hold, and six frames spread over the length: 22 to 44 frames per video, 682 in all, looked at as contact sheets of six half-size frames, and at full size wherever a sheet left a doubt. After each rebuild the changed places were looked at again in the new MP4 (two to ten frames each); the unchanged parts of a rebuilt video were not looked at a second time.
+- **Not done: nobody listened.** No audio was heard at any point. What was done for the sound is in section 7: the text given to the voice was read, the length of every voice clip was compared with its text, and the QC tool's audio measurements were taken. Whether a word is pronounced correctly is unknown.
+
+"Explainer scenes" is the share of the running time during which a library scene or an animated commit graph is on screen (terminals, tables and key points are animated too and are not counted). "QC tool" is the result of `make.sh qc VNNN`; its warnings E5 and E6 are subtitle line length and reading speed.
+
+## 2. Per video
+
+| Video | Length | Size | Explainer scenes | QC tool | What was fixed | Still imperfect |
+|---|---|---|---|---|---|---|
+| **V067** git log is a graph query: selection, filters, graph shape and output formats | 19:02 | 86 MB | 24 % | PASS; warn E5,E6 | The four-stage picture now carries its last caption (the tag had dropped it). The query table of the mental model shows each row with its sentence (rows were one paragraph late and three captions were lost). The production example shows the corrected query, a full timestamp at each end with all five commits of the tenth in the window, under its caption (it showed the uncorrected query). One presenter note in the narration reworded ("Keep the four words on screen in mind"). | In "Which commits did the filter see?" the edge that leaves `ca7e2b7` downwards passes just right of that ID (wider columns would shrink the labels to 14 px). |
+| **V068** Set questions, git grep, and the retirement of git whatchanged | 14:37 | 64 MB | 28 % | PASS; warn E5,E6 | The reflog graph is drawn with wider columns: the edge to `87f090b` no longer grazes the ID `2652768`. | The table "What is searched" stands 7 s in silence before the `git whatchanged` terminal. |
+| **V069** The history of one file: --follow, the pickaxe, line history, and deleted files | 17:58 | 77 MB | 20 % | PASS; warn E5,E6 | Narration: "the method for reading it's the next video" corrected to "it is". | The comparison table of `-S` and `-G` stands 8 s in silence at the end of the diagram section. |
+| **V070** git blame: what a row asserts, reformatting commits, moved code, and a method for finding the origin of a bug | 16:46 | 80 MB | 26 % | PASS; warn E5,E6 | Blame scene checked against the two transcripts (rows 1 to 9 of `git blame scorekit/text.py` and of the run with the ignore file): IDs, line texts and the changed rows 3, 7 and 8 are right. The squash-merge graph has wider columns (edge clear of `9c8df98`). | A key point at 1:16 is drawn as a tall, mostly empty panel (library, section 6). |
+| **V071** git bisect: binary search over commits | 12:52 | 55 MB | 18 % | PASS; warn E5,E6 | "Ask the audience: how many more verdicts" (a presenter note that was read aloud) now reads "Predict: ...". The third mark of the search picture arrives while its sentence is read (it was cut after one second). | None seen. |
+| **V072** git bisect run, the exit-code protocol, custom terms, replay, --first-parent, and the pitfalls | 14:26 | 67 MB | 22 % | PASS; warn E5,E6 | The version note about `--reset-when-found` (70 words shown for 5 s and not read) is now read as a paragraph while it is on screen. | In the merge graph the mark "first bad" touches the edge that arrives at M (library placement). |
+| **V073** What Git keeps: four layers of protection, and the reflog | 15:13 | 71 MB | 26 % | PASS; warn E5 | Vault picture: rows arrive with their sentences and the caption "One card protects a whole chain" is shown (it was dropped). The reset in the first demo graph is finished before the prediction pause. History graph with wider columns (an edge ran through the `main` and HEAD chips). `git gc --prune=now` is drawn as destructive. | None seen. |
+| **V074** Retention and its exceptions, ORIG_HEAD, and git fsck as a search tool | 17:31 | 77 MB | 23 % | PASS; warn E5,E6 | "ORIG_HEAD is one slot": both resets are now visible with time to read them (the second arrived in the last second). Three graphs with wider columns (edges crossed the last character of `536f5df` and `da62b60`). The second root-cause box, held 9 s in silence, now has its root-cause sentence read over it. | The two-column table "writes ORIG_HEAD" stands 5 s in silence. |
+| **V075** The recovery method, and recovering commits I: a hard reset, a deleted branch, a deleted commit | 14:55 | 67 MB | 33 % | PASS; warn E5,E6 | Vault picture: the caption of the second paragraph is shown (it was dropped). Both incident graphs with wider columns (edges touched IDs). In the second incident the branch label is gone when the narration says so (the step was cut). ORIG_HEAD after the second reset checked in a sandbox (fix list). | The on-screen list of the eight steps stands 6 s in silence before the cards scene. |
+| **V076** Recovering commits II: a wrong rebase, a bad merge, the wrong branch, detached HEAD, a wrong cherry-pick | 14:36 | 67 MB | 27 % | PASS; warn E5,E6 | "Commits on the wrong branch": the side branch is drawn above the main line, so no edge runs through the ID `4711dcc` any more. Five more graphs with wider columns. The replay of the opening and three late steps re-timed; two four-second paragraphs got a pause so that their step can finish. Two root-cause boxes held in silence now have their root-cause sentence read over them. ORIG_HEAD positions checked (fix list). | None seen. |
+| **V077** Recovering uncommitted work, and recovering from the remote side | 14:04 | 63 MB | 28 % | PASS; warn E5,E6 | Stash graph: wider, and the two entries are visible with their names before `git stash clear` (all steps had played in the first second). Forced-push panels: the forced commit is drawn above the line, so the merge edge no longer crosses the ID `d8a3934`. Blob card `fd0a951`: the pill "not in this repository" no longer covers its last line (workaround, section 6). | The missing blob's card shows "..." for its first two lines. |
+| **V078** A damaged repository, and what cannot be recovered | 13:14 | 57 MB | 28 % | PASS; warn E5 | The corrupt-index picture showed the file name with two underscores (`any__file`); the reset step now comes when the narration reaches `git reset`. | The placeholder file name is still drawn `any_file` (the `file=` value is not put through the underscore rule). |
+| **V079** The point of no return, prevention with backup refs and bundles, and what GitHub adds | 17:36 | 77 MB | 22 % | PASS; warn E5 | The "Unverified" caveat about the GitHub recipe is now read (it was a one-word card for 24 s under other narration). `git reset --hard` drawn as destructive. Backup-ref graph with wider columns. | The `gh api` line types itself in 2.5 s of silence in a terminal titled with the lab's name. |
+| **V080** Tags: three kinds, two mechanisms, listing, and how tags travel | 14:25 | 65 MB | 24 % | PASS; warn E5,E6 | The field table of the tag object is now read (it stood 7.5 s in silence; storyboard hint closed). | "Precisely." stands alone as a key point for one second. |
+| **V081** Why a published tag must not move | 13:41 | 62 MB | 25 % | PASS; warn E5,E6 | Fix list: the repair transcript (`06-repair`) is back on screen while its paragraph walks through the commands, and the CI transcript likewise; the three-repository picture follows each. `git push --force` drawn as destructive. "Ask the audience" reworded to "Predict". | In the three-panel picture the server and CI panels are drawn smaller than the middle one; their IDs are about 14 px. |
+| **V082** git describe, Semantic Versioning, and release branches on the Git side | 15:56 | 72 MB | 24 % | PASS; warn E5,E6 | Release-branch graph with wider columns (the edge to `c40960e` grazed the ID `eb112a5`). | None seen. |
+| **V083** Linked worktrees: what they are, what is shared, and one branch per worktree | 13:43 | 66 MB | 24 % | PASS; warn E5,E6 | Intro graph with wider columns (edge clear of `168d50a`); its labels arrive while they are named. | The seven-column table "what changes" at 8:13 breaks "unchanged" as "unchange / d" in two columns (library) and stands 5 s in silence. |
+| **V084** Worktrees in use: the hotfix during a rebase, reviewing a branch, the life cycle, and the pitfalls | 15:06 | 72 MB | 26 % | PASS; warn E5,E6 | Nothing needed changing. | None seen. |
+| **V085** Stash internals: a stash entry is a small commit graph | 12:04 | 51 MB | 23 % | PASS; warn E5,E6 | The table of four trees showed literal underscores (`H_8f8672d`); now `H 8f8672d`. In the diagram section U is erased later. | In the diagram section the complete picture with U stands only about 2 s before U is erased. The role pill H touches an edge. |
+| **V086** Rerere: resolve a conflict once | 14:16 | 64 MB | 23 % | PASS; warn E5 | Intro graph: three states instead of four, each finished inside its sentence. Fix list: the "volatile" and "Unverified" caveats are now read while their cards are shown. | In the last state of the intro graph the dashed edge to the discarded test merge crosses the edge of the real merge (the two merges share both parents). |
+| **V087** .gitattributes: per-path settings that travel, and line endings | 14:37 | 63 MB | 25 % | PASS; warn E5,E6 | The state table is now read (7 s of silence; storyboard hint closed). Fix list: the "Outdated advice" caveat is now read. | A key point at 1:14 is drawn as a tall, mostly empty panel (library). |
+| **V088** Diff drivers, merge drivers, and clean and smudge filters | 15:43 | 70 MB | 23 % | PASS; warn E5,E6 | Nothing needed changing. | A key point at 1:09 is drawn as a tall, mostly empty panel (library). |
+
+### Imperfections that apply to several videos
+
+- **Text or a table held in silence.** Where an `[ON SCREEN]` direction or a table is followed directly by a terminal or a scene, it is shown for 3 to 8 seconds with nothing read (V068, V069, V074, V075, V083). Two such tables were given a sentence (V080, V087); the others would need a new sentence each.
+- **Terminals type before they are spoken about.** Most demo transcripts appear in a silent hold of 2 to 8 seconds before their paragraph (1 to 12 such holds per video, 68 s in V076 before this pass, less now). This is the pipeline's normal behaviour; it was changed only where the paragraph that explains a transcript was being read over something else (V081).
+- **A step placed at 82 % of a short paragraph is cut.** When a paragraph plays several steps and nothing sets their timing, the last one starts 82 % into the paragraph. In a paragraph of four to eight seconds it does not finish before the next beat takes the screen. Found and re-timed with `at_<step>=` or a `[PAUSE]` in V071, V073, V074, V075, V076, V083, V085 and V086. A scan of all 22 storyboards for this pattern found no other case in which the next beat is not the same scene; it cannot see a step that is merely late for its sentence.
+- **Edges close to IDs.** A branch drawn below the line leaves its commit under the ID of that commit. With the default column width the edge touches the last characters; `dx=230` to `260` (or a `^` row above the line) clears it. Done in 19 graphs of 11 videos. One is left (V067) because wider columns shrink its labels below a legible size.
+- **Marks and pills on edges.** A mark above a commit that an edge reaches from the upper left sits on that edge (V072 "first bad"), and a role pill can touch an edge (V085 "H").
+- **Presenter notes in the narration.** "Ask the audience:" (V071, V081) and "Hold the four words on screen" (V067) were instructions to a presenter that the voice read out; they were reworded. "Point at ..." (V067, V068, V069, V070, V084) was left: the course uses it to address the viewer ("point at the branch of this tree", V075).
+- **Explainer share.** 20 to 33 percent in 21 of the 22 videos; V071 has 18 percent. The brief's aim was a quarter to a third.
+
+## 3. Fix-list items (`authoring/VIDEO_FIX_LIST.md`)
+
+| Item | Outcome |
+|---|---|
+| V075, V076: what `ORIG_HEAD` holds after the second reset | **Closed.** Replayed in a throwaway repository (Git 2.55.0, `GIT_CONFIG_GLOBAL=/dev/null`, a scratchpad directory): six commits, `git reset --hard HEAD~3`, `git branch rescue ORIG_HEAD`, `git reset --hard rescue`. After the second reset `ORIG_HEAD` is the tip from before it, the three-commits-shorter one. The pictures agree: V075 draws it on `798cb66`; V076 draws it on `deec1c6` after the first reset and on `df44d03` after the second, and in the opening on `48b4def` after the stale reset. |
+| "Contraction passes were scripted: spot-check subtitles" | **Closed for this range.** Every "it's" and "its" in the 22 subtitle files was listed with its sentence (41 "it's") and read. One was wrong (V069, "reading it's the next video") and is corrected. |
+| V081: a transcript shortened to a silent hold although its paragraph walks through the repair commands | **Closed.** The paragraph is read over the transcript `06-repair`; the picture follows at the quiz. The same was done for the CI transcript. Seen in the rebuilt video at 7:38 to 8:22. |
+| V086, V087: "Unverified", "volatile", "Outdated advice" callouts shown and not read | **Closed**, and the same for V079 ("Unverified", the GitHub recipe) and V072 (the version note). Each caveat is now a narration paragraph made of the direction's own sentences, read while its card is on screen. No fact was added. Narration grew by 3.8 % in V086, 2.9 % in V072, 2.5 % in V087 (which includes the table sentence), 1.8 % in V079 and 1.5 % in V076; V086 is above the 3 percent of the scene-pass brief, because two caveats had to be read in full. |
+| V070: the blame scene after the library fix | **Checked, right.** Seen at 2:44 and 4:40: nine rows, IDs `d926d3c5`, `dd70d9e4`, `9c8df982`, `c0d33a57` as in the transcript, the underscore of `_PUNCTUATION` drawn, indentation kept; with the formatter commit ignored, rows 3, 7 and 8 change to `d926d3c5`, `d926d3c5`, `dd70d9e4`, as the second transcript prints. |
+| All ranges: no diagram held in silence | **Checked.** Every beat that shows a hand-drawn drawing was listed from the storyboards. Every `[DIAGRAM]` section has narration over its drawing. Three root-cause boxes in demo sections (one in V074, two in V076) were held 8 s in silence; each now has one sentence, the box's own "Root cause" line. |
+| All ranges: definitions, one wording per term | **Open.** Not part of this pass (final pass, with the glossary). |
+
+## 4. Other things corrected
+
+- Storyboard notices: V080 and V087 each had one ("the table is held in silence"); both are gone. `make.sh storyboard` reports no warning and no notice for any of the 22.
+- Commands that destroy something are drawn as such (red, warning triangle) where they were not: `git gc --prune=now` (V073), `git reset --hard HEAD~1` (V079), `git push --force origin v1.2.0` (V081).
+- After the edits `python3 tools/inject.py --check` reports 0 problems for each edited script. `python3 tools/check_course.py` reports 0 problems (698 Markdown files) at the end of the pass.
+- Only `[ANIMATION]` and `[PAUSE]` lines and the narration sentences named in this report were changed. No snippet, table, heading or `[ON SCREEN]` line was touched. Library files were not edited.
+
+## 5. What was verified by looking, and what was not
+
+Verified in frames of the finished videos: every item in the "What was fixed" column; the absence of overlapping or cut text, of a stray "!" before a command, and of literal underscores in captions and labels (two cases found and fixed: V078, V085); that no quiz is asked over a picture that shows its answer (the prediction pauses were looked at one by one); that scene captions fit the paragraph being read at the sampled moments.
+
+Not verified: frames between the samples (a scene is sampled at the end of each beat, not during its motion); the unchanged parts of a video after its rebuild; the audio (section 7); the subtitles beyond the contraction read and the QC tool's checks.
+
+## 6. Library defects and limits found (nothing in `tools/` was edited)
+
+| # | Where seen | Defect | Workaround used |
+|---|---|---|---|
+| 1 | V067 lines 70 to 78 and 84 to 104, V073 line 72, V075 line 90 | A scene tag with no `step:` tag, then a paragraph, then `say: ...` and a second paragraph: the planner keeps the scene's last step for the second paragraph and drops the `say:` text. The picture is one paragraph late and the caption never appears. No warning. | `step: <last step>` directly after the scene tag |
+| 2 | V067 line 606 | `step: window.full` for a step that the scene has already passed is ignored without a warning (a scene cannot go back). | a new one-state graph |
+| 3 | V077 line 281, frame 7:07 | `objects` with `cards=` and `missing=`: the pill "not in this repository" is drawn over the last row of a card with three rows. Rendered with `--look` in four variants: it is only clear with two rows and an empty one. | first two rows replaced by "..." |
+| 4 | V071, V073, V074, V075, V076, V083, V085, V086 | A step that starts at the default 82 % of a short paragraph is cut when the next beat is not the same scene; the rule "a step is not over before the camera has settled" does not lengthen the beat. | `at_<step>=`, or a `[PAUSE]` |
+| 5 | V083, 8:13 | A Markdown table with seven columns breaks a word inside the word ("unchange / d"). | none |
+| 6 | V070 1:16, V087 1:14, V088 1:09 | Key points in the "card" layout (`keypoint_html` in `tools/video_animate.py`, every second key point without a drawing) put one or two lines at the top of a panel about 410 px high; the rest of the panel is empty. | none |
+| 7 | V072 6:17, V085 1:55 | A mark above a commit sits on an edge that reaches the commit from the upper left; a role pill and the `main` chip sit on the first-parent edge of a stash entry. | none |
+| 8 | V081 4:45 and later | Three repository panels side by side: the two outer panels are scaled smaller than the middle one (IDs about 14 px). | none |
+| 9 | V078 line 75 | `trees: file=` draws the value as written: `any__file` shows two underscores, `any_file` one. The underscore rule of section 8 of the style guide does not apply to it, which the guide does not say. | one underscore |
+| 10 | V079 12:34, V086 9:36, V087 10:18 | A quoted `[ON SCREEN]` direction shows only its quotation; the rest of the direction is neither shown nor read. This is how four caveats were lost. | the caveat as narration |
+| 11 | V067 line 358 | A graph of 15 commits in three rows: with `dx=230` the layout check reports labels of 14 px. There is no way to widen one column. | left as it is |
+
+## 7. The sound (not listened to)
+
+Nobody listened to any of the 22 videos. What follows is what could be established without ears.
+
+**What was found.** When the first rebuilt video of this pass (V087) was inspected, a table sentence of 17 words lasted 15.7 s on screen. The cause was the voice step: under load the macOS voice returned clips with words missing, drawn out or repeated, and the cache kept them. A scan of clip length against text length flagged 133 of the 1,796 voice clips of this range in the builds of the morning (V070 17, V084 16, V087 14, V074 12 and so on; V067 to V069, built first, one or two each). Later, after the first repair of the voice step, the QC tool failed six re-voiced videos on loudness (V067, V069, V073, V074, V075, V077: -17.2 to -18.4 LUFS against a target of -16): each contained one to three clips that the voice had rendered 10 to 12 dB too loud and clipped (for example V069, the paragraph "The value changed and the name stayed": 21 s at -6.2 dBFS against a median of -18.3, with 32,108 samples at full scale), with the right length, so the two-take check had accepted them. Both findings went to the coordinator, who repaired `tts()` in `tools/video_build.py` during the day (one synthesis at a time, two takes that agree, pace bounds, and since about 16:45 a check for level, clipping and inner silence) and the speech normaliser. The original builds of the morning must not be used; they no longer exist under these names.
+
+**State now.** All 22 were voiced again with the repaired step, at normal priority, one at a time: V078 to V082 and V084 to V088 between 17:00 and 20:12, V067 to V077 and V083 between 20:14 and 21:30. Then:
+
+- `make.sh qc V067-V088`: 22 PASS, 0 failed. Warnings only for subtitle line length (E5, all 22) and reading speed (E6, 18 of 22).
+- Every one of the 1,796 voice clips has its verification mark. Length against text: 32 clips are more than 1.45 times slower, or more than 1.6 times faster, per letter than the median. 31 of them are sentences full of numbers, section numbers, IDs or file paths, which are longer spoken than written ("Read sections 25.1 to 25.4 of Chapter 25": 5.1 s). **One is implausibly short and should be heard: V070, the bold lead-in "Looking in blame for who removed something." (script line 732, in Common mistakes): 1.6 s for seven words.**
+- Level: no clip of the range is more than 5 dB from the median of its video (`loudclips.py`, written for this pass).
+- The list is in `video/production/.cache/inspect-b3a/ttsscan2-final.txt`.
+
+**The text given to the voice** (`video/production/.cache/tts/VNNN.spoken.txt`) was read for V072, V080, V082, V085 and V087 after the normaliser change. An object ID is now its first four characters ("9 6 2 e"); the first version had put the word "commit" before every ID, also before blob IDs in V085, which was reported and corrected before the final voice pass. Wordings that remain odd:
+
+| Video, script line | The voice is given | Remark |
+|---|---|---|
+| V080 line 20 | "v 1 point 0 point 0 caret, empty curly braces, with empty braces, follows them" | the braces are named twice |
+| V087 line 56 | "git restore dot here writes back files" | `git restore .` followed by the word "here" |
+| V087 lines 35 and 39 | "sample dot C S V", but "CSV files" | one spelling spelled out, one left to the voice |
+| V080 line 62 | "W I P-retry-header" | the tag `wip-retry-header` |
+| V072, V082, V085, V087, V088 (reading lists) | "sections 14 B point 12 to 14 B point 14 of Chapter 14B" | section numbers are read like version numbers; "Exercise 13.6" and "sections 25.1 to 25.4" are left as they are |
+| V082 line 73 | "git cherry dash v release slash 1.2 main" | the branch `release/1.2` keeps "1.2" while versions are "1 point 2" |
+
+The voice still fails now and then on a whole sentence under load ("Deleting. Three places." took between 0.7 and 9.4 s in eight attempts); the builder then refuses the video and the queue tries again. V069, V074 and V080 each needed a second or third attempt.
+
+## 8. Verification at the end
+
+- ffprobe and `VNNN.build.json` for all 22: see section 1. The script hash in every storyboard equals the script on disk, and every MP4 is newer than its script.
+- `make.sh qc V067-V088`: 22 PASS.
+- `make.sh storyboard`: no warning and no notice for any of the 22.
+- Rebuilds ran one at a time from a detached queue; `--look` renders one at a time (31 renders, prefix `b3a-`). Logs: `video/production/.cache/inspect-b3a/rebuild.log`, `rebuild2.log`, `rebuild3.log`, `rebuild5.log`; working notes: `video/production/.cache/inspect-b3a-progress.md`.
+- Times given in this report (minutes and seconds) are from the build that was inspected; the final voice pass moved some of them by a few seconds.
+- No `git` command was run in the course directory, nothing was run against GitHub, no video outside V067 to V088 was touched, and nothing in `tools/` was edited.

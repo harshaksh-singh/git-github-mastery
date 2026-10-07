@@ -1,1009 +1,1009 @@
 1
-00:00:04,500 --> 00:00:06,803
+00:00:04,500 --> 00:00:08,007
 Your CTO asks: "Security
 reviewed commit X on Friday.
 
 2
-00:00:06,843 --> 00:00:10,031
+00:00:08,047 --> 00:00:12,893
 Monday's build was made from commit
 Y. The diff between X and Y is empty.
 
 3
-00:00:10,071 --> 00:00:11,622
+00:00:12,933 --> 00:00:15,302
 Did we deploy reviewed code or not?"
 
 4
-00:00:11,962 --> 00:00:16,527
+00:00:15,642 --> 00:00:20,210
 Two IDs. An empty diff between them,
 so not one line of code differs.
 
 5
-00:00:16,567 --> 00:00:20,465
+00:00:20,250 --> 00:00:24,151
 Both facts are true at the same
 time, and neither is a bug.
 
 6
-00:00:20,505 --> 00:00:22,400
+00:00:24,191 --> 00:00:26,088
 How? Say your guess out loud.
 
 7
-00:00:27,240 --> 00:00:31,687
+00:00:30,928 --> 00:00:36,407
 A commit ID is the hash of the whole commit
 object, and that object contains the
 
 8
-00:00:31,727 --> 00:00:36,399
+00:00:36,447 --> 00:00:42,203
 moment the commit was created. A commit is
 one saved snapshot of the project, with a
 
 9
-00:00:36,439 --> 00:00:40,774
+00:00:42,243 --> 00:00:47,584
 note about who saved it and when. A hash
 is a fingerprint computed from bytes.
 
 10
-00:00:41,114 --> 00:00:46,244
+00:00:47,924 --> 00:00:52,904
 An amend, a rebase or a cherry-pick, three
 commands that later videos teach, writes
 
 11
-00:00:46,284 --> 00:00:49,608
+00:00:52,944 --> 00:00:56,170
 a new object with the same
 content and a different ID.
 
 12
-00:00:49,648 --> 00:00:54,529
+00:00:56,210 --> 00:01:00,947
 To answer the CTO you need to know exactly
 what is in a commit object, what git
 
 13
-00:00:54,569 --> 00:00:57,520
+00:01:00,987 --> 00:01:03,850
 commit writes, and what
 the ID is computed from.
 
 14
-00:00:59,360 --> 00:01:03,512
+00:01:05,690 --> 00:01:09,578
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 15
-00:01:03,552 --> 00:01:09,147
+00:01:09,618 --> 00:01:14,858
 You've met commits twice: as one of four
 object types in video 8, and as the thing
 
 16
-00:01:09,187 --> 00:01:14,919
+00:01:14,898 --> 00:01:20,267
 the index turns into in video 15. The next
 three videos are about the commit itself.
 
 17
-00:01:15,259 --> 00:01:21,097
+00:01:20,607 --> 00:01:25,486
 Hold on to one idea through all three: a
 commit is a small text object that never
 
 18
-00:01:21,137 --> 00:01:27,119
+00:01:25,526 --> 00:01:30,526
 changes after it is written. Every command
 that seems to change one, amend, rebase,
 
 19
-00:01:27,159 --> 00:01:32,996
+00:01:30,566 --> 00:01:35,444
 cherry-pick, sign, writes another object
 and moves a ref, a name that points at a
 
 20
-00:01:33,036 --> 00:01:33,504
+00:01:35,484 --> 00:01:35,869
 commit.
 
 21
-00:01:33,844 --> 00:01:38,728
+00:01:36,209 --> 00:01:41,093
 Today: the fields of a commit, the six
 steps of git commit, the files it touches
 
 22
-00:01:38,768 --> 00:01:43,898
+00:01:41,133 --> 00:01:46,264
 under .git, and the commit ID computed by
 hand. By the end, you'll answer the CTO in
 
 23
-00:01:43,938 --> 00:01:44,698
+00:01:46,304 --> 00:01:47,064
 one sentence.
 
 24
-00:01:46,538 --> 00:01:48,117
+00:01:48,904 --> 00:01:50,482
 Here's what you'll walk away with.
 
 25
-00:01:48,457 --> 00:01:49,869
+00:01:50,822 --> 00:01:52,234
 After this video you can:
 
 26
-00:01:50,209 --> 00:01:52,192
+00:01:52,574 --> 00:01:54,558
 Read every field of a commit object.
 
 27
-00:01:52,532 --> 00:01:56,297
+00:01:54,898 --> 00:01:58,600
 List what git commit writes under
 .git, and what it leaves untouched.
 
 28
-00:01:56,637 --> 00:01:59,960
+00:01:58,940 --> 00:02:02,263
 Compute why a change to any
 field gives another commit ID.
 
 29
-00:02:00,300 --> 00:02:03,362
+00:02:02,603 --> 00:02:05,665
 State what a commit ID
 guarantees, and what it does not.
 
 30
-00:02:05,202 --> 00:02:09,090
+00:02:07,505 --> 00:02:12,027
 What a commit is. In one sentence: a commit
 is an immutable object that names one
 
 31
-00:02:09,130 --> 00:02:13,067
+00:02:12,067 --> 00:02:16,646
 complete snapshot of the project, the commit
 or commits it was built on, who wrote
 
 32
-00:02:13,107 --> 00:02:16,365
+00:02:16,686 --> 00:02:20,476
 the change and when, who created
 the commit and when, and a message.
 
 33
-00:02:16,705 --> 00:02:18,838
+00:02:20,816 --> 00:02:22,949
 The manual lists five required fields.
 
 34
-00:02:19,178 --> 00:02:23,443
+00:02:23,289 --> 00:02:27,554
 tree: the tree object of the top-level
 directory, the full snapshot.
 
 35
-00:02:23,483 --> 00:02:24,203
+00:02:27,594 --> 00:02:28,314
 Exactly one.
 
 36
-00:02:24,543 --> 00:02:28,449
+00:02:28,654 --> 00:02:33,239
 parent: a commit this one was built on.
 None for a root commit, one for an ordinary
 
 37
-00:02:28,489 --> 00:02:29,971
+00:02:33,279 --> 00:02:35,022
 commit, two or more for a merge.
 
 38
-00:02:30,311 --> 00:02:35,722
+00:02:35,362 --> 00:02:40,772
 author: name, email, time and time-zone
 offset of the person who wrote the change.
 
 39
-00:02:35,762 --> 00:02:35,988
+00:02:40,812 --> 00:02:41,038
 One.
 
 40
-00:02:36,328 --> 00:02:37,708
+00:02:41,378 --> 00:02:45,152
 committer: the same for the person
 who created this commit object.
 
 41
-00:02:37,748 --> 00:02:37,794
+00:02:45,192 --> 00:02:45,383
 One.
 
 42
-00:02:38,134 --> 00:02:40,860
+00:02:45,723 --> 00:02:48,448
 The message: free text
 after one empty line.
 
 43
-00:02:41,200 --> 00:02:45,857
+00:02:48,788 --> 00:02:53,693
 Quick quiz, three options. Which of these
 is stored inside a commit object: the
 
 44
-00:02:45,897 --> 00:02:49,663
+00:02:53,733 --> 00:02:57,700
 branch name, the diff, or the
 committer's time? Say your answer.
 
 45
-00:02:54,503 --> 00:02:59,244
+00:03:02,540 --> 00:03:07,306
 The committer's time. A commit holds no
 diff, no branch name and no file names.
 
 46
-00:02:59,284 --> 00:03:04,207
+00:03:07,346 --> 00:03:12,294
 Optional headers can follow the committer
 line: encoding, and gpgsig, a signature.
 
 47
-00:03:04,547 --> 00:03:09,558
+00:03:12,634 --> 00:03:17,645
 Inside .git: one object per commit in the
 object database, Git's store of objects.
 
 48
-00:03:09,598 --> 00:03:14,732
+00:03:17,685 --> 00:03:22,820
 Nothing else describes a commit. There's no
 table of commits and no per-branch list.
 
 49
-00:03:14,772 --> 00:03:18,798
+00:03:22,860 --> 00:03:26,885
 A branch reaches its commits by
 following parent IDs from its tip.
 
 50
-00:03:19,138 --> 00:03:23,903
+00:03:27,225 --> 00:03:31,990
 How git commit creates a commit. In one
 sentence: git commit turns the index into
 
 51
-00:03:23,943 --> 00:03:28,827
+00:03:32,030 --> 00:03:36,914
 tree objects, wraps the top tree in a new
 commit object whose parent is the current
 
 52
-00:03:28,867 --> 00:03:32,209
+00:03:36,954 --> 00:03:40,296
 HEAD commit, and moves the
 current branch to that object.
 
 53
-00:03:32,249 --> 00:03:36,717
+00:03:40,336 --> 00:03:44,805
 It is 🟢 SAFE. The index is the middle
 box, and HEAD is the commit you're on.
 
 54
-00:03:37,057 --> 00:03:40,676
+00:03:45,145 --> 00:03:48,716
 Six steps, in the order in which
 their results depend on each other.
 
 55
-00:03:41,016 --> 00:03:44,133
+00:03:49,056 --> 00:03:52,172
 One, content: the index
 is the proposed snapshot.
 
 56
-00:03:44,473 --> 00:03:49,753
+00:03:52,512 --> 00:03:57,792
 Two, checks and message: the pre-commit
 hook runs before the message is obtained,
 
 57
-00:03:49,793 --> 00:03:55,270
+00:03:57,832 --> 00:04:03,309
 and the commit-msg hook can reject the
 message. A hook is a script Git runs at a set
 
 58
-00:03:55,310 --> 00:03:57,306
+00:04:03,349 --> 00:04:05,345
 moment. --no-verify skips both.
 
 59
-00:03:57,646 --> 00:04:02,072
+00:04:05,685 --> 00:04:09,860
 Three, trees: Git builds one tree per
 directory from the index entries.
 
 60
-00:04:02,112 --> 00:04:06,979
+00:04:09,900 --> 00:04:14,489
 A tree that the object database already
 holds keeps its ID, and nothing new is
 
 61
-00:04:07,019 --> 00:04:09,998
+00:04:14,529 --> 00:04:17,338
 stored. git write-tree
 performs this step alone.
 
 62
-00:04:10,338 --> 00:04:13,902
+00:04:17,678 --> 00:04:21,521
 Four, parent: the commit that HEAD
 resolves to becomes the parent.
 
 63
-00:04:13,942 --> 00:04:18,052
+00:04:21,561 --> 00:04:25,992
 A first commit has none. A merge in
 progress adds the commits in MERGE_HEAD.
 
 64
-00:04:18,392 --> 00:04:27,893
+00:04:26,332 --> 00:04:31,223
 Five, the commit object: tree ID, parent
 IDs, author, committer and message are
 
 65
-00:04:27,933 --> 00:04:33,811
+00:04:31,263 --> 00:04:34,281
 written as one object. Its
 hash is the commit ID.
 
 66
-00:04:34,151 --> 00:04:39,090
+00:04:34,621 --> 00:04:39,793
 Six, refs: the ref that HEAD names is set
 to the new ID, and the reflogs of HEAD and
 
 67
-00:04:39,130 --> 00:04:43,951
+00:04:39,833 --> 00:04:44,880
 of the branch each gain a line. A reflog
 is Git's local journal of where a ref has
 
 68
-00:04:43,991 --> 00:04:44,425
+00:04:44,920 --> 00:04:45,377
 pointed.
 
 69
-00:04:50,165 --> 00:04:54,554
+00:04:51,117 --> 00:04:55,506
 Nothing in a commit says which branch it
 is on. It goes wherever HEAD pointed when
 
 70
-00:04:54,594 --> 00:04:55,634
+00:04:55,546 --> 00:04:56,586
 you ran the command.
 
 71
-00:04:55,974 --> 00:05:00,664
+00:04:56,926 --> 00:05:02,144
 The commit ID. In one sentence: a commit ID
 is the hash of the commit object, so one
 
 72
-00:05:00,704 --> 00:05:05,281
+00:05:02,184 --> 00:05:07,277
 ID names the snapshot, the metadata and,
 through the parent IDs, the whole history
 
 73
-00:05:05,321 --> 00:05:06,294
+00:05:07,317 --> 00:05:08,404
 behind the commit.
 
 74
-00:05:06,634 --> 00:05:11,214
+00:05:08,744 --> 00:05:14,405
 Precisely: Git hashes the bytes commit,
 a space, the size, one NUL byte, and the
 
 75
-00:05:11,254 --> 00:05:15,950
+00:05:14,445 --> 00:05:20,248
 object content. With the default object
 format the hash is SHA-1 and the ID has 40
 
 76
-00:05:15,990 --> 00:05:18,722
+00:05:20,288 --> 00:05:23,668
 hexadecimal digits. A
 SHA-256 repository has 64.
 
 77
-00:05:19,062 --> 00:05:22,831
+00:05:24,008 --> 00:05:27,777
 Two properties follow. Same
 bytes, same ID, on any machine.
 
 78
-00:05:22,871 --> 00:05:28,189
+00:05:27,817 --> 00:05:33,135
 The replays in this course pin the identity
 and the clock, which is the only reason
 
 79
-00:05:28,229 --> 00:05:30,512
+00:05:33,175 --> 00:05:35,459
 your IDs can equal the printed ones.
 
 80
-00:05:30,852 --> 00:05:36,968
+00:05:35,799 --> 00:05:41,017
 And any change, new ID. The parent line
 contains the parent's ID, so an ID depends
 
 81
-00:05:37,008 --> 00:05:43,123
+00:05:41,057 --> 00:05:46,276
 on every ancestor. Nobody can alter an old
 commit without changing the ID of every
 
 82
-00:05:43,163 --> 00:05:44,324
+00:05:46,316 --> 00:05:47,302
 commit after it.
 
 83
-00:05:44,664 --> 00:05:49,656
+00:05:47,642 --> 00:05:52,635
 What the ID does not guarantee. It says
 nothing about who really wrote the commit.
 
 84
-00:05:49,696 --> 00:05:54,812
+00:05:52,675 --> 00:05:57,790
 Author and committer are assertions: --author,
 the configuration and the environment
 
 85
-00:05:54,852 --> 00:05:59,660
+00:05:57,830 --> 00:06:02,639
 accept any text. Only a verified signature
 is evidence of who created a commit.
 
 86
-00:05:59,700 --> 00:06:04,570
+00:06:02,679 --> 00:06:07,549
 And an ID names the commit, and nothing
 outside it: a run started from a working
 
 87
-00:06:04,610 --> 00:06:08,867
+00:06:07,589 --> 00:06:11,845
 tree with uncommitted edits executed
 code that no commit ID describes.
 
 88
-00:06:09,207 --> 00:06:14,091
+00:06:12,185 --> 00:06:17,252
 Abbreviated IDs. Any unique prefix of at
 least four characters names an object.
 
 89
-00:06:14,131 --> 00:06:19,203
+00:06:17,292 --> 00:06:22,554
 Git prints abbreviations whose length it
 computes from the size of the repository,
 
 90
-00:06:19,243 --> 00:06:24,004
+00:06:22,594 --> 00:06:27,532
 seven characters in these sandboxes. A
 prefix that is unique today can become
 
 91
-00:06:24,044 --> 00:06:28,742
+00:06:27,572 --> 00:06:32,445
 ambiguous later, so deploy records and
 model cards should store the full ID.
 
 92
-00:06:30,582 --> 00:06:35,255
+00:06:34,285 --> 00:06:38,866
 The textbook's analogy: an entry in a
 ledger whose page numbers are computed from
 
 93
-00:06:35,295 --> 00:06:40,084
+00:06:38,906 --> 00:06:43,602
 what is written on the page. Each entry
 points at a full inventory sheet, cites the
 
 94
-00:06:40,124 --> 00:06:44,856
+00:06:43,642 --> 00:06:48,280
 page number of the entry before it, and
 names who did the work and who entered it.
 
 95
-00:06:44,896 --> 00:06:47,765
+00:06:48,320 --> 00:06:51,132
 Change one character, and
 the page number changes.
 
 96
-00:06:48,105 --> 00:06:52,102
+00:06:51,472 --> 00:06:56,628
 Now apply it to the hook. Somebody rewrote
 the entry on Monday: same inventory
 
 97
-00:06:52,142 --> 00:06:55,829
+00:06:56,668 --> 00:07:01,423
 sheet, same previous page, a new time
 of entry. The page number changed.
 
 98
-00:06:55,869 --> 00:06:57,899
+00:07:01,463 --> 00:07:04,088
 The inventory didn't. That's Y beside X.
 
 99
-00:06:58,239 --> 00:07:03,322
+00:07:04,428 --> 00:07:09,511
 The analogy breaks at the binding. A ledger
 is one sequence, while an entry in Git
 
 100
-00:07:03,362 --> 00:07:07,883
+00:07:09,551 --> 00:07:14,072
 may cite two earlier entries, which
 is a merge, or none, which is a root.
 
 101
-00:07:09,723 --> 00:07:14,682
+00:07:15,912 --> 00:07:20,870
 The ref points at the commit. The commit
 box lists its fields: one tree, no parent,
 
 102
-00:07:14,722 --> 00:07:18,535
+00:07:20,910 --> 00:07:24,724
 an author with a time, a committer
 with a time, and the message.
 
 103
-00:07:18,575 --> 00:07:20,764
+00:07:24,764 --> 00:07:26,952
 The tree arrow leads to the snapshot.
 
 104
-00:07:21,104 --> 00:07:24,922
+00:07:27,292 --> 00:07:31,111
 That box is the hook, written out.
 We return to it after the demo.
 
 105
-00:07:26,762 --> 00:07:28,799
+00:07:32,951 --> 00:07:37,186
 A new repository, evalkit, and its
 first commit. git commit 🟢 SAFE.
 
 106
-00:07:29,139 --> 00:07:54,763
+00:07:37,526 --> 00:07:41,775
 (root-commit) in the summary line
 says that this commit has no parent.
 
 107
-00:07:54,803 --> 00:08:02,829
+00:07:41,815 --> 00:07:43,123
 Now the object itself.
 
 108
-00:08:03,169 --> 00:08:09,104
+00:07:43,463 --> 00:07:47,881
 git cat-file -p prints the object
 as stored. Read every field.
 
 109
-00:08:09,144 --> 00:08:15,754
+00:07:47,921 --> 00:07:52,842
 The tree line names the snapshot,
 and HEAD^{tree} asks for that tree.
 
 110
-00:08:15,794 --> 00:08:23,561
+00:07:52,882 --> 00:07:58,666
 There's no parent line. author and committer
 end with a time in seconds since the
 
 111
-00:08:23,601 --> 00:08:28,476
+00:07:58,706 --> 00:08:02,334
 first of January 1970, UTC,
 and an offset from UTC.
 
 112
-00:08:28,516 --> 00:08:32,813
+00:08:02,374 --> 00:08:05,569
 One empty line separates
 headers and message.
 
 113
-00:08:33,153 --> 00:08:37,428
+00:08:05,909 --> 00:08:10,418
 Now a second commit, watched from the
 plumbing side, the low-level commands.
 
 114
-00:08:37,468 --> 00:08:41,288
+00:08:10,458 --> 00:08:14,488
 The script stages an edit and runs
 git write-tree before committing.
 
 115
-00:08:41,328 --> 00:08:46,057
+00:08:14,528 --> 00:08:19,515
 Predict two things: which ID will appear on
 the new commit's tree line, and which on
 
 116
-00:08:46,097 --> 00:08:48,555
+00:08:19,555 --> 00:08:22,149
 its parent line. Say it
 out loud. I'll wait.
 
 117
-00:08:53,395 --> 00:08:57,203
+00:08:26,989 --> 00:08:32,698
 git write-tree printed 27d56e4, and the new
 commit's tree line carries the same ID:
 
 118
-00:08:57,243 --> 00:09:01,052
+00:08:32,738 --> 00:08:38,448
 the commit recorded the index. git rev-parse
 HEAD printed 51d62b3, which is now the
 
 119
-00:09:01,092 --> 00:09:01,608
+00:08:38,488 --> 00:08:39,279
 parent line.
 
 120
-00:09:01,948 --> 00:09:06,802
+00:08:39,619 --> 00:08:45,136
 .git/HEAD still holds the same text. The
 commit moved the branch, and HEAD follows
 
 121
-00:09:06,842 --> 00:09:10,563
+00:08:45,176 --> 00:08:49,405
 only because it names the branch.
 Both reflogs gained an entry.
 
 122
-00:09:16,703 --> 00:09:22,213
+00:08:55,545 --> 00:09:01,056
 Two reading commands. --format=fuller
 shows both identities and both dates.
 
 123
-00:09:22,253 --> 00:09:28,356
+00:09:01,096 --> 00:09:07,199
 --format=raw --no-patch shows the same
 headers as the stored object, with the ID in
 
 124
-00:09:28,396 --> 00:09:30,651
+00:09:07,239 --> 00:09:09,493
 front and the message indented.
 
 125
-00:09:30,991 --> 00:09:35,401
+00:09:09,833 --> 00:09:14,475
 A second sandbox with a similar edit.
 This time the script compares the object
 
 126
-00:09:35,441 --> 00:09:40,079
+00:09:14,515 --> 00:09:19,396
 database before and after each command.
 Predict: which objects does git add write,
 
 127
-00:09:40,119 --> 00:09:41,905
+00:09:19,436 --> 00:09:21,317
 and which does git commit write?
 
 128
-00:09:42,245 --> 00:09:45,238
+00:09:21,657 --> 00:09:26,918
 git add wrote the blob, the file's content.
 So the content is in the object database
 
 129
-00:09:45,278 --> 00:09:46,140
+00:09:26,958 --> 00:09:28,495
 before any commit exists.
 
 130
-00:09:46,480 --> 00:09:51,873
+00:09:28,835 --> 00:09:33,606
 The commit wrote three objects: a tree for
 evalkit/, a tree for the top level, and
 
 131
-00:09:51,913 --> 00:09:57,174
+00:09:33,646 --> 00:09:38,299
 the commit. It wrote no blob, and the new
 top-level tree points at the README.md
 
 132
-00:09:57,214 --> 00:09:59,825
+00:09:38,339 --> 00:09:40,645
 blob that the first commit already uses.
 
 133
-00:10:00,165 --> 00:10:04,601
+00:09:40,985 --> 00:09:45,422
 Now every file under .git that
 is new or changed by the commit.
 
 134
-00:10:04,641 --> 00:10:08,296
+00:09:45,462 --> 00:09:49,117
 Predict whether .git/HEAD
 is in the list. Yes or no?
 
 135
-00:10:08,336 --> 00:10:09,433
+00:09:49,157 --> 00:09:50,254
 Say it out loud.
 
 136
-00:10:14,273 --> 00:10:19,575
+00:09:55,094 --> 00:10:00,396
 No. Eight files: three objects, the branch
 ref, two reflogs, the index, with the
 
 137
-00:10:19,615 --> 00:10:24,984
+00:10:00,436 --> 00:10:05,805
 same entries and refreshed bookkeeping,
 and COMMIT_EDITMSG with the last message.
 
 138
-00:10:25,024 --> 00:10:29,658
+00:10:05,845 --> 00:10:10,479
 .git/HEAD is not in the list. If you
 said yes, you're in good company.
 
 139
-00:10:29,998 --> 00:10:32,894
+00:10:10,819 --> 00:10:13,714
 Compute an ID by hand,
 then let Git confirm it.
 
 140
-00:10:33,234 --> 00:10:37,103
+00:10:14,054 --> 00:10:18,623
 Three lines print the same ID,
 1f9c5d8. First git rev-parse HEAD.
 
 141
-00:10:37,143 --> 00:10:41,374
+00:10:18,663 --> 00:10:23,656
 Then shasum over the word commit, the
 size, a NUL byte and the content.
 
 142
-00:10:41,414 --> 00:10:46,186
+00:10:23,696 --> 00:10:29,328
 Then git hash-object -t commit --stdin,
 which hashes the text the way git commit
 
 143
-00:10:46,226 --> 00:10:48,291
+00:10:29,368 --> 00:10:31,809
 does. There's no secret ingredient.
 
 144
-00:10:48,631 --> 00:10:53,880
+00:10:32,149 --> 00:10:37,480
 Rebuild the same commit from its parts with
 git commit-tree 🟢 SAFE, which adds one
 
 145
-00:10:53,920 --> 00:10:58,266
+00:10:37,520 --> 00:10:41,933
 commit object and moves no ref.
 Identical inputs gave 1f9c5d8 again.
 
 146
-00:10:58,606 --> 00:11:03,747
+00:10:42,273 --> 00:10:46,796
 Now change one input at a time.
 Try it on paper, thirty seconds.
 
 147
-00:11:03,787 --> 00:11:10,385
+00:10:46,836 --> 00:10:52,643
 Seven changes are coming: message, author
 date, committer date, time zone, parent,
 
 148
-00:11:10,425 --> 00:11:15,161
+00:10:52,683 --> 00:10:56,849
 tree, email. For each, write
 yes or no: will the ID change?
 
 149
-00:11:15,201 --> 00:11:17,751
+00:10:56,889 --> 00:10:59,131
 Pause me, and write your answer.
 
 150
-00:11:22,591 --> 00:11:28,764
+00:11:03,971 --> 00:11:09,042
 Seven times yes. Seven changes, seven new
 IDs. One more character in the message.
 
 151
-00:11:28,804 --> 00:11:34,440
+00:11:09,082 --> 00:11:13,712
 One second on the author date. One
 second on the committer date is enough.
 
 152
-00:11:34,480 --> 00:11:40,653
+00:11:13,752 --> 00:11:18,824
 The same instant with another offset is a
 different commit, because the offset is
 
 153
-00:11:40,693 --> 00:11:45,332
+00:11:18,864 --> 00:11:22,673
 part of the text. So is a capital
 letter in an email address.
 
 154
-00:11:45,672 --> 00:11:51,076
+00:11:23,013 --> 00:11:28,418
 So here's your answer for the CTO. X and
 Y are two commits with the same tree, and
 
 155
-00:11:51,116 --> 00:11:56,388
+00:11:28,458 --> 00:11:33,729
 comparing the two tree IDs proves it. Then
 the branch moves back to X, or Y gets
 
 156
-00:11:56,428 --> 00:11:56,986
+00:11:33,769 --> 00:11:34,327
 approved.
 
 157
-00:11:58,826 --> 00:12:00,474
+00:11:36,167 --> 00:11:37,815
 Five mistakes to watch for.
 
 158
-00:12:00,814 --> 00:12:04,393
+00:11:38,155 --> 00:11:41,734
 Saying "I only fixed the message,
 the code is the same commit".
 
 159
-00:12:04,433 --> 00:12:09,219
+00:11:41,774 --> 00:11:46,560
 Root cause: the message is part of the commit
 object, and the ID is the hash of that
 
 160
-00:12:09,259 --> 00:12:12,149
+00:11:46,600 --> 00:11:49,490
 object; it is the same tree
 and a different commit.
 
 161
-00:12:12,489 --> 00:12:18,109
+00:11:49,830 --> 00:11:54,575
 Concluding from two different
 IDs that the code differs.
 
 162
-00:12:18,149 --> 00:12:26,195
+00:11:54,615 --> 00:12:01,411
 Root cause: the ID covers metadata too;
 compare X^{tree} and Y^{tree} to compare
 
 163
-00:12:26,235 --> 00:12:27,004
+00:12:01,451 --> 00:12:02,095
 content.
 
 164
-00:12:27,344 --> 00:12:32,880
+00:12:02,435 --> 00:12:07,971
 Expecting .git/HEAD to change on a commit.
 Root cause: the commit sets the ref that
 
 165
-00:12:32,920 --> 00:12:36,373
+00:12:08,011 --> 00:12:11,464
 HEAD names; HEAD itself
 still holds the branch name.
 
 166
-00:12:36,713 --> 00:12:39,645
+00:12:11,804 --> 00:12:16,523
 Committing on the wrong branch, or on
 none. Root cause: nothing in a commit says
 
 167
-00:12:39,685 --> 00:12:42,766
+00:12:16,563 --> 00:12:21,520
 which branch it is on; it goes wherever HEAD
 pointed, so check git status before you
 
 168
-00:12:42,806 --> 00:12:43,435
+00:12:21,560 --> 00:12:22,590
 commit, not after.
 
 169
-00:12:43,775 --> 00:12:49,023
+00:12:22,930 --> 00:12:28,179
 Storing abbreviated IDs in deploy records.
 Root cause: a prefix that is unique today
 
 170
-00:12:49,063 --> 00:12:50,723
+00:12:28,219 --> 00:12:29,879
 can become ambiguous later.
 
 171
-00:12:52,563 --> 00:12:57,396
+00:12:31,719 --> 00:12:36,637
 Now, out of the lab. An evaluation run is
 tracked with the commit ID of the code.
 
 172
-00:12:57,436 --> 00:13:02,088
+00:12:36,677 --> 00:12:41,411
 The textbook's warning: a commit ID in
 a deploy record or an evaluation report
 
 173
-00:13:02,128 --> 00:13:05,697
+00:12:41,451 --> 00:12:45,083
 identifies the code exactly,
 and nothing outside the commit.
 
 174
-00:13:05,737 --> 00:13:10,389
+00:12:45,123 --> 00:12:49,857
 A run started from a working tree with
 uncommitted edits executed code that no
 
 175
-00:13:10,429 --> 00:13:15,021
+00:12:49,897 --> 00:12:54,570
 commit ID describes, and trackers may
 not notice: the textbook cites MLflow's
 
 176
-00:13:15,061 --> 00:13:19,653
+00:12:54,610 --> 00:12:59,283
 classic run context, which records the
 commit and doesn't inspect uncommitted
 
 177
-00:13:19,693 --> 00:13:20,134
+00:12:59,323 --> 00:12:59,772
 changes.
 
 178
-00:13:20,474 --> 00:13:25,653
+00:13:00,112 --> 00:13:05,290
 The remedy it gives: record git rev-parse
 HEAD together with git status --porcelain,
 
 179
-00:13:25,693 --> 00:13:29,007
+00:13:05,330 --> 00:13:08,645
 or refuse a tracked run when
 that output is not empty.
 
 180
-00:13:29,347 --> 00:13:34,163
+00:13:08,985 --> 00:13:13,800
 And for deployments, the prevention line
 of the root-cause box: gate deploys on the
 
 181
-00:13:34,203 --> 00:13:36,152
+00:13:13,840 --> 00:13:15,789
 approved ID, not on a branch name.
 
 182
-00:13:37,992 --> 00:13:44,088
+00:13:17,629 --> 00:13:24,443
 Your turn. Do Exercise 3.1, Level 1,
 "read a commit field by field", in
 
 183
-00:13:44,128 --> 00:13:46,941
+00:13:24,483 --> 00:13:27,629
 exercises/m01-m05-foundations.md.
 
 184
-00:13:47,281 --> 00:13:51,614
+00:13:27,969 --> 00:13:32,299
 Before you print the object, write down
 the fields you expect, in order, and for
 
 185
-00:13:51,654 --> 00:13:56,041
+00:13:32,339 --> 00:13:36,723
 each one say whether it would differ if
 the same change were committed one minute
 
 186
-00:13:56,081 --> 00:13:56,369
+00:13:36,763 --> 00:13:37,051
 later.
 
 187
-00:13:58,209 --> 00:14:04,244
+00:13:38,891 --> 00:13:43,686
 Q8: "What exactly does git commit write
 inside .git, and what does it leave
 
 188
-00:14:04,284 --> 00:14:05,135
+00:13:43,726 --> 00:13:44,396
 untouched?"
 
 189
-00:14:07,475 --> 00:14:12,421
+00:13:46,736 --> 00:13:51,519
 Answer out loud. A strong answer lists
 objects, refs and other files separately,
 
 190
-00:14:12,461 --> 00:14:17,469
+00:13:51,559 --> 00:13:56,402
 says which objects are not written because
 they already exist, and names the file
 
 191
-00:14:17,509 --> 00:14:22,705
+00:13:56,442 --> 00:14:01,467
 that people expect to change and that doesn't.
 Mention the case in which the list is
 
 192
-00:14:22,745 --> 00:14:25,136
+00:14:01,507 --> 00:14:03,818
 different because no branch is current.
 
 193
-00:14:26,976 --> 00:14:32,155
+00:14:05,658 --> 00:14:10,645
 Let's land this. You should now be able to
 say, in your own words: a commit object
 
 194
-00:14:32,195 --> 00:14:37,501
+00:14:10,685 --> 00:14:15,794
 has a tree, zero or more parents, an author,
 a committer and a message, and holds no
 
 195
-00:14:37,541 --> 00:14:39,983
+00:14:15,834 --> 00:14:18,185
 diff, no branch name and no file names.
 
 196
-00:14:40,323 --> 00:14:45,511
+00:14:18,525 --> 00:14:23,470
 git commit writes trees from the index,
 writes the commit with HEAD's commit as
 
 197
-00:14:45,551 --> 00:14:49,482
+00:14:23,510 --> 00:14:27,255
 parent, moves the current branch
 and appends to two reflogs.
 
 198
-00:14:49,522 --> 00:14:52,592
+00:14:27,295 --> 00:14:30,221
 It doesn't touch .git/HEAD
 or the working tree.
 
 199
-00:14:52,932 --> 00:14:57,526
+00:14:30,561 --> 00:14:35,527
 The commit ID is a hash over all of the
 object, parents included, so it fixes the
 
 200
-00:14:57,566 --> 00:15:01,530
+00:14:35,567 --> 00:14:39,853
 whole history behind it, and any
 change to any field gives another ID.
 
 201
-00:15:01,570 --> 00:15:05,706
+00:14:39,893 --> 00:14:44,365
 It guarantees content and history. It
 doesn't prove who wrote the commit.
 
 202
-00:15:07,546 --> 00:15:11,171
+00:14:46,205 --> 00:14:49,830
 Read sections 6.1 to 6.4 of Chapter 6.
 
 203
-00:15:11,511 --> 00:15:17,552
+00:14:50,170 --> 00:14:55,759
 Do Lab 3.2, "Change only the committer
 date and watch the ID change", in
 
 204
-00:15:17,592 --> 00:15:19,747
+00:14:55,799 --> 00:14:57,792
 lab-manual/m03-commits.md.
 
 205
-00:15:20,087 --> 00:15:25,650
+00:14:58,132 --> 00:15:05,417
 Challenge: Exercise 3.7, Level 3, "one
 ahead, one behind, and nobody else pushed",
 
 206
-00:15:25,690 --> 00:15:28,109
+00:15:05,457 --> 00:15:08,633
 in exercises/m01-m05-foundations.md.
 
 207
-00:15:28,449 --> 00:15:32,702
+00:15:08,973 --> 00:15:12,827
 Today you read a commit byte by
 byte and computed its ID by hand.
 
 208
-00:15:32,742 --> 00:15:36,598
+00:15:12,867 --> 00:15:16,362
 Read one commit of your own
 that way before the next video.
 
 209
-00:15:36,638 --> 00:15:40,297
+00:15:16,402 --> 00:15:19,717
 Next time: author and committer,
 two dates, and parents.
 
 210
-00:15:40,337 --> 00:15:43,731
+00:15:19,757 --> 00:15:22,832
 Until then, look at the
 state first and type second.
 
 211
-00:15:43,771 --> 00:15:45,316
+00:15:22,872 --> 00:15:24,270
 See you in the next one.

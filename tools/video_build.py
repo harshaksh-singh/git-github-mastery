@@ -13,10 +13,13 @@ Options:  --force            rebuild even if the output is newer than its inputs
           --keep-temp        keep the working directory under video/production/.cache/build/
           --no-anim          ignore the animation layer of a video and use the still slides
           --no-encode        stop before ffmpeg: write the cut narration, subtitles and chapters only (works without ffmpeg)
+          --speech-selftest  check the text handed to the voice, the rules for accepting a voice clip and the subtitle cues
+                             (nothing is spoken or rendered)
+          --audio-selftest   check the true-peak limit of the sound track on a synthetic signal (needs ffmpeg, a few seconds)
 
 What happens: the retakes and pauses logged by the booth are cut out of the recording, every beat's slide is shown for
 exactly as long as the narrator spent on that beat, the thumbnail (or title card) is shown for one second first,
-and the sound is normalised to about -16 LUFS.
+and the sound is normalised to about -16 LUFS, with its true peak held at -1.5 dBTP or below in the finished file.
 """
 import os
 import array, json, math, os, re, shutil, subprocess, sys, time, wave
@@ -24,6 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
 from video_common import *   # noqa: F401,F403
+import math
 import video_takes
 try:
     import video_animate
@@ -94,10 +98,24 @@ SAY_WORD = {"YAML": "yammel", "SHA": "shah", "README": "read me", "ORIG_HEAD": "
             "config": "config", "reflog": "ref log", "refspec": "ref spec", "refspecs": "ref specs", "reflogs": "ref logs", "packfile": "pack file",
             "packfiles": "pack files", "gitignore": "git ignore", "gitattributes": "git attributes", "gitconfig": "git config", "gitmodules": "git modules",
             "github": "git hub", "gitkeep": "git keep", "mailmap": "mail map", "worktree": "work tree", "worktrees": "work trees", "untracked": "un-tracked",
-            "LAB": "lab", "eval": "eval", "evals": "evals"}
+            "LAB": "lab", "eval": "eval", "evals": "evals",
+            "sha1": "shah 1", "sha256": "shah 256", "SHA1": "shah 1", "SHA256": "shah 256", "diff3": "diff 3", "zdiff3": "z diff 3"}
 REF_HEADS = ("origin", "upstream", "refs", "heads", "tags", "remotes", "feature", "feat", "fix", "hotfix", "release", "bugfix", "pull", "HEAD")
 NOT_PATHS = {"and/or", "either/or", "i/o", "ci/cd", "n/a", "read/write", "yes/no", "true/false", "client/server", "he/she", "km/h", "24/7", "tcp/ip"}
 NUM_WORD = {"0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine", "10": "ten"}
+# A symbol typed twice is named twice ("star star"); three or more are counted ("seven less-than signs").
+SYM_TWICE = {"=": "equals equals", "*": "star star", "#": "hash hash", "@": "at at", "|": "pipe pipe", "+": "plus plus",
+             "<": "two less-than signs", ">": "two greater-than signs", "!": "two exclamation marks"}
+SYM_MANY = {"=": "equals signs", "*": "stars", "#": "hashes", "@": "at signs", "|": "pipes", "+": "plus signs",
+            "<": "less-than signs", ">": "greater-than signs", "!": "exclamation marks"}
+# What is left of a symbol once every rule in speakable() has had its turn: its plain name.
+SYM_NAME = {"*": "star", "|": "pipe", "<": "less-than sign", ">": "greater-than sign", "+": "plus", "#": "hash", "@": "at", "~": "tilde", "^": "caret",
+            "$": "dollar", "\\": "backslash", "=": "equals", "/": "slash", "_": "underscore", "%": "percent", "&": "ampersand",
+            "[": "open square bracket", "]": "close square bracket", "{": "open curly brace", "}": "close curly brace"}
+SPAN_NAME = {"...": "three dots", "..": "two dots", ".": "dot", "?": "question mark", "!": "exclamation mark", ":": "colon", ";": "semicolon",
+             "<": "less-than sign", ">": "greater-than sign", "=": "equals sign", "-": "dash", "??": "two question marks", "!!": "two exclamation marks", ",": "comma", "'": "single quote", '"': "double quote", "(": "open parenthesis", ")": "close parenthesis", "()": "empty parentheses"}
+RISK_WORD = {"\U0001F7E2": "SAFE", "\U0001F7E1": "CAUTION", "\U0001F534": "DANGEROUS"}
+SAY_SCHEME = {"https": "H T T P S", "http": "H T T P", "ssh": "S S H"}
 
 
 def _say_token(w):
@@ -106,6 +124,11 @@ def _say_token(w):
     if "_" in w: return " ".join(_say_token(x) for x in w.split("_") if x)
     if re.fullmatch(r"[a-z]+[A-Z][A-Za-z]*", w): return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", w)          # camelCase config keys
     return w
+
+
+def _say_letters(s):
+    """The letters of an option or a format code one by one, a capital announced: X -> capital X     gd -> g d"""
+    return " ".join(("capital " + c) if c.isupper() else c for c in s)
 
 
 def _say_path(m):
@@ -118,15 +141,15 @@ def _say_path(m):
 
 def _say_path_tok(tok):
     if tok.lower() in NOT_PATHS or re.fullmatch(r"\d+/\d+", tok):
-        return tok
+        return tok.replace("/", "\x02")                                                                # prose (and/or, 3/4): the slash is kept for the voice
     parts = [p for p in tok.split("/")]
     lead = tok.startswith("/")
     refish = parts[0] in REF_HEADS and not lead and "." not in tok
-    pathish = lead or tok.count("/") >= 2 or bool(re.search(r"[._$~\d-]", tok)) or parts[0] in ("labs", "textbook", "video", "tools", "src", "docs", "config", "prompts", "tests", "home", "usr", "bin", "etc", "tmp")
-    if not (refish or pathish):
-        return tok
     said = [_say_dotted(p) for p in parts if p]
-    return (" " if refish else " slash ").join(said) if said else tok
+    if not said: return tok
+    if refish: return " ".join(said)
+    # every other slash is spoken, also the one a path starts or ends with: /dev/null -> slash dev slash null     logs/refs/ -> logs slash refs slash
+    return ("slash " if lead else "") + " slash ".join(said) + (" slash" if tok.endswith("/") else "")
 
 
 def _say_dotted(w):
@@ -142,58 +165,156 @@ def _say_dotted(w):
     return " ".join(out)
 
 
+def _say_version(m):
+    """v0.2.0 -> v 0 point 2 point 0     2.55.0 -> 2 point 55 point 0     1.2.x -> 1 point 2 point x"""
+    v, nums, x = m.group(1), m.group(2), m.group(3) or ""
+    if not ((v and "." in nums) or x or nums.count(".") >= 2): return m.group(0)
+    return ("v " if v else "") + nums.replace(".", " point ") + (" point x" if x else "")
+
+
+def _say_run(m):
+    ch, n = m.group(1), len(m.group(0))
+    return " " + (SYM_TWICE[ch] if n == 2 else f"{NUM_WORD.get(str(n), n)} {SYM_MANY[ch]}") + " "
+
+
+def _say_square(m):
+    """[rejected] -> rejected in square brackets     [0-9] -> 0 to 9 in square brackets     [] -> empty square brackets"""
+    inner = re.sub(r"\b(\w)-(\w)\b", r"\1 to \2", m.group(1).strip())
+    return " " + (inner + " in square brackets" if inner else "empty square brackets") + " "
+
+
+def _say_span(m):
+    """A code span of the script (the teleprompter text keeps the backticks).  Inside it punctuation is code and is named:
+    git add . -> git add dot     fixup! -> fixup exclamation mark     remote: -> remote colon     $1 -> dollar 1"""
+    s = m.group(1).strip()
+    if s in SPAN_NAME: return SPAN_NAME[s]
+    s = s.replace("...", " three dots ").replace("$?", " dollar question mark")
+    s = re.sub(r"(?<!\.)\.\.(?![./])", " two dots ", s)
+    s = re.sub(r"(?:(?<=\s)|^)\.(?=\s|$)", "dot", s)
+    s = re.sub(r"(?:(?<=\s)|^)-(?=\s|$)", "dash", s)                                                  # git switch -
+    s = re.sub(r"(%[A-Za-z]{1,3})\?", r"\1 question mark ", s)
+    s = re.sub(r"(?:(?<=\s)|^)\?(?=\s|$)", "question mark", s)
+    s = re.sub(r"\$(?=\d)", " dollar ", s)
+    s = re.sub(r"(?<=[\w)\]])([:!?])$", lambda k: " " + SPAN_NAME[k.group(1)], s)
+    return s
+
+
 def speakable(text):
     """Text for the computer voice.  It changes only what is SPOKEN (subtitles and slides keep the script's spelling):
-    symbols and Git spellings the synthesiser reads badly are written out, and PAUSE marks short silences."""
-    t = re.sub("[\U0001F7E0-\U0001F7EB\U0001F534\U0001F535✅❌⚠️]", " ", text)
-    t = re.sub(r"<([A-Za-z0-9_ -]+)>", r"\1", t)
+    symbols and Git spellings the synthesiser reads badly are written out, and PAUSE marks short silences.
+    The forms are listed in video/NARRATION_STYLE.md ("How symbols are spoken"); speech_selftest() below holds one case of each."""
+    t = re.sub(r"`([^`]+)`", _say_span, text)                                                          # code spans first: there punctuation is code
+    t = re.sub(r"(?<=[\w-] )\.(?=[\s,;:?!]|$)", "dot", t)                                              # git add .  -> git add dot (text without code spans)
+    # a risk label that stands without its word is spoken as the word: "is 🔴." -> "is DANGEROUS."
+    t = re.sub("([\U0001F7E2\U0001F7E1\U0001F534])\ufe0f?(?!\\s*(?:SAFE|CAUTION|DANGEROUS))", lambda m: f" {RISK_WORD[m.group(1)]} ", t)
+    t = re.sub("[\U0001F7E0-\U0001F7EB\U0001F534\U0001F535✅❌⚠️]", " ", t)
+    # a placeholder is spoken as its name: <path> -> path; any other < or > is named further down, never dropped
+    t = re.sub(r"<([A-Za-z0-9_-]+(?: [A-Za-z0-9_-]+)*)>(\.\.\.)?", lambda m: m.group(1) + (" three dots" if m.group(2) else ""), t)
+    t = re.sub(r"(?<=[\w)]) ([<>])(=?) (?=[\w(])", lambda m: (" less than " if m.group(1) == "<" else " greater than ") + ("or equal to " if m.group(2) else ""), t)   # 3 > 2
+    t = t.replace("&&", " and ").replace("->", " points to ").replace("=>", " gives ")
+    t = re.sub(r"([<>=|*#@!+])\1+", _say_run, t)                                                       # <<<<<<<  =======  **  @@
+    t = re.sub(r"(?<![\w-])-{3,}(?![\w-])", lambda m: f"{NUM_WORD.get(str(len(m.group(0))), len(m.group(0)))} dashes", t)
     t = t.replace("…", ". ").replace("→", " to ").replace("·", ", ").replace("`", "").replace("↪", " ")
     t = re.sub(r"\be\.g\.,?", "for example,", t); t = re.sub(r"\bi\.e\.,?", "that is,", t)
     # list prefixes: "Root cause: ..." gets a breath before and after
     t = re.sub(r"(?<=[.!?\"”)])\s+(Root cause|Fix|Prevention|Mechanism|Symptom|Diagnosis|Correct fix)\s*:\s*", lambda m: f" {PAUSE} {m.group(1)}. {PAUSE} ", t)
     t = re.sub(r"^(Root cause|Fix|Prevention|Mechanism|Symptom|Diagnosis|Correct fix)\s*:\s*", lambda m: f"{m.group(1)}. {PAUSE} ", t)
-    # object IDs: "commit" and the first four characters, spelled out
+    # the suffix of git describe: v1.1.0-2-g57c8425 -> ... dash 2 dash g 5 7 c 8
+    t = re.sub(r"(?<=\w)-(\d+)-g([0-9a-f]{7,40})\b", lambda m: f" dash {m.group(1)} dash g " + " ".join(m.group(2)[:4]), t)
+    # object IDs: the first four characters, spelled out (the narration itself says what kind of object it is)
     def oid(m):
         h = m.group(2)
         if not (re.search(r"[a-f]", h) and re.search(r"\d", h)): return m.group(0)
         four = " ".join(h[:4])
-        return (m.group(1) or "") + (four if m.group(1) else "commit " + four)
-    t = re.sub(r"(\b[Cc]ommits?\s+|\b[Tt]ree\s+|\b[Bb]lob\s+|\b[Tt]ag\s+|\bID\s+|\band\s+(?=[0-9a-f]{7}\b))?\b([0-9a-f]{7,40})\b", oid, t)
+        return (m.group(1) or "") + four + (" three dots" if m.group(3) else "")   # never add a type word: a bare ID may be a blob, a tree or a tag
+    # an ID that Git itself shortens with dots ("could not apply 0805fd8... Add settings") keeps them, named: after the ID is
+    # spelled out the dots would stand after a letter, where no rule below sees them (a range, A...B, is not touched here)
+    t = re.sub(r"(\b[Cc]ommits?\s+|\b[Tt]ree\s+|\b[Bb]lob\s+|\b[Tt]ag\s+|\bID\s+|\band\s+(?=[0-9a-f]{7}\b))?\b([0-9a-f]{7,40})\b(\.\.\.(?![\w/@{(^~.]))?", oid, t)
+    # version numbers and numbered labs: the dots between the numbers are "point"
+    t = re.sub(r"\b(\d+)([A-Da-d])\.(\d+)\b", lambda m: f"{m.group(1)} {m.group(2).upper()} point {m.group(3)}", t)                 # Lab 14A.14
+    t = re.sub(r"(?<!\w)(?<!\w\.)(v?)(\d+(?:\.\d+)*)(\.x\b)?(?![\w])(?!\.\d)", _say_version, t)
+    t = re.sub(r"\b(Git|version|Python) (\d+)\.(\d+)(?![\w]|\.\d)", r"\1 \2 point \3", t)                                           # Git 2.55
     # ranges and revision suffixes
-    t = re.sub(r"(?<=[\w)}/])\.\.\.(?=[\w/@{(])", " three dots ", t)
-    t = re.sub(r"(?<=[\w)}/])\.\.(?=[\w/@{(])", " two dots ", t)
+    t = t.replace("../", " dot dot slash ")
+    t = re.sub(r"(?<![\w.])\./", "dot slash ", t); t = re.sub(r"(?<![\w.])\.(?=\[)", "dot ", t)       # ./run   .[]
+    t = re.sub(r"(?<=[\w)}/^~'\"])\.\.\.(?=[\w/@{(^~])", " three dots ", t)                           # A...B
+    t = re.sub(r"(?<![\w.)}'\"])\.\.\.(?=[\"”'])", " three dots", t)                                 # three dots that stand alone before a closing quote: "On main: ..."
+    t = re.sub(r"(?<![\w.)}'\"])\.\.\.(?=[\w/@^~)]|\s*$|\s)", " three dots ", t)                       # ...B, and three dots that stand alone
+    t = re.sub(r"(?<!\.)\.\.(?!\.)", " two dots ", t)                                                  # A..B  ..B  A..
+    t = re.sub(r"@\{-(\d+)\}", lambda m: " at minus " + NUM_WORD.get(m.group(1), m.group(1)), t)
     t = re.sub(r"@\{(\d+)\}", lambda m: " at " + NUM_WORD.get(m.group(1), m.group(1)), t)
     t = re.sub(r"@\{([^}]+)\}", r" at \1", t)
-    t = re.sub(r"(?<=\w)~(\d+)", lambda m: " tilde " + NUM_WORD.get(m.group(1), m.group(1)), t)
+    t = re.sub(r"(?<!\w)~/", "home slash ", t)
+    t = re.sub(r"~(\d+)", lambda m: " tilde " + NUM_WORD.get(m.group(1), m.group(1)), t)
     t = re.sub(r"(?<=\w)~", " tilde", t); t = t.replace("~/", "home slash ")
-    t = re.sub(r"(?<=\w)\^(\d+)", lambda m: " caret " + NUM_WORD.get(m.group(1), m.group(1)), t)
+    t = re.sub(r"\^\{([^}]*)\}", lambda m: " caret, " + (m.group(1).strip() + " in curly braces" if m.group(1).strip() else "empty curly braces") + " ", t)
+    t = re.sub(r"\^(\d+)", lambda m: " caret " + NUM_WORD.get(m.group(1), m.group(1)), t)
+    t = re.sub(r"\^-(\d*)(?!\w)", lambda m: " caret dash " + NUM_WORD.get(m.group(1), m.group(1)), t)
+    t = t.replace("^@", " caret at ").replace("^!", " caret exclamation mark ")
     t = re.sub(r"(?<=\w)\^(?!\w)", " caret", t)
-    # options: --force-with-lease -> dash dash force with lease     -m -> dash m
-    t = re.sub(r"(?<![\w-])--([A-Za-z][\w-]*)(=?)", lambda m: "dash dash " + " ".join(_say_token(x) for x in m.group(1).split("-") if x) + (" equals " if m.group(2) else ""), t)
-    t = re.sub(r"(?<![\w-])-([A-Za-z0-9]{1,2})(?![\w-])", lambda m: "dash " + " ".join(m.group(1)) if not m.group(1).isdigit() else "dash " + m.group(1), t)
-    t = t.replace("$LAB", "lab").replace("$HOME", "home").replace("&&", " and ").replace("->", " points to ").replace("=>", " gives ")
+    # format codes and shell variables: %(refname:short)  %gd  ${{ github.sha }}  $GIT_DIR  $?
+    t = re.sub(r"%\(([^()]*)\)", lambda m: " percent, " + m.group(1).replace(":", " colon ") + " in parentheses ", t)
+    t = re.sub(r"(?<![\d\w])%([A-Za-z]{1,3})(?![A-Za-z])", lambda m: " percent " + _say_letters(m.group(1)) + " ", t)
+    t = t.replace("$LAB", "lab").replace("$HOME", "home")
+    t = re.sub(r"\$\{\{\s*(.*?)\s*\}\}", r" dollar, \1 in double curly braces ", t)
+    t = t.replace("$?", " dollar question mark").replace("$@", " dollar at ")
+    t = re.sub(r"\$(?=[A-Za-z_])", " dollar ", t)                                                       # $5 in a sentence is money and is left to the voice
+    # options: --force-with-lease -> dash dash force with lease     -m -> dash m     -X -> dash capital X     -- -> dash dash
+    t = re.sub(r"(?<![\w-])--([A-Za-z0-9][\w-]*)(=?)", lambda m: "dash dash " + " ".join(_say_token(x) for x in m.group(1).split("-") if x) + (" equals " if m.group(2) else ""), t)
+    t = re.sub(r"(?<![\w-])--(?![\w-])", "dash dash", t)
+    t = re.sub(r"(?<=[A-Za-z])--(?=[A-Za-z])", " dash dash ", t)                                       # git fsmonitor--daemon
+    t = re.sub(r"(?<![\w-])-([A-Za-z]{1,3})(\d+%?)?(?![\w-])", lambda m: "dash " + _say_letters(m.group(1)) + (" " + m.group(2) if m.group(2) else ""), t)
+    t = re.sub(r"(?<![\w-])-(\d{1,2})(?![\w-])", r"dash \1", t)
+    t = re.sub(r"(?<![\w-])-(?=[A-Za-z]{4})", "dash ", t)                                              # -text  -committerdate
+    t = re.sub(r"(?<=\w)-(?![\w-])", " dash", t)                                                       # sha-  pr-
     t = re.sub(r"\*\.(\w+)", lambda m: "star dot " + SAY_EXT.get(m.group(1).lower(), m.group(1)), t)
-    t = re.sub(r"(?<!\w)#(\d+)", r"number \1", t)
+    t = re.sub(r"(?<=\w)\.\*", " dot star", t)                                                         # core.*
+    t = re.sub(r"(?<!\w)#(\d+|N\b)", r"number \1", t)
+    # addresses: https://  git@github.com:OWNER/REPO.git  HEAD:path  (a colon inside code is spoken; the time 10:27 is left alone)
+    t = re.sub(r"\b([A-Za-z]+)://", lambda m: SAY_SCHEME.get(m.group(1).lower(), m.group(1)) + " colon slash slash ", t)
+    t = re.sub(r"(?<=\w)@(?=\w)", " at ", t)
+    t = re.sub(r"(?<!\S):(?=[\w/])", "colon ", t)                                                     # :1:path
+    t = re.sub(r"(?<=[\w)\]}\"'*>]):(?=[\w/.*+~^$@%<{-])(?<!\d:(?=\d))", " colon ", t)
+    t = re.sub(r"\[([^\[\]]*)\]", _say_square, t)
+    t = re.sub(r"\{([^{}]*)\}", lambda m: " " + (m.group(1).strip() + " in curly braces" if m.group(1).strip() else "empty curly braces") + " ", t)
+    t = re.sub(r"(?<=\w)\(\)", "", t)                                                                  # lower() -> lower
+    t = re.sub(r"(?<=\w)\((?=\S)", " (", t)                                                            # log2(n) -> log2 (n)
     # paths and refs, then dotted names, then single words
     t = re.sub(r"(?<![\w.])/?[\w.$~-]+(?:/[\w.$~*-]+)+/?", _say_path, t)
+    t = re.sub(r"(?<=\()(\d+)\x02(\d+)(?=\))|(?<=PATCH )(\d+)\x02(\d+)", lambda m: f"{m.group(1) or m.group(3)} of {m.group(2) or m.group(4)}", t)   # Rebasing (1/3)
     t = re.sub(r"(?<![\w/])\.[A-Za-z][\w-]*(?:\.[A-Za-z]\w*)*", lambda m: _say_dotted(m.group(0)), t)                      # .git  .gitignore
     t = re.sub(r"\b[A-Za-z][\w-]*(?:\.[A-Za-z][\w-]*)+\b", lambda m: _say_dotted(m.group(0)), t)                           # README.md  user.name
+    t = re.sub(r"(?<=\d)\.(?=[A-Za-z])|(?<=[A-Za-z])\.(?=\d)", " dot ", t)                             # 1.week  rc.1
     t = re.sub(r"\bSHA-?(\d+)", r"shah \1", t)
+    t = re.sub(r"\b(m|ch)0?(\d{1,2})([a-d]?)\b", lambda m: " ".join(m.group(1).upper()) + " " + m.group(2) + (" " + m.group(3).upper() if m.group(3) else ""), t)   # m06  ch14a
     t = re.sub(r"\b[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*\b", lambda m: _say_token(m.group(0)), t)
+    # whatever symbol is still there is named: nothing is handed to the voice raw, and nothing is dropped
+    t = re.sub(r"(?<=[A-Za-z]),(?=[A-Za-z])", ", ", t)
+    t = re.sub(r"(?<=[A-Za-z0-9])_(?=[A-Za-z0-9])", " ", t)
+    t = re.sub(r"(?<=\s)=(?=[,.;:?!]|\s*$)", "equals sign", t)
+    t = re.sub(r"(?<=\w)\s*&\s*(?=\w)", " and ", t)
+    t = re.sub(r"(?<![\w\"”')\]])!|!(?=[\w.\[/*])", " exclamation mark ", t)
+    t = re.sub(r"(?<=\d)%", "\x00", t); t = re.sub(r"\$(?=\d)", "\x01", t)                             # 61% and $5 stay: the voice reads them
+    t = re.sub(r"[*|<>+#@~^$\\=/_%&\[\]{}]", lambda m: f" {SYM_NAME[m.group(0)]} ", t).replace("\x00", "%").replace("\x01", "$").replace("\x02", "/")
     t = re.sub(r"\s+", " ", t).strip()
+    t = re.sub(r" (?=[,;:?!.](?:\s|$|[\"”')]))", "", t)
+    t = re.sub(r",(\s*,)+", ",", t); t = re.sub(r"\(\s+", "(", t); t = re.sub(r"\s+\)", ")", t)
+    t = t.replace("in square brackets in brackets", "in square brackets")
     t = re.sub(rf"\s*{PAUSE}(\s*{PAUSE})*\s*", f" {PAUSE} ", t).strip()
     return t
 
 
 def spoken_chunks(sb, b):
     """What the voice is given for one beat: [text or seconds of silence, ...].  A list that is read in one beat gets a
-    breath between its items; PAUSE marks from speakable() become short silences."""
-    pieces = [b["text"]]
+    breath between its items; PAUSE marks from speakable() become short silences.  speakable() is given the teleprompter
+    text, which is the narration with its code spans still in backticks, so that it can tell code from prose."""
+    pieces = [b.get("tele") or b["text"]]
     slide = next((s for s in sb["slides"] if s["n"] == b["slide"]), None)
     if slide and slide.get("kind") == "bullets" and len(slide.get("items", [])) >= 2:
-        items = [re.sub(r"\s+", " ", html_unescape(re.sub(r"<[^>]+>", "", it))).strip().rstrip(".;") + "." for it in slide["items"]]
+        item = lambda it, tick: re.sub(r"\s+", " ", html_unescape(re.sub(r"<[^>]+>", "", re.sub(r"</?code>", tick, it)))).strip().rstrip(".;") + "."
+        items = [item(it, "") for it in slide["items"]]
         if re.sub(r"\s+", " ", " ".join(items)) == re.sub(r"\s+", " ", b["text"]).strip():
-            pieces = items
+            pieces = [item(it, "`") for it in slide["items"]]
     out = []
     for k, piece in enumerate(pieces):
         if k: out.append(LIST_GAP)
@@ -226,31 +347,485 @@ def pick_voice(want=None):
     return short[0]
 
 
-def tts(spoken, voice, rate):
-    """Speak one piece of already prepared text (see speakable) with the macOS voice -> cached 48 kHz mono WAV path."""
-    d = CACHE / "tts"
-    d.mkdir(parents=True, exist_ok=True)
-    p = d / f"{sha1(f'{voice}|{rate}|{spoken}')}.wav"
-    if p.exists() and p.stat().st_size > 44:
-        return p
-    tmp = p.with_suffix(f".{os.getpid()}.{id(spoken) % 100000}.tmp.wav")
-    # The macOS synthesiser now and then hangs on one paragraph and never returns.  A paragraph takes a few seconds, so after
-    # two minutes the attempt is abandoned and repeated; three attempts, then the build of this video fails with a clear message.
-    err = ""
-    for attempt in range(3):
-        try:
-            r = subprocess.run(["say", "-v", voice, "-r", str(rate), "-o", str(tmp), f"--data-format=LEI16@{SR}", "--", spoken],
+def tts_path(spoken, voice, rate):
+    """Where the voice cache keeps one spoken piece.  The name is made from the voice, the rate and the spoken text itself:
+    a sentence whose spoken text changes is spoken again, every other sentence is reused."""
+    return CACHE / "tts" / f"{sha1(f'{voice}|{rate}|{spoken}')}.wav"
+
+
+class _say_lock:
+    """A lock file shared by every build on this machine, so that only one `say` runs at a time."""
+    def __enter__(self):
+        import fcntl
+        (CACHE / "tts").mkdir(parents=True, exist_ok=True)
+        self.f = open(CACHE / "tts" / ".say.lock", "w")
+        fcntl.flock(self.f, fcntl.LOCK_EX)
+        return self
+    def __exit__(self, *a):
+        import fcntl
+        fcntl.flock(self.f, fcntl.LOCK_UN); self.f.close()
+
+
+def _wav_seconds(path):
+    try:
+        return max(0.0, (path.stat().st_size - 44) / (SR * 2))
+    except OSError:
+        return 0.0
+
+
+# The pace a spoken piece must have.  tools/video_qc.py judges every beat by these same numbers (its item C1, where the reasons
+# for each value are written down), so a clip the builder accepts is a clip the check accepts.
+PACE_FACTOR = (0.55, 1.65)   # words per second, as factors of the configured rate (165 wpm: 1.51 to 4.54), pieces of PACE_MIN_WORDS words or more
+PACE_LETTERS = (8.0, 19.0)   # letters per second of such a piece (a digit counts as four letters: "7" is said "seven")
+PACE_MIN_WORDS = 8           # shorter pieces are judged by the wide bounds below: one long or short word moves their pace a lot
+PACE_FLOOR_WPS = 10.0        # no piece of any length may be faster than this
+PACE_SHORT_FACTOR = 2.0      # a short piece may be this much slower or faster, in letters per second, than PACE_LETTERS (4 to 38)
+VOICE_TRIES = 8              # attempts for one piece before it is split
+SENTENCE_GAP, CLAUSE_GAP = 0.33, 0.18   # silence between the parts of a piece that had to be spoken in parts (measured on whole
+                                        # takes of this voice: 0.33 s between two sentences, 0.12 to 0.22 s at a comma)
+
+
+def pace_units(said):
+    """-> (words, letters) as the pace bounds count them."""
+    return len(said.split()), len(re.findall(r"[^\W\d_]", said)) + 4 * len(re.findall(r"\d", said))
+
+
+def pace_fault(said, seconds, rate):
+    """Is `seconds` a believable length for the spoken text `said` at `rate` words per minute?
+    -> (None or "fast" or "slow", words per second, letters per second).  "fast" is what a clip that was cut short looks like,
+    "slow" one with silence or noise added.  The one rule for the builder (every clip) and for the quality check (every beat)."""
+    words, letters = pace_units(said)
+    if seconds <= 0.05: return "fast", 99.0, 999.0
+    wps, lps = words / seconds, letters / seconds
+    lo, hi = PACE_FACTOR[0] * rate / 60.0, PACE_FACTOR[1] * rate / 60.0
+    if words >= PACE_MIN_WORDS:
+        if wps > hi or lps > PACE_LETTERS[1]: return "fast", wps, lps
+        if wps < lo or lps < PACE_LETTERS[0]: return "slow", wps, lps
+    else:
+        if wps > PACE_FLOOR_WPS or lps > PACE_LETTERS[1] * PACE_SHORT_FACTOR: return "fast", wps, lps
+        if lps < PACE_LETTERS[0] / PACE_SHORT_FACTOR: return "slow", wps, lps
+    return None, wps, lps
+
+
+def pace_range(said, rate):
+    """The lengths in seconds that pace_fault() accepts for this text -> (shortest, longest)."""
+    words, letters = pace_units(said)
+    if words >= PACE_MIN_WORDS:
+        return (max(words / (PACE_FACTOR[1] * rate / 60.0), letters / PACE_LETTERS[1]), min(words / (PACE_FACTOR[0] * rate / 60.0), letters / PACE_LETTERS[0]))
+    return max(words / PACE_FLOOR_WPS, letters / (PACE_LETTERS[1] * PACE_SHORT_FACTOR)), letters / (PACE_LETTERS[0] / PACE_SHORT_FACTOR)
+
+
+def clip_seconds(path):
+    """Length of a voice clip as it is used in a video: without the synthesiser's silence before and after it."""
+    return len(trim_voice(read_wav(path))) / SR
+
+
+# Measured on 2,247 verified Tara clips (7 October 2026): the level of the spoken parts lies between -20.5 and -17.7 dBFS and
+# the longest gap inside a clip is 0.55 s.  A faulty take is about 10 dB louder and clipped (38 of them, -10 to -7 dBFS, tens
+# of thousands of samples at full scale), or has seconds of silence in the middle (one with 11.5 s).  Lengths agree in both
+# cases, so the length checks do not see them.
+VOICE_RMS_DB = (-24.0, -15.0)      # allowed level of the spoken parts of a clip
+VOICE_MAX_CLIPPED = 20             # samples at full scale
+VOICE_MAX_GAP = 1.5                # seconds of silence inside a clip
+
+
+def sound_fault(samples):
+    """A voice clip that is too loud, clipped, too quiet or has a hole in it -> "loud" / "quiet" / "gap", else None."""
+    try:
+        import numpy as np
+    except Exception:
+        np = None
+    n = len(samples) // 2400                                 # 50 ms frames
+    if n < 2:
+        return None
+    floor = (32768.0 * 10 ** (-45 / 20)) ** 2                # a frame below -45 dBFS is silence
+    if np is not None:
+        x = np.frombuffer(samples.tobytes(), dtype=np.int16).astype(np.float64)
+        clipped = int((np.abs(x) >= 32700).sum())
+        energies = (x[:n * 2400].reshape(n, 2400) ** 2).mean(1).tolist()
+    else:
+        clipped = sum(1 for v in samples if v >= 32700 or v <= -32700)
+        energies = [sum(v * v for v in samples[i * 2400:(i + 1) * 2400]) / 2400.0 for i in range(n)]
+    if clipped > VOICE_MAX_CLIPPED:
+        return "loud"
+    voiced = [e for e in energies if e > floor]
+    if not voiced:
+        return "quiet"
+    db = 10 * math.log10(sum(voiced) / len(voiced) / (32768.0 ** 2))
+    if db > VOICE_RMS_DB[1]: return "loud"
+    if db < VOICE_RMS_DB[0]: return "quiet"
+    first = next(i for i, e in enumerate(energies) if e > floor)
+    last = max(i for i, e in enumerate(energies) if e > floor)
+    run = longest = 0
+    for e in energies[first:last + 1]:
+        run = run + 1 if e <= floor else 0
+        longest = max(longest, run)
+    return "gap" if longest * 0.05 > VOICE_MAX_GAP else None
+
+
+def clip_pace_fault(said, path, rate):
+    """pace_fault() of a clip in the voice cache, and sound_fault(); a file that cannot be read is a fault too."""
+    try:
+        wav = read_wav(path)
+        fault, wps, lps = pace_fault(said, len(trim_voice(wav)) / SR, rate)
+        return (fault or sound_fault(wav)), wps, lps
+    except Exception:
+        return "unreadable", 0.0, 0.0
+
+
+def split_spoken(said):
+    """Smaller pieces of a spoken text for the voice -> (parts, gap in seconds), or ([], 0) if it cannot be split.
+    Sentences first; a single sentence at its clause marks (comma, semicolon, colon, dash).  A part has at least two words,
+    so that an abbreviation or a single spelled letter never stands alone."""
+    def join_short(parts):
+        out = []
+        for x in parts:
+            if out and (len(out[-1].split()) < 2 or not re.search(r"\w", out[-1])): out[-1] += " " + x
+            else: out.append(x)
+        if len(out) > 1 and len(out[-1].split()) < 2: out[-2] += " " + out.pop()
+        return out
+    said = said.strip()
+    for pat, gap in ((r"(?<=[.!?])(?<!\b[A-Za-z]\.)[\"”')]*\s+(?=[\"“(]?[A-Z0-9])", SENTENCE_GAP), (r"(?<=[,;:])[\"”')]?\s+|\s+-\s+", CLAUSE_GAP)):
+        cuts, parts, a = [m for m in re.finditer(pat, said)], [], 0
+        for m in cuts:
+            k = m.start() + len(m.group(0)) - len(m.group(0).lstrip("\"”')"))      # a closing quote stays with its sentence
+            parts.append(said[a:k].strip()); a = m.end()
+        parts.append(said[a:].strip())
+        parts = join_short([x for x in parts if x])
+        if len(parts) > 1: return parts, gap
+    return [], 0.0
+
+
+class VoiceError(RuntimeError):
+    """The voice could not speak a sentence correctly: the video is not built (bad sound is never kept)."""
+
+
+def _say(spoken, voice, rate, out):
+    """One run of the synthesiser -> None, or what went wrong.  speech_selftest() puts a stand-in here: it never speaks."""
+    try:
+        with _say_lock():           # one synthesis at a time on the whole machine: two at once disturb each other
+            r = subprocess.run(["say", "-v", voice, "-r", str(rate), "-o", str(out), f"--data-format=LEI16@{SR}", "--", spoken],
                                capture_output=True, text=True, timeout=120)
-        except subprocess.TimeoutExpired:
-            err = "say did not finish within 120 s"
-            try: tmp.unlink()
+    except subprocess.TimeoutExpired:      # the synthesiser now and then hangs on one paragraph and never returns
+        return "say did not finish within 120 s"
+    if r.returncode != 0:
+        return r.stderr.strip()[:300] or f"say ended with exit code {r.returncode}"
+    return None
+
+
+def _speak_whole(spoken, voice, rate, p):
+    """Speak one piece in one go until two attempts agree in length (within 2 %) and that length is inside the pace bounds.
+    -> (True, seconds) with the clip written to p, or (False, why)."""
+    lo, hi = pace_range(spoken, rate)
+    takes, notes = [], []                   # (seconds, path) of the attempts inside the bounds; what the others were
+    try:
+        for attempt in range(VOICE_TRIES):
+            tmp = p.with_suffix(f".{os.getpid()}.{id(spoken) % 100000}.{attempt}.tmp.wav")
+            err = _say(spoken, voice, rate, tmp)
+            secs = 0.0 if err else _wav_seconds(tmp)
+            if not err and secs <= 0: err = "no sound file was written"
+            if not err:
+                fault, wps, lps = clip_pace_fault(spoken, tmp, rate)
+                if fault:                   # cut short, or with silence added: such an attempt never counts, however often it comes
+                    err = f"{clip_seconds(tmp) if fault != 'unreadable' else 0:.2f} s ({ {'fast': 'cut short', 'slow': 'too long', 'loud': 'too loud or clipped', 'quiet': 'too quiet', 'gap': 'silence inside'}.get(fault, fault) })"
+            if err:
+                notes.append(err)
+                try: tmp.unlink()
+                except OSError: pass
+                continue
+            for other, _ in takes:
+                if abs(other - secs) <= max(0.05, 0.02 * secs):
+                    os.replace(tmp, p)
+                    return True, secs
+            takes.append((secs, tmp))
+        said = ", ".join(notes[:8] + [f"{t:.2f} s (alone)" for t, _ in takes])
+        return False, f"{VOICE_TRIES} attempts, none twice with the same believable length ({lo:.1f} to {hi:.1f} s for these {len(spoken.split())} words): {said}"
+    finally:
+        for _, t in takes:
+            try: t.unlink()
             except OSError: pass
-            continue
-        if r.returncode == 0 and tmp.exists() and tmp.stat().st_size > 44:
-            os.replace(tmp, p)
+
+
+def tts(spoken, voice, rate, _depth=0):
+    """Speak one piece of already prepared text (see speakable) with the macOS voice -> cached 48 kHz mono WAV path.
+
+    The macOS synthesiser is not repeatable on a busy machine: the same sentence now and then comes out with words missing, or
+    drawn out, or with silence added, and it can come out wrong the same way twice.  So a piece is accepted only if
+      1. two attempts agree in length (within 2 %), and
+      2. that length is inside the pace bounds (pace_fault: words and letters per second for the configured rate).
+    Only such a file is kept and marked with a ".ok" file beside it.  A cached file without the mark, or with a mark but outside
+    the bounds (marks from before the bounds existed), is spoken again.
+    A piece that does not pass after VOICE_TRIES attempts is split at its sentences (a single sentence at its clauses), the
+    parts are spoken and checked one by one in the same way and joined with a short gap.  If a part still cannot pass, VoiceError
+    is raised with the sentence in it and the video is not built."""
+    p = tts_path(spoken, voice, rate)
+    ok = p.with_suffix(".ok")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists() and p.stat().st_size > 44 and ok.exists():
+        if not clip_pace_fault(spoken, p, rate)[0]:
             return p
-        err = r.stderr.strip()[:300] or "no sound file was written"
-    raise RuntimeError(f"say failed: {err}")
+        try: ok.unlink()                    # marked, but too short or too long for its words: not a verified clip
+        except OSError: pass
+    done, why = _speak_whole(spoken, voice, rate, p)
+    if done:
+        ok.write_text(f"{why:.3f}\n")
+        return p
+    parts, gap = split_spoken(spoken) if _depth < 2 else ([], 0.0)
+    if not parts:
+        raise VoiceError(f"the voice cannot speak this sentence correctly: {spoken!r}\n      {why}")
+    try:
+        wavs = [tts(x, voice, rate, _depth + 1) for x in parts]
+    except VoiceError as e:
+        raise VoiceError(f"{e}\n      (a part of: {spoken[:160]!r})" if _depth == 0 else str(e)) from None
+    whole = array.array("h")
+    for k, w in enumerate(wavs):
+        if k: whole.extend(silence(gap))
+        whole.extend(trim_voice(read_wav(w), 2400 if k == len(wavs) - 1 else 480))
+    secs = len(whole) / SR
+    fault = pace_fault(spoken, len(trim_voice(array.array("h", whole))) / SR, rate)[0]
+    if fault:
+        raise VoiceError(f"the voice cannot speak this sentence correctly, not even in {len(parts)} parts ({secs:.2f} s, {'cut short' if fault == 'fast' else 'too long'}): {spoken!r}")
+    tmp = p.with_suffix(f".{os.getpid()}.{id(spoken) % 100000}.join.tmp.wav")
+    write_wav(tmp, whole)
+    os.replace(tmp, p)
+    ok.write_text(f"{secs:.3f} joined from {len(parts)} parts\n")
+    return p
+
+
+SPEECH_CASES = (   # (narration with its code spans, what the voice is given): one line for each form in NARRATION_STYLE.md, "How symbols are spoken"
+    ('Look at `HEAD@{1}`, `HEAD@{upstream}` and `@{-1}`.',
+     'Look at HEAD at one, HEAD at upstream and at minus one.'),
+    ('Go to `HEAD~2`, then `main~`, then `HEAD^`, `HEAD^2` and `HEAD^^`.',
+     'Go to HEAD tilde two, then main tilde, then HEAD caret, HEAD caret two and HEAD caret caret.'),
+    ('Peel with `v1.0.0^{}`, `HEAD^{tree}` and `^{tag}`.',
+     'Peel with v 1 point 0 point 0 caret, empty curly braces, HEAD caret, tree in curly braces and caret, tag in curly braces.'),
+    ('The forms `^@`, `^!` and `^-` are shorthands, and `^1..^2` is a range.',
+     'The forms caret at, caret exclamation mark and caret dash are shorthands, and caret one two dots caret two is a range.'),
+    ('Compare `main..topic`, `main...topic`, `..topic` and `@{u}..`.',
+     'Compare main two dots topic, main three dots topic, two dots topic and at u two dots dot'),
+    ('Know `..` from `...`.',
+     'Know two dots from three dots.'),
+    ('Use `--force-with-lease`, `--force-with-lease=main`, `-X ours`, `-x`, `-fdx`, `-M40%` and `--3way`.',
+     'Use dash dash force with lease, dash dash force with lease equals main, dash capital X ours, dash x, dash f d x, dash capital M 40% and dash dash 3way.'),
+    ('Run `git log --all -- <path>` and `git checkout -`.',
+     'Run git log dash dash all dash dash path and git checkout dash.'),
+    ('The patterns `*`, `**`, `*.log`, `refs/heads/*`, `v[0-9]*` and `core.*`.',
+     'The patterns star, star star, star dot log, refs heads star, v 0 to 9 in square brackets star and core dot star.'),
+    ('Run `git tag | tail -1`.',
+     'Run git tag pipe tail dash 1.'),
+    ('Read the `=`, `!`, `<`, and `>` markers.',
+     'Read the equals sign, exclamation mark, less-than sign, and greater-than sign markers.'),
+    ('Between `<<<<<<<` and `=======`, then `>>>>>>>`, and `|||||||` in diff3 style.',
+     'Between seven less-than signs and seven equals signs, then seven greater-than signs, and seven pipes in diff 3 style.'),
+    ('It compared `pred == gold`, and `MAX_TIMEOUT_S = 60`.',
+     'It compared pred equals equals gold, and MAX TIMEOUT S equals 60.'),
+    ('Set `* text=auto`, `-text` and `eol=lf`.',
+     'Set star text equals auto, dash text and eol equals lf.'),
+    ('In `$GIT_DIR/hooks`, `$HOME`, `$1`, `$?` and `${{ github.sha }}`.',
+     'In dollar GIT DIR slash hooks, home, dollar 1, dollar question mark and dollar, git hub dot sha in double curly braces.'),
+    ('Print `%gd %gs`, `%GS`, `%G?` and `%(refname:short)`.',
+     'Print percent g d percent g s, percent capital G capital S, percent capital G question mark and percent, refname colon short in parentheses.'),
+    ('Open `/dev/null`, `data/`, `/build/`, `./run`, `../ravi` and `~/work/`.',
+     'Open slash dev slash null, data slash, slash build slash, dot slash run, dot dot slash ravi and home slash work slash.'),
+    ('Open `labs/shell`, `origin/main`, `README.md`, `.gitignore` and `exercises/m06-m10-integration.md`.',
+     'Open labs slash shell, origin main, read me dot M D, dot git ignore and exercises slash M 6 M 10 integration dot M D.'),
+    ('Git 2.55 and Git 2.55.0, the tags `v0.2.0` and `v2.0.0-rc.1`, `2.x`, and `v1.1.0-2-g57c8425`.',
+     'Git 2 point 55 and Git 2 point 55 point 0, the tags v 0 point 2 point 0 and v 2 point 0 point 0-rc dot 1, 2 point x, and v 1 point 1 point 0 dash 2 dash g 5 7 c 8.'),
+    ('Section 14A.14 and Lab 6.1.',
+     'Section 14 A point 14 and Lab 6.1.'),
+    ('It says `! [rejected]`, `[remote "origin"]`, `[ahead 1, behind 2]` and `[]`.',
+     'It says exclamation mark rejected in square brackets, remote "origin" in square brackets, ahead 1, behind 2 in square brackets and empty square brackets.'),
+    ('Clone `git@github.com:acme/support-bot.git` or `https://github.com/acme/support-bot.git`.',
+     'Clone git at git hub dot com colon acme slash support bot dot git or H T T P S colon slash slash git hub dot com slash acme slash support bot dot git.'),
+    ('Show `HEAD:path`, `:1:path`, `blob:none`, and a `remote:` line at 10:27.',
+     'Show HEAD colon path, colon 1 colon path, blob colon none, and a remote colon line at 10:27.'),
+    ('Run `git add .`, then `git restore --staged .` twice.',
+     'Run git add dot, then git restore dash dash staged dot twice.'),
+    ('The prefixes `ghp_`, `GIT_COMMITTER_`, `MERGE_*`, `fixup!` and `__git_ps1`.',
+     'The prefixes ghp underscore, GIT COMMITTER underscore, MERGE underscore star, fixup exclamation mark and underscore underscore git ps1.'),
+    ('Call `.lower()`, `success()` and `!cancelled()`.',
+     'Call dot lower, success and exclamation mark cancelled.'),
+    ('A `+` line, a `-` line, `+refs/heads/*:refs/remotes/origin/*`, `#`, `##` and `@@`.',
+     'A plus line, a dash line, plus refs heads star colon refs remotes origin star, hash, hash hash and at at.'),
+    ('Use `actions/checkout@v4`, W&B, and issue #12.',
+     'Use actions slash checkout at v4, W and B, and issue number 12.'),
+    ('`git fsmonitor--daemon` and `Rebasing (1/3)`.',
+     'git fsmonitor dash dash daemon and Rebasing (1 of 3).'),
+    ('It is 🔴. This one is 🟡 CAUTION: careful.',
+     'It is DANGEROUS. This one is CAUTION: careful.'),
+    ('The base is 6ae3c51.',
+     'The base is 6 a e 3.'),
+    ('It failed. Root cause: the tip moved.',
+     'It failed. ‖ Root cause. ‖ the tip moved.'),
+    ('Is `a > b`, or is 2 <= 3?',
+     'Is a greater than b, or is 2 less than or equal to 3?'),
+    ('Entries are named "On <branch>: ..." and do not contain "WIP".',
+     'Entries are named "On branch: three dots" and do not contain "W I P".'),
+    ('It\'s refused: "is at `4f2cc0c`... but expected `b602c1f`...". Then: "could not apply 0805fd8... Add staging settings".',
+     'It\'s refused: "is at 4 f 2 c three dots but expected b 6 0 2 three dots". Then: "could not apply 0 8 0 5 three dots Add staging settings".'),
+    ('The line "(cherry picked from commit f98ffd3..." and the range `4f2cc0c...b602c1f`.',
+     'The line "(cherry picked from commit f 9 8 f three dots" and the range 4 f 2 c three dots b 6 0 2.'),
+)
+SPEECH_PROSE = (   # ordinary punctuation is never touched
+    "It's a 50/50 call, and/or a coin toss - on 3/4 of the days.",
+    'Don\'t worry: it\'s a well-known, two-step fix, "as the manual says", isn\'t it? About 61% of teams, for $5.',
+    "So that's the destination. Now, why is the course built the way it is (and for whom)?",
+    "It's the end of an ordinary release week; at 10:27 your CTO asks, calmly: what changed?",
+)
+RAW_SYMBOL = r"[*|<>+#@~^\\\\=/_&\[\]{}`]|(?<!\d)%|\$(?!\d)|\.\.|(?<![\w\"')])!|\s[-.]+(?=\s|$)"
+
+
+def speech_selftest():
+    """Pure text checks of speakable(): no voice, no rendering.  -> list of problems (empty when all is well).
+    Run it with:  python3 tools/video_build.py --speech-selftest"""
+    bad = []
+    for src, want in SPEECH_CASES:
+        got = speakable(src)
+        if got != want: bad.append(f"{src!r}\n      expected {want!r}\n      got      {got!r}")
+    for src, want in SPEECH_CASES:
+        left = re.findall(RAW_SYMBOL, speakable(src).replace(PAUSE, " "))
+        if left: bad.append(f"{src!r}: raw symbols reach the voice: {left}")
+    for src in SPEECH_PROSE:
+        if speakable(src) != src: bad.append(f"prose was changed: {src!r} -> {speakable(src)!r}")
+    # the voice cache: one file per (voice, rate, spoken text), so a changed sentence is spoken again and an unchanged one is reused
+    a, b = speakable("Go to `HEAD~2`."), speakable("Go to `HEAD~3`.")
+    if tts_path(a, "Tara", 165) != tts_path(speakable("Go to `HEAD~2`."), "Tara", 165): bad.append("the voice cache key is not stable for the same spoken text")
+    if len({tts_path(a, "Tara", 165), tts_path(b, "Tara", 165), tts_path(a, "Tara", 175), tts_path(a, "Samantha", 165)}) != 4:
+        bad.append("the voice cache key does not depend on the spoken text, the voice and the rate")
+    if tts_path(a, "Tara", 165).name != sha1(f"Tara|165|{a}") + ".wav": bad.append("the voice cache key changed its form: every cached sentence would be spoken again")
+    sb = {"slides": [{"n": 1, "kind": "bullets", "items": ["Run <code>git add .</code> first", "Use <code>-X</code> ours."]}]}
+    beat = {"i": 0, "slide": 1, "text": "Run git add . first. Use -X ours.", "tele": "Run `git add .` first. Use `-X` ours."}
+    got = spoken_chunks(sb, beat)
+    if got != ["Run git add dot first.", LIST_GAP, "Use dash capital X ours."]: bad.append(f"a list beat: {got!r}")
+    got = spoken_chunks({"slides": []}, {"i": 0, "slide": 9, "text": "Run git add .. Done.", "tele": "Run `git add .`. Done."})
+    if got != ["Run git add dot. Done."]: bad.append(f"a beat with a code span: {got!r}")
+    return bad + voice_selftest() + srt_selftest()
+
+
+def voice_selftest():
+    """The rules of tts() with a stand-in for the synthesiser: nothing is spoken, the voice cache is not touched."""
+    import tempfile
+    bad = []
+    full = "Here are the candidates on the first-parent line again. HEAD now points at commit 0 7 4 d, and at no branch."
+    s1, s2 = "Here are the candidates on the first-parent line again.", "HEAD now points at commit 0 7 4 d, and at no branch."
+    # the bounds, on the lengths measured for these texts (V071 beat 39: 3.94 s was marked verified)
+    for said, secs, want in ((full, 7.30, None), (full, 6.70, None), (full, 3.94, "fast"), (full, 16.0, "slow"), (s1, 2.72, None), (s1, 2.07, "fast"),
+                             ("Root cause.", 0.80, None), ("Root cause.", 0.15, "fast"), ("You should now be able to say:", 19.0, "slow")):
+        got = pace_fault(said, secs, 165)[0]
+        if got != want: bad.append(f"pace bounds: {said[:40]!r} in {secs} s is {got!r}, expected {want!r}")
+    lo, hi = pace_range(full, 165)
+    if pace_fault(full, lo + 0.01, 165)[0] or pace_fault(full, hi - 0.01, 165)[0] or not pace_fault(full, lo - 0.01, 165)[0] or not pace_fault(full, hi + 0.01, 165)[0]:
+        bad.append(f"pace_range() and pace_fault() disagree for {lo:.2f} to {hi:.2f} s")
+    for said, want in ((full, ([s1, s2], SENTENCE_GAP)), (s2, (["HEAD now points at commit 0 7 4 d,", "and at no branch."], CLAUSE_GAP)),
+                       ('He said "stop." Then he left. Git 2.55 was out.', (['He said "stop."', "Then he left.", "Git 2.55 was out."], SENTENCE_GAP)),
+                       ("Yes, it is, as planned.", (["Yes, it is,", "as planned."], CLAUSE_GAP)), ("and at no branch.", ([], 0.0))):
+        if split_spoken(said) != want: bad.append(f"split_spoken({said!r}): {split_spoken(said)!r}, expected {want!r}")
+    global tts_path, _say
+    real = tts_path, _say
+    with tempfile.TemporaryDirectory() as d:
+        d = pathlib.Path(d)
+        calls = []
+        def tone(path, seconds):
+            n = int(seconds * SR) - 480 - 2400          # the length tts() measures: trim_voice() keeps 480 samples before and 2400 after
+            write_wav(path, silence(0.3) + array.array("h", [3500 if (k // 40) % 2 else -3500 for k in range(n)]) + silence(0.3))
+        def stand_in(plan):
+            def say(spoken, voice, rate, out):
+                calls.append(spoken)
+                todo = plan.get(spoken, [])
+                secs = todo.pop(0) if len(todo) > 1 else (todo[0] if todo else None)
+                if secs is None: return "say did not finish within 120 s"
+                tone(out, secs); return None
+            return say
+        def run_case(name, plan, said, want_secs=None, want_error=None, want_calls=None, mark=None):
+            global _say
+            calls.clear(); _say = stand_in({k: list(v) for k, v in plan.items()})
+            try:
+                p = tts(said, "Tara", 165)
+                secs, note = clip_seconds(p), p.with_suffix(".ok").read_text()
+                if want_error: bad.append(f"voice, {name}: accepted a clip of {secs:.2f} s, expected the build to fail")
+                elif abs(secs - want_secs) > 0.02: bad.append(f"voice, {name}: clip of {secs:.2f} s, expected {want_secs:.2f}")
+                elif mark and mark not in note: bad.append(f"voice, {name}: the mark says {note!r}")
+            except VoiceError as e:
+                if not want_error: bad.append(f"voice, {name}: {e}")
+                elif want_error not in str(e): bad.append(f"voice, {name}: the message does not name the sentence {want_error!r}: {e}")
+                elif tts_path(said, "Tara", 165).with_suffix(".ok").exists(): bad.append(f"voice, {name}: a failed sentence was marked verified")
+            if want_calls is not None and len(calls) != want_calls: bad.append(f"voice, {name}: {len(calls)} runs of the synthesiser, expected {want_calls}")
+            if list(d.glob("*/*.tmp.wav")): bad.append(f"voice, {name}: temporary files were left behind")
+        case = [0]
+        def fresh():
+            global tts_path
+            case[0] += 1; sub = d / str(case[0]); sub.mkdir()
+            tts_path = lambda spoken, voice, rate: sub / f"{sha1(f'{voice}|{rate}|{spoken}')}.wav"
+        try:
+            fresh(); run_case("two equal attempts", {full: [7.30]}, full, want_secs=7.30, want_calls=2)
+            fresh(); run_case("cut short twice the same way, then right", {full: [3.94, 3.94, 7.30, 9.57 * 2, 7.30]}, full, want_secs=7.30, want_calls=5)
+            fresh(); run_case("two believable lengths that differ", {full: [6.70, 7.30, 6.71]}, full, want_secs=6.71, want_calls=3)
+            fresh(); run_case("always cut short: spoken in sentences", {full: [3.94], s1: [2.72], s2: [4.26]}, full, want_secs=2.72 - 0.04 + SENTENCE_GAP + 4.26, want_calls=VOICE_TRIES + 4, mark="joined from 2 parts")
+            fresh(); run_case("a sentence that fails too: spoken in clauses", {full: [3.94], s1: [2.72], s2: [1.0], "HEAD now points at commit 0 7 4 d,": [2.9], "and at no branch.": [1.2]}, full,
+                              want_secs=2.72 - 0.04 + SENTENCE_GAP + (2.9 - 0.04 + CLAUSE_GAP + 1.2), want_calls=2 * VOICE_TRIES + 6)
+            fresh(); run_case("a part that never passes: the build fails", {full: [3.94], s1: [2.72], s2: [1.0], "HEAD now points at commit 0 7 4 d,": [2.9], "and at no branch.": [0.1]}, full, want_error="and at no branch.")
+            fresh(); run_case("the synthesiser hangs: the build fails", {}, "Root cause.", want_error="Root cause.", want_calls=VOICE_TRIES)
+            # a clip that was marked before the bounds existed is not trusted, and its mark goes
+            fresh(); p = tts_path(full, "Tara", 165); tone(p, 3.94); p.with_suffix(".ok").write_text("3.986\n")
+            run_case("a marked clip outside the bounds is spoken again", {full: [7.30]}, full, want_secs=7.30, want_calls=2)
+            fresh(); p = tts_path(full, "Tara", 165); tone(p, 7.30); p.with_suffix(".ok").write_text("7.300\n")
+            run_case("a marked clip inside the bounds is reused", {}, full, want_secs=7.30, want_calls=0)
+        finally:
+            tts_path, _say = real
+    return bad
+
+
+def audio_selftest():
+    """seal_audio() on a synthetic track: loud syllables with sharp high tones (peaks between the samples), reveal sounds mixed in.
+    The finished AAC track must be at or below PEAK_CEILING and still at the loudness target.  -> (problems, what was measured)"""
+    import tempfile
+    ff, _ = need_ffmpeg()
+    bad = []
+    with tempfile.TemporaryDirectory() as d:
+        work = pathlib.Path(d)
+        raw, norm, seconds = work / "narration.raw.wav", work / "narration.wav", 24.0
+        a = array.array("h", bytes(2 * int(seconds * SR)))
+        for k in range(len(a)):
+            t = k / SR
+            env = abs(math.sin(2 * math.pi * 1.6 * t)) ** 3 * (0.35 + 0.65 * abs(math.sin(2 * math.pi * 0.11 * t)))
+            a[k] = int(30000 * env * (0.5 * math.sin(2 * math.pi * 170 * t) + 0.22 * math.sin(2 * math.pi * 510 * t + 1) + 0.2 * math.sin(2 * math.pi * 2300 * t) + 0.08 * math.sin(2 * math.pi * 11900 * t + 2)))
+        write_wav(raw, a)
+        loudnorm(ff, raw, norm, seconds)
+        mix_sfx(ff, norm, [(0.5 + 0.63 * k, ("pop", "tick", "whoosh")[k % 3], 1.5) for k in range(36)])
+        before = work / "before.m4a"
+        run([ff, "-y", "-v", "error", "-i", str(norm)] + AAC + [str(before)])
+        i0, tp0 = measure_audio(ff, before)
+        res = seal_audio(ff, norm, seconds, work)
+        final = work / "final.m4a"
+        run([ff, "-y", "-v", "error", "-i", str(norm), "-af", f"apad,atrim=0:{seconds:.6f}"] + AAC + ["-t", f"{seconds:.6f}", str(final)])
+        i1, tp1 = measure_audio(ff, final)
+        target = float(__import__("inspect").getsource(loudnorm).split('target = "I=')[1].split(":")[0])
+        if tp1 is None or tp1 > PEAK_CEILING: bad.append(f"true peak of the finished track is {tp1} dBTP, above {PEAK_CEILING:g}")
+        if i1 is None or abs(i1 - target) > 0.5: bad.append(f"integrated loudness of the finished track is {i1} LUFS, target {target:g}")
+        if i0 is not None and i1 is not None and abs(i1 - i0) > 0.3: bad.append(f"the limiter moved the loudness from {i0} to {i1} LUFS")
+        if read_wav(norm).buffer_info()[1] != int(round(seconds * SR)): bad.append("the limiter changed the length of the track")
+        note = f"without the limiter {tp0} dBTP at {i0} LUFS; finished track {tp1} dBTP at {i1} LUFS (limiter at {res['limiter_dbtp']} dBTP, {res['rounds']} round(s))"
+    return bad, note
+
+
+def srt_selftest():
+    """Subtitle cues never overlap, whatever the beat lengths are (V096 and V103 had a cue that started 55 ms before the last one ended)."""
+    bad = []
+    beats = [{"type": "narration", "text": "A long first sentence that needs a little while to be read by anybody. And a second one that follows it."},
+             {"type": "narration", "text": "Yes."}, {"type": "hold"}, {"type": "narration", "text": "Short."}, {"type": "narration", "text": "Gone."},
+             {"type": "narration", "text": "The next beat starts right after it."}, {"type": "narration", "text": "End."}]
+    for name, durs, tail in (("ordinary beats", [6.0, 0.9, 2.0, 0.8, 0.7, 2.5, 0.8], 0.3), ("a beat of 0.305 s", [6.0, 0.305, 0.0, 0.305, 0.31, 2.5, 0.1], 0.3),
+                             ("beats of a few frames", [6.0, 0.1, 0.0, 0.07, 0.0, 2.5, 0.0], 0.3), ("a recording, no tail", [5.0, 0.2, 1.0, 0.05, 0.3, 2.0, 0.3], 0.0)):
+        starts, t = [], 1.0
+        for x in durs: starts.append(t); t += x
+        cues = srt_cues({"beats": beats}, starts, durs, tail)
+        for a, b in zip(cues, cues[1:]):
+            if b[0] < a[1] or b[0] < a[0]: bad.append(f"subtitles, {name}: the cue at {srt_time(b[0] / 1000)} starts before the one before it ends at {srt_time(a[1] / 1000)}")
+        if any(c[1] <= c[0] for c in cues): bad.append(f"subtitles, {name}: a cue ends before it starts")
+        said = " ".join(c[2].replace("\n", " ") for c in cues)
+        if said != " ".join(b["text"] for b in beats if b["type"] == "narration"): bad.append(f"subtitles, {name}: text was lost or reordered: {said!r}")
+        if name == "ordinary beats" and [c[:2] for c in cues[-2:]] != [[11400, 13560], [13900, 14360]]: bad.append(f"subtitles, {name}: the times changed: {[c[:2] for c in cues]}")
+    return bad
 
 
 def trim_voice(seg, tail=2400):
@@ -345,7 +920,8 @@ def assemble_audio(sb, mode, work, ff, opts):
 
 
 def loudnorm(ff, raw, out, total):
-    """Two-pass EBU R128 normalisation to -16 LUFS (true peak -1.5 dB)."""
+    """Two-pass EBU R128 normalisation of the narration to -16 LUFS (true peak -1.5 dB).  The finished track, with the reveal
+    sounds mixed in and encoded as AAC, is held at that peak by seal_audio()."""
     target = "I=-16:TP=-1.5:LRA=11"
     r = subprocess.run([ff, "-hide_banner", "-nostats", "-i", str(raw), "-af", f"loudnorm={target}:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True)
@@ -367,6 +943,49 @@ def loudnorm(ff, raw, out, total):
     else:
         run([ff, "-y", "-v", "error", "-i", str(raw), "-af", af + f",apad,atrim=0:{total:.6f}", "-ar", str(SR), "-ac", "1", "-c:a", "pcm_s16le", str(out)])
     return meas
+
+
+PEAK_CEILING = -1.5        # dBTP: the sound track of the finished MP4 (after the reveal sounds and the AAC encoder) is at or below this
+PEAK_MARGIN = 0.1          # dB kept below the ceiling when the limiter is set
+AAC = ["-c:a", "aac", "-b:a", "160k", "-ar", str(SR), "-ac", "1"]     # the sound track of every MP4; seal_audio() measures with the same
+
+
+def measure_audio(ff, path):
+    """EBU R128 measurement of a sound file -> (integrated LUFS, true peak dBTP); None where ffmpeg gives no number (silence)."""
+    r = subprocess.run([ff, "-hide_banner", "-nostats", "-i", str(path), "-vn", "-af", "ebur128=peak=true:framelog=quiet", "-f", "null", "-"], capture_output=True, text=True)
+    tail = r.stderr[r.stderr.rfind("Summary:"):] if "Summary:" in r.stderr else ""
+    num = lambda pat: (lambda m: float(m.group(1)) if m else None)(re.search(pat, tail))
+    return num(r"\bI:\s+(-?[\d.]+) LUFS"), num(r"Peak:\s+(-?[\d.]+) dBFS")
+
+
+def seal_audio(ff, wav, seconds, work):
+    """Last step of the sound: hold the true peak of the finished track at or below PEAK_CEILING.  Rewrites `wav` in place.
+
+    loudnorm() limits the narration alone to -1.5 dBTP, but the reveal sounds are mixed in after it and the AAC encoder moves
+    peaks, so finished videos measured -1.0 to -1.3 dBTP.  Here the mixed track goes through a limiter (at four times the sample
+    rate, so that peaks between the samples are seen), is encoded exactly as it will be in the MP4, and is measured; if the encoded
+    track is above the ceiling the limiter is set lower by the excess and the step is repeated.  Only peaks are touched: the
+    integrated loudness stays where loudnorm() put it.  -> {"true_peak_dbtp", "integrated_lufs", "limiter_dbtp", "rounds"}"""
+    src, lim, trial = work / "narration.mix.wav", work / "narration.lim.wav", work / "narration.trial.m4a"
+    shutil.copyfile(wav, src)
+    want = PEAK_CEILING - PEAK_MARGIN
+    limit, res = want - 0.6, None
+    for rounds in range(1, 7):
+        run([ff, "-y", "-v", "error", "-i", str(src), "-af",
+             f"aresample={4 * SR},alimiter=limit={10 ** (limit / 20):.6f}:attack=5:release=50:level=false:latency=true,aresample={SR},apad,atrim=0:{seconds:.6f}",
+             "-ar", str(SR), "-ac", "1", "-c:a", "pcm_s16le", str(lim)])
+        run([ff, "-y", "-v", "error", "-i", str(lim), "-af", f"apad,atrim=0:{seconds:.6f}"] + AAC + ["-t", f"{seconds:.6f}", str(trial)])
+        i_lufs, tp = measure_audio(ff, trial)
+        res = {"true_peak_dbtp": tp, "integrated_lufs": i_lufs, "limiter_dbtp": round(limit, 2), "rounds": rounds}
+        if tp is None or tp <= want + 0.05:           # no number: digital silence
+            os.replace(lim, wav)
+            for f in (src, trial):
+                try: f.unlink()
+                except OSError: pass
+            (work / "audio_final.json").write_text(json.dumps(res), encoding="utf-8")
+            return res
+        limit -= (tp - want) + 0.1
+    raise RuntimeError(f"the sound track could not be brought to {PEAK_CEILING:g} dBTP or below: it measures {res['true_peak_dbtp']} dBTP after {res['rounds']} rounds of limiting")
 
 
 # ---- video -------------------------------------------------------------------------------------------
@@ -429,6 +1048,7 @@ def encode(ff, sb, slide_dir, plan, audio, out, total_frames, work):
     lines.append(f"file '{p}'")          # the concat demuxer needs the last picture named twice
     lst.write_text("\n".join(lines) + "\n", encoding="utf-8")
     total = total_frames / FPS
+    seal_audio(ff, audio, total, work)
     tmp = out.with_suffix(".part.mp4")
     run([ff, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-i", str(audio),
          # colour conversion first (once per slide), then the frame-rate filter repeats the converted picture
@@ -436,7 +1056,7 @@ def encode(ff, sb, slide_dir, plan, audio, out, total_frames, work):
          "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-crf", "20", "-g", str(FPS * 5), "-pix_fmt", "yuv420p",
          "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
          "-r", str(FPS), "-video_track_timescale", "15360",
-         "-af", f"apad,atrim=0:{total:.6f}", "-c:a", "aac", "-b:a", "160k", "-ar", str(SR), "-ac", "1",
+         "-af", f"apad,atrim=0:{total:.6f}"] + AAC + [
          "-t", f"{total:.6f}", "-movflags", "+faststart", str(tmp)])
     os.replace(tmp, out)
 
@@ -667,9 +1287,10 @@ def encode_animated(ff, sb, man, durs, audio, out, work, stamp=None):
     lst.write_text("ffconcat version 1.0\n" + "".join(f"file '{p}'\n" for p in files), encoding="utf-8")
     nsfx = mix_sfx(ff, audio, sounds)
     seconds = total / FPS
+    seal_audio(ff, audio, seconds, work)                    # after the reveal sounds: the limit holds for the finished track
     tmp = out.with_suffix(".part.mp4")
     run([ff, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-i", str(audio), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
-         "-af", f"apad,atrim=0:{seconds:.6f}", "-c:a", "aac", "-b:a", "160k", "-ar", str(SR), "-ac", "1", "-t", f"{seconds:.6f}",
+         "-af", f"apad,atrim=0:{seconds:.6f}"] + AAC + ["-t", f"{seconds:.6f}",
          "-video_track_timescale", "15360", "-movflags", "+faststart", str(tmp)])
     os.replace(tmp, out)
     return {"segments": len(segs), "clips": len(man["clips"]), "clip_frames": sum(s["used"] for s in segs), "sound_effects": nsfx, "frames": total}
@@ -702,6 +1323,16 @@ def srt_time(t):
     return f"{ms // 3600000:02d}:{ms % 3600000 // 60000:02d}:{ms % 60000 // 1000:02d},{ms % 1000:03d}"
 
 
+def two_lines(c):
+    """One cue text -> the same text broken near its middle if it is longer than a 42-character line."""
+    if len(c) > 42:
+        mid, best = len(c) / 2, None
+        for m in re.finditer(" ", c):
+            if best is None or abs(m.start() - mid) < abs(best - mid): best = m.start()
+        if best is not None and max(best, len(c) - best - 1) <= 60: c = c[:best] + "\n" + c[best + 1:]
+    return c
+
+
 def cue_chunks(text, limit=84):
     """Split narration into subtitle cues of at most two 42-character lines."""
     words_, cues, cur = text.split(), [], ""
@@ -713,19 +1344,18 @@ def cue_chunks(text, limit=84):
             if re.search(r"[.?!][\"”)]?$", w) and len(cur) > limit * 0.6:
                 cues.append(cur); cur = ""
     if cur: cues.append(cur)
-    out = []
-    for c in cues:
-        if len(c) > 42:
-            mid, best = len(c) / 2, None
-            for m in re.finditer(" ", c):
-                if best is None or abs(m.start() - mid) < abs(best - mid): best = m.start()
-            if best is not None and max(best, len(c) - best - 1) <= 60: c = c[:best] + "\n" + c[best + 1:]
-        out.append(c)
-    return out
+    return [two_lines(c) for c in cues]
 
 
-def write_srt(sb, starts, durs, path, tail=0.0):
-    n, lines = 0, []
+CUE_GAP = 0.04             # seconds between the end of a cue and the start of the next
+CUE_MIN = 0.20             # a cue that would be shorter than this once it is cut back to make room for the next one is joined to that one
+
+
+def srt_cues(sb, starts, durs, tail=0.0):
+    """The subtitle cues of a video -> [[start ms, end ms, text], ...], in order and never overlapping.
+    Cue times are spread over a beat in proportion to the text.  A beat gets at least 0.4 s; where that is more than the beat
+    has (a narration beat of a few frames), the cue ends where the next one starts, or is joined to it."""
+    raw = []
     for b, t0, d in zip(sb["beats"], starts, durs):
         if b["type"] != "narration": continue
         cues = cue_chunks(b["text"])
@@ -734,11 +1364,31 @@ def write_srt(sb, starts, durs, path, tail=0.0):
         t = t0
         for c in cues:
             dt = span * len(c) / total
-            n += 1
-            lines += [str(n), f"{srt_time(t)} --> {srt_time(t + dt - 0.04)}", c, ""]
+            raw.append([int(round(t * 1000)), int(round((t + dt - CUE_GAP) * 1000)), c])
             t += dt
+    out, gap = [], int(round(CUE_GAP * 1000))
+    for k, c in enumerate(raw):
+        if out and c[0] < out[-1][0]: c[0] = out[-1][0]              # never before the cue before it
+        if k + 1 < len(raw):
+            nxt = raw[k + 1]
+            if c[1] > nxt[0] - gap or nxt[0] <= c[0]:                # it would still be shown when the next one starts
+                if nxt[0] - gap - c[0] < CUE_MIN * 1000:             # ... and has no room of its own: one cue for both texts
+                    nxt[0], nxt[2] = c[0], two_lines(c[2].replace("\n", " ") + " " + nxt[2].replace("\n", " "))
+                    continue
+                c[1] = nxt[0] - gap
+        if out and out[-1][1] > c[0]: out[-1][1] = c[0]
+        if c[1] <= c[0]: c[1] = c[0] + 1
+        out.append(c)
+    return out
+
+
+def write_srt(sb, starts, durs, path, tail=0.0):
+    cues = srt_cues(sb, starts, durs, tail)
+    lines = []
+    for n, (a, e, c) in enumerate(cues, 1):
+        lines += [str(n), f"{srt_time(a / 1000)} --> {srt_time(e / 1000)}", c, ""]
     path.write_text("\n".join(lines), encoding="utf-8")
-    return n
+    return len(cues)
 
 
 def chapter_time(t):
@@ -873,6 +1523,8 @@ def build_one(vid, draft, opts):
         nch = write_chapters(sb, starts, total, chap)
         pr = probe(fp, mp4)
         pr["faststart"] = is_faststart(mp4)
+        try: info["final"] = json.loads((work / "audio_final.json").read_text())      # what seal_audio() measured on the encoded track
+        except Exception: pass
         if anim and pr["frames"] != total_frames:
             print(f"  {vid}: the animated video has {pr['frames']} frames, expected {total_frames}", flush=True)
         ok = (not anim or pr["frames"] == total_frames) and (pr["width"], pr["height"]) == (W, H) and pr["fps"] in (f"{FPS}/1", str(FPS)) and pr["vcodec"] == "h264" and pr["acodec"] == "aac" \
@@ -896,6 +1548,15 @@ def build_one(vid, draft, opts):
 
 def main():
     argv = sys.argv[1:]
+    if "--speech-selftest" in argv:        # text only: nothing is spoken, rendered or built
+        bad = speech_selftest()
+        print("\n".join("FAIL  " + x for x in bad) if bad else f"speech self-test: {len(SPEECH_CASES)} sentences, prose, the voice cache key, the voice's pace bounds and splitting, subtitle cues: all correct")
+        return 1 if bad else 0
+    if "--audio-selftest" in argv:         # a synthetic track through the last steps of the sound: nothing is spoken, no video is built
+        bad, note = audio_selftest()
+        print("\\n".join("FAIL  " + x for x in bad) if bad else f"audio self-test: true peak at or below {PEAK_CEILING:g} dBTP, loudness kept: correct")
+        print("  " + note)
+        return 1 if bad else 0
     opts = {"allow_missing": "--allow-missing" in argv, "keep_temp": "--keep-temp" in argv or "--no-encode" in argv,
             "no_encode": "--no-encode" in argv, "no_anim": "--no-anim" in argv}
     for flag in ("--voice", "--rate"):

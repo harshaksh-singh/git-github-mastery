@@ -35,7 +35,7 @@ This video covers the mechanism and its first application, line endings. The nex
 
 In one sentence: a `.gitattributes` file attaches named attributes to paths, and Git consults them whenever it converts, compares, merges or archives a file. The file is versioned and reaches every clone, while the programs that some attributes name are defined in configuration and reach nobody.
 
-Precisely. Each line is a pattern followed by attributes. For one path, an attribute is in one of four states.
+Precisely. Each line is a pattern followed by attributes.
 
 **[ON SCREEN]** The state table of section 14C.4.
 
@@ -45,6 +45,8 @@ Precisely. Each line is a pattern followed by attributes. For one path, an attri
 | `-text` | unset | `unset` |
 | `eol=lf` | set to a value | the value |
 | not mentioned, or `!text` | unspecified | `unspecified` |
+
+For one path, an attribute is in one of four states: set, unset, set to a value, or unspecified.
 
 **[ANIMATION]** match: id=attr header=.gitattributes rules=*:text=auto|*.sh:text_eol=lf|*.csv:text_eol=crlf|*.bin:binary|CHANGELOG.md:merge=union|docs:export-ignore|.gitattributes:export-ignore paths=src/train.py:1|scripts/run.sh:1+2|labels.csv:1+3 wins=last title=A_later_line_overrides_an_earlier_one
 
@@ -393,6 +395,8 @@ i/lf    w/lf    attr/text=auto        	split.py
 `git restore .` here writes back files that the script deleted a line earlier. In general it's 🔴 DANGEROUS, because it overwrites uncommitted edits in the working tree. The rewritten `loader.py` and `split.py` have LF on this Mac. `sample.csv` has CRLF on every platform because of `eol=crlf`. And `clean.py`, which was not rewritten, keeps its CRLF.
 
 **[ON SCREEN]** "Outdated advice": "Set `core.autocrlf` and you are done." The setting is a convenience for one user. The textbook cites the Git FAQ, which recommends marking text and binary files in `.gitattributes`, and the attributes manual, which gives the procedure you saw: `* text=auto`, then one `git add --renormalize .`.
+
+That advice is outdated. The setting is a convenience for one user. The textbook cites the Git FAQ, which recommends marking text and binary files in `.gitattributes`, and the attributes manual, which gives the procedure you saw: `* text=auto`, then one `git add --renormalize .`.
 
 ## COMMON MISTAKES
 

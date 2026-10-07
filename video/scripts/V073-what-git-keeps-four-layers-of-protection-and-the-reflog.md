@@ -71,6 +71,8 @@ When the reflog can't help: it records movements of refs only. Edits to files, s
 
 **[ANIMATION]** stores: boxes=the_front_desk:index_cards_=_refs|the_ledger:old_box_numbers_=_the_reflog|the_vault:boxes_=_objects rows=1:A:a_card|1:C:the_box_it_names|2:B:a_ledger_line|2:C:a_box_only_the_ledger_names|3:C:a_box_nobody_mentions@ghost arrows=1:A1>C1:names|2:B1>C2:names title=A_bank_vault_with_a_ledger id=vault
 
+**[ANIMATION]** step: 3
+
 The textbook's analogy for the layers is a bank vault with a ledger. The safe-deposit boxes are objects. The index cards at the front desk are refs: each card names one box. When a card is rewritten, the clerk notes the old box number in a ledger, the reflog. Boxes that no card and no ledger line mentions are emptied in a periodic clear-out, but only boxes that have been untouched for two weeks.
 
 **[ANIMATION]** say: One_card_protects_a_whole_chain._The_ledger_is_private_to_one_branch_office
@@ -126,7 +128,7 @@ git cat-file -t dbe6ec8
 git count-objects -v | grep -e "^count" -e in-pack
 ```
 
-**[ANIMATION]** graph: ...older-da62b60-dbe6ec8 main; HEAD=main; title:A_commit_removed_from_its_branch => ...older-da62b60 main; da62b60-dbe6ec8; reflog:dbe6ec8; HEAD=main; say:After_the_reset:_dbe6ec8_is_on_no_branch; name:reset => + dbe6ec8 HEAD@{1}; cmd:git_gc_--prune=now; say:HEAD@{1}_names_it:_layer_two; name:named id=lost
+**[ANIMATION]** graph: ...older-da62b60-dbe6ec8 main; HEAD=main; title:A_commit_removed_from_its_branch => ...older-da62b60 main; da62b60-dbe6ec8; reflog:dbe6ec8; HEAD=main; say:After_the_reset:_dbe6ec8_is_on_no_branch; name:reset => + dbe6ec8 HEAD@{1}; cmd:!git_gc_--prune=now; say:HEAD@{1}_names_it:_layer_two; name:named id=lost at_state_1=8 at_reset=22
 
 **[ANIMATION]** step: reset
 
@@ -172,7 +174,7 @@ $ git reset -q --hard HEAD~1
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: 538ea2f-536f5df-da62b60 main; HEAD=main; title:The_history_behind_the_reflog => + da62b60-14a18d6 feature/rerank; HEAD=feature/rerank; cmd:git_commit_-m_"Add_reranker"; name:commit => 538ea2f-536f5df-da62b60 main; da62b60-f1f247e feature/rerank; da62b60-14a18d6; reflog:14a18d6; HEAD=feature/rerank; cmd:git_commit_--amend; say:The_amend_replaces_14a18d6._Only_reflogs_name_it_now; name:amend => + f1f247e main; HEAD=main; cmd:git_merge_feature/rerank; say:A_fast-forward:_main_moves_to_f1f247e; name:merge => + da62b60 main; cmd:!git_reset_--hard_HEAD~1; say:The_reset_pulls_main_back_to_da62b60; name:reset => + f1f247e HEAD@{1}; 14a18d6 HEAD@{4}; cmd:git_rev-parse_--short_'HEAD@{1}'; say:Every_old_value_is_a_name_you_can_use; name:selectors id=hist
+**[ANIMATION]** graph: 538ea2f-536f5df-da62b60 main; HEAD=main; title:The_history_behind_the_reflog => + da62b60-14a18d6 feature/rerank; HEAD=feature/rerank; cmd:git_commit_-m_"Add_reranker"; name:commit => 538ea2f-536f5df-da62b60 main; da62b60-f1f247e feature/rerank; da62b60-14a18d6; reflog:14a18d6; HEAD=feature/rerank; cmd:git_commit_--amend; say:The_amend_replaces_14a18d6._Only_reflogs_name_it_now; name:amend => + f1f247e main; HEAD=main; cmd:git_merge_feature/rerank; say:A_fast-forward:_main_moves_to_f1f247e; name:merge => + da62b60 main; cmd:!git_reset_--hard_HEAD~1; say:The_reset_pulls_main_back_to_da62b60; name:reset => + f1f247e HEAD@{1}; 14a18d6 HEAD@{4}; cmd:git_rev-parse_--short_'HEAD@{1}'; say:Every_old_value_is_a_name_you_can_use; name:selectors id=hist dx=260
 
 **[ANIMATION]** step: commit
 

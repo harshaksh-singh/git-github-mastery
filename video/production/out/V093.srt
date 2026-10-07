@@ -1,0 +1,1129 @@
+1
+00:00:04,500 --> 00:00:08,506
+"git pull worked for everyone yesterday.
+Today it dies with not our ref."
+
+2
+00:00:08,846 --> 00:00:14,201
+It dies for everyone except one person. That
+person improved the shared library from
+
+3
+00:00:14,241 --> 00:00:19,017
+inside the service, committed in both
+repositories, and pushed the service.
+
+4
+00:00:19,057 --> 00:00:23,962
+The push was accepted. Nothing warned
+them. And the service on the server now
+
+5
+00:00:24,002 --> 00:00:28,907
+records a library commit that exists in
+exactly one place in the world: under
+
+6
+00:00:28,947 --> 00:00:31,284
+.git/modules on that person's laptop.
+
+7
+00:00:31,624 --> 00:00:35,781
+If the laptop goes on holiday before anyone
+works out what happened, the whole team
+
+8
+00:00:35,821 --> 00:00:38,359
+is blocked, and so is CI.
+Keep that laptop in mind.
+
+9
+00:00:40,199 --> 00:00:43,778
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+10
+00:00:43,818 --> 00:00:48,702
+A quick reminder first. A submodule is
+another repository checked out inside yours.
+
+11
+00:00:48,742 --> 00:00:53,686
+The superproject is the repository that
+contains it, and a gitlink is the entry that
+
+12
+00:00:53,726 --> 00:00:58,491
+records the one commit it expects. Two
+videos ago you learned what a superproject
+
+13
+00:00:58,531 --> 00:01:00,034
+records about a submodule.
+
+14
+00:01:00,374 --> 00:01:06,250
+In the last one you watched the recorded
+commit and the checked-out commit drift
+
+15
+00:01:06,290 --> 00:01:12,462
+apart on a teammate's machine. Today you
+add the third value: the commits that exist
+
+16
+00:01:12,502 --> 00:01:18,304
+in the submodule's shared repository. And
+you go through the remaining standard
+
+17
+00:01:18,344 --> 00:01:23,702
+failures, one after another, each with
+its diagnosis, fix and prevention.
+
+18
+00:01:24,042 --> 00:01:28,953
+There are six: the push order, a dirty
+submodule, switching to a commit without the
+
+19
+00:01:28,993 --> 00:01:33,188
+submodule, a conflict between two
+pointers, removal, and a changed URL.
+
+20
+00:01:33,228 --> 00:01:38,020
+The video ends with what all of this means
+for a CI job, where nobody is there to
+
+21
+00:01:38,060 --> 00:01:38,974
+read git status.
+
+22
+00:01:40,814 --> 00:01:43,904
+diagnose not our ref and
+prevent it with a push guard;
+
+23
+00:01:44,244 --> 00:01:47,017
+handle a dirty submodule
+when switching branches;
+
+24
+00:01:47,357 --> 00:01:51,772
+resolve a conflict between two recorded
+pointers, and say when Git resolves it
+
+25
+00:01:51,812 --> 00:01:52,115
+alone;
+
+26
+00:01:52,455 --> 00:01:57,701
+remove a submodule completely, re-add one,
+and propagate a changed URL to existing
+
+27
+00:01:57,741 --> 00:01:58,152
+clones;
+
+28
+00:01:58,492 --> 00:02:02,956
+state what a CI checkout needs for
+submodules, as the section gives it.
+
+29
+00:02:04,796 --> 00:02:08,620
+Push order. A gitlink is only an ID,
+and the server doesn't check it.
+
+30
+00:02:08,660 --> 00:02:13,268
+So pushing the superproject alone is accepted
+even when the library commit it names
+
+31
+00:02:13,308 --> 00:02:17,188
+hasn't been pushed. Git has a guard
+for this, and it's off by default.
+
+32
+00:02:17,228 --> 00:02:21,836
+🟢 SAFE: git push --recurse-submodules=check
+verifies, before anything is sent, that
+
+33
+00:02:21,876 --> 00:02:26,091
+every submodule commit named by the
+commits being pushed is reachable from a
+
+34
+00:02:26,131 --> 00:02:28,387
+remote-tracking branch of that submodule.
+
+35
+00:02:28,727 --> 00:02:35,005
+--recurse-submodules=on-demand goes one
+step further and pushes the submodules
+
+36
+00:02:35,045 --> 00:02:41,322
+first. push.recurseSubmodules=check is
+the setting to put in every developer's
+
+37
+00:02:41,362 --> 00:02:45,128
+configuration for a
+repository with submodules.
+
+38
+00:02:45,468 --> 00:02:49,674
+Its limits: check trusts your remote-tracking
+branches, so it's satisfied by a
+
+39
+00:02:49,714 --> 00:02:53,974
+commit that sits on a library branch you
+pushed and that someone later deletes.
+
+40
+00:02:54,014 --> 00:02:58,273
+And on-demand needs push permission on
+the library, which consumers often don't
+
+41
+00:02:58,313 --> 00:03:02,736
+have. In that case the library change goes
+through the library's own review first,
+
+42
+00:03:02,776 --> 00:03:05,458
+and the superproject bumps
+the pointer afterwards.
+
+43
+00:03:05,798 --> 00:03:10,506
+Dirty submodules. A submodule's working
+tree can have uncommitted changes of its
+
+44
+00:03:10,546 --> 00:03:15,433
+own. The superproject reports them and can't
+record them: a gitlink can only name a
+
+45
+00:03:15,473 --> 00:03:20,241
+commit. The work has to be committed inside
+the submodule first, on a branch, and
+
+46
+00:03:20,281 --> 00:03:23,624
+then the new commit ID can be
+staged in the superproject.
+
+47
+00:03:23,964 --> 00:03:27,839
+Switching to a commit without the submodule
+leaves its directory behind, because Git
+
+48
+00:03:27,879 --> 00:03:30,962
+won't delete a directory that
+contains a repository's working tree.
+
+49
+00:03:31,002 --> 00:03:34,598
+With recursion, the checkout removes and
+restores the submodule's working tree
+
+50
+00:03:34,638 --> 00:03:38,513
+together with the superproject's files. The
+repository itself stays in .git/modules/
+
+51
+00:03:38,553 --> 00:03:39,026
+either way.
+
+52
+00:03:39,366 --> 00:03:43,306
+Pointer conflicts. Two branches of
+the superproject move the gitlink.
+
+53
+00:03:43,346 --> 00:03:47,978
+What a merge does depends on how the two
+library commits relate, and Git can look
+
+54
+00:03:48,018 --> 00:03:52,765
+that up only in the submodule's repository.
+If one is an ancestor of the other, Git
+
+55
+00:03:52,805 --> 00:03:55,995
+resolves the pointer by itself
+and takes the descendant.
+
+56
+00:03:56,035 --> 00:04:00,840
+If they have diverged, as these two have,
+the superproject can't produce the answer.
+
+57
+00:04:01,180 --> 00:04:07,902
+The correct pointer is a library commit that
+contains both lines of development, and
+
+58
+00:04:07,942 --> 00:04:10,397
+only the library can create it.
+
+59
+00:04:10,737 --> 00:04:15,292
+Removal. There are two different "removals".
+🟡 CAUTION: git submodule deinit <path>
+
+60
+00:04:15,332 --> 00:04:19,500
+is local. It empties the working directory
+and removes the section from your
+
+61
+00:04:19,540 --> 00:04:22,545
+.git/config, and git submodule
+update --init undoes it.
+
+62
+00:04:22,585 --> 00:04:26,089
+🟡 CAUTION: git rm <path> removes
+the submodule from the project.
+
+63
+00:04:26,129 --> 00:04:30,241
+It deletes the gitlink and the section
+in .gitmodules, and you commit that.
+
+64
+00:04:30,581 --> 00:04:35,671
+Three leftovers remain: a possibly empty
+.gitmodules, the section in .git/config,
+
+65
+00:04:35,711 --> 00:04:40,991
+and the repository under .git/modules/. Git
+keeps the repository on purpose, so that
+
+66
+00:04:41,031 --> 00:04:46,248
+old commits which still contain the gitlink
+can be checked out without a new clone.
+
+67
+00:04:46,588 --> 00:04:51,575
+A changed URL. git submodule set-url edits
+.gitmodules and synchronizes your own
+
+68
+00:04:51,615 --> 00:04:56,790
+configuration. A teammate's configuration
+still has the URL that init copied months
+
+69
+00:04:56,830 --> 00:04:57,042
+ago.
+
+70
+00:04:57,382 --> 00:05:02,307
+🟢 SAFE: git submodule sync copies the URLs
+from .gitmodules into .git/config and
+
+71
+00:05:02,347 --> 00:05:05,597
+into the origin remote of
+each initialized submodule.
+
+72
+00:05:05,937 --> 00:05:11,374
+CI. A CI job is a fresh clone made by a
+script, so every default of this chapter
+
+73
+00:05:11,414 --> 00:05:12,332
+applies to it.
+
+74
+00:05:12,672 --> 00:05:16,753
+When not to use submodules at all
+is the question of the next video.
+
+75
+00:05:16,793 --> 00:05:21,602
+For today: every failure here is a
+disagreement between two of three values, and
+
+76
+00:05:21,642 --> 00:05:23,602
+every fix makes them agree again.
+
+77
+00:05:25,442 --> 00:05:35,330
+The three values, once more. What your
+book cites. What page the reader's copy is
+
+78
+00:05:35,370 --> 00:05:40,969
+open at. What the bookshop's
+edition contains.
+
+79
+00:05:41,309 --> 00:05:45,946
+Last time, the first two disagreed. Today's
+headline failure is the first and third:
+
+80
+00:05:45,986 --> 00:05:50,233
+your book cites a page that was never
+printed. It exists only in the author's
+
+81
+00:05:50,273 --> 00:05:54,854
+manuscript. Every reader who follows the
+citation is told by the bookshop: we don't
+
+82
+00:05:54,894 --> 00:05:55,411
+have that.
+
+83
+00:05:55,751 --> 00:06:00,188
+A pointer conflict is two editions of
+your book citing two different pages.
+
+84
+00:06:00,228 --> 00:06:04,247
+If one page is a later revision of
+the other, the choice is obvious.
+
+85
+00:06:04,287 --> 00:06:08,904
+If the two pages were revised independently,
+somebody has to write a page that
+
+86
+00:06:08,944 --> 00:06:12,605
+combines them, and that somebody
+works at the other publisher.
+
+87
+00:06:12,945 --> 00:06:17,478
+Where the analogy stops being
+useful: a dirty submodule.
+
+88
+00:06:17,518 --> 00:06:21,806
+Scribbles in the reader's
+copy can't be cited at all.
+
+89
+00:06:21,846 --> 00:06:24,419
+Only printed pages have numbers.
+
+90
+00:06:29,259 --> 00:06:33,810
+Every row names two things that should
+agree. That's the diagnosis method for
+
+91
+00:06:33,850 --> 00:06:36,971
+submodules: find the two
+values, print both, compare.
+
+92
+00:06:38,811 --> 00:06:43,437
+You improve the library from inside the
+service, on the submodule's main, as the
+
+93
+00:06:43,477 --> 00:06:44,545
+last video advised.
+
+94
+00:06:44,885 --> 00:06:49,263
+There are now two unpushed commits in two
+repositories: 17d7857 in the library, and
+
+95
+00:06:49,303 --> 00:06:53,362
+a commit in the superproject whose tree
+names it. With the guard, the push is
+
+96
+00:06:53,402 --> 00:06:55,066
+refused before anything is sent.
+
+97
+00:06:55,406 --> 00:07:00,404
+"The following submodule paths contain
+changes that can not be found on any remote."
+
+98
+00:07:00,444 --> 00:07:05,262
+Now without the guard. Predict: does the
+server accept a superproject commit that
+
+99
+00:07:05,302 --> 00:07:08,920
+names an unpushed library commit?
+Say it out loud. I'll wait.
+
+100
+00:07:13,760 --> 00:07:17,615
+Accepted. The server doesn't
+check a gitlink. Ravi pulls.
+
+101
+00:07:17,955 --> 00:07:23,027
+"not our ref" and the full ID. Note what
+state the failure left: the fetch of the
+
+102
+00:07:23,067 --> 00:07:27,318
+superproject succeeded, and the
+merge didn't run. Now the diagnosis.
+
+103
+00:07:27,358 --> 00:07:32,619
+Try it now, on paper, thirty seconds: write
+down the questions you would ask to find
+
+104
+00:07:32,659 --> 00:07:34,512
+the missing commit. I'll wait.
+
+105
+00:07:39,352 --> 00:07:44,269
+Three questions. Which library
+commit does the superproject want?
+
+106
+00:07:44,309 --> 00:07:50,522
+git ls-tree origin/main vendor/ says 17d7857.
+Does the library's shared repository
+
+107
+00:07:50,562 --> 00:07:56,775
+have it? git ls-remote shows main still at
+e216665, and no ref leads to the wanted
+
+108
+00:07:56,815 --> 00:07:57,309
+commit.
+
+109
+00:07:57,649 --> 00:08:02,485
+Who has it? Not Ravi's clone. The author
+of the superproject commit, on a local
+
+110
+00:08:02,525 --> 00:08:07,360
+branch. That's the laptop from the opening.
+So the fix is on the author's side.
+
+111
+00:08:14,700 --> 00:08:18,567
+The library commit is pushed,
+and the teammate's pull works.
+
+112
+00:08:18,907 --> 00:08:21,552
+With on-demand, Git pushes
+the submodule first:
+
+113
+00:08:21,892 --> 00:08:24,873
+And the setting for every
+developer's configuration:
+
+114
+00:08:29,013 --> 00:08:33,672
+"modified content, untracked content"
+means: the submodule's HEAD is the recorded
+
+115
+00:08:33,712 --> 00:08:38,313
+commit and its working tree isn't clean.
+git submodule status therefore shows no
+
+116
+00:08:38,353 --> 00:08:38,893
+plus sign.
+
+117
+00:08:39,233 --> 00:08:48,989
+The diff appends -dirty to the ID.
+Predict what git commit -am does with it.
+
+118
+00:08:49,029 --> 00:08:50,278
+I'll wait.
+
+119
+00:08:55,118 --> 00:08:58,981
+Nothing to commit. If you expected a
+commit, that's a fair guess, but there's
+
+120
+00:08:59,021 --> 00:09:02,782
+nothing for the superproject to stage.
+To look into all submodules at once:
+
+121
+00:09:03,122 --> 00:09:06,183
+The lower-case m in short status is the
+superproject's marker for modified content
+
+122
+00:09:06,223 --> 00:09:06,901
+inside a submodule.
+
+123
+00:09:07,241 --> 00:09:11,861
+Plain update does nothing: the checked-out
+commit already is the recorded one.
+
+124
+00:09:11,901 --> 00:09:14,609
+--force discards the edit
+to the tracked file.
+
+125
+00:09:14,949 --> 00:09:18,684
+"unable to rmdir 'vendor/textsplit':
+Directory not empty".
+
+126
+00:09:18,724 --> 00:09:23,892
+The stray vendor/ is untracked on that
+commit. A careless git add -A there would
+
+127
+00:09:23,932 --> 00:09:26,626
+stage it as a new gitlink. With recursion:
+
+128
+00:09:26,966 --> 00:09:30,928
+The directory is removed and restored
+together with the superproject's files.
+
+129
+00:09:31,268 --> 00:09:37,815
+use-release records the 0.2.0 release.
+use-tokens records a feature branch of the
+
+130
+00:09:37,855 --> 00:09:41,637
+library. The two library
+commits have diverged.
+
+131
+00:09:41,977 --> 00:09:47,115
+Git's hint says it: recursive merging with
+submodules supports only trivial cases.
+
+132
+00:09:47,455 --> 00:09:53,313
+UU on the path, and three stages in the
+index, each a gitlink: stage 1 the merge
+
+133
+00:09:53,353 --> 00:09:59,506
+base's pointer, stage 2 ours, stage 3 theirs.
+There are no conflict markers, because
+
+134
+00:09:59,546 --> 00:10:04,962
+there's no file to put them in. git
+submodule status prints a U and zeros.
+
+135
+00:10:05,302 --> 00:10:09,971
+The hint lists two ways. Merge inside the
+submodule yourself, which creates a merge
+
+136
+00:10:10,011 --> 00:10:14,397
+commit that exists only in your clone
+and must be pushed to the library before
+
+137
+00:10:14,437 --> 00:10:18,879
+anyone else can use it. Or wait for the
+library to merge, and then point at the
+
+138
+00:10:18,919 --> 00:10:21,262
+result. The demonstration does the second.
+
+139
+00:10:21,602 --> 00:10:26,649
+The library's main now has a merge,
+5a1935a, that contains both.
+
+140
+00:10:26,989 --> 00:10:33,022
+git add on the path stages whatever commit
+the submodule has checked out, which
+
+141
+00:10:33,062 --> 00:10:39,402
+resolves the path. git commit concludes the
+merge. And the case Git resolves alone:
+
+142
+00:10:39,742 --> 00:10:43,922
+When one of the two library commits is
+an ancestor of the other, Git takes the
+
+143
+00:10:43,962 --> 00:10:45,815
+descendant and says so in one line.
+
+144
+00:10:46,155 --> 00:10:50,690
+That needs both commits to be present
+in the submodule's local repository.
+
+145
+00:10:50,730 --> 00:10:55,822
+The textbook reports, from runs without a
+printed transcript, that in a clone where
+
+146
+00:10:55,862 --> 00:11:00,830
+the submodule isn't checked out the merge
+reports a conflict instead, and that -X
+
+147
+00:11:00,870 --> 00:11:02,067
+theirs doesn't help.
+
+148
+00:11:02,407 --> 00:11:06,047
+Local only: the directory is cleared, the
+status prefix is a minus, and the history
+
+149
+00:11:06,087 --> 00:11:08,130
+is untouched. Now the
+removal from the project.
+
+150
+00:11:16,470 --> 00:11:21,465
+"delete mode 160000". Look at the
+listing: .gitmodules is still there.
+
+151
+00:11:21,505 --> 00:11:24,055
+And two more leftovers on your disk:
+
+152
+00:11:24,395 --> 00:11:28,720
+A quick quiz. Someone adds a
+submodule under the same name again.
+
+153
+00:11:28,760 --> 00:11:32,077
+Does Git accept it, or
+refuse it? Say it out loud.
+
+154
+00:11:36,917 --> 00:11:42,449
+Refused: "A git directory for
+'vendor/textsplit' is found locally".
+
+155
+00:11:42,489 --> 00:11:48,353
+To remove a submodule completely from
+your clone, delete the leftovers.
+
+156
+00:11:48,693 --> 00:11:53,534
+History isn't rewritten by any of this.
+A checkout of a commit from before the
+
+157
+00:11:53,574 --> 00:11:58,290
+removal has the gitlink again, and the
+directory is empty until the next git
+
+158
+00:11:58,330 --> 00:11:59,792
+submodule update --init.
+
+159
+00:12:00,132 --> 00:12:04,020
+One line of .gitmodules changes, and
+your own configuration is synchronized.
+
+160
+00:12:04,060 --> 00:12:04,588
+Ravi pulls.
+
+161
+00:12:07,928 --> 00:12:12,370
+He has the new .gitmodules. His
+configuration still has the old URL.
+
+162
+00:12:15,710 --> 00:12:20,440
+sync copies the URL into .git/config
+and into the submodule's origin remote.
+
+163
+00:12:20,480 --> 00:12:23,076
+Then update fetches from the new location.
+
+164
+00:12:23,416 --> 00:12:27,454
+What follows from the mechanics,
+in the textbook's five points.
+
+165
+00:12:27,494 --> 00:12:32,827
+An empty directory isn't an error to Git,
+so a job without submodule checkout fails
+
+166
+00:12:32,867 --> 00:12:38,200
+later and elsewhere. So add an explicit
+step such as git submodule status, and fail
+
+167
+00:12:38,240 --> 00:12:43,444
+if any line starts with a minus or a plus.
+The job tests the recorded commit, not
+
+168
+00:12:43,484 --> 00:12:44,803
+the library's latest.
+
+169
+00:12:45,143 --> 00:12:49,551
+The push-order failure appears in CI first.
+A workflow that recursively checks out
+
+170
+00:12:49,591 --> 00:12:54,054
+submodules of a pull request from a fork
+lets the fork's .gitmodules choose what is
+
+171
+00:12:54,094 --> 00:12:58,393
+cloned onto the runner. And git archive
+doesn't include submodule contents, so a
+
+172
+00:12:58,433 --> 00:13:02,407
+build that starts from an archive needs
+the submodules fetched separately.
+
+173
+00:13:04,247 --> 00:13:05,895
+Five mistakes to watch for.
+
+174
+00:13:06,235 --> 00:13:10,888
+Pushing the superproject before the library.
+Root cause: a gitlink is only an ID and
+
+175
+00:13:10,928 --> 00:13:15,581
+the server does not check that the commit
+exists in the library's shared repository.
+
+176
+00:13:15,921 --> 00:13:20,322
+Trying to save work in a dirty submodule
+with a commit in the superproject.
+
+177
+00:13:20,362 --> 00:13:24,823
+Root cause: a gitlink can name only a
+commit; uncommitted content inside the
+
+178
+00:13:24,863 --> 00:13:26,007
+submodule has no ID.
+
+179
+00:13:26,347 --> 00:13:31,202
+Resolving a pointer conflict by picking
+one side. Root cause: when the library
+
+180
+00:13:31,242 --> 00:13:36,348
+commits have diverged, the correct pointer
+is a library commit that contains both,
+
+181
+00:13:36,388 --> 00:13:38,482
+which only the library can create.
+
+182
+00:13:38,822 --> 00:13:44,108
+git rm and then a failed re-add. Root cause:
+the repository under .git/modules/ and
+
+183
+00:13:44,148 --> 00:13:47,317
+the section in .git/config
+are kept after removal.
+
+184
+00:13:47,657 --> 00:13:51,976
+Changing the URL in .gitmodules
+and expecting clones to follow.
+
+185
+00:13:52,016 --> 00:13:57,441
+Root cause: each clone uses the copy that
+init wrote into .git/config until git
+
+186
+00:13:57,481 --> 00:13:58,825
+submodule sync runs.
+
+187
+00:14:00,665 --> 00:14:05,301
+Now, out of the lab. A platform team
+shares protocol definitions between eight
+
+188
+00:14:05,341 --> 00:14:10,037
+services through a submodule. On a Thursday,
+CI on main of one service fails at
+
+189
+00:14:10,077 --> 00:14:14,953
+checkout with "not our ref". The engineer
+on call doesn't start with the service's
+
+190
+00:14:14,993 --> 00:14:15,253
+code.
+
+191
+00:14:15,593 --> 00:14:20,530
+He prints three values. The gitlink that
+origin/main records for the submodule path.
+
+192
+00:14:20,570 --> 00:14:24,026
+The refs of the definitions
+repository, with git ls-remote.
+
+193
+00:14:24,066 --> 00:14:28,825
+And, after a message in the team channel,
+the branches in the author's clone that
+
+194
+00:14:28,865 --> 00:14:33,210
+contain the wanted commit. The first
+value appears in neither of the other
+
+195
+00:14:33,250 --> 00:14:36,824
+repository's refs, and the author
+finds it on a local branch.
+
+196
+00:14:36,864 --> 00:14:40,616
+One push of the definitions
+repository fixes every clone and CI.
+
+197
+00:14:40,956 --> 00:14:49,644
+The follow-up is two lines in the team's
+setup script: push.recurseSubmodules set to
+
+198
+00:14:49,684 --> 00:14:58,267
+check, and a CI step that runs git submodule
+status and fails on a leading minus or
+
+199
+00:14:58,307 --> 00:14:58,786
+plus.
+
+200
+00:15:00,626 --> 00:15:09,182
+Your turn. Do Exercise 15.4, Level 2,
+command prediction, "The first character of
+
+201
+00:15:09,222 --> 00:15:16,610
+git submodule status", in
+exercises/m11-m15-investigation-recovery.md.
+
+202
+00:15:16,950 --> 00:15:21,831
+For each situation the exercise describes,
+write the character you expect, space,
+
+203
+00:15:21,871 --> 00:15:26,630
+minus, plus or U, and the two values that
+agree or disagree, before you run the
+
+204
+00:15:26,670 --> 00:15:27,116
+command.
+
+205
+00:15:27,456 --> 00:15:32,875
+The challenge is Exercise 15.9, Level 4,
+"It works on your machine", in the same
+
+206
+00:15:32,915 --> 00:15:33,216
+file.
+
+207
+00:15:37,056 --> 00:15:41,705
+Answer out loud. A strong answer states the
+root cause as a disagreement between two
+
+208
+00:15:41,745 --> 00:15:45,166
+named things, and says where the
+missing commit physically is.
+
+209
+00:15:45,206 --> 00:15:49,744
+Each of the three commands answers one
+question, and the answer names the question
+
+210
+00:15:49,784 --> 00:15:54,153
+with the command: what is wanted, whether
+the shared repository has it, and who
+
+211
+00:15:54,193 --> 00:15:54,432
+does.
+
+212
+00:15:54,772 --> 00:15:58,262
+It says on whose machine the fix
+runs, which isn't the teammate's.
+
+213
+00:15:58,302 --> 00:16:02,541
+For prevention it names the setting,
+describes what it checks before a push, and
+
+214
+00:16:02,581 --> 00:16:06,284
+gives its limits. It may add where
+this failure is usually seen first.
+
+215
+00:16:08,124 --> 00:16:15,062
+Let's land this. Six failures, and one
+method: find the two values that should
+
+216
+00:16:15,102 --> 00:16:21,860
+agree, print both, compare. Here, the
+library commit had to reach the shared
+
+217
+00:16:21,900 --> 00:16:22,844
+repository.
+
+218
+00:16:23,184 --> 00:16:41,901
+You should now be able to say:
+
+219
+00:16:42,241 --> 00:16:47,361
+"not our ref" means the superproject
+records a library commit that the library's
+
+220
+00:16:47,401 --> 00:16:52,134
+shared repository does not have;
+push.recurseSubmodules=check prevents it.
+
+221
+00:16:52,474 --> 00:16:56,897
+Uncommitted work in a submodule cannot
+be recorded by the superproject; it is
+
+222
+00:16:56,937 --> 00:16:59,041
+committed inside the submodule first.
+
+223
+00:16:59,381 --> 00:17:04,139
+A pointer conflict is three gitlinks in
+the index; Git resolves it alone only when
+
+224
+00:17:04,179 --> 00:17:05,894
+one commit contains the other.
+
+225
+00:17:06,234 --> 00:17:11,825
+Removing a submodule leaves .gitmodules,
+a config section and a repository under
+
+226
+00:17:11,865 --> 00:17:16,751
+.git/modules; a changed URL reaches
+clones through git submodule sync.
+
+227
+00:17:17,091 --> 00:17:22,225
+A CI job is a fresh clone with every default
+of this chapter, so it has to ask for
+
+228
+00:17:22,265 --> 00:17:24,370
+submodules and check their status.
+
+229
+00:17:26,210 --> 00:17:29,240
+Read sections 23.8 to 23.12 of Chapter 23.
+
+230
+00:17:29,580 --> 00:17:34,007
+Today you diagnosed "not our ref" from
+three questions, and that's a real on-call
+
+231
+00:17:34,047 --> 00:17:36,985
+skill. If six failures felt
+like a lot, that's normal.
+
+232
+00:17:37,025 --> 00:17:40,625
+The table in the diagram section
+is your map, so practise with it.
+
+233
+00:17:40,665 --> 00:17:44,927
+Next time: subtrees, and choosing between
+a submodule, a subtree and a package
+
+234
+00:17:44,967 --> 00:17:48,291
+manager. Until then, look at the
+state first and type second.
+
+235
+00:17:48,331 --> 00:17:49,615
+See you in the next one.

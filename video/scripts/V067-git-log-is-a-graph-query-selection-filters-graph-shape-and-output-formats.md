@@ -69,6 +69,8 @@ It's one option from each of stages one, three and four. Walk from every ref. A 
 
 **[ANIMATION]** gates: packet=git_log_--author=asha_-5 gates=walk:done:stage_1:from_HEAD|filter:done:stage_2:keep_Asha's_commits,_then_count_five|order:done:stage_3:commit_date,_newest_first|print:done:stage_4:one_entry_per_survivor title=Four_stages id=stages
 
+**[ANIMATION]** step: 4
+
 When to think this way: always, and say it out loud when you explain a query to a colleague. "`git log --author=asha -5`" is "walk from HEAD, keep Asha's commits, print the first five that pass". HEAD is Git's name for where you are now. The limit counts after the filter and before `--reverse`. That's why `--reverse -1` prints the newest commit and not the oldest. If you want the root commits, the ones without a parent, the textbook gives you `git rev-list --max-parents=0 HEAD`.
 
 **[ANIMATION]** say: Wrong_tips,_a_filter_that_tests_something_else,_or_an_output_that_hides_a_distinction
@@ -80,6 +82,8 @@ When the model fails you, it fails in one of three places. You walked from the w
 ## MENTAL MODEL
 
 **[ANIMATION]** walk: columns=stage,git_log,database_query rows=1:walk:FROM|2:filter:WHERE|3:order:ORDER_BY|4:print:SELECT title=A_query_over_the_graph id=query
+
+**[ANIMATION]** step: 4
 
 The textbook's analogy is a database query. `FROM` is the set of commits. `WHERE` is the filter. `ORDER BY` is the ordering. `SELECT` is the output format.
 
@@ -97,7 +101,7 @@ Second, the default order is by commit date, newest first. Only `--topo-order`, 
 
 **[ANIMATION]** say: walk,_filter,_order,_print
 
-**[PAUSE]** Hold the four words on screen: walk, filter, order, print. For every command in the rest of this video, name the stage of each option before you look at the output.
+**[PAUSE]** Keep the four words on screen in mind: walk, filter, order, print. For every command in the rest of this video, name the stage of each option before you look at the output.
 
 ## DIAGRAM
 
@@ -599,7 +603,7 @@ A sixth, for judgement and not for Git: commit counts measure commits. They say 
 
 Now, out of the lab. An evaluation team writes an incident note: "No commits touched the harness on 10 September." The engineer ran the date query at lunchtime without a time of day. Four commits from that morning weren't listed, and one of them changed how warnings are sent.
 
-**[ANIMATION]** say: The_corrected_note:_a_full_timestamp_at_each_end,_and_the_time_zone
+**[ANIMATION]** graph: ...older-72134f3-8dc82cb-074d492-be9ad1b-d926d3c-9c8df98-...newer; HEAD=none; sub:72134f3:Thu_10:06; sub:8dc82cb:Thu_10:41; sub:074d492:Thu_11:36; sub:be9ad1b:Thu_12:31; sub:d926d3c:Thu_13:36; sub:9c8df98:Fri_10:16; range:72134f3,8dc82cb,074d492,be9ad1b,d926d3c:Thu_00:00_to_Fri_00:00; cmd:git_log_--since='2026-09-10_00:00'_--until='2026-09-11_00:00'; say:The_corrected_note:_a_full_timestamp_at_each_end,_and_the_time_zone; title:The_tenth_of_September id=corrected at_state_1=8
 
 The corrected note states the query as it was run: the range, a full timestamp at each end, and the time zone. It also says which date was compared: the committer date. Anyone who reads the note can rerun the command and get the same list, whatever the time of day. That's the standard for evidence in the rest of this course: the command, written so that it's reproducible, beside the claim.
 

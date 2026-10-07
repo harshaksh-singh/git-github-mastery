@@ -11,6 +11,7 @@
 #   video/production/make.sh status                  table of what exists for every video
 #   video/production/make.sh selftest                check the booth and the builder without a microphone
 #   video/production/make.sh demo                    a short video that plays every scene of the animation library
+#   video/production/make.sh qc         V008|all     measure a finished video against QC_CHECKLIST.md (reads only; report in out/qc/)
 #
 # "all" skips what is already up to date.  Several videos or a range also work:  slides V008 V009   draft V010-V020
 set -u
@@ -53,7 +54,9 @@ case "$cmd" in
     exec "$PY" "$TOOLS/video_status.py" "$@" ;;
   selftest)
     exec "$PY" "$TOOLS/video_selftest.py" "$@" ;;
+  qc)       # quality control of finished videos: measures, never builds or re-encodes; --selftest needs no video
+    need_arg "$@"; exec "$PY" "$TOOLS/video_qc.py" "$@" ;;
   help|-h|--help|*)
-    sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     [ "$cmd" = help ] || [ "$cmd" = -h ] || [ "$cmd" = --help ] || { echo; echo "unknown command: $cmd"; exit 2; } ;;
 esac

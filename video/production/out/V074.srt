@@ -1,1095 +1,1105 @@
 1
-00:00:04,500 --> 00:00:12,513
+00:00:04,500 --> 00:00:09,160
 That was the CTO's second question in
 the last video, about work lost in a Git
 
 2
-00:00:12,553 --> 00:00:20,876
+00:00:09,200 --> 00:00:14,040
 repository. The common answer in engineering
 chat is "relax, Git keeps everything
 
 3
-00:00:20,916 --> 00:00:28,310
+00:00:14,080 --> 00:00:18,379
 for 30 days, plus two weeks". Three
 things are wrong with that sentence.
 
 4
-00:00:28,650 --> 00:00:32,418
+00:00:18,719 --> 00:00:22,973
 Nothing happens when the time is up.
 Expiry is work done by a command.
 
 5
-00:00:32,458 --> 00:00:36,932
+00:00:23,013 --> 00:00:28,065
 The two weeks aren't added on top of the
 30 days. And there are situations in which
 
 6
-00:00:36,972 --> 00:00:41,393
+00:00:28,105 --> 00:00:33,096
 there was never a reflog entry to begin
 with: a deleted branch, a server, a tag, a
 
 7
-00:00:41,433 --> 00:00:45,962
+00:00:33,136 --> 00:00:38,249
 branch you only fetched. The reflog, remember,
 is Git's local log of where each name
 
 8
-00:00:46,002 --> 00:00:46,614
+00:00:38,289 --> 00:00:38,985
 has pointed.
 
 9
-00:00:46,954 --> 00:00:52,441
+00:00:39,325 --> 00:00:43,433
 If you give the CTO the comfortable
 number and the work was in one of those
 
 10
-00:00:52,481 --> 00:00:56,347
+00:00:43,473 --> 00:00:46,363
 situations, you'll be wrong
 at the moment it matters.
 
 11
-00:00:56,387 --> 00:01:01,505
+00:00:46,403 --> 00:00:50,234
 Keep that comfortable sentence in
 mind. By the end you can correct it.
 
 12
-00:01:03,345 --> 00:01:06,542
+00:00:52,074 --> 00:00:55,909
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 13
-00:01:06,582 --> 00:01:10,787
+00:00:55,949 --> 00:01:00,990
 Last time you learned the four layers that
 protect a commit, a saved snapshot of
 
 14
-00:01:10,827 --> 00:01:14,395
+00:01:01,030 --> 00:01:05,309
 your project: refs, reflogs, a grace
 period, and other repositories.
 
 15
-00:01:14,435 --> 00:01:16,359
+00:01:05,349 --> 00:01:07,659
 And you learned how to read a reflog.
 
 16
-00:01:16,699 --> 00:01:21,518
+00:01:07,999 --> 00:01:12,776
 Today you learn how long layers two and
 three last, and what shortens them.
 
 17
-00:01:21,558 --> 00:01:26,766
+00:01:12,816 --> 00:01:17,979
 Then two instruments. ORIG_HEAD, which is
 convenient and holds exactly one value.
 
 18
-00:01:26,806 --> 00:01:32,079
+00:01:18,019 --> 00:01:23,245
 And git fsck, which you met as an integrity
 check and now use as a search tool for
 
 19
-00:01:32,119 --> 00:01:34,476
+00:01:23,285 --> 00:01:25,622
 work that no ref and no reflog names.
 
 20
-00:01:34,816 --> 00:01:39,660
+00:01:25,962 --> 00:01:30,918
 One remark about the demonstrations, said
 once. The lab clock is fixed in the past
 
 21
-00:01:39,700 --> 00:01:44,366
+00:01:30,958 --> 00:01:35,731
 and the expiry code reads the real clock,
 so the lab configuration sets the two
 
 22
-00:01:44,406 --> 00:01:48,595
+00:01:35,771 --> 00:01:40,057
 reflog periods to never. The 90 and
 30 days are stated from the manual.
 
 23
-00:01:48,635 --> 00:01:53,301
+00:01:40,097 --> 00:01:44,870
 On screen, expiry is shown only with the
 cut-off now, which doesn't depend on a
 
 24
-00:01:53,341 --> 00:01:56,935
+00:01:44,910 --> 00:01:48,587
 clock. A relative cut-off would
 depend on the recording date.
 
 25
-00:01:58,775 --> 00:02:02,197
+00:01:50,427 --> 00:01:53,849
 state the default retention periods
 and which event starts each;
 
 26
-00:02:02,537 --> 00:02:07,000
+00:01:54,189 --> 00:01:59,220
 name the situations in which no reflog
 exists or it is deleted at once;
 
 27
-00:02:07,340 --> 00:02:09,312
+00:01:59,560 --> 00:02:03,142
 say which four commands write
 ORIG_HEAD and why it is one slot;
 
 28
-00:02:09,652 --> 00:02:14,720
+00:02:03,482 --> 00:02:08,380
 find lost commits with git
 fsck and explain --no-reflogs;
 
 29
-00:02:15,060 --> 00:02:17,947
+00:02:08,720 --> 00:02:11,607
 triage a list of dangling
 commits to the one that matters.
 
 30
-00:02:19,787 --> 00:02:26,817
+00:02:13,447 --> 00:02:17,931
 The defaults. Three numbers govern
 recoverability in a repository with default
 
 31
-00:02:26,857 --> 00:02:28,086
+00:02:17,971 --> 00:02:18,743
 configuration.
 
 32
-00:02:28,426 --> 00:02:33,844
+00:02:19,083 --> 00:02:22,083
 Two facts about these numbers
 are routinely misunderstood.
 
 33
-00:02:34,184 --> 00:02:39,666
+00:02:22,423 --> 00:02:27,514
 First, nothing happens when the time is
 up. Expiry is work done by a command: git
 
 34
-00:02:39,706 --> 00:02:45,324
+00:02:27,554 --> 00:02:32,772
 gc, Git's garbage collection, git reflog
 expire, or the maintenance that Git starts
 
 35
-00:02:45,364 --> 00:02:50,982
+00:02:32,812 --> 00:02:38,030
 after some commands. An entry that is 100
 days old is still there until one of them
 
 36
-00:02:51,022 --> 00:02:51,323
+00:02:38,070 --> 00:02:38,347
 runs.
 
 37
-00:02:51,663 --> 00:02:56,850
+00:02:38,687 --> 00:02:43,541
 Second, the 30-day rule is the one that
 matters for recovery, because it applies to
 
 38
-00:02:56,890 --> 00:03:02,141
+00:02:43,581 --> 00:02:48,494
 the entries you recover from. The manual
 says such entries "are generally created as
 
 39
-00:03:02,181 --> 00:03:07,368
+00:02:48,534 --> 00:02:53,388
 a result of using git commit --amend or git
 rebase and are the commits prior to the
 
 40
-00:03:07,408 --> 00:03:12,596
+00:02:53,428 --> 00:02:58,282
 amend or rebase occurring". The exact test,
 from the source: an entry is subject to
 
 41
-00:03:12,636 --> 00:03:17,823
+00:02:58,322 --> 00:03:03,176
 the shorter period if its old value or its
 new value isn't reachable from the ref's
 
 42
-00:03:17,863 --> 00:03:18,579
+00:03:03,216 --> 00:03:03,884
 current tip.
 
 43
-00:03:18,919 --> 00:03:22,998
+00:03:04,224 --> 00:03:09,355
 The grace period isn't added on top.
 gc.pruneExpire compares the cut-off with the
 
 44
-00:03:23,038 --> 00:03:26,914
+00:03:09,395 --> 00:03:14,271
 modification time of the object file.
 The two weeks are measured against that
 
 45
-00:03:26,954 --> 00:03:30,424
+00:03:14,311 --> 00:03:18,677
 modification time, not from the
 moment the object became unreachable.
 
 46
-00:03:30,764 --> 00:03:34,761
+00:03:19,017 --> 00:03:24,388
 Try it now, on paper. Thirty seconds: a
 commit was written 40 days ago and hasn't
 
 47
-00:03:34,801 --> 00:03:37,602
+00:03:24,428 --> 00:03:28,197
 been touched since. Today it
 loses its last reflog entry.
 
 48
-00:03:37,642 --> 00:03:39,945
+00:03:28,237 --> 00:03:31,337
 How much grace period is
 left? Say it out loud.
 
 49
-00:03:44,785 --> 00:03:48,464
+00:03:36,177 --> 00:03:40,130
 Possibly none. That commit may
 already be older than the cut-off.
 
 50
-00:03:48,504 --> 00:03:53,100
+00:03:40,170 --> 00:03:45,105
 The grace period protects what never had
 a reflog entry and was written recently.
 
 51
-00:03:53,440 --> 00:03:58,196
+00:03:45,445 --> 00:03:50,076
 The exceptions. Four situations give you
 less than the table promises, and one gives
 
 52
-00:03:58,236 --> 00:03:58,710
+00:03:50,116 --> 00:03:50,576
 you more.
 
 53
-00:03:59,050 --> 00:04:03,783
+00:03:50,916 --> 00:03:56,337
 A deleted branch loses its reflog at once.
 The manual of git branch says so for -d
 
 54
-00:04:03,823 --> 00:04:08,557
+00:03:56,377 --> 00:04:01,798
 and -D. The commits stay reachable from
 the HEAD reflog if you ever had the branch
 
 55
-00:04:08,597 --> 00:04:13,156
+00:04:01,838 --> 00:04:07,059
 checked out. The same holds for a
 remote-tracking branch that git fetch --prune
 
 56
-00:04:13,196 --> 00:04:13,622
+00:04:07,099 --> 00:04:07,592
 removes.
 
 57
-00:04:13,962 --> 00:04:16,857
+00:04:07,932 --> 00:04:11,532
 A commit that was never checked
 out has no HEAD reflog entry.
 
 58
-00:04:16,897 --> 00:04:20,852
+00:04:11,572 --> 00:04:16,486
 A teammate's branch that you only fetched
 exists in your clone as a remote-tracking
 
 59
-00:04:20,892 --> 00:04:24,894
+00:04:16,526 --> 00:04:21,499
 ref. When that ref is pruned, nothing names
 the commits, and they are on layer three
 
 60
-00:04:24,934 --> 00:04:25,712
+00:04:21,539 --> 00:04:22,513
 from that moment.
 
 61
-00:04:26,052 --> 00:04:31,715
+00:04:22,853 --> 00:04:27,336
 A bare repository, one with no working
 tree, as on a server, keeps no reflogs by
 
 62
-00:04:31,755 --> 00:04:37,418
+00:04:27,376 --> 00:04:31,859
 default. core.logAllRefUpdates is true by
 default in a repository with a working
 
 63
-00:04:37,458 --> 00:04:43,336
+00:04:31,899 --> 00:04:36,552
 tree and false by default in a bare repository.
 A server that receives a force push
 
 64
-00:04:43,376 --> 00:04:47,470
+00:04:36,592 --> 00:04:39,831
 therefore has no record of the
 value that was overwritten.
 
 65
-00:04:47,810 --> 00:04:52,986
+00:04:40,171 --> 00:04:45,438
 Tags, the fixed names for commits, have
 no reflog. Moving a tag with git tag -f
 
 66
-00:04:53,026 --> 00:04:56,749
+00:04:45,478 --> 00:04:49,268
 prints the old ID once, and
 that line is the only record.
 
 67
-00:04:57,089 --> 00:05:02,062
+00:04:49,608 --> 00:04:54,581
 And the one that gives you more: stash
 entries, your parked uncommitted work, don't
 
 68
-00:05:02,102 --> 00:05:06,894
+00:04:54,621 --> 00:04:59,413
 expire, until they are dropped. The textbook
 cites a comment in Git's source for
 
 69
-00:05:06,934 --> 00:05:11,666
+00:04:59,453 --> 00:05:04,185
 this, "If unconfigured, make stash never
 expire", and notes that no manual page
 
 70
-00:05:11,706 --> 00:05:15,350
+00:05:04,225 --> 00:05:07,870
 states it. The exemption applies
 to the default periods only.
 
 71
-00:05:15,390 --> 00:05:20,062
+00:05:07,910 --> 00:05:12,581
 A cut-off given on the command line
 applies to every ref, refs/stash included.
 
 72
-00:05:20,402 --> 00:05:25,829
+00:05:12,921 --> 00:05:17,730
 ORIG_HEAD. In one sentence: a file that
 holds the commit HEAD, your current
 
 73
-00:05:25,869 --> 00:05:31,806
+00:05:17,770 --> 00:05:23,033
 position, pointed at before the last
 "drastic" command, so that the command can be
 
 74
-00:05:31,846 --> 00:05:37,856
+00:05:23,073 --> 00:05:28,400
 undone with git reset --hard ORIG_HEAD. The
 manual names four commands: git am, git
 
 75
-00:05:37,896 --> 00:05:39,970
+00:05:28,440 --> 00:05:30,275
 merge, git rebase, git reset.
 
 76
-00:05:40,310 --> 00:05:46,001
+00:05:30,615 --> 00:05:35,820
 git pull writes it too, because it runs a
 merge or a rebase, and so does git stash
 
 77
-00:05:46,041 --> 00:05:51,243
+00:05:35,860 --> 00:05:40,618
 push, through the reset it performs.
 Inside .git it's one file with one ID.
 
 78
-00:05:51,283 --> 00:05:56,205
+00:05:40,658 --> 00:05:45,160
 It has no reflog, and it's not a
 starting point for garbage collection.
 
 79
-00:05:56,545 --> 00:06:02,223
+00:05:45,500 --> 00:05:51,642
 git fsck as a search tool. In one sentence:
 git fsck walks the object database from
 
 80
-00:06:02,263 --> 00:06:05,874
+00:05:51,682 --> 00:05:55,589
 every starting point and
 reports what it can't reach.
 
 81
-00:06:05,914 --> 00:06:10,490
+00:05:55,629 --> 00:06:00,580
 🟢 SAFE, except that --lost-found
 writes files into .git/lost-found.
 
 82
-00:06:10,830 --> 00:06:17,724
+00:06:00,920 --> 00:06:06,398
 Four options matter. The default, --dangling,
 reports unreachable objects that no
 
 83
-00:06:17,764 --> 00:06:24,658
+00:06:06,438 --> 00:06:11,917
 other object refers to: the tips of lost
 history, and blobs that lost their index
 
 84
-00:06:24,698 --> 00:06:29,281
+00:06:11,957 --> 00:06:15,596
 entry. --unreachable reports
 every unreachable object.
 
 85
-00:06:29,321 --> 00:06:34,503
+00:06:15,636 --> 00:06:19,752
 --no-reflogs doesn't count reflog
 entries as starting points.
 
 86
-00:06:34,543 --> 00:06:41,265
+00:06:19,792 --> 00:06:25,134
 And --lost-found also writes each dangling
 commit's ID and each dangling blob's
 
 87
-00:06:41,305 --> 00:06:42,892
+00:06:25,174 --> 00:06:26,429
 content into files.
 
 88
-00:06:43,232 --> 00:06:47,745
+00:06:26,769 --> 00:06:31,349
 The difference between "dangling" and
 "unreachable" is the difference between a tip
 
 89
-00:06:47,785 --> 00:06:52,079
+00:06:31,389 --> 00:06:35,746
 and a chain. On screen, the three commits
 of the branch exp/hybrid from today's
 
 90
-00:06:52,119 --> 00:06:56,194
+00:06:35,786 --> 00:06:39,921
 demonstration, after its deletion. If
 three commits are lost, all three are
 
 91
-00:06:56,234 --> 00:07:00,802
+00:06:39,961 --> 00:06:44,596
 unreachable, and only the newest is dangling,
 because the newest still refers to the
 
 92
-00:07:00,842 --> 00:07:05,136
+00:06:44,636 --> 00:06:48,994
 other two. For recovery you want dangling
 commits: anchor the tip and the chain
 
 93
-00:07:05,176 --> 00:07:05,904
+00:06:49,034 --> 00:06:49,773
 comes with it.
 
 94
-00:07:07,744 --> 00:07:11,835
+00:06:51,613 --> 00:06:56,511
 Now a picture to keep. For ORIG_HEAD the
 textbook's analogy is the "last number
 
 95
-00:07:11,875 --> 00:07:16,227
+00:06:56,551 --> 00:07:01,763
 redial" button of a phone. It holds exactly
 one number, the newest call replaces it,
 
 96
-00:07:16,267 --> 00:07:18,894
+00:07:01,803 --> 00:07:04,951
 and it tells you nothing
 about which call that was.
 
 97
-00:07:18,934 --> 00:07:20,620
+00:07:04,991 --> 00:07:07,014
 The reflog is the full call list.
 
 98
-00:07:20,960 --> 00:07:25,727
+00:07:07,354 --> 00:07:12,208
 Carry the vault from the last video for
 the rest. A reflog is a ledger that is
 
 99
-00:07:25,767 --> 00:07:29,732
+00:07:12,248 --> 00:07:16,287
 trimmed by a retention policy.
 It's not a second copy of the ref.
 
 100
-00:07:29,772 --> 00:07:34,909
+00:07:16,327 --> 00:07:21,558
 And git fsck is the audit that walks the
 vault with every card and every ledger line
 
 101
-00:07:34,949 --> 00:07:39,963
+00:07:21,598 --> 00:07:26,704
 in hand and lists the boxes nobody mentions.
 With --no-reflogs, the auditor leaves
 
 102
-00:07:40,003 --> 00:07:42,859
+00:07:26,744 --> 00:07:29,653
 the ledger at the desk
 and uses the cards only.
 
 103
-00:07:43,199 --> 00:07:50,525
+00:07:29,993 --> 00:07:34,920
 Where the redial button breaks as a model:
 a phone's last number is at least always
 
 104
-00:07:50,565 --> 00:07:57,891
+00:07:34,960 --> 00:07:39,887
 the last call. ORIG_HEAD is the position
 before the last command from a short list.
 
 105
-00:07:57,931 --> 00:08:05,168
+00:07:39,927 --> 00:07:44,793
 After a commit, a switch or a cherry-pick
 it still holds a value from some earlier
 
 106
-00:08:05,208 --> 00:08:05,878
+00:07:44,833 --> 00:07:45,272
 command.
 
 107
-00:08:07,718 --> 00:08:12,793
+00:07:47,112 --> 00:07:52,090
 Stop on the third row. After day 30 the
 next maintenance run removes the reflog
 
 108
-00:08:12,833 --> 00:08:18,101
+00:07:52,130 --> 00:07:57,299
 entries, and because the object file is
 already older than two weeks, the same run
 
 109
-00:08:18,141 --> 00:08:21,727
+00:07:57,339 --> 00:08:00,856
 may delete the object. There's
 no second waiting period.
 
 110
-00:08:22,067 --> 00:08:26,569
+00:08:01,196 --> 00:08:04,339
 Three commits in a chain.
 All three are unreachable.
 
 111
-00:08:26,609 --> 00:08:33,905
+00:08:04,379 --> 00:08:09,481
 Only 2ae0c97 is dangling. The blob on the
 right is both: it was staged, and then its
 
 112
-00:08:33,945 --> 00:08:35,827
+00:08:09,521 --> 00:08:10,828
 index entry was reset.
 
 113
-00:08:40,667 --> 00:08:44,200
+00:08:15,668 --> 00:08:19,989
 Here's that branch as a picture: three
 commits, an amend, one more commit, and a
 
 114
-00:08:44,240 --> 00:08:46,433
+00:08:20,029 --> 00:08:22,714
 reset. Two commits end up
 off the current history.
 
 115
-00:08:46,773 --> 00:08:52,303
+00:08:23,054 --> 00:08:27,633
 Predict: of six entries, how
 many fall under the 30-day rule?
 
 116
-00:08:52,343 --> 00:08:54,769
+00:08:27,673 --> 00:08:29,677
 Say it out loud. I'll wait.
 
 117
-00:08:59,609 --> 00:09:03,719
+00:08:34,517 --> 00:08:39,533
 Four of six. The commit before the amend,
 the commit that was reset away, and also
 
 118
-00:09:03,759 --> 00:09:06,553
+00:08:39,573 --> 00:08:42,985
 the two entries whose other
 end is one of those commits.
 
 119
-00:09:06,593 --> 00:09:09,893
+00:08:43,025 --> 00:08:47,055
 Despite the word prune in the
 output, the dry run removed nothing.
 
 120
-00:09:15,733 --> 00:09:23,361
+00:08:52,895 --> 00:08:57,350
 The HEAD reflog wasn't named in that
 command and still has every entry.
 
 121
-00:09:23,401 --> 00:09:29,733
+00:08:57,390 --> 00:09:01,086
 In a real repository both logs
 are trimmed in the same run.
 
 122
-00:09:30,073 --> 00:09:31,996
+00:09:01,426 --> 00:09:03,345
 Now the stash. Two entries.
 
 123
-00:09:32,336 --> 00:09:35,864
+00:09:03,685 --> 00:09:08,883
 The stash list is the reflog of refs/stash.
 Predict what git stash list prints after
 
 124
-00:09:35,904 --> 00:09:37,563
+00:09:08,923 --> 00:09:11,377
 a cut-off of now is applied to all refs.
 
 125
-00:09:37,903 --> 00:09:43,574
+00:09:11,717 --> 00:09:16,547
 Nothing. The ref still points
 at 71ed40a, the newest entry.
 
 126
-00:09:43,614 --> 00:09:48,511
+00:09:16,587 --> 00:09:20,756
 The older entry, 89fc6b8,
 is now a dangling commit.
 
 127
-00:09:48,851 --> 00:09:52,576
+00:09:21,096 --> 00:09:24,205
 And the two commits from the
 picture are in that list as well.
 
 128
-00:10:01,516 --> 00:10:03,605
+00:09:24,545 --> 00:09:28,610
+The root cause: only the newest
+stash entry is held by a ref.
+
+129
+00:09:28,650 --> 00:09:32,849
+Every older entry is held by a
+reflog line and by nothing else.
+
+130
+00:09:33,189 --> 00:09:37,973
 The newest entry comes back. You recover
 an older one in the video on uncommitted
 
-129
-00:10:03,645 --> 00:10:03,737
+131
+00:09:38,013 --> 00:09:38,271
 work.
 
-130
-00:10:04,077 --> 00:10:06,055
+132
+00:09:38,611 --> 00:09:41,320
 The server. A push into a bare repository.
 
-131
-00:10:06,395 --> 00:10:11,028
+133
+00:09:41,660 --> 00:09:45,583
 No reflogs on the bare side.
 The setting isn't set there.
 
-132
-00:10:11,068 --> 00:10:15,537
+134
+00:09:45,623 --> 00:09:49,406
 Whoever administers a bare
 repository can switch it on.
 
-133
-00:10:15,577 --> 00:10:20,210
+135
+00:09:49,446 --> 00:09:53,368
 git config set and git config
 get need Git 2.46 or later.
 
-134
-00:10:20,550 --> 00:10:25,256
+136
+00:09:53,708 --> 00:09:58,681
 The log has one line, and main@{1} still
 resolves: Git takes the old value recorded
 
-135
-00:10:25,296 --> 00:10:28,744
+137
+00:09:58,721 --> 00:10:02,365
 in that line. This is a setting
 for servers you run yourself.
 
-136
-00:10:28,784 --> 00:10:33,319
+138
+00:10:02,405 --> 00:10:07,196
 A hosting service has its own instruments,
 which come at the end of this module.
 
-137
-00:10:33,659 --> 00:10:39,120
+139
+00:10:07,536 --> 00:10:12,996
 An amend, two switches, a cherry-pick and
 a revert: five movements of HEAD, each
 
-138
-00:10:39,160 --> 00:10:44,828
+140
+00:10:13,036 --> 00:10:18,703
 with a reflog entry, and no ORIG_HEAD. A
 reset, a merge and a rebase each write it.
 
-139
-00:10:53,168 --> 00:10:57,537
+141
+00:10:27,043 --> 00:10:32,214
 Each time the value is the tip from
 immediately before the command.
 
-140
-00:10:57,577 --> 00:11:02,539
+142
+00:10:32,254 --> 00:10:38,124
 Now the trap. You switch to main and
 cherry-pick. Quick quiz, three options.
 
-141
-00:11:02,579 --> 00:11:07,672
+143
+00:10:38,164 --> 00:10:44,190
 Does ORIG_HEAD name the tip of main before
 the cherry-pick, the old tip of the
 
-142
-00:11:07,712 --> 00:11:10,568
+144
+00:10:44,230 --> 00:10:47,612
 feature branch, or
 nothing? Say it out loud.
 
-143
-00:11:15,408 --> 00:11:19,685
+145
+00:10:52,452 --> 00:10:57,964
 Option two. 68e6fff, a commit of the feature
 branch from before its rebase, which no
 
-144
-00:11:19,725 --> 00:11:20,970
+146
+00:10:58,004 --> 00:10:59,617
 branch contains any more.
 
-145
-00:11:21,310 --> 00:11:30,969
+147
+00:10:59,956 --> 00:11:05,125
 git reset --hard ORIG_HEAD at this moment
 would move main onto abandoned history.
 
-146
-00:11:31,009 --> 00:11:39,829
+148
+00:11:05,165 --> 00:11:09,883
 On the picture, ORIG_HEAD sits on a
 dashed commit that no branch contains.
 
-147
-00:11:39,869 --> 00:11:44,739
+149
+00:11:09,923 --> 00:11:12,519
 Almost everyone trusts it once too often.
 
-148
-00:11:55,579 --> 00:12:00,097
+150
+00:11:23,359 --> 00:11:27,877
 Predict: does git fsck report the
 three commits? Say it out loud.
 
-149
-00:12:04,937 --> 00:12:09,462
+151
+00:11:32,717 --> 00:11:37,534
 No. Only the blob, the content of one file.
 The three commits are still reachable
 
-150
-00:12:09,502 --> 00:12:13,801
+152
+00:11:37,574 --> 00:11:42,151
 from the HEAD reflog, because the branch
 was checked out when they were made.
 
-151
-00:12:13,841 --> 00:12:17,126
+153
+00:11:42,191 --> 00:11:45,689
 That default answers "what is
 at risk of being collected?".
 
-152
-00:12:17,166 --> 00:12:20,733
+154
+00:11:45,729 --> 00:11:49,526
 To ask "what is no longer on any
 branch?", take the reflogs out.
 
-153
-00:12:21,073 --> 00:12:26,615
+155
+00:11:49,866 --> 00:11:54,986
 One dangling commit, 2ae0c97, stands for
 three unreachable commits with their trees
 
-154
-00:12:26,655 --> 00:12:27,288
+156
+00:11:55,026 --> 00:11:55,607
 and blobs.
 
-155
-00:12:27,628 --> 00:12:32,641
+157
+00:11:55,947 --> 00:12:00,959
 In a repository that has been used for
 months the list of dangling commits is long:
 
-156
-00:12:32,681 --> 00:12:36,355
+158
+00:12:00,999 --> 00:12:04,671
 every amend, every rebase and
 every dropped stash leaves one.
 
-157
-00:12:36,395 --> 00:12:38,912
+159
+00:12:04,711 --> 00:12:07,227
 Turn the list into something you can read.
 
-158
-00:12:39,252 --> 00:12:44,231
+160
+00:12:07,567 --> 00:12:12,836
 Date, author, subject for each tip. The
 second command shows the whole lost line:
 
-159
-00:12:44,271 --> 00:12:47,514
+161
+00:12:12,876 --> 00:12:16,310
 commits reachable from the
 found tip and from no ref.
 
-160
-00:12:47,854 --> 00:12:54,288
+162
+00:12:16,650 --> 00:12:22,445
 --lost-found saves the findings as files.
 That's convenient for blobs: a blob has no
 
-161
-00:12:54,328 --> 00:12:58,835
+163
+00:12:22,485 --> 00:12:26,543
 name and no date and can only
 be recognised by its content.
 
-162
-00:12:59,175 --> 00:13:03,382
+164
+00:12:26,883 --> 00:12:31,114
 A found commit is still unreachable.
 Reading it doesn't protect it.
 
-163
-00:13:03,422 --> 00:13:08,454
+165
+00:12:31,154 --> 00:12:36,214
 Give it a ref. 🟢 SAFE: git branch <name>
 <id> writes one ref and changes nothing
 
-164
-00:13:08,494 --> 00:13:08,771
+166
+00:12:36,254 --> 00:12:36,533
 else.
 
-165
-00:13:13,911 --> 00:13:17,956
+167
+00:12:41,673 --> 00:12:46,465
 From this moment the three commits are on
 layer one, and no expiry or collection can
 
-166
-00:13:17,996 --> 00:13:21,313
+168
+00:12:46,505 --> 00:12:50,434
 touch them. One label on the tip,
 and the whole chain is solid again.
 
-167
-00:13:23,153 --> 00:13:24,801
+169
+00:12:52,274 --> 00:12:53,922
 Five mistakes to watch for.
 
-168
-00:13:25,141 --> 00:13:29,780
+170
+00:12:54,262 --> 00:12:58,974
 "30 days in the reflog, then two more
 weeks." Root cause: the prune cut-off is
 
-169
-00:13:29,820 --> 00:13:34,519
+171
+00:12:59,014 --> 00:13:03,788
 compared with the modification time of
 the object file, not with the moment the
 
-170
-00:13:34,559 --> 00:13:36,079
+172
+00:13:03,828 --> 00:13:05,372
 object became unreachable.
 
-171
-00:13:36,419 --> 00:13:42,177
+173
+00:13:05,712 --> 00:13:09,525
 Expecting a deleted branch's
 reflog to still exist.
 
-172
-00:13:42,217 --> 00:13:51,387
+174
+00:13:09,565 --> 00:13:15,644
 Root cause: git branch -d and -D delete
 the reflog with the branch; only the HEAD
 
-173
-00:13:51,427 --> 00:13:56,049
+175
+00:13:15,684 --> 00:13:18,742
 reflog, or git fsck, still knows the tip.
 
-174
-00:13:56,389 --> 00:13:59,753
+176
+00:13:19,082 --> 00:13:24,147
 git reset --hard ORIG_HEAD some commands
 later. Root cause: ORIG_HEAD is one slot
 
-175
-00:13:59,793 --> 00:14:03,241
+177
+00:13:24,187 --> 00:13:29,379
 written by a short list of commands, and
 it keeps the value of an earlier one after
 
-176
-00:14:03,281 --> 00:14:04,502
+178
+00:13:29,419 --> 00:13:31,270
 commands that do not write it.
 
-177
-00:14:04,842 --> 00:14:11,678
+179
+00:13:31,610 --> 00:13:37,298
 "git fsck shows nothing, so the commits
 are gone." Root cause: by default reflog
 
-178
-00:14:11,718 --> 00:14:18,382
+180
+00:13:37,338 --> 00:13:42,882
 entries count as starting points, so
 commits that a reflog still names are not
 
-179
-00:14:18,422 --> 00:14:22,765
+181
+00:13:42,922 --> 00:13:46,534
 reported; --no-reflogs
 removes them from the roots.
 
-180
-00:14:23,105 --> 00:14:27,175
+182
+00:13:46,874 --> 00:13:51,863
 Reading "dangling" as damage. Root cause:
 dangling is information; only lines that
 
-181
-00:14:27,215 --> 00:14:30,984
+183
+00:13:51,903 --> 00:13:56,524
 begin with missing, broken or error
 describe a repository that needs repair.
 
-182
-00:14:32,824 --> 00:14:37,018
+184
+00:13:58,364 --> 00:14:03,275
 Now, out of the lab. An ML engineer cleans
 up a clone that holds six months of
 
-183
-00:14:37,058 --> 00:14:41,415
+185
+00:14:03,315 --> 00:14:08,416
 experiments. A blog post recommends expiring
 all reflogs with a cut-off of now to
 
-184
-00:14:41,455 --> 00:14:44,672
+186
+00:14:08,456 --> 00:14:12,224
 "shrink the repository". Afterwards
 git stash list is empty.
 
-185
-00:14:44,712 --> 00:14:47,170
+187
+00:14:12,264 --> 00:14:15,144
 It held four parked
 prompt-tuning experiments.
 
-186
-00:14:47,510 --> 00:14:50,960
+188
+00:14:15,484 --> 00:14:20,852
 The lead reads the state before anyone
 types more. refs/stash still points at the
 
-187
-00:14:51,000 --> 00:14:53,632
+189
+00:14:20,892 --> 00:14:24,991
 newest entry, so one experiment
 comes back with git stash pop.
 
-188
-00:14:53,672 --> 00:14:57,080
+190
+00:14:25,031 --> 00:14:30,332
 The other three were held by reflog lines
 only. They're dangling commits now, on
 
-189
-00:14:57,120 --> 00:15:00,528
+191
+00:14:30,372 --> 00:14:35,673
 layer three, and nothing has been pruned
 yet. The team finds them with git fsck,
 
-190
-00:15:00,568 --> 00:15:04,148
+192
+00:14:35,713 --> 00:14:41,281
 anchors each one, and writes down the rule
 that the root-cause box gives: long-lived
 
-191
-00:15:04,188 --> 00:15:07,725
+193
+00:14:41,321 --> 00:14:46,822
 work goes on a branch, not into the stash,
 and nobody expires reflogs with --all in
 
-192
-00:15:07,765 --> 00:15:08,975
+194
+00:14:46,862 --> 00:14:48,758
 a repository that holds work.
 
-193
-00:15:10,815 --> 00:15:13,948
+195
+00:14:50,598 --> 00:14:57,366
 Your turn. Do Exercise 12.3, Level
 1, "git fsck as a search tool", in
 
-194
-00:15:13,988 --> 00:15:15,971
+196
+00:14:57,406 --> 00:15:01,707
 exercises/m11-m15-investigation-recovery.md.
 
-195
-00:15:16,311 --> 00:15:20,809
+197
+00:15:02,047 --> 00:15:07,063
 Before each git fsck invocation, predict
 how many dangling commits and how many
 
-196
-00:15:20,849 --> 00:15:25,117
+198
+00:15:07,103 --> 00:15:11,862
 dangling blobs it will print, and say
 which starting points you included or
 
-197
-00:15:25,157 --> 00:15:29,597
+199
+00:15:11,902 --> 00:15:16,854
 excluded. Then anchor what you find and
 predict what the next git fsck will no
 
-198
-00:15:29,637 --> 00:15:30,402
+200
+00:15:16,894 --> 00:15:17,750
 longer report.
 
-199
-00:15:30,742 --> 00:15:36,545
+201
+00:15:18,090 --> 00:15:24,040
 The challenge is Exercise 12.6, Level 2,
 draw the graph, "Reset, commit, rescue,
 
-200
-00:15:36,585 --> 00:15:38,444
+202
+00:15:24,080 --> 00:15:25,987
 rebase", in the same file.
 
-201
-00:15:40,284 --> 00:15:41,551
+203
+00:15:27,827 --> 00:15:29,104
 Pause and answer out loud.
 
-202
-00:15:46,391 --> 00:15:51,158
+204
+00:15:33,944 --> 00:15:38,992
 A strong answer gives three numbers with
 the setting behind each, and says to which
 
-203
-00:15:51,198 --> 00:15:55,559
+205
+00:15:39,032 --> 00:15:43,650
 entries the shorter reflog period applies.
 It then separates two clocks: the
 
-204
-00:15:55,599 --> 00:15:59,787
+206
+00:15:43,690 --> 00:15:48,124
 timestamp of a reflog entry, and the
 modification time of an object file.
 
-205
-00:15:59,827 --> 00:16:04,362
+207
+00:15:48,164 --> 00:15:52,966
 It explains that expiry happens when a
 command runs and not when a date passes.
 
-206
-00:16:04,702 --> 00:16:09,363
+208
+00:15:53,306 --> 00:15:59,001
 And it lists the cases in which the first
 clock never started, because there was no
 
-207
-00:16:09,403 --> 00:16:13,950
+209
+00:15:59,041 --> 00:16:04,598
 reflog entry at all. If you can add what
 the lab environment changes and why, you
 
-208
-00:16:13,990 --> 00:16:18,197
+210
+00:16:04,638 --> 00:16:09,781
 have shown that you know the difference
 between the manual and a particular
 
-209
-00:16:18,237 --> 00:16:18,990
+211
+00:16:09,821 --> 00:16:10,748
 configuration.
 
-210
-00:16:20,830 --> 00:16:23,757
+212
+00:16:12,588 --> 00:16:15,516
 Let's land this. You
 should now be able to say:
 
-211
-00:16:24,097 --> 00:16:28,821
+213
+00:16:15,856 --> 00:16:20,551
 By default reflog entries last 90 days,
 30 days if an end is off the current
 
-212
-00:16:28,861 --> 00:16:33,774
+214
+00:16:20,591 --> 00:16:25,474
 history, and unreachable objects older
 than two weeks can be pruned; none of it
 
-213
-00:16:33,814 --> 00:16:35,592
+215
+00:16:25,514 --> 00:16:27,281
 happens until a command runs.
 
-214
-00:16:35,932 --> 00:16:39,767
+216
+00:16:27,621 --> 00:16:32,854
 A deleted branch, a bare repository, a tag
 and a branch that was only fetched have
 
-215
-00:16:39,807 --> 00:16:40,996
+217
+00:16:32,894 --> 00:16:34,527
 no reflog to recover from.
 
-216
-00:16:41,336 --> 00:16:46,504
+218
+00:16:34,867 --> 00:16:40,341
 ORIG_HEAD is one slot written by reset,
 merge, rebase and am; I use it only as the
 
-217
-00:16:46,544 --> 00:16:49,743
+219
+00:16:40,381 --> 00:16:43,771
 very next command, and the
 branch reflog otherwise.
 
-218
-00:16:50,083 --> 00:17:00,487
+220
+00:16:44,111 --> 00:16:50,491
 git fsck --no-reflogs lists what no ref
 reaches; a dangling commit is the tip of a
 
-219
-00:17:00,527 --> 00:17:01,888
+221
+00:16:50,531 --> 00:16:51,352
 lost chain.
 
-220
-00:17:02,228 --> 00:17:05,257
+222
+00:16:51,692 --> 00:16:54,721
 A found commit is safe only
 after I give it a ref.
 
-221
-00:17:07,097 --> 00:17:13,586
+223
+00:16:56,561 --> 00:17:04,321
 Read sections 13.4 to 13.6 of Chapter 13.
 Do Exercise 12.2, Level 1, "A backup ref,
 
-222
-00:17:13,626 --> 00:17:19,800
+224
+00:17:04,361 --> 00:17:11,744
 and the one slot of ORIG_HEAD", in
 exercises/m11-m15-investigation-recovery.md.
 
-223
-00:17:20,140 --> 00:17:22,472
+225
+00:17:12,084 --> 00:17:16,429
 Today you learned how long each layer
 lasts, and you can now correct that
 
-224
-00:17:22,512 --> 00:17:25,202
+226
+00:17:16,469 --> 00:17:21,474
 comfortable sentence about 30 days plus two
 weeks. Find a dangling commit in the lab
 
-225
-00:17:25,242 --> 00:17:27,802
+227
+00:17:21,514 --> 00:17:26,278
 shell before the next video. Next time:
 the recovery method, and the first three
 
-226
-00:17:27,842 --> 00:17:29,882
+228
+00:17:26,318 --> 00:17:30,122
 recoveries. Until then, look at
 the state first and type second.
 
-227
-00:17:29,922 --> 00:17:30,662
+229
+00:17:30,162 --> 00:17:31,563
 See you in the next one.

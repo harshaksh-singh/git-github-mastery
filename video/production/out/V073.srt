@@ -1,991 +1,991 @@
 1
-00:00:04,500 --> 00:00:09,395
+00:00:04,500 --> 00:00:09,363
 A reset points a branch at another commit,
 another saved snapshot, and the work
 
 2
-00:00:09,435 --> 00:00:14,454
+00:00:09,403 --> 00:00:14,390
 after it seems to vanish. Your CTO asks
 you two questions, and neither of them is
 
 3
-00:00:14,494 --> 00:00:18,265
+00:00:14,430 --> 00:00:18,176
 "which command do we type". The
 first is: can we get it back?
 
 4
-00:00:18,305 --> 00:00:21,825
+00:00:18,216 --> 00:00:21,713
 The second is: how sure are
 you, and how long do we have?
 
 5
-00:00:22,165 --> 00:00:27,136
+00:00:22,053 --> 00:00:26,960
 Both questions have exact answers. They
 depend on three facts about the lost work.
 
 6
-00:00:27,176 --> 00:00:31,902
+00:00:27,000 --> 00:00:31,666
 Was it ever written into the object
 database, Git's store of everything it has
 
 7
-00:00:31,942 --> 00:00:35,446
+00:00:31,706 --> 00:00:35,165
 saved? Does anything still name
 it? Has the clock run out?
 
 8
-00:00:35,486 --> 00:00:40,578
+00:00:35,205 --> 00:00:40,233
 If you can answer those three from evidence,
 you can answer the CTO in a minute, and
 
 9
-00:00:40,618 --> 00:00:45,528
+00:00:40,273 --> 00:00:45,119
 you can also say the harder sentence when
 it's true: this can't be recovered, and
 
 10
-00:00:45,568 --> 00:00:49,072
+00:00:45,159 --> 00:00:48,618
 here is exactly why. Hold on
 to 18:40. We come back to it.
 
 11
-00:00:50,912 --> 00:00:54,571
+00:00:50,458 --> 00:00:54,118
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 12
-00:00:54,611 --> 00:00:59,423
+00:00:54,158 --> 00:00:58,970
 This video opens the recovery module. For
 the next seven videos you take fifteen
 
 13
-00:00:59,463 --> 00:01:03,548
+00:00:59,010 --> 00:01:03,094
 kinds of accident and bring the work
 back, or prove that it is gone.
 
 14
-00:01:03,888 --> 00:01:08,802
+00:01:03,434 --> 00:01:08,364
 Three earlier videos supply the foundations.
 You know reachability: an object is
 
 15
-00:01:08,842 --> 00:01:13,632
+00:01:08,404 --> 00:01:13,210
 kept as long as some starting point
 reaches it. You know what git reset --hard
 
 16
-00:01:13,672 --> 00:01:18,771
+00:01:13,250 --> 00:01:18,366
 destroys. And you know force pushes and
 remote-tracking refs, your records of where
 
 17
-00:01:18,811 --> 00:01:23,292
+00:01:18,406 --> 00:01:22,901
 a server's branches were. Today those
 pieces become a map, four layers of
 
 18
-00:01:23,332 --> 00:01:27,936
+00:01:22,941 --> 00:01:27,560
 protection, and you learn to read the
 instrument you'll use in almost every
 
 19
-00:01:27,976 --> 00:01:29,237
+00:01:27,600 --> 00:01:28,864
 recovery: the reflog.
 
 20
-00:01:31,077 --> 00:01:34,355
+00:01:30,704 --> 00:01:33,982
 name the four layers that protect
 work and what each holds;
 
 21
-00:01:34,695 --> 00:01:39,096
+00:01:34,322 --> 00:01:38,724
 read a reflog entry: old ID,
 new ID, selector, action;
 
 22
-00:01:39,436 --> 00:01:44,465
+00:01:39,064 --> 00:01:44,093
 tell the HEAD reflog from a branch reflog
 and choose the right one for an incident;
 
 23
-00:01:44,805 --> 00:01:48,789
+00:01:44,433 --> 00:01:48,416
 use @{n} and time selectors, and
 explain why the reflog is local;
 
 24
-00:01:49,129 --> 00:01:52,563
+00:01:48,756 --> 00:01:52,191
 explain how an unreachable commit
 survives a maintenance run.
 
 25
-00:01:54,403 --> 00:01:59,389
+00:01:54,031 --> 00:01:59,017
 In one sentence: Git never deletes an object
 that something still names, it keeps a
 
 26
-00:01:59,429 --> 00:02:04,355
+00:01:59,057 --> 00:02:03,983
 private log of every name that recently
 changed, and it waits before deleting what
 
 27
-00:02:04,395 --> 00:02:09,321
+00:02:04,023 --> 00:02:08,948
 nothing names. Work is lost only when it
 was never an object, or when all of these
 
 28
-00:02:09,361 --> 00:02:10,592
+00:02:08,988 --> 00:02:10,220
 protections are gone.
 
 29
-00:02:10,932 --> 00:02:15,952
+00:02:10,560 --> 00:02:15,467
 Precisely. An object is kept as long as
 it is reachable from a starting point.
 
 30
-00:02:15,992 --> 00:02:21,337
+00:02:15,507 --> 00:02:20,731
 The manual of git gc lists the starting
 points: branches and tags, the index, which
 
 31
-00:02:21,377 --> 00:02:26,721
+00:02:20,771 --> 00:02:25,996
 is your proposed next commit, remote-tracking
 branches, reflogs, "and anything else
 
 32
-00:02:26,761 --> 00:02:28,343
+00:02:26,036 --> 00:02:27,581
 in the refs/* namespace".
 
 33
-00:02:28,683 --> 00:02:33,104
+00:02:27,921 --> 00:02:32,281
 It adds one exclusion: a note attached
 to an object doesn't keep it alive.
 
 34
-00:02:33,144 --> 00:02:36,481
+00:02:32,321 --> 00:02:35,610
 An object that no starting
 point reaches is unreachable.
 
 35
-00:02:36,521 --> 00:02:41,424
+00:02:35,650 --> 00:02:40,485
 It still exists until a collection, Git's
 clean-up of its store, deletes it, and a
 
 36
-00:02:41,464 --> 00:02:45,946
+00:02:40,525 --> 00:02:44,944
 collection deletes only objects older
 than a cut-off, two weeks by default.
 
 37
-00:02:46,286 --> 00:02:50,680
+00:02:45,284 --> 00:02:49,652
 That gives four layers, and a recovery is
 always a move from a lower layer back to
 
 38
-00:02:50,720 --> 00:02:51,437
+00:02:49,692 --> 00:02:50,405
 the first one.
 
 39
-00:02:51,777 --> 00:02:55,283
+00:02:50,745 --> 00:02:54,251
 Layer one is refs, the names
 that hold an object ID.
 
 40
-00:02:55,323 --> 00:03:00,671
+00:02:54,291 --> 00:02:59,639
 A branch, a tag, a remote-tracking ref,
 refs/stash, HEAD or the index names the
 
 41
-00:03:00,711 --> 00:03:04,149
+00:02:59,679 --> 00:03:03,117
 object. It lasts until the
 ref is moved or deleted.
 
 42
-00:03:04,189 --> 00:03:07,628
+00:03:03,157 --> 00:03:06,595
 You find it with git log
 --all or git for-each-ref.
 
 43
-00:03:07,968 --> 00:03:11,455
+00:03:06,935 --> 00:03:10,434
 Layer two is reflogs. A reflog
 entry names the object.
 
 44
-00:03:11,495 --> 00:03:16,811
+00:03:10,474 --> 00:03:15,807
 The manual's defaults are 90 days, or 30
 days for entries off the current history.
 
 45
-00:03:16,851 --> 00:03:22,102
+00:03:15,847 --> 00:03:21,114
 The lab configuration overrides both, so
 that the transcripts don't depend on the
 
 46
-00:03:22,142 --> 00:03:26,152
+00:03:21,154 --> 00:03:25,177
 day they were produced. You get
 the details in the next video.
 
 47
-00:03:26,192 --> 00:03:29,157
+00:03:25,217 --> 00:03:28,191
 You find these with git
 reflog and git log -g.
 
 48
-00:03:29,497 --> 00:03:34,436
+00:03:28,531 --> 00:03:33,470
 Layer three is the grace period. Nothing
 names the object, but its file is younger
 
 49
-00:03:34,476 --> 00:03:39,293
+00:03:33,510 --> 00:03:38,327
 than the prune cut-off. Two weeks from
 the time the object was written, and then
 
 50
-00:03:39,333 --> 00:03:42,510
+00:03:38,367 --> 00:03:41,544
 until the next collection
 runs. The tool is git fsck.
 
 51
-00:03:42,850 --> 00:03:47,391
+00:03:41,884 --> 00:03:46,425
 Layer four is other repositories: another
 clone, the server, a bundle file, a
 
 52
-00:03:47,431 --> 00:03:50,662
+00:03:46,465 --> 00:03:49,696
 backup. Its lifetime is
 independent of this repository.
 
 53
-00:03:51,002 --> 00:03:54,711
+00:03:50,036 --> 00:03:53,745
 Before the layers comes a precondition:
 was the work ever an object?
 
 54
-00:03:55,051 --> 00:03:59,694
+00:03:54,085 --> 00:03:58,728
 Read the middle column. Committed,
 stashed, or staged with git add: an object
 
 55
-00:03:59,734 --> 00:04:04,559
+00:03:58,768 --> 00:04:03,593
 exists. Saved in the working tree and
 never staged, or untracked: no object, and
 
 56
-00:04:04,599 --> 00:04:06,383
+00:04:03,633 --> 00:04:05,417
 nothing for Git to bring back.
 
 57
-00:04:06,723 --> 00:04:12,204
+00:04:05,757 --> 00:04:11,238
 Now the reflog. In one sentence: a reflog
 is a local, append-only list of the values
 
 58
-00:04:12,244 --> 00:04:17,461
+00:04:11,278 --> 00:04:16,495
 a ref has had, with the time, the person
 and the command behind each change, and
 
 59
-00:04:17,501 --> 00:04:20,879
+00:04:16,535 --> 00:04:19,913
 every one of those old values
 is a name you can use.
 
 60
-00:04:21,219 --> 00:04:26,445
+00:04:20,253 --> 00:04:25,463
 Precisely. There's one reflog per ref that
 has logging enabled, plus one for HEAD.
 
 61
-00:04:26,485 --> 00:04:31,070
+00:04:25,503 --> 00:04:30,073
 In a repository with a working tree,
 Git by default logs HEAD, branches,
 
 62
-00:04:31,110 --> 00:04:36,080
+00:04:30,113 --> 00:04:35,067
 remote-tracking branches and notes refs.
 Tags get no reflog unless the setting
 
 63
-00:04:36,120 --> 00:04:41,410
+00:04:35,107 --> 00:04:40,381
 core.logAllRefUpdates is always. Each entry
 stores the value before the change, the
 
 64
-00:04:41,450 --> 00:04:46,356
+00:04:40,421 --> 00:04:45,311
 value after it, the committer identity
 and time, and a message written by the
 
 65
-00:04:46,396 --> 00:04:46,870
+00:04:45,351 --> 00:04:45,823
 command.
 
 66
-00:04:47,210 --> 00:04:50,747
+00:04:46,163 --> 00:04:49,700
 There are two kinds, and they
 answer different questions.
 
 67
-00:04:50,787 --> 00:04:56,018
+00:04:49,740 --> 00:04:54,972
 The HEAD reflog records every movement of
 HEAD: commits, switches, resets, each step
 
 68
-00:04:56,058 --> 00:05:01,101
+00:04:55,012 --> 00:05:00,055
 of a rebase, merges, cherry-picks. It
 answers "what did I do, in order", and it's
 
 69
-00:05:01,141 --> 00:05:05,054
+00:05:00,095 --> 00:05:04,008
 the only log that sees detached
 HEAD, when you're on no branch.
 
 70
-00:05:05,094 --> 00:05:08,820
+00:05:04,048 --> 00:05:07,773
 A branch reflog records only
 changes of that branch's value.
 
 71
-00:05:08,860 --> 00:05:12,334
+00:05:07,813 --> 00:05:11,288
 It answers "where was this
 branch before the operation".
 
 72
-00:05:12,374 --> 00:05:14,468
+00:05:11,328 --> 00:05:13,421
 A whole rebase is one entry there.
 
 73
-00:05:14,808 --> 00:05:18,878
+00:05:13,761 --> 00:05:17,830
 When the reflog can't help: it
 records movements of refs only.
 
 74
-00:05:18,918 --> 00:05:22,392
+00:05:17,870 --> 00:05:21,343
 Edits to files, staging and
 unstaging leave no entry.
 
 75
-00:05:22,432 --> 00:05:26,502
+00:05:21,383 --> 00:05:25,452
 And it's local. No other clone
 and no server sees your reflog.
 
 76
-00:05:28,342 --> 00:05:32,654
+00:05:27,292 --> 00:05:31,604
 The textbook's analogy for the layers
 is a bank vault with a ledger.
 
 77
-00:05:32,694 --> 00:05:38,029
+00:05:31,644 --> 00:05:36,979
 The safe-deposit boxes are objects. The
 index cards at the front desk are refs: each
 
 78
-00:05:38,069 --> 00:05:43,340
+00:05:37,019 --> 00:05:42,290
 card names one box. When a card is rewritten,
 the clerk notes the old box number in
 
 79
-00:05:43,380 --> 00:05:48,651
+00:05:42,330 --> 00:05:47,601
 a ledger, the reflog. Boxes that no card
 and no ledger line mentions are emptied in
 
 80
-00:05:48,691 --> 00:05:53,515
+00:05:47,641 --> 00:05:52,465
 a periodic clear-out, but only boxes
 that have been untouched for two weeks.
 
 81
-00:05:53,855 --> 00:05:58,915
+00:05:52,805 --> 00:05:57,865
 The analogy breaks in two places. A box
 in Git also holds the numbers of older
 
 82
-00:05:58,955 --> 00:06:04,343
+00:05:57,905 --> 00:06:03,293
 boxes: a commit names its parents and its
 tree. So one card protects a whole chain.
 
 83
-00:06:04,383 --> 00:06:09,771
+00:06:03,333 --> 00:06:08,721
 And the ledger is private to one branch
 office: no other clone, and no server, sees
 
 84
-00:06:09,811 --> 00:06:10,556
+00:06:08,761 --> 00:06:09,506
 your reflog.
 
 85
-00:06:10,896 --> 00:06:16,036
+00:06:09,846 --> 00:06:14,987
 For the reflog alone, the textbook offers
 the "undo history" of an editor, kept per
 
 86
-00:06:16,076 --> 00:06:21,217
+00:06:15,027 --> 00:06:20,167
 document. That breaks in two places too. A
 reflog has no undo command: it gives you
 
 87
-00:06:21,257 --> 00:06:24,401
+00:06:20,207 --> 00:06:23,351
 old positions, and you
 decide what to do with them.
 
 88
-00:06:24,441 --> 00:06:26,773
+00:06:23,391 --> 00:06:25,723
 And it records movements of refs only.
 
 89
-00:06:28,613 --> 00:06:34,373
+00:06:27,563 --> 00:06:33,204
 In layer one the branch names da62b60, and
 through it every parent, tree and blob.
 
 90
-00:06:34,413 --> 00:06:39,820
+00:06:33,244 --> 00:06:38,538
 In layer two a reflog entry names dbe6ec8,
 a commit that was removed from its
 
 91
-00:06:39,860 --> 00:06:43,710
+00:06:38,578 --> 00:06:42,349
 branch. In layer three nothing
 names the object at all.
 
 92
-00:06:43,750 --> 00:06:45,974
+00:06:42,389 --> 00:06:44,565
 Layer four is outside this .git.
 
 93
-00:06:46,314 --> 00:06:51,109
+00:06:44,905 --> 00:06:49,512
 The ref itself holds only the new value.
 Each of the two log files gains one line
 
 94
-00:06:51,149 --> 00:06:56,064
+00:06:49,552 --> 00:06:54,272
 with the old value and the new one. A command
 that moves the current branch appends
 
 95
-00:06:56,104 --> 00:06:56,899
+00:06:54,312 --> 00:06:55,075
 to both files.
 
 96
-00:06:58,739 --> 00:07:03,957
+00:06:56,915 --> 00:07:02,658
 git gc --prune=now is also 🔴 DANGEROUS: a
 collection with no grace period at all.
 
 97
-00:07:03,997 --> 00:07:09,084
+00:07:02,698 --> 00:07:08,299
 Before it runs, the five answers. What
 it changes: it packs objects and deletes
 
 98
-00:07:09,124 --> 00:07:14,082
+00:07:08,339 --> 00:07:13,796
 unreachable ones immediately. What it
 can destroy: everything on layer three.
 
 99
-00:07:14,122 --> 00:07:18,755
+00:07:13,836 --> 00:07:18,936
 How to preview: git prune -n lists
 what an immediate prune would delete.
 
 100
-00:07:18,795 --> 00:07:24,078
+00:07:18,976 --> 00:07:24,791
 How to recover: from another repository
 only. When it's appropriate: you'll see in
 
 101
-00:07:24,118 --> 00:07:28,037
+00:07:24,831 --> 00:07:29,146
 the last video of this module.
 Here the preview is the point.
 
 102
-00:07:32,877 --> 00:07:37,325
+00:07:33,986 --> 00:07:38,434
 Predict: the commit dbe6ec8 is
 on no branch. Does it survive?
 
 103
-00:07:37,365 --> 00:07:39,311
+00:07:38,474 --> 00:07:40,420
 Say it out loud. I'll wait.
 
 104
-00:07:44,151 --> 00:07:48,131
+00:07:45,260 --> 00:07:49,242
 It survives. git prune -n prints
 nothing: nothing would be deleted.
 
 105
-00:07:48,171 --> 00:07:51,670
+00:07:49,282 --> 00:07:52,783
 After the collection, git
 cat-file -t still answers commit.
 
 106
-00:07:51,710 --> 00:07:55,090
+00:07:52,823 --> 00:07:56,204
 All twelve objects were packed,
 the lost commit included.
 
 107
-00:07:55,430 --> 00:08:00,878
+00:07:56,544 --> 00:08:01,992
 The reflog entry HEAD@{1} names it, so it's
 on layer two, and a reflog is a starting
 
 108
-00:08:00,918 --> 00:08:02,380
+00:08:02,032 --> 00:08:03,495
 point for reachability.
 
 109
-00:08:08,220 --> 00:08:13,231
+00:08:09,335 --> 00:08:14,086
 Here's that history as a picture. One
 branch, main, with three commits.
 
 110
-00:08:13,271 --> 00:08:17,713
+00:08:14,126 --> 00:08:18,337
 Then a second branch, feature/rerank,
 with one commit, 14a18d6.
 
 111
-00:08:18,053 --> 00:08:23,084
+00:08:18,677 --> 00:08:23,316
 The amend replaces that commit with
 f1f247e, and the old one turns dashed.
 
 112
-00:08:23,424 --> 00:08:29,603
+00:08:23,656 --> 00:08:29,460
 main fast-forwards to f1f247e, and then
 the reset pulls it back to da62b60.
 
 113
-00:08:29,943 --> 00:08:35,368
+00:08:29,800 --> 00:08:35,149
 Try it now, on paper. Thirty seconds: write
 down how many lines the HEAD reflog will
 
 114
-00:08:35,408 --> 00:08:39,142
+00:08:35,189 --> 00:08:38,870
 have, counting the three commits
 made before this snippet.
 
 115
-00:08:39,182 --> 00:08:40,508
+00:08:38,910 --> 00:08:40,217
 Then say it out loud.
 
 116
-00:08:45,348 --> 00:08:51,155
+00:08:45,057 --> 00:08:50,676
 Nine. Read it from the bottom. Each line
 is "the value HEAD had after this event".
 
 117
-00:08:51,195 --> 00:08:56,930
+00:08:50,716 --> 00:08:56,267
 HEAD@{0} is always the current value. The
 amend at HEAD@{3} replaced 14a18d6 with
 
 118
-00:08:56,970 --> 00:09:01,136
+00:08:56,307 --> 00:09:00,339
 f1f247e, and the old commit is
 still listed one line below.
 
 119
-00:09:01,176 --> 00:09:06,769
+00:09:00,379 --> 00:09:05,792
 The two checkout lines record branch
 switches, which change HEAD and no branch.
 
 120
-00:09:07,109 --> 00:09:12,319
+00:09:06,132 --> 00:09:11,534
 The reflog of main has five lines where
 HEAD has nine: the switches and the work on
 
 121
-00:09:12,359 --> 00:09:17,505
+00:09:11,574 --> 00:09:16,911
 the other branch are absent. git reflog
 list, which needs Git 2.45 or later, names
 
 122
-00:09:17,545 --> 00:09:19,087
+00:09:16,951 --> 00:09:18,550
 every ref that has a log.
 
 123
-00:09:19,427 --> 00:09:24,390
+00:09:18,890 --> 00:09:23,853
 A reflog entry is addressed with a selector,
 and a selector is a revision, a way of
 
 124
-00:09:24,430 --> 00:09:27,043
+00:09:23,893 --> 00:09:26,506
 naming a commit, that
 every command accepts.
 
 125
-00:09:27,383 --> 00:09:32,664
+00:09:26,846 --> 00:09:31,985
 HEAD@{1} is the value HEAD had one change
 ago. @{1} with no name is for the current
 
 126
-00:09:32,704 --> 00:09:37,921
+00:09:32,025 --> 00:09:37,102
 branch, not for HEAD. @{-1} is different
 in kind: it's the branch that was checked
 
 127
-00:09:37,961 --> 00:09:41,383
+00:09:37,142 --> 00:09:40,471
 out before the current one,
 a name and not a position.
 
 128
-00:09:41,423 --> 00:09:45,998
+00:09:40,511 --> 00:09:44,964
 Quote selectors in the shell, because
 braces are special to some shells.
 
 129
-00:09:46,338 --> 00:09:49,674
+00:09:45,304 --> 00:09:48,639
 Time-based selectors read
 the timestamps in the log.
 
 130
-00:09:49,714 --> 00:09:53,244
+00:09:48,679 --> 00:09:52,209
 Predict the last command: the
 log began on 7 September.
 
 131
-00:09:53,284 --> 00:09:58,436
+00:09:52,249 --> 00:09:57,402
 What does "two days ago" return? Quick
 quiz, three options: an error, nothing at
 
 132
-00:09:58,476 --> 00:10:01,812
+00:09:57,442 --> 00:10:00,777
 all, or the oldest value
 Git knows. Say it out loud.
 
 133
-00:10:06,652 --> 00:10:11,821
+00:10:05,617 --> 00:10:10,751
 At 10:10:30 main was still at da62b60,
 because the merge happened at 10:12.
 
 134
-00:10:11,861 --> 00:10:15,641
+00:10:10,791 --> 00:10:14,545
 The last command asks for a
 time before the log begins.
 
 135
-00:10:15,681 --> 00:10:21,405
+00:10:14,585 --> 00:10:20,271
 Option three: Git answers with the oldest
 value it knows, 538ea2f, and says so in a
 
 136
-00:10:21,445 --> 00:10:26,753
+00:10:20,311 --> 00:10:25,583
 warning. A time selector is a statement
 about your local log, never about the
 
 137
-00:10:26,793 --> 00:10:32,448
+00:10:25,623 --> 00:10:31,240
 project. In a clone made today, main@{1.week.ago}
 can't know where main was a week
 
 138
-00:10:32,488 --> 00:10:32,726
+00:10:31,280 --> 00:10:31,516
 ago.
 
 139
-00:10:33,066 --> 00:10:38,460
+00:10:31,856 --> 00:10:37,250
 git log -g walks a reflog instead of the
 ancestry, with placeholders for the reflog
 
 140
-00:10:38,500 --> 00:10:38,919
+00:10:37,290 --> 00:10:37,709
 fields.
 
 141
-00:10:39,259 --> 00:10:45,001
+00:10:38,049 --> 00:10:43,956
 %gd is the selector, %gs the reflog message,
 %gn the name of the person who made the
 
 142
-00:10:45,041 --> 00:10:50,577
+00:10:43,996 --> 00:10:49,691
 change. --grep-reflog filters by reflog
 message. The third command lists only the
 
 143
-00:10:50,617 --> 00:10:56,084
+00:10:49,731 --> 00:10:55,355
 entries that created commits. That's how
 you search a long log for the event you
 
 144
-00:10:56,124 --> 00:10:58,562
+00:10:55,395 --> 00:10:57,904
 need, instead of counting positions.
 
 145
-00:10:58,902 --> 00:11:00,028
+00:10:58,244 --> 00:10:59,369
 Last, the files.
 
 146
-00:11:00,368 --> 00:11:04,076
+00:10:59,709 --> 00:11:03,417
 One event on the current branch
 is two lines, one in each file.
 
 147
-00:11:04,116 --> 00:11:08,062
+00:11:03,457 --> 00:11:07,404
 The first ID of a line is the old
 value and the second the new one.
 
 148
-00:11:08,102 --> 00:11:13,060
+00:11:07,444 --> 00:11:12,401
 That's more than git reflog prints, and it
 matters: the old value of the newest line
 
 149
-00:11:13,100 --> 00:11:16,452
+00:11:12,441 --> 00:11:15,793
 tells you where a ref was even
 when no older line exists.
 
 150
-00:11:18,292 --> 00:11:19,940
+00:11:17,633 --> 00:11:19,281
 Five mistakes to watch for.
 
 151
-00:11:20,280 --> 00:11:23,927
+00:11:19,621 --> 00:11:23,268
 Looking in the reflog for an
 edit that was never committed.
 
 152
-00:11:23,967 --> 00:11:28,926
+00:11:23,308 --> 00:11:28,268
 Root cause: a reflog records movements of
 refs only; edits to files, staging and
 
 153
-00:11:28,966 --> 00:11:30,489
+00:11:28,308 --> 00:11:29,830
 unstaging leave no entry.
 
 154
-00:11:30,829 --> 00:11:34,991
+00:11:30,170 --> 00:11:34,332
 Counting positions in the HEAD
 reflog to find where a branch was.
 
 155
-00:11:35,031 --> 00:11:40,422
+00:11:34,372 --> 00:11:39,763
 Root cause: HEAD has one line per step,
 including every step of a rebase; the branch
 
 156
-00:11:40,462 --> 00:11:42,620
+00:11:39,803 --> 00:11:41,962
 reflog has one line per operation.
 
 157
-00:11:42,960 --> 00:11:47,900
+00:11:42,302 --> 00:11:46,954
 Writing main@{1} in an incident note. Root
 cause: a selector is relative to the log
 
 158
-00:11:47,940 --> 00:11:52,640
+00:11:46,994 --> 00:11:51,421
 at that moment; it means something else
 after the next command and nothing on a
 
 159
-00:11:52,680 --> 00:11:55,040
+00:11:51,461 --> 00:11:53,682
 colleague's machine. Record the full ID.
 
 160
-00:11:55,380 --> 00:12:00,320
+00:11:54,022 --> 00:11:58,963
 Asking a teammate or the server for "your
 reflog". Root cause: reflogs are never
 
 161
-00:12:00,360 --> 00:12:03,184
+00:11:59,003 --> 00:12:01,826
 pushed or cloned; each
 repository has its own.
 
 162
-00:12:03,524 --> 00:12:08,231
+00:12:02,166 --> 00:12:06,907
 Trusting a time selector in a fresh clone.
 Root cause: the log starts when the clone
 
 163
-00:12:08,271 --> 00:12:12,357
+00:12:06,947 --> 00:12:11,062
 was made, and Git answers with the
 oldest value it knows, with a warning.
 
 164
-00:12:14,197 --> 00:12:19,615
+00:12:12,902 --> 00:12:18,320
 Back to 18:40 on release day. The first
 minute of a recovery is classification, not
 
 165
-00:12:19,655 --> 00:12:20,076
+00:12:18,360 --> 00:12:18,780
 typing.
 
 166
-00:12:20,416 --> 00:12:24,964
+00:12:19,120 --> 00:12:23,604
 You ask the engineer what form the work
 had. "Three days of commits on a feature
 
 167
-00:12:25,004 --> 00:12:29,782
+00:12:23,644 --> 00:12:28,353
 branch, and I reset the branch" is layer
 two: the branch reflog has the old tip, and
 
 168
-00:12:29,822 --> 00:12:34,428
+00:12:28,393 --> 00:12:32,933
 with default settings the entry for a
 commit off the current history lives for 30
 
 169
-00:12:34,468 --> 00:12:39,073
+00:12:32,973 --> 00:12:37,512
 days. You tell the CTO: recoverable, high
 confidence, weeks of margin, and nobody
 
 170
-00:12:39,113 --> 00:12:41,769
+00:12:37,552 --> 00:12:40,170
 should run maintenance
 in that clone meanwhile.
 
 171
-00:12:42,109 --> 00:12:47,331
+00:12:40,510 --> 00:12:45,628
 A different answer changes everything. "I
 had edited the files since lunch and then
 
 172
-00:12:47,371 --> 00:12:50,818
+00:12:45,668 --> 00:12:49,047
 ran git restore" was never
 an object. No layer applies.
 
 173
-00:12:50,858 --> 00:12:55,700
+00:12:49,087 --> 00:12:53,833
 You move on to editor history and backups
 at once, and you say so, instead of
 
 174
-00:12:55,740 --> 00:12:57,538
+00:12:53,873 --> 00:12:55,635
 spending an hour in git fsck.
 
 175
-00:12:59,378 --> 00:13:06,119
+00:12:57,475 --> 00:13:04,199
 Your turn. Do Exercise 12.1, Level 1,
 "Read a reflog before you need it", in
 
 176
-00:13:06,159 --> 00:13:10,045
+00:13:04,239 --> 00:13:08,115
 exercises/m11-m15-investigation-recovery.md.
 
 177
-00:13:10,385 --> 00:13:15,409
+00:13:08,455 --> 00:13:13,479
 Work in labs/shell. Before you print any
 reflog, predict the number of lines in the
 
 178
-00:13:15,449 --> 00:13:20,046
+00:13:13,519 --> 00:13:18,116
 HEAD reflog and in the branch reflog
 for the operations the exercise has you
 
 179
-00:13:20,086 --> 00:13:24,013
+00:13:18,156 --> 00:13:22,083
 perform, and which lines will
 appear in one and not in the other.
 
 180
-00:13:24,353 --> 00:13:29,941
+00:13:22,423 --> 00:13:28,012
 The challenge is Exercise 12.4, Level 2,
 command prediction, "What the reflog will
 
 181
-00:13:29,981 --> 00:13:31,520
+00:13:28,052 --> 00:13:29,590
 say", in the same file.
 
 182
-00:13:33,360 --> 00:13:37,971
+00:13:31,430 --> 00:13:36,041
 Pause and answer out loud. It's a short
 question, and a short answer is a weak one.
 
 183
-00:13:42,811 --> 00:13:47,642
+00:13:40,881 --> 00:13:45,712
 A strong answer defines the reflog by
 what it records and where it lives, then
 
 184
-00:13:47,682 --> 00:13:52,887
+00:13:45,752 --> 00:13:50,958
 connects it to reachability: why an entry
 keeps a commit alive through a collection.
 
 185
-00:13:52,927 --> 00:13:57,946
+00:13:50,998 --> 00:13:56,016
 It distinguishes the HEAD reflog from a
 branch reflog and says which one you read
 
 186
-00:13:57,986 --> 00:14:03,129
+00:13:56,056 --> 00:14:01,199
 for which incident. It states the limits
 without being asked: local only, movements
 
 187
-00:14:03,169 --> 00:14:07,938
+00:14:01,239 --> 00:14:06,008
 of refs only, entries that expire, and
 the cases in which there is no reflog.
 
 188
-00:14:07,978 --> 00:14:13,058
+00:14:06,048 --> 00:14:11,129
 And it finishes with a concrete recovery
 in two steps: find the ID, then give it a
 
 189
-00:14:13,098 --> 00:14:13,371
+00:14:11,169 --> 00:14:11,441
 name.
 
 190
-00:14:15,211 --> 00:14:18,138
+00:14:13,281 --> 00:14:16,208
 Let's land this. You
 should now be able to say:
 
 191
-00:14:18,478 --> 00:14:24,090
+00:14:16,548 --> 00:14:22,160
 Work is protected by refs, then by reflogs,
 then by a grace period, then by other
 
 192
-00:14:24,130 --> 00:14:27,440
+00:14:22,200 --> 00:14:25,510
 repositories; a recovery
 moves it back to a ref.
 
 193
-00:14:27,780 --> 00:14:32,452
+00:14:25,850 --> 00:14:30,523
 Only work that became an object can be
 recovered from Git: committed, stashed, or
 
 194
-00:14:32,492 --> 00:14:32,860
+00:14:30,563 --> 00:14:30,930
 staged.
 
 195
-00:14:33,200 --> 00:14:38,771
+00:14:31,270 --> 00:14:36,841
 A reflog entry holds an old value, a new
 value, who, when and which command; every
 
 196
-00:14:38,811 --> 00:14:40,618
+00:14:36,881 --> 00:14:38,688
 old value is a usable name.
 
 197
-00:14:40,958 --> 00:14:45,996
+00:14:39,028 --> 00:14:44,066
 The HEAD reflog shows what I did in order;
 a branch reflog shows where that branch
 
 198
-00:14:46,036 --> 00:14:46,243
+00:14:44,106 --> 00:14:44,313
 was.
 
 199
-00:14:46,583 --> 00:14:50,043
+00:14:44,653 --> 00:14:48,113
 The reflog is local, and objects
 it names count as reachable.
 
 200
-00:14:51,883 --> 00:14:56,043
+00:14:49,953 --> 00:14:54,113
 Read sections 13.1 to 13.3 of Chapter 13.
 
 201
-00:14:56,383 --> 00:15:01,852
+00:14:54,453 --> 00:14:59,958
 Today you got the map: four layers, one
 precondition, and a log of every move a ref
 
 202
-00:15:01,892 --> 00:15:05,769
+00:14:59,998 --> 00:15:03,900
 made. Read a reflog in the lab
 shell before the next video.
 
 203
-00:15:05,809 --> 00:15:09,951
+00:15:03,940 --> 00:15:08,109
 Next time: retention, ORIG_HEAD,
 and git fsck as a search tool.
 
 204
-00:15:09,991 --> 00:15:13,403
+00:15:08,149 --> 00:15:11,583
 Until then, look at the
 state first and type second.
 
 205
-00:15:13,443 --> 00:15:14,996
+00:15:11,623 --> 00:15:13,186
 See you in the next one.

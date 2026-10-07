@@ -1,1089 +1,1089 @@
 1
-00:00:04,500 --> 00:00:10,387
+00:00:04,500 --> 00:00:09,521
 It isn't right, and Git didn't lie. git
 blame labels every line of a file with the
 
 2
-00:00:10,427 --> 00:00:16,458
+00:00:09,561 --> 00:00:14,706
 commit that last changed it. A commit is
 one saved snapshot of the project, with its
 
 3
-00:00:16,498 --> 00:00:22,313
+00:00:14,746 --> 00:00:19,705
 author. On Friday someone ran a formatter,
 a tool that tidies the layout of code.
 
 4
-00:00:22,653 --> 00:00:27,074
+00:00:20,045 --> 00:00:24,466
 Every line whose indentation or quotes
 changed now carries that commit and that
 
 5
-00:00:27,114 --> 00:00:31,592
+00:00:24,506 --> 00:00:28,984
 name. The person who wrote the logic, the
 person who introduced the bug, and the
 
 6
-00:00:31,632 --> 00:00:36,336
+00:00:29,024 --> 00:00:33,727
 reason for either are one step further back,
 and plain blame doesn't take that step.
 
 7
-00:00:36,676 --> 00:00:39,247
+00:00:34,067 --> 00:00:37,067
 There's a second way blame
 misleads, and it's worse.
 
 8
-00:00:39,287 --> 00:00:42,260
+00:00:37,107 --> 00:00:40,575
 The line that caused the regression
 in scorekit was deleted.
 
 9
-00:00:42,300 --> 00:00:45,876
+00:00:40,615 --> 00:00:44,784
 Blame annotates lines that exist. It
 has no row for a line that is gone.
 
 10
-00:00:45,916 --> 00:00:49,844
+00:00:44,824 --> 00:00:49,403
 Keep that Friday formatter in mind. By
 the end you'll look straight through it.
 
 11
-00:00:51,684 --> 00:00:55,153
+00:00:51,243 --> 00:00:54,775
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 12
-00:00:55,193 --> 00:00:59,697
+00:00:54,815 --> 00:00:59,400
 In the previous video you searched history
 for content: a string, a function, a
 
 13
-00:00:59,737 --> 00:01:04,299
+00:00:59,440 --> 00:01:04,084
 deleted file. Today you look at the tool
 most engineers reach for first, and you
 
 14
-00:01:04,339 --> 00:01:09,074
+00:01:04,124 --> 00:01:08,944
 learn to state exactly what it claims. Then
 you put all the tools of this module in
 
 15
-00:01:09,114 --> 00:01:13,848
+00:01:08,984 --> 00:01:13,803
 order: a method that takes you from a symptom
 to the commit, to a confirmation, and
 
 16
-00:01:13,888 --> 00:01:16,149
+00:01:13,843 --> 00:01:16,145
 to the list of releases that contain it.
 
 17
-00:01:16,489 --> 00:01:21,567
+00:01:16,485 --> 00:01:21,666
 One note on the method. The curriculum
 summary for this video calls it a seven-step
 
 18
-00:01:21,607 --> 00:01:26,623
+00:01:21,706 --> 00:01:26,824
 method. The textbook's table in section
 14A.19 has nine steps, and the textbook is
 
 19
-00:01:26,663 --> 00:01:28,720
+00:01:26,864 --> 00:01:28,962
 the authority, so you'll see nine.
 
 20
-00:01:30,560 --> 00:01:32,464
+00:01:30,802 --> 00:01:33,596
 state precisely what one
 row of git blame asserts;
 
 21
-00:01:32,804 --> 00:01:37,433
+00:01:33,936 --> 00:01:39,727
 look through a reformatting commit with
 -w, --ignore-rev and an ignore-revs file;
 
 22
-00:01:37,773 --> 00:01:40,470
+00:01:40,067 --> 00:01:44,312
 follow moved and copied
 code with -M and -C;
 
 23
-00:01:40,810 --> 00:01:43,577
+00:01:44,652 --> 00:01:47,419
 explain what blame shows
 after a squash merge;
 
 24
-00:01:43,917 --> 00:01:45,045
+00:01:47,759 --> 00:01:50,400
 apply the method from
 symptom to blast radius.
 
 25
-00:01:46,885 --> 00:01:51,736
+00:01:52,240 --> 00:01:57,091
 In one sentence: 🟢 SAFE, git blame annotates
 every line of a file, as it is in one
 
 26
-00:01:51,776 --> 00:01:54,957
+00:01:57,131 --> 00:02:00,312
 revision, with the commit
 that last changed that line.
 
 27
-00:01:54,997 --> 00:01:57,224
+00:02:00,352 --> 00:02:02,579
 A revision is any commit you can name.
 
 28
-00:01:57,564 --> 00:02:03,553
+00:02:02,919 --> 00:02:06,413
 Precisely. Blame starts from
 the file in the given revision.
 
 29
-00:02:03,593 --> 00:02:11,793
+00:02:06,453 --> 00:02:11,243
 That's HEAD by default, the commit you're
 on, or the working tree file, the one on
 
 30
-00:02:11,833 --> 00:02:19,832
+00:02:11,283 --> 00:02:15,955
 your disk, if it has uncommitted changes,
 which are attributed to "Not Committed
 
 31
-00:02:19,872 --> 00:02:20,334
+00:02:15,995 --> 00:02:16,249
 Yet".
 
 32
-00:02:20,674 --> 00:02:24,991
+00:02:16,589 --> 00:02:20,839
 It compares the file with the same file
 in the parent commit, the commit this one
 
 33
-00:02:25,031 --> 00:02:29,186
+00:02:20,879 --> 00:02:24,970
 was built on. Lines that the diff shows
 as unchanged are passed to the parent.
 
 34
-00:02:29,226 --> 00:02:31,875
+00:02:25,010 --> 00:02:27,618
 Lines that it shows as
 added stay with the commit.
 
 35
-00:02:32,215 --> 00:02:37,055
+00:02:27,958 --> 00:02:31,884
 The parent is then treated the same
 way, until every line has an owner.
 
 36
-00:02:37,095 --> 00:02:42,691
+00:02:31,924 --> 00:02:36,464
 The manual adds two sentences you should
 be able to quote: "The origin of lines is
 
 37
-00:02:42,731 --> 00:02:48,464
+00:02:36,504 --> 00:02:41,156
 automatically followed across whole-file
 renames", and "the report does not tell you
 
 38
-00:02:48,504 --> 00:02:52,450
+00:02:41,196 --> 00:02:44,396
 anything about lines which have
 been deleted or replaced".
 
 39
-00:02:52,790 --> 00:02:57,681
+00:02:44,736 --> 00:02:49,627
 Inside .git, nothing is written. The work
 is one diff per commit that touched the
 
 40
-00:02:57,721 --> 00:03:02,552
+00:02:49,667 --> 00:02:54,497
 file, so blame on an old, busy file in a
 large repository takes noticeable time.
 
 41
-00:03:02,892 --> 00:03:07,576
+00:02:54,837 --> 00:02:59,521
 So what does a row assert? Try it now,
 on paper, for thirty seconds: write one
 
 42
-00:03:07,616 --> 00:03:11,210
+00:02:59,561 --> 00:03:03,155
 sentence that starts "this commit
 is". Then say your answer.
 
 43
-00:03:16,050 --> 00:03:20,821
+00:03:07,995 --> 00:03:12,766
 Here's the exact version. This commit is
 the last one whose diff against its parent
 
 44
-00:03:20,861 --> 00:03:24,472
+00:03:12,806 --> 00:03:16,417
 shows this line as added. Nothing
 about who designed the logic.
 
 45
-00:03:24,512 --> 00:03:27,718
+00:03:16,457 --> 00:03:19,663
 Nothing about why. Nothing
 about what stood here before.
 
 46
-00:03:28,058 --> 00:03:32,459
+00:03:20,003 --> 00:03:25,049
 You want to know who wrote this logic.
 Blame gives who last changed the line,
 
 47
-00:03:32,499 --> 00:03:37,074
+00:03:25,089 --> 00:03:30,333
 possibly a formatter or a rename of a
 variable. You want to know who removed the
 
 48
-00:03:37,114 --> 00:03:41,745
+00:03:30,373 --> 00:03:35,684
 line that used to be here. Blame gives
 nothing, and you use git log -S or git log
 
 49
-00:03:41,785 --> 00:03:41,918
+00:03:35,724 --> 00:03:35,882
 -L.
 
 50
-00:03:42,258 --> 00:03:46,707
+00:03:36,222 --> 00:03:40,981
 You want to know why. Blame gives an ID,
 and git show gives the message and the
 
 51
-00:03:46,747 --> 00:03:51,138
+00:03:41,021 --> 00:03:45,720
 whole commit. You want to know whom to
 ask about code that arrived in a squash
 
 52
-00:03:51,178 --> 00:03:55,853
+00:03:45,760 --> 00:03:50,762
 merge. Blame gives the person who ran the
 merge, and you read the trailers, the key
 
 53
-00:03:55,893 --> 00:04:00,625
+00:03:50,802 --> 00:03:55,865
 and value lines that end a commit message,
 or the pull request, GitHub's proposal to
 
 54
-00:04:00,665 --> 00:04:01,591
+00:03:55,905 --> 00:03:56,898
 merge the branch.
 
 55
-00:04:01,931 --> 00:04:07,081
+00:03:57,238 --> 00:04:01,521
 You want to know whether the line is the
 bug. Blame gives nothing, because the
 
 56
-00:04:07,121 --> 00:04:12,403
+00:04:01,561 --> 00:04:05,955
 defect may be a line that is missing or
 one in another file, and that's what git
 
 57
-00:04:12,443 --> 00:04:16,595
+00:04:05,995 --> 00:04:09,447
 bisect is for: a binary search
 over commits, in the next video.
 
 58
-00:04:16,935 --> 00:04:21,062
+00:04:09,787 --> 00:04:13,914
 Three refinements deal with the three ways
 the last change can be uninteresting.
 
 59
-00:04:21,402 --> 00:04:26,251
+00:04:14,254 --> 00:04:19,628
 A reformatting commit. -w ignores whitespace
 when blame compares a commit with its
 
 60
-00:04:26,291 --> 00:04:31,198
+00:04:19,668 --> 00:04:25,107
 parent. --ignore-rev goes further: it removes
 one commit from consideration, "as if
 
 61
-00:04:31,238 --> 00:04:35,788
+00:04:25,147 --> 00:04:30,190
 the change never happened", and blames
 its lines "on the previous commit that
 
 62
-00:04:35,828 --> 00:04:40,080
+00:04:30,230 --> 00:04:34,943
 changed that line or nearby lines".
 A file of full object IDs, read with
 
 63
-00:04:40,120 --> 00:04:44,790
+00:04:34,983 --> 00:04:40,158
 --ignore-revs-file or named by
 blame.ignoreRevsFile, makes that permanent for a
 
 64
-00:04:44,830 --> 00:04:45,445
+00:04:40,198 --> 00:04:40,884
 repository.
 
 65
-00:04:45,785 --> 00:04:52,647
+00:04:41,224 --> 00:04:46,973
 Moved code. -M looks for the origin of a
 line in other places of the same file.
 
 66
-00:04:52,687 --> 00:04:59,898
+00:04:47,013 --> 00:04:53,055
 -C looks in files modified in the same
 commit. A second -C also looks in every file
 
 67
-00:04:59,938 --> 00:05:04,703
+00:04:53,095 --> 00:04:57,085
 of the parent, for commits
 that create the blamed file.
 
 68
-00:05:04,743 --> 00:05:09,858
+00:04:57,125 --> 00:05:01,408
 A third looks in every file of
 the parent, in every commit.
 
 69
-00:05:09,898 --> 00:05:17,109
+00:05:01,448 --> 00:05:07,489
 Each rung costs more. And there are minimums:
 20 alphanumeric characters for -M, 40
 
 70
-00:05:17,149 --> 00:05:17,720
+00:05:07,529 --> 00:05:08,002
 for -C.
 
 71
-00:05:18,060 --> 00:05:21,934
+00:05:08,342 --> 00:05:12,401
 A squash merge. It records the content
 of a branch as one new commit.
 
 72
-00:05:21,974 --> 00:05:25,564
+00:05:12,441 --> 00:05:16,204
 Blame on the target branch then
 knows one commit and one author.
 
 73
-00:05:25,904 --> 00:05:29,640
+00:05:16,544 --> 00:05:20,312
 When not to rely on the ignore
 list: its attribution is a guess.
 
 74
-00:05:29,680 --> 00:05:34,478
+00:05:20,352 --> 00:05:25,191
 Git maps an ignored line to the line of
 the parent that looks like its origin, and
 
 75
-00:05:34,518 --> 00:05:38,726
+00:05:25,231 --> 00:05:29,475
 for a line that the ignored commit
 really introduced there is no origin.
 
 76
-00:05:38,766 --> 00:05:43,447
+00:05:29,515 --> 00:05:34,236
 And list only commits that change no
 behavior: formatter runs, mass renames of a
 
 77
-00:05:43,487 --> 00:05:48,344
+00:05:34,276 --> 00:05:39,174
 symbol, license header updates. Listing a
 commit that also changed logic hides that
 
 78
-00:05:48,384 --> 00:05:49,347
+00:05:39,214 --> 00:05:40,186
 logic from blame.
 
 79
-00:05:51,187 --> 00:05:55,885
+00:05:42,026 --> 00:05:46,824
 Now a picture to keep. The textbook's
 analogy: a "last edited by" column beside a
 
 80
-00:05:55,925 --> 00:06:00,566
+00:05:46,864 --> 00:05:51,603
 document. The column is reliable about
 the last edit and silent about everything
 
 81
-00:06:00,606 --> 00:06:05,246
+00:05:51,643 --> 00:05:56,382
 else: the edit before it, the paragraph
 that used to stand here, and whether the
 
 82
-00:06:05,286 --> 00:06:08,581
+00:05:56,422 --> 00:05:59,787
 last editor wrote the sentence
 or only fixed its spacing.
 
 83
-00:06:08,921 --> 00:06:12,913
+00:06:00,127 --> 00:06:04,932
 The analogy breaks on the word "line". A
 document editor knows which sentence you
 
 84
-00:06:12,953 --> 00:06:16,896
+00:06:04,972 --> 00:06:09,716
 touched. Git doesn't. It decides which
 old line corresponds to which new line by
 
 85
-00:06:16,936 --> 00:06:20,480
+00:06:09,756 --> 00:06:14,023
 running a diff, so the attribution
 depends on how the diff aligned them.
 
 86
-00:06:20,820 --> 00:06:24,155
+00:06:14,363 --> 00:06:19,385
 The working rule that follows: treat a blame
 row as a pointer into history, never as
 
 87
-00:06:24,195 --> 00:06:27,530
+00:06:19,425 --> 00:06:24,448
 a verdict about a person. The next command
 after git blame is git show with that ID.
 
 88
-00:06:29,370 --> 00:06:34,855
+00:06:26,288 --> 00:06:31,773
 One line, line 7 of scorekit/text.py,
 and four commits of its history.
 
 89
-00:06:35,195 --> 00:06:38,211
+00:06:32,113 --> 00:06:35,130
 Plain blame stops at the
 newest commit, the formatter.
 
 90
-00:06:38,552 --> 00:06:42,103
+00:06:35,470 --> 00:06:40,469
 With --ignore-rev for the formatter, it
 stops at d926d3c, where the line was
 
 91
-00:06:42,143 --> 00:06:44,041
+00:06:40,509 --> 00:06:43,187
 replaced and the lowercasing disappeared.
 
 92
-00:06:44,381 --> 00:06:48,957
+00:06:43,527 --> 00:06:48,103
 If you blame the parent of that commit,
 you're asking about an older line 7, and you
 
 93
-00:06:48,997 --> 00:06:52,090
+00:06:48,143 --> 00:06:51,236
 stop at the commit that moved
 the function into the file.
 
 94
-00:06:52,430 --> 00:06:57,194
+00:06:51,576 --> 00:06:56,745
 With -C at that commit, blame crosses
 into the file the function came from.
 
 95
-00:06:57,534 --> 00:07:02,011
+00:06:57,085 --> 00:07:01,562
 Four marks, four different answers to "who
 wrote line 7", and every one of them is
 
 96
-00:07:02,051 --> 00:07:04,214
+00:07:01,602 --> 00:07:03,766
 correct for the question that was asked.
 
 97
-00:07:06,054 --> 00:07:11,994
+00:07:05,606 --> 00:07:11,297
 Read one row out loud: the abbreviated commit
 ID, the author and author date of that
 
 98
-00:07:12,034 --> 00:07:15,909
+00:07:11,337 --> 00:07:15,050
 commit, the line number in
 this revision, and the line.
 
 99
-00:07:15,949 --> 00:07:21,888
+00:07:15,090 --> 00:07:20,782
 -s drops author and date, and -L limits the
 output with the same range syntax as git
 
 100
-00:07:21,928 --> 00:07:22,387
+00:07:20,822 --> 00:07:21,259
 log -L.
 
 101
-00:07:22,727 --> 00:07:26,488
+00:07:21,599 --> 00:07:25,360
 A revision before the path asks
 about an older state of the file.
 
 102
-00:07:26,828 --> 00:07:31,743
+00:07:25,700 --> 00:07:30,616
 Point at the extra column, scorer.py. It
 appears whenever a line comes from a commit
 
 103
-00:07:31,783 --> 00:07:36,344
+00:07:30,656 --> 00:07:35,218
 in which the file had another name. A
 whole-file rename doesn't disturb blame.
 
 104
-00:07:36,684 --> 00:07:38,786
+00:07:35,558 --> 00:07:37,660
 For scripts there is a porcelain format.
 
 105
-00:07:39,126 --> 00:07:46,689
+00:07:38,000 --> 00:07:42,036
 Full IDs and one header per attribution.
 Find the field named previous: the commit
 
 106
-00:07:46,729 --> 00:07:52,530
+00:07:42,076 --> 00:07:45,167
 before the blamed one. That's the
 key to stepping further back.
 
 107
-00:07:52,870 --> 00:07:58,402
+00:07:45,507 --> 00:07:51,039
 Now the limit that matters for our regression.
 Predict: line 7 used to lowercase the
 
 108
-00:07:58,442 --> 00:08:02,713
+00:07:51,079 --> 00:07:55,350
 text. What does blame say about
 that line today? Say it out loud.
 
 109
-00:08:02,753 --> 00:08:03,376
+00:07:55,390 --> 00:07:56,014
 I'll wait.
 
 110
-00:08:08,216 --> 00:08:12,111
+00:08:00,854 --> 00:08:05,982
 Before d926d3c, line 7 contained .lower().
 Today a different line 7 exists, and
 
 111
-00:08:12,151 --> 00:08:15,497
+00:08:06,022 --> 00:08:10,431
 blame reports on that one. There's
 no row for the line that is gone.
 
 112
-00:08:15,537 --> 00:08:17,489
+00:08:10,471 --> 00:08:13,047
 That's the second trap from the opening.
 
 113
-00:08:17,829 --> 00:08:22,835
+00:08:13,387 --> 00:08:18,268
 Five of seven lines carry 9c8df982.
 Quick quiz, three options.
 
 114
-00:08:22,875 --> 00:08:29,021
+00:08:18,308 --> 00:08:24,299
 With -w, do all five fall through to an
 older commit, four of them, or none?
 
 115
-00:08:29,061 --> 00:08:30,324
+00:08:24,339 --> 00:08:25,569
 Say it out loud.
 
 116
-00:08:35,164 --> 00:08:43,204
+00:08:30,409 --> 00:08:34,870
 Four. The lines that were only
 re-indented fall through to b4b066b4.
 
 117
-00:08:43,244 --> 00:08:52,117
+00:08:34,910 --> 00:08:39,835
 Line 13 stays with the formatter, because
 there it also changed the quotes.
 
 118
-00:08:52,157 --> 00:08:56,157
+00:08:39,875 --> 00:08:42,085
 Whitespace wasn't the only change.
 
 119
-00:08:56,497 --> 00:09:01,599
+00:08:42,425 --> 00:08:47,608
 Now line 13 goes back too. That's the
 Friday formatter from the opening, looked
 
 120
-00:09:01,639 --> 00:09:07,001
+00:08:47,648 --> 00:08:53,095
 through. Typing the option every time doesn't
 scale, so the IDs go into a file: one
 
 121
-00:09:07,041 --> 00:09:10,711
+00:08:53,135 --> 00:08:56,864
 full object ID per line, with
 comments after a hash sign.
 
 122
-00:09:18,051 --> 00:09:23,523
+00:09:04,204 --> 00:09:09,328
 Point at the question mark on line 3.
 blame.markIgnoredLines flags every line whose
 
 123
-00:09:23,563 --> 00:09:29,036
+00:09:09,368 --> 00:09:14,493
 attribution passed through an ignored commit.
 Keep that mark: the attribution of an
 
 124
-00:09:29,076 --> 00:09:30,630
+00:09:14,533 --> 00:09:15,987
 ignored line is a guess.
 
 125
-00:09:30,970 --> 00:09:36,528
+00:09:16,327 --> 00:09:20,947
 Two failures are common enough to show.
 Almost everyone meets the first one.
 
 126
-00:09:36,868 --> 00:09:42,105
+00:09:21,287 --> 00:09:26,527
 The file must contain full IDs. And once
 the key is set, the file must exist in
 
 127
-00:09:42,145 --> 00:09:43,642
+00:09:26,567 --> 00:09:28,064
 every commit you visit.
 
 128
-00:09:43,982 --> 00:09:48,016
+00:09:28,404 --> 00:09:33,119
 The tag, a fixed name for an older commit,
 predates the file, and blame fails.
 
 129
-00:09:48,056 --> 00:09:50,994
+00:09:33,159 --> 00:09:36,594
 An empty --ignore-revs-file
 clears the list of revisions.
 
 130
-00:09:51,034 --> 00:09:53,762
+00:09:36,634 --> 00:09:39,826
 It doesn't stop Git from
 opening the configured file.
 
 131
-00:09:53,802 --> 00:09:58,150
+00:09:39,866 --> 00:09:44,947
 The manual documents a prefix for path-valued
 settings, :(optional): the variable is
 
 132
-00:09:58,190 --> 00:10:01,545
+00:09:44,987 --> 00:09:48,910
 treated as if it doesn't exist
 when the named path doesn't exist.
 
 133
-00:10:01,885 --> 00:10:07,927
+00:09:49,250 --> 00:09:55,516
 At v0.2.0 blame runs and nothing is ignored.
 Back on main the list applies again.
 
 134
-00:10:08,267 --> 00:10:13,743
+00:09:55,856 --> 00:10:01,697
 Every line belongs to the commit that
 moved it. Now today's file, with -C, and a
 
 135
-00:10:13,783 --> 00:10:19,053
+00:10:01,737 --> 00:10:07,357
 prediction: -C wants 40 alphanumeric
 characters. Are there 40 left unchanged?
 
 136
-00:10:19,393 --> 00:10:24,269
+00:10:07,697 --> 00:10:13,563
 No. After later edits only short fragments
 of the moved block survive, and the
 
 137
-00:10:24,309 --> 00:10:29,500
+00:10:13,603 --> 00:10:19,847
 default threshold rejects them. With a lower
 one, given as -C5, line 6 goes back to
 
 138
-00:10:29,540 --> 00:10:34,101
+00:10:19,887 --> 00:10:25,375
 b2502383 in scorer.py. That's why moved
 code is sometimes not recognized.
 
 139
-00:10:34,441 --> 00:10:37,222
+00:10:25,715 --> 00:10:26,669
 The squash merge.
 
 140
-00:10:37,562 --> 00:10:40,770
+00:10:27,009 --> 00:10:30,217
 On main, the person who
 squashed "wrote" the function.
 
 141
-00:10:40,810 --> 00:10:44,138
+00:10:30,257 --> 00:10:33,585
 The branch, while it still
 exists, has the real history.
 
 142
-00:10:44,178 --> 00:10:46,244
+00:10:33,625 --> 00:10:35,690
 Nothing links the two in the graph.
 
 143
-00:10:46,584 --> 00:10:50,274
+00:10:36,030 --> 00:10:40,749
 After the branch is deleted, the Co-authored-by
 trailers and the pull request are
 
 144
-00:10:50,314 --> 00:10:53,728
+00:10:40,789 --> 00:10:45,155
 the only record of who wrote which part.
 That's a real cost of squash-merge
 
 145
-00:10:53,768 --> 00:10:56,583
+00:10:45,195 --> 00:10:48,797
 workflows, to be weighed against
 the linear history they give.
 
 146
-00:10:56,623 --> 00:10:59,991
+00:10:48,837 --> 00:10:53,144
 The opposite question, "which merge
 put this line on main", is answered by
 
 147
-00:11:00,031 --> 00:11:01,971
+00:10:53,184 --> 00:10:55,670
 --first-parent: blame
 then stops at merges.
 
 148
-00:11:08,811 --> 00:11:13,468
+00:11:02,510 --> 00:11:06,803
 Steps 3 to 5 are fast and need
 an idea of where the fault is.
 
 149
-00:11:13,508 --> 00:11:18,550
+00:11:06,843 --> 00:11:11,492
 Step 6, bisect, is slower and needs
 no idea at all, only the test.
 
 150
-00:11:18,590 --> 00:11:24,403
+00:11:11,532 --> 00:11:16,891
 Step 7 isn't optional: every tool before
 it produces a suspect, not a proof.
 
 151
-00:11:24,743 --> 00:11:26,279
+00:11:17,231 --> 00:11:19,777
 The symptom, and the code
 that produces the behavior.
 
 152
-00:11:26,619 --> 00:11:28,548
+00:11:20,117 --> 00:11:23,246
 The documentation says
 "equal after normalization".
 
 153
-00:11:28,588 --> 00:11:29,590
+00:11:23,286 --> 00:11:24,923
 That points at normalize().
 
 154
-00:11:29,930 --> 00:11:33,348
+00:11:25,263 --> 00:11:29,024
 Both body lines are owned by the
 formatter commit. Look through it.
 
 155
-00:11:33,688 --> 00:11:41,651
+00:11:29,364 --> 00:11:34,411
 One line was last changed for a real
 reason, by d926d3c, the day before the
 
 156
-00:11:41,691 --> 00:11:45,066
+00:11:34,451 --> 00:11:36,582
 formatter ran. Read that commit.
 
 157
-00:11:48,406 --> 00:11:51,290
+00:11:39,922 --> 00:11:43,022
 The message promises speed
 and no change of behavior.
 
 158
-00:11:51,330 --> 00:11:55,924
+00:11:43,062 --> 00:11:47,999
 The patch replaces the lowercasing call with
 a pattern substitution, and .lower() is
 
 159
-00:11:55,964 --> 00:12:00,338
+00:11:48,039 --> 00:11:52,739
 gone, while the documentation still says
 that normalization lowercases the text.
 
 160
-00:12:00,378 --> 00:12:04,090
+00:11:52,779 --> 00:11:56,768
 The pickaxe confirms that this is
 where the call left the code base.
 
 161
-00:12:04,430 --> 00:12:09,968
+00:11:57,108 --> 00:12:02,467
 Step 7. Test on both sides of the suspect,
 in two temporary worktrees, extra working
 
 162
-00:12:10,008 --> 00:12:15,281
+00:12:02,507 --> 00:12:07,609
 directories of the same repository, so
 that the main working tree isn't touched.
 
 163
-00:12:15,321 --> 00:12:20,793
+00:12:07,649 --> 00:12:12,944
 git worktree add is 🟢 SAFE, and worktrees
 have their own videos later in this part.
 
 164
-00:12:20,833 --> 00:12:22,386
+00:12:12,984 --> 00:12:14,486
 Predict the two results.
 
 165
-00:12:22,726 --> 00:12:25,835
+00:12:14,826 --> 00:12:19,440
 True before, False after. That's
 the proof. Step 8, the spread.
 
 166
-00:12:31,675 --> 00:12:35,652
+00:12:25,280 --> 00:12:29,422
 The answer for the CTO: the
 harness regressed, not the model.
 
 167
-00:12:35,692 --> 00:12:40,920
+00:12:29,462 --> 00:12:34,906
 Commit d926d3c, on Thursday 10 September,
 dropped lowercasing from normalization
 
 168
-00:12:40,960 --> 00:12:46,254
+00:12:34,946 --> 00:12:40,459
 while optimizing it. Release v0.2.0 contains
 the commit, and so does every branch
 
 169
-00:12:46,294 --> 00:12:50,863
+00:12:40,499 --> 00:12:45,258
 cut since. The fix is one line, plus
 a test with a capitalized answer.
 
 170
-00:12:50,903 --> 00:12:55,934
+00:12:45,298 --> 00:12:50,537
 Notice how that sentence is phrased: it
 names a commit and a mechanism, not a
 
 171
-00:12:55,974 --> 00:12:56,461
+00:12:50,577 --> 00:12:51,085
 culprit.
 
 172
-00:12:58,301 --> 00:12:59,949
+00:12:52,925 --> 00:12:54,573
 Five mistakes to watch for.
 
 173
-00:13:00,289 --> 00:13:04,487
+00:12:54,913 --> 00:12:59,813
 Reading a blame row as authorship of the
 logic. Root cause: a row names the last
 
 174
-00:13:04,527 --> 00:13:08,830
+00:12:59,853 --> 00:13:04,877
 commit whose diff shows the line as added,
 which may be a formatter, a rename of a
 
 175
-00:13:08,870 --> 00:13:09,943
+00:13:04,917 --> 00:13:06,174
 variable or a squash.
 
 176
-00:13:10,283 --> 00:13:13,692
+00:13:06,514 --> 00:13:10,975
 Looking in blame for who removed something.
 Root cause: blame annotates lines that
 
 177
-00:13:13,732 --> 00:13:16,047
+00:13:11,015 --> 00:13:14,049
 exist in the blamed revision;
 a deleted line has no row.
 
 178
-00:13:16,387 --> 00:13:27,543
+00:13:14,389 --> 00:13:19,666
 Short IDs in the ignore-revs file. Root
 cause: the file is a list of full object
 
 179
-00:13:27,583 --> 00:13:36,360
+00:13:19,706 --> 00:13:23,854
 IDs, and Git rejects an abbreviation
 as an invalid object name.
 
 180
-00:13:36,700 --> 00:13:39,821
+00:13:24,194 --> 00:13:27,993
 Blame fails on an old commit after
 blame.ignoreRevsFile is set.
 
 181
-00:13:39,861 --> 00:13:44,034
+00:13:28,033 --> 00:13:33,113
 Root cause: the configured file must exist
 in the checked-out state; the :(optional)
 
 182
-00:13:44,074 --> 00:13:46,342
+00:13:33,153 --> 00:13:35,917
 prefix makes the setting
 tolerate its absence.
 
 183
-00:13:46,682 --> 00:13:49,799
+00:13:36,257 --> 00:13:39,441
 Listing a commit before it
 reached the shared branch.
 
 184
-00:13:49,839 --> 00:13:54,505
+00:13:39,481 --> 00:13:44,246
 Root cause: rebasing or squashing the
 listed commit changes its ID and silently
 
 185
-00:13:54,545 --> 00:13:55,577
+00:13:44,286 --> 00:13:45,341
 empties the entry.
 
 186
-00:13:57,417 --> 00:14:02,127
+00:13:47,181 --> 00:13:51,895
 Now, out of the lab. A backend team adopts
 a formatter across a Java and Python
 
 187
-00:14:02,167 --> 00:14:06,936
+00:13:51,935 --> 00:13:56,708
 monorepo. The formatter commit touches
 most files. From that day, the blame view
 
 188
-00:14:06,976 --> 00:14:11,806
+00:13:56,748 --> 00:14:01,582
 names one engineer on almost every line,
 and code review comments begin with "you
 
 189
-00:14:11,846 --> 00:14:12,528
+00:14:01,622 --> 00:14:02,304
 wrote this".
 
 190
-00:14:12,868 --> 00:14:18,744
+00:14:02,644 --> 00:14:07,373
 The team does three things, in this order.
 They wait until the formatter commit is
 
 191
-00:14:18,784 --> 00:14:24,732
+00:14:07,413 --> 00:14:12,201
 on main, so its ID is final. They commit a
 file named .git-blame-ignore-revs in the
 
 192
-00:14:24,772 --> 00:14:29,565
+00:14:12,241 --> 00:14:16,098
 root, with the full ID and a comment
 that says what the commit was.
 
 193
-00:14:29,605 --> 00:14:35,337
+00:14:16,138 --> 00:14:20,751
 And they add the configuration key to the
 onboarding script with the :(optional)
 
 194
-00:14:35,377 --> 00:14:40,387
+00:14:20,791 --> 00:14:24,822
 prefix, because engineers bisect
 across commits that predate the file.
 
 195
-00:14:40,427 --> 00:14:46,087
+00:14:24,862 --> 00:14:29,417
 They also turn on the mark for ignored
 lines, so that nobody mistakes a guessed
 
 196
-00:14:46,127 --> 00:14:47,746
+00:14:29,457 --> 00:14:30,754
 attribution for a fact.
 
 197
-00:14:49,586 --> 00:14:55,717
+00:14:32,594 --> 00:14:38,492
 Your turn. Do Lab 11.6, "Blame through a
 reformatting commit with an ignore-revs
 
 198
-00:14:55,757 --> 00:14:59,266
+00:14:38,532 --> 00:14:41,906
 file", in
 lab-manual/m11-history-forensics.md.
 
 199
-00:14:59,606 --> 00:15:02,984
+00:14:42,246 --> 00:14:46,583
 Before you run blame with the ignore list,
 predict for each line of the function
 
 200
-00:15:03,024 --> 00:15:06,487
+00:14:46,623 --> 00:14:51,069
 which commit it will be attributed to, and
 which lines will carry a question mark.
 
 201
-00:15:06,527 --> 00:15:10,033
+00:14:51,109 --> 00:14:55,609
 Then make the lab's failure happen on purpose
 and predict the error text before you
 
 202
-00:15:10,073 --> 00:15:10,375
+00:14:55,649 --> 00:14:56,047
 read it.
 
 203
-00:15:10,715 --> 00:15:16,856
+00:14:56,387 --> 00:15:03,015
 The challenge is Exercise 11.3, Level 1,
 "Blame, and one step further back", in
 
 204
-00:15:16,896 --> 00:15:20,299
+00:15:03,055 --> 00:15:06,729
 exercises/m11-m15-investigation-recovery.md.
 
 205
-00:15:22,139 --> 00:15:23,406
+00:15:08,569 --> 00:15:09,846
 Pause and answer out loud.
 
 206
-00:15:28,246 --> 00:15:31,926
+00:15:14,686 --> 00:15:19,593
 A strong answer opens with a definition
 that is narrow and exact: one revision, one
 
 207
-00:15:31,966 --> 00:15:35,063
+00:15:19,633 --> 00:15:23,765
 line as it stands, the last commit
 that changed it, decided by a diff.
 
 208
-00:15:35,103 --> 00:15:38,559
+00:15:23,805 --> 00:15:28,414
 It then gives three situations that are
 different in kind, not three formatter
 
 209
-00:15:38,599 --> 00:15:42,189
+00:15:28,454 --> 00:15:33,242
 stories, and for each one names the tool
 or option that recovers the real origin.
 
 210
-00:15:42,229 --> 00:15:45,954
+00:15:33,282 --> 00:15:38,249
 It mentions what blame can't show at all.
 And it ends with the practice that follows
 
 211
-00:15:45,994 --> 00:15:49,315
+00:15:38,289 --> 00:15:42,719
 from the definition: what you run next,
 and how you speak about the result.
 
 212
-00:15:51,155 --> 00:15:54,082
+00:15:44,559 --> 00:15:47,486
 Let's land this. You
 should now be able to say:
 
 213
-00:15:54,422 --> 00:16:00,396
+00:15:47,826 --> 00:15:52,825
 A blame row names the last commit that
 changed a line as it stands in one revision;
 
 214
-00:16:00,436 --> 00:16:03,004
+00:15:52,865 --> 00:15:55,010
 it is a pointer to a commit to read.
 
 215
-00:16:03,344 --> 00:16:07,891
+00:15:55,350 --> 00:16:00,594
 -w and --ignore-rev look through reformatting;
 an ignore-revs file holds full IDs,
 
 216
-00:16:07,931 --> 00:16:10,520
+00:16:00,634 --> 00:16:03,623
 and its attributions are
 guesses worth marking.
 
 217
-00:16:10,860 --> 00:16:16,271
+00:16:03,963 --> 00:16:10,136
 -M and -C follow moved and copied code at
 increasing cost and with minimum sizes.
 
 218
-00:16:16,611 --> 00:16:19,241
+00:16:10,476 --> 00:16:15,092
 After a squash merge, blame on the target
 branch knows one commit and one author.
 
 219
-00:16:19,581 --> 00:16:24,625
+00:16:15,432 --> 00:16:20,088
 Every investigative tool produces a
 suspect; the test at the suspect and at its
 
 220
-00:16:24,665 --> 00:16:25,912
+00:16:20,128 --> 00:16:21,277
 parent is the proof.
 
 221
-00:16:27,752 --> 00:16:32,830
+00:16:23,117 --> 00:16:28,312
 Read sections 14A.16 to
 14A.19 of Chapter 14A.
 
 222
-00:16:33,170 --> 00:16:41,255
+00:16:28,652 --> 00:16:33,695
 Today you learned to read a blame row as a
 pointer and not a verdict, and you walked
 
 223
-00:16:41,295 --> 00:16:49,091
+00:16:33,735 --> 00:16:38,598
 from a symptom to a proven commit. Try the
 ignore-revs lab before the next video.
 
 224
-00:16:49,131 --> 00:16:56,830
+00:16:38,638 --> 00:16:43,439
 Next time: git bisect, binary search over
 commits. Until then, look at the state
 
 225
-00:16:56,870 --> 00:17:01,376
+00:16:43,479 --> 00:16:46,284
 first and type second.
 See you in the next one.

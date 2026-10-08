@@ -123,6 +123,8 @@ Six. Two times three is six cells. One is excluded, which leaves five. The inclu
 
 **[ON SCREEN]** Callout: Unverified. The names of the checks that matrix jobs report are not specified on an official page that the course's research could find. Workflow 10 therefore sets the job name explicitly from the matrix values, and adds a final job with a fixed name to serve as the required check.
 
+One thing is unverified: the names of the checks that matrix jobs report aren't specified on any official page the course's research found. So workflow 10 sets the job name from the matrix values, and adds a final job with a fixed name.
+
 **Caching. In one sentence:** a cache stores a directory under a key so that a later run with the same key can restore it and skip the download. It's an optimization that may be absent, never a place to keep something you need.
 
 The key: at most 512 characters, usually built from the operating system and `hashFiles` of a lock file. A lock file pins each dependency to one exact version, and a hash is a fingerprint computed from content. An existing key is never overwritten. The documentation: "You cannot change the contents of an existing cache."
@@ -235,6 +237,8 @@ It needs `test`, and it has `if: always()`. That one fixed name is what a rulese
 **[ANIMATION]** end
 
 **[ON SCREEN]** The root-cause box of section 20A.11, one line at a time. Observed behavior: a dependency was upgraded, CI still installs the old version from cache. Mechanism: the key had no lock-file hash, or a broad restore key matched an old entry, which was then extended and saved under the new key. Root cause: caches are immutable per key and restore keys match by prefix. Correct fix: put `hashFiles` of the lock file in the key; install from the lock file, with `uv sync --locked`, so that a stale cache cannot change what is installed. Prevention: a manual prefix, such as `v2-`, to invalidate everything at once.
+
+Read the root-cause line: caches are immutable per key, and restore keys match by prefix.
 
 ## LIVE TERMINAL DEMO
 
@@ -389,7 +393,9 @@ Then the `all-tests` job. `if: always()` makes it run even when a matrix job fai
 
 **[ON SCREEN]** Callout: Unverified. How the result of a needed matrix job is aggregated when its only failure had `continue-on-error` is not spelled out on the pages read for the chapter. The expectation, from the definition of `continue-on-error`, is `success`. Lab 26.8 has you observe it.
 
-Now Lab 26.8 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. Before you open the run, write the list of jobs on paper: operating system, Python version, experimental or not, and the name each will show. Then open the pull request's checks and the run, and count. Find the aggregate job by its fixed name.
+Also unverified: how a needed matrix job's result is aggregated when its only failure had continue-on-error. The expectation is success, and Lab 26.8 has you observe it.
+
+**Now Lab 26.8 on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. Before you open the run, write the list of jobs on paper: operating system, Python version, experimental or not, and the name each will show. Then open the pull request's checks and the run, and count. Find the aggregate job by its fixed name.
 
 ## COMMON MISTAKES
 

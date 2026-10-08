@@ -273,7 +273,7 @@ $ git status -s
 
 **[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
 
-Part B of Lab 24.3, on your own practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. Never show a real key or token on screen.
+**Part B of Lab 24.3, on your own practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. Never show a real key or token on screen.
 
 You need a signing key in your normal Git configuration and an address that's verified on your account. You register the public key as a signing key. Then the lab has you make three empty commits on a branch: one unsigned, one signed, and one unsigned whose author is a made-up person at `example.com`. You look at them locally first:
 

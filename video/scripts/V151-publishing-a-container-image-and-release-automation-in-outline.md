@@ -216,7 +216,7 @@ v1.1.0-2-g57c8425-dirty
 
 `-dirty`. Git is saying that the working tree differs from HEAD. An image built now and labelled with the commit ID alone would claim to be `57c8425` and wouldn't be.
 
-**[ANIMATION]** trees: file=src/warehouse/rules.py steps=setup,edit,restore versions=the_commit,one_uncommitted_line title=Is_the_tree_exactly_the_commit
+**[ANIMATION]** trees: file=src/warehouse/rules.py steps=setup,edit,restore versions=the_commit,one_uncommitted_line title=Is_the_tree_exactly_the_commit commits=57c8425 ref=main
 
 **[ANIMATION]** step: edit
 
@@ -263,7 +263,7 @@ After the annotated tag, the tag points at HEAD and the description is the tag n
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
-Part B of Lab 27.1, on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**Part B of Lab 27.1, on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 Predict first, as the lab asks: which tags will the image get for a push of a Git version tag? Read the `tags` input of the metadata step in workflow 6 and write your prediction down.
 

@@ -153,6 +153,8 @@ Two layers. The bracket marks the signed bytes: the object without `gpgsig`. The
 
 **[ON SCREEN]** The root-cause box of section 14B.16, one line at a time. Observed behavior: `git log --show-signature` prints "No signature", and `%G?` prints N, for a commit that visibly has a gpgsig header. Git state: the commit is signed; `gpg.ssh.allowedSignersFile` is not set. Mechanism: SSH verification means "find this key in my list of allowed signers"; without a list Git does not start ssh-keygen at all and reports no result. Root cause: signing needs one key; verifying needs a statement of whom you trust. Why Git does this: an SSH key has no owner written into it and no web of trust; the manual says trust is "fully" when the key is in the file and "undefined" otherwise. Correct fix: create the allowed-signers file and point `gpg.ssh.allowedSignersFile` at it. Prevention: distribute the file with the signing setup; a team can keep it in the repository.
 
+Read the root-cause line: signing needs one key; verifying needs a statement of whom you trust.
+
 ## LIVE TERMINAL DEMO
 
 **[TERMINAL]** Three replays. Start with `labs/run ch06/signed-header`. It is volatile: a throwaway key is created in the sandbox.
@@ -320,7 +322,7 @@ gpg.format ssh
 ```
 <!-- /snippet -->
 
-Point at the file name: `user.signingKey` names the public key file. `ssh-keygen` finds the private key beside it, or in an agent.
+Look at the file name: `user.signingKey` names the public key file. `ssh-keygen` finds the private key beside it, or in an agent.
 
 <!-- snippet: ch14b/ssh-signing/03-sign-a-commit -->
 ```text

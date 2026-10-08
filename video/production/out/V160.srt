@@ -1,0 +1,1553 @@
+1
+00:00:04,500 --> 00:00:07,564
+"Our secrets are safe. They
+are masked in the logs."
+
+2
+00:00:07,904 --> 00:00:11,814
+"We do not store cloud keys
+any more. We use OIDC."
+
+3
+00:00:12,154 --> 00:00:16,004
+"Our release job has contents:
+read. It cannot be tampered with."
+
+4
+00:00:16,344 --> 00:00:21,341
+Teams say each of these in good faith,
+and the incidents of this part show where
+
+5
+00:00:21,381 --> 00:00:26,314
+each belief ends. Masking edits log lines.
+It does nothing about a process that
+
+6
+00:00:26,354 --> 00:00:30,092
+sends the value somewhere else.
+OIDC removes the stored key.
+
+7
+00:00:30,132 --> 00:00:35,191
+Any code in the job can still ask for the
+token. And a read-only job token didn't
+
+8
+00:00:35,231 --> 00:00:39,976
+stop a cache from being written, because
+cache writes didn't use that token.
+
+9
+00:00:40,316 --> 00:00:45,228
+None of the three statements is false. Each
+is true about a narrower thing than the
+
+10
+00:00:45,268 --> 00:00:48,808
+speaker thinks. This video draws
+the real boundary for each.
+
+11
+00:00:48,848 --> 00:00:52,030
+Keep the third one in mind,
+the read-only release job.
+
+12
+00:00:52,070 --> 00:00:55,132
+Its answer is the least
+expected, and it comes back.
+
+13
+00:00:56,972 --> 00:01:00,515
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:00,555 --> 00:01:05,097
+You've now seen four of the five parts
+of the model, and the fifth in the last
+
+15
+00:01:05,137 --> 00:01:09,737
+video. This video is about what a job
+holds and what it takes in: the things an
+
+16
+00:01:09,777 --> 00:01:12,733
+attacker wants, and the
+less obvious roads to them.
+
+17
+00:01:13,073 --> 00:01:18,203
+Four words first. A job is a list of steps
+that run on one machine, the runner.
+
+18
+00:01:18,243 --> 00:01:22,064
+A secret is an encrypted value
+stored in GitHub's settings.
+
+19
+00:01:22,104 --> 00:01:26,907
+Masking means that GitHub replaces a
+secret's value with stars in the log.
+
+20
+00:01:26,947 --> 00:01:31,750
+And OIDC is a way for a job to prove
+what it is, in place of a stored key.
+
+21
+00:01:32,090 --> 00:01:36,020
+Five topics, in the order of
+sections 21A.9 to 21A.13.
+
+22
+00:01:36,060 --> 00:01:41,976
+Secrets: scope, and why masking isn't a
+boundary. OIDC federation: what id-token:
+
+23
+00:01:42,016 --> 00:01:45,725
+write grants and where the
+access decision is made.
+
+24
+00:01:45,765 --> 00:01:51,534
+Caches and artifacts as untrusted input.
+Self-hosted runners, from the security
+
+25
+00:01:51,574 --> 00:01:57,637
+side. And environment protection, which you
+configured in video 149 and now read as
+
+26
+00:01:57,677 --> 00:01:59,034
+a security control.
+
+27
+00:01:59,374 --> 00:02:04,123
+The demonstration removes two controls from
+the course's secure workflow and shows
+
+28
+00:02:04,163 --> 00:02:08,913
+which check notices. It's grep and sed on
+a file in the sandbox: one command finds
+
+29
+00:02:08,953 --> 00:02:11,950
+lines, the other edits them.
+Nothing runs on GitHub.
+
+30
+00:02:13,790 --> 00:02:15,368
+Here's what you'll walk away with.
+
+31
+00:02:15,708 --> 00:02:17,121
+After this video you can:
+
+32
+00:02:17,461 --> 00:02:21,937
+say who can read a repository, environment
+and organization secret and when;
+
+33
+00:02:22,277 --> 00:02:25,460
+explain why log masking
+does not protect a secret;
+
+34
+00:02:25,800 --> 00:02:30,071
+explain what id-token: write grants
+and where the access decision is made;
+
+35
+00:02:30,411 --> 00:02:35,070
+explain how a cache or an artifact
+written by a less trusted run can reach a
+
+36
+00:02:35,110 --> 00:02:35,997
+privileged one;
+
+37
+00:02:36,337 --> 00:02:40,309
+state why self-hosted runners and public
+repositories are a dangerous combination.
+
+38
+00:02:42,149 --> 00:02:47,561
+Secrets. In one sentence: a secret is as
+exposed as the least trustworthy code in
+
+39
+00:02:47,601 --> 00:02:49,244
+any job that receives it.
+
+40
+00:02:49,584 --> 00:02:54,342
+Precisely. Secrets exist at organization,
+repository and environment level.
+
+41
+00:02:54,382 --> 00:02:59,652
+And GitHub Actions can only read a secret
+if you explicitly include the secret in a
+
+42
+00:02:59,692 --> 00:03:02,786
+workflow. Where you include
+it sets the exposure.
+
+43
+00:03:13,826 --> 00:03:19,142
+In the first form the secret is in
+workflow-level env, the environment variables
+
+44
+00:03:19,182 --> 00:03:24,431
+that every step receives. The lint job
+has it. The test job has it, and so does
+
+45
+00:03:24,471 --> 00:03:28,045
+every package whose install
+script or test runs there.
+
+46
+00:03:28,085 --> 00:03:32,932
+In the second form, one step of one
+job has it, and that job is behind an
+
+47
+00:03:32,972 --> 00:03:38,288
+environment, a named gate the job must
+pass first. You saw the first form in the
+
+48
+00:03:38,328 --> 00:03:43,376
+inventory of video 156: a secret named
+on line 19 of a file, before any job.
+
+49
+00:03:43,716 --> 00:03:45,734
+Two facts are routinely misunderstood.
+
+50
+00:03:46,074 --> 00:03:50,825
+Write access is secret access. The
+documentation: "Any user with write access to
+
+51
+00:03:50,865 --> 00:03:55,497
+your repository has read access to all
+secrets configured in your repository."
+
+52
+00:03:55,537 --> 00:03:59,450
+The reason: they can push a branch
+with a workflow that uses them.
+
+53
+00:03:59,490 --> 00:04:03,582
+The textbook says two of the case
+studies are this sentence at scale.
+
+54
+00:04:03,622 --> 00:04:08,493
+And it names the exception: environment
+secrets behind required reviewers make the
+
+55
+00:04:08,533 --> 00:04:11,487
+sentence false for your
+most valuable credentials.
+
+56
+00:04:11,827 --> 00:04:16,360
+Masking is a courtesy for logs. Registered
+secrets are redacted from logs.
+
+57
+00:04:16,400 --> 00:04:21,426
+But the documentation says: "because there
+are multiple ways a secret value can be
+
+58
+00:04:21,466 --> 00:04:26,554
+transformed, this redaction is not guaranteed".
+It adds: "never use structured data
+
+59
+00:04:26,594 --> 00:04:31,374
+as a secret". And: "if an unredacted
+secret is sent to a workflow run log, you
+
+60
+00:04:31,414 --> 00:04:34,154
+should delete the log
+and rotate the secret".
+
+61
+00:04:34,494 --> 00:04:39,512
+Redaction matches known strings in log
+output. It does nothing about a process that
+
+62
+00:04:39,552 --> 00:04:44,447
+sends the value elsewhere, and nothing
+about code that reads the runner's memory,
+
+63
+00:04:44,487 --> 00:04:48,225
+which the Phase 0 report finds
+recurring across the incidents.
+
+64
+00:04:48,265 --> 00:04:53,161
+The textbook's conclusion is the sentence
+to remember: the boundary is which code
+
+65
+00:04:53,201 --> 00:04:56,086
+runs in the job and which
+secrets the job holds.
+
+66
+00:04:56,426 --> 00:05:01,609
+OIDC federation. In one sentence: instead
+of storing a cloud key as a secret, the
+
+67
+00:05:01,649 --> 00:05:06,897
+job asks GitHub for a signed statement of
+what it is, and the cloud exchanges that
+
+68
+00:05:06,937 --> 00:05:10,186
+statement for a credential
+valid for that job only.
+
+69
+00:05:10,526 --> 00:05:15,702
+Precisely. The job or workflow must grant
+the id-token: write permission to allow
+
+70
+00:05:15,742 --> 00:05:20,532
+GitHub's OIDC provider to create a JSON
+Web Token, a small signed document.
+
+71
+00:05:20,572 --> 00:05:25,491
+And the documentation is exact about
+what the permission is: it "only enables
+
+72
+00:05:25,531 --> 00:05:30,385
+fetching and setting the OIDC token; it
+does not grant write access to other
+
+73
+00:05:30,425 --> 00:05:35,601
+resources". The cloud returns a short-lived
+access token that is only valid for a
+
+74
+00:05:35,641 --> 00:05:36,309
+single job.
+
+75
+00:05:36,649 --> 00:05:41,506
+The token's claims describe the run. A
+claim is one stated fact inside the token.
+
+76
+00:05:41,546 --> 00:05:46,584
+Besides the standard ones there are the
+repository and its ID, the owner and its ID,
+
+77
+00:05:46,624 --> 00:05:51,601
+the visibility, the ref and its type, the
+environment, the event name, the workflow
+
+78
+00:05:51,641 --> 00:05:55,047
+reference, the runner environment,
+the actor, and others.
+
+79
+00:05:55,087 --> 00:06:00,004
+The cloud's trust policy matches on them,
+above all on the subject, the claim that
+
+80
+00:06:00,044 --> 00:06:03,994
+says which repository, and which
+branch or environment, is asking.
+
+81
+00:06:04,334 --> 00:06:09,139
+For a job that references an environment,
+the default subject is the repository
+
+82
+00:06:09,179 --> 00:06:12,266
+followed by environment and
+the environment's name.
+
+83
+00:06:12,306 --> 00:06:17,050
+For a pull request event with no environment:
+the repository and pull_request.
+
+84
+00:06:17,090 --> 00:06:20,300
+For a branch: the repository
+and the full branch ref.
+
+85
+00:06:20,340 --> 00:06:23,182
+For a tag: the repository
+and the full tag ref.
+
+86
+00:06:23,522 --> 00:06:28,700
+Quick quiz. Where is the access decision
+made? A, at GitHub, when it signs the
+
+87
+00:06:28,740 --> 00:06:32,513
+token. B, at the cloud provider,
+when it reads the token.
+
+88
+00:06:32,553 --> 00:06:33,315
+Your answer?
+
+89
+00:06:38,155 --> 00:06:43,009
+B. Not at GitHub. GitHub states facts.
+The cloud provider decides, by comparing
+
+90
+00:06:43,049 --> 00:06:46,850
+those facts with its trust policy,
+its own list of conditions.
+
+91
+00:06:46,890 --> 00:06:51,682
+The OIDC reference: "You must define at
+least one condition, so that untrusted
+
+92
+00:06:51,722 --> 00:06:55,833
+repositories can't request access
+tokens for your cloud resources."
+
+93
+00:06:55,873 --> 00:06:59,488
+The textbook: the trust policy
+is where the security lives.
+
+94
+00:06:59,828 --> 00:07:04,927
+GitHub's guide for one cloud gives a
+condition that requires the audience and the
+
+95
+00:07:04,967 --> 00:07:08,162
+exact subject of one
+environment in one repository.
+
+96
+00:07:08,202 --> 00:07:13,047
+The same guide also shows a wildcard
+form: the repository followed by a star.
+
+97
+00:07:13,087 --> 00:07:18,313
+The textbook tells you how to read that
+one: every branch, every tag and every pull
+
+98
+00:07:18,353 --> 00:07:21,802
+request workflow of the
+repository may assume the role.
+
+99
+00:07:21,842 --> 00:07:23,198
+Prefer the exact form.
+
+100
+00:07:23,538 --> 00:07:28,656
+Older behavior: the subject contains only
+names, so a deleted and re-registered
+
+101
+00:07:28,696 --> 00:07:32,574
+organization or repository name
+could mint the same subject.
+
+102
+00:07:32,614 --> 00:07:37,668
+Current behavior: repositories created
+after the fifteenth of July 2026 use an
+
+103
+00:07:37,708 --> 00:07:43,087
+immutable default subject format that
+includes both the owner ID and the repository
+
+104
+00:07:43,127 --> 00:07:43,283
+ID.
+
+105
+00:07:43,623 --> 00:07:48,984
+Renames and transfers after that date switch
+as well, and existing repositories can
+
+106
+00:07:49,024 --> 00:07:54,451
+opt in. Since: opt-in on the twenty-third
+of April 2026, default on the fifteenth of
+
+107
+00:07:54,491 --> 00:07:59,917
+July 2026. Recommended: check which format
+your repository issues before writing the
+
+108
+00:07:59,957 --> 00:08:04,473
+trust policy. A policy in the old
+format won't match a new repository.
+
+109
+00:08:04,813 --> 00:08:09,633
+Subject customization lets an organization
+or repository change which claims form
+
+110
+00:08:09,673 --> 00:08:14,613
+the subject, for example to require the
+reusable workflow reference, so that only a
+
+111
+00:08:14,653 --> 00:08:17,553
+particular reusable workflow
+can obtain the role.
+
+112
+00:08:17,893 --> 00:08:21,248
+What OIDC does not do. It
+removes the long-lived key.
+
+113
+00:08:21,288 --> 00:08:26,371
+It doesn't make the job trustworthy. The
+textbook quotes a post-mortem, a team's
+
+114
+00:08:26,411 --> 00:08:31,046
+published account of its incident:
+"OIDC trusted-publisher binding has no
+
+115
+00:08:31,086 --> 00:08:35,978
+per-publish review. Once configured, any
+code path in the workflow can mint a
+
+116
+00:08:36,018 --> 00:08:39,308
+publish-capable token." So
+the rule has three parts.
+
+117
+00:08:39,348 --> 00:08:44,688
+Grant id-token: write to one job. Bind the
+subject to an environment with protection
+
+118
+00:08:44,728 --> 00:08:48,274
+rules. And let no untrusted
+code or cache into that job.
+
+119
+00:08:48,614 --> 00:08:53,575
+Caches and artifacts. In one sentence: a
+cache is a shared, unsigned directory keyed
+
+120
+00:08:53,615 --> 00:08:58,277
+by a string. Whoever can write an entry
+under the key your release job computes
+
+121
+00:08:58,317 --> 00:09:00,182
+controls what that job restores.
+
+122
+00:09:00,522 --> 00:09:05,404
+Precisely. The documentation: "Anyone with
+read access can create a pull request on
+
+123
+00:09:05,444 --> 00:09:10,385
+a repository and access the contents of a
+cache", and "cache contents are not signed
+
+124
+00:09:10,425 --> 00:09:15,070
+or verified". A run can restore caches
+from its own branch and from the default
+
+125
+00:09:15,110 --> 00:09:15,485
+branch.
+
+126
+00:09:15,825 --> 00:09:20,653
+A pull_request run saves to its own merge
+ref, which other branches can't restore.
+
+127
+00:09:20,693 --> 00:09:25,640
+A privileged trigger runs in the default
+branch's context, and that was the opening.
+
+128
+00:09:25,680 --> 00:09:30,628
+The post-mortem records: "cache writes use
+a runner-internal token, not the workflow
+
+129
+00:09:30,668 --> 00:09:35,437
+GITHUB_TOKEN… Setting permissions: contents:
+read does not block cache mutation."
+
+130
+00:09:35,777 --> 00:09:40,310
+That's the third sentence of the hook,
+answered. The read-only job token was never
+
+131
+00:09:40,350 --> 00:09:43,823
+the token that writes the cache.
+Two platform changes followed.
+
+132
+00:09:44,163 --> 00:09:49,589
+The twenty-sixth of June 2026: only push,
+workflow_dispatch, repository_dispatch,
+
+133
+00:09:49,629 --> 00:09:55,190
+delete, registry_package, page_build and
+schedule can create or overwrite caches in
+
+134
+00:09:55,230 --> 00:10:00,792
+the default branch's scope. Other triggers
+that resolve to it get read-only access.
+
+135
+00:10:01,132 --> 00:10:06,366
+The tenth of September 2026: cache-mode,
+at workflow or job level, with the values
+
+136
+00:10:06,406 --> 00:10:11,319
+read, write, write-only and none. The
+job value overrides the workflow value.
+
+137
+00:10:11,359 --> 00:10:16,401
+And a warning from the changelog: explicitly
+declaring write or write-only on a
+
+138
+00:10:16,441 --> 00:10:20,196
+low-trust trigger reintroduces
+the risk of cache poisoning.
+
+139
+00:10:20,536 --> 00:10:25,692
+Setup actions cache implicitly, so check
+them too. And artifacts, the files one job
+
+140
+00:10:25,732 --> 00:10:29,072
+uploads for another to
+download, follow the same rule.
+
+141
+00:10:29,112 --> 00:10:34,330
+The documentation: "A workflow_run workflow
+should treat artifacts uploaded by other
+
+142
+00:10:34,370 --> 00:10:38,838
+workflows as untrusted data, since
+their contents can come from a fork."
+
+143
+00:10:39,178 --> 00:10:44,102
+Self-hosted runners. In one sentence: a
+self-hosted runner is your machine, on your
+
+144
+00:10:44,142 --> 00:10:49,006
+network, executing whatever the workflow
+says, and it keeps its state between jobs
+
+145
+00:10:49,046 --> 00:10:50,740
+unless you make it ephemeral.
+
+146
+00:10:51,080 --> 00:10:55,481
+The documentation: "Self-hosted runners
+should almost never be used for public
+
+147
+00:10:55,521 --> 00:10:59,751
+repositories on GitHub, because any
+user can open pull requests against the
+
+148
+00:10:59,791 --> 00:11:04,249
+repository and compromise the environment."
+Private repositories aren't exempt:
+
+149
+00:11:04,289 --> 00:11:08,804
+anyone who can fork the repository and
+open a pull request, generally those with
+
+150
+00:11:08,844 --> 00:11:13,131
+read access, can do the same. GitHub-hosted
+runners are "ephemeral and clean
+
+151
+00:11:13,171 --> 00:11:17,686
+isolated virtual machines". Self-hosted
+ones "can be persistently compromised by
+
+152
+00:11:17,726 --> 00:11:19,394
+untrusted code in a workflow".
+
+153
+00:11:19,734 --> 00:11:23,664
+The fork approval gate doesn't help
+once a contributor is past it.
+
+154
+00:11:23,704 --> 00:11:27,453
+And on self-hosted runners,
+environments don't isolate secrets.
+
+155
+00:11:27,793 --> 00:11:32,389
+The documented controls. Ephemeral runners
+that take one job and are removed.
+
+156
+00:11:32,429 --> 00:11:36,243
+Runner groups that restrict which
+repositories may use a runner.
+
+157
+00:11:36,283 --> 00:11:40,879
+The organization setting that restricts
+or disables repository-level runners.
+
+158
+00:11:40,919 --> 00:11:43,468
+And approval for all
+external contributors.
+
+159
+00:11:43,808 --> 00:11:48,591
+Environment protection. In one sentence:
+an environment puts a human decision, a
+
+160
+00:11:48,631 --> 00:11:53,354
+branch condition, or both between a job
+and the secrets and cloud identity that
+
+161
+00:11:53,394 --> 00:11:55,162
+belong to a deployment target.
+
+162
+00:11:55,502 --> 00:12:00,624
+You know the mechanics from video 149.
+For security review three details matter.
+
+163
+00:12:00,664 --> 00:12:06,043
+Referencing a name that doesn't exist creates
+an environment with no rules: a typing
+
+164
+00:12:06,083 --> 00:12:11,333
+error in the name silently removes the
+gate. Deployment branch rules are evaluated
+
+165
+00:12:11,373 --> 00:12:16,624
+against the ref the run executes on: since
+the eighth of December 2025 that is the
+
+166
+00:12:16,664 --> 00:12:21,849
+merge ref for pull_request events and the
+default branch for pull_request_target.
+
+167
+00:12:22,189 --> 00:12:27,192
+And required reviewers and wait timers are
+plan-gated, meaning they depend on your
+
+168
+00:12:27,232 --> 00:12:31,805
+GitHub plan: on Free, Pro and Team they
+exist only for public repositories.
+
+169
+00:12:32,145 --> 00:12:37,406
+And the combination that makes the whole
+design hold: with OIDC, an environment name
+
+170
+00:12:37,446 --> 00:12:42,519
+in the subject means the cloud role can
+be assumed only by a job that passed that
+
+171
+00:12:42,559 --> 00:12:43,781
+environment's rules.
+
+172
+00:12:45,621 --> 00:12:50,781
+Analogy for OIDC, from the textbook. A
+notarized letter of introduction in place of
+
+173
+00:12:50,821 --> 00:12:55,729
+a copied house key. The cloud reads the
+letter, which names the repository, the
+
+174
+00:12:55,769 --> 00:12:59,238
+branch and the environment,
+and decides whether to open.
+
+175
+00:12:59,578 --> 00:13:04,066
+The analogy breaks at one point: any code
+running in the job can ask the notary for
+
+176
+00:13:04,106 --> 00:13:04,666
+the letter.
+
+177
+00:13:05,006 --> 00:13:09,627
+Take that sentence seriously and the
+three topics of this video become one.
+
+178
+00:13:09,667 --> 00:13:14,660
+A secret in the environment, an OIDC token
+on request, the job token: all of them
+
+179
+00:13:14,700 --> 00:13:18,264
+are available to every piece
+of code that runs in the job.
+
+180
+00:13:18,304 --> 00:13:22,179
+Masking doesn't change that. Short
+lifetimes don't change that.
+
+181
+00:13:22,219 --> 00:13:25,908
+A read-only job token doesn't
+change that for the other two.
+
+182
+00:13:26,248 --> 00:13:31,497
+So there are only two real levers. What the
+job holds: as little as possible, in as
+
+183
+00:13:31,537 --> 00:13:36,467
+few jobs as possible, behind a gate. And
+what code and input reach the job: no
+
+184
+00:13:36,507 --> 00:13:41,565
+outsider's code, no cache it didn't build,
+no artifact it treats as anything but
+
+185
+00:13:41,605 --> 00:13:41,884
+data.
+
+186
+00:13:42,224 --> 00:13:47,631
+That's the question from video 156 again,
+now with a full answer to its third part:
+
+187
+00:13:47,671 --> 00:13:51,503
+"what can the job reach" includes
+what the job can ask for.
+
+188
+00:13:53,343 --> 00:13:58,438
+Try it now, thirty seconds, on paper. Draw
+a job as a box with three steps: your
+
+189
+00:13:58,478 --> 00:14:02,547
+script, a third-party action, and
+a dependency's install script.
+
+190
+00:14:02,587 --> 00:14:07,554
+The job holds one secret in env. Mark
+every step that can read it, and say the
+
+191
+00:14:07,594 --> 00:14:08,581
+number out loud.
+
+192
+00:14:13,421 --> 00:14:18,180
+All three. In the first picture, the mask
+and the leak are unrelated: the log shows
+
+193
+00:14:18,220 --> 00:14:20,781
+stars, and the value
+left through step three.
+
+194
+00:14:21,121 --> 00:14:26,144
+In the second picture, the OIDC exchange,
+the only place where "no" can be said is
+
+195
+00:14:26,184 --> 00:14:31,145
+the trust policy. If its condition is a
+wildcard, it says yes to every branch and
+
+196
+00:14:31,185 --> 00:14:33,985
+every pull request workflow
+of the repository.
+
+197
+00:14:35,825 --> 00:14:37,566
+Step 1: the baseline.
+
+198
+00:14:37,906 --> 00:14:42,684
+Two checks that a team could run in CI,
+its automated checks on every change.
+
+199
+00:14:42,724 --> 00:14:47,814
+The first lists every uses line that isn't
+pinned to forty hexadecimal characters.
+
+200
+00:14:47,854 --> 00:14:52,319
+The second counts the checkouts that
+don't leave the credential on disk.
+
+201
+00:14:52,359 --> 00:14:56,323
+On an intact workflow 12, what
+does each print? Say it out loud.
+
+202
+00:15:01,163 --> 00:15:06,691
+A clean working tree. Six uses lines. The
+unpinned scan returns nothing, with exit
+
+203
+00:15:06,731 --> 00:15:12,394
+status 1 from grep: every action is pinned.
+And four lines with persist-credentials:
+
+204
+00:15:12,434 --> 00:15:12,801
+false.
+
+205
+00:15:13,141 --> 00:15:15,989
+Step 2: a "cleanup" that many
+reviewers would approve.
+
+206
+00:15:16,329 --> 00:15:20,863
+The comment in the transcript describes
+it the way its author would: readable
+
+207
+00:15:20,903 --> 00:15:25,674
+version tags, less boilerplate. The sed
+command edits a file in the working tree.
+
+208
+00:15:25,714 --> 00:15:27,397
+Git has recorded nothing yet.
+
+209
+00:15:27,737 --> 00:15:33,329
+Three insertions, seven deletions. Imagine
+this diff in a pull request titled "Tidy
+
+210
+00:15:33,369 --> 00:15:38,690
+the CI file". It is shorter. It is more
+readable. Nothing about it looks like a
+
+211
+00:15:38,730 --> 00:15:41,337
+security change. Two controls are gone.
+
+212
+00:15:41,677 --> 00:15:43,871
+Step 3: which check notices.
+
+213
+00:15:44,211 --> 00:15:50,128
+The unpinned scan now prints three lines,
+36, 82 and 111, each a checkout by tag,
+
+214
+00:15:50,168 --> 00:15:55,938
+with exit status 0: found. And the count
+of persist-credentials: false is zero.
+
+215
+00:15:55,978 --> 00:16:00,644
+Both checks noticed. A reviewer
+reading the diff might not have.
+
+216
+00:16:00,984 --> 00:16:05,812
+Now the limit of this demonstration, which
+the lab's objective states: you remove
+
+217
+00:16:05,852 --> 00:16:10,378
+two controls and see which checks notice.
+These two can be found by pattern.
+
+218
+00:16:10,418 --> 00:16:15,246
+Workflow 12 marks nine controls with
+comments. Ask yourself which of the others a
+
+219
+00:16:15,286 --> 00:16:19,212
+grep could detect if removed, and
+which only a person would catch.
+
+220
+00:16:19,252 --> 00:16:23,899
+Removing cache-mode: none from the deploy
+job? Removing the environment block?
+
+221
+00:16:23,939 --> 00:16:27,684
+Changing the if that keeps pull
+requests out of the deploy job?
+
+222
+00:16:27,724 --> 00:16:29,186
+That question is the lab.
+
+223
+00:16:29,526 --> 00:16:31,166
+Step 4: recover.
+
+224
+00:16:31,506 --> 00:16:34,878
+git restore on a path is 🔴
+DANGEROUS, so the five answers.
+
+225
+00:16:34,918 --> 00:16:39,585
+What it changes: the file in the working
+tree, back to the version in the index.
+
+226
+00:16:39,625 --> 00:16:43,997
+What it can destroy: uncommitted edits
+to that file that were never staged.
+
+227
+00:16:44,037 --> 00:16:47,704
+How to preview: git diff for the
+path, which you saw as a stat.
+
+228
+00:16:47,744 --> 00:16:50,940
+How to recover: none for
+content that was never staged.
+
+229
+00:16:50,980 --> 00:16:55,882
+When it is appropriate: here, because the
+edit was the experiment, and discarding it
+
+230
+00:16:55,922 --> 00:16:56,588
+is the goal.
+
+231
+00:16:56,928 --> 00:17:00,890
+Clean status, the scan is empty
+again, and the count is back to four.
+
+232
+00:17:01,230 --> 00:17:06,225
+One picture of what happened. The cleanup
+edited the file in the working tree only.
+
+233
+00:17:06,265 --> 00:17:11,017
+Nothing was staged, and nothing was
+committed. So restore had one job: copy the
+
+234
+00:17:11,057 --> 00:17:13,444
+version in the index back over the edit.
+
+235
+00:17:13,784 --> 00:17:18,885
+Read the deploy job with this video's
+five topics. Its if admits only a push to
+
+236
+00:17:18,925 --> 00:17:24,155
+main: only trusted code reaches this job.
+It names an environment: the protection
+
+237
+00:17:24,195 --> 00:17:27,669
+rules, and the environment's
+name in the OIDC subject.
+
+238
+00:17:27,709 --> 00:17:32,680
+Its permissions are contents: read and
+id-token: write: the only job that may
+
+239
+00:17:32,720 --> 00:17:34,112
+request an OIDC token.
+
+240
+00:17:34,452 --> 00:17:37,929
+cache-mode: none: it neither
+restores nor saves a cache.
+
+241
+00:17:37,969 --> 00:17:43,018
+And there is no stored cloud key anywhere
+in the file: the role is assumed with a
+
+242
+00:17:43,058 --> 00:17:47,101
+short-lived token. Search the whole
+file for the secrets context.
+
+243
+00:17:47,141 --> 00:17:48,169
+It doesn't occur.
+
+244
+00:17:48,509 --> 00:17:53,350
+Now Lab 29.2, Part B, on your practice
+repository, in your normal shell.
+
+245
+00:17:53,390 --> 00:17:58,978
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+246
+00:17:59,018 --> 00:18:02,029
+No GitHub output was
+captured by the authors.
+
+247
+00:18:02,369 --> 00:18:06,637
+Add the workflow through a pull request
+and look at the list of checks.
+
+248
+00:18:06,677 --> 00:18:11,734
+Predict first which jobs run for a pull
+request and which are skipped, from their if
+
+249
+00:18:11,774 --> 00:18:15,495
+conditions. The deploy job is
+skipped for two reasons at once.
+
+250
+00:18:15,535 --> 00:18:20,410
+Name both. Then the lab has you make the
+title job fail on purpose by editing the
+
+251
+00:18:20,450 --> 00:18:20,774
+title.
+
+252
+00:18:21,114 --> 00:18:25,790
+Notice what the lab tells you: editing the
+title doesn't start a new run, because
+
+253
+00:18:25,830 --> 00:18:29,807
+the trigger without types reacts to
+opened, synchronize and reopened.
+
+254
+00:18:29,847 --> 00:18:34,580
+You push an empty commit to start one, read
+the failed job, restore the title, and
+
+255
+00:18:34,620 --> 00:18:35,221
+push again.
+
+256
+00:18:37,061 --> 00:18:38,709
+Five mistakes to watch for.
+
+257
+00:18:39,049 --> 00:18:43,908
+Putting a secret in workflow-level env.
+Root cause: every step of every job,
+
+258
+00:18:43,948 --> 00:18:49,258
+including third-party actions and dependencies'
+install scripts, then has it in its
+
+259
+00:18:49,298 --> 00:18:50,031
+environment.
+
+260
+00:18:50,371 --> 00:18:55,403
+Treating log masking as protection. Root
+cause: redaction matches known strings in
+
+261
+00:18:55,443 --> 00:19:00,041
+log output; it does nothing about a
+process that sends the value elsewhere.
+
+262
+00:19:00,381 --> 00:19:05,442
+A wildcard subject in the cloud's trust
+policy. Root cause: it lets every branch,
+
+263
+00:19:05,482 --> 00:19:10,479
+every tag and every pull request workflow
+of the repository assume the role; the
+
+264
+00:19:10,519 --> 00:19:13,628
+trust policy is where the
+access decision is made.
+
+265
+00:19:13,968 --> 00:19:17,191
+Letting a job with a publishing
+identity restore a cache.
+
+266
+00:19:17,231 --> 00:19:21,885
+Root cause: cache contents are not signed,
+and a less trusted run may have written
+
+267
+00:19:21,925 --> 00:19:24,232
+the entry under the key the job computes.
+
+268
+00:19:24,572 --> 00:19:27,945
+Believing permissions: contents:
+read protects the cache.
+
+269
+00:19:27,985 --> 00:19:32,317
+Root cause: cache writes used a
+runner-internal token, not the job token.
+
+270
+00:19:34,157 --> 00:19:38,944
+Now, out of the lab. Picture a team that
+publishes an evaluation library to a
+
+271
+00:19:38,984 --> 00:19:44,084
+package registry. Two years ago it stored
+a registry token as a repository secret.
+
+272
+00:19:44,124 --> 00:19:49,350
+Last year it moved to trusted publishing
+with OIDC and deleted the stored token, and
+
+273
+00:19:49,390 --> 00:19:54,051
+wrote in its security notes that
+publishing credentials can no longer leak.
+
+274
+00:19:54,391 --> 00:19:59,116
+Review that with this video. The stored
+key is gone: good, nothing long-lived to
+
+275
+00:19:59,156 --> 00:20:04,000
+steal. But which job has id-token: write?
+If it's set at workflow level, every job
+
+276
+00:20:04,040 --> 00:20:08,706
+can request the token, including the test
+job that runs the dependencies' code.
+
+277
+00:20:09,046 --> 00:20:13,678
+Is the publishing job behind an environment
+with rules, and is the environment's
+
+278
+00:20:13,718 --> 00:20:18,409
+name in the subject the registry checks?
+Does the publishing job restore a cache,
+
+279
+00:20:18,449 --> 00:20:23,140
+and which runs can write under that key?
+Does any step in it run code that didn't
+
+280
+00:20:23,180 --> 00:20:25,243
+come from a reviewed commit on main?
+
+281
+00:20:25,583 --> 00:20:30,323
+The textbook's summary of what OIDC
+changes fits on one line: it removes the
+
+282
+00:20:30,363 --> 00:20:33,845
+long-lived key, and it doesn't
+make the job trustworthy.
+
+283
+00:20:33,885 --> 00:20:39,128
+The team's notes should say which job can
+ask for the identity, what gates that job,
+
+284
+00:20:39,168 --> 00:20:40,889
+and what is allowed into it.
+
+285
+00:20:42,729 --> 00:20:49,114
+Your turn. Do Lab 29.2, "Justify
+every control of workflow 12", in
+
+286
+00:20:49,154 --> 00:20:55,150
+lab-manual/m29-actions-security.md.
+Part A runs in labs/shell.
+
+287
+00:20:55,490 --> 00:21:00,404
+Write the table the lab asks for: control,
+line, threat, and what breaks without it.
+
+288
+00:21:00,444 --> 00:21:05,063
+The file marks nine controls with comments.
+Find at least two more that have no
+
+289
+00:21:05,103 --> 00:21:09,722
+comment. For each control, predict before
+you test whether a pattern scan would
+
+290
+00:21:09,762 --> 00:21:10,843
+notice its removal.
+
+291
+00:21:11,183 --> 00:21:16,816
+The challenge is Exercise 29.6,
+"Who can assume the role?", in
+
+292
+00:21:16,856 --> 00:21:20,293
+exercises/m26-m31-actions-security.md.
+
+293
+00:21:22,133 --> 00:21:25,348
+Read the question on screen.
+Say your answer out loud.
+
+294
+00:21:30,188 --> 00:21:34,377
+A strong answer is precise about the
+permission: what it enables and what it
+
+295
+00:21:34,417 --> 00:21:38,939
+explicitly doesn't. It then follows the
+exchange: what the token states, who reads
+
+296
+00:21:38,979 --> 00:21:43,501
+it, and what is compared with what. It
+names the claim that matters most and gives
+
+297
+00:21:43,541 --> 00:21:48,119
+the difference between an exact and a
+wildcard condition in terms of who can assume
+
+298
+00:21:48,159 --> 00:21:48,620
+the role.
+
+299
+00:21:48,960 --> 00:21:53,662
+It ends with what federation doesn't solve.
+The follow-up is a trust policy that
+
+300
+00:21:53,702 --> 00:21:57,634
+matches for older repositories and
+not for one created this summer.
+
+301
+00:21:57,674 --> 00:22:02,258
+You heard the version note, so say what
+changed and how you would diagnose it.
+
+302
+00:22:04,098 --> 00:22:05,025
+Let's land this.
+
+303
+00:22:05,365 --> 00:22:07,025
+You should now be able to say:
+
+304
+00:22:07,365 --> 00:22:12,478
+A secret is as exposed as the least
+trustworthy code in any job that receives it;
+
+305
+00:22:12,518 --> 00:22:17,757
+write access to the repository is access
+to its secrets, except environment secrets
+
+306
+00:22:17,797 --> 00:22:19,411
+behind required reviewers.
+
+307
+00:22:19,751 --> 00:22:24,236
+Masking edits log lines; the boundary
+is which code runs in the job and which
+
+308
+00:22:24,276 --> 00:22:25,529
+secrets the job holds.
+
+309
+00:22:25,869 --> 00:22:31,242
+id-token: write only lets the job fetch
+an OIDC token; the cloud's trust policy
+
+310
+00:22:31,282 --> 00:22:34,599
+makes the access decision,
+mostly on the subject.
+
+311
+00:22:34,939 --> 00:22:39,800
+Caches are shared and unsigned, artifacts
+from other workflows can come from a fork;
+
+312
+00:22:39,840 --> 00:22:44,117
+a job with an identity uses cache-mode:
+none and treats artifacts as data.
+
+313
+00:22:44,457 --> 00:22:49,189
+A persistent self-hosted runner keeps what
+a job left, and an environment puts its
+
+314
+00:22:49,229 --> 00:22:50,644
+gate in front of the job.
+
+315
+00:22:52,484 --> 00:22:57,824
+Read sections 21A.9 to
+21A.13 of Chapter 21A.
+
+316
+00:22:58,164 --> 00:23:03,729
+Today you drew the real boundary behind
+three comfortable sentences, and watched two
+
+317
+00:23:03,769 --> 00:23:09,067
+controls vanish in a tidy-looking diff.
+Run that demo yourself in the lab shell.
+
+318
+00:23:09,107 --> 00:23:14,604
+Next time: static analysis of workflows,
+the platform changes of 2025 and 2026, and
+
+319
+00:23:14,644 --> 00:23:18,941
+workflow 12. Until then, look at
+the state first and type second.
+
+320
+00:23:18,981 --> 00:23:20,543
+See you in the next one.

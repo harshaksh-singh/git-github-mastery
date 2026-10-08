@@ -1,0 +1,1017 @@
+1
+00:00:04,500 --> 00:00:08,967
+The on-call engineer looks at the
+deployment and reads the image reference.
+
+2
+00:00:09,007 --> 00:00:13,954
+It ends in :latest. A container image is
+an application packaged with what it needs
+
+3
+00:00:13,994 --> 00:00:17,319
+to run, and a registry is the
+server that stores images.
+
+4
+00:00:17,660 --> 00:00:22,433
+That tag was pushed four times this week.
+It names whatever was pushed last, not
+
+5
+00:00:22,473 --> 00:00:27,246
+what is running. To answer the question,
+someone now has to correlate timestamps
+
+6
+00:00:27,286 --> 00:00:32,059
+from a registry, a deployment log and a
+workflow history, and hope they line up.
+
+7
+00:00:32,399 --> 00:00:36,877
+The team could have answered in one command
+if the image had been identified by
+
+8
+00:00:36,917 --> 00:00:41,510
+something that can't move, and if that
+identifier had been recorded together with
+
+9
+00:00:41,550 --> 00:00:46,314
+the commit, the saved snapshot of the source.
+This video is about making an artifact
+
+10
+00:00:46,354 --> 00:00:50,775
+carry its own answer. Keep that question.
+By the end it has a one-line answer.
+
+11
+00:00:52,615 --> 00:00:56,288
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:56,328 --> 00:01:00,062
+This is the last video of the
+delivery module, and it's short.
+
+13
+00:01:00,102 --> 00:01:01,523
+It finishes two threads.
+
+14
+00:01:01,863 --> 00:01:06,769
+The first thread is workflow 6, which
+you read in video 148 for its syntax.
+
+15
+00:01:06,809 --> 00:01:11,056
+A workflow is a file that tells
+GitHub Actions which jobs to run.
+
+16
+00:01:11,096 --> 00:01:16,464
+Here you look at it again for delivery:
+what identifies an image, and how an image
+
+17
+00:01:16,504 --> 00:01:18,443
+is tied to exactly one commit.
+
+18
+00:01:18,783 --> 00:01:23,680
+The second thread is release automation,
+in outline, as the section gives it: three
+
+19
+00:01:23,720 --> 00:01:28,676
+facts and one trap. A release is a GitHub
+record that points at a tag and adds notes
+
+20
+00:01:28,716 --> 00:01:33,613
+and files. The trap is the reason a release
+created by a workflow so often triggers
+
+21
+00:01:33,653 --> 00:01:34,089
+nothing.
+
+22
+00:01:34,429 --> 00:01:39,064
+The local demonstration is about the Git
+side of identity: is the working tree
+
+23
+00:01:39,104 --> 00:01:43,738
+exactly a commit, and what is that commit
+called relative to the release tags?
+
+24
+00:01:43,778 --> 00:01:48,352
+The sample project's Dockerfile couldn't
+be built while the book was written,
+
+25
+00:01:48,392 --> 00:01:52,487
+because the author could pull no
+base image. Lab 27.1 has you run it.
+
+26
+00:01:54,327 --> 00:01:55,905
+Here's what you'll walk away with.
+
+27
+00:01:56,245 --> 00:01:57,658
+After this video you can:
+
+28
+00:01:57,998 --> 00:02:01,556
+make a container image identify
+the commit it was built from;
+
+29
+00:02:01,896 --> 00:02:06,418
+explain why a release created by the
+workflow's own token triggers no further
+
+30
+00:02:06,458 --> 00:02:06,951
+workflow;
+
+31
+00:02:07,291 --> 00:02:12,134
+derive the version of a release from a tag
+in CI and say what the checkout needs for
+
+32
+00:02:12,174 --> 00:02:12,424
+that;
+
+33
+00:02:12,764 --> 00:02:15,649
+outline release automation
+as the section gives it.
+
+34
+00:02:17,489 --> 00:02:23,423
+The image. Workflow 6 builds and pushes an
+image to the GitHub container registry at
+
+35
+00:02:23,463 --> 00:02:26,339
+ghcr.io. Three facts matter for delivery.
+
+36
+00:02:26,679 --> 00:02:31,717
+First, authentication. The job authenticates
+with the GITHUB_TOKEN, the short-lived
+
+37
+00:02:31,757 --> 00:02:36,672
+token every job gets, and needs packages:
+write. The documentation recommends the
+
+38
+00:02:36,712 --> 00:02:41,628
+token over a personal access token, and
+says that publishing from a workflow with
+
+39
+00:02:41,668 --> 00:02:46,278
+that token is also the easiest way to
+connect the package to the repository.
+
+40
+00:02:46,618 --> 00:02:51,601
+Second, how tags and content are produced.
+The metadata action derives tags and
+
+41
+00:02:51,641 --> 00:02:56,752
+labels from the Git ref and commit. The
+build action builds and, with push: true,
+
+42
+00:02:56,792 --> 00:03:02,094
+pushes. By default that action builds from
+the Git context, not from the checked-out
+
+43
+00:03:02,134 --> 00:03:06,800
+directory, so files changed by earlier
+steps are ignored unless context: .
+
+44
+00:03:06,840 --> 00:03:07,245
+is set.
+
+45
+00:03:07,585 --> 00:03:13,001
+Third, and this is the sentence of the
+video: an image is identified by its digest,
+
+46
+00:03:13,041 --> 00:03:17,998
+not by a tag. The digest is a fingerprint
+computed from the image's content.
+
+47
+00:03:18,038 --> 00:03:22,600
+A tag such as latest or main is a
+movable name, exactly like a branch.
+
+48
+00:03:22,640 --> 00:03:27,070
+So: deploy by digest, and record
+the digest and the commit together.
+
+49
+00:03:27,110 --> 00:03:32,264
+The textbook adds that actions/attest can
+attach signed build provenance to the
+
+50
+00:03:32,304 --> 00:03:34,302
+digest. That belongs to Part 7.
+
+51
+00:03:34,642 --> 00:03:38,382
+One commit per image. An image
+tag should identify one commit.
+
+52
+00:03:38,422 --> 00:03:42,223
+Git can tell you two things that
+make that statement checkable.
+
+53
+00:03:42,263 --> 00:03:47,100
+Whether a working tree is exactly a commit:
+git status in its short or porcelain
+
+54
+00:03:47,140 --> 00:03:51,856
+form prints nothing when it is. And what
+that commit is called relative to the
+
+55
+00:03:51,896 --> 00:03:56,429
+release tags: git describe with --tags
+and --match for the release pattern.
+
+56
+00:03:56,769 --> 00:04:00,651
+git describe has an option for
+exactly this purpose: --dirty.
+
+57
+00:04:00,691 --> 00:04:04,381
+It appends -dirty when the
+working tree differs from HEAD.
+
+58
+00:04:04,421 --> 00:04:09,589
+A runner's checkout is clean, which is one
+reason the textbook gives for building
+
+59
+00:04:09,629 --> 00:04:12,226
+release images in CI and not on a laptop.
+
+60
+00:04:12,566 --> 00:04:18,171
+And the connection to video 145: a job that
+derives the version from a tag needs the
+
+61
+00:04:18,211 --> 00:04:23,749
+tags and enough history for git describe
+to walk. The default checkout has neither.
+
+62
+00:04:24,089 --> 00:04:27,262
+Releases, in outline.
+Three facts and one trap.
+
+63
+00:04:27,602 --> 00:04:31,344
+Fact one. A release is a
+GitHub object on a Git tag.
+
+64
+00:04:31,384 --> 00:04:36,363
+In a job, gh release create with the
+tag, the files, --verify-tag and
+
+65
+00:04:36,403 --> 00:04:42,328
+--generate-notes creates it, with the token
+in the environment and contents: write
+
+66
+00:04:42,368 --> 00:04:47,275
+permission. --verify-tag refuses to
+invent a tag that doesn't exist.
+
+67
+00:04:47,315 --> 00:04:53,166
+You saw why that matters in video 140:
+without it the command may create a tag on
+
+68
+00:04:53,206 --> 00:04:58,040
+the default branch, and section
+15.22 labels that form 🔴 DANGEROUS.
+
+69
+00:04:58,080 --> 00:05:01,895
+With --verify-tag and --draft
+the label is 🟡 CAUTION.
+
+70
+00:05:02,235 --> 00:05:08,156
+Fact two. With immutable releases, create
+a draft, attach every asset, then publish.
+
+71
+00:05:08,496 --> 00:05:13,388
+Fact three. Tools such as release-please
+derive the release from conventional commit
+
+72
+00:05:13,428 --> 00:05:18,202
+messages. The textbook is explicit: it's
+named as a concept and wasn't run for the
+
+73
+00:05:18,242 --> 00:05:18,495
+book.
+
+74
+00:05:18,835 --> 00:05:23,275
+Quick quiz. One workflow creates
+a release with the job token.
+
+75
+00:05:23,315 --> 00:05:28,549
+A second workflow has the trigger on:
+release. Does the second one start?
+
+76
+00:05:28,589 --> 00:05:30,499
+A, yes. B, no. Your answer?
+
+77
+00:05:35,339 --> 00:05:40,367
+The trap. B, it doesn't. Events caused by
+the GITHUB_TOKEN don't start new workflow
+
+78
+00:05:40,407 --> 00:05:45,313
+runs, with narrow exceptions. A workflow
+that creates a tag or a release with the
+
+79
+00:05:45,353 --> 00:05:49,648
+job token won't trigger your separate
+on: release or tag-push workflow.
+
+80
+00:05:49,988 --> 00:05:55,024
+The textbook gives two ways out. Either
+chain the work as jobs of one workflow with
+
+81
+00:05:55,064 --> 00:05:58,020
+needs. Or create the tag
+with a GitHub App token.
+
+82
+00:05:58,360 --> 00:06:03,324
+Why does GitHub do this? You heard the
+rule in video 143 as a property of the job
+
+83
+00:06:03,364 --> 00:06:08,328
+token. Think about the alternative: a
+workflow that pushes with its own token and
+
+84
+00:06:08,368 --> 00:06:10,057
+thereby starts itself again.
+
+85
+00:06:11,897 --> 00:06:15,513
+There are three kinds of names on an
+image, and each has a twin in Git.
+
+86
+00:06:15,853 --> 00:06:20,819
+A tag like main or latest behaves like a
+branch: it's a name that moves when someone
+
+87
+00:06:20,859 --> 00:06:21,236
+pushes.
+
+88
+00:06:21,576 --> 00:06:27,244
+A tag like 0.2.0 behaves like a release
+tag: it's meant to stay, and nothing but
+
+89
+00:06:27,284 --> 00:06:29,027
+discipline makes it stay.
+
+90
+00:06:29,367 --> 00:06:33,941
+The digest behaves like a commit ID: it's
+computed from the content, so it can't
+
+91
+00:06:33,981 --> 00:06:35,036
+name anything else.
+
+92
+00:06:35,376 --> 00:06:39,797
+The model you built in Part 1, that a
+branch is a ref and a commit ID is the
+
+93
+00:06:39,837 --> 00:06:44,669
+identity, carries over directly. Deploying
+:latest is like deploying "whatever main
+
+94
+00:06:44,709 --> 00:06:46,782
+is at the moment the machine pulls".
+
+95
+00:06:47,122 --> 00:06:50,809
+Where the comparison breaks: a
+commit ID covers the source.
+
+96
+00:06:50,849 --> 00:06:55,862
+A digest covers the built image. The same
+commit built twice doesn't necessarily
+
+97
+00:06:55,902 --> 00:07:00,221
+give the same digest, because a build
+tool isn't always reproducible.
+
+98
+00:07:00,261 --> 00:07:04,642
+You heard that in video 149. So
+neither identifier replaces the other.
+
+99
+00:07:04,682 --> 00:07:09,632
+You record both, together, and that pair
+is what answers the on-call engineer's
+
+100
+00:07:09,672 --> 00:07:10,201
+question.
+
+101
+00:07:12,041 --> 00:07:15,580
+Start at the commit. The build
+gets its ID in the checkout.
+
+102
+00:07:15,620 --> 00:07:20,494
+The image carries it in a tag and a label.
+The deployment record holds the digest
+
+103
+00:07:20,534 --> 00:07:22,132
+and the commit ID together.
+
+104
+00:07:22,472 --> 00:07:26,373
+Follow the commit ID along the
+chain: it's written on every arrow.
+
+105
+00:07:28,213 --> 00:07:28,972
+Into the lab.
+
+106
+00:07:29,312 --> 00:07:33,357
+Step 1: is this tree exactly a commit,
+and what is the commit called?
+
+107
+00:07:33,697 --> 00:07:39,030
+All four only read. No tag points at HEAD,
+and the newest release tag is two commits
+
+108
+00:07:39,070 --> 00:07:42,355
+back. What will git describe
+print? Say it out loud.
+
+109
+00:07:47,195 --> 00:07:53,022
+The full ID of HEAD. Then nothing from git
+status --porcelain: the tree is clean,
+
+110
+00:07:53,062 --> 00:07:58,743
+it's exactly that commit. Nothing from
+git tag --points-at: this commit isn't a
+
+111
+00:07:58,783 --> 00:07:59,322
+release.
+
+112
+00:07:59,662 --> 00:08:06,229
+And the description: v1.1.0-2-g57c8425. The
+last release, two commits since, and the
+
+113
+00:08:06,269 --> 00:08:12,599
+abbreviated ID. That string is a usable
+build identifier: it names one commit and
+
+114
+00:08:12,639 --> 00:08:14,802
+tells a human where it sits.
+
+115
+00:08:15,142 --> 00:08:19,254
+Try it now. Thirty seconds, in
+any repository of your own.
+
+116
+00:08:19,294 --> 00:08:24,195
+Run git status --porcelain, which
+only reads. Does it print anything?
+
+117
+00:08:26,535 --> 00:08:29,957
+If it printed nothing, your
+working tree is exactly a commit.
+
+118
+00:08:29,997 --> 00:08:34,611
+If it printed lines, each one is a difference,
+and a build from that tree wouldn't
+
+119
+00:08:34,651 --> 00:08:36,313
+be the commit it claims to be.
+
+120
+00:08:36,653 --> 00:08:39,527
+Step 2: a build from a tree
+that is not the commit.
+
+121
+00:08:39,867 --> 00:08:43,394
+Someone builds on a laptop
+with one uncommitted line.
+
+122
+00:08:43,434 --> 00:08:46,356
+What does --dirty add?
+Make your prediction.
+
+123
+00:08:51,196 --> 00:08:55,153
+-dirty. Git is saying that the
+working tree differs from HEAD.
+
+124
+00:08:55,193 --> 00:09:00,440
+An image built now and labelled with the
+commit ID alone would claim to be 57c8425
+
+125
+00:09:00,480 --> 00:09:01,471
+and wouldn't be.
+
+126
+00:09:01,811 --> 00:09:05,529
+Here's the same state in the
+three-trees picture from Part 1.
+
+127
+00:09:05,569 --> 00:09:10,642
+HEAD and the index still hold the commit.
+Only the working tree has the extra line.
+
+128
+00:09:10,982 --> 00:09:13,359
+Step 3: recovery, and a release.
+
+129
+00:09:17,699 --> 00:09:22,172
+git restore on a path is 🔴 DANGEROUS,
+so the five answers before it runs.
+
+130
+00:09:22,212 --> 00:09:26,005
+What it changes: the file in the
+working tree, from the index.
+
+131
+00:09:26,045 --> 00:09:30,642
+What it can destroy: uncommitted edits
+to that file that were never staged.
+
+132
+00:09:30,682 --> 00:09:35,526
+How to preview: git diff for the path.
+How to recover: there is no recovery for
+
+133
+00:09:35,566 --> 00:09:40,472
+content that was never staged. When it's
+appropriate: here, for a one-line tweak
+
+134
+00:09:40,512 --> 00:09:45,417
+made on purpose in a sandbox, after git
+status showed that it's the only change.
+
+135
+00:09:45,757 --> 00:09:49,424
+git tag -a is 🟢 SAFE: it
+adds an object and a ref.
+
+136
+00:09:49,764 --> 00:09:52,158
+After the restore the
+description is clean again.
+
+137
+00:09:52,498 --> 00:09:57,772
+After the annotated tag, the tag points at
+HEAD and the description is the tag name
+
+138
+00:09:57,812 --> 00:10:02,958
+itself: v1.2.0. That's the moment a release
+build wants: the commit's name is the
+
+139
+00:10:02,998 --> 00:10:04,943
+version, with nothing after it.
+
+140
+00:10:05,283 --> 00:10:09,981
+Part B of Lab 27.1, on your practice
+repository, in your normal shell.
+
+141
+00:10:10,021 --> 00:10:15,598
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+142
+00:10:15,638 --> 00:10:18,644
+No GitHub output was
+captured by the authors.
+
+143
+00:10:18,984 --> 00:10:24,089
+Predict first, as the lab asks: which tags
+will the image get for a push of a Git
+
+144
+00:10:24,129 --> 00:10:29,296
+version tag? Read the tags input of the
+metadata step in workflow 6 and write your
+
+145
+00:10:29,336 --> 00:10:30,313
+prediction down.
+
+146
+00:10:30,653 --> 00:10:36,135
+git push of a tag is 🟡 CAUTION: it creates
+a tag on GitHub and starts every workflow
+
+147
+00:10:36,175 --> 00:10:41,328
+with a matching tag filter, here an image
+push, and deleting the tag afterwards
+
+148
+00:10:41,368 --> 00:10:44,418
+doesn't unpublish the
+image. gh run list reads.
+
+149
+00:10:44,758 --> 00:10:49,480
+Open the run in the browser and go to the
+job summary that the last step of the
+
+150
+00:10:49,520 --> 00:10:53,519
+workflow writes. Find two things:
+the digest, and the list of tags.
+
+151
+00:10:53,559 --> 00:10:58,584
+Compare the tags with your prediction. Then
+write down the pair that identifies this
+
+152
+00:10:58,624 --> 00:11:03,527
+release: the digest and the commit ID. Find
+the package from the repository's page
+
+153
+00:11:03,567 --> 00:11:07,928
+and see whether its tag list tells you
+which of its names can still move.
+
+154
+00:11:09,768 --> 00:11:11,416
+Five mistakes to watch for.
+
+155
+00:11:11,756 --> 00:11:17,181
+Deploying by a tag such as latest or main.
+Root cause: a tag is a movable name,
+
+156
+00:11:17,221 --> 00:11:21,332
+exactly like a branch; only the
+digest identifies the image.
+
+157
+00:11:21,672 --> 00:11:26,684
+Building a release image on a laptop. Root
+cause: the working tree may differ from
+
+158
+00:11:26,724 --> 00:11:30,195
+the commit it claims to be; a
+runner's checkout is clean.
+
+159
+00:11:30,535 --> 00:11:34,289
+A release workflow that waits for
+an event its own token caused.
+
+160
+00:11:34,329 --> 00:11:39,151
+Root cause: events caused by the GITHUB_TOKEN
+do not start new workflow runs, with
+
+161
+00:11:39,191 --> 00:11:40,218
+narrow exceptions.
+
+162
+00:11:40,558 --> 00:11:44,704
+Deriving the version from a tag in
+a job with the default checkout.
+
+163
+00:11:44,744 --> 00:11:49,202
+Root cause: one commit and no tags,
+so git describe has nothing to find.
+
+164
+00:11:49,542 --> 00:11:52,625
+Omitting context: . after
+steps that changed files.
+
+165
+00:11:52,665 --> 00:11:57,463
+Root cause: by default the build action
+builds from the Git context and ignores
+
+166
+00:11:57,503 --> 00:11:58,626
+local file changes.
+
+167
+00:12:00,466 --> 00:12:04,990
+Now, out of the lab. A team that serves
+a ranking model has two workflows.
+
+168
+00:12:05,030 --> 00:12:10,171
+The first runs on pushes to main: it tests,
+computes the next version, and creates a
+
+169
+00:12:10,211 --> 00:12:15,167
+release with the job token. The second has
+the trigger on: release and builds and
+
+170
+00:12:15,207 --> 00:12:18,312
+publishes the image. The
+first workflow goes green.
+
+171
+00:12:18,352 --> 00:12:23,493
+A release appears. The second workflow never
+starts, and for a day people look for a
+
+172
+00:12:23,533 --> 00:12:25,219
+typing error in its trigger.
+
+173
+00:12:25,559 --> 00:12:30,244
+There is none. The release was created by
+the GITHUB_TOKEN, and events caused by
+
+174
+00:12:30,284 --> 00:12:32,666
+that token don't start new workflow runs.
+
+175
+00:12:33,006 --> 00:12:38,008
+The team chooses the first of the textbook's
+two repairs: one workflow, with the
+
+176
+00:12:38,048 --> 00:12:43,239
+image job chained after the release job by
+needs. In the same change, the image job
+
+177
+00:12:43,279 --> 00:12:48,533
+stops deploying latest. It writes the digest
+and the commit ID into its job summary,
+
+178
+00:12:48,573 --> 00:12:53,639
+and the deploy job refers to the image by
+digest. The on-call engineer's question
+
+179
+00:12:53,679 --> 00:12:55,277
+now has a one-line answer.
+
+180
+00:12:57,117 --> 00:13:03,708
+Your turn. Do Lab 27.1, "A container image
+that identifies its commit (workflow 6)",
+
+181
+00:13:03,748 --> 00:13:10,260
+in lab-manual/m27-build-package-deliver.md.
+Part A runs in labs/shell, and your IDs
+
+182
+00:13:10,300 --> 00:13:13,970
+differ there. Part B runs
+in your normal shell.
+
+183
+00:13:14,310 --> 00:13:19,130
+In Part A, predict the output of git describe
+before each run: on the clean commit,
+
+184
+00:13:19,170 --> 00:13:23,931
+on the modified tree, and after tagging.
+In Part B, predict the image tags for the
+
+185
+00:13:23,971 --> 00:13:26,273
+tag push before you look at the summary.
+
+186
+00:13:26,613 --> 00:13:33,012
+The challenge is Exercise 27.6, "The
+release that triggers nothing", in
+
+187
+00:13:33,052 --> 00:13:36,458
+exercises/m26-m31-actions-security.md.
+
+188
+00:13:40,298 --> 00:13:45,155
+Answer out loud. This is a design question
+with three requirements, and a strong
+
+189
+00:13:45,195 --> 00:13:50,114
+answer takes them one at a time and names
+the mechanism from Module 27 that meets
+
+190
+00:13:50,154 --> 00:13:53,725
+each. How bytes travel between
+jobs and what verifies them.
+
+191
+00:13:53,765 --> 00:13:58,255
+Which job names the environment and
+why the others can't read its secrets.
+
+192
+00:13:58,595 --> 00:14:03,099
+And which concurrency setting serializes
+production, with the setting it must not
+
+193
+00:14:03,139 --> 00:14:07,418
+have. Then it says what gates the
+production job and what that gate rests on.
+
+194
+00:14:07,458 --> 00:14:12,018
+The follow-up is the approver asking "what
+exactly am I approving?": answer with a
+
+195
+00:14:12,058 --> 00:14:14,991
+commit range, and say what
+an approval doesn't cover.
+
+196
+00:14:16,831 --> 00:14:17,758
+Let's land this.
+
+197
+00:14:18,098 --> 00:14:19,758
+You should now be able to say:
+
+198
+00:14:20,098 --> 00:14:25,394
+An image is identified by its digest; a
+tag is a movable name, like a branch.
+
+199
+00:14:25,734 --> 00:14:29,528
+Deploy by digest and record the
+digest and the commit ID together.
+
+200
+00:14:29,868 --> 00:14:35,953
+git describe --tags --match names a commit
+relative to the release tags, and --dirty
+
+201
+00:14:35,993 --> 00:14:38,724
+says when the tree is not that commit.
+
+202
+00:14:39,064 --> 00:14:43,682
+A tag-driven release job needs the tags and
+the history, which the default checkout
+
+203
+00:14:43,722 --> 00:14:44,524
+does not fetch.
+
+204
+00:14:44,864 --> 00:14:50,080
+Events caused by the job token start no new
+workflow runs: chain jobs with needs, or
+
+205
+00:14:50,120 --> 00:14:51,519
+use a GitHub App token.
+
+206
+00:14:53,359 --> 00:15:00,827
+Read section 20B.7 of Chapter 20B. Do Lab
+27.2, "One build, carried between jobs
+
+207
+00:15:00,867 --> 00:15:06,270
+(workflow 7)", in
+lab-manual/m27-build-package-deliver.md.
+
+208
+00:15:06,610 --> 00:15:11,698
+You can now make an image carry its own
+answer: a digest and a commit ID, recorded
+
+209
+00:15:11,738 --> 00:15:16,638
+together. Try git describe with --dirty
+in the lab shell before the next video.
+
+210
+00:15:16,678 --> 00:15:21,703
+Next time: runners, limits and billing,
+and the investigation order for a failing
+
+211
+00:15:21,743 --> 00:15:25,581
+workflow. Until then, look at
+the state first and type second.
+
+212
+00:15:25,621 --> 00:15:27,081
+See you in the next one.

@@ -358,7 +358,7 @@ A second commit on the same branch changes `pom.xml`. The three-dot diff now lis
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
-Lab 26.2 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**Lab 26.2 on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 Read the trigger of `workflows/02-lint.yml` first: pushes to `main`, and pull requests. The lab has you add the workflow on a branch named `ci/lint`, push the branch and open a pull request. `git push` is 🟡 CAUTION and `gh pr create` is 🟡 CAUTION: it creates a GitHub object that notifies people.
 

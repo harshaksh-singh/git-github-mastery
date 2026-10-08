@@ -1,0 +1,1121 @@
+1
+00:00:04,500 --> 00:00:07,471
+Your repository hasn't
+received a commit in a week.
+
+2
+00:00:07,511 --> 00:00:12,431
+Your workflow file hasn't changed in two
+years. This morning your job runs code that
+
+3
+00:00:12,471 --> 00:00:16,978
+didn't exist yesterday, with your job's
+token and every secret the job holds.
+
+4
+00:00:17,318 --> 00:00:21,097
+Nobody touched your repository.
+Somebody moved a tag in another one.
+
+5
+00:00:21,137 --> 00:00:25,198
+That somebody was either a maintainer
+of the action or a person holding a
+
+6
+00:00:25,238 --> 00:00:29,243
+maintainer's token, and from your side
+of the line you can't tell which.
+
+7
+00:00:29,583 --> 00:00:34,157
+You'll reproduce the move locally in three
+commands, with a bare repository playing
+
+8
+00:00:34,197 --> 00:00:38,493
+the action's repository. A bare repository
+is one with no working tree, like a
+
+9
+00:00:38,533 --> 00:00:42,884
+server's. Then you'll see the one form
+of that line that wouldn't have changed.
+
+10
+00:00:42,924 --> 00:00:46,220
+Keep that promise in mind. You'll
+collect on it in the demo.
+
+11
+00:00:48,060 --> 00:00:51,810
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:51,850 --> 00:00:55,041
+This is part five of the
+model: third-party actions.
+
+13
+00:00:55,081 --> 00:00:59,887
+An action is a packaged, reusable step
+that a workflow calls with a uses line.
+
+14
+00:00:59,927 --> 00:01:03,490
+It downloads and runs someone
+else's code inside your job.
+
+15
+00:01:03,830 --> 00:01:07,477
+Of the five parts, this is the one
+that rests most directly on Git.
+
+16
+00:01:07,517 --> 00:01:12,098
+The chapter said at the start that Git
+contributes exactly two facts to the security
+
+17
+00:01:12,138 --> 00:01:16,280
+model. A tag is a ref, a name that holds
+a commit's ID, and it can be moved.
+
+18
+00:01:16,320 --> 00:01:20,902
+A commit ID names content that can't change.
+Both are things you've known since Part
+
+19
+00:01:20,942 --> 00:01:25,413
+1 and Part 4 of this course. Here they
+decide what code runs next to your secrets.
+
+20
+00:01:25,753 --> 00:01:30,793
+Three topics. What a uses line trusts. How
+to write a pin, how to keep it current,
+
+21
+00:01:30,833 --> 00:01:35,996
+and what a pin doesn't protect against. And
+organization policies: the settings that
+
+22
+00:01:36,036 --> 00:01:40,641
+move some of these rules from "every
+author must remember" to "the platform
+
+23
+00:01:40,681 --> 00:01:41,199
+refuses".
+
+24
+00:01:41,539 --> 00:01:46,266
+The demonstration is Git, not GitHub Actions,
+which is why it can be shown locally.
+
+25
+00:01:48,106 --> 00:01:49,684
+Here's what you'll walk away with.
+
+26
+00:01:50,024 --> 00:01:51,436
+After this video you can:
+
+27
+00:01:51,776 --> 00:01:55,238
+explain what uses: owner/action@v4 trusts;
+
+28
+00:01:55,578 --> 00:01:59,395
+show locally that a tag can be moved to
+another commit without any change in the
+
+29
+00:01:59,435 --> 00:02:00,504
+workflow that names it;
+
+30
+00:02:00,844 --> 00:02:03,868
+pin an action to a full commit
+ID and keep the pin current;
+
+31
+00:02:04,208 --> 00:02:06,896
+name three things pinning
+does not protect against;
+
+32
+00:02:07,236 --> 00:02:10,893
+say what organization policies
+for allowed actions can enforce.
+
+33
+00:02:12,733 --> 00:02:17,399
+In one sentence. uses with an owner, a
+repository and a ref downloads and runs
+
+34
+00:02:17,439 --> 00:02:22,467
+someone else's code inside your job, and
+only a full commit ID guarantees that it is
+
+35
+00:02:22,507 --> 00:02:23,795
+the code you reviewed.
+
+36
+00:02:24,135 --> 00:02:28,847
+Precisely. From GitHub's secure use
+reference. A compromised action "would have
+
+37
+00:02:28,887 --> 00:02:33,599
+access to all secrets configured on your
+repository, and may be able to use the
+
+38
+00:02:33,639 --> 00:02:38,532
+GITHUB_TOKEN to write to the repository".
+And: "Pinning an action to a full-length
+
+39
+00:02:38,572 --> 00:02:43,284
+commit SHA is currently the only way to
+use an action as an immutable release."
+
+40
+00:02:43,624 --> 00:02:47,940
+A commit SHA is the commit ID, and
+immutable means it can never change.
+
+41
+00:02:47,980 --> 00:02:52,971
+Tags are a matter of trust: "Pin actions
+to a tag only if you trust the creator… a
+
+42
+00:02:53,011 --> 00:02:57,573
+tag can be moved or deleted if a bad
+actor gains access to the repository."
+
+43
+00:02:57,613 --> 00:02:59,966
+The same applies to reusable workflows.
+
+44
+00:03:00,306 --> 00:03:04,655
+Quick quiz. Your workflow says
+@v4, and the file never changes.
+
+45
+00:03:04,695 --> 00:03:09,323
+When is that tag looked up? A, once,
+on the day you wrote the line.
+
+46
+00:03:09,363 --> 00:03:11,762
+B, again on every run. Your answer?
+
+47
+00:03:16,602 --> 00:03:17,935
+B, on every run.
+
+48
+00:03:18,275 --> 00:03:22,856
+So what does @v4 trust? Three things
+at once. That the author is honest.
+
+49
+00:03:22,896 --> 00:03:26,258
+That nobody else can push
+to the author's repository.
+
+50
+00:03:26,298 --> 00:03:31,071
+And that both stay true on every future
+day your workflow runs, because the
+
+51
+00:03:31,111 --> 00:03:33,702
+reference is resolved again on every run.
+
+52
+00:03:34,042 --> 00:03:38,423
+Writing a pin. Take the commit ID
+from the action's own repository.
+
+53
+00:03:38,463 --> 00:03:43,767
+The reference adds a check: verify that
+it's from the action's repository and not
+
+54
+00:03:43,807 --> 00:03:49,112
+from a fork of it. The course's pin file
+shows the command, git ls-remote --tags,
+
+55
+00:03:49,152 --> 00:03:50,497
+which needs no login.
+
+56
+00:03:50,837 --> 00:03:54,980
+Maintaining a pin. Pins don't update
+themselves, and that's the point.
+
+57
+00:03:55,020 --> 00:03:59,700
+So you let Dependabot, GitHub's dependency
+update feature, propose the updates.
+
+58
+00:04:04,540 --> 00:04:09,694
+That's the documented configuration. And
+one behavior to know: since the fourteenth
+
+59
+00:04:09,734 --> 00:04:14,888
+of July 2026, version updates wait a default
+cooldown of three days after a release
+
+60
+00:04:14,928 --> 00:04:19,956
+before a pull request is opened. Security
+updates are immediate, and the cooldown
+
+61
+00:04:19,996 --> 00:04:25,212
+option configures it. The textbook's reading:
+a cooldown gives the ecosystem time to
+
+62
+00:04:25,252 --> 00:04:28,153
+notice a malicious release
+before you adopt it.
+
+63
+00:04:28,493 --> 00:04:32,845
+The limits of pinning. The textbook says:
+state these whenever you recommend it.
+
+64
+00:04:33,185 --> 00:04:38,237
+First. A pin protects against a moved tag,
+but, quoting the Phase 0 report, "not
+
+65
+00:04:38,277 --> 00:04:43,394
+against a malicious commit pinned deliberately
+or against unpinned actions nested
+
+66
+00:04:43,434 --> 00:04:48,422
+inside composite actions". A composite
+action is an action that bundles several
+
+67
+00:04:48,462 --> 00:04:51,032
+steps. So: read the diff of a pin update.
+
+68
+00:04:51,372 --> 00:04:56,276
+Second. Quoting GitHub: "Dependabot only
+creates alerts for vulnerable actions that
+
+69
+00:04:56,316 --> 00:05:00,803
+use semantic versioning and will not
+create alerts for actions pinned to SHA
+
+70
+00:05:00,843 --> 00:05:04,257
+values." Pinning trades automatic
+alerts for immutability.
+
+71
+00:05:04,297 --> 00:05:08,069
+Version updates, and advisories
+you read yourself, fill the gap.
+
+72
+00:05:08,409 --> 00:05:13,204
+Third. A remote script fetched and
+executed in a run step, the pattern of
+
+73
+00:05:13,244 --> 00:05:18,568
+downloading with curl and piping into a
+shell, is the same risk class with no pin
+
+74
+00:05:18,608 --> 00:05:21,746
+available. That's the
+Codecov case of video 162.
+
+75
+00:05:22,086 --> 00:05:28,048
+Fourth, a nuance. Immutable releases,
+generally available since the twenty-eighth of
+
+76
+00:05:28,088 --> 00:05:33,977
+October 2025, make a published release's
+tag unchangeable once a maintainer enables
+
+77
+00:05:34,017 --> 00:05:38,693
+the feature. astral-sh/setup-uv
+has used them since version 8.0.0.
+
+78
+00:05:38,733 --> 00:05:43,765
+But you can't see from a uses line
+whether a tag is protected this way.
+
+79
+00:05:43,805 --> 00:05:45,766
+So the pin remains the rule.
+
+80
+00:05:46,106 --> 00:05:51,317
+Organization policies. In one sentence:
+policies move three of this chapter's rules
+
+81
+00:05:51,357 --> 00:05:55,113
+from "every author must remember"
+to "the platform refuses".
+
+82
+00:05:55,453 --> 00:05:59,499
+Allowed actions and reusable
+workflows. The choices: allow all.
+
+83
+00:05:59,539 --> 00:06:02,937
+Only those in the owner's
+organization or enterprise.
+
+84
+00:06:02,977 --> 00:06:08,191
+Or the owner plus a selection, with switches
+for actions created by GitHub and by
+
+85
+00:06:08,231 --> 00:06:13,574
+verified Marketplace creators, and a pattern
+list. Available on all plans since the
+
+86
+00:06:13,614 --> 00:06:15,066
+fifth of February 2026.
+
+87
+00:06:15,406 --> 00:06:21,036
+Blocking. An entry prefixed with an
+exclamation mark blocks a specific action or
+
+88
+00:06:21,076 --> 00:06:24,155
+version. Since the
+fifteenth of August 2025.
+
+89
+00:06:24,495 --> 00:06:28,059
+"Require actions to be pinned
+to a full-length commit SHA".
+
+90
+00:06:28,099 --> 00:06:33,008
+With it, any workflow that attempts to use
+an action that isn't pinned will fail,
+
+91
+00:06:33,048 --> 00:06:37,834
+including GitHub's own actions. One
+exception is stated: reusable workflows can
+
+92
+00:06:37,874 --> 00:06:39,484
+still be referenced by tag.
+
+93
+00:06:39,824 --> 00:06:44,161
+The workflow permissions default:
+the read-only token of video 156.
+
+94
+00:06:44,201 --> 00:06:49,061
+A restrictive organization default
+disables the permissive option below it.
+
+95
+00:06:49,401 --> 00:06:54,142
+Fork pull request approval: who needs
+approval before a pull_request run starts.
+
+96
+00:06:54,482 --> 00:06:59,320
+Workflow execution protections: actor
+rules, for who may trigger workflows, and
+
+97
+00:06:59,360 --> 00:07:04,260
+event rules, for which events may run.
+They're built on rulesets, GitHub's named
+
+98
+00:07:04,300 --> 00:07:08,274
+lists of rules, at enterprise,
+organization and repository level.
+
+99
+00:07:08,614 --> 00:07:13,412
+And "Allow GitHub Actions to create and
+approve pull requests": off by default for
+
+100
+00:07:13,452 --> 00:07:18,131
+new personal repositories. Keep it off,
+so that a workflow can't approve its own
+
+101
+00:07:18,171 --> 00:07:18,544
+change.
+
+102
+00:07:18,884 --> 00:07:24,051
+The change dated 2 November 2026. With
+execution protections, GitHub introduced a
+
+103
+00:07:24,091 --> 00:07:29,257
+default event rule. For public repositories
+that don't already have an applicable
+
+104
+00:07:29,297 --> 00:07:32,985
+event policy, a default rule
+disables pull_request_target.
+
+105
+00:07:33,025 --> 00:07:37,998
+It initially runs in evaluate mode, and
+GitHub announced that on the second of
+
+106
+00:07:38,038 --> 00:07:42,433
+November 2026 it is enforced
+automatically for affected repositories.
+
+107
+00:07:42,773 --> 00:07:47,624
+That date lies after the course baseline,
+so check the changelog on the day you
+
+108
+00:07:47,664 --> 00:07:51,462
+watch this. Private and internal
+repositories aren't affected.
+
+109
+00:07:51,502 --> 00:07:56,477
+A maintainer can explicitly allow the
+event, optionally for named workflow files.
+
+110
+00:07:56,517 --> 00:08:01,430
+The textbook's advice for a public repository
+with a labeler or a welcome bot on
+
+111
+00:08:01,470 --> 00:08:06,445
+that trigger: decide before that date.
+Migrate it, or allow it deliberately after
+
+112
+00:08:06,485 --> 00:08:08,612
+reviewing it against section 21A.5.
+
+113
+00:08:08,952 --> 00:08:14,888
+Policies do not replace review of the
+files. The control for that is a code-owner
+
+114
+00:08:14,928 --> 00:08:20,863
+rule on .github/workflows/, enforced by a
+ruleset, as you set it up in video 136.
+
+115
+00:08:22,703 --> 00:08:27,286
+Analogy, from the textbook. A tag is a
+street address, and a commit ID is a
+
+116
+00:08:27,326 --> 00:08:32,094
+fingerprint. Whoever owns the plot can
+put up a different building at the same
+
+117
+00:08:32,134 --> 00:08:33,204
+address overnight.
+
+118
+00:08:33,544 --> 00:08:36,614
+The textbook says the analogy
+breaks in your favor.
+
+119
+00:08:36,654 --> 00:08:39,969
+A fingerprint can in principle
+be shared by two people.
+
+120
+00:08:40,009 --> 00:08:44,848
+Forging a commit ID means, in GitHub's
+words, producing "a SHA-1 collision for a
+
+121
+00:08:44,888 --> 00:08:46,434
+valid Git object payload".
+
+122
+00:08:46,774 --> 00:08:51,448
+Keep both halves. An address tells you
+where to go, and somebody else decides what
+
+123
+00:08:51,488 --> 00:08:56,221
+stands there. A fingerprint tells you what
+you'll find, and nobody can change that.
+
+124
+00:08:56,561 --> 00:09:01,148
+Then add the limit, so that you don't
+oversell it. The fingerprint identifies the
+
+125
+00:09:01,188 --> 00:09:04,690
+building. It says nothing about
+whether the building is sound.
+
+126
+00:09:04,730 --> 00:09:09,318
+A pinned commit can be malicious if it was
+pinned deliberately, and it can itself
+
+127
+00:09:09,358 --> 00:09:13,602
+call other actions by tag. Pinning
+answers one question: is this the code I
+
+128
+00:09:13,642 --> 00:09:16,916
+reviewed? It doesn't answer:
+was the code I reviewed good?
+
+129
+00:09:18,756 --> 00:09:23,833
+Try it now, thirty seconds, on paper.
+Write one workflow line that ends in @v1.
+
+130
+00:09:23,873 --> 00:09:29,144
+Draw a tag and two commits. Point the tag
+at the first commit, then move its arrow
+
+131
+00:09:29,184 --> 00:09:32,771
+to the second. What did you
+change in the workflow line?
+
+132
+00:09:32,811 --> 00:09:33,807
+Say it out loud.
+
+133
+00:09:46,547 --> 00:09:49,838
+Nothing. The top line didn't
+change, and what it runs did.
+
+134
+00:09:49,878 --> 00:09:54,663
+The pinned line at the bottom can't change
+what it runs without a commit to your own
+
+135
+00:09:54,703 --> 00:09:55,294
+repository.
+
+136
+00:09:57,134 --> 00:10:00,107
+Step 1: what a consumer
+gets for @v1 today.
+
+137
+00:10:00,447 --> 00:10:05,729
+git ls-remote is 🟢 SAFE: it reads. v1 is
+an annotated tag: a tag ref that points at
+
+138
+00:10:05,769 --> 00:10:10,795
+a tag object, which in turn names the
+commit. How many lines will there be, and
+
+139
+00:10:10,835 --> 00:10:13,424
+which one is the commit? Say it out loud.
+
+140
+00:10:18,264 --> 00:10:24,859
+Two lines. The first is the tag object,
+71c87ce. The second, ending in ^{}, is the
+
+141
+00:10:24,899 --> 00:10:31,575
+commit it points at: 80827f4. That commit
+is what a workflow saying @v1 runs today.
+
+142
+00:10:31,915 --> 00:10:35,099
+Step 2: someone with push
+access moves the tag.
+
+143
+00:10:35,439 --> 00:10:40,991
+git tag -f is 🟡 CAUTION: it moves a
+local tag, and a tag has no reflog.
+
+144
+00:10:41,331 --> 00:10:46,756
+git push --force of a tag is 🔴 DANGEROUS,
+so the five answers before it runs.
+
+145
+00:10:46,796 --> 00:10:52,434
+What it changes: the remote tag ref. What
+it can destroy: it can silently change
+
+146
+00:10:52,474 --> 00:10:58,395
+what every consumer of the tag runs. How to
+preview: git ls-remote --tags origin v1.
+
+147
+00:10:58,435 --> 00:11:03,576
+How to recover: by pushing the old tag
+object back, if you still have it.
+
+148
+00:11:03,616 --> 00:11:08,970
+When it is appropriate: only for a
+deliberate "moving major tag" policy that
+
+149
+00:11:09,010 --> 00:11:10,461
+consumers know about.
+
+150
+00:11:10,801 --> 00:11:15,963
+Here it is run in the sandbox, against a
+local bare repository, to show you what the
+
+151
+00:11:16,003 --> 00:11:17,078
+other side can do.
+
+152
+00:11:17,418 --> 00:11:23,321
+"Updated tag v1, was 71c87ce". And the
+push reports a forced update, with a plus
+
+153
+00:11:23,361 --> 00:11:29,265
+sign: from 71c87ce to 0ca190d. In the
+scenario, the person at this keyboard is a
+
+154
+00:11:29,305 --> 00:11:32,979
+maintainer, or whoever
+holds a maintainer's token.
+
+155
+00:11:33,319 --> 00:11:35,471
+Step 3: the same question again.
+
+156
+00:11:35,811 --> 00:11:39,332
+The name is the same. What do
+you expect on the two lines?
+
+157
+00:11:39,372 --> 00:11:40,621
+Make your prediction.
+
+158
+00:11:45,461 --> 00:11:49,855
+A new tag object, 0ca190d,
+and a new commit, 5de1e2d.
+
+159
+00:11:49,895 --> 00:11:54,707
+Same name, different commit.
+No consumer workflow changed.
+
+160
+00:11:54,747 --> 00:11:58,221
+A workflow that says @v1 now runs 5de1e2d.
+
+161
+00:11:58,561 --> 00:12:03,526
+Then the second half of the snippet. git
+cat-file -p with the old commit's full ID
+
+162
+00:12:03,566 --> 00:12:05,174
+and the path of action.yml.
+
+163
+00:12:05,514 --> 00:12:09,911
+The commit that was reviewed still exists,
+and its ID still names exactly that
+
+164
+00:12:09,951 --> 00:12:13,608
+content. A workflow pinned to that
+ID runs what it ran yesterday.
+
+165
+00:12:13,648 --> 00:12:18,329
+There's the promise from the opening: the
+one form of the line that doesn't change.
+
+166
+00:12:24,669 --> 00:12:29,207
+Now how the course records pins. In
+workflow 12, find the checkout step.
+
+167
+00:12:29,247 --> 00:12:34,039
+The comment above it says: full commit
+SHA, version as a comment, the format
+
+168
+00:12:34,079 --> 00:12:39,253
+Dependabot maintains. The line itself is
+the action, an at sign, forty characters,
+
+169
+00:12:39,293 --> 00:12:44,149
+and the version after a hash sign. Every
+uses line in the file has that form:
+
+170
+00:12:44,189 --> 00:12:48,854
+checkout, the uv setup action, the
+dependency review action, and the cloud
+
+171
+00:12:48,894 --> 00:12:50,062
+credentials action.
+
+172
+00:12:50,402 --> 00:12:54,923
+In the pin file, each action has one row:
+the name, the version, the commit ID.
+
+173
+00:12:54,963 --> 00:12:59,600
+The header says when the pins were read
+and how. Read versions from that file, on
+
+174
+00:12:59,640 --> 00:13:04,277
+the day, and re-verify a pin with the
+command the file gives before you trust it.
+
+175
+00:13:06,117 --> 00:13:07,765
+Five mistakes to watch for.
+
+176
+00:13:08,105 --> 00:13:13,432
+Treating @v4 as a version. Root cause: it
+is a tag, resolved again on every run, and
+
+177
+00:13:13,472 --> 00:13:18,352
+a tag can be moved or deleted by whoever
+can push to the action's repository.
+
+178
+00:13:18,692 --> 00:13:24,041
+Taking the commit ID from a fork of the
+action. Root cause: the pin is only as good
+
+179
+00:13:24,081 --> 00:13:29,234
+as its source; the documentation says to
+verify that the ID is from the action's
+
+180
+00:13:29,274 --> 00:13:31,636
+repository and not a repository fork.
+
+181
+00:13:31,976 --> 00:13:36,566
+Pinning and then never updating. Root
+cause: pins do not update themselves, and
+
+182
+00:13:36,606 --> 00:13:41,020
+Dependabot creates no vulnerability
+alerts for actions pinned to commit IDs.
+
+183
+00:13:41,360 --> 00:13:45,925
+Approving a pin update without reading its
+diff. Root cause: a pin does not protect
+
+184
+00:13:45,965 --> 00:13:48,533
+against a malicious commit
+pinned deliberately.
+
+185
+00:13:48,873 --> 00:13:53,809
+Believing a pinned workflow has no unpinned
+code. Root cause: actions nested inside
+
+186
+00:13:53,849 --> 00:13:58,185
+composite actions, and scripts fetched
+in run steps, are outside the pin.
+
+187
+00:14:00,025 --> 00:14:05,020
+Now, out of the lab. An ML platform
+organization with sixty repositories decides to
+
+188
+00:14:05,060 --> 00:14:09,995
+pin. Asking sixty teams to remember is the
+first idea, and the textbook's sentence
+
+189
+00:14:10,035 --> 00:14:14,788
+about policies describes why it won't
+hold: you want the rule moved from "every
+
+190
+00:14:14,828 --> 00:14:17,701
+author must remember" to
+"the platform refuses".
+
+191
+00:14:18,041 --> 00:14:23,136
+So the organization does three things. It
+adds the github-actions ecosystem to the
+
+192
+00:14:23,176 --> 00:14:28,334
+Dependabot configuration of every repository,
+so that pins have a source of updates
+
+193
+00:14:28,374 --> 00:14:33,594
+before the rule bites. It converts the
+existing references, reading each ID from the
+
+194
+00:14:33,634 --> 00:14:38,792
+action's own repository. Then it switches
+on the policy that requires actions to be
+
+195
+00:14:38,832 --> 00:14:44,052
+pinned to a full-length commit SHA. From
+that day a workflow with an unpinned action
+
+196
+00:14:44,092 --> 00:14:44,428
+fails.
+
+197
+00:14:44,768 --> 00:14:49,063
+Two details from the table decide
+whether the rollout goes smoothly.
+
+198
+00:14:49,103 --> 00:14:54,417
+The policy applies to GitHub's own actions
+as well, so actions/checkout by tag fails
+
+199
+00:14:54,457 --> 00:14:59,580
+too. And reusable workflows can still be
+referenced by tag, so the central deploy
+
+200
+00:14:59,620 --> 00:15:04,615
+workflow that forty repositories call
+needs its own discipline: a pinned ref by
+
+201
+00:15:04,655 --> 00:15:07,739
+convention, and code-owner
+review on the callers.
+
+202
+00:15:09,579 --> 00:15:15,485
+Your turn. Do Exercise 29.5,
+"What can this token do?", in
+
+203
+00:15:15,525 --> 00:15:19,381
+exercises/m26-m31-actions-security.md.
+
+204
+00:15:19,721 --> 00:15:24,618
+For each workflow in the exercise, before
+you compute the token's scopes, list every
+
+205
+00:15:24,658 --> 00:15:29,438
+uses line and mark it as pinned or floating.
+Predict for each floating one what it
+
+206
+00:15:29,478 --> 00:15:32,376
+could do with the token
+you are about to work out.
+
+207
+00:15:32,716 --> 00:15:38,012
+The challenge is Exercise 29.8, "A
+workflow nobody wrote", in the same file.
+
+208
+00:15:39,852 --> 00:15:43,068
+Read the question on screen.
+Say your answer out loud.
+
+209
+00:15:47,908 --> 00:15:52,551
+A strong answer first says, in one sentence,
+what pinning does protect against, in
+
+210
+00:15:52,591 --> 00:15:57,063
+Git terms. Then it gives three limits
+that are different in kind, each with its
+
+211
+00:15:57,103 --> 00:16:01,802
+reason: one about the pinned code itself,
+one about code the pin doesn't reach, and
+
+212
+00:16:01,842 --> 00:16:04,886
+one about what you give up
+in return for immutability.
+
+213
+00:16:04,926 --> 00:16:09,398
+The follow-up asks how you keep pins
+current without re-opening the window that
+
+214
+00:16:09,438 --> 00:16:14,081
+pinning closed. Think about who proposes
+the update, how long it waits, and what a
+
+215
+00:16:14,121 --> 00:16:15,737
+human does before merging it.
+
+216
+00:16:17,577 --> 00:16:18,504
+Let's land this.
+
+217
+00:16:18,844 --> 00:16:20,504
+You should now be able to say:
+
+218
+00:16:20,844 --> 00:16:25,969
+A uses line runs someone else's code with
+your job's token and secrets, and a tag in
+
+219
+00:16:26,009 --> 00:16:28,060
+it is resolved again on every run.
+
+220
+00:16:28,400 --> 00:16:33,503
+A tag is a movable ref; a full commit ID
+names content that cannot change, and it is
+
+221
+00:16:33,543 --> 00:16:36,320
+the only immutable way
+to reference an action.
+
+222
+00:16:36,660 --> 00:16:41,211
+A pin is the commit ID with the version
+as a comment, taken from the action's own
+
+223
+00:16:41,251 --> 00:16:45,518
+repository and updated by Dependabot,
+with a default cooldown of three days.
+
+224
+00:16:45,858 --> 00:16:50,386
+Pinning does not vouch for the pinned code,
+does not cover nested unpinned actions
+
+225
+00:16:50,426 --> 00:16:53,395
+or downloaded scripts, and
+gives up Dependabot alerts.
+
+226
+00:16:53,735 --> 00:16:58,662
+Organization policies can restrict which
+actions run and require pinning; reviewing
+
+227
+00:16:58,702 --> 00:17:02,073
+the workflow files still needs
+code owners and a ruleset.
+
+228
+00:17:03,913 --> 00:17:09,072
+Read sections 21A.7 and
+21A.8 of Chapter 21A.
+
+229
+00:17:09,412 --> 00:17:14,578
+Today you moved a tag with three commands
+and watched a commit ID stay exactly where
+
+230
+00:17:14,618 --> 00:17:19,723
+it was. Replay that demo once in the lab.
+Next time: secrets, and why masking isn't
+
+231
+00:17:19,763 --> 00:17:23,690
+a boundary. Until then, look at
+the state first and type second.
+
+232
+00:17:23,730 --> 00:17:25,178
+See you in the next one.

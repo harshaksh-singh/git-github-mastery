@@ -249,7 +249,7 @@ From ../../server/ticket-router
 ```
 <!-- /snippet -->
 
-Point at the last line of the fetch output. `origin/main`, your clone's record of the server's `main`, moved from `9a383e5` to `9aa221a`. Every answer from here on is about the server's `main`, not about your local `main`.
+Look at the last line of the fetch output. `origin/main`, your clone's record of the server's `main`, moved from `9a383e5` to `9aa221a`. Every answer from here on is about the server's `main`, not about your local `main`.
 
 **Step 2.** Run the script for each branch.
 
@@ -321,7 +321,9 @@ $ git log --oneline --graph origin/main..origin/docs/queues
 
 The first command wrote a tree, `338b4c9`, and named the conflicted file: `config/routing.yaml`. A tree is Git's object for one directory listing. Nothing in your working tree or index changed. `merge-tree` works on objects only.
 
-**[ANIMATION]** graph: id=dq ...3-9a383e5-9aa221a origin/main; ^9a383e5-4e570dc-9042b9e origin/docs/queues; 9aa221a-9042b9e; HEAD=none; note:4e570dc:List_the_queues_in_the_README; note:9042b9e:Merge_main_into_docs/queues; say:git_log_--oneline_--graph_origin/main..origin/docs/queues => + mark:merge_commit:9042b9e; name:verdict; say:Up_to_date_with_main:_yes._Merge_commits_among_them:_1 dx=250
+**[ANIMATION]** graph: id=dq ...3-9a383e5-9aa221a origin/main; ^9a383e5-4e570dc-9042b9e origin/docs/queues; 9aa221a-9042b9e; HEAD=none; note:4e570dc:List_the_queues_in_the_README; note:9042b9e:Merge_main_into_docs/queues; say:git_log_--oneline_--graph_origin/main..origin/docs/queues => + mark:merge_commit:9042b9e; name:verdict; say:Up_to_date_with_main:_yes._Merge_commits_among_them:_1 dx=250 at_state_1=18
+
+**[ANIMATION]** step: state-1
 
 The second command shows why `docs/queues` has a merge commit: `9042b9e`, "Merge main into docs/queues". Ravi brought the branch up to date by merging `main` into it.
 

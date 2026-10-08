@@ -155,11 +155,17 @@ Try it now, thirty seconds, on paper. Take the first question mark, `router/prio
 
 **[ANIMATION]** step: m.2
 
-Lines 2, 5 and 6 match, and line 6 is the last. So the owners are the routing team and the on-call team. Both are on line 6. The drawing only wraps it. The other four question marks are yours, in the pattern exercises of section 19.16.
+Lines 2, 5 and 6 match, and line 6 is the last. So the owners are the routing team and the on-call team. Both are on line 6. The drawing only wraps it.
 
 **[DIAGRAM]** Three arrows are drawn, because the textbook resolves those three paths in its text. Four of the five question marks are still yours: they are among the pattern exercises of section 19.16. For each, mark the matching lines and keep the last. Two of them depend on a rule you have heard in the last five minutes and will see in the terminal in the next five.
 
+The other four question marks are yours, in the pattern exercises of section 19.16.
+
+For each, mark the matching lines and keep the last.
+
 **[ON SCREEN]** The root-cause box of section 19.5, one line at a time. Observed behavior: `git check-ignore` says `docs/*` matches `docs/build-app/troubleshooting.md`, and GitHub's CODEOWNERS documentation says it does not. Git state: none involved; this is pattern matching on path strings. Mechanism: gitignore patterns are applied to each directory on the way down; `docs/*` matches the directory `docs/build-app`, and everything below an excluded directory is excluded, while CODEOWNERS assigns owners to files, one path at a time. Root cause: two matchers with a shared pattern language and different jobs; one prunes directory walks, the other labels files. Why Git does this: skipping an ignored directory without reading it is what makes status fast. Correct fix: do not test CODEOWNERS with check-ignore; reason from the documented rules, then confirm on GitHub. Prevention: to own a whole subtree write the directory form, `/docs/`, not `docs/*`.
+
+Read the root-cause line: two matchers with a shared pattern language and different jobs. One prunes directory walks, the other labels files.
 
 ## LIVE TERMINAL DEMO
 
@@ -346,7 +352,7 @@ The search order and the size are plain Git questions about the base branch. `gi
 
 **[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
 
-On your practice repository, following Lab 23.2. The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. In this video only look: open the CODEOWNERS file in the browser after step 2 of the lab. The documentation says errors are highlighted on that page. Then browse to a file under `router/` and look for the indication of who owns it. The enforcement part of the lab belongs to the next video.
+**On your practice repository, following Lab 23.2.** The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. In this video only look: open the CODEOWNERS file in the browser after step 2 of the lab. The documentation says errors are highlighted on that page. Then browse to a file under `router/` and look for the indication of who owns it. The enforcement part of the lab belongs to the next video.
 
 ## COMMON MISTAKES
 

@@ -309,7 +309,7 @@ $ git merge-base main feature/bulk-reorder
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: id=sides ...older-197d992-57c8425-2230054 main; 57c8425-34f82ef feature/bulk-reorder; HEAD=feature/bulk-reorder; title:Two_sides_of_the_test_merge => + ^2230054-?test_merge; 34f82ef-?test_merge; HEAD=none; note:?test_merge:HEAD_(no_branch); pass:34f82ef; fail:?test_merge; name:merge; say:The_failure_exists_only_in_the_merge => + reflog:?test_merge; 34f82ef-9c7cc7e-2cb0b73 feature/bulk-reorder; 2230054-9c7cc7e; HEAD=feature/bulk-reorder; drop:34f82ef; pass:2cb0b73; name:fixed; say:The_base_is_merged_into_the_branch,_and_the_call_is_fixed dx=230
+**[ANIMATION]** graph: id=sides ...older-197d992-57c8425-2230054 main; ^57c8425-34f82ef feature/bulk-reorder; HEAD=feature/bulk-reorder; title:Two_sides_of_the_test_merge => + 2230054-?test_merge; 34f82ef-?test_merge; HEAD=none; note:?test_merge:HEAD_(no_branch); pass:34f82ef; fail:?test_merge; name:merge; say:The_failure_exists_only_in_the_merge => + reflog:?test_merge; 34f82ef-9c7cc7e-2cb0b73 feature/bulk-reorder; 2230054-9c7cc7e; HEAD=feature/bulk-reorder; drop:34f82ef; pass:2cb0b73; name:fixed; say:The_base_is_merged_into_the_branch,_and_the_call_is_fixed dx=230
 
 **[ANIMATION]** step: state-1
 
@@ -427,7 +427,7 @@ Count what you didn't do: you never read a log. Step 2 of the order answered the
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
-Lab 28.2 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**Lab 28.2 on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 Take a failing run from the lab and go down the list with the run page and the CLI side by side. For step 1 and 2, find on the run page the workflow name, the event, the branch and the commit ID, and compare the commit ID with `git rev-parse HEAD` in your clone. For step 3, read the `permissions` blocks of the workflow file at that commit. For step 4, expand the "Set up job" section and find the image. For step 5, look at whether the job names an environment. Only when you reach step 9, expand the failed step. Write down at which step you had the answer.
 

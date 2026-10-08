@@ -127,7 +127,7 @@ Carry one distinction through the demonstration: does a tool fail, or does it li
 
 ## DIAGRAM
 
-**[ANIMATION]** graph: id=mref 6fe5455-29b222b main; HEAD=none; note:29b222b:threshold_10; say:main_has_a_new_commit => + 6fe5455-80c9cfa feature/reorder-report special:refs/pull/7/head; note:80c9cfa:your_HEAD; name:branch; say:Your_branch_starts_at_the_older_commit => + 29b222b-d04ef31 special:refs/pull/7/merge; 80c9cfa-d04ef31; note:d04ef31:runner_HEAD_(detached); name:merge; say:The_test_merge_exists_only_on_the_server => + pass:80c9cfa; fail:d04ef31; name:results; say:They_tested_different_commits => + 80c9cfa-?your_merge; 29b222b-?your_merge; fail:?your_merge; name:same; say:Both_merges_have_the_tree_745aaaa:_same_tree,_same_test_result dx=300 at_state_1=10 at_branch=30 at_merge=72 at_same=0
+**[ANIMATION]** graph: id=mref 6fe5455-29b222b main; HEAD=none; note:29b222b:threshold_10; say:main_has_a_new_commit => + 6fe5455-80c9cfa feature/reorder-report special:refs/pull/7/head; name:branch; say:Your_branch_starts_at_the_older_commit => + 29b222b-d04ef31 special:refs/pull/7/merge; 80c9cfa-d04ef31; name:merge; say:The_test_merge_exists_only_on_the_server => + note:80c9cfa:your_HEAD; note:d04ef31:runner_HEAD_(detached); name:who; say:Your_laptop:_80c9cfa._The_runner:_d04ef31 => + pass:80c9cfa; fail:d04ef31; name:results; say:They_tested_different_commits => + 80c9cfa-?your_merge; 29b222b-?your_merge; fail:?your_merge; name:same; say:Both_merges_have_the_tree_745aaaa:_same_tree,_same_test_result dx=300 at_state_1=10 at_branch=30 at_merge=72 at_same=0
 
 **[DIAGRAM]** The picture of section 20A.8, with the IDs of the transcript. Draw `main` first, then your branch from the older commit, then ask where CI's commit is, and only then draw the merge commit below `main`.
 
@@ -154,13 +154,17 @@ Try it now, on paper. Thirty seconds. Copy this drawing, then put one finger on 
 
 **[DIAGRAM]** Three commits matter. `80c9cfa` is yours. `29b222b` is the new tip of `main`. `d04ef31` exists only on the server: neither you nor your colleague created it.
 
-**[ANIMATION]** say: Your_laptop:_80c9cfa._The_runner:_d04ef31
+**[ANIMATION]** step: who
 
 Your laptop tested `80c9cfa`, the tip of your branch. The runner tested `d04ef31`, the merge commit below `main`.
 
 **[ON SCREEN]** The first root-cause box of section 20A.8, one line at a time. Observed behavior: the build names the release `6fe5455` instead of `v0.1.0-1-g6fe5455`. Git state: `.git/shallow` lists HEAD; one commit; no refs under `refs/tags`. Mechanism: `git describe` walks parents looking for a tagged commit; the graft ends the walk. Root cause: the `actions/checkout` defaults, fetch-depth 1 and fetch-tags false. Why it does this: a job that only compiles and tests needs the snapshot, not the history; fetching one commit is the fastest correct default for that job. Correct fix: `fetch-depth: 0` in the job that needs history or tags. Prevention: decide per job whether it asks history a question; never use `--always` to silence describe in a release build.
 
+Read the root-cause line: the actions/checkout defaults, fetch-depth 1 and fetch-tags false.
+
 **[ON SCREEN]** The second root-cause box. Observed behavior: tests pass locally, fail in CI "on the same commit". Git state: laptop HEAD is `80c9cfa`, the pull request head; runner HEAD is `d04ef31`, the test merge. Mechanism: `pull_request` sets `GITHUB_REF` to `refs/pull/N/merge`; checkout uses `GITHUB_REF`. Root cause: the base branch gained a commit that changes behavior the new code relies on. Why it does this: the question a pull request asks is "is the result of merging safe", which only the merged tree can answer. Correct fix: update the branch, by merge or rebase onto the base, fix the code, push. Prevention: reproduce with a fetch and a merge of `origin/main` before debugging; a merge queue or "require branches to be up to date" closes the remaining gap.
+
+And the second root cause: the base branch gained a commit that changes behavior the new code relies on.
 
 ## LIVE TERMINAL DEMO
 

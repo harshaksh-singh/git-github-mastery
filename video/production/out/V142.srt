@@ -1,0 +1,1297 @@
+1
+00:00:04,500 --> 00:00:09,360
+Four questions a CTO can ask about one pull
+request, a proposal on GitHub to merge
+
+2
+00:00:09,400 --> 00:00:14,200
+one branch into another. "The tests passed
+on your laptop and failed in CI on the
+
+3
+00:00:14,240 --> 00:00:19,100
+same commit. Was it the same commit?" "The
+build stamped the release with a commit
+
+4
+00:00:19,140 --> 00:00:22,028
+ID and not with a version.
+Who removed the tags?"
+
+5
+00:00:22,368 --> 00:00:25,817
+"This workflow has a paths
+filter and is a required check.
+
+6
+00:00:25,857 --> 00:00:29,426
+Why is the pull request waiting
+forever?" "The job is green.
+
+7
+00:00:29,466 --> 00:00:32,675
+Did the tests run, or did a
+pipe swallow the failure?"
+
+8
+00:00:32,715 --> 00:00:36,103
+CI, by the way, is the automated
+checking of each change.
+
+9
+00:00:36,443 --> 00:00:41,118
+The chapter makes a claim about these four,
+and it's the claim of this whole part of
+
+10
+00:00:41,158 --> 00:00:44,373
+the course: none of them is
+answered by knowing YAML keys.
+
+11
+00:00:44,413 --> 00:00:48,919
+Each is answered by knowing what a runner,
+the machine that runs your job, has on
+
+12
+00:00:48,959 --> 00:00:51,894
+disk and in its environment
+when your command starts.
+
+13
+00:00:52,234 --> 00:00:57,650
+Which commit, how much history, which
+shell with which flags, which token, which
+
+14
+00:00:57,690 --> 00:01:03,175
+variables. And one smaller puzzle for
+today. A team asks for Python 3.10 and gets
+
+15
+00:01:03,215 --> 00:01:07,130
+Python 3.1, with no error
+anywhere. Keep that one in mind.
+
+16
+00:01:07,170 --> 00:01:08,699
+You'll watch it happen.
+
+17
+00:01:10,539 --> 00:01:15,688
+Welcome back to Git and GitHub Deep Mastery.
+Pull up a chair, and welcome to Part 6.
+
+18
+00:01:15,728 --> 00:01:19,888
+So far the course has been about
+Git and about GitHub as a platform.
+
+19
+00:01:19,928 --> 00:01:24,768
+From here on there's a third layer, and
+you'll see its lower-third label often.
+
+20
+00:01:25,108 --> 00:01:30,071
+The textbook's framing: everything in this
+part except the repository content is
+
+21
+00:01:30,111 --> 00:01:35,074
+GitHub Actions, a service that reacts to
+events on GitHub by running commands on
+
+22
+00:01:35,114 --> 00:01:40,014
+machines. Git appears in exactly one
+place, when a job fetches commits onto the
+
+23
+00:01:40,054 --> 00:01:45,017
+runner. That place causes most of the
+surprises, and it has its own video, video
+
+24
+00:01:45,057 --> 00:01:45,268
+145.
+
+25
+00:01:45,608 --> 00:01:50,359
+This video does two things. It gives you
+the model: seven terms and which contains
+
+26
+00:01:50,399 --> 00:01:55,267
+which. And it teaches you to read YAML, the
+indented text format that workflow files
+
+27
+00:01:55,307 --> 00:01:59,941
+are written in, as data, because a workflow
+file is parsed before GitHub Actions
+
+28
+00:01:59,981 --> 00:02:01,344
+interprets a single key.
+
+29
+00:02:01,684 --> 00:02:05,214
+One statement about evidence,
+which holds for all of Part 6.
+
+30
+00:02:05,254 --> 00:02:08,726
+Nothing in these chapters was
+run on GitHub by the authors.
+
+31
+00:02:08,766 --> 00:02:13,546
+The workflow files of the course were
+parse-checked and assembled from documented
+
+32
+00:02:13,586 --> 00:02:17,533
+syntax and from each action's own
+definition at the pinned version.
+
+33
+00:02:17,573 --> 00:02:21,937
+They weren't executed on GitHub by the
+author. The labs have you run them.
+
+34
+00:02:21,977 --> 00:02:26,936
+So when a workflow fails for a reason the
+authors couldn't test, that's material for
+
+35
+00:02:26,976 --> 00:02:29,376
+diagnosis and not a defect in your setup.
+
+36
+00:02:31,216 --> 00:02:32,794
+Here's what you'll walk away with.
+
+37
+00:02:33,134 --> 00:02:34,546
+After this video you can:
+
+38
+00:02:34,886 --> 00:02:39,849
+define workflow, event, job, step, action,
+runner and shell and say which contains
+
+39
+00:02:39,889 --> 00:02:40,216
+which;
+
+40
+00:02:40,556 --> 00:02:44,947
+read a workflow file in a fixed order to
+predict when it runs, where, and with what;
+
+41
+00:02:45,287 --> 00:02:49,197
+name the YAML features that change the
+meaning of a workflow without an error;
+
+42
+00:02:49,537 --> 00:02:52,528
+explain why the key on needs
+care and what a tab does;
+
+43
+00:02:52,868 --> 00:02:56,713
+say what was and was not verified
+about the course's workflow files.
+
+44
+00:02:58,553 --> 00:03:03,401
+In one sentence. A workflow is a YAML file
+in the repository that says "when this
+
+45
+00:03:03,441 --> 00:03:08,470
+event happens, run these jobs". Each job is
+a list of steps that run in order on one
+
+46
+00:03:08,510 --> 00:03:13,478
+fresh machine called a runner. A step is
+either a shell command or an action, which
+
+47
+00:03:13,518 --> 00:03:14,806
+is a packaged program.
+
+48
+00:03:15,146 --> 00:03:19,266
+Precisely. The terms, as the
+workflow syntax reference uses them.
+
+49
+00:03:19,606 --> 00:03:24,522
+A workflow is a configurable automated
+process defined by a YAML file.
+
+50
+00:03:24,562 --> 00:03:28,983
+The file must be in .github/workflows
+and end in .yml or .yaml.
+
+51
+00:03:29,323 --> 00:03:34,490
+An event is an activity on GitHub, such
+as a push, a pull request activity or a
+
+52
+00:03:34,530 --> 00:03:37,851
+release. Or a schedule. Or
+a manual or API request.
+
+53
+00:03:37,891 --> 00:03:40,751
+An event isn't written
+anywhere. It happens.
+
+54
+00:03:41,091 --> 00:03:45,569
+The trigger is the on key of a workflow:
+which events, with which filters, start a
+
+55
+00:03:45,609 --> 00:03:45,789
+run.
+
+56
+00:03:46,129 --> 00:03:49,925
+A workflow run is one execution
+of a workflow for one event.
+
+57
+00:03:49,965 --> 00:03:54,145
+It has a run ID, a run number and,
+when re-run, an attempt number.
+
+58
+00:03:54,485 --> 00:03:58,119
+A job is a set of steps that
+execute on the same runner.
+
+59
+00:03:58,159 --> 00:04:02,120
+Jobs of one run execute in
+parallel unless needs orders them.
+
+60
+00:04:02,460 --> 00:04:07,408
+A step is one run command line or script,
+or one uses reference to an action.
+
+61
+00:04:07,448 --> 00:04:09,481
+Steps of a job execute in order.
+
+62
+00:04:09,821 --> 00:04:15,169
+An action is a reusable program referenced
+by uses, with an owner, a repository and
+
+63
+00:04:15,209 --> 00:04:20,233
+a ref. It's a JavaScript program, a
+composite of steps, or a Docker container,
+
+64
+00:04:20,273 --> 00:04:23,154
+declared by the action.yml
+in its repository.
+
+65
+00:04:23,494 --> 00:04:28,372
+A runner is the machine that executes
+one job. A GitHub-hosted runner is a new
+
+66
+00:04:28,412 --> 00:04:31,083
+virtual machine per
+job, chosen by runs-on.
+
+67
+00:04:31,423 --> 00:04:34,821
+And the shell is the program
+that executes a run step.
+
+68
+00:04:34,861 --> 00:04:36,794
+Each run step is a new process.
+
+69
+00:04:37,134 --> 00:04:40,816
+Three properties follow from those
+definitions, and they explain most of what the
+
+70
+00:04:40,856 --> 00:04:41,597
+next videos show.
+
+71
+00:04:41,937 --> 00:04:46,821
+First: a job is the unit of isolation.
+A job starts on a fresh machine.
+
+72
+00:04:46,861 --> 00:04:52,162
+Files, installed tools and environment
+variables don't carry from job to job.
+
+73
+00:04:52,202 --> 00:04:56,115
+Data crosses jobs only as job
+outputs, which are strings.
+
+74
+00:04:56,155 --> 00:05:01,942
+As artifacts, which are files. Or as caches,
+which are files on a best-effort basis.
+
+75
+00:05:02,282 --> 00:05:07,412
+Quick quiz. Step one of a job
+runs cd src. Step two runs ls.
+
+76
+00:05:07,452 --> 00:05:13,702
+Where does step two start? A, inside
+src. B, back where step one started.
+
+77
+00:05:13,742 --> 00:05:14,736
+Your answer?
+
+78
+00:05:19,576 --> 00:05:24,984
+B. Second: a step is the unit of process.
+Steps of one job share the filesystem of
+
+79
+00:05:25,024 --> 00:05:28,505
+the runner, but each run
+step is a new shell process.
+
+80
+00:05:28,545 --> 00:05:31,827
+A cd or an export in one
+step is gone in the next.
+
+81
+00:05:32,167 --> 00:05:35,075
+Third: the workflow file is
+versioned with the code.
+
+82
+00:05:35,115 --> 00:05:39,780
+For push and pull_request the workflow
+definition is read from the commit the event
+
+83
+00:05:39,820 --> 00:05:44,372
+refers to, so a branch can change its own
+CI. For several other events it is read
+
+84
+00:05:44,412 --> 00:05:46,016
+from the default branch only.
+
+85
+00:05:46,356 --> 00:05:52,104
+Inside .git. A workflow is an ordinary blob,
+the object that holds the bytes of one
+
+86
+00:05:52,144 --> 00:05:56,288
+file, at a path under
+.github/workflows/ in a commit's tree.
+
+87
+00:05:56,328 --> 00:06:00,472
+Nothing else in the repository's
+Git data describes Actions.
+
+88
+00:06:00,512 --> 00:06:05,911
+Runs, jobs, logs, artifacts, caches,
+secrets and variables are GitHub objects.
+
+89
+00:06:05,951 --> 00:06:09,955
+A clone doesn't contain them,
+and git log can't show them.
+
+90
+00:06:10,295 --> 00:06:14,376
+YAML. In one sentence: a workflow
+file is data, not a script.
+
+91
+00:06:14,416 --> 00:06:19,780
+A YAML parser turns it into nested maps,
+lists and scalars before GitHub Actions
+
+92
+00:06:19,820 --> 00:06:24,576
+interprets any key, so indentation
+and quoting decide what GitHub sees.
+
+93
+00:06:24,916 --> 00:06:28,176
+Four rules cover the mistakes
+that occur in workflow files.
+
+94
+00:06:28,516 --> 00:06:32,263
+One. Indentation is structure,
+and tabs aren't indentation.
+
+95
+00:06:32,303 --> 00:06:37,591
+A key belongs to the map whose column it
+sits in. A tab character in indentation is
+
+96
+00:06:37,631 --> 00:06:38,554
+a syntax error.
+
+97
+00:06:38,894 --> 00:06:44,549
+Two. An unquoted scalar is typed by its
+shape. 3.10 without quotes is a number, and
+
+98
+00:06:44,589 --> 00:06:48,185
+the number is 3.1. v1.0 is
+a string because of the v.
+
+99
+00:06:48,225 --> 00:06:52,027
+So quote everything that's a
+version, a label or a glob.
+
+100
+00:06:52,067 --> 00:06:57,516
+The filter pattern cheat sheet adds that
+patterns starting with a star, a square
+
+101
+00:06:57,556 --> 00:07:03,005
+bracket or an exclamation mark must be
+quoted, because those characters are YAML
+
+102
+00:07:03,045 --> 00:07:03,486
+syntax.
+
+103
+00:07:03,826 --> 00:07:09,096
+Three. The vertical bar keeps line breaks.
+The greater-than sign folds them into
+
+104
+00:07:09,136 --> 00:07:12,150
+spaces. A multi-line run
+script needs the bar.
+
+105
+00:07:12,490 --> 00:07:18,338
+Four. An ampersand with a name marks a
+node, and a star with the name reuses it.
+
+106
+00:07:18,378 --> 00:07:24,520
+Anchors and aliases are standard YAML and
+have been accepted in workflow files since
+
+107
+00:07:24,560 --> 00:07:26,949
+the eighteenth of September 2025.
+
+108
+00:07:28,789 --> 00:07:33,606
+Analogy. A workflow is a standing order
+at a print shop: "Whenever a manuscript
+
+109
+00:07:33,646 --> 00:07:38,772
+arrives, give one copy to the proofreader
+and one to the typesetter, each at a clean
+
+110
+00:07:38,812 --> 00:07:43,753
+desk, each following a numbered checklist,
+some items of which say 'use the house
+
+111
+00:07:43,793 --> 00:07:47,258
+stamping machine'." The
+manuscript arriving is the event.
+
+112
+00:07:47,298 --> 00:07:50,886
+The two workers are two jobs.
+The clean desk is the runner.
+
+113
+00:07:50,926 --> 00:07:54,698
+The checklist is the steps. The
+stamping machine is an action.
+
+114
+00:07:55,038 --> 00:07:58,067
+The textbook says the analogy
+breaks in two places.
+
+115
+00:07:58,107 --> 00:08:03,121
+The desks are destroyed after each job, so
+nothing left on one is found by the next.
+
+116
+00:08:03,161 --> 00:08:07,814
+And the manuscript isn't handed over:
+the worker must fetch it, and by default
+
+117
+00:08:07,854 --> 00:08:09,439
+fetches only the last page.
+
+118
+00:08:09,779 --> 00:08:14,764
+Hold on to "only the last page". It's the
+shallow checkout, and it answers the CTO's
+
+119
+00:08:14,804 --> 00:08:15,721
+second question.
+
+120
+00:08:16,061 --> 00:08:21,078
+A reading order. The textbook explains
+workflow 1 from top to bottom: name, trigger,
+
+121
+00:08:21,118 --> 00:08:26,075
+permissions, job and runner, then the steps.
+This course uses that as a fixed order
+
+122
+00:08:26,115 --> 00:08:29,928
+for every workflow file you meet,
+and you'll use it in the gate.
+
+123
+00:08:30,268 --> 00:08:33,348
+First, the trigger. Which
+events, with which filters?
+
+124
+00:08:33,388 --> 00:08:37,469
+That tells you when a run exists at
+all, and for which commit and ref.
+
+125
+00:08:37,809 --> 00:08:42,591
+Second, the permissions. What may the job's
+token, the credential it uses to call
+
+126
+00:08:42,631 --> 00:08:43,246
+GitHub, do?
+
+127
+00:08:43,586 --> 00:08:47,722
+Third, each job: on which runner, after
+which other jobs, under which conditions.
+
+128
+00:08:48,062 --> 00:08:52,412
+Fourth, the first steps of the job:
+what's checked out, and how much of it.
+
+129
+00:08:52,752 --> 00:08:55,277
+Fifth and last, the commands
+that are the real check.
+
+130
+00:08:55,617 --> 00:08:59,977
+People read in the opposite order. They
+go to the test command first because it's
+
+131
+00:09:00,017 --> 00:09:04,431
+familiar. But a correct test command that
+runs on the wrong commit, or never runs,
+
+132
+00:09:04,471 --> 00:09:05,246
+proves nothing.
+
+133
+00:09:07,086 --> 00:09:10,434
+Read it from the outside
+in. An event starts a run.
+
+134
+00:09:10,474 --> 00:09:13,890
+The run holds two jobs, each
+on its own new machine.
+
+135
+00:09:13,930 --> 00:09:17,677
+Inside a job, every step is
+an action or a shell process.
+
+136
+00:09:17,717 --> 00:09:22,727
+And between build and report, only job
+outputs cross, and those are strings.
+
+137
+00:09:24,567 --> 00:09:29,049
+One caveat before the first output,
+and the textbook is exact about it.
+
+138
+00:09:29,089 --> 00:09:34,017
+The parser here is PyYAML, the library
+that parse-checks the course workflows.
+
+139
+00:09:34,057 --> 00:09:37,265
+It implements YAML 1.1.
+GitHub uses its own parser.
+
+140
+00:09:37,305 --> 00:09:40,450
+So read each result with
+the note that follows it.
+
+141
+00:09:40,790 --> 00:09:42,316
+Step 1: scalars.
+
+142
+00:09:42,656 --> 00:09:50,085
+The file has a list of Python versions:
+3.9, then 3.10 without quotes, then 3.10 in
+
+143
+00:09:50,125 --> 00:09:55,485
+quotes, then 3.11. And three
+more values: yes, NO, and v1.0.
+
+144
+00:09:55,525 --> 00:10:00,164
+Predict the type and value
+of each. Say it out loud.
+
+145
+00:10:05,004 --> 00:10:09,526
+The second element is 3.1. There's
+the puzzle from the opening.
+
+146
+00:10:09,566 --> 00:10:15,607
+A matrix, a list of variants that each get
+their own job, written with unquoted 3.10
+
+147
+00:10:15,647 --> 00:10:20,675
+asks for Python 3.1. This is a property
+of numbers, not of one parser.
+
+148
+00:10:20,715 --> 00:10:26,540
+The quoted one stayed a string. yes and
+NO became booleans, because YAML 1.1 says
+
+149
+00:10:26,580 --> 00:10:26,757
+so.
+
+150
+00:10:27,097 --> 00:10:32,432
+Try it now, thirty seconds, on paper.
+Rewrite that list of Python versions so that
+
+151
+00:10:32,472 --> 00:10:35,119
+every element arrives as text. I'll wait.
+
+152
+00:10:39,959 --> 00:10:45,195
+Put each version in quotes. Quoted, 3.10
+keeps its zero, exactly as the third
+
+153
+00:10:45,235 --> 00:10:50,883
+element did. That's rule two: quote everything
+that's a version, a label or a glob.
+
+154
+00:10:51,223 --> 00:10:56,246
+One point is unverified. Whether GitHub's
+workflow parser also reads unquoted yes,
+
+155
+00:10:56,286 --> 00:11:01,309
+no, on and off values as booleans isn't
+stated on the documentation pages read for
+
+156
+00:11:01,349 --> 00:11:05,138
+the chapter. Quote such values
+and the question doesn't arise.
+
+157
+00:11:05,478 --> 00:11:07,033
+Step 2: the key on.
+
+158
+00:11:07,373 --> 00:11:12,164
+A minimal workflow with name, on and jobs.
+What will the three top-level keys be
+
+159
+00:11:12,204 --> 00:11:14,338
+after parsing? Make your prediction.
+
+160
+00:11:19,178 --> 00:11:23,186
+name, true, and jobs. The key on
+came out as the boolean true.
+
+161
+00:11:23,226 --> 00:11:27,625
+GitHub Actions documents on as the
+trigger key and reads it as such.
+
+162
+00:11:27,665 --> 00:11:32,978
+A generic YAML 1.1 tool doesn't. The
+consequence is for your own tooling: a script
+
+163
+00:11:33,018 --> 00:11:37,156
+that loads workflow files with
+PyYAML must look up the key True.
+
+164
+00:11:37,196 --> 00:11:39,441
+The course's own checker does that.
+
+165
+00:11:39,781 --> 00:11:44,458
+Also notice pull_request: null. An event
+with no configuration is a key with an
+
+166
+00:11:44,498 --> 00:11:49,414
+empty value, and the documentation requires
+the colon on every event once any event
+
+167
+00:11:49,454 --> 00:11:51,146
+in the map has configuration.
+
+168
+00:11:51,486 --> 00:11:52,955
+Step 3: anchors.
+
+169
+00:11:59,295 --> 00:12:03,157
+The test job defines two anchors.
+The lint job reuses them.
+
+170
+00:12:03,197 --> 00:12:06,994
+After parsing, the alias is
+indistinguishable from a copy.
+
+171
+00:12:07,034 --> 00:12:11,293
+So an anchor removes repetition
+inside one file and nothing more.
+
+172
+00:12:11,333 --> 00:12:12,682
+It can't cross files.
+
+173
+00:12:13,022 --> 00:12:17,631
+One more point is unverified. YAML merge
+keys aren't mentioned by the anchors
+
+174
+00:12:17,671 --> 00:12:22,703
+documentation or the changelog entry. The
+course's research notes mark their support
+
+175
+00:12:22,743 --> 00:12:26,085
+as unverified, and the course's
+examples don't use them.
+
+176
+00:12:26,425 --> 00:12:28,319
+Step 4: block scalars.
+
+177
+00:12:28,659 --> 00:12:33,767
+The same two command lines, once under a
+vertical bar and once under a greater-than
+
+178
+00:12:33,807 --> 00:12:37,055
+sign. What string does each
+produce? Say it out loud.
+
+179
+00:12:41,895 --> 00:12:47,452
+With the bar: two lines. With the greater-than
+sign: one line, uv sync --locked uv
+
+180
+00:12:47,492 --> 00:12:51,548
+run pytest. That's one wrong
+command and not two right ones.
+
+181
+00:12:51,588 --> 00:12:55,166
+The file is valid YAML both
+ways. No error tells you.
+
+182
+00:12:55,506 --> 00:12:57,117
+Step 5: a tab.
+
+183
+00:12:57,457 --> 00:13:01,725
+This is the one mistake of the five that's
+reported: a scanner error with the line
+
+184
+00:13:01,765 --> 00:13:02,513
+and the column.
+
+185
+00:13:02,853 --> 00:13:05,227
+Now read workflow 1 in
+the order you learned.
+
+186
+00:13:05,567 --> 00:13:08,771
+The trigger: pushes to main,
+and pull request activity.
+
+187
+00:13:08,811 --> 00:13:13,312
+The branch filter on push stops a second
+run for every push to a pull request
+
+188
+00:13:13,352 --> 00:13:15,790
+branch, which pull_request already covers.
+
+189
+00:13:16,130 --> 00:13:20,844
+The permissions: contents: read. The job
+token may read repository contents, and
+
+190
+00:13:20,884 --> 00:13:25,421
+every other permission is none. That's
+least privilege, and it makes the file
+
+191
+00:13:25,461 --> 00:13:28,274
+independent of the
+repository's default setting.
+
+192
+00:13:28,614 --> 00:13:34,620
+The job: one job with the ID test and the
+display name "Unit tests", on the fixed
+
+193
+00:13:34,660 --> 00:13:37,606
+image ubuntu-24.04, at most ten minutes.
+
+194
+00:13:37,946 --> 00:13:43,287
+The checkout: an action, pinned to a full
+commit ID with the version as a comment.
+
+195
+00:13:43,327 --> 00:13:48,471
+Read the ID from the file and from
+workflows/ACTION_PINS.md, never from memory.
+
+196
+00:13:48,511 --> 00:13:52,606
+persist-credentials: false means:
+don't keep the token on disk.
+
+197
+00:13:52,946 --> 00:13:56,785
+Then a shell step that prints the event,
+the ref, the commit, whether the clone is
+
+198
+00:13:56,825 --> 00:14:00,663
+shallow, and the branch status. The textbook
+calls this the first thing to read in
+
+199
+00:14:00,703 --> 00:14:02,082
+any log: what was checked out.
+
+200
+00:14:02,422 --> 00:14:06,858
+Then Python 3.13, with the version
+quoted, as you now know why.
+
+201
+00:14:06,898 --> 00:14:12,682
+And last, the check itself: the unit tests.
+A non-zero exit status fails the step,
+
+202
+00:14:12,722 --> 00:14:14,103
+the job and the run.
+
+203
+00:14:14,443 --> 00:14:18,474
+Lab 26.1 on your own practice
+repository, in your normal shell.
+
+204
+00:14:18,514 --> 00:14:23,837
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+205
+00:14:23,877 --> 00:14:26,745
+No GitHub output was
+captured by the authors.
+
+206
+00:14:27,085 --> 00:14:31,601
+You copy the sample project, add workflow
+1, commit, and create the repository with
+
+207
+00:14:31,641 --> 00:14:36,212
+gh repo create and --push. Section 15.22
+labels that command 🟡 CAUTION: it creates a
+
+208
+00:14:36,252 --> 00:14:40,714
+repository on GitHub, a remote and a push,
+and what reaches a public repository is
+
+209
+00:14:40,754 --> 00:14:44,940
+published. Before you run it, the lab
+makes you predict: which event the push
+
+210
+00:14:44,980 --> 00:14:49,496
+causes, which workflow starts, what GITHUB_REF
+and GITHUB_SHA will be, and how many
+
+211
+00:14:49,536 --> 00:14:51,088
+commits the runner will have.
+
+212
+00:14:51,428 --> 00:14:56,267
+Both read. In the browser, open the Actions
+tab, find the run, open the job, and
+
+213
+00:14:56,307 --> 00:15:00,902
+expand the step "Show what was checked
+out". Compare its six lines with your
+
+214
+00:15:00,942 --> 00:15:01,573
+prediction.
+
+215
+00:15:03,413 --> 00:15:05,061
+Five mistakes to watch for.
+
+216
+00:15:05,401 --> 00:15:11,379
+An unquoted version such as 3.10 in a
+matrix. Root cause: an unquoted scalar is
+
+217
+00:15:11,419 --> 00:15:14,883
+typed by its shape, and
+as a number it is 3.1.
+
+218
+00:15:15,223 --> 00:15:20,420
+A multi-line script under >. Root cause:
+the folded form joins the lines with
+
+219
+00:15:20,460 --> 00:15:24,977
+spaces, so two commands become one
+wrong command, without an error.
+
+220
+00:15:25,317 --> 00:15:30,287
+A custom tool that looks for the key on
+after loading the file with a YAML 1.1
+
+221
+00:15:30,327 --> 00:15:34,205
+parser. Root cause: that parser
+reads on as the boolean true.
+
+222
+00:15:34,545 --> 00:15:38,578
+Expecting a file or an installed
+tool from one job in the next.
+
+223
+00:15:38,618 --> 00:15:43,168
+Root cause: a job is the unit of
+isolation and runs on a fresh machine.
+
+224
+00:15:43,508 --> 00:15:46,596
+Reading the test command
+first and the trigger last.
+
+225
+00:15:46,636 --> 00:15:51,527
+Root cause: whether a run exists, and for
+which commit, is decided before any step
+
+226
+00:15:51,567 --> 00:15:51,828
+runs.
+
+227
+00:15:53,668 --> 00:15:59,362
+Now, out of the lab. An evaluation team adds
+Python 3.10 to the test matrix of their
+
+228
+00:15:59,402 --> 00:16:05,096
+harness, so that the nightly run covers the
+interpreter their largest customer still
+
+229
+00:16:05,136 --> 00:16:09,192
+uses. The pull request is one
+line: a new element in a list.
+
+230
+00:16:09,232 --> 00:16:14,244
+It's reviewed in a minute. The new
+matrix job doesn't ask for Python 3.10.
+
+231
+00:16:14,284 --> 00:16:15,814
+It asks for Python 3.1.
+
+232
+00:16:16,154 --> 00:16:21,490
+The reviewer saw 3.10. The parser saw
+3.1. The repair is two quote characters.
+
+233
+00:16:21,530 --> 00:16:27,210
+The prevention is the rule from this video,
+applied in review: every version, label
+
+234
+00:16:27,250 --> 00:16:32,930
+and glob in a workflow file is quoted, and
+a reviewer who sees an unquoted one asks
+
+235
+00:16:32,970 --> 00:16:34,101
+what type it has.
+
+236
+00:16:35,941 --> 00:16:40,431
+Your turn. Do Lab 26.1,
+"Workflow 1, run the tests", in
+
+237
+00:16:40,471 --> 00:16:46,772
+lab-manual/m26-actions-fundamentals.md,
+in your normal shell on your practice
+
+238
+00:16:46,812 --> 00:16:47,842
+organization.
+
+239
+00:16:48,182 --> 00:16:52,338
+The lab's second step is the prediction,
+and it's the point of the lab.
+
+240
+00:16:52,378 --> 00:16:57,007
+Write down, before you push: the event,
+the workflow that starts, the values of
+
+241
+00:16:57,047 --> 00:17:00,967
+GITHUB_REF and GITHUB_SHA, and the
+number of commits on the runner.
+
+242
+00:17:01,007 --> 00:17:02,031
+Then read the log.
+
+243
+00:17:02,371 --> 00:17:08,892
+The challenge is Exercise 26.3, "Six
+things the author did not mean", in
+
+244
+00:17:08,932 --> 00:17:12,355
+exercises/m26-m31-actions-security.md.
+
+245
+00:17:16,195 --> 00:17:20,768
+Answer out loud first. A strong answer gives
+an order and a reason for each position
+
+246
+00:17:20,808 --> 00:17:25,216
+in it, in the terms of the model: event,
+ref and commit, token, runner, checkout,
+
+247
+00:17:25,256 --> 00:17:28,016
+commands. It says what each
+stage lets you predict.
+
+248
+00:17:28,056 --> 00:17:32,629
+The follow-up asks what you still can't know
+from the repository alone after reading
+
+249
+00:17:32,669 --> 00:17:37,242
+all twelve. Think about which of the things
+in this video are GitHub objects and not
+
+250
+00:17:37,282 --> 00:17:37,736
+Git data.
+
+251
+00:17:39,576 --> 00:17:44,471
+Let's land this. One event, one run, one
+job on a fresh runner, steps in order, and
+
+252
+00:17:44,511 --> 00:17:48,573
+a result at the end. And before any
+of that, a parser reads the file.
+
+253
+00:17:48,913 --> 00:17:50,573
+You should now be able to say:
+
+254
+00:17:50,913 --> 00:17:56,107
+An event starts a run of a workflow; a run
+has jobs; each job runs on its own fresh
+
+255
+00:17:56,147 --> 00:18:00,144
+runner; a job has steps; a step
+is an action or a shell process.
+
+256
+00:18:00,484 --> 00:18:04,457
+A job is the unit of isolation and
+a step is the unit of process.
+
+257
+00:18:04,797 --> 00:18:09,740
+A workflow file is an ordinary blob in a
+commit; runs, logs, secrets and variables
+
+258
+00:18:09,780 --> 00:18:12,293
+are GitHub objects that no clone contains.
+
+259
+00:18:12,633 --> 00:18:17,686
+YAML is parsed before Actions reads it:
+quote versions and globs, use the bar for
+
+260
+00:18:17,726 --> 00:18:19,007
+scripts, never a tab.
+
+261
+00:18:19,347 --> 00:18:24,103
+The course's workflow files were parse-checked
+and assembled from documentation, and
+
+262
+00:18:24,143 --> 00:18:25,929
+not run on GitHub by the author.
+
+263
+00:18:27,769 --> 00:18:36,252
+Read sections 20A.1 to 20A.3 of Chapter
+20A. Do Exercise 26.1, "True or false, with
+
+264
+00:18:36,292 --> 00:18:41,796
+the reason", in
+exercises/m26-m31-actions-security.md.
+
+265
+00:18:42,136 --> 00:18:47,321
+Today you learned the seven terms of the
+Actions model, and you caught YAML changing
+
+266
+00:18:47,361 --> 00:18:52,422
+a value without an error. Before the next
+video, read workflow 1 once in the fixed
+
+267
+00:18:52,462 --> 00:18:55,719
+order: trigger, permissions,
+job, checkout, commands.
+
+268
+00:18:55,759 --> 00:19:00,882
+Next time: events and filters, contexts and
+expressions, and env, vars and secrets.
+
+269
+00:19:00,922 --> 00:19:04,117
+Until then, look at the
+state first and type second.
+
+270
+00:19:04,157 --> 00:19:05,610
+See you in the next one.

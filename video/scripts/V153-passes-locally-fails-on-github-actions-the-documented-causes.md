@@ -61,6 +61,8 @@ After this video you can:
 
 **[ON SCREEN]** Lower third: GitHub Actions. The table of section 20B.12, in groups.
 
+Here are the fourteen rows of the textbook's table, in two pages.
+
 Go through the fourteen rows grouped by where they sit in the investigation order.
 
 **[ANIMATION]** walk: id=fourteen columns=where_in_the_order,documented_causes rows=the_commit_and_the_clone:a_shallow,_tagless_clone;_not_the_pushed_commit|authority:missing_secrets|the_machine:shell_differences;_moving_images_and_tools;_out_of_memory_or_time;_environment_differences|what_the_run_depends_on:old_action_majors;_a_stale_or_missing_cache|whether_a_run_exists:a_check_that_stays_pending;_cancelled_runs;_a_workflow_that_never_fires|Git:case_sensitivity;_line_endings marks=6.1:hl,6.2:hl mono=off title=Fourteen_documented_causes
@@ -170,6 +172,8 @@ Try it now. Thirty seconds, in any repository on your own machine. Run `git conf
 If it prints true, Git found a filesystem that ignores case when it created that repository, which is the macOS default. Then the left column of this table describes your own disk.
 
 **[ON SCREEN]** The root-cause box of section 20B.12, one line at a time. Observed behavior: the version step fails in the job; the same command works on every laptop. Git state: `.git/shallow` lists the one fetched commit; `refs/tags` is empty. Mechanism: `git describe` needs a tag that is reachable from HEAD through parent links. Root cause: `actions/checkout` defaults to fetch-depth 1 and fetch-tags false. Why it does this: one commit is all most jobs need, and it is fast on a large repository. Correct fix: `fetch-depth: 0` on the checkout step of the job that needs history. Prevention: derive versions in one job; never add a fallback such as "or echo 0.0.0", or `--always`, to make the error disappear, because that ships a wrong version.
+
+Read the root-cause line: actions/checkout defaults to fetch-depth 1 and fetch-tags false.
 
 ## LIVE TERMINAL DEMO
 

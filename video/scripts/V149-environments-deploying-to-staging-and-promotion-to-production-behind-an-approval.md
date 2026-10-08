@@ -223,6 +223,8 @@ Three boxes, and the security argument is in the right one. While the production
 
 **[ON SCREEN]** The root-cause box of section 20B.4, one line at a time. Observed behavior: a job that names "production" started without waiting for anybody. Git state: irrelevant; the workflow file names the environment correctly. Mechanism: protection rules are properties of the environment object on GitHub; the environment had been created by the first run that named it, with no rules; or the repository is private on a plan where reviewers do not apply. Root cause: the gate was assumed from the YAML and never configured or verified. Why GitHub does it: naming a missing environment creates it, so that a first deployment works without an administrator; rules are an administrator's decision. Correct fix: configure the rules; read them back with a `gh api` call on the environment. Prevention: create environments before the workflow that uses them; keep their configuration in a reviewed script; test the gate with a harmless run.
 
+Read the root-cause line: the gate was assumed from the YAML and never configured or verified.
+
 ## LIVE TERMINAL DEMO
 
 Into the lab.
@@ -451,7 +453,7 @@ After the merge the ref is `main`, the hotfix is an ancestor, and the range from
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthroughs.
 
-On your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. Never show a real secret value.
+**On your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. Never show a real secret value.
 
 Lab 27.3. Create the `staging` environment before you add workflow 8, set its variable and its secret with a made-up value, and read both back with the listing commands. Then add the workflow. After the push to `main`, open the run: find the two jobs and the order between them. Open the repository's list of deployments and find the record for `staging` with the commit it names.
 

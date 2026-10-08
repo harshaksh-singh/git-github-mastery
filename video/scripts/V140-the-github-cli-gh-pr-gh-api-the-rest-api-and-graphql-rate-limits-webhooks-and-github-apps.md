@@ -160,6 +160,8 @@ A GitHub App is the identity an integration should have. It's installed on chose
 
 **[ON SCREEN]** Callout: Unverified. Webhook delivery retries and signature validation were not researched for the Phase 0 report, and are not described in the course.
 
+One thing here is unverified. Webhook delivery retries and signature validation weren't researched for the Phase 0 report, and aren't described in the course.
+
 ## MENTAL MODEL
 
 **[ANIMATION]** stores: id=clients boxes=clients:each_presents_a_credential|GitHub's_API:one_API rows=1:A:the_browser|2:A:gh|3:A:a_script_with_curl|4:A:a_GitHub_App|5:A:gh_also_runs_git_on_your_machine@hl arrows=1:A1>B:|2:A2>B:|3:A3>B:|4:A4>B: title=One_API,_many_clients at_1=2 at_2=12 at_3=22 at_4=38

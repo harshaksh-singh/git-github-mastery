@@ -1,0 +1,1410 @@
+1
+00:00:04,500 --> 00:00:09,535
+A monorepo, one repository that holds several
+projects, with a Python service and a
+
+2
+00:00:09,575 --> 00:00:14,609
+Java service. Each has its own workflow,
+the file that tells GitHub Actions what to
+
+3
+00:00:14,649 --> 00:00:19,378
+run and when. Each workflow has a paths
+filter, so that a documentation change
+
+4
+00:00:19,418 --> 00:00:22,129
+doesn't spend twenty
+runner minutes on Maven.
+
+5
+00:00:22,469 --> 00:00:27,438
+Sensible. Then someone makes the Java
+workflow a required check, one that a rule
+
+6
+00:00:27,478 --> 00:00:32,448
+says must pass before a merge. The next
+documentation pull request shows a check
+
+7
+00:00:32,488 --> 00:00:35,766
+that's waiting, and it waits
+until somebody gives up.
+
+8
+00:00:35,806 --> 00:00:37,520
+Why? Take a guess, out loud.
+
+9
+00:00:42,360 --> 00:00:47,118
+Nothing failed. The filter did what it
+was written to do: it decided that no run
+
+10
+00:00:47,158 --> 00:00:51,856
+should exist. And a ruleset that requires
+a check waits for a result that won't
+
+11
+00:00:51,896 --> 00:00:56,833
+come. To predict that before you push, you
+need to know how an event becomes a run,
+
+12
+00:00:56,873 --> 00:01:00,552
+and that's this video. Keep that
+waiting pull request in mind.
+
+13
+00:01:00,592 --> 00:01:02,591
+You'll rebuild it in the terminal.
+
+14
+00:01:04,431 --> 00:01:07,719
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+15
+00:01:07,759 --> 00:01:12,137
+In the last video you learned the model,
+and a reading order that starts with the
+
+16
+00:01:12,177 --> 00:01:16,610
+trigger. Now you learn to read the trigger
+properly, and then two more things that
+
+17
+00:01:16,650 --> 00:01:18,902
+sit between the trigger and your commands.
+
+18
+00:01:19,242 --> 00:01:23,837
+Three parts. Events and filters: which
+commit and ref a run is about, which copy of
+
+19
+00:01:23,877 --> 00:01:28,472
+the workflow file is used, and how a branch
+or path filter decides whether a run is
+
+20
+00:01:28,512 --> 00:01:33,164
+created at all. Contexts and expressions:
+the data a workflow can read and the small
+
+21
+00:01:33,204 --> 00:01:37,576
+formula language over it, with the question
+that matters most, which is when an
+
+22
+00:01:37,616 --> 00:01:42,211
+expression is evaluated. And env, vars and
+secrets: three things that look alike in
+
+23
+00:01:42,251 --> 00:01:45,953
+a script and differ in where they're
+defined and who can read them.
+
+24
+00:01:46,293 --> 00:01:50,480
+The path filter part has a local
+demonstration, because the comparison GitHub
+
+25
+00:01:50,520 --> 00:01:54,049
+documents is a plain Git diff, and
+you can run it before pushing.
+
+26
+00:01:55,889 --> 00:01:57,467
+Here's what you'll walk away with.
+
+27
+00:01:57,807 --> 00:01:59,220
+After this video you can:
+
+28
+00:01:59,560 --> 00:02:04,045
+say for push, pull_request, schedule and
+workflow_dispatch which commit the run
+
+29
+00:02:04,085 --> 00:02:07,367
+refers to and from which branch
+the workflow file is read;
+
+30
+00:02:07,707 --> 00:02:12,202
+predict whether a branch or path filter
+starts a workflow for a given change;
+
+31
+00:02:12,542 --> 00:02:16,350
+explain how changed paths are computed
+for a pull request and for a push;
+
+32
+00:02:16,690 --> 00:02:19,302
+read an expression and
+say when it is evaluated;
+
+33
+00:02:19,642 --> 00:02:24,074
+distinguish env, vars and secrets by where
+they are defined and who can read them.
+
+34
+00:02:25,914 --> 00:02:30,319
+Events. In one sentence: the on key
+lists the events that start a run.
+
+35
+00:02:30,359 --> 00:02:35,145
+Each event fixes which commit and ref
+the run is about and which copy of the
+
+36
+00:02:35,185 --> 00:02:39,272
+workflow file is used. A ref is a
+name such as a branch or a tag.
+
+37
+00:02:39,312 --> 00:02:42,765
+And filters narrow an event
+to branches, tags or paths.
+
+38
+00:02:43,105 --> 00:02:47,159
+on takes one event, a list, or a map
+from event to its configuration.
+
+39
+00:02:47,199 --> 00:02:51,787
+The textbook lists eight events with the
+values the events reference gives for
+
+40
+00:02:51,827 --> 00:02:55,288
+GITHUB_SHA and GITHUB_REF. Take
+the four you'll meet first.
+
+41
+00:02:55,628 --> 00:03:00,395
+push starts when commits or tags are pushed.
+The commit is the tip commit pushed to
+
+42
+00:03:00,435 --> 00:03:05,259
+the ref. The ref is the updated ref. It runs
+for any branch, including workflows not
+
+43
+00:03:05,299 --> 00:03:07,055
+merged into the default branch.
+
+44
+00:03:07,395 --> 00:03:12,715
+pull_request starts when a pull request is
+opened, gets new commits, or is reopened.
+
+45
+00:03:12,755 --> 00:03:17,500
+Other activity types need types. The
+commit is the last merge commit on the
+
+46
+00:03:17,540 --> 00:03:20,819
+GITHUB_REF branch, and the
+ref is refs/pull/N/merge.
+
+47
+00:03:20,859 --> 00:03:24,902
+That's the test merge that GitHub
+computes for the pull request.
+
+48
+00:03:24,942 --> 00:03:29,241
+So the commit isn't the tip of your
+branch. Video 145 is about that.
+
+49
+00:03:29,281 --> 00:03:34,538
+And the reference adds: it doesn't run while
+the pull request has a merge conflict.
+
+50
+00:03:34,878 --> 00:03:39,515
+workflow_dispatch starts when someone
+starts it by hand, with the CLI or the API.
+
+51
+00:03:39,555 --> 00:03:44,019
+The commit is the last commit on the
+chosen branch or tag, and the ref is that
+
+52
+00:03:44,059 --> 00:03:48,581
+branch or tag. It works only if the
+workflow file exists on the default branch.
+
+53
+00:03:48,921 --> 00:03:54,992
+schedule starts when a cron expression
+matches. The commit is the last commit on the
+
+54
+00:03:55,032 --> 00:04:00,739
+default branch. The ref is the default
+branch. It's in UTC unless a timezone is
+
+55
+00:04:00,779 --> 00:04:06,560
+given. The shortest interval is five
+minutes. It can be delayed or dropped under
+
+56
+00:04:06,600 --> 00:04:12,380
+load. And in a public repository it is
+disabled after 60 days without repository
+
+57
+00:04:12,420 --> 00:04:13,035
+activity.
+
+58
+00:04:13,375 --> 00:04:18,105
+The other four in the table are
+workflow_call, workflow_run, merge_group and
+
+59
+00:04:18,145 --> 00:04:23,188
+release. One remark on merge_group now,
+because it's the same class of problem as
+
+60
+00:04:23,228 --> 00:04:28,460
+the hook: required checks must listen to
+it, or the merge queue never gets a result.
+
+61
+00:04:28,800 --> 00:04:31,903
+The textbook tells you to read
+the table as three families.
+
+62
+00:04:31,943 --> 00:04:35,953
+push, pull_request, merge_group and
+release are about a specific commit that
+
+63
+00:04:35,993 --> 00:04:40,375
+somebody produced. schedule and workflow_run
+are about the default branch, whatever
+
+64
+00:04:40,415 --> 00:04:44,478
+happened elsewhere. workflow_dispatch
+is about whatever ref the person chose.
+
+65
+00:04:44,818 --> 00:04:49,022
+One event is deliberately not in
+the table: pull_request_target.
+
+66
+00:04:49,062 --> 00:04:54,593
+It starts on the same pull request activity,
+but it's about the base repository: the
+
+67
+00:04:54,633 --> 00:04:59,434
+workflow file comes from the default
+branch and the job receives the base
+
+68
+00:04:59,474 --> 00:05:04,806
+repository's token and secrets. The
+textbook's instruction is plain: don't use it
+
+69
+00:05:04,846 --> 00:05:07,989
+before reading section
+21A.5. That is video 157.
+
+70
+00:05:08,329 --> 00:05:13,183
+Which copy of the workflow file. From the
+last video: for push and pull_request the
+
+71
+00:05:13,223 --> 00:05:17,900
+workflow definition is read from the commit
+the event refers to, so a branch can
+
+72
+00:05:17,940 --> 00:05:22,852
+change its own CI. For several other events
+it is read from the default branch only.
+
+73
+00:05:23,192 --> 00:05:28,207
+Filters. push accepts filters for branches,
+tags and paths, each with an -ignore
+
+74
+00:05:28,247 --> 00:05:33,450
+form. pull_request accepts the branch
+filters, which match the base branch, and the
+
+75
+00:05:33,490 --> 00:05:35,283
+two path filters. Four rules.
+
+76
+00:05:35,623 --> 00:05:40,201
+A positive filter and an -ignore filter of
+the same kind can't be combined for one
+
+77
+00:05:40,241 --> 00:05:44,706
+event. You use an exclamation mark pattern
+inside the positive filter, and order
+
+78
+00:05:44,746 --> 00:05:45,156
+matters.
+
+79
+00:05:45,496 --> 00:05:50,729
+When a branch filter and a path filter are
+both present, the workflow runs only when
+
+80
+00:05:50,769 --> 00:05:51,922
+both are satisfied.
+
+81
+00:05:52,262 --> 00:05:55,215
+Path filters aren't evaluated
+for pushes of tags.
+
+82
+00:05:55,555 --> 00:06:00,506
+And the rule the demonstration is built
+on: path filters compare with a three-dot
+
+83
+00:06:00,546 --> 00:06:03,772
+diff for pull requests and
+a two-dot diff for pushes.
+
+84
+00:06:03,812 --> 00:06:08,824
+Two limits come with it. A push with more
+than 1,000 commits, or a diff that times
+
+85
+00:06:08,864 --> 00:06:13,815
+out, always runs the workflow. A diff of
+more than 3,000 files in which the match
+
+86
+00:06:13,855 --> 00:06:16,033
+isn't among the first 3,000 doesn't.
+
+87
+00:06:16,373 --> 00:06:21,400
+Two more ways a run doesn't come to exist.
+A commit whose message contains [skip
+
+88
+00:06:21,440 --> 00:06:26,340
+ci], or one of its documented variants,
+skips push and pull_request workflows.
+
+89
+00:06:26,380 --> 00:06:31,659
+And events created by a workflow's own job
+token don't start new workflow runs, with
+
+90
+00:06:31,699 --> 00:06:36,663
+documented exceptions: workflow_dispatch,
+repository_dispatch, and pull request
+
+91
+00:06:36,703 --> 00:06:40,716
+events, which wait for approval
+since the eleventh of June 2026.
+
+92
+00:06:40,756 --> 00:06:45,972
+So a job that pushes a commit with the job
+token doesn't trigger the push workflows
+
+93
+00:06:46,012 --> 00:06:46,986
+for that commit.
+
+94
+00:06:47,326 --> 00:06:52,173
+Contexts and expressions. In one sentence:
+a context is a named object of facts
+
+95
+00:06:52,213 --> 00:06:57,371
+about the run, and an expression, written
+with a dollar sign and double braces, is a
+
+96
+00:06:57,411 --> 00:07:02,506
+small formula over contexts that GitHub
+Actions replaces with its value before your
+
+97
+00:07:02,546 --> 00:07:03,248
+step starts.
+
+98
+00:07:03,588 --> 00:07:08,498
+The contexts you'll use first: github, with
+the event name, the full event payload,
+
+99
+00:07:08,538 --> 00:07:11,539
+the ref, the commit, the
+actor and the run numbers.
+
+100
+00:07:11,579 --> 00:07:16,369
+env. vars. secrets. inputs. matrix. steps,
+which holds the outputs and outcome of
+
+101
+00:07:16,409 --> 00:07:21,318
+earlier steps that have an id. And needs,
+which holds the outputs and result of the
+
+102
+00:07:21,358 --> 00:07:22,570
+jobs listed in needs.
+
+103
+00:07:22,910 --> 00:07:25,973
+The rules of the expression
+language that cause surprises.
+
+104
+00:07:26,313 --> 00:07:30,759
+Strings use single quotes inside the
+braces. Double quotes are an error.
+
+105
+00:07:31,099 --> 00:07:36,001
+String comparison ignores case. When the
+two sides of an equality differ in type,
+
+106
+00:07:36,041 --> 00:07:37,832
+both are converted to numbers.
+
+107
+00:07:38,172 --> 00:07:42,480
+A property that doesn't exist evaluates
+to an empty string, without an error.
+
+108
+00:07:42,520 --> 00:07:45,868
+A typing error in the name of
+a step ID is therefore silent.
+
+109
+00:07:46,208 --> 00:07:51,731
+The functions include contains, startsWith,
+format, toJSON, fromJSON, hashFiles, and
+
+110
+00:07:51,771 --> 00:07:56,234
+the status functions success(),
+failure(), cancelled() and always().
+
+111
+00:07:56,274 --> 00:08:00,803
+The function case has existed since
+the twenty-ninth of January 2026.
+
+112
+00:08:00,843 --> 00:08:06,233
+Older files imitate it with "condition and
+a, or b", which returns b whenever a is
+
+113
+00:08:06,273 --> 00:08:06,630
+falsy.
+
+114
+00:08:06,970 --> 00:08:12,449
+Context availability is per key. A job-level
+if can read github, needs, vars and
+
+115
+00:08:12,489 --> 00:08:17,899
+inputs, but not matrix, steps, env or
+secrets. A step-level if can read matrix,
+
+116
+00:08:17,939 --> 00:08:23,211
+steps and env, but still not secrets.
+The reason is timing: a job-level if is
+
+117
+00:08:23,251 --> 00:08:28,868
+decided before a runner exists, so nothing
+that lives on the runner can take part.
+
+118
+00:08:29,208 --> 00:08:34,145
+The trap in if. The wrapper of dollar sign
+and braces is optional in an if, unless
+
+119
+00:08:34,185 --> 00:08:39,122
+the expression starts with an exclamation
+mark. Text outside the wrapper turns the
+
+120
+00:08:39,162 --> 00:08:42,339
+whole value into a non-empty
+string, which is truthy.
+
+121
+00:08:42,379 --> 00:08:44,402
+The condition is then always true.
+
+122
+00:08:44,742 --> 00:08:49,669
+Since the twenty-ninth of January 2026 the
+editor validation flags the third form
+
+123
+00:08:49,709 --> 00:08:51,631
+and the run shows an annotation.
+
+124
+00:08:51,971 --> 00:08:56,650
+env, vars and secrets. In one sentence:
+env is defined in the workflow file and
+
+125
+00:08:56,690 --> 00:09:01,608
+becomes environment variables of the process.
+vars and secrets are stored in GitHub
+
+126
+00:09:01,648 --> 00:09:06,267
+settings and are read through contexts.
+Only secrets are encrypted and masked.
+
+127
+00:09:06,607 --> 00:09:11,232
+Where each is defined: env in the workflow
+file, at workflow, job or step level.
+
+128
+00:09:11,272 --> 00:09:15,546
+vars and secrets in the settings of
+the organization, the repository or an
+
+129
+00:09:15,586 --> 00:09:16,246
+environment.
+
+130
+00:09:16,586 --> 00:09:21,134
+Who can see it: env is in the file. vars
+aren't in the repository but readable in
+
+131
+00:09:21,174 --> 00:09:24,192
+settings and logs. secrets
+are write-only in settings.
+
+132
+00:09:24,532 --> 00:09:27,827
+How it reaches a step: env
+as an environment variable.
+
+133
+00:09:27,867 --> 00:09:32,953
+vars and secrets only through their context.
+You map them into env, or for a secret
+
+134
+00:09:32,993 --> 00:09:34,003
+into env or with.
+
+135
+00:09:34,343 --> 00:09:39,973
+Precedence for the same name: for env, the
+most specific wins, step over job over
+
+136
+00:09:40,013 --> 00:09:44,594
+workflow. For vars, environment
+over repository over organization.
+
+137
+00:09:44,634 --> 00:09:47,884
+For secrets, the
+environment-level secret wins.
+
+138
+00:09:48,224 --> 00:09:52,878
+Masking: env no, vars no, secrets
+yes, when the exact value appears.
+
+139
+00:09:52,918 --> 00:09:56,122
+The textbook adds three
+words: not a guarantee.
+
+140
+00:09:56,462 --> 00:10:00,791
+Quick quiz. A deploy step reads
+a secret that nobody ever set.
+
+141
+00:10:00,831 --> 00:10:04,948
+What does the step receive? A,
+an error that stops the run.
+
+142
+00:10:04,988 --> 00:10:07,203
+B, an empty string. Your answer?
+
+143
+00:10:12,043 --> 00:10:15,606
+B, an empty string. Three
+behaviors cause real failures.
+
+144
+00:10:15,646 --> 00:10:20,753
+An unset secret is an empty string, not
+an error. A deploy step that receives an
+
+145
+00:10:20,793 --> 00:10:25,899
+empty credential fails later and elsewhere,
+with a message about authentication.
+
+146
+00:10:25,939 --> 00:10:31,303
+Secrets aren't passed to workflows triggered
+from forks or by Dependabot, apart from
+
+147
+00:10:31,343 --> 00:10:32,719
+a read-only job token.
+
+148
+00:10:33,059 --> 00:10:36,973
+A fork is a second repository
+on GitHub, made from the first.
+
+149
+00:10:37,013 --> 00:10:42,159
+A fork pull request that "fails only in
+CI" is often a job that needed a secret.
+
+150
+00:10:42,199 --> 00:10:47,410
+And secrets can't be used in if. You map
+the secret into env and test whether the
+
+151
+00:10:47,450 --> 00:10:48,836
+variable is non-empty.
+
+152
+00:10:49,176 --> 00:10:52,802
+GITHUB_TOKEN is a secret that
+GitHub creates for each job.
+
+153
+00:10:52,842 --> 00:10:57,794
+What it may do is set by the permissions
+key, and when any permission is named,
+
+154
+00:10:57,834 --> 00:10:59,753
+every unnamed one becomes none.
+
+155
+00:11:01,593 --> 00:11:05,512
+Analogy, from the textbook. An
+expression is a mail-merge field.
+
+156
+00:11:05,552 --> 00:11:10,213
+The letter, which is your step, is
+printed with the field already filled in.
+
+157
+00:11:10,253 --> 00:11:14,605
+The recipient, which is the shell,
+never sees the field, only the text.
+
+158
+00:11:14,945 --> 00:11:20,022
+The textbook says the analogy is exact
+about the danger and incomplete about the
+
+159
+00:11:20,062 --> 00:11:25,266
+timing. Exact about the danger: text
+substituted into a script becomes part of the
+
+160
+00:11:25,306 --> 00:11:30,318
+script. That's how an untrusted pull
+request title becomes a shell command, and
+
+161
+00:11:30,358 --> 00:11:35,562
+video 158 is about that. Incomplete about
+the timing: not every field is available
+
+162
+00:11:35,602 --> 00:11:36,522
+in every place.
+
+163
+00:11:36,862 --> 00:11:40,342
+So for every expression ask:
+who evaluates this, and when?
+
+164
+00:11:40,382 --> 00:11:41,798
+There are three moments.
+
+165
+00:11:42,138 --> 00:11:47,000
+Before a runner is assigned, the service
+evaluates on, the job-level if, and the
+
+166
+00:11:47,040 --> 00:11:47,429
+matrix.
+
+167
+00:11:47,769 --> 00:11:52,762
+On the runner, per step, before the shell
+starts, the step-level if, with, env, and
+
+168
+00:11:52,802 --> 00:11:55,612
+any expression inside a
+run text are evaluated.
+
+169
+00:11:55,952 --> 00:11:59,510
+And at run time, the shell expands
+an ordinary shell variable.
+
+170
+00:11:59,850 --> 00:12:03,339
+The difference between the last
+two is a security boundary.
+
+171
+00:12:03,379 --> 00:12:07,107
+An expression inside run pastes
+the value into the script text.
+
+172
+00:12:07,147 --> 00:12:12,071
+A value mapped into env and then read as a
+shell variable is handed to the shell as
+
+173
+00:12:12,111 --> 00:12:16,976
+data. Every course workflow uses the second
+form, including for values that aren't
+
+174
+00:12:17,016 --> 00:12:19,966
+attacker-controlled, so
+that the habit is uniform.
+
+175
+00:12:21,806 --> 00:12:26,955
+Four rows, three questions: which commit,
+which ref, and which copy of the workflow
+
+176
+00:12:26,995 --> 00:12:31,957
+file. Look at the last column. Only push
+and pull_request read the file from the
+
+177
+00:12:31,997 --> 00:12:33,645
+commit the event refers to.
+
+178
+00:12:33,985 --> 00:12:38,723
+And the second picture: three moments.
+The service evaluates before a runner is
+
+179
+00:12:38,763 --> 00:12:43,319
+assigned. The runner fills in expressions
+per step, before the shell starts.
+
+180
+00:12:43,359 --> 00:12:46,464
+And the shell expands its
+own variables at run time.
+
+181
+00:12:48,304 --> 00:12:53,673
+The situation: a pull request branch,
+feature/reorder-report, that touches only
+
+182
+00:12:53,713 --> 00:12:58,465
+Python files, while main moved on.
+A Java workflow has the path filter
+
+183
+00:12:58,505 --> 00:12:59,560
+java-service/**.
+
+184
+00:12:59,900 --> 00:13:02,400
+Step 1: the pull request comparison.
+
+185
+00:13:02,740 --> 00:13:07,244
+Three dots. Which files are listed, and
+what's the exit status of the second
+
+186
+00:13:07,284 --> 00:13:08,738
+command? Say it out loud.
+
+187
+00:13:13,578 --> 00:13:19,168
+Two Python files. Exit status 0 from git
+diff --quiet means no difference under that
+
+188
+00:13:19,208 --> 00:13:21,782
+path. The Java workflow wouldn't start.
+
+189
+00:13:22,122 --> 00:13:24,332
+Step 2: what two dots would say.
+
+190
+00:13:24,672 --> 00:13:29,109
+Four files. stock.py and its test
+changed on main, not on the branch.
+
+191
+00:13:29,449 --> 00:13:33,387
+Two dots compare the two tips and
+blame the branch for what main did.
+
+192
+00:13:33,427 --> 00:13:38,115
+For a pull request GitHub is documented to
+use three dots: the merge base compared
+
+193
+00:13:38,155 --> 00:13:40,651
+with the head, which is
+what the branch did.
+
+194
+00:13:40,991 --> 00:13:46,454
+Try it now, thirty seconds, in a repository
+of your own, on a branch other than the
+
+195
+00:13:46,494 --> 00:13:52,024
+default one. Run git diff --name-only
+origin/main...HEAD, with your default branch's
+
+196
+00:13:52,064 --> 00:13:55,538
+name if it isn't main. Three
+dots, and it only reads.
+
+197
+00:13:55,578 --> 00:13:57,129
+What does the list show?
+
+198
+00:13:59,469 --> 00:14:04,282
+It shows every path your branch changed
+since the merge base, the commit where it
+
+199
+00:14:04,322 --> 00:14:08,956
+left the default branch. For a pull
+request, that's the list a paths filter is
+
+200
+00:14:08,996 --> 00:14:13,510
+documented to be compared with. If
+nothing in it matches, no run is created.
+
+201
+00:14:13,850 --> 00:14:15,329
+Step 3: a push.
+
+202
+00:14:15,669 --> 00:14:20,536
+git commit adds an object and moves the
+branch. For a push, the comparison is two
+
+203
+00:14:20,576 --> 00:14:25,503
+dots between the old and the new tip of
+the pushed branch: the commits you pushed.
+
+204
+00:14:25,543 --> 00:14:27,563
+Exit status? Make your prediction.
+
+205
+00:14:32,403 --> 00:14:37,662
+Status 1: a path under java-service/
+changed. The Java workflow would start.
+
+206
+00:14:38,002 --> 00:14:43,965
+Step 4: the lab replay. Replay
+labs/run ch20a/lab-26-5-path-filter.
+
+207
+00:14:44,005 --> 00:14:51,222
+Here the filter has two entries: the Java
+directory and the workflow file itself.
+
+208
+00:14:51,562 --> 00:14:57,031
+A documentation branch. Only README.md
+changed. Status 0: the workflow doesn't
+
+209
+00:14:57,071 --> 00:15:02,681
+start. If that workflow were a required
+check, this is the pull request from the
+
+210
+00:15:02,721 --> 00:15:03,034
+hook.
+
+211
+00:15:03,374 --> 00:15:06,571
+A second commit on the same
+branch changes pom.xml.
+
+212
+00:15:06,611 --> 00:15:10,443
+The three-dot diff now lists
+both files, and the status is 1.
+
+213
+00:15:10,483 --> 00:15:15,521
+Notice what this means for a pull request:
+the comparison is over the whole pull
+
+214
+00:15:15,561 --> 00:15:20,663
+request, so once any commit in it touches
+a filtered path, the workflow starts on
+
+215
+00:15:20,703 --> 00:15:22,631
+every later push to it as well.
+
+216
+00:15:22,971 --> 00:15:26,759
+Lab 26.2 on your practice
+repository, in your normal shell.
+
+217
+00:15:26,799 --> 00:15:32,145
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+218
+00:15:32,185 --> 00:15:35,065
+No GitHub output was
+captured by the authors.
+
+219
+00:15:35,405 --> 00:15:41,062
+Read the trigger of workflows/02-lint.yml
+first: pushes to main, and pull requests.
+
+220
+00:15:41,102 --> 00:15:46,827
+The lab has you add the workflow on a branch
+named ci/lint, push the branch and open
+
+221
+00:15:46,867 --> 00:15:52,386
+a pull request. git push is 🟡 CAUTION and
+gh pr create is 🟡 CAUTION: it creates a
+
+222
+00:15:52,426 --> 00:15:54,788
+GitHub object that notifies people.
+
+223
+00:15:55,128 --> 00:16:00,096
+Before the push, the lab asks you to
+predict: which workflows start for the pull
+
+224
+00:16:00,136 --> 00:16:04,917
+request, and how many checks will it
+show? Think about it with what you know.
+
+225
+00:16:04,957 --> 00:16:10,114
+The push to ci/lint is a push, but not to
+main, so the push trigger with its branch
+
+226
+00:16:10,154 --> 00:16:15,373
+filter doesn't match. The pull_request
+trigger matches once the pull request exists.
+
+227
+00:16:15,413 --> 00:16:20,319
+And the lint workflow file is on the
+branch, not yet on main: for pull_request,
+
+228
+00:16:20,359 --> 00:16:21,509
+which copy is used?
+
+229
+00:16:21,849 --> 00:16:25,779
+In the browser, open the pull
+request and find the list of checks.
+
+230
+00:16:25,819 --> 00:16:30,833
+Name each by the workflow and job it comes
+from. Then look at two expressions in the
+
+231
+00:16:30,873 --> 00:16:35,826
+file while the run is in progress: the if
+with !cancelled() on the formatting step,
+
+232
+00:16:35,866 --> 00:16:40,819
+which needs the wrapper because it starts
+with an exclamation mark, and the summary
+
+233
+00:16:40,859 --> 00:16:45,030
+step that maps two step outcomes into
+env before the shell reads them.
+
+234
+00:16:46,870 --> 00:16:48,518
+Five mistakes to watch for.
+
+235
+00:16:48,858 --> 00:16:51,816
+A required check on a
+workflow with a paths filter.
+
+236
+00:16:51,856 --> 00:16:56,694
+Root cause: a workflow that a filter skips
+never creates its check, and the ruleset
+
+237
+00:16:56,734 --> 00:16:58,928
+waits for a result that will not come.
+
+238
+00:16:59,268 --> 00:17:02,674
+Predicting a pull request path
+filter with a two-dot diff.
+
+239
+00:17:02,714 --> 00:17:07,665
+Root cause: for pull requests the comparison
+is three dots, from the merge base; two
+
+240
+00:17:07,705 --> 00:17:10,339
+dots include what changed
+on the base branch.
+
+241
+00:17:10,679 --> 00:17:15,572
+An if with text outside the expression
+wrapper. Root cause: the whole value becomes
+
+242
+00:17:15,612 --> 00:17:19,673
+a non-empty string, which is truthy,
+so the condition is always true.
+
+243
+00:17:20,013 --> 00:17:25,122
+A typing error in steps.<id>.outputs. Root
+cause: a property that does not exist
+
+244
+00:17:25,162 --> 00:17:28,148
+evaluates to an empty
+string, without an error.
+
+245
+00:17:28,488 --> 00:17:32,811
+Expecting a secret in a fork pull
+request, or testing secrets in if.
+
+246
+00:17:32,851 --> 00:17:37,753
+Root cause: secrets are not passed to
+workflows triggered from forks, and the
+
+247
+00:17:37,793 --> 00:17:40,256
+secrets context is not available in if.
+
+248
+00:17:42,096 --> 00:17:46,563
+Now, out of the lab. A platform team
+runs a nightly evaluation with schedule.
+
+249
+00:17:46,603 --> 00:17:51,364
+An engineer improves the evaluation workflow
+on a feature branch and waits for the
+
+250
+00:17:51,404 --> 00:17:56,164
+night to see the result. In the morning
+the run has used the old workflow, and the
+
+251
+00:17:56,204 --> 00:17:57,686
+engineer suspects a cache.
+
+252
+00:17:58,026 --> 00:18:02,914
+Read the table. For schedule, the commit
+is the last commit on the default branch
+
+253
+00:18:02,954 --> 00:18:07,782
+and the ref is the default branch. A
+scheduled run knows nothing about a feature
+
+254
+00:18:07,822 --> 00:18:12,588
+branch. To try the changed workflow before
+merging, the engineer needs an event
+
+255
+00:18:12,628 --> 00:18:14,170
+that's about a chosen ref.
+
+256
+00:18:14,510 --> 00:18:19,408
+That is workflow_dispatch, with its own
+condition: it works only if the workflow
+
+257
+00:18:19,448 --> 00:18:24,160
+file exists on the default branch. So
+the first version of a manually started
+
+258
+00:18:24,200 --> 00:18:29,222
+workflow has to be merged before it can be
+started by hand from any branch at all.
+
+259
+00:18:31,062 --> 00:18:35,475
+Your turn. Do Lab 26.2,
+"Workflow 2, linting", in
+
+260
+00:18:35,515 --> 00:18:41,019
+lab-manual/m26-actions-fundamentals.md,
+in your normal shell.
+
+261
+00:18:41,359 --> 00:18:46,204
+Predict before step 3: which workflows
+start for the pull request, and how many
+
+262
+00:18:46,244 --> 00:18:51,337
+checks it will show. Then, in the failure
+part of the lab, predict which step fails
+
+263
+00:18:51,377 --> 00:18:53,872
+and whether the step after it still runs.
+
+264
+00:18:54,212 --> 00:19:00,995
+The challenge is Exercise 26.4, "Will
+the path filter start the workflow?", in
+
+265
+00:19:01,035 --> 00:19:04,319
+exercises/m26-m31-actions-security.md.
+
+266
+00:19:08,159 --> 00:19:12,556
+Answer out loud first. A strong answer
+goes event by event and keeps the two
+
+267
+00:19:12,596 --> 00:19:16,759
+questions separate, because they have
+different answers for some events.
+
+268
+00:19:16,799 --> 00:19:21,546
+For pull_request it names the commit exactly
+and says why it isn't the branch tip.
+
+269
+00:19:21,586 --> 00:19:24,816
+It mentions the condition
+attached to workflow_dispatch.
+
+270
+00:19:24,856 --> 00:19:29,662
+The follow-up is about a pull request that
+edits its own workflow to remove a test:
+
+271
+00:19:29,702 --> 00:19:34,391
+say whether the edited file runs, and then
+what that implies about who may change
+
+272
+00:19:34,431 --> 00:19:38,185
+workflow files and what a required
+check can and can't guarantee.
+
+273
+00:19:40,025 --> 00:19:45,206
+Let's land this. The waiting pull request
+from the opening has its explanation: the
+
+274
+00:19:45,246 --> 00:19:49,923
+filter created no run, so no check was
+reported, and the rule kept waiting.
+
+275
+00:19:50,263 --> 00:19:51,923
+You should now be able to say:
+
+276
+00:19:52,263 --> 00:19:57,108
+Each event fixes a commit and a ref: the
+pushed tip for push, the test merge under
+
+277
+00:19:57,148 --> 00:20:02,052
+refs/pull/N/merge for pull_request, the
+default branch for schedule, the chosen ref
+
+278
+00:20:02,092 --> 00:20:03,363
+for workflow_dispatch.
+
+279
+00:20:03,703 --> 00:20:08,277
+A filter decides whether a run is created
+at all, and a run that is not created
+
+280
+00:20:08,317 --> 00:20:09,270
+reports no check.
+
+281
+00:20:09,610 --> 00:20:14,204
+Path filters use a three-dot diff for pull
+requests and a two-dot diff for pushes,
+
+282
+00:20:14,244 --> 00:20:16,069
+and you can compute both locally.
+
+283
+00:20:16,409 --> 00:20:21,550
+An expression is replaced by its value before
+the shell starts; which contexts exist
+
+284
+00:20:21,590 --> 00:20:22,722
+depends on the key.
+
+285
+00:20:23,062 --> 00:20:27,966
+env is in the file, vars and secrets are
+in settings, only secrets are masked, and
+
+286
+00:20:28,006 --> 00:20:30,076
+an unset secret is an empty string.
+
+287
+00:20:31,916 --> 00:20:40,121
+Read sections 20A.4 to 20A.6 of Chapter
+20A. Do Exercise 26.2, "Which commit, which
+
+288
+00:20:40,161 --> 00:20:46,081
+ref, which file?", in
+exercises/m26-m31-actions-security.md.
+
+289
+00:20:46,421 --> 00:20:51,225
+Today you learned to say, for an event,
+which commit, which ref and which file, and
+
+290
+00:20:51,265 --> 00:20:56,070
+you computed a path filter with a plain
+diff. Run the three-dot diff on a branch of
+
+291
+00:20:56,110 --> 00:21:00,856
+yours before the next video. Next time:
+shells, and passing data between steps and
+
+292
+00:21:00,896 --> 00:21:04,241
+jobs. Until then, look at the
+state first and type second.
+
+293
+00:21:04,281 --> 00:21:05,642
+See you in the next one.

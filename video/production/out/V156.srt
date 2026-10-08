@@ -1,0 +1,1343 @@
+1
+00:00:04,500 --> 00:00:09,696
+"A contributor we have never heard of opened
+a pull request on our public evaluation
+
+2
+00:00:09,736 --> 00:00:14,558
+library. Eight hours later there were
+malicious versions of our package on the
+
+3
+00:00:14,598 --> 00:00:19,046
+registry, published by our own release
+workflow. No password was stolen.
+
+4
+00:00:19,086 --> 00:00:19,358
+How?"
+
+5
+00:00:19,698 --> 00:00:24,839
+That's the shape of a real incident of the
+eleventh of May 2026, and video 162 goes
+
+6
+00:00:24,879 --> 00:00:28,834
+through it. Notice one thing: each
+step was documented behavior.
+
+7
+00:00:28,874 --> 00:00:34,016
+A workflow trigger, the event that starts
+an automated run, that runs with the base
+
+8
+00:00:34,056 --> 00:00:37,886
+repository's privileges. A checkout
+of the contributor's code.
+
+9
+00:00:37,926 --> 00:00:42,942
+A cache, a directory one run stores for a
+later run, shared with the release job.
+
+10
+00:00:42,982 --> 00:00:48,124
+A release job that could request a publishing
+identity, the credential it publishes
+
+11
+00:00:48,164 --> 00:00:49,185
+the package with.
+
+12
+00:00:49,525 --> 00:00:52,865
+A CTO who asks "how?" doesn't
+want a list of settings.
+
+13
+00:00:52,905 --> 00:00:58,124
+They want to know which line of which file
+gave an outsider code execution next to a
+
+14
+00:00:58,164 --> 00:01:03,383
+credential, why the platform allowed it,
+what the smallest change is that closes it,
+
+15
+00:01:03,423 --> 00:01:08,580
+and how you'll know it stays closed. A
+smaller puzzle for today: one workflow file,
+
+16
+00:01:08,620 --> 00:01:12,837
+copied unchanged into a second
+repository, where one step now fails.
+
+17
+00:01:12,877 --> 00:01:13,713
+Hold on to it.
+
+18
+00:01:15,553 --> 00:01:19,561
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+19
+00:01:19,601 --> 00:01:24,008
+This is Part 7: security. A word
+about what this part is and isn't.
+
+20
+00:01:24,348 --> 00:01:29,084
+It is defensive. The chapter says so in
+its second paragraph: it shows unsafe
+
+21
+00:01:29,124 --> 00:01:34,232
+workflow patterns next to their fixes, at
+the level of detail GitHub's own security
+
+22
+00:01:34,272 --> 00:01:38,946
+documentation uses, so that you can
+review and harden your team's workflows.
+
+23
+00:01:38,986 --> 00:01:42,854
+It contains no working attack.
+The same holds for these videos.
+
+24
+00:01:43,194 --> 00:01:48,011
+And the evidence statement, as for Part
+6. Nothing in this chapter was run on
+
+25
+00:01:48,051 --> 00:01:53,246
+GitHub. The transcripts show plain Git and
+grep, a command that prints the matching
+
+26
+00:01:53,286 --> 00:01:57,409
+lines of a file, on the course's
+workflow files. The five files in
+
+27
+00:01:57,449 --> 00:02:01,635
+workflows/vulnerable/ are teaching
+material with faults on purpose.
+
+28
+00:02:01,675 --> 00:02:06,745
+They were assembled from documented syntax
+and parse-checked, and never executed.
+
+29
+00:02:06,785 --> 00:02:09,205
+Never copy them into a real repository.
+
+30
+00:02:09,545 --> 00:02:14,718
+Five words before we start. A workflow is
+a file that says: when this event happens,
+
+31
+00:02:14,758 --> 00:02:19,310
+run these jobs. A job is a list of
+steps on one fresh machine, the runner.
+
+32
+00:02:19,350 --> 00:02:24,337
+A token is a credential: a string that
+stands for an account with a subset of its
+
+33
+00:02:24,377 --> 00:02:29,488
+rights. A pull request proposes merging a
+branch into yours, and a fork is a second
+
+34
+00:02:29,528 --> 00:02:31,846
+repository on GitHub, made from yours.
+
+35
+00:02:32,186 --> 00:02:37,034
+This first video gives you the model in five
+parts, and then takes the first part in
+
+36
+00:02:37,074 --> 00:02:41,923
+full: the job token and the permissions key.
+The demonstration is an inventory: five
+
+37
+00:02:41,963 --> 00:02:46,346
+files you've never seen, and four grep
+commands that tell you where to look.
+
+38
+00:02:48,186 --> 00:02:49,764
+Here's what you'll walk away with.
+
+39
+00:02:50,104 --> 00:02:51,516
+After this video you can:
+
+40
+00:02:51,856 --> 00:02:56,512
+describe the security model of a workflow
+run in the five parts the section names;
+
+41
+00:02:56,852 --> 00:03:01,585
+say what the job token can do when a workflow
+has no permissions key and what that
+
+42
+00:03:01,625 --> 00:03:02,225
+depends on;
+
+43
+00:03:02,565 --> 00:03:04,992
+write least-privilege
+permissions for a job;
+
+44
+00:03:05,332 --> 00:03:10,386
+inventory the triggers, permissions, actions
+and secrets of a set of workflow files
+
+45
+00:03:10,426 --> 00:03:11,613
+with local commands.
+
+46
+00:03:13,453 --> 00:03:18,213
+"Whose code runs in this job, on whose
+text does it operate, and what can the job
+
+47
+00:03:18,253 --> 00:03:18,627
+reach?"
+
+48
+00:03:18,967 --> 00:03:23,560
+The textbook says the whole chapter reduces
+to that one question, asked of every
+
+49
+00:03:23,600 --> 00:03:28,250
+job. If the answer to the first two parts
+is "somebody outside the team", and the
+
+50
+00:03:28,290 --> 00:03:33,057
+answer to the third is anything other than
+"nothing", you've found a vulnerability,
+
+51
+00:03:33,097 --> 00:03:34,967
+a weakness an outsider could use.
+
+52
+00:03:35,307 --> 00:03:40,301
+In one sentence. A workflow run is a program
+that GitHub starts on your behalf, with
+
+53
+00:03:40,341 --> 00:03:44,915
+a credential for your repository in its
+pocket, and its safety depends on who
+
+54
+00:03:44,955 --> 00:03:47,491
+controls the program's
+code and its inputs.
+
+55
+00:03:47,831 --> 00:03:49,428
+Precisely: five parts.
+
+56
+00:03:49,768 --> 00:03:54,896
+One. The job token. Each job receives a
+GITHUB_TOKEN limited to the workflow's
+
+57
+00:03:54,936 --> 00:03:58,607
+repository, and the permissions
+key sets what it may do.
+
+58
+00:03:58,947 --> 00:04:04,364
+Two. Fork pull requests. A pull_request
+run from a fork gets a read-only token and
+
+59
+00:04:04,404 --> 00:04:08,291
+no secrets, the encrypted values
+kept in GitHub's settings.
+
+60
+00:04:08,331 --> 00:04:11,885
+By default only first-time
+contributors need approval.
+
+61
+00:04:12,225 --> 00:04:16,729
+Three. Privileged triggers.
+pull_request_target, and also workflow_run and
+
+62
+00:04:16,769 --> 00:04:20,659
+issue_comment, run with the base
+repository's token and secrets.
+
+63
+00:04:20,699 --> 00:04:24,466
+The base repository is the one
+that receives the pull request.
+
+64
+00:04:24,506 --> 00:04:28,519
+These triggers are safe only while
+they don't run the fork's code.
+
+65
+00:04:28,859 --> 00:04:33,615
+Four. Expression injection. The dollar-brace
+expression, a formula that Actions
+
+66
+00:04:33,655 --> 00:04:38,289
+replaces with its value, is substituted
+into the script text before the shell
+
+67
+00:04:38,329 --> 00:04:41,324
+starts, so attacker-controlled
+fields become code.
+
+68
+00:04:41,664 --> 00:04:47,384
+Five. Third-party actions. An action is a
+packaged step: someone else's code inside
+
+69
+00:04:47,424 --> 00:04:50,923
+your job. It runs with the
+job's token and secrets.
+
+70
+00:04:50,963 --> 00:04:54,739
+A tag can be moved. Only a
+full commit ID is immutable.
+
+71
+00:04:55,079 --> 00:04:58,312
+The next videos take parts
+two to five one at a time.
+
+72
+00:04:58,352 --> 00:05:02,943
+And one statement about layers: nothing
+in this model is a property of Git.
+
+73
+00:05:03,283 --> 00:05:06,911
+Git contributes exactly two
+facts that the model relies on.
+
+74
+00:05:06,951 --> 00:05:10,455
+A tag, a name for one commit,
+is a ref that can be moved.
+
+75
+00:05:10,495 --> 00:05:13,439
+And a commit ID names
+content that can't change.
+
+76
+00:05:13,779 --> 00:05:18,759
+The job token. In one sentence: every job
+gets its own short-lived token for the
+
+77
+00:05:18,799 --> 00:05:23,780
+repository that contains the workflow,
+and the permissions key decides what that
+
+78
+00:05:23,820 --> 00:05:24,596
+token may do.
+
+79
+00:05:24,936 --> 00:05:29,217
+Precisely. The documentation: "At the
+start of each workflow job, GitHub
+
+80
+00:05:29,257 --> 00:05:33,778
+automatically creates a unique GITHUB_TOKEN
+secret to use in your workflow."
+
+81
+00:05:33,818 --> 00:05:38,819
+It's a GitHub App installation access token,
+and its permissions "are limited to the
+
+82
+00:05:38,859 --> 00:05:43,260
+repository that contains your workflow".
+It expires when the job finishes.
+
+83
+00:05:43,300 --> 00:05:46,981
+On GitHub-hosted runners it can
+live for a maximum of 6 hours.
+
+84
+00:05:47,321 --> 00:05:49,928
+What the token may do is
+decided in three layers.
+
+85
+00:05:50,268 --> 00:05:54,962
+The repository or organization default:
+the setting called "Workflow permissions".
+
+86
+00:05:55,002 --> 00:05:58,194
+It decides what a workflow
+with no permissions key gets.
+
+87
+00:05:58,234 --> 00:06:03,043
+There are two options, quoted from the
+documentation: "read and write access for all
+
+88
+00:06:03,083 --> 00:06:07,430
+permissions", or read access for the
+contents and packages permissions only.
+
+89
+00:06:07,770 --> 00:06:12,516
+The workflow: the top-level permissions key
+sets the token of every job that doesn't
+
+90
+00:06:12,556 --> 00:06:13,199
+override it.
+
+91
+00:06:13,539 --> 00:06:17,826
+The job: a permissions key under the
+job sets the token of that job only.
+
+92
+00:06:18,166 --> 00:06:20,654
+Three rules of the key
+carry most of the weight.
+
+93
+00:06:20,994 --> 00:06:26,262
+Rule one, quoted: "If you specify the
+access for any of these permissions, all of
+
+94
+00:06:26,302 --> 00:06:31,308
+those that are not specified are set to
+none." So writing contents: read also
+
+95
+00:06:31,348 --> 00:06:35,371
+removes issues, packages,
+pull-requests and every other scope.
+
+96
+00:06:35,411 --> 00:06:37,730
+A scope is one named area of access.
+
+97
+00:06:38,070 --> 00:06:42,868
+Quick quiz. A workflow's only
+permissions line is issues: write.
+
+98
+00:06:42,908 --> 00:06:46,874
+Can its token read the
+repository's contents? A, yes.
+
+99
+00:06:46,914 --> 00:06:48,310
+B, no. Your answer?
+
+100
+00:06:53,150 --> 00:06:58,275
+B. Naming one scope sets every other
+one to none, reading contents included.
+
+101
+00:06:58,315 --> 00:07:01,061
+Almost everyone expects A the first time.
+
+102
+00:07:01,401 --> 00:07:04,427
+Rule two: permissions with an
+empty map removes everything.
+
+103
+00:07:04,467 --> 00:07:06,818
+read-all and write-all
+are the two shorthands.
+
+104
+00:07:07,158 --> 00:07:12,640
+Rule three: the scopes. On the first of
+October 2026 the list has sixteen names,
+
+105
+00:07:12,680 --> 00:07:18,300
+among them actions, attestations, checks,
+contents, deployments, id-token, issues,
+
+106
+00:07:18,340 --> 00:07:22,028
+packages, pull-requests,
+security-events and statuses.
+
+107
+00:07:22,068 --> 00:07:25,893
+Each takes read, write or
+none, and write includes read.
+
+108
+00:07:26,233 --> 00:07:31,445
+Older behavior: a workflow without a
+permissions key received a read-write token.
+
+109
+00:07:31,485 --> 00:07:36,761
+Current behavior: the default is read-only
+for new repositories, organizations and
+
+110
+00:07:36,801 --> 00:07:42,207
+enterprises. Since the second of February
+2023, and the changelog adds: "this change
+
+111
+00:07:42,247 --> 00:07:46,940
+will not impact any existing enterprises,
+organizations or repositories".
+
+112
+00:07:46,980 --> 00:07:52,062
+Recommended: never rely on the default.
+Declare permissions at the top of every
+
+113
+00:07:52,102 --> 00:07:57,119
+workflow, because a repository created
+before February 2023 may still have the
+
+114
+00:07:57,159 --> 00:08:02,177
+permissive setting. The Nx project's
+post-mortem, its published account of the
+
+115
+00:08:02,217 --> 00:08:05,548
+incident, names exactly this
+as one of three causes.
+
+116
+00:08:05,888 --> 00:08:09,663
+So the answer to "what can the token
+do when there is no permissions key?"
+
+117
+00:08:09,703 --> 00:08:13,838
+is: it depends on a setting you can't see
+in the file, and on when the repository
+
+118
+00:08:13,878 --> 00:08:14,457
+was created.
+
+119
+00:08:18,297 --> 00:08:22,607
+Read the comment in the second block.
+The job-level block replaces the
+
+120
+00:08:22,647 --> 00:08:25,901
+workflow-level one, so
+contents is none for that job.
+
+121
+00:08:25,941 --> 00:08:29,381
+That's correct here, because
+the job checks nothing out.
+
+122
+00:08:29,421 --> 00:08:34,539
+GitHub's guidance says the same in prose:
+set the default permission to read access
+
+123
+00:08:34,579 --> 00:08:39,387
+only for repository contents, and increase
+it as required for individual jobs.
+
+124
+00:08:39,427 --> 00:08:44,421
+That practice is called least privilege:
+the smallest set of rights that does the
+
+125
+00:08:44,461 --> 00:08:44,669
+job.
+
+126
+00:08:45,009 --> 00:08:48,148
+Two properties limit what
+a stolen job token can do.
+
+127
+00:08:48,188 --> 00:08:53,282
+First: events triggered by the GITHUB_TOKEN
+will not create a new workflow run, with
+
+128
+00:08:53,322 --> 00:08:57,621
+workflow_dispatch and repository_dispatch
+as the documented exceptions.
+
+129
+00:08:57,661 --> 00:09:02,572
+The textbook warns that the exception isn't
+academic: in the Nx incident a stolen
+
+130
+00:09:02,612 --> 00:09:06,179
+read-write token was used to
+dispatch the publish workflow.
+
+131
+00:09:06,219 --> 00:09:08,379
+Second: the token dies with the job.
+
+132
+00:09:08,719 --> 00:09:13,684
+Inside .git. The token also reaches Git.
+The checkout action, which fetches the
+
+133
+00:09:13,724 --> 00:09:18,942
+repository onto the runner, says in its
+README: "The auth token is persisted in the
+
+134
+00:09:18,982 --> 00:09:23,884
+local git config. This enables your
+scripts to run authenticated git commands.
+
+135
+00:09:23,924 --> 00:09:28,889
+The token is removed during post-job
+cleanup. Set persist-credentials: false to
+
+136
+00:09:28,929 --> 00:09:29,459
+opt-out."
+
+137
+00:09:29,799 --> 00:09:34,744
+Since version 6 of the action the credential
+is stored in a separate file under the
+
+138
+00:09:34,784 --> 00:09:39,668
+runner's temporary directory. Either way,
+until the job ends, every later step and
+
+139
+00:09:39,708 --> 00:09:44,593
+every process it starts can run authenticated
+Git commands against your repository
+
+140
+00:09:44,633 --> 00:09:49,577
+with whatever contents permission the job
+has. A job that only builds and tests has
+
+141
+00:09:49,617 --> 00:09:51,259
+no reason to leave it there.
+
+142
+00:09:53,099 --> 00:09:58,107
+Analogy for the model, from the textbook.
+A contractor is let into your office each
+
+143
+00:09:58,147 --> 00:10:03,033
+time a parcel arrives. The front desk gives
+the contractor a badge, and the badge
+
+144
+00:10:03,073 --> 00:10:07,533
+opens whatever doors the desk configured.
+The contractor follows a written
+
+145
+00:10:07,573 --> 00:10:12,642
+procedure, which is the workflow file. Uses
+tools bought from other firms, which are
+
+146
+00:10:12,682 --> 00:10:16,534
+actions. And reads the label on
+the parcel, which is event data.
+
+147
+00:10:16,874 --> 00:10:20,240
+Three things can go wrong. The
+badge opens too many doors.
+
+148
+00:10:20,280 --> 00:10:23,763
+The procedure was written by
+the person who sent the parcel.
+
+149
+00:10:23,803 --> 00:10:27,815
+Or the contractor reads the label
+aloud as if it were an instruction.
+
+150
+00:10:28,155 --> 00:10:32,442
+The analogy breaks in one place that
+matters: this contractor executes text
+
+151
+00:10:32,482 --> 00:10:37,001
+literally and instantly, so a label that
+contains an instruction is carried out
+
+152
+00:10:37,041 --> 00:10:38,443
+before anyone can notice.
+
+153
+00:10:38,783 --> 00:10:42,976
+Analogy for the token. A visitor badge
+printed at the start of each shift and
+
+154
+00:10:43,016 --> 00:10:47,483
+shredded at the end. The desk can print it
+with access to one room or to the whole
+
+155
+00:10:47,523 --> 00:10:47,978
+building.
+
+156
+00:10:48,318 --> 00:10:53,252
+It breaks because every tool the visitor
+picks up can use the badge without asking.
+
+157
+00:10:53,292 --> 00:10:58,167
+The documentation: "An action can access
+the GITHUB_TOKEN through the github.token
+
+158
+00:10:58,207 --> 00:11:02,782
+context even if the workflow does not
+explicitly pass the GITHUB_TOKEN to the
+
+159
+00:11:02,822 --> 00:11:03,261
+action."
+
+160
+00:11:03,601 --> 00:11:07,343
+Put the two together and you have
+the reason for least privilege.
+
+161
+00:11:07,383 --> 00:11:10,775
+You don't decide which steps
+use the token. Every step can.
+
+162
+00:11:10,815 --> 00:11:12,985
+You only decide what the token can do.
+
+163
+00:11:14,825 --> 00:11:18,867
+Try it now, thirty seconds, on
+paper. Draw a box for one job.
+
+164
+00:11:18,907 --> 00:11:23,015
+On its left, write what only
+people with write access control.
+
+165
+00:11:23,055 --> 00:11:27,766
+On its right, what an outsider can
+control. For each, who can write it?
+
+166
+00:11:27,806 --> 00:11:28,837
+Say it out loud.
+
+167
+00:11:41,577 --> 00:11:46,530
+Compare with yours. Here the job stands in
+the middle, and trust flows in from one
+
+168
+00:11:46,570 --> 00:11:51,219
+side only. On the left, people with write
+access. On the right, anyone on the
+
+169
+00:11:51,259 --> 00:11:55,299
+internet. Each arrow from the right
+is one of the next four videos.
+
+170
+00:11:57,139 --> 00:12:01,416
+Into the lab. These five files each have
+one planted weakness of a different
+
+171
+00:12:01,456 --> 00:12:05,164
+documented class. In this video
+you don't look for the weaknesses.
+
+172
+00:12:05,204 --> 00:12:09,765
+You take the inventory: for each file, the
+trigger, the permissions, the actions,
+
+173
+00:12:09,805 --> 00:12:14,422
+and the secrets. That's the first half of
+the question on screen: what can the job
+
+174
+00:12:14,462 --> 00:12:15,899
+reach, and what starts it?
+
+175
+00:12:16,239 --> 00:12:17,827
+Step 1: what is there.
+
+176
+00:12:18,167 --> 00:12:24,270
+Five files, between 32 and 65 lines. Small
+enough to read in full, which the lab
+
+177
+00:12:24,310 --> 00:12:25,115
+insists on.
+
+178
+00:12:25,455 --> 00:12:27,006
+Step 2: the triggers.
+
+179
+00:12:27,346 --> 00:12:32,251
+Five triggers will appear. Which kinds of
+event let an outsider start a run, and
+
+180
+00:12:32,291 --> 00:12:35,775
+which of those run with the
+base repository's privileges?
+
+181
+00:12:35,815 --> 00:12:36,764
+Say it out loud.
+
+182
+00:12:41,604 --> 00:12:45,560
+issues, opened. pull_request_target.
+schedule with a manual trigger.
+
+183
+00:12:45,600 --> 00:12:47,147
+pull_request. push to main.
+
+184
+00:12:50,487 --> 00:12:54,300
+Sort them by who can cause the
+event. Anyone can open an issue.
+
+185
+00:12:54,340 --> 00:12:59,314
+Anyone can open a pull request. A push to
+main and a manual run need write access,
+
+186
+00:12:59,354 --> 00:13:03,962
+and a schedule needs nobody. And one of
+the two pull request triggers is the
+
+187
+00:13:04,002 --> 00:13:08,977
+privileged one. You haven't found a weakness
+yet. You've found where an outsider's
+
+188
+00:13:09,017 --> 00:13:10,017
+input can arrive.
+
+189
+00:13:10,357 --> 00:13:12,022
+Step 3: the permissions.
+
+190
+00:13:12,362 --> 00:13:17,366
+Apply rule one to each block before you
+read on. For each file, which scopes does
+
+191
+00:13:17,406 --> 00:13:20,916
+the token have, and which are
+none? Make your prediction.
+
+192
+00:13:25,756 --> 00:13:31,082
+File 1: issues: write, and therefore
+nothing else, not even reading contents.
+
+193
+00:13:31,122 --> 00:13:36,308
+File 2: read contents, write pull
+requests. File 3: write-all, on one line.
+
+194
+00:13:36,348 --> 00:13:42,021
+Files 4 and 5: read contents. Every file
+declares the key, so none of them depends
+
+195
+00:13:42,061 --> 00:13:47,735
+on the repository's default setting. Whether
+each declaration is the least the job
+
+196
+00:13:47,775 --> 00:13:49,686
+needs is the lab's question.
+
+197
+00:13:50,026 --> 00:13:51,770
+Step 4: the actions.
+
+198
+00:13:52,110 --> 00:13:56,011
+Twelve references. Read down
+the part after the at sign.
+
+199
+00:13:56,051 --> 00:14:00,093
+Eleven are 40-character commit
+IDs with a version comment.
+
+200
+00:14:00,133 --> 00:14:05,933
+One line is different. Part five of the
+model tells you why that matters, and video
+
+201
+00:14:05,973 --> 00:14:07,059
+159 is about it.
+
+202
+00:14:07,399 --> 00:14:09,763
+Step 5: secrets and tokens.
+
+203
+00:14:10,103 --> 00:14:15,432
+Three lines. Two files hand the job token
+to a step through env, its environment
+
+204
+00:14:15,472 --> 00:14:20,936
+variables, for the GitHub CLI. One file
+names a deployment secret, and look at the
+
+205
+00:14:20,976 --> 00:14:24,829
+line number: 19, near the top
+of the file, before any job.
+
+206
+00:14:24,869 --> 00:14:30,199
+Ask where in a file an env entry applies,
+and therefore which jobs and steps can
+
+207
+00:14:30,239 --> 00:14:33,622
+read that secret. Hold that
+question for video 160.
+
+208
+00:14:33,962 --> 00:14:38,281
+You now have a table with five rows
+and four columns, made in one minute.
+
+209
+00:14:38,321 --> 00:14:41,983
+It tells you where to read. It
+doesn't tell you what is wrong.
+
+210
+00:14:42,023 --> 00:14:44,251
+The lab manual says so in those words.
+
+211
+00:14:44,591 --> 00:14:48,347
+On your own practice repository.
+The interface changes.
+
+212
+00:14:48,387 --> 00:14:54,005
+The documentation linked from section 21A.3
+is the reference, and no GitHub output
+
+213
+00:14:54,045 --> 00:14:59,526
+was captured by the authors. Lab 29.1
+itself needs no GitHub access for its main
+
+214
+00:14:59,566 --> 00:15:02,976
+part. This is one look that
+belongs to this video.
+
+215
+00:15:03,316 --> 00:15:07,962
+Open the repository's settings for Actions
+and find the setting the documentation
+
+216
+00:15:08,002 --> 00:15:12,647
+calls "Workflow permissions". Read which
+of the two options is selected: read and
+
+217
+00:15:12,687 --> 00:15:16,176
+write for all permissions, or
+read for contents and packages.
+
+218
+00:15:16,216 --> 00:15:20,977
+Don't change anything. Changing a setting
+is a decision, and this is an inspection.
+
+219
+00:15:21,017 --> 00:15:25,257
+Then say aloud what a workflow without
+a permissions key would get in this
+
+220
+00:15:25,297 --> 00:15:29,422
+repository, and why none of the course
+workflows depends on that answer.
+
+221
+00:15:31,262 --> 00:15:32,910
+Five mistakes to watch for.
+
+222
+00:15:33,250 --> 00:15:38,663
+Relying on the default token permissions.
+Root cause: the default is a repository or
+
+223
+00:15:38,703 --> 00:15:44,115
+organization setting, read-only only for
+repositories created since 2 February 2023;
+
+224
+00:15:44,155 --> 00:15:45,803
+the file does not show it.
+
+225
+00:15:46,143 --> 00:15:51,228
+Adding one permission and breaking another
+step. Root cause: when any permission is
+
+226
+00:15:51,268 --> 00:15:54,193
+specified, all unspecified
+ones are set to none.
+
+227
+00:15:54,533 --> 00:16:00,079
+permissions: write-all "to make it work".
+Root cause: every job, and every action in
+
+228
+00:16:00,119 --> 00:16:03,736
+every job, can then push,
+tag, release and edit issues.
+
+229
+00:16:04,076 --> 00:16:08,629
+Assuming an action cannot use the token
+because the workflow did not pass it.
+
+230
+00:16:08,669 --> 00:16:13,042
+Root cause: an action can read the
+token through the github.token context.
+
+231
+00:16:13,382 --> 00:16:18,030
+Leaving the checkout credential in place
+in a job that only builds and tests.
+
+232
+00:16:18,070 --> 00:16:23,084
+Root cause: until the job ends, every later
+step can run authenticated Git commands
+
+233
+00:16:23,124 --> 00:16:25,215
+with the job's contents permission.
+
+234
+00:16:27,055 --> 00:16:32,041
+Now, out of the lab. A team that maintains
+an evaluation library has a repository
+
+235
+00:16:32,081 --> 00:16:36,943
+created in 2021. Its workflows have no
+permissions key, because "the default is
+
+236
+00:16:36,983 --> 00:16:41,782
+read-only now". A new engineer copies
+one of those workflows into a repository
+
+237
+00:16:41,822 --> 00:16:46,622
+created last month, where it behaves
+differently: a step that used to create a
+
+238
+00:16:46,662 --> 00:16:48,918
+release fails for lack of permission.
+
+239
+00:16:49,258 --> 00:16:53,282
+Nothing in the two files differs.
+There's the puzzle from the opening.
+
+240
+00:16:53,322 --> 00:16:57,986
+What differs is the "Workflow permissions"
+setting behind them: permissive in the
+
+241
+00:16:58,026 --> 00:17:02,631
+old repository, restrictive in the new
+one. The engineer has found, by accident,
+
+242
+00:17:02,671 --> 00:17:07,277
+that the old repository's workflows have
+been running with read-write tokens for
+
+243
+00:17:07,317 --> 00:17:09,484
+years, in every job, for every action.
+
+244
+00:17:09,824 --> 00:17:13,772
+The fix isn't to switch the new
+repository to the permissive option.
+
+245
+00:17:13,812 --> 00:17:18,465
+It's to declare permissions: contents:
+read at the top of every workflow in both
+
+246
+00:17:18,505 --> 00:17:22,922
+repositories, and to add the one write
+scope to the one job that creates the
+
+247
+00:17:22,962 --> 00:17:27,673
+release. After that, the two repositories
+behave the same, and the files say what
+
+248
+00:17:27,713 --> 00:17:28,729
+the tokens can do.
+
+249
+00:17:30,569 --> 00:17:37,912
+Your turn. Do Exercise 29.1, "Whose code,
+whose text, what can it reach?", in
+
+250
+00:17:37,952 --> 00:17:41,555
+exercises/m26-m31-actions-security.md.
+
+251
+00:17:41,895 --> 00:17:46,164
+For each job in the exercise, answer the
+three parts of the question in writing
+
+252
+00:17:46,204 --> 00:17:49,928
+before you judge anything: whose
+code, whose text, what it can reach.
+
+253
+00:17:49,968 --> 00:17:54,291
+Predict which jobs will have "somebody
+outside the team" in one of the first two
+
+254
+00:17:54,331 --> 00:17:54,728
+answers.
+
+255
+00:17:55,068 --> 00:18:00,348
+The challenge is Exercise 29.5, "What
+can this token do?", in the same file.
+
+256
+00:18:02,188 --> 00:18:05,404
+Read the question on screen.
+Say your answer out loud.
+
+257
+00:18:10,244 --> 00:18:14,885
+A strong answer refuses to give one answer
+and explains why: it names the setting
+
+258
+00:18:14,925 --> 00:18:19,741
+that decides, the two options that setting
+has, and the date and scope of the change
+
+259
+00:18:19,781 --> 00:18:24,596
+of default. It says what the token is limited
+to in any case, and how long it lives.
+
+260
+00:18:24,936 --> 00:18:29,714
+Then it gives the recommendation and its
+reason. The follow-up adds contents: read
+
+261
+00:18:29,754 --> 00:18:34,237
+at the top and a labeling job starts
+failing with a "not accessible" message.
+
+262
+00:18:34,277 --> 00:18:39,055
+Explain it with rule one, and give the
+smallest correct change, at the right level
+
+263
+00:18:39,095 --> 00:18:39,760
+of the file.
+
+264
+00:18:41,600 --> 00:18:42,527
+Let's land this.
+
+265
+00:18:42,867 --> 00:18:44,527
+You should now be able to say:
+
+266
+00:18:44,867 --> 00:18:49,763
+The question for every job: whose code runs,
+on whose text does it operate, and what
+
+267
+00:18:49,803 --> 00:18:50,821
+can the job reach?
+
+268
+00:18:51,161 --> 00:18:55,964
+The model has five parts: the job token,
+fork pull requests, privileged triggers,
+
+269
+00:18:56,004 --> 00:18:58,475
+expression injection, third-party actions.
+
+270
+00:18:58,815 --> 00:19:04,011
+The job token is created per job, limited
+to the workflow's repository, and expires
+
+271
+00:19:04,051 --> 00:19:04,831
+with the job.
+
+272
+00:19:05,171 --> 00:19:10,102
+Without a permissions key the token's scope
+depends on a repository or organization
+
+273
+00:19:10,142 --> 00:19:13,096
+setting; naming any scope
+sets all others to none.
+
+274
+00:19:13,436 --> 00:19:18,874
+Declare permissions: contents: read at the
+top of every workflow and add scopes per
+
+275
+00:19:18,914 --> 00:19:19,138
+job.
+
+276
+00:19:20,978 --> 00:19:25,977
+Read sections 21A.1 to
+21A.3 of Chapter 21A.
+
+277
+00:19:26,317 --> 00:19:30,499
+Today you read five unfamiliar
+workflow files and knew where to look.
+
+278
+00:19:30,539 --> 00:19:35,638
+Try that inventory in the lab. Next time:
+fork pull requests, the approval gate, and
+
+279
+00:19:35,678 --> 00:19:40,104
+privileged triggers. Until then, look
+at the state first and type second.
+
+280
+00:19:40,144 --> 00:19:41,573
+See you in the next one.

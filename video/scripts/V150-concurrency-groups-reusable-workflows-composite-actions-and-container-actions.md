@@ -206,11 +206,13 @@ Try it now, on paper. Thirty seconds. Copy these three bars. Then draw them agai
 
 **[PAUSE]**
 
-**[ANIMATION]** walk: id=vars columns=run_1,run_2,run_3,with rows=finishes:cancelled:finishes:the_default|cancelled:cancelled:finishes:cancel-in-progress:_true|finishes:finishes:finishes:queue:_max marks=1.2:bad,2.1:bad,2.2:bad mono=off title=Three_runs_in_one_group at_1=3 at_2=20 at_3=80
+**[ANIMATION]** walk: id=vars columns=run_1,run_2,run_3,with rows=finishes:cancelled:finishes:the_default|cancelled:cancelled:finishes:cancel-in-progress:_true|finishes:finishes:finishes:queue:_max marks=1.2:bad,2.1:bad,2.2:bad mono=off title=Three_runs_in_one_group at_1=3 at_2=20 at_3=50
 
 Only run 3. Run 1 is cancelled when run 2 arrives, and run 2 when run 3 arrives.
 
 **[DIAGRAM]** One running, one pending, one cancelled. Then redraw it in your head for the two variations. With `cancel-in-progress: true`: run 1 is cancelled when run 2 arrives, and run 2 when run 3 arrives; only run 3 finishes. With `queue: max`: nothing is cancelled, and the three run one after another.
+
+So the default once more: one running, one pending, one cancelled. Redraw it in your head for queue: max. Nothing is cancelled, and the three run one after another.
 
 ## LIVE TERMINAL DEMO
 
@@ -337,7 +339,7 @@ The rule from the textbook: caller and called file must agree in one commit when
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
-Lab 27.5 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**Lab 27.5 on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 Add the two files of workflow 11. After the run, open it and look at the list of jobs. Find the job that came from the called workflow and read its full name: it should be composed of two names, as the documentation describes. Write that name down exactly, because it's the name a ruleset would have to require. Then open the summary and find the revision that the second job wrote: one string that crossed from the called workflow to the caller as an output.
 

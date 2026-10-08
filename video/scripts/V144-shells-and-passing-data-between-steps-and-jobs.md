@@ -61,7 +61,7 @@ If you write nothing inside a job container on Linux: `sh`, not `bash`.
 
 And `shell: python` runs the file with Python.
 
-Quick quiz. On a Linux runner, bash already runs your script. You add `shell: bash` to the step. Does anything change? A, nothing. B, the shell's options. Your answer?
+Quick quiz, with the table still in front of you. On a Linux runner, bash already runs your script. You add `shell: bash` to the step. Does anything change? A, nothing. B, the shell's options. Your answer?
 
 **[PAUSE]**
 
@@ -298,7 +298,7 @@ In the `build` job, the step with the ID `describe` appends one line to `GITHUB_
 
 **[ANIMATION]** end
 
-Now Lab 26.3 on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. After the merge to `main` starts a run, open the run, open the `build` job, and expand a `run` step. Look in the step's log for where it states the shell that ran your script, and compare it with the template table. The textbook doesn't describe that part of the log, so treat what you find as your own observation and check it against the documented templates. Then open the run's summary page and find the two values that crossed from one job to the other.
+**Now Lab 26.3 on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. After the merge to `main` starts a run, open the run, open the `build` job, and expand a `run` step. Look in the step's log for where it states the shell that ran your script, and compare it with the template table. The textbook doesn't describe that part of the log, so treat what you find as your own observation and check it against the documented templates. Then open the run's summary page and find the two values that crossed from one job to the other.
 
 ## COMMON MISTAKES
 

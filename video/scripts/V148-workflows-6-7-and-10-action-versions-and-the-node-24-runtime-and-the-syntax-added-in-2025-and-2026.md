@@ -63,7 +63,7 @@ Permissions: at workflow level, `contents: read`. Then the one job that pushes h
 
 Workflow-level `env`: the registry, `ghcr.io`, and the image name from `github.repository`, which is owner and name. The metadata action lowercases image names, which a registry requires.
 
-**[ANIMATION]** gates: id=pr6 packet=a_pull__request gates=Checkout:pass|Buildx_setup:pass|Login:skip:-:only_when_the_event_is_not_pull__request|Tags_and_labels:pass|Build:pass:-:push_is_false|Job_summary:pass result=built,_never_pushed title=Workflow_6_on_a_pull_request,_by_the_file at_1=5 at_2=12 at_3=20
+**[ANIMATION]** gates: id=pr6 packet=a_pull__request gates=Checkout:pass|Buildx_setup:pass|Login:skip:-:only_when_the_event_is_not_pull__request|Tags_and_labels:pass|Build:pass:-:push_is_false|Summary:pass result=built,_never_pushed title=Workflow_6_on_a_pull_request,_by_the_file at_1=5 at_2=12 at_3=20 at_result=25
 
 **[ANIMATION]** step: 3
 
@@ -330,7 +330,7 @@ Two guards in the script, two in the workflow. The script refuses an empty direc
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthroughs.
 
-On your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**On your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 Lab 26.6. Add workflow 6 on a branch and open a pull request. Don't merge yet. Predict: is the login step executed, is anything pushed, and which tags does the metadata step produce for a pull request? Then open the run and look at the login step's status, and at the job summary for the tags. After merging, read the run for the push to `main`, and compare the tags with your prediction from the two Git values. Then push the version tag, list the runs, and see which workflows started. Find the package on your organization's page and look at its list of tags.
 

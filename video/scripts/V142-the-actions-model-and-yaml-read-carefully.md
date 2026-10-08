@@ -47,7 +47,7 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** ci: id=ci push file=01-tests.yml job=test runner=ubuntu-24.04 title=One_event,_one_run,_one_job_on_a_fresh_runner (Check out the repository, Show what was checked out, Set up Python, Run the tests)
+**[ANIMATION]** ci: id=ci push file=off job=test runner=ubuntu-24.04 title=One_event,_one_run,_one_job_on_a_fresh_runner (Check out the repository, Show what was checked out, Set up Python, Run the tests)
 
 **[ANIMATION]** step: steps
 
@@ -242,6 +242,8 @@ Put each version in quotes. Quoted, `3.10` keeps its zero, exactly as the third 
 
 **[ON SCREEN]** Callout: Unverified. Whether GitHub's workflow parser also reads unquoted `yes`, `no`, `on` and `off` values as booleans is not stated on the documentation pages read for the chapter. Quote such values and the question does not arise.
 
+One point is unverified. Whether GitHub's workflow parser also reads unquoted yes, no, on and off values as booleans isn't stated on the documentation pages read for the chapter. Quote such values and the question doesn't arise.
+
 **Step 2: the key `on`.**
 
 ```bash
@@ -331,6 +333,8 @@ The `test` job defines two anchors. The `lint` job reuses them. After parsing, t
 
 **[ON SCREEN]** Callout: Unverified. YAML merge keys are not mentioned by the anchors documentation or the changelog entry. The course's research notes mark their support as unverified, and the course's examples do not use them.
 
+One more point is unverified. YAML merge keys aren't mentioned by the anchors documentation or the changelog entry. The course's research notes mark their support as unverified, and the course's examples don't use them.
+
 **Step 4: block scalars.**
 
 ```bash
@@ -409,7 +413,7 @@ Then Python 3.13, with the version quoted, as you now know why. And last, the ch
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
-Lab 26.1 on your own practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**Lab 26.1 on your own practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 You copy the sample project, add workflow 1, commit, and create the repository with `gh repo create` and `--push`. Section 15.22 labels that command 🟡 CAUTION: it creates a repository on GitHub, a remote and a push, and what reaches a public repository is published. Before you run it, the lab makes you predict: which event the push causes, which workflow starts, what `GITHUB_REF` and `GITHUB_SHA` will be, and how many commits the runner will have.
 

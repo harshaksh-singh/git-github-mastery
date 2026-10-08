@@ -326,7 +326,7 @@ $ git show origin/main:.github/CODEOWNERS | grep -n "^[^#]"
 
 The non-comment lines with their line numbers: this is the form in which you reason about "last match".
 
-**[ANIMATION]** match: id=four header=.github/CODEOWNERS_on_origin/main rules=*:platform|/router/:routing|/router/priority.py:routing,_on-call|*.yaml:platform,_sre|docs/*:docs|/.github/:repo-admins numbers=2,5,6,9,12,15 paths=.github/CODEOWNERS:1+6|config/routing.yaml:1+4|docs/README.md:1+5|docs/runbooks/escalation.md:1 wins=last title=The_owners_are_teams_of_@example-org at_rules=0 at_1=10 at_2=28 at_3=47 at_4=64
+**[ANIMATION]** match: id=four header=.github/CODEOWNERS rules=*:platform|/router/:routing|/router/priority.py:routing,_on-call|*.yaml:platform,_sre|docs/*:docs|/.github/:repo-admins numbers=2,5,6,9,12,15 paths=.github/CODEOWNERS:1+6|config/routing.yaml:1+4|docs/README.md:1+5|docs/runbooks/escalation.md:1 wins=last title=The_base_version_on_origin/main:_owners_are_teams_of_@example-org at_rules=0 at_1=10 at_2=28 at_3=47 at_4=64
 
 Now check your paper. `.github/CODEOWNERS`: line 15. `config/routing.yaml`: line 9, platform and SRE. `docs/README.md`: line 12, the docs team. And `docs/runbooks/escalation.md`: line 2 only, the platform team, because `docs/*` doesn't match nested files.
 
@@ -383,7 +383,7 @@ With a catch-all line followed by `*.yaml`, Git names line 2 for `routing.yaml` 
 
 **[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
 
-Part B of Lab 23.2, on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. You need a second account or a teammate.
+**Part B of Lab 23.2, on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. You need a second account or a teammate.
 
 The lab has five stages. You give the second account write access. You add a CODEOWNERS file through a pull request, and before merging you ask the errors endpoint about the file on your branch. You add a second ruleset that requires code owner review. That's a `gh api` call with `POST`, which Chapter 18 labels 🔴 DANGEROUS, and whose five answers you heard in video 134: create, read back with `gh ruleset check main`, and disable or delete to recover. Then you open a pull request that touches `/router/`, which the second account owns.
 
@@ -392,7 +392,7 @@ gh pr view --json reviewRequests,reviewDecision
 gh pr merge --squash
 ```
 
-On screen, name the controls by function. In the pull request, find the list of requested reviewers and see whether the owner is in it. Find the merge box and read what it says is missing. The merge attempt is expected to be refused. Then the second account approves, and you read the review decision again and merge. What you have then proved: a code owner's approval is required when a rule says so, and the base branch's file decides.
+On your screen, know the controls by their function. In the pull request, find the list of requested reviewers and see whether the owner is in it. Find the merge box and read what it says is missing. The merge attempt is expected to be refused. Then the second account approves, and you read the review decision again and merge. What you have then proved: a code owner's approval is required when a rule says so, and the base branch's file decides.
 
 ## COMMON MISTAKES
 
@@ -441,6 +441,8 @@ Answer out loud first. A strong answer names the rule and its source: which vers
 ## RECAP
 
 **[ANIMATION]** step: copies.4
+
+**[ANIMATION]** say: Review_requests_come_from_THIS_copy:_the_base_branch
 
 Let's land this. The developer from the opening deleted a line and removed nobody, because the copy on the base branch decides.
 

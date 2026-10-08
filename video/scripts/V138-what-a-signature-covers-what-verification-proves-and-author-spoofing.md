@@ -394,6 +394,8 @@ acc22ee  G  Allow short bursts
 
 **[ON SCREEN]** Lower third: GitHub. The same logic runs on the platform. According to GitHub's documentation, merge and squash commits made in the web interface are signed by GitHub, and commits produced by "rebase and merge" are not signed at all. V139 returns to this.
 
+The same logic runs on the platform. According to GitHub's documentation, merge and squash commits made in the web interface are signed by GitHub, and commits produced by rebase and merge aren't signed at all. Video 139 returns to this.
+
 **[ON SCREEN]** Lower third: Git.
 
 <!-- snippet: ch14b/signature-scope/04-unknown-key -->

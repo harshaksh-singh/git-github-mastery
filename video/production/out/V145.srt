@@ -1,0 +1,1263 @@
+1
+00:00:04,500 --> 00:00:08,407
+"The tests passed on your laptop and
+failed in CI on the same commit.
+
+2
+00:00:08,447 --> 00:00:09,781
+Was it the same commit?"
+
+3
+00:00:10,121 --> 00:00:14,055
+"The build stamped the release
+as 6fe5455 and not as a version.
+
+4
+00:00:14,095 --> 00:00:15,443
+Who removed the tags?"
+
+5
+00:00:15,783 --> 00:00:20,712
+Two questions from a CTO, and one cause.
+CI is the automated testing that runs on
+
+6
+00:00:20,752 --> 00:00:23,903
+each change. The answer to
+the first question is no.
+
+7
+00:00:23,943 --> 00:00:28,811
+It wasn't the same commit, and the commit
+CI tested doesn't exist in your clone,
+
+8
+00:00:28,851 --> 00:00:32,738
+your copy of the repository. The
+answer to the second is nobody.
+
+9
+00:00:32,778 --> 00:00:36,052
+The tags, fixed names for
+commits, were never fetched.
+
+10
+00:00:36,392 --> 00:00:41,295
+Both follow from the defaults of one action
+that is the first step of almost every
+
+11
+00:00:41,335 --> 00:00:44,369
+job. So how can CI test a
+commit that nobody wrote?
+
+12
+00:00:44,409 --> 00:00:49,433
+Keep that question. In this video you rebuild
+what that action leaves on the runner,
+
+13
+00:00:49,473 --> 00:00:51,603
+with plain Git, on your own machine.
+
+14
+00:00:53,443 --> 00:00:57,401
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+15
+00:00:57,441 --> 00:01:02,776
+GitHub Actions is a service that reacts to
+events on GitHub by running commands on
+
+16
+00:01:02,816 --> 00:01:08,150
+machines. A job is a list of steps on one
+fresh machine, the runner, and an action
+
+17
+00:01:08,190 --> 00:01:13,525
+is a packaged, reusable step. Video 142
+said that Git appears in exactly one place
+
+18
+00:01:13,565 --> 00:01:18,900
+there: when a job fetches commits onto the
+runner. This video is about that place.
+
+19
+00:01:19,240 --> 00:01:24,626
+The layers are worth separating. A ref is
+a name that holds an object ID, such as a
+
+20
+00:01:24,666 --> 00:01:29,790
+branch or a tag. Which ref and which
+options the checkout action uses is GitHub
+
+21
+00:01:29,830 --> 00:01:35,020
+Actions, taken from the action's README
+and its definition at version 7.0.1, the
+
+22
+00:01:35,060 --> 00:01:40,315
+version pinned in this course. What a
+repository with one commit and no tags then
+
+23
+00:01:40,355 --> 00:01:45,676
+answers to git describe or git log is Git,
+and it behaves the same on a runner and
+
+24
+00:01:45,716 --> 00:01:46,460
+on your Mac.
+
+25
+00:01:46,800 --> 00:01:51,638
+So the demonstration can be local. A bare
+repository, one with no working tree,
+
+26
+00:01:51,678 --> 00:01:56,763
+stands in for GitHub. One honest limit,
+which the textbook states: the runner's own
+
+27
+00:01:56,803 --> 00:02:01,518
+sequence of Git commands is an implementation
+detail and isn't what is shown.
+
+28
+00:02:01,558 --> 00:02:04,667
+What is shown is the
+documented result, reproduced.
+
+29
+00:02:05,007 --> 00:02:09,976
+There are two halves. One commit and no
+tags: the shallow clone and what it does to
+
+30
+00:02:10,016 --> 00:02:14,925
+history questions. Then the merge ref:
+which commit a pull request run checks out.
+
+31
+00:02:14,965 --> 00:02:19,089
+A pull request is GitHub's proposal
+to merge one branch into another.
+
+32
+00:02:20,929 --> 00:02:22,507
+Here's what you'll walk away with.
+
+33
+00:02:22,847 --> 00:02:24,259
+After this video you can:
+
+34
+00:02:24,599 --> 00:02:28,311
+say what the runner's repository
+contains after a default checkout;
+
+35
+00:02:28,650 --> 00:02:33,190
+name three commands or tools that give
+wrong results there and the minimal fix for
+
+36
+00:02:33,230 --> 00:02:33,469
+each;
+
+37
+00:02:33,809 --> 00:02:38,480
+explain which commit a pull_request run
+checks out and why it is not in your clone;
+
+38
+00:02:38,820 --> 00:02:42,133
+reproduce the runner's checkout
+locally with a shallow fetch;
+
+39
+00:02:42,473 --> 00:02:44,976
+decide when full history
+is worth its cost.
+
+40
+00:02:46,816 --> 00:02:50,562
+In one sentence. A runner starts
+with no repository at all.
+
+41
+00:02:50,602 --> 00:02:55,438
+actions/checkout fetches one commit,
+without tags, for the ref of the event.
+
+42
+00:02:55,478 --> 00:03:00,763
+On pull_request events that ref is the test
+merge commit refs/pull/N/merge, checked
+
+43
+00:03:00,803 --> 00:03:06,024
+out with a detached HEAD. Detached means
+that HEAD holds a commit ID, not a branch
+
+44
+00:03:06,064 --> 00:03:06,344
+name.
+
+45
+00:03:06,684 --> 00:03:11,338
+Precisely. The inputs, meaning the settings
+a workflow passes to this action, and
+
+46
+00:03:11,378 --> 00:03:12,207
+their defaults.
+
+47
+00:03:12,547 --> 00:03:17,528
+ref: the ref or commit of the event. On
+pull_request, that is refs/pull/N/merge.
+
+48
+00:03:17,868 --> 00:03:22,778
+fetch-depth: 1. The README: "Only a
+single commit is fetched by default".
+
+49
+00:03:22,818 --> 00:03:26,236
+Zero fetches all history
+for all branches and tags.
+
+50
+00:03:26,576 --> 00:03:31,199
+fetch-tags: false. No tags, so
+nothing for git describe to find.
+
+51
+00:03:31,539 --> 00:03:36,566
+persist-credentials: true. The job token,
+the short-lived credential every job gets
+
+52
+00:03:36,606 --> 00:03:41,205
+for its repository, is kept for later
+git commands of the job and removed in
+
+53
+00:03:41,245 --> 00:03:46,333
+post-job cleanup. Since version 6 it's stored
+under the runner's temporary directory
+
+54
+00:03:46,373 --> 00:03:51,339
+and not in .git/config. The course workflows
+set it to false, because none of them
+
+55
+00:03:51,379 --> 00:03:56,467
+runs an authenticated git command after the
+checkout, and a credential that isn't on
+
+56
+00:03:56,507 --> 00:03:58,604
+disk can't be read by a later step.
+
+57
+00:03:58,944 --> 00:04:04,946
+lfs and submodules: false. So Git LFS
+pointers, the small stand-ins for large files,
+
+58
+00:04:04,986 --> 00:04:10,054
+aren't replaced by content. And
+submodule directories, which hold other
+
+59
+00:04:10,094 --> 00:04:11,780
+repositories, are empty.
+
+60
+00:04:12,120 --> 00:04:16,722
+clean: true, which matters on self-hosted
+runners, machines you operate yourself,
+
+61
+00:04:16,762 --> 00:04:18,040
+that reuse a workspace.
+
+62
+00:04:18,380 --> 00:04:23,513
+And allow-unsafe-pr-checkout: false.
+Version 7 refuses to check out fork pull
+
+63
+00:04:23,553 --> 00:04:27,274
+request code under
+pull_request_target and workflow_run.
+
+64
+00:04:27,314 --> 00:04:30,700
+A fork is a second, connected
+repository on GitHub.
+
+65
+00:04:30,740 --> 00:04:32,044
+Part 7 explains why.
+
+66
+00:04:32,384 --> 00:04:37,096
+Inside .git. Every commit names its
+parents, the commits it was built on.
+
+67
+00:04:37,136 --> 00:04:41,784
+A shallow fetch writes the fetched
+commit's ID to the file .git/shallow.
+
+68
+00:04:41,824 --> 00:04:47,058
+That file tells Git to treat the commit
+as having no parents, although the commit
+
+69
+00:04:47,098 --> 00:04:50,703
+object itself still names
+them. No tag refs are created.
+
+70
+00:04:50,743 --> 00:04:55,391
+HEAD is a branch for push events and
+a bare commit ID for pull requests.
+
+71
+00:04:55,731 --> 00:05:00,621
+Think about what "no parents" does. Every
+command that walks history starts at HEAD,
+
+72
+00:05:00,661 --> 00:05:05,493
+reaches the cut, and stops. git describe
+walks parents looking for a tagged commit.
+
+73
+00:05:05,533 --> 00:05:09,131
+git log for a path looks for the
+commit that changed the file.
+
+74
+00:05:09,171 --> 00:05:13,709
+git merge-base looks for a common ancestor.
+None of them can see past the cut.
+
+75
+00:05:14,049 --> 00:05:18,941
+Why it does this. The textbook's reason is
+a fair one: a job that only compiles and
+
+76
+00:05:18,981 --> 00:05:23,516
+tests needs the snapshot, not the history.
+Fetching one commit is the fastest
+
+77
+00:05:23,556 --> 00:05:28,389
+correct default for that job. The default
+is right for most jobs and wrong for the
+
+78
+00:05:28,429 --> 00:05:30,350
+ones that ask history a question.
+
+79
+00:05:30,690 --> 00:05:35,691
+The merge ref. Chapter 17 showed that GitHub
+keeps, for a mergeable pull request, a
+
+80
+00:05:35,731 --> 00:05:40,247
+test merge commit under refs/pull/N/merge.
+The events reference states that
+
+81
+00:05:40,287 --> 00:05:45,349
+pull_request workflows set GITHUB_REF to
+that ref and GITHUB_SHA to that commit, and
+
+82
+00:05:45,389 --> 00:05:50,269
+that the checkout action therefore, in the
+documentation's words, "checks out the
+
+83
+00:05:50,309 --> 00:05:55,188
+merge branch", so that "CI tests run against
+the merged result, not just the head
+
+84
+00:05:55,228 --> 00:05:56,039
+branch alone".
+
+85
+00:05:56,379 --> 00:06:01,378
+Why? The textbook: the question a pull
+request asks is "is the result of merging
+
+86
+00:06:01,418 --> 00:06:05,410
+safe", which only the merged tree,
+the merged files, can answer.
+
+87
+00:06:05,750 --> 00:06:08,381
+Three consequences, all
+from the same pages.
+
+88
+00:06:08,721 --> 00:06:13,775
+First, the test merge can be older than
+main. It's regenerated when the pull request
+
+89
+00:06:13,815 --> 00:06:18,626
+branch is pushed, when the merge base
+changes, or when it's older than 12 hours.
+
+90
+00:06:18,666 --> 00:06:22,810
+The merge base is the most recent
+commit that both histories contain.
+
+91
+00:06:22,850 --> 00:06:27,600
+And a re-run of a job reuses the original
+commit, so a re-run doesn't pick up a
+
+92
+00:06:27,640 --> 00:06:28,267
+newer base.
+
+93
+00:06:28,607 --> 00:06:33,424
+Second, a conflicted pull request has no
+merge ref, and its pull_request workflows
+
+94
+00:06:33,464 --> 00:06:38,340
+don't run at all. The symptom is missing
+checks, the results reported for a commit,
+
+95
+00:06:38,380 --> 00:06:39,288
+not failed ones.
+
+96
+00:06:39,628 --> 00:06:44,225
+Third, to test the head commit alone, the
+README documents setting ref to the head
+
+97
+00:06:44,265 --> 00:06:48,975
+commit of the pull request from the event
+payload. You then test something that will
+
+98
+00:06:49,015 --> 00:06:53,442
+never be on the base branch. Do it
+knowingly, for example for a linter, a style
+
+99
+00:06:53,482 --> 00:06:56,326
+checker, that should judge
+only the author's files.
+
+100
+00:06:56,666 --> 00:07:01,968
+When full history is worth its cost. The
+rule from the root-cause box: decide per
+
+101
+00:07:02,008 --> 00:07:06,914
+job whether it asks history a question.
+A job that runs unit tests doesn't.
+
+102
+00:07:06,954 --> 00:07:12,124
+A job that computes a version from tags,
+generates a changelog, detects changed
+
+103
+00:07:12,164 --> 00:07:17,532
+files, or runs blame-based analysis does.
+For those, fetch-depth: 0, as workflow 3
+
+104
+00:07:17,572 --> 00:07:17,994
+has it.
+
+105
+00:07:19,834 --> 00:07:20,807
+A picture helps.
+
+106
+00:07:21,147 --> 00:07:26,147
+Analogy, from the textbook. You asked a
+courier for "the contract" and received the
+
+107
+00:07:26,187 --> 00:07:30,822
+last page, unstapled, with a cover sheet
+that merges your draft and the other
+
+108
+00:07:30,862 --> 00:07:35,741
+party's latest draft. It's the right thing
+to sign and the wrong thing to consult
+
+109
+00:07:35,781 --> 00:07:37,562
+about the history of clause 4.
+
+110
+00:07:37,902 --> 00:07:42,593
+The last page is the single commit. The
+cover sheet that merges two drafts is the
+
+111
+00:07:42,633 --> 00:07:43,235
+test merge.
+
+112
+00:07:43,575 --> 00:07:48,400
+The analogy breaks in one place: the last
+page here is a complete snapshot of every
+
+113
+00:07:48,440 --> 00:07:51,389
+file. Only the history is
+missing, not the content.
+
+114
+00:07:51,429 --> 00:07:55,843
+That's why compiling and testing work
+perfectly, and why the failures are so
+
+115
+00:07:55,883 --> 00:07:56,370
+specific.
+
+116
+00:07:56,710 --> 00:08:01,647
+Carry one distinction through the demonstration:
+does a tool fail, or does it lie?
+
+117
+00:08:01,687 --> 00:08:04,742
+A tool that fails gives you
+an error and a red job.
+
+118
+00:08:04,782 --> 00:08:08,869
+A tool that lies gives you a confident
+wrong answer and a green job.
+
+119
+00:08:08,909 --> 00:08:13,603
+You'll see one of each, and one that
+fails or lies depending on a single flag.
+
+120
+00:08:15,443 --> 00:08:19,810
+Here's the whole story as one picture.
+First main, with its new commit.
+
+121
+00:08:19,850 --> 00:08:23,845
+Then your branch, from the older
+commit. So where is CI's commit?
+
+122
+00:08:23,885 --> 00:08:26,701
+There: a merge of the
+two, on the server only.
+
+123
+00:08:27,041 --> 00:08:32,073
+Try it now, on paper. Thirty seconds. Copy
+this drawing, then put one finger on the
+
+124
+00:08:32,113 --> 00:08:36,412
+commit your laptop tested, and another
+on the commit the runner tested.
+
+125
+00:08:38,752 --> 00:08:42,470
+Your laptop tested 80c9cfa,
+the tip of your branch.
+
+126
+00:08:42,510 --> 00:08:46,523
+The runner tested d04ef31,
+the merge commit below main.
+
+127
+00:08:46,863 --> 00:08:51,588
+Read the root-cause line: the
+actions/checkout defaults, fetch-depth 1 and
+
+128
+00:08:51,628 --> 00:08:52,682
+fetch-tags false.
+
+129
+00:08:53,022 --> 00:08:57,924
+And the second root cause: the base branch
+gained a commit that changes behavior the
+
+130
+00:08:57,964 --> 00:08:59,042
+new code relies on.
+
+131
+00:09:00,882 --> 00:09:01,642
+Into the lab.
+
+132
+00:09:01,982 --> 00:09:03,658
+Step 1: your clone.
+
+133
+00:09:03,998 --> 00:09:08,474
+Three commits and one annotated
+tag, v0.1.0, on the middle commit.
+
+134
+00:09:08,514 --> 00:09:12,238
+An annotated tag also records
+who tagged, when and why.
+
+135
+00:09:12,278 --> 00:09:17,233
+git describe prints the tag, one commit
+after it, and the abbreviated ID.
+
+136
+00:09:17,573 --> 00:09:21,865
+Here's that clone as a picture: three
+commits in a row, the tag on the middle one,
+
+137
+00:09:21,905 --> 00:09:22,869
+main on the newest.
+
+138
+00:09:23,209 --> 00:09:25,319
+Step 2: the runner's clone.
+
+139
+00:09:25,659 --> 00:09:31,743
+git clone is 🟢 SAFE: it creates a new
+directory. HUB is a file:// URL of the bare
+
+140
+00:09:31,783 --> 00:09:38,095
+repository that plays GitHub. The URL form
+matters: a plain path would make Git copy
+
+141
+00:09:38,135 --> 00:09:40,665
+the repository and ignore --depth.
+
+142
+00:09:41,005 --> 00:09:46,785
+Predict the five outputs: the log, shallow
+or not, the content of .git/shallow, the
+
+143
+00:09:46,825 --> 00:09:49,730
+tags, the commit count. Say them out loud.
+
+144
+00:09:54,570 --> 00:09:58,456
+One line of log, with the word
+"grafted" in the decoration.
+
+145
+00:09:58,496 --> 00:10:02,516
+Shallow: true. The file holds
+the full ID of that one commit.
+
+146
+00:10:02,556 --> 00:10:05,045
+The tag list is empty. The count is 1.
+
+147
+00:10:05,385 --> 00:10:09,661
+"Grafted" and the ID in .git/shallow say
+the same thing: history is cut here.
+
+148
+00:10:09,701 --> 00:10:14,202
+In the picture, the two older commits are
+hatched: they aren't in this clone, and
+
+149
+00:10:14,242 --> 00:10:15,491
+the tag went with them.
+
+150
+00:10:15,831 --> 00:10:18,364
+Step 3: asking history questions.
+
+151
+00:10:18,704 --> 00:10:22,617
+For each of these three commands:
+does it fail, or does it lie?
+
+152
+00:10:22,657 --> 00:10:23,934
+Make your prediction.
+
+153
+00:10:28,774 --> 00:10:33,824
+git describe --tags fails:
+"No names found", status 128.
+
+154
+00:10:33,864 --> 00:10:36,733
+A red job. Annoying, and honest.
+
+155
+00:10:37,073 --> 00:10:42,994
+With --always it doesn't fail. It prints
+6fe5455, status 0, and a build stamps that
+
+156
+00:10:43,034 --> 00:10:47,232
+as the version. That's the CTO's
+second question, answered.
+
+157
+00:10:47,272 --> 00:10:49,889
+One flag turned a failure into a lie.
+
+158
+00:10:50,229 --> 00:10:55,635
+The git log line is the worst of the three.
+It claims that pom.xml was last changed
+
+159
+00:10:55,675 --> 00:11:00,556
+by the only commit there is, because a
+parentless commit "adds" every file.
+
+160
+00:11:00,596 --> 00:11:04,165
+The true answer, coming in a
+moment, is another commit.
+
+161
+00:11:04,205 --> 00:11:09,480
+Any tool that asks history a question gets
+a confident wrong answer: changed-file
+
+162
+00:11:09,520 --> 00:11:14,729
+detection, blame-based analysis, changelog
+generators, version-from-tag plugins.
+
+163
+00:11:15,069 --> 00:11:19,541
+And git merge-base fails, because the
+name it was given can't be resolved here.
+
+164
+00:11:19,881 --> 00:11:22,370
+Step 4: tags alone are not enough.
+
+165
+00:11:22,710 --> 00:11:27,630
+git fetch is 🟢 SAFE. This is what
+fetch-tags: true with depth 1 amounts to.
+
+166
+00:11:27,970 --> 00:11:32,999
+Quick quiz. The tag will now
+exist. Does git describe work?
+
+167
+00:11:33,039 --> 00:11:35,319
+A, yes. B, no. Your answer?
+
+168
+00:11:40,159 --> 00:11:45,128
+B. The tag arrived, and describe still fails,
+with a different message: "No tags can
+
+169
+00:11:45,168 --> 00:11:45,724
+describe".
+
+170
+00:11:46,064 --> 00:11:50,462
+The walk from HEAD through parents ends
+at the graft before it reaches the tagged
+
+171
+00:11:50,502 --> 00:11:53,312
+commit. Tags need the history
+between them and HEAD.
+
+172
+00:11:53,352 --> 00:11:55,449
+If you chose A, you're in good company.
+
+173
+00:11:55,789 --> 00:11:57,557
+Step 5: full history.
+
+174
+00:11:57,897 --> 00:12:02,119
+🟢 SAFE: it adds objects and tag
+refs and removes .git/shallow.
+
+175
+00:12:02,159 --> 00:12:05,969
+This is fetch-depth: 0 as a
+repair of an existing clone.
+
+176
+00:12:06,309 --> 00:12:12,107
+Not shallow, three commits, the right
+description. And the true answer for pom.xml:
+
+177
+00:12:12,147 --> 00:12:15,624
+ae299cb, "Add Maven module
+for price calculation".
+
+178
+00:12:15,964 --> 00:12:20,477
+And in the picture the cut is gone: three
+commits again, and the tag within reach of
+
+179
+00:12:20,517 --> 00:12:20,748
+HEAD.
+
+180
+00:12:21,088 --> 00:12:29,067
+Step 6: the lab replay, briefly.
+labs/run ch20a/lab-26-3-describe.
+
+181
+00:12:29,407 --> 00:12:33,820
+The same commit described three times:
+in your repository, in a clone like the
+
+182
+00:12:33,860 --> 00:12:36,846
+default checkout, and in a
+clone like fetch-depth: 0.
+
+183
+00:12:36,886 --> 00:12:38,730
+The middle answer is the bare ID.
+
+184
+00:12:39,070 --> 00:12:42,961
+Step 7: the merge ref. Replay
+labs/run ch20a/merge-ref.
+
+185
+00:12:43,001 --> 00:12:48,607
+The fixture: your branch adds a reorder
+report whose test assumes the low-stock
+
+186
+00:12:48,647 --> 00:12:53,110
+threshold is 5. A colleague raised
+the threshold to 10 on main.
+
+187
+00:12:53,150 --> 00:12:58,257
+The two changes touch different files,
+so they merge without a conflict.
+
+188
+00:12:58,597 --> 00:13:02,284
+On your branch, at
+80c9cfa, the tests pass.
+
+189
+00:13:02,624 --> 00:13:07,409
+The server is a bare repository in which
+the fixture created the two pull request
+
+190
+00:13:07,449 --> 00:13:10,685
+refs with plain Git, imitating
+the documented behavior.
+
+191
+00:13:11,025 --> 00:13:15,518
+refs/pull/7/head is your commit.
+refs/pull/7/merge is d04ef31.
+
+192
+00:13:15,558 --> 00:13:19,686
+Compare it with every other
+line: no branch points at it.
+
+193
+00:13:20,026 --> 00:13:23,794
+The runner fetches that one
+commit and detaches HEAD on it.
+
+194
+00:13:23,834 --> 00:13:29,216
+git checkout --detach is the older spelling.
+The script uses the git switch --detach
+
+195
+00:13:29,256 --> 00:13:30,700
+form a few steps later.
+
+196
+00:13:31,040 --> 00:13:35,888
+Read the subject of the commit: "Merge",
+your commit's full ID, "into", the ID of
+
+197
+00:13:35,928 --> 00:13:36,551
+main's tip.
+
+198
+00:13:36,891 --> 00:13:41,683
+On the runner now: what does git status
+say about the branch, who is the author of
+
+199
+00:13:41,723 --> 00:13:45,925
+HEAD, how many commits are there, and
+what is the threshold in stock.py?
+
+200
+00:13:45,965 --> 00:13:46,868
+Say it out loud.
+
+201
+00:13:51,708 --> 00:13:57,152
+"HEAD (no branch)". The author is GitHub:
+the commit nobody on the team wrote.
+
+202
+00:13:57,192 --> 00:14:02,917
+One commit. No current branch. The threshold
+is 10, from main, and report.py, from
+
+203
+00:14:02,957 --> 00:14:07,557
+your branch, is there too. The
+working tree contains both changes.
+
+204
+00:14:07,897 --> 00:14:10,760
+The tests fail on the runner
+and pass on your laptop.
+
+205
+00:14:11,100 --> 00:14:15,860
+Both results are correct. They tested
+different commits, and that's the CTO's first
+
+206
+00:14:15,900 --> 00:14:16,958
+question, answered.
+
+207
+00:14:17,298 --> 00:14:22,564
+Back in your clone. You copy the commit ID
+from the CI log and ask your clone about
+
+208
+00:14:22,604 --> 00:14:25,057
+it. What happens? Make your prediction.
+
+209
+00:14:29,897 --> 00:14:33,349
+"Could not get object info."
+The commit isn't in your clone.
+
+210
+00:14:33,389 --> 00:14:37,830
+Then the reproduction: fetch, detach on
+your branch so that the branch itself
+
+211
+00:14:37,870 --> 00:14:42,661
+doesn't move, and merge origin/main. git
+merge is 🟡 CAUTION, and on a detached HEAD
+
+212
+00:14:42,701 --> 00:14:43,766
+it moves only HEAD.
+
+213
+00:14:44,106 --> 00:14:48,891
+The tree ID of your local merge equals
+the tree ID on the runner, 745aaaa.
+
+214
+00:14:48,931 --> 00:14:53,259
+Same tree, so the same test result:
+the failure reproduces locally.
+
+215
+00:14:53,299 --> 00:14:57,431
+Then the script switches back to
+the branch, which is unchanged.
+
+216
+00:14:59,271 --> 00:15:00,919
+Five mistakes to watch for.
+
+217
+00:15:01,259 --> 00:15:04,924
+Silencing git describe with
+--always in a release build.
+
+218
+00:15:04,964 --> 00:15:10,349
+Root cause: with one commit and no tags
+the command would fail, and --always turns
+
+219
+00:15:10,389 --> 00:15:14,848
+that failure into a bare commit ID
+that gets stamped as the version.
+
+220
+00:15:15,188 --> 00:15:20,103
+Setting fetch-tags: true and keeping depth
+1. Root cause: describe walks parents
+
+221
+00:15:20,143 --> 00:15:25,119
+from HEAD to a tagged ancestor, and the
+graft ends the walk before it gets there.
+
+222
+00:15:25,459 --> 00:15:30,453
+Debugging a CI failure on your branch tip.
+Root cause: a pull_request run checks out
+
+223
+00:15:30,493 --> 00:15:34,947
+the test merge under refs/pull/N/merge,
+a commit that is not in your clone.
+
+224
+00:15:35,287 --> 00:15:40,415
+Re-running a job to "pick up the new main".
+Root cause: a re-run reuses the original
+
+225
+00:15:40,455 --> 00:15:40,846
+commit.
+
+226
+00:15:41,186 --> 00:15:45,597
+Reading missing checks on a conflicted
+pull request as a broken workflow.
+
+227
+00:15:45,637 --> 00:15:50,171
+Root cause: a conflicted pull request
+has no merge ref, so its pull_request
+
+228
+00:15:50,211 --> 00:15:51,879
+workflows do not run at all.
+
+229
+00:15:53,719 --> 00:15:58,540
+Now, out of the lab. The textbook's case:
+an ML team's pull request adds a metric
+
+230
+00:15:58,580 --> 00:16:02,261
+and passes locally. CI fails in
+an unrelated data-loader test.
+
+231
+00:16:02,301 --> 00:16:07,062
+The author spends an hour on the loader
+before looking at the first lines of the
+
+232
+00:16:07,102 --> 00:16:11,023
+checkout step's log, where the
+fetched ref is refs/pull/412/merge.
+
+233
+00:16:11,063 --> 00:16:14,504
+Someone had merged a loader
+change twenty minutes earlier.
+
+234
+00:16:14,844 --> 00:16:19,747
+The habit that prevents the lost hour: read
+which commit the job checked out before
+
+235
+00:16:19,787 --> 00:16:24,274
+reading anything else. Workflow 1 prints
+it in its own step for that reason.
+
+236
+00:16:26,114 --> 00:16:31,600
+Your turn. Do Lab 26.3, "Workflow
+3, build the application", in
+
+237
+00:16:31,640 --> 00:16:36,951
+lab-manual/m26-actions-fundamentals.md,
+in your normal shell.
+
+238
+00:16:37,291 --> 00:16:42,001
+The lab asks for two predictions. Write
+both down. When the tag is pushed: which
+
+239
+00:16:42,041 --> 00:16:46,039
+workflows start, and what will the
+build job print after "Building"?
+
+240
+00:16:46,079 --> 00:16:50,493
+And after one more commit lands on main:
+what will the description be then?
+
+241
+00:16:50,833 --> 00:16:57,376
+The challenge is Exercise 28.5, "Green
+here, red in a fresh clone", in
+
+242
+00:16:57,416 --> 00:17:00,950
+exercises/m26-m31-actions-security.md.
+
+243
+00:17:04,790 --> 00:17:09,567
+Answer out loud. A strong answer describes
+the repository on the runner as Git
+
+244
+00:17:09,607 --> 00:17:14,507
+state: how many commits, which refs, what
+HEAD is, and which file marks the cut.
+
+245
+00:17:14,547 --> 00:17:19,448
+Then it picks three history questions and
+classifies each as an error or a wrong
+
+246
+00:17:19,488 --> 00:17:23,647
+answer, with the mechanism. It says
+which is more dangerous and why.
+
+247
+00:17:23,687 --> 00:17:27,785
+The follow-up is about fetch-tags:
+true with the depth left at one.
+
+248
+00:17:27,825 --> 00:17:31,985
+You've seen the answer, so explain
+it from how describe finds a tag.
+
+249
+00:17:33,825 --> 00:17:34,752
+Let's land this.
+
+250
+00:17:35,092 --> 00:17:36,752
+You should now be able to say:
+
+251
+00:17:37,092 --> 00:17:42,360
+After a default checkout the runner has one
+commit, no tags, and a .git/shallow file
+
+252
+00:17:42,400 --> 00:17:44,003
+that cuts history at HEAD.
+
+253
+00:17:44,343 --> 00:17:49,293
+History questions there either fail or give
+a confident wrong answer; fetch-depth: 0
+
+254
+00:17:49,333 --> 00:17:51,729
+in the job that needs history is the fix.
+
+255
+00:17:52,069 --> 00:17:56,602
+A pull_request run checks out the test merge
+under refs/pull/N/merge with a detached
+
+256
+00:17:56,642 --> 00:17:59,814
+HEAD: a commit that is on the
+server and not in your clone.
+
+257
+00:18:00,154 --> 00:18:05,155
+To reproduce what CI tested, fetch and
+merge the base into a detached copy of your
+
+258
+00:18:05,195 --> 00:18:06,938
+branch, and compare tree IDs.
+
+259
+00:18:07,278 --> 00:18:12,079
+A re-run reuses the original commit, and
+a conflicted pull request gets no run at
+
+260
+00:18:12,119 --> 00:18:12,318
+all.
+
+261
+00:18:14,158 --> 00:18:17,314
+Read section 20A.8 of Chapter 20A.
+
+262
+00:18:17,654 --> 00:18:22,316
+Today you rebuilt a runner's checkout on
+your own machine, and caught one tool
+
+263
+00:18:22,356 --> 00:18:27,200
+lying. Practise that once before you need
+it. Next time: controlling jobs, matrix
+
+264
+00:18:27,240 --> 00:18:32,143
+strategies, dependency caching, and artifacts.
+Until then, look at the state first
+
+265
+00:18:32,183 --> 00:18:34,615
+and type second. See you in the next one.

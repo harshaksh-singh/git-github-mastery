@@ -1,0 +1,1337 @@
+1
+00:00:04,500 --> 00:00:09,344
+The release manager looks at the deployment
+history in the afternoon and finds two
+
+2
+00:00:09,384 --> 00:00:13,990
+deployments, not three. A deployment is
+one delivery of the software to a live
+
+3
+00:00:14,030 --> 00:00:18,279
+system, and here each merge to main
+starts a run of the deploy workflow.
+
+4
+00:00:18,319 --> 00:00:23,163
+The second merge was never deployed on its
+own. Nobody cancelled anything by hand.
+
+5
+00:00:23,503 --> 00:00:28,595
+Was a change lost? Is the pipeline broken?
+Before you answer, you need to know what
+
+6
+00:00:28,635 --> 00:00:33,480
+a concurrency group does by default with
+a run that is waiting when another one
+
+7
+00:00:33,520 --> 00:00:38,674
+arrives. The answer is one sentence in the
+workflow syntax reference, and most teams
+
+8
+00:00:38,714 --> 00:00:41,890
+have never read it. Keep
+those three merges in mind.
+
+9
+00:00:41,930 --> 00:00:43,498
+They come back, as trains.
+
+10
+00:00:45,338 --> 00:00:49,152
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:49,192 --> 00:00:54,082
+A workflow is a file that tells GitHub
+Actions which jobs to run when an event
+
+12
+00:00:54,122 --> 00:00:59,390
+happens. A job is a list of steps on one
+fresh machine, the runner, and a run is one
+
+13
+00:00:59,430 --> 00:01:00,907
+execution of a workflow.
+
+14
+00:01:01,247 --> 00:01:05,838
+In the last video the production job had
+a block you were asked to accept for the
+
+15
+00:01:05,878 --> 00:01:10,184
+moment: a concurrency group named
+production with cancel-in-progress: false.
+
+16
+00:01:10,224 --> 00:01:14,815
+This video explains it, and then turns to
+a different question that every growing
+
+17
+00:01:14,855 --> 00:01:19,618
+organization meets: how do forty repositories
+share one deployment procedure without
+
+18
+00:01:19,658 --> 00:01:20,933
+copying it forty times?
+
+19
+00:01:21,273 --> 00:01:26,388
+Two topics. Concurrency groups: one name,
+at most one run at a time, and a rule for
+
+20
+00:01:26,428 --> 00:01:31,606
+everyone else. And reuse: reusable workflows,
+composite actions and Docker container
+
+21
+00:01:31,646 --> 00:01:36,512
+actions, which differ in what they replace.
+The reusable workflow gets the most
+
+22
+00:01:36,552 --> 00:01:41,543
+time, because it's the one that changes
+the names of your required checks and the
+
+23
+00:01:41,583 --> 00:01:46,761
+path of your secrets. A required check is
+a result that a rule says must pass before
+
+24
+00:01:46,801 --> 00:01:51,233
+a merge, and a secret is an encrypted
+value stored in GitHub's settings.
+
+25
+00:01:51,573 --> 00:01:56,039
+The local demonstration is short and makes
+one point with Git: which version of a
+
+26
+00:01:56,079 --> 00:01:57,819
+reusable workflow a caller runs.
+
+27
+00:01:59,659 --> 00:02:01,237
+Here's what you'll walk away with.
+
+28
+00:02:01,577 --> 00:02:02,989
+After this video you can:
+
+29
+00:02:03,329 --> 00:02:07,669
+predict which of several queued runs
+deploy under a concurrency group, with and
+
+30
+00:02:07,709 --> 00:02:08,833
+without cancellation;
+
+31
+00:02:09,173 --> 00:02:13,584
+choose between a reusable workflow, a
+composite action and a container action;
+
+32
+00:02:13,924 --> 00:02:17,337
+explain what each choice does to
+the names of required checks;
+
+33
+00:02:17,677 --> 00:02:22,564
+say why a caller cannot pass an environment
+secret to a reusable workflow and where
+
+34
+00:02:22,604 --> 00:02:23,513
+it must be read;
+
+35
+00:02:23,853 --> 00:02:27,084
+explain which version of a
+reusable workflow a caller runs.
+
+36
+00:02:28,924 --> 00:02:32,602
+Concurrency. In one sentence:
+a concurrency group is a name.
+
+37
+00:02:32,642 --> 00:02:37,807
+GitHub lets at most one run or job with that
+name execute at a time and decides what
+
+38
+00:02:37,847 --> 00:02:39,170
+happens to the others.
+
+39
+00:02:39,510 --> 00:02:41,767
+Precisely, from the workflow syntax.
+
+40
+00:02:42,107 --> 00:02:45,565
+concurrency can be set for the
+whole workflow or for one job.
+
+41
+00:02:45,605 --> 00:02:50,209
+Its value is a group name, or a mapping
+with group, cancel-in-progress and queue.
+
+42
+00:02:50,549 --> 00:02:55,416
+The default behavior: when a run is queued
+and another run in the same group is in
+
+43
+00:02:55,456 --> 00:03:00,083
+progress, the new one is pending, and
+any run already pending in that group is
+
+44
+00:03:00,123 --> 00:03:03,433
+cancelled. So by default at
+most one runs and one waits.
+
+45
+00:03:03,773 --> 00:03:09,419
+Quick quiz. Three runs arrive in one
+group, one after another, with the default
+
+46
+00:03:09,459 --> 00:03:13,449
+settings. How many of them
+finish? A, all three. B, two.
+
+47
+00:03:13,489 --> 00:03:15,896
+C, only the last one. Your answer?
+
+48
+00:03:20,736 --> 00:03:25,463
+B, two. The first is in progress and
+finishes. The second is pending, and it's
+
+49
+00:03:25,503 --> 00:03:29,557
+cancelled when the third is queued.
+The third waits, and then runs.
+
+50
+00:03:29,597 --> 00:03:31,880
+If you said A, you're in good company.
+
+51
+00:03:32,220 --> 00:03:36,056
+cancel-in-progress: true also
+cancels the run in progress.
+
+52
+00:03:36,096 --> 00:03:37,660
+It may be an expression.
+
+53
+00:03:38,000 --> 00:03:42,829
+queue: max, since the seventh of May
+2026, keeps up to 100 pending runs and
+
+54
+00:03:42,869 --> 00:03:48,218
+processes them in order. Combining it with
+cancel-in-progress: true is a validation
+
+55
+00:03:48,258 --> 00:03:48,607
+error.
+
+56
+00:03:48,947 --> 00:03:54,331
+The group expression may use only the
+github, inputs and vars contexts at workflow
+
+57
+00:03:54,371 --> 00:03:58,035
+level. A context is a named
+object of facts about a run.
+
+58
+00:03:58,075 --> 00:04:01,872
+A job-level group may also use
+needs, strategy and matrix.
+
+59
+00:04:02,212 --> 00:04:06,688
+Group names are case-insensitive, and a
+group isn't private to a workflow: two
+
+60
+00:04:06,728 --> 00:04:09,989
+workflows that use the group
+name deploy share one track.
+
+61
+00:04:10,329 --> 00:04:13,459
+And the documentation states
+that ordering isn't guaranteed.
+
+62
+00:04:13,799 --> 00:04:17,215
+Two patterns cover most needs,
+and they want opposite settings.
+
+63
+00:04:21,555 --> 00:04:26,452
+The first includes the workflow name and
+the ref, so that only runs of the same
+
+64
+00:04:26,492 --> 00:04:31,701
+workflow on the same ref compete. The second
+is deliberately the same for every ref.
+
+65
+00:04:31,741 --> 00:04:35,138
+Workflow 8 uses the second
+form for the whole workflow.
+
+66
+00:04:35,178 --> 00:04:40,387
+Workflow 9 uses one group per environment
+at job level, so that a staging deployment
+
+67
+00:04:40,427 --> 00:04:42,824
+doesn't wait for a production approval.
+
+68
+00:04:43,164 --> 00:04:46,627
+Why never cancel-in-progress:
+true on a deployment?
+
+69
+00:04:46,667 --> 00:04:52,053
+Section 20B.17: a deployment cancelled
+half-way leaves a state nobody designed.
+
+70
+00:04:52,393 --> 00:04:56,469
+One more sentence from the documentation
+that people assume the opposite of:
+
+71
+00:04:56,509 --> 00:05:00,693
+concurrency and environment aren't
+connected. An environment doesn't serialise
+
+72
+00:05:00,733 --> 00:05:01,722
+anything by itself.
+
+73
+00:05:02,062 --> 00:05:06,945
+Reuse. Three mechanisms remove duplication.
+They differ in what they replace.
+
+74
+00:05:07,285 --> 00:05:10,676
+A reusable workflow replaces
+one or more whole jobs.
+
+75
+00:05:10,716 --> 00:05:15,625
+It's a workflow file with on: workflow_call,
+called with uses at job level.
+
+76
+00:05:15,665 --> 00:05:19,254
+It chooses its own runners.
+It can name an environment.
+
+77
+00:05:19,294 --> 00:05:24,203
+Its secrets are declared in its interface,
+or passed with secrets: inherit.
+
+78
+00:05:24,243 --> 00:05:26,644
+In the log it shows as separate jobs.
+
+79
+00:05:26,984 --> 00:05:30,492
+A composite action replaces
+several steps inside a job.
+
+80
+00:05:30,532 --> 00:05:35,653
+It's an action.yml with runs.using:
+"composite", called with uses at step level.
+
+81
+00:05:35,693 --> 00:05:39,588
+It runs on the caller's runner.
+It can't name an environment.
+
+82
+00:05:39,628 --> 00:05:43,845
+It can't read the secrets context,
+so values are passed as inputs.
+
+83
+00:05:43,885 --> 00:05:45,458
+In the log it's one step.
+
+84
+00:05:45,798 --> 00:05:50,639
+A Docker container action replaces one
+step. It's an action.yml with runs.using:
+
+85
+00:05:50,679 --> 00:05:55,703
+"docker". It needs a Linux runner, and the
+documentation notes it's slower than the
+
+86
+00:05:55,743 --> 00:05:59,120
+other kinds, because the image
+is built or pulled first.
+
+87
+00:05:59,460 --> 00:06:04,305
+Reusable workflows, in one sentence: a
+reusable workflow is a workflow file that
+
+88
+00:06:04,345 --> 00:06:07,358
+another workflow calls as
+if it were a single job.
+
+89
+00:06:07,698 --> 00:06:12,987
+The called file declares its interface under
+on.workflow_call: two inputs, each with
+
+90
+00:06:13,027 --> 00:06:16,856
+a type, one secret, and one
+output, mapped from a job output.
+
+91
+00:06:17,196 --> 00:06:21,938
+The caller has a job named staging whose
+body is uses, with and secrets, and a
+
+92
+00:06:21,978 --> 00:06:25,065
+second job that needs staging
+and reads its output.
+
+93
+00:06:25,405 --> 00:06:25,956
+The rules.
+
+94
+00:06:26,296 --> 00:06:30,749
+Inputs have a type of boolean, number or
+string. Outputs are declared at workflow
+
+95
+00:06:30,789 --> 00:06:35,353
+level and mapped from job outputs. The
+caller reads them through needs and the name
+
+96
+00:06:35,393 --> 00:06:36,407
+of the calling job.
+
+97
+00:06:36,747 --> 00:06:41,870
+A calling job isn't a normal job. It may
+contain only a fixed set of keys, among
+
+98
+00:06:41,910 --> 00:06:47,098
+them name, uses, with, secrets, strategy,
+needs, if, concurrency and permissions.
+
+99
+00:06:47,138 --> 00:06:52,003
+It has no runs-on and no steps. No
+context or expression is allowed in uses.
+
+100
+00:06:52,343 --> 00:06:57,354
+Where the file comes from. A path starting
+with ./ is the same repository at the
+
+101
+00:06:57,394 --> 00:07:02,658
+commit of the run. The form with owner,
+repository, path and a ref after the at sign
+
+102
+00:07:02,698 --> 00:07:07,899
+is another repository. Pin the ref to a
+full commit ID, for the reason every action
+
+103
+00:07:07,939 --> 00:07:08,530
+is pinned.
+
+104
+00:07:08,870 --> 00:07:15,125
+Since the thirtieth of July 2026 the
+documentation recommends a form starting with
+
+105
+00:07:15,165 --> 00:07:21,112
+$/ for the same repository on github.com.
+It needs runner 2.336.0 or later and
+
+106
+00:07:21,152 --> 00:07:26,716
+doesn't exist on GitHub Enterprise
+Server. And files in subdirectories of
+
+107
+00:07:26,756 --> 00:07:29,326
+.github/workflows can't be called.
+
+108
+00:07:29,666 --> 00:07:34,400
+Secrets pass only one level: a workflow
+called by a called workflow needs them
+
+109
+00:07:34,440 --> 00:07:39,420
+passed again. secrets: inherit passes all
+of the caller's secrets and works within
+
+110
+00:07:39,460 --> 00:07:44,195
+one organization or enterprise. And
+environment secrets can't be passed by the
+
+111
+00:07:44,235 --> 00:07:49,153
+caller, because, in the documentation's
+words, "on.workflow_call does not support
+
+112
+00:07:49,193 --> 00:07:53,010
+the environment keyword". The
+called job names the environment.
+
+113
+00:07:53,050 --> 00:07:57,968
+In workflow 11 the deploy job does that
+with the environment taken from an input.
+
+114
+00:07:58,008 --> 00:08:03,049
+So an environment secret is read where the
+environment is named: in the called job.
+
+115
+00:08:03,389 --> 00:08:08,360
+env doesn't cross. Variables in the caller's
+workflow-level env aren't visible in
+
+116
+00:08:08,400 --> 00:08:12,072
+the called workflow. Use inputs,
+or configuration variables.
+
+117
+00:08:12,412 --> 00:08:17,132
+Permissions only narrow. The called workflow's
+token permissions can be reduced, not
+
+118
+00:08:17,172 --> 00:08:19,001
+raised, relative to the caller's.
+
+119
+00:08:19,341 --> 00:08:23,920
+The github context is the caller's:
+event, ref, commit and github.workflow.
+
+120
+00:08:23,960 --> 00:08:25,644
+Billing is the caller's too.
+
+121
+00:08:25,984 --> 00:08:31,240
+Limits: up to ten levels of workflows,
+and at most 50 unique reusable workflows
+
+122
+00:08:31,280 --> 00:08:35,530
+called from one workflow file,
+since the sixth of November 2025.
+
+123
+00:08:35,870 --> 00:08:40,926
+And check names. A required status check
+for a job in a called workflow is named
+
+124
+00:08:40,966 --> 00:08:45,002
+with the calling job's name, a
+slash, and the called job's name.
+
+125
+00:08:45,042 --> 00:08:49,779
+With the two course files, the check
+is "Staging / Test, build and deploy".
+
+126
+00:08:49,819 --> 00:08:54,237
+Renaming either job silently breaks
+a rule that requires the old name.
+
+127
+00:08:54,577 --> 00:08:59,540
+One point is unverified, and it's on screen
+now. How the secrets of an environment
+
+128
+00:08:59,580 --> 00:09:04,665
+that a called job names appear in that job,
+when the caller passes named secrets and
+
+129
+00:09:04,705 --> 00:09:09,668
+doesn't use secrets: inherit, isn't spelled
+out on the pages read for the chapter.
+
+130
+00:09:09,708 --> 00:09:14,671
+Workflow 11 avoids the question. Verify
+the behavior in your repository before you
+
+131
+00:09:14,711 --> 00:09:15,464
+depend on it.
+
+132
+00:09:15,804 --> 00:09:20,603
+Re-runs. Re-running all jobs resolves a
+reference that's not a commit ID again.
+
+133
+00:09:20,643 --> 00:09:25,564
+Re-running failed or selected jobs uses
+the same commit of the called workflow as
+
+134
+00:09:25,604 --> 00:09:30,402
+the first attempt. A reusable workflow
+referenced as @main can therefore differ
+
+135
+00:09:30,442 --> 00:09:32,730
+between a first run and a full re-run.
+
+136
+00:09:33,070 --> 00:09:37,709
+Composite actions. The documented
+rules that differ from workflow steps.
+
+137
+00:09:37,749 --> 00:09:42,909
+Every run step must state its shell. Inputs
+are read through the inputs context.
+
+138
+00:09:42,949 --> 00:09:47,719
+Outputs need a value that maps to a
+step output. The secrets context isn't
+
+139
+00:09:47,759 --> 00:09:52,918
+available. And the parallel-step keywords
+of June 2026 can't be used inside one.
+
+140
+00:09:52,958 --> 00:09:58,248
+In the log the whole action is one step,
+which makes a failure inside it harder to
+
+141
+00:09:58,288 --> 00:10:00,782
+locate than the same steps written out.
+
+142
+00:10:01,122 --> 00:10:05,944
+Which one. The textbook's rule. Steps that
+repeat inside jobs: a composite action.
+
+143
+00:10:05,984 --> 00:10:10,569
+A whole job, or a job that needs an
+environment, a runner choice or secrets: a
+
+144
+00:10:10,609 --> 00:10:15,491
+reusable workflow. A tool that needs an
+operating system environment you don't want
+
+145
+00:10:15,531 --> 00:10:20,294
+on the runner: a container action. And
+neither, when the duplication is two short
+
+146
+00:10:20,334 --> 00:10:24,918
+blocks in one file: YAML anchors or plain
+repetition are easier to read and to
+
+147
+00:10:24,958 --> 00:10:25,274
+debug.
+
+148
+00:10:27,114 --> 00:10:29,410
+A picture helps, and this one has trains.
+
+149
+00:10:29,750 --> 00:10:34,807
+Analogy for concurrency, from the textbook.
+A single-track railway section with one
+
+150
+00:10:34,847 --> 00:10:39,597
+waiting siding. One train is on the track.
+A second train waits in the siding.
+
+151
+00:10:39,637 --> 00:10:44,203
+If a third arrives, the second is sent
+away and the third takes the siding.
+
+152
+00:10:44,243 --> 00:10:49,362
+With cancel-in-progress: true, the arriving
+train also removes the one on the track.
+
+153
+00:10:49,702 --> 00:10:54,906
+The analogy breaks with queue: max, which
+turns the siding into a yard for up to 100
+
+154
+00:10:54,946 --> 00:10:55,343
+trains.
+
+155
+00:10:55,683 --> 00:10:58,879
+Now run the three merges
+from the opening through it.
+
+156
+00:10:58,919 --> 00:11:02,359
+Merge one is on the track.
+Merge two waits in the siding.
+
+157
+00:11:02,399 --> 00:11:07,120
+Merge three arrives, merge two is sent
+away, and merge three takes the siding.
+
+158
+00:11:07,160 --> 00:11:11,455
+Two deployments, and that's the release
+manager's afternoon, explained.
+
+159
+00:11:11,495 --> 00:11:16,400
+Is anything lost? Usually not, because the
+third run's commit contains the second
+
+160
+00:11:16,440 --> 00:11:21,528
+merge. It's not fine when each run must
+happen, for example a database migration per
+
+161
+00:11:21,568 --> 00:11:26,351
+commit. Then you use queue: max, or you
+design the deployment to be cumulative.
+
+162
+00:11:26,691 --> 00:11:31,628
+Analogy for a reusable workflow. A subcontractor
+who brings a whole crew, their own
+
+163
+00:11:31,668 --> 00:11:36,544
+tools and their own site rules, and works
+to a written order, which is the inputs.
+
+164
+00:11:36,584 --> 00:11:41,401
+You can't give the crew individual
+instructions. You can only place the order and
+
+165
+00:11:41,441 --> 00:11:44,100
+read the delivery note,
+which is the outputs.
+
+166
+00:11:44,440 --> 00:11:48,735
+The textbook says it breaks on trust:
+the subcontractor works with your access
+
+167
+00:11:48,775 --> 00:11:52,292
+badge, and can use less of its
+access than you gave, never more.
+
+168
+00:11:52,332 --> 00:11:56,516
+That is "permissions only narrow", and
+"the github context is the caller's".
+
+169
+00:11:58,356 --> 00:12:02,473
+Try it now, on paper. Thirty
+seconds. Copy these three bars.
+
+170
+00:12:02,513 --> 00:12:07,530
+Then draw them again for cancel-in-progress:
+true. Which runs finish now?
+
+171
+00:12:09,870 --> 00:12:15,598
+Only run 3. Run 1 is cancelled when run
+2 arrives, and run 2 when run 3 arrives.
+
+172
+00:12:15,938 --> 00:12:19,663
+So the default once more: one
+running, one pending, one cancelled.
+
+173
+00:12:19,703 --> 00:12:24,341
+Redraw it in your head for queue: max.
+Nothing is cancelled, and the three run one
+
+174
+00:12:24,381 --> 00:12:25,140
+after another.
+
+175
+00:12:26,980 --> 00:12:27,740
+Into the lab.
+
+176
+00:12:28,080 --> 00:12:35,956
+Step 1: what makes groups distinct.
+One snippet from the replay labs/run
+
+177
+00:12:35,996 --> 00:12:42,772
+ch20b/lab-28-1-broken-workflows,
+which video 154 uses in full.
+
+178
+00:12:43,112 --> 00:12:48,462
+Three branches, each of which gets pushes.
+A workflow's group is named ci, with
+
+179
+00:12:48,502 --> 00:12:54,057
+cancel-in-progress: true. A colleague pushes
+to docs/rollback-steps while your run
+
+180
+00:12:54,097 --> 00:12:58,492
+on feature/safety-stock is in
+progress. What happens to your run?
+
+181
+00:12:58,532 --> 00:12:59,583
+Say it out loud.
+
+182
+00:13:04,423 --> 00:13:09,088
+It's cancelled. A group named ci
+gives all three refs one track.
+
+183
+00:13:09,128 --> 00:13:12,912
+A group that contains
+github.ref gives each its own.
+
+184
+00:13:12,952 --> 00:13:19,087
+Section 20B.16 lists exactly this symptom:
+CI runs of different branches cancel each
+
+185
+00:13:19,127 --> 00:13:21,955
+other, because the group lacks the ref.
+
+186
+00:13:22,295 --> 00:13:28,785
+Step 2: which version of a reusable
+workflow runs. Replay labs/run
+
+187
+00:13:28,825 --> 00:13:31,556
+ch20b/lab-27-5-reusable-ref.
+
+188
+00:13:31,896 --> 00:13:37,119
+All four read. The repository has a
+caller, deploy.yml, and a called file,
+
+189
+00:13:37,159 --> 00:13:43,022
+reusable-deploy.yml. A branch, ci/python-version,
+adds an input to the called file.
+
+190
+00:13:43,362 --> 00:13:48,717
+git grep -c counts matches per ref. For
+which of the two refs will it print a line?
+
+191
+00:13:48,757 --> 00:13:50,082
+Make your prediction.
+
+192
+00:13:54,922 --> 00:13:56,018
+Only for the branch.
+
+193
+00:13:56,358 --> 00:14:01,344
+The caller on main uses the ./ form, which
+means: the called file from the same
+
+194
+00:14:01,384 --> 00:14:06,179
+commit as the caller. So a branch that
+changes the called file tests its own
+
+195
+00:14:06,219 --> 00:14:09,869
+version, and main keeps using
+the old one until the merge.
+
+196
+00:14:10,209 --> 00:14:12,947
+Step 3: caller and called file disagree.
+
+197
+00:14:13,287 --> 00:14:18,060
+git commit adds an object and moves the
+branch. On main, the caller starts passing
+
+198
+00:14:18,100 --> 00:14:18,882
+the new input.
+
+199
+00:14:19,222 --> 00:14:23,185
+Does the called file on main declare
+that input? Make your prediction.
+
+200
+00:14:28,025 --> 00:14:29,930
+Exit status 1: no match.
+
+201
+00:14:30,270 --> 00:14:35,143
+The caller on main now passes an input that
+the called file on main doesn't declare.
+
+202
+00:14:35,183 --> 00:14:38,478
+You found the disagreement
+with git grep, before any run.
+
+203
+00:14:38,818 --> 00:14:42,442
+The recovery brings the
+declaration to main with a merge.
+
+204
+00:14:42,482 --> 00:14:47,843
+git merge --no-ff is 🟡 CAUTION. Now both
+files mention the input in the same commit.
+
+205
+00:14:48,183 --> 00:14:52,734
+The rule from the textbook: caller and
+called file must agree in one commit when
+
+206
+00:14:52,774 --> 00:14:56,694
+they live in one repository, and
+across a pinned ref when they don't.
+
+207
+00:14:57,034 --> 00:15:00,891
+Lab 27.5 on your practice
+repository, in your normal shell.
+
+208
+00:15:00,931 --> 00:15:06,372
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+209
+00:15:06,412 --> 00:15:09,343
+No GitHub output was
+captured by the authors.
+
+210
+00:15:09,683 --> 00:15:14,306
+Add the two files of workflow 11. After
+the run, open it and look at the list of
+
+211
+00:15:14,346 --> 00:15:18,969
+jobs. Find the job that came from the
+called workflow and read its full name: it
+
+212
+00:15:19,009 --> 00:15:22,700
+should be composed of two names,
+as the documentation describes.
+
+213
+00:15:22,740 --> 00:15:27,596
+Write that name down exactly, because it's
+the name a ruleset would have to require.
+
+214
+00:15:27,636 --> 00:15:32,317
+Then open the summary and find the revision
+that the second job wrote: one string
+
+215
+00:15:32,357 --> 00:15:36,105
+that crossed from the called
+workflow to the caller as an output.
+
+216
+00:15:36,445 --> 00:15:41,194
+Then the lab's failure case: change the
+called file on a branch and open a pull
+
+217
+00:15:41,234 --> 00:15:46,104
+request. Ask yourself before you look:
+which version of the called file does this
+
+218
+00:15:46,144 --> 00:15:47,498
+pull request's run use?
+
+219
+00:15:49,338 --> 00:15:50,986
+Five mistakes to watch for.
+
+220
+00:15:51,326 --> 00:15:56,644
+A CI group without the ref. Root cause: a
+group is a name shared by everything that
+
+221
+00:15:56,684 --> 00:16:00,324
+uses it, so runs of different
+branches cancel each other.
+
+222
+00:16:00,664 --> 00:16:05,881
+Expecting every queued deployment to run.
+Root cause: by default a newly queued run
+
+223
+00:16:05,921 --> 00:16:08,731
+cancels the run already
+pending in the group.
+
+224
+00:16:09,071 --> 00:16:13,715
+cancel-in-progress: true on a deployment.
+Root cause: the run in progress is
+
+225
+00:16:13,755 --> 00:16:17,044
+cancelled half-way and leaves
+a state nobody designed.
+
+226
+00:16:17,384 --> 00:16:22,368
+An empty secret in a called workflow. Root
+cause: secrets pass one level only, and
+
+227
+00:16:22,408 --> 00:16:27,271
+an environment secret cannot be passed by
+the caller; it is read in the job that
+
+228
+00:16:27,311 --> 00:16:28,619
+names the environment.
+
+229
+00:16:28,959 --> 00:16:32,109
+Renaming a job after extracting
+a reusable workflow.
+
+230
+00:16:32,149 --> 00:16:37,079
+Root cause: the check is named from the
+calling job and the called job, so a rule
+
+231
+00:16:37,119 --> 00:16:41,189
+that requires the old name waits
+for a check that no longer exists.
+
+232
+00:16:43,029 --> 00:16:48,113
+Now, out of the lab. The textbook's case:
+a platform team owns one deploy workflow
+
+233
+00:16:48,153 --> 00:16:53,237
+in a central repository. Forty service
+repositories call it at a pinned commit and
+
+234
+00:16:53,277 --> 00:16:58,423
+pass an environment name. A change to the
+deployment procedure is one reviewed pull
+
+235
+00:16:58,463 --> 00:17:01,734
+request, rolled out by
+Dependabot updates of the pin.
+
+236
+00:17:02,074 --> 00:17:06,638
+Then the sentence that makes it a security
+design and not only a convenience: that
+
+237
+00:17:06,678 --> 00:17:11,242
+one file runs with deployment credentials
+in forty repositories, so its repository
+
+238
+00:17:11,282 --> 00:17:13,937
+needs the strictest ruleset
+in the organization.
+
+239
+00:17:14,277 --> 00:17:18,270
+And the trap the textbook attaches
+to concurrency in this setting.
+
+240
+00:17:18,310 --> 00:17:21,936
+A called workflow sees the
+caller's name in github.workflow.
+
+241
+00:17:21,976 --> 00:17:27,068
+So if the caller and the called workflow
+both use the group built from workflow name
+
+242
+00:17:27,108 --> 00:17:31,834
+and ref, with cancel-in-progress: true,
+the called job cancels its own caller.
+
+243
+00:17:32,174 --> 00:17:37,446
+One counterweight from section 20B.17:
+don't extract a reusable workflow for two
+
+244
+00:17:37,486 --> 00:17:42,958
+callers. Indirection costs debugging time,
+and the check name changes and can break
+
+245
+00:17:42,998 --> 00:17:44,020
+required checks.
+
+246
+00:17:45,860 --> 00:17:52,985
+Your turn. Do Lab 27.5, "A reusable
+workflow and its caller (workflow 11)", in
+
+247
+00:17:53,025 --> 00:17:56,660
+lab-manual/m27-build-package-deliver.md.
+
+248
+00:17:57,000 --> 00:18:01,585
+Before the first run, predict the exact
+name of the check that the called job will
+
+249
+00:18:01,625 --> 00:18:06,211
+report. Before the failure case, predict
+which version of the called file the pull
+
+250
+00:18:06,251 --> 00:18:07,283
+request's run uses.
+
+251
+00:18:07,623 --> 00:18:14,239
+The challenge is Exercise 27.5, "Four
+reusable-workflow surprises", in
+
+252
+00:18:14,279 --> 00:18:17,853
+exercises/m26-m31-actions-security.md.
+
+253
+00:18:21,693 --> 00:18:26,362
+Answer out loud. A strong answer
+states the default rule first, in the
+
+254
+00:18:26,402 --> 00:18:31,945
+documentation's terms: in progress, pending,
+and what happens to a pending run when
+
+255
+00:18:31,985 --> 00:18:37,596
+another is queued. Then it walks the three
+runs through that rule on a timeline, and
+
+256
+00:18:37,636 --> 00:18:42,304
+says whether anything was lost and
+under which condition that matters.
+
+257
+00:18:42,344 --> 00:18:46,610
+The follow-up combines queue: max
+with cancel-in-progress: true.
+
+258
+00:18:46,650 --> 00:18:52,193
+Say what GitHub does with that combination,
+and then judge each of the two settings
+
+259
+00:18:52,233 --> 00:18:54,076
+separately for a deployment.
+
+260
+00:18:55,916 --> 00:18:56,844
+Let's land this.
+
+261
+00:18:57,184 --> 00:18:58,843
+You should now be able to say:
+
+262
+00:18:59,183 --> 00:19:04,254
+A concurrency group allows one run in progress
+and, by default, one pending; a newly
+
+263
+00:19:04,294 --> 00:19:06,869
+queued run cancels the
+one already pending.
+
+264
+00:19:07,209 --> 00:19:12,183
+CI wants a group with workflow name and ref
+and cancellation; a deployment wants one
+
+265
+00:19:12,223 --> 00:19:14,093
+fixed group and no cancellation.
+
+266
+00:19:14,433 --> 00:19:18,505
+A reusable workflow replaces whole jobs,
+a composite action replaces steps, a
+
+267
+00:19:18,545 --> 00:19:21,282
+container action replaces
+one step in its own image.
+
+268
+00:19:21,622 --> 00:19:26,055
+A called job's check is named from the
+calling job and the called job, and an
+
+269
+00:19:26,095 --> 00:19:30,238
+environment secret is read in the
+called job that names the environment.
+
+270
+00:19:30,578 --> 00:19:35,399
+With the ./ form the called file comes
+from the same commit as the caller; across
+
+271
+00:19:35,439 --> 00:19:40,020
+repositories the ref after the at sign
+decides, and it should be a commit ID.
+
+272
+00:19:41,860 --> 00:19:50,464
+Read sections 20B.5 and 20B.6 of Chapter
+20B. Do Exercise 27.3, "Three pushes in ten
+
+273
+00:19:50,504 --> 00:19:55,712
+minutes", in
+exercises/m26-m31-actions-security.md.
+
+274
+00:19:56,052 --> 00:20:00,408
+Three merges, two deployments, and you
+can now say why without opening a log.
+
+275
+00:20:00,448 --> 00:20:04,062
+Draw the three bars once more from
+memory before the next video.
+
+276
+00:20:04,102 --> 00:20:08,344
+Next time: publishing a container image,
+and release automation in outline.
+
+277
+00:20:08,384 --> 00:20:11,313
+Until then, look at the
+state first and type second.
+
+278
+00:20:11,353 --> 00:20:12,684
+See you in the next one.

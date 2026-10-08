@@ -1,0 +1,1113 @@
+1
+00:00:04,500 --> 00:00:09,154
+A step that prints a title. It doesn't
+build anything, it doesn't deploy anything,
+
+2
+00:00:09,194 --> 00:00:13,676
+it doesn't touch a secret. A reviewer's
+eye passes over it in a second, and the
+
+3
+00:00:13,716 --> 00:00:14,706
+reviewer approves.
+
+4
+00:00:15,046 --> 00:00:19,691
+That line is one of the planted weaknesses
+of the lab, and its class began a real
+
+5
+00:00:19,731 --> 00:00:24,492
+compromise: in the Nx incident, the first
+step was a pull request title echoed in a
+
+6
+00:00:24,532 --> 00:00:29,292
+privileged workflow. The textbook's root-cause
+box describes what the team observes
+
+7
+00:00:29,332 --> 00:00:33,399
+afterwards: a step that only prints
+a title runs commands nobody wrote.
+
+8
+00:00:33,739 --> 00:00:39,109
+To see why, you need one fact about timing
+that you already know from video 143.
+
+9
+00:00:39,149 --> 00:00:43,979
+Hold on to that one echo. You'll fix
+it yourself before this video ends.
+
+10
+00:00:45,819 --> 00:00:49,468
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:49,508 --> 00:00:52,674
+This is part four of the
+model: expression injection.
+
+12
+00:00:53,014 --> 00:00:57,873
+Three words first. A run step is one
+entry of a workflow job: a shell command.
+
+13
+00:00:57,913 --> 00:01:02,396
+The shell is the program that reads
+text and carries it out as commands.
+
+14
+00:01:02,436 --> 00:01:07,547
+And an expression is a formula, written
+with a dollar sign and double braces, that
+
+15
+00:01:07,587 --> 00:01:09,997
+GitHub Actions replaces with its value.
+
+16
+00:01:10,337 --> 00:01:15,394
+You know the mechanism. In video 143 you
+learned that an expression is evaluated
+
+17
+00:01:15,434 --> 00:01:20,555
+before the shell starts, and that the
+difference between an expression inside run
+
+18
+00:01:20,595 --> 00:01:23,995
+and a value passed through
+env is a security boundary.
+
+19
+00:01:24,035 --> 00:01:29,219
+In video 144 you learned how the runner,
+the machine that runs the job, executes a
+
+20
+00:01:29,259 --> 00:01:34,380
+run step: it writes the text to a temporary
+script file and starts a shell on it.
+
+21
+00:01:34,420 --> 00:01:36,992
+This video puts those two facts together.
+
+22
+00:01:37,332 --> 00:01:42,348
+The video is defensive. You'll see the
+unsafe step as GitHub's documentation prints
+
+23
+00:01:42,388 --> 00:01:47,159
+it, and the documented fix, and a real
+diff that applies the fix to a lab file.
+
+24
+00:01:47,199 --> 00:01:52,275
+You won't see a crafted input. The
+documentation's own demonstration is described in
+
+25
+00:01:52,315 --> 00:01:54,894
+one sentence, as the
+textbook describes it.
+
+26
+00:01:56,734 --> 00:01:58,313
+Here's what you'll walk away with.
+
+27
+00:01:58,653 --> 00:02:00,065
+After this video you can:
+
+28
+00:02:00,405 --> 00:02:05,802
+explain why an expression inside run: is
+code generation and not variable passing;
+
+29
+00:02:06,142 --> 00:02:08,517
+list event fields an outsider controls;
+
+30
+00:02:08,857 --> 00:02:13,855
+fix an injection by passing the value through
+env and explain why the same value is
+
+31
+00:02:13,895 --> 00:02:14,705
+then harmless;
+
+32
+00:02:15,045 --> 00:02:19,172
+find candidate injections in a set
+of workflows with a local search;
+
+33
+00:02:19,512 --> 00:02:22,365
+write the review comment a
+security engineer would write.
+
+34
+00:02:24,205 --> 00:02:29,147
+In one sentence. An expression in dollar
+sign and double braces is replaced by its
+
+35
+00:02:29,187 --> 00:02:34,251
+value in the text of the script before the
+shell starts, so a value that an outsider
+
+36
+00:02:34,291 --> 00:02:36,559
+controls becomes part of your program.
+
+37
+00:02:36,899 --> 00:02:41,456
+Precisely. The documentation: "The run
+command executes within a temporary shell
+
+38
+00:02:41,496 --> 00:02:46,053
+script on the runner. Before the shell
+script is run, the expressions inside are
+
+39
+00:02:46,093 --> 00:02:50,362
+evaluated and then substituted with the
+resulting values, which can make it
+
+40
+00:02:50,402 --> 00:02:52,603
+vulnerable to shell command injection."
+
+41
+00:02:52,943 --> 00:02:57,874
+The order is the whole mechanism. Four
+steps. One: GitHub Actions evaluates the
+
+42
+00:02:57,914 --> 00:03:01,523
+expression. Two: it pastes the
+value into the script text.
+
+43
+00:03:01,563 --> 00:03:05,425
+Three: the runner writes that
+text to a temporary script file.
+
+44
+00:03:05,465 --> 00:03:08,319
+Four: the runner starts
+the shell on the file.
+
+45
+00:03:08,659 --> 00:03:13,524
+The shell never sees the expression. It sees
+whatever the value contained, as source
+
+46
+00:03:13,564 --> 00:03:13,816
+code.
+
+47
+00:03:14,156 --> 00:03:19,186
+That's why the right phrase is code generation.
+The workflow file is a template, and
+
+48
+00:03:19,226 --> 00:03:23,954
+each run generates a new program from it.
+If part of the input to the generator
+
+49
+00:03:23,994 --> 00:03:27,998
+comes from an outsider, the outsider
+is a co-author of the program.
+
+50
+00:03:28,338 --> 00:03:33,471
+Which values are attacker-controlled? A
+context is a named object of facts about a
+
+51
+00:03:33,511 --> 00:03:38,644
+run, and the documentation says: "Attackers
+can add their own malicious content to
+
+52
+00:03:38,684 --> 00:03:43,375
+the github context, which should be
+treated as potentially untrusted input.
+
+53
+00:03:43,415 --> 00:03:48,359
+These contexts typically end with body,
+default_branch, email, head_ref, label,
+
+54
+00:03:48,399 --> 00:03:51,008
+message, name, page_name, ref, and title."
+
+55
+00:03:51,348 --> 00:03:56,259
+Go through that list with Git in mind.
+head_ref is a branch name, and Git allows
+
+56
+00:03:56,299 --> 00:03:59,848
+characters in a branch name
+that a shell treats as syntax.
+
+57
+00:03:59,888 --> 00:04:04,799
+message is a commit message. name and
+email are author fields, and you proved in
+
+58
+00:04:04,839 --> 00:04:09,873
+video 138 that anyone can set those to
+anything. Titles and bodies of issues, pull
+
+59
+00:04:09,913 --> 00:04:13,895
+requests and comments are GitHub
+data that any account can write.
+
+60
+00:04:14,235 --> 00:04:16,947
+The unsafe step, as the
+documentation prints it.
+
+61
+00:04:17,287 --> 00:04:21,621
+Quick quiz. The author put the
+expression in double quotes.
+
+62
+00:04:21,661 --> 00:04:25,847
+Does that make the step safe?
+A, yes. B, no. Your answer?
+
+63
+00:04:30,687 --> 00:04:35,489
+B. The quotes look careful, and they don't
+help, because the value arrives before
+
+64
+00:04:35,529 --> 00:04:40,391
+the shell parses anything. A title that
+contains a double quote closes the string,
+
+65
+00:04:40,431 --> 00:04:45,173
+and what follows it is parsed as commands.
+The documentation's own demonstration
+
+66
+00:04:45,213 --> 00:04:49,297
+uses a title that closes the quote
+and lists the workspace directory.
+
+67
+00:04:49,337 --> 00:04:51,270
+That's all I'll say about inputs.
+
+68
+00:04:51,610 --> 00:04:56,329
+What an attacker achieves is arbitrary
+commands in that job, with that job's token
+
+69
+00:04:56,369 --> 00:05:00,913
+and secrets: its credential for the
+repository, and the encrypted values it was
+
+70
+00:05:00,953 --> 00:05:01,262
+given.
+
+71
+00:05:01,602 --> 00:05:06,328
+Where that matters. On pull_request from
+a fork, a second repository made from
+
+72
+00:05:06,368 --> 00:05:11,094
+yours, it's contained by the fork model
+of the last video: read-only token, no
+
+73
+00:05:11,134 --> 00:05:15,861
+secrets. On pull_request_target, issues,
+issue_comment or discussion, it isn't
+
+74
+00:05:15,901 --> 00:05:19,161
+contained. Those run with
+the base repository's token.
+
+75
+00:05:19,501 --> 00:05:23,824
+The fixed step, with the documented
+mitigation, an intermediate environment
+
+76
+00:05:23,864 --> 00:05:28,595
+variable. An environment variable is a
+named value that a program receives when it
+
+77
+00:05:28,635 --> 00:05:29,002
+starts.
+
+78
+00:05:35,142 --> 00:05:38,616
+Why this form is safe. The
+expression is still evaluated.
+
+79
+00:05:38,656 --> 00:05:43,794
+But its value no longer goes into the script
+text. In the documentation's words, the
+
+80
+00:05:43,834 --> 00:05:48,726
+value "is stored in memory and used as a
+variable, and doesn't interact with the
+
+81
+00:05:48,766 --> 00:05:50,390
+script generation process".
+
+82
+00:05:50,730 --> 00:05:55,280
+Follow the consequences. The script that
+the shell parses is now a constant.
+
+83
+00:05:55,320 --> 00:05:59,267
+It's identical for every pull
+request, and you can review it once.
+
+84
+00:05:59,307 --> 00:06:03,977
+The title reaches the shell as the value
+of a variable, after parsing is over.
+
+85
+00:06:04,017 --> 00:06:08,930
+And the shell doesn't re-parse the value
+of a variable as commands when it expands
+
+86
+00:06:08,970 --> 00:06:09,111
+it.
+
+87
+00:06:09,451 --> 00:06:13,887
+The double quotes around the variable
+are still needed, for the ordinary shell
+
+88
+00:06:13,927 --> 00:06:18,477
+reason: an unquoted expansion is split
+into words and glob-expanded, meaning its
+
+89
+00:06:18,517 --> 00:06:21,404
+wildcard characters are
+matched against file names.
+
+90
+00:06:21,444 --> 00:06:24,445
+The documentation tells you
+to quote for that reason.
+
+91
+00:06:24,785 --> 00:06:29,424
+A second mitigation, which the same reference
+prefers when available: use an action
+
+92
+00:06:29,464 --> 00:06:32,862
+instead of an inline script, and
+pass the value through with.
+
+93
+00:06:33,202 --> 00:06:35,666
+Two notes for review,
+both from the textbook.
+
+94
+00:06:36,006 --> 00:06:40,391
+The rule is about where the value
+lands, not which context it comes from.
+
+95
+00:06:40,431 --> 00:06:45,482
+A pull request number can't carry code. But
+a reviewer who decides case by case will
+
+96
+00:06:45,522 --> 00:06:50,392
+eventually decide wrongly. So many teams
+adopt the mechanical rule: no expression
+
+97
+00:06:50,432 --> 00:06:55,422
+inside run at all. The course workflows
+follow it, including for values that aren't
+
+98
+00:06:55,462 --> 00:06:56,635
+attacker-controlled.
+
+99
+00:06:56,975 --> 00:07:01,848
+And env doesn't make later misuse safe.
+Passing the variable to eval, the shell
+
+100
+00:07:01,888 --> 00:07:06,388
+command that runs a string as code,
+or writing the value unvalidated into
+
+101
+00:07:06,428 --> 00:07:09,560
+GITHUB_ENV, brings the
+problem back one layer down.
+
+102
+00:07:11,400 --> 00:07:16,634
+Analogy, from the textbook. Mail merge. You
+write "Dear, name, your order shipped",
+
+103
+00:07:16,674 --> 00:07:21,971
+and the software pastes the name in. If the
+letter is then read aloud by someone who
+
+104
+00:07:22,011 --> 00:07:27,117
+obeys every sentence, a customer whose
+"name" contains a sentence gets it obeyed.
+
+105
+00:07:27,457 --> 00:07:32,310
+The textbook says the analogy is close,
+and breaks only in one respect: a shell is
+
+106
+00:07:32,350 --> 00:07:37,144
+far more obedient than any reader, and
+treats quotes and separators in the pasted
+
+107
+00:07:37,184 --> 00:07:38,218
+text as structure.
+
+108
+00:07:38,558 --> 00:07:43,010
+Now the two forms in that picture. With
+the expression inside run, the name is
+
+109
+00:07:43,050 --> 00:07:46,235
+pasted into the letter before
+it's handed to the reader.
+
+110
+00:07:46,275 --> 00:07:50,727
+The reader can't tell which words were
+yours and which came from the customer.
+
+111
+00:07:50,767 --> 00:07:55,219
+With env, the letter says "read out the
+content of the envelope marked TITLE".
+
+112
+00:07:55,259 --> 00:07:59,941
+The letter is always the same. The envelope's
+content is read out as a name, never
+
+113
+00:07:59,981 --> 00:08:01,151
+obeyed as a sentence.
+
+114
+00:08:01,491 --> 00:08:05,829
+That's the difference between code and
+data, and the whole fix is to keep the
+
+115
+00:08:05,869 --> 00:08:07,705
+outsider's text on the data side.
+
+116
+00:08:09,545 --> 00:08:14,281
+Try it now, thirty seconds, on paper.
+Write the four steps in order, from the
+
+117
+00:08:14,321 --> 00:08:19,119
+workflow file to the running shell, and
+mark the step where an outsider's text
+
+118
+00:08:19,159 --> 00:08:20,607
+enters. Say it out loud.
+
+119
+00:08:25,447 --> 00:08:29,594
+Check your order. Evaluate, paste,
+write the file, start the shell.
+
+120
+00:08:29,634 --> 00:08:34,594
+The outsider's text enters at step two,
+and the shell only arrives at step four.
+
+121
+00:08:34,634 --> 00:08:39,594
+So the shell never sees the expression.
+It sees whatever the value contained, as
+
+122
+00:08:39,634 --> 00:08:40,343
+source code.
+
+123
+00:08:49,383 --> 00:08:56,603
+Step 1: find the candidate. One snippet
+from labs/run ch21a/lab-29-1-inventory,
+
+124
+00:08:56,643 --> 00:09:00,555
+which you saw at the
+end of the last video.
+
+125
+00:09:00,895 --> 00:09:04,704
+One line, in file 1, line 32,
+inside a multi-line script.
+
+126
+00:09:04,744 --> 00:09:10,241
+There's the echo from the opening. Two
+expressions on it: the issue number and the
+
+127
+00:09:10,281 --> 00:09:15,846
+issue title. Classify each. Which of the
+two can carry text that an outsider wrote?
+
+128
+00:09:15,886 --> 00:09:20,978
+And which trigger did file 1 have: is
+this job in the contained lane or not?
+
+129
+00:09:21,018 --> 00:09:22,059
+Say it out loud.
+
+130
+00:09:26,899 --> 00:09:31,227
+The number can't carry code. The
+title is on the documentation's list.
+
+131
+00:09:31,267 --> 00:09:36,219
+And file 1 runs on an opened issue, with
+the base repository's token and issues:
+
+132
+00:09:36,259 --> 00:09:41,398
+write. So: an outsider's text, placed where
+the shell expects source code, in a job
+
+133
+00:09:41,438 --> 00:09:42,584
+with a write scope.
+
+134
+00:09:42,924 --> 00:09:47,617
+Step 2: the fix. Replay
+labs/run ch21a/lab-29-1-fixes.
+
+135
+00:09:47,657 --> 00:09:54,541
+It applies the reference fix to each of
+the five lab files and shows the diffs.
+
+136
+00:09:54,881 --> 00:09:59,509
+A word before it runs. The replay
+contains the fixes for all five files.
+
+137
+00:09:59,549 --> 00:10:03,983
+Four of them belong to other videos
+and to your own work in Lab 29.1.
+
+138
+00:10:04,023 --> 00:10:08,262
+This video shows the summary and
+the one diff that is its subject.
+
+139
+00:10:08,302 --> 00:10:12,087
+If you haven't done the lab
+yet, don't read the other four.
+
+140
+00:10:12,427 --> 00:10:15,865
+Five files changed, 24
+insertions and 33 deletions.
+
+141
+00:10:15,905 --> 00:10:21,252
+The fixes remove more than they add.
+That's typical: securing a workflow mostly
+
+142
+00:10:21,292 --> 00:10:22,956
+means taking things away.
+
+143
+00:10:23,296 --> 00:10:28,381
+Before the diff appears, write the fix
+yourself. You need three new lines above run,
+
+144
+00:10:28,421 --> 00:10:32,102
+an env line and two variables,
+and one changed line below it.
+
+145
+00:10:32,142 --> 00:10:33,932
+Make your prediction on paper.
+
+146
+00:10:38,772 --> 00:10:43,667
+Read the second hunk. Three added lines: an
+env mapping with two variables, each set
+
+147
+00:10:43,707 --> 00:10:48,249
+from an expression. One removed line and
+one added line in the script: the two
+
+148
+00:10:48,289 --> 00:10:52,068
+expressions are gone, and in their
+place are two shell variables.
+
+149
+00:10:52,408 --> 00:10:56,942
+Now apply the test from the concept
+section. Is the script text a constant?
+
+150
+00:10:56,982 --> 00:11:01,028
+Yes: it's the same for every issue.
+Where do the two values arrive?
+
+151
+00:11:01,068 --> 00:11:06,151
+In the environment, after parsing. The number
+was moved too, although it can't carry
+
+152
+00:11:06,191 --> 00:11:11,030
+code. That's the mechanical rule: no
+expression inside run, without case-by-case
+
+153
+00:11:11,070 --> 00:11:11,579
+judgment.
+
+154
+00:11:11,919 --> 00:11:14,204
+Step 3: verify with the scans.
+
+155
+00:11:14,544 --> 00:11:19,119
+Four scans, and each must come back
+empty. The third is the awk program for
+
+156
+00:11:19,159 --> 00:11:23,919
+multi-line scripts, and it prints nothing.
+The fourth is the single-line form.
+
+157
+00:11:23,959 --> 00:11:28,720
+The other two belong to the last video
+and the next: no privileged trigger, no
+
+158
+00:11:28,760 --> 00:11:33,704
+opt-out flag, no write-all, and no action
+reference that isn't a 40-character ID.
+
+159
+00:11:34,044 --> 00:11:38,967
+Every file declares permissions once.
+And the one secret is named in one step.
+
+160
+00:11:39,307 --> 00:11:42,935
+git commit is 🟢 SAFE: it adds
+an object and moves the branch.
+
+161
+00:11:42,975 --> 00:11:47,987
+The status is clean. In your own run of the
+lab you make one commit per file, with a
+
+162
+00:11:48,027 --> 00:11:49,972
+message that says what you fixed.
+
+163
+00:11:50,312 --> 00:11:55,334
+The review comment. Here's the form a security
+engineer would use for that line, and
+
+164
+00:11:55,374 --> 00:12:00,275
+you can adapt it. Name the line. Name the
+class: script injection through an event
+
+165
+00:12:00,315 --> 00:12:05,337
+field. State what is substituted and when:
+the issue title is pasted into the script
+
+166
+00:12:05,377 --> 00:12:07,085
+text before the shell starts.
+
+167
+00:12:07,425 --> 00:12:12,311
+State the condition: the workflow runs on
+issues, so anyone who can open an issue
+
+168
+00:12:12,351 --> 00:12:15,777
+supplies that text, and the
+job's token can write issues.
+
+169
+00:12:15,817 --> 00:12:20,643
+State the smallest change: move both
+expressions to env and reference the quoted
+
+170
+00:12:20,683 --> 00:12:24,656
+variables. And cite the documentation's
+page on script injections.
+
+171
+00:12:24,696 --> 00:12:29,096
+Five sentences, no drama, and the
+author can act on it without a meeting.
+
+172
+00:12:30,936 --> 00:12:32,584
+Five mistakes to watch for.
+
+173
+00:12:32,924 --> 00:12:36,218
+Believing that quotes around
+the expression make it safe.
+
+174
+00:12:36,258 --> 00:12:40,664
+Root cause: the value is pasted into
+the script text before the shell parses
+
+175
+00:12:40,704 --> 00:12:44,232
+anything, so a quote character
+in the value ends your string.
+
+176
+00:12:44,572 --> 00:12:48,377
+Scanning only lines that contain
+both run: and an expression.
+
+177
+00:12:48,417 --> 00:12:53,609
+Root cause: in a multi-line script the
+expression is on a later line than run:, and
+
+178
+00:12:53,649 --> 00:12:55,626
+the narrow scan returns nothing.
+
+179
+00:12:55,966 --> 00:13:00,675
+Deciding case by case which contexts are
+harmless. Root cause: the rule is about
+
+180
+00:13:00,715 --> 00:13:05,186
+where the value lands; a reviewer who
+judges each case will eventually judge
+
+181
+00:13:05,226 --> 00:13:09,044
+wrongly, which is why teams forbid
+expressions in run altogether.
+
+182
+00:13:09,384 --> 00:13:12,970
+Moving the value to env and
+then using it as code anyway.
+
+183
+00:13:13,010 --> 00:13:18,251
+Root cause: eval on the variable, or writing
+it unvalidated into GITHUB_ENV, brings
+
+184
+00:13:18,291 --> 00:13:20,287
+the problem back one layer down.
+
+185
+00:13:20,627 --> 00:13:25,825
+Leaving the variable unquoted. Root cause:
+an unquoted expansion is split into words
+
+186
+00:13:25,865 --> 00:13:26,948
+and glob-expanded.
+
+187
+00:13:28,788 --> 00:13:33,871
+Now, out of the lab. The textbook's case.
+A prompt-evaluation workflow prints the
+
+188
+00:13:33,911 --> 00:13:38,740
+pull request title in a job that holds
+a provider API key, because it runs on
+
+189
+00:13:38,780 --> 00:13:43,610
+pull_request_target. The textbook's
+comment: that one line is the Nx pattern.
+
+190
+00:13:43,950 --> 00:13:47,275
+The fix is two edits, and they're
+from two different videos.
+
+191
+00:13:47,315 --> 00:13:50,360
+The env form, from this one,
+so that the title is data.
+
+192
+00:13:50,400 --> 00:13:55,071
+And removing the privileged trigger, from
+the last one, so that the key isn't in the
+
+193
+00:13:55,111 --> 00:13:55,688
+job at all.
+
+194
+00:13:56,028 --> 00:13:59,348
+Notice that either edit alone
+would have left something.
+
+195
+00:13:59,388 --> 00:14:04,387
+With only the first, an outsider's pull
+request still starts a job that holds a key.
+
+196
+00:14:04,427 --> 00:14:09,427
+With only the second, the injectable line
+is still in the file, waiting for the next
+
+197
+00:14:09,467 --> 00:14:14,106
+person who changes the trigger. A review
+that finds one weakness in a workflow
+
+198
+00:14:14,146 --> 00:14:15,966
+should finish reading the file.
+
+199
+00:14:17,806 --> 00:14:22,548
+Your turn. Do Lab 29.1, "Find and
+fix five planted weaknesses", in
+
+200
+00:14:22,588 --> 00:14:27,113
+lab-manual/m29-actions-security.md,
+if you haven't finished it.
+
+201
+00:14:27,153 --> 00:14:33,200
+For the file with the injectable line, write
+the review comment in the five-sentence
+
+202
+00:14:33,240 --> 00:14:35,374
+form before you edit the file.
+
+203
+00:14:35,714 --> 00:14:40,633
+Before you run the verification scans on
+your own fixes, predict the exit status of
+
+204
+00:14:40,673 --> 00:14:40,932
+each.
+
+205
+00:14:41,272 --> 00:14:46,737
+The challenge is Exercise 29.3,
+"The release workflow", in
+
+206
+00:14:46,777 --> 00:14:50,345
+exercises/m26-m31-actions-security.md.
+
+207
+00:14:52,185 --> 00:14:55,401
+Read the question on screen.
+Say your answer out loud.
+
+208
+00:15:00,241 --> 00:15:04,045
+A strong answer is about timing
+and about who does the evaluating.
+
+209
+00:15:04,085 --> 00:15:08,823
+For the first form: what evaluates the
+expression, where the result goes, and what
+
+210
+00:15:08,863 --> 00:15:13,658
+the shell then parses. For the second: what
+is evaluated by Actions, what the shell
+
+211
+00:15:13,698 --> 00:15:17,911
+parses, and at which moment the value
+reaches the shell and in what role.
+
+212
+00:15:18,251 --> 00:15:23,160
+It ends with the consequence for review.
+The follow-up is about gating a step on
+
+213
+00:15:23,200 --> 00:15:27,243
+whether a secret is set with an if
+that reads the secrets context.
+
+214
+00:15:27,283 --> 00:15:32,315
+Recall from video 143 which contexts an if
+can read and what timing has to do with
+
+215
+00:15:32,355 --> 00:15:32,501
+it.
+
+216
+00:15:34,341 --> 00:15:35,268
+Let's land this.
+
+217
+00:15:35,608 --> 00:15:37,268
+You should now be able to say:
+
+218
+00:15:37,608 --> 00:15:42,596
+An expression inside run is pasted into the
+script text before the shell starts: it
+
+219
+00:15:42,636 --> 00:15:43,505
+generates code.
+
+220
+00:15:43,845 --> 00:15:49,471
+Titles, bodies, labels, branch names,
+commit messages, author names and addresses
+
+221
+00:15:49,511 --> 00:15:51,570
+are text an outsider controls.
+
+222
+00:15:51,910 --> 00:15:56,367
+Through env the script is a constant, and
+the value arrives as data in a variable
+
+223
+00:15:56,407 --> 00:15:58,865
+that the shell does not
+re-parse as commands.
+
+224
+00:15:59,205 --> 00:16:04,223
+The mechanical rule is no expression inside
+run at all; and env does not protect
+
+225
+00:16:04,263 --> 00:16:07,448
+against eval or an unvalidated
+write to GITHUB_ENV.
+
+226
+00:16:07,788 --> 00:16:13,014
+A single-line scan misses multi-line scripts;
+scan the lines inside each run block.
+
+227
+00:16:14,854 --> 00:16:18,384
+Read section 21A.6 of Chapter 21A.
+
+228
+00:16:18,724 --> 00:16:23,674
+Today you turned a line that looked
+harmless into a finding, a fix and a review
+
+229
+00:16:23,714 --> 00:16:27,022
+comment. Write that comment
+once yourself in the lab.
+
+230
+00:16:27,062 --> 00:16:31,886
+Next time: third-party actions, mutable
+tags, commit pinning and organization
+
+231
+00:16:31,926 --> 00:16:35,802
+policies. Until then, look at
+the state first and type second.
+
+232
+00:16:35,842 --> 00:16:37,318
+See you in the next one.

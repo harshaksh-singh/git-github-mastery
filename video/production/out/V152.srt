@@ -1,0 +1,1430 @@
+1
+00:00:04,500 --> 00:00:09,114
+Take the first. A pull request is GitHub's
+proposal to merge one branch into
+
+2
+00:00:09,154 --> 00:00:12,972
+another, and red means that one
+of its automated checks failed.
+
+3
+00:00:13,012 --> 00:00:17,687
+The textbook's answer: almost always
+because the job didn't run what you ran.
+
+4
+00:00:17,727 --> 00:00:22,709
+Another commit, another shell, another tool
+version, no secrets, an empty history.
+
+5
+00:00:22,749 --> 00:00:27,730
+Each cause is a documented default. And
+then the sentence that separates two kinds
+
+6
+00:00:27,770 --> 00:00:31,833
+of engineer. One who knows the
+defaults finds the cause in minutes.
+
+7
+00:00:31,873 --> 00:00:34,405
+One who doesn't re-runs the job and hopes.
+
+8
+00:00:34,745 --> 00:00:39,433
+Re-running and hoping has a recognizable
+first move: open the red step and start
+
+9
+00:00:39,473 --> 00:00:44,339
+reading the log. This video gives you a
+different first move, and eleven more after
+
+10
+00:00:44,379 --> 00:00:47,353
+it. The log is step nine.
+Why ninth, and not first?
+
+11
+00:00:47,393 --> 00:00:49,776
+Keep that question for the demonstration.
+
+12
+00:00:51,616 --> 00:00:55,549
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:55,589 --> 00:00:59,848
+This video opens the last module
+of Part 6: runners and debugging.
+
+14
+00:00:59,888 --> 00:01:04,798
+A runner is the machine that runs one
+job, and a job is a list of steps in a
+
+15
+00:01:04,838 --> 00:01:08,511
+workflow, the file that tells
+GitHub Actions what to run.
+
+16
+00:01:08,551 --> 00:01:13,722
+From here to the gate, the subject is the
+skill that Chapter 20B says a CTO pays
+
+17
+00:01:13,762 --> 00:01:18,086
+for: finding out why a run failed,
+in a fixed order, with evidence.
+
+18
+00:01:18,426 --> 00:01:21,967
+Four topics, in the order of
+sections 20B.8 to 20B.11.
+
+19
+00:01:22,007 --> 00:01:27,404
+GitHub-hosted runners: what they are and
+why a label ending in -latest is a moving
+
+20
+00:01:27,444 --> 00:01:31,978
+target. Self-hosted runners: the
+risks, and what "ephemeral" changes.
+
+21
+00:01:32,018 --> 00:01:37,283
+Limits and billing, as the section gives
+them. And the investigation order for a
+
+22
+00:01:37,323 --> 00:01:42,852
+failing workflow: twelve questions, from
+"did the right thing start at all" to "what
+
+23
+00:01:42,892 --> 00:01:43,648
+did it say".
+
+24
+00:01:43,988 --> 00:01:48,986
+A note on the numbers. Limits and prices
+in this video are quoted from section
+
+25
+00:01:49,026 --> 00:01:54,347
+20B.10 and are re-verified on the recording
+day. If you watch this later, check the
+
+26
+00:01:54,387 --> 00:01:58,997
+price page before you write a cost
+estimate. The textbook says the same.
+
+27
+00:02:00,837 --> 00:02:02,416
+Here's what you'll walk away with.
+
+28
+00:02:02,756 --> 00:02:04,168
+After this video you can:
+
+29
+00:02:04,508 --> 00:02:09,351
+say what a GitHub-hosted runner is and
+why a -latest label is a moving target;
+
+30
+00:02:09,691 --> 00:02:13,332
+state the risks of self-hosted
+runners and what "ephemeral" changes;
+
+31
+00:02:13,672 --> 00:02:17,149
+state the limits and the billing
+model as the section gives them;
+
+32
+00:02:17,489 --> 00:02:23,203
+recite the investigation order: workflow,
+event, permissions, runner, environment,
+
+33
+00:02:23,243 --> 00:02:28,536
+dependencies, secrets, action versions,
+logs, artifacts, cache, concurrency;
+
+34
+00:02:28,876 --> 00:02:31,910
+explain why the log is not
+the first thing to read.
+
+35
+00:02:33,750 --> 00:02:38,809
+Hosted runners. In one sentence: a GitHub-hosted
+runner is a fresh virtual machine,
+
+36
+00:02:38,849 --> 00:02:43,110
+built from a published image, that
+runs one job and is then destroyed.
+
+37
+00:02:43,450 --> 00:02:48,381
+runs-on selects it by label. A virtual
+machine is a computer made in software, and
+
+38
+00:02:48,421 --> 00:02:50,927
+the image is the template it's built from.
+
+39
+00:02:51,267 --> 00:02:58,405
+ubuntu-latest is Ubuntu 24.04 on the first
+of October 2026, and GitHub has announced
+
+40
+00:02:58,445 --> 00:03:05,412
+its migration to Ubuntu 26.04 between the
+nineteenth of October and the nineteenth
+
+41
+00:03:05,452 --> 00:03:10,197
+of November 2026. windows-latest
+is Windows Server 2025.
+
+42
+00:03:10,237 --> 00:03:16,776
+macos-latest is macOS 26 on arm64, moved
+from macOS 15 in June and July 2026.
+
+43
+00:03:16,816 --> 00:03:20,536
+Then the fixed labels,
+which name a version.
+
+44
+00:03:20,876 --> 00:03:26,886
+ubuntu-22.04 is deprecated since the
+seventeenth of September 2026, with the end of
+
+45
+00:03:26,926 --> 00:03:30,676
+support announced for the
+seventeenth of April 2027.
+
+46
+00:03:30,716 --> 00:03:35,998
+For macos-14 the announced end of
+support is the second of November 2026.
+
+47
+00:03:36,038 --> 00:03:42,048
+Those three dates lie after the course
+baseline: check the changelog on the day you
+
+48
+00:03:42,088 --> 00:03:42,849
+watch this.
+
+49
+00:03:43,189 --> 00:03:48,429
+And ubuntu-slim: one CPU, runs the job
+in a container, with jobs limited to 15
+
+50
+00:03:48,469 --> 00:03:48,971
+minutes.
+
+51
+00:03:49,311 --> 00:03:54,575
+The textbook's comparison is one you can
+keep: a -latest label is a moving name, the
+
+52
+00:03:54,615 --> 00:03:59,691
+runner equivalent of a branch. A migration
+is rolled out gradually over weeks, so
+
+53
+00:03:59,731 --> 00:04:03,859
+two runs of one workflow on the
+same day can get different images.
+
+54
+00:04:04,199 --> 00:04:09,823
+And a fixed label isn't frozen either.
+Images are rebuilt weekly, so tool versions
+
+55
+00:04:09,863 --> 00:04:15,556
+inside a fixed label move too. The textbook's
+example: in May 2026 Node 20 left the
+
+56
+00:04:15,596 --> 00:04:21,220
+images and the default node became 22.
+That's why the course workflows use a fixed
+
+57
+00:04:21,260 --> 00:04:26,263
+label and also install their tools
+with setup actions at stated versions.
+
+58
+00:04:26,603 --> 00:04:30,959
+The cost of pinning: you must move the
+label yourself before the image retires.
+
+59
+00:04:30,999 --> 00:04:33,296
+Put the retirement dates in your calendar.
+
+60
+00:04:33,636 --> 00:04:38,968
+Where do you see which image a job received?
+The "Set up job" section of a run's log
+
+61
+00:04:39,008 --> 00:04:44,341
+names it. The textbook adds a caveat that
+I pass on: the Phase 0 notes didn't verify
+
+62
+00:04:44,381 --> 00:04:47,667
+that section separately, so
+read it in your own run.
+
+63
+00:04:48,007 --> 00:04:54,042
+Hardware. Standard Linux and Windows runners
+have 4 CPUs and 16 gigabytes of memory
+
+64
+00:04:54,082 --> 00:04:59,532
+in public repositories, and 2 CPUs and
+8 gigabytes in private ones, with 14
+
+65
+00:04:59,572 --> 00:05:05,023
+gigabytes of disk in both. macOS arm64
+runners have 3 CPUs and 7 gigabytes.
+
+66
+00:05:05,063 --> 00:05:11,171
+So a test suite that fits in a public
+repository can run out of memory or time after
+
+67
+00:05:11,211 --> 00:05:13,441
+the repository is made private.
+
+68
+00:05:13,781 --> 00:05:18,416
+Self-hosted runners. In one sentence: a
+self-hosted runner is the same runner
+
+69
+00:05:18,456 --> 00:05:23,212
+program on a machine you operate, which
+asks GitHub for jobs and runs them with
+
+70
+00:05:23,252 --> 00:05:25,215
+whatever access that machine has.
+
+71
+00:05:25,555 --> 00:05:30,261
+The risk, in GitHub's own words from the
+secure use reference: self-hosted runners
+
+72
+00:05:30,301 --> 00:05:34,892
+"should almost never be used for public
+repositories", because anyone can open a
+
+73
+00:05:34,932 --> 00:05:39,522
+pull request that runs code on them. The
+warning extends to private repositories
+
+74
+00:05:39,562 --> 00:05:43,169
+where anyone with read access can
+fork and open a pull request.
+
+75
+00:05:43,509 --> 00:05:48,527
+A hosted runner is a clean machine per job.
+A persistent self-hosted runner "can be
+
+76
+00:05:48,567 --> 00:05:52,063
+persistently compromised by
+untrusted code in a workflow".
+
+77
+00:05:52,103 --> 00:05:57,061
+And on a self-hosted runner an environment
+doesn't isolate secrets from other jobs
+
+78
+00:05:57,101 --> 00:05:58,280
+on the same machine.
+
+79
+00:05:58,620 --> 00:06:03,661
+Ephemeral runners. Registering with the
+--ephemeral option gives a runner that takes
+
+80
+00:06:03,701 --> 00:06:08,681
+one job and is removed. So-called just-in-time
+runners are created through the REST
+
+81
+00:06:08,721 --> 00:06:13,399
+API and also run at most one job. GitHub
+recommends autoscaling with ephemeral
+
+82
+00:06:13,439 --> 00:06:16,786
+runners and advises against
+autoscaling persistent ones.
+
+83
+00:06:16,826 --> 00:06:21,806
+And one more sentence from the documentation:
+reusing hardware for such runners can
+
+84
+00:06:21,846 --> 00:06:26,766
+still expose information from the environment.
+The textbook's reading: "ephemeral"
+
+85
+00:06:26,806 --> 00:06:28,097
+must include the disk.
+
+86
+00:06:28,437 --> 00:06:32,939
+Runner groups restrict which repositories
+may send jobs to which runners.
+
+87
+00:06:32,979 --> 00:06:37,979
+They're available to organizations on every
+plan since the seventeenth of October
+
+88
+00:06:38,019 --> 00:06:42,770
+2024. The risk is a group open to "all
+repositories": every repository in the
+
+89
+00:06:42,810 --> 00:06:47,810
+organization, including the least reviewed
+one, can run code on the machines that
+
+90
+00:06:47,850 --> 00:06:49,117
+can reach production.
+
+91
+00:06:49,457 --> 00:06:55,896
+Versions. Since the twenty-ninth of September
+2026 a runner older than 2.329.0 can't
+
+92
+00:06:55,936 --> 00:07:02,375
+register on github.com, and a runner must
+install each new release within 30 days or
+
+93
+00:07:02,415 --> 00:07:08,545
+it stops receiving jobs. That bites fleets
+built from a fixed image with updates
+
+94
+00:07:08,585 --> 00:07:09,239
+disabled.
+
+95
+00:07:09,579 --> 00:07:15,127
+Queueing. A job waits until a matching
+runner is online and fails after 24 hours in
+
+96
+00:07:15,167 --> 00:07:18,965
+the queue. A self-hosted job
+may run for up to five days.
+
+97
+00:07:19,305 --> 00:07:19,864
+Limits.
+
+98
+00:07:20,204 --> 00:07:26,043
+A job on a GitHub-hosted runner: 6 hours.
+A workflow run, including waiting for
+
+99
+00:07:26,083 --> 00:07:30,805
+approval: 35 days. An environment
+approval: fails after 30 days.
+
+100
+00:07:30,845 --> 00:07:36,683
+A matrix: 256 jobs per run. Re-runs: 50
+per workflow run, within 30 days of the
+
+101
+00:07:36,723 --> 00:07:42,487
+first run. Reusable workflows: 10 levels,
+50 unique called workflows per file.
+
+102
+00:07:42,827 --> 00:07:48,478
+Concurrent jobs on standard runners: 20
+on Free, 40 on Pro, 60 on Team, 500 on
+
+103
+00:07:48,518 --> 00:07:54,460
+Enterprise. For macOS, 5, or 50 on Enterprise.
+Cache: ten gigabytes per repository
+
+104
+00:07:54,500 --> 00:07:58,764
+without charge, with entries
+unused for seven days evicted.
+
+105
+00:07:58,804 --> 00:08:04,892
+Artifacts and logs: 90 days by default, and
+since the first of October 2026 the same
+
+106
+00:08:04,932 --> 00:08:08,321
+setting also removes
+checks, runs and statuses.
+
+107
+00:08:08,661 --> 00:08:12,941
+Billing. Standard hosted runners
+are free in public repositories.
+
+108
+00:08:12,981 --> 00:08:18,392
+Self-hosted runners are free. Private
+repositories include 2,000 minutes per month
+
+109
+00:08:18,432 --> 00:08:23,510
+on Free, 3,000 on Pro and Team, and
+50,000 on Enterprise Cloud, with artifact
+
+110
+00:08:23,550 --> 00:08:27,233
+storage allowances that are
+shared with GitHub Packages.
+
+111
+00:08:27,573 --> 00:08:33,919
+List prices per minute since the first of
+January 2026: Linux 2-core, 0.6 cents.
+
+112
+00:08:33,959 --> 00:08:38,229
+Linux arm64 2-core, 0.5 cents.
+ubuntu-slim, 0.2 cents.
+
+113
+00:08:38,269 --> 00:08:44,855
+Windows 2-core, 1 cent. macOS, 6.2 cents.
+Each job is rounded up to a whole minute.
+
+114
+00:08:44,895 --> 00:08:51,480
+Storage beyond the allowance: artifacts 25
+cents and cache 7 cents per gigabyte per
+
+115
+00:08:51,520 --> 00:08:56,909
+month. Larger runners are always
+billed, in public repositories too.
+
+116
+00:08:56,949 --> 00:09:03,055
+A reusable workflow is billed to the
+caller. Time spent in a wait timer isn't
+
+117
+00:09:03,095 --> 00:09:03,614
+billed.
+
+118
+00:09:03,954 --> 00:09:09,186
+One thing here is unverified, and it's
+on screen. How Windows and macOS minutes
+
+119
+00:09:09,226 --> 00:09:14,791
+consume the included minutes isn't stated
+on any 2026 page the research could fetch.
+
+120
+00:09:14,831 --> 00:09:19,462
+Don't quote a multiplier. Read your
+own usage in the billing settings.
+
+121
+00:09:19,802 --> 00:09:25,271
+And a version note. Prices were cut by
+up to 39 percent on the first of January
+
+122
+00:09:25,311 --> 00:09:31,059
+2026, so older tutorials quote more. One
+charge is announced and not in effect: 0.2
+
+123
+00:09:31,099 --> 00:09:36,010
+cents per minute for self-hosted
+runners, postponed without a new date.
+
+124
+00:09:36,350 --> 00:09:39,936
+Quick quiz, on that rounding
+rule. Which costs more?
+
+125
+00:09:39,976 --> 00:09:45,724
+A, one job with ten steps of six seconds
+each. B, ten jobs with one six-second step
+
+126
+00:09:45,764 --> 00:09:46,979
+each. Your answer?
+
+127
+00:09:51,819 --> 00:09:56,991
+B. Each job is rounded up to a whole
+minute, so ten short jobs are billed as ten
+
+128
+00:09:57,031 --> 00:10:02,398
+minutes, and the one job as one. Almost
+everyone misses that once, because the work
+
+129
+00:10:02,438 --> 00:10:03,180
+is the same.
+
+130
+00:10:03,520 --> 00:10:09,307
+The cost levers follow from the rules.
+Cancel superseded CI runs with a concurrency
+
+131
+00:10:09,347 --> 00:10:15,063
+group. Prefer one job with several steps
+over many one-step jobs, because each job
+
+132
+00:10:15,103 --> 00:10:20,749
+rounds up. Keep macOS for what needs macOS,
+at roughly ten times the Linux price.
+
+133
+00:10:20,789 --> 00:10:24,821
+Use ubuntu-slim for glue jobs.
+Shorten artifact retention.
+
+134
+00:10:24,861 --> 00:10:29,805
+Path filters also save minutes, and
+video 154 shows what they cost you.
+
+135
+00:10:30,145 --> 00:10:34,861
+The investigation order. The textbook's
+instruction: a failing run tempts you to
+
+136
+00:10:34,901 --> 00:10:38,428
+open the red step and start
+reading. Do that last but three.
+
+137
+00:10:38,468 --> 00:10:43,421
+The order goes from "did the right thing
+start at all" to "what did it say", because
+
+138
+00:10:43,461 --> 00:10:47,286
+an answer early in the list makes
+everything after it irrelevant.
+
+139
+00:10:47,626 --> 00:10:52,475
+One. Workflow. Which workflow file,
+from which commit, defined this run?
+
+140
+00:10:52,815 --> 00:10:57,576
+Two. Event. What triggered it, and which
+ref and commit did the job check out?
+
+141
+00:10:57,616 --> 00:11:01,823
+push builds the pushed commit.
+pull_request builds refs/pull/N/merge.
+
+142
+00:11:01,863 --> 00:11:04,532
+A re-run reuses the
+original commit and ref.
+
+143
+00:11:04,872 --> 00:11:10,118
+Three. Permissions. What could the token
+do? Top-level and job-level permissions.
+
+144
+00:11:10,158 --> 00:11:14,883
+Unlisted scopes are none. Fork and
+Dependabot runs get a read-only token.
+
+145
+00:11:15,223 --> 00:11:20,633
+Four. Runner. Which image, which size? The
+label, the image named at the top of the
+
+146
+00:11:20,673 --> 00:11:24,377
+job log, and whether the
+repository is public or private.
+
+147
+00:11:24,717 --> 00:11:29,324
+Five. Environment. Did the job
+reference one, and did its rules pass?
+
+148
+00:11:29,364 --> 00:11:34,106
+Waiting, rejected, wrong branch, or
+an environment created by accident.
+
+149
+00:11:34,446 --> 00:11:38,862
+Six. Dependencies. Were the same
+versions installed as locally?
+
+150
+00:11:38,902 --> 00:11:43,176
+The lock file, --locked, the
+versions printed by setup steps.
+
+151
+00:11:43,516 --> 00:11:49,233
+Seven. Secrets. Were they present? An unset
+or withheld secret is an empty string,
+
+152
+00:11:49,273 --> 00:11:50,146
+not an error.
+
+153
+00:11:50,486 --> 00:11:54,687
+Eight. Action versions. Which
+commit of each action ran?
+
+154
+00:11:54,727 --> 00:11:58,247
+The pins, an old major
+on Node 24, a moved tag.
+
+155
+00:11:58,587 --> 00:12:01,866
+Nine. Logs. What did
+the failed step print?
+
+156
+00:12:02,206 --> 00:12:06,719
+Ten. Artifacts. Were the expected
+files produced and passed on?
+
+157
+00:12:07,059 --> 00:12:10,397
+Eleven. Cache. What was
+restored, under which key?
+
+158
+00:12:10,737 --> 00:12:15,318
+Twelve. Concurrency. Was the run
+cancelled or replaced by another?
+
+159
+00:12:15,658 --> 00:12:19,095
+All of these are 🟢 SAFE: they
+change nothing on GitHub.
+
+160
+00:12:19,135 --> 00:12:22,571
+gh run download writes files
+into your local directory.
+
+161
+00:12:22,911 --> 00:12:27,755
+The textbook's summary of the method: steps
+1 and 2 remove the most confusion for
+
+162
+00:12:27,795 --> 00:12:32,398
+the least effort. gh run view prints the
+event, the branch and the commit ID.
+
+163
+00:12:32,438 --> 00:12:37,403
+Compare that ID with git rev-parse HEAD on
+your machine before you compare anything
+
+164
+00:12:37,443 --> 00:12:37,705
+else.
+
+165
+00:12:39,545 --> 00:12:40,518
+A picture helps.
+
+166
+00:12:40,858 --> 00:12:43,828
+Analogy for self-hosted
+runners, from the textbook.
+
+167
+00:12:43,868 --> 00:12:47,074
+Lending your workshop to
+anyone who holds a work order.
+
+168
+00:12:47,114 --> 00:12:51,678
+A GitHub-hosted runner is a rented workshop
+that is demolished after each job.
+
+169
+00:12:51,718 --> 00:12:56,105
+Yours stays: tools, leftovers, and
+everything a previous visitor hid there.
+
+170
+00:12:56,445 --> 00:13:01,254
+The analogy breaks in one respect, and the
+textbook says that respect is everything:
+
+171
+00:13:01,294 --> 00:13:05,584
+you choose who may write work orders,
+and that choice is the whole security
+
+172
+00:13:05,624 --> 00:13:06,103
+question.
+
+173
+00:13:06,443 --> 00:13:11,530
+A model for the investigation order. Think
+of a run as a chain of decisions, each
+
+174
+00:13:11,570 --> 00:13:15,833
+made before the next can matter.
+Was a run created, from which file?
+
+175
+00:13:15,873 --> 00:13:19,314
+For which commit? With what
+authority? On what machine?
+
+176
+00:13:19,354 --> 00:13:24,060
+Past which gate? With which dependencies,
+which secrets, which action code?
+
+177
+00:13:24,100 --> 00:13:27,415
+Only then does your command
+start and print anything.
+
+178
+00:13:27,755 --> 00:13:32,401
+The log is the output of the last link. If
+an earlier link was different from what
+
+179
+00:13:32,441 --> 00:13:36,116
+you assume, the log is a faithful
+record of the wrong experiment.
+
+180
+00:13:36,156 --> 00:13:40,802
+You can read it for an hour and learn
+nothing, because nothing in it says "this is
+
+181
+00:13:40,842 --> 00:13:42,288
+not the commit you think".
+
+182
+00:13:42,628 --> 00:13:46,949
+That's why the order is fixed and why
+the log sits at nine, which answers the
+
+183
+00:13:46,989 --> 00:13:51,083
+question from the opening. The three
+steps after it, artifacts, cache and
+
+184
+00:13:51,123 --> 00:13:54,707
+concurrency, are about what the
+run handed on or was done to it.
+
+185
+00:13:56,547 --> 00:14:01,832
+Try it now, on paper. Thirty seconds. Look
+away from the screen and write the first
+
+186
+00:14:01,872 --> 00:14:04,462
+four words of the order. Then check them.
+
+187
+00:14:06,802 --> 00:14:11,483
+Workflow, event, permissions, runner. If
+you had the first two, you have the two
+
+188
+00:14:11,523 --> 00:14:14,552
+that remove the most confusion
+for the least effort.
+
+189
+00:14:16,392 --> 00:14:17,152
+Into the lab.
+
+190
+00:14:17,492 --> 00:14:20,853
+The developer's report: "The
+checks pass on my machine.
+
+191
+00:14:20,893 --> 00:14:22,399
+The pull request is red."
+
+192
+00:14:22,739 --> 00:14:24,886
+Step 1: what the developer sees.
+
+193
+00:14:25,226 --> 00:14:28,273
+On the branch feature/bulk-reorder,
+both checks pass.
+
+194
+00:14:28,313 --> 00:14:30,428
+The developer isn't wrong about that.
+
+195
+00:14:30,768 --> 00:14:35,316
+Step 2 of the order, before any log:
+which commit did the job check out?
+
+196
+00:14:35,356 --> 00:14:39,586
+For a pull_request run you know the
+answer in kind: the test merge.
+
+197
+00:14:39,626 --> 00:14:42,071
+So look at the two sides of that merge.
+
+198
+00:14:42,411 --> 00:14:46,047
+What do you expect to see on main
+that the branch doesn't have?
+
+199
+00:14:46,087 --> 00:14:46,980
+Say it out loud.
+
+200
+00:14:56,820 --> 00:15:03,193
+main has a commit by Asha, 2230054, "Require
+a safety stock in the reorder rules".
+
+201
+00:15:03,233 --> 00:15:09,606
+The branch has 34f82ef, "Add bulk reorder".
+They share the merge base 57c8425, the
+
+202
+00:15:09,646 --> 00:15:16,019
+most recent commit that both histories
+contain. Two people changed related code on
+
+203
+00:15:16,059 --> 00:15:16,801
+two sides.
+
+204
+00:15:17,141 --> 00:15:20,539
+Step 3: build what the pull
+request run checks out.
+
+205
+00:15:20,879 --> 00:15:24,019
+git merge-tree reads and
+writes an unreferenced tree.
+
+206
+00:15:24,059 --> 00:15:27,439
+The switch detaches HEAD on
+main so that no branch moves.
+
+207
+00:15:27,479 --> 00:15:31,339
+git merge is 🟡 CAUTION, and here
+it moves only the detached HEAD.
+
+208
+00:15:31,679 --> 00:15:35,962
+The merge is clean. Will both checks
+pass on it? Make your prediction.
+
+209
+00:15:40,802 --> 00:15:44,306
+"HEAD (no branch)", as on the
+runner. The first check passes.
+
+210
+00:15:44,346 --> 00:15:48,954
+The second fails with a TypeError: a
+function now needs an argument that the new
+
+211
+00:15:48,994 --> 00:15:50,000
+code doesn't pass.
+
+212
+00:15:50,340 --> 00:15:54,517
+Asha's commit changed a signature,
+and the branch calls the old one.
+
+213
+00:15:54,557 --> 00:15:58,053
+No conflict, because the changes
+are in different places.
+
+214
+00:15:58,093 --> 00:16:00,348
+The failure exists only in the merge.
+
+215
+00:16:00,688 --> 00:16:02,657
+Step 4: the wrong reflex.
+
+216
+00:16:02,997 --> 00:16:07,735
+Back on the branch, the check passes again.
+The comment in the transcript is the
+
+217
+00:16:07,775 --> 00:16:12,215
+lesson: re-checking the branch alone
+reproduces nothing, however often it's
+
+218
+00:16:12,255 --> 00:16:17,113
+repeated. On GitHub the equivalent is
+pressing re-run, and you know from video 145
+
+219
+00:16:17,153 --> 00:16:19,562
+that a re-run reuses the original commit.
+
+220
+00:16:19,902 --> 00:16:21,828
+Step 5: recovery.
+
+221
+00:16:22,168 --> 00:16:26,704
+Bring the base into the branch, and the
+failure is now on the branch, where you can
+
+222
+00:16:26,744 --> 00:16:30,564
+work on it. One call is fixed and
+committed, and git commit is 🟢 SAFE.
+
+223
+00:16:30,904 --> 00:16:35,954
+The graph shows the merge 9c7cc7e
+and the fix 2cb0b73 on top.
+
+224
+00:16:36,294 --> 00:16:39,026
+Step 6: verify the same way CI will.
+
+225
+00:16:39,366 --> 00:16:44,091
+A new test merge on a detached HEAD, both
+checks pass, and you return to the branch
+
+226
+00:16:44,131 --> 00:16:48,627
+with a clean status. You have verified
+the thing the next run will test, before
+
+227
+00:16:48,667 --> 00:16:49,086
+pushing.
+
+228
+00:16:49,426 --> 00:16:53,892
+Count what you didn't do: you never read
+a log. Step 2 of the order answered the
+
+229
+00:16:53,932 --> 00:16:54,399
+question.
+
+230
+00:16:54,739 --> 00:16:58,595
+Lab 28.2 on your practice
+repository, in your normal shell.
+
+231
+00:16:58,635 --> 00:17:04,076
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+232
+00:17:04,116 --> 00:17:07,048
+No GitHub output was
+captured by the authors.
+
+233
+00:17:07,388 --> 00:17:12,306
+Take a failing run from the lab and go down
+the list with the run page and the CLI
+
+234
+00:17:12,346 --> 00:17:17,263
+side by side. For step 1 and 2, find on
+the run page the workflow name, the event,
+
+235
+00:17:17,303 --> 00:17:22,221
+the branch and the commit ID, and compare
+the commit ID with git rev-parse HEAD in
+
+236
+00:17:22,261 --> 00:17:22,886
+your clone.
+
+237
+00:17:23,226 --> 00:17:28,243
+For step 3, read the permissions blocks
+of the workflow file at that commit.
+
+238
+00:17:28,283 --> 00:17:32,435
+For step 4, expand the "Set up
+job" section and find the image.
+
+239
+00:17:32,475 --> 00:17:36,228
+For step 5, look at whether
+the job names an environment.
+
+240
+00:17:36,268 --> 00:17:39,621
+Only when you reach step
+9, expand the failed step.
+
+241
+00:17:39,661 --> 00:17:42,549
+Write down at which step
+you had the answer.
+
+242
+00:17:44,389 --> 00:17:46,037
+Five mistakes to watch for.
+
+243
+00:17:46,377 --> 00:17:51,233
+Reading the log first. Root cause: most
+failures are decided before the first log
+
+244
+00:17:51,273 --> 00:17:55,827
+line, by the workflow file, the event,
+the commit, the token or the machine.
+
+245
+00:17:56,167 --> 00:18:00,804
+Re-running to reproduce or to "pick up
+main". Root cause: a re-run reuses the
+
+246
+00:18:00,844 --> 00:18:02,261
+original commit and ref.
+
+247
+00:18:02,601 --> 00:18:06,406
+Using -latest labels and
+being surprised by a change.
+
+248
+00:18:06,446 --> 00:18:12,498
+Root cause: a -latest label is a moving
+name, and migrations roll out gradually over
+
+249
+00:18:12,538 --> 00:18:12,934
+weeks.
+
+250
+00:18:13,274 --> 00:18:17,854
+A persistent self-hosted runner for a
+repository that accepts pull requests from
+
+251
+00:18:17,894 --> 00:18:22,589
+forks. Root cause: the machine runs whatever
+a workflow tells it, and what one job
+
+252
+00:18:22,629 --> 00:18:24,668
+leaves behind is there for the next.
+
+253
+00:18:25,008 --> 00:18:29,820
+Many one-step jobs "for clarity". Root
+cause: each job is rounded up to a whole
+
+254
+00:18:29,860 --> 00:18:31,970
+minute and starts on a new machine.
+
+255
+00:18:33,810 --> 00:18:38,616
+Now, out of the lab. Two cases from
+the textbook, both from ML teams.
+
+256
+00:18:38,956 --> 00:18:44,224
+The first. A model-evaluation job that fits
+in the team's public mirror is killed in
+
+257
+00:18:44,264 --> 00:18:49,405
+the private repository, with identical
+code. The textbook's instruction: ask first
+
+258
+00:18:49,445 --> 00:18:53,006
+for the visibility of the
+repository, then for the label.
+
+259
+00:18:53,046 --> 00:18:56,798
+Public means 4 CPUs and 16
+gigabytes. Private means 2 and 8.
+
+260
+00:18:56,838 --> 00:19:01,284
+That's step 4 of the order, and no
+log line will say it in those words.
+
+261
+00:19:01,624 --> 00:19:06,780
+The second. An ML team runs GPU evaluation
+on its own machines, because hosted GPU
+
+262
+00:19:06,820 --> 00:19:11,152
+minutes are expensive. The textbook
+calls this the defensible design.
+
+263
+00:19:11,192 --> 00:19:16,284
+Ephemeral runners, in a runner group that
+only the evaluation repository may use.
+
+264
+00:19:16,324 --> 00:19:21,227
+Workflows on those runners triggered only
+by push to protected branches and by
+
+265
+00:19:21,267 --> 00:19:24,522
+workflow_dispatch, never by
+pull_request from forks.
+
+266
+00:19:24,562 --> 00:19:27,753
+And no long-lived cloud
+credentials on the machine.
+
+267
+00:19:29,593 --> 00:19:36,907
+Your turn. Do Lab 28.2, "The investigation
+order, applied to a failing run", in
+
+268
+00:19:36,947 --> 00:19:40,537
+lab-manual/m28-runners-debugging-ci.md.
+
+269
+00:19:40,877 --> 00:19:44,500
+Before you open anything, write
+the twelve steps from memory.
+
+270
+00:19:44,540 --> 00:19:49,303
+Then, for the failing run, predict at
+which step the cause will show itself, and
+
+271
+00:19:49,343 --> 00:19:51,705
+write that number down before you start.
+
+272
+00:19:52,045 --> 00:19:58,213
+The challenge is Exercise 28.4,
+"What does this pipeline cost?", in
+
+273
+00:19:58,253 --> 00:20:01,735
+exercises/m26-m31-actions-security.md.
+
+274
+00:20:05,575 --> 00:20:10,233
+Answer out loud. A strong answer gives
+the order as a list with one question per
+
+275
+00:20:10,273 --> 00:20:15,166
+step, and then the principle behind it: what
+it means that an early answer makes the
+
+276
+00:20:15,206 --> 00:20:19,923
+later steps irrelevant. It names the two
+steps that remove the most confusion for
+
+277
+00:20:19,963 --> 00:20:23,153
+the least effort and the one
+comparison you make first.
+
+278
+00:20:23,193 --> 00:20:28,028
+The follow-up asks for a concrete case in
+which reading the log first costs an hour
+
+279
+00:20:28,068 --> 00:20:32,667
+that the second step would have saved.
+You've replayed one, so tell it with the
+
+280
+00:20:32,707 --> 00:20:33,489
+commits named.
+
+281
+00:20:35,329 --> 00:20:36,256
+Let's land this.
+
+282
+00:20:36,596 --> 00:20:38,256
+You should now be able to say:
+
+283
+00:20:38,596 --> 00:20:43,843
+A hosted runner is a fresh virtual machine
+per job from an image that changes; a
+
+284
+00:20:43,883 --> 00:20:45,891
+-latest label is a moving name.
+
+285
+00:20:46,231 --> 00:20:50,847
+A self-hosted runner runs whatever a
+workflow tells it with the machine's access,
+
+286
+00:20:50,887 --> 00:20:53,778
+and persists unless it is
+ephemeral, disk included.
+
+287
+00:20:54,118 --> 00:20:58,658
+Jobs are rounded up to whole minutes;
+private repositories get smaller standard
+
+288
+00:20:58,698 --> 00:21:01,789
+runners; prices and limits
+must be checked on the day.
+
+289
+00:21:02,129 --> 00:21:07,565
+The investigation order is workflow,
+event, permissions, runner, environment,
+
+290
+00:21:07,605 --> 00:21:12,969
+dependencies, secrets, action versions,
+logs, artifacts, cache, concurrency.
+
+291
+00:21:13,309 --> 00:21:18,219
+The log is ninth because everything above
+it was decided before the first log line.
+
+292
+00:21:20,059 --> 00:21:27,999
+Read sections 20B.8 to 20B.11 of Chapter
+20B. Do Exercise 28.1, "Where in the
+
+293
+00:21:28,039 --> 00:21:33,181
+order?", in
+exercises/m26-m31-actions-security.md.
+
+294
+00:21:33,521 --> 00:21:37,833
+You now have a first move that isn't
+the log, and eleven more after it.
+
+295
+00:21:37,873 --> 00:21:42,858
+Write the twelve words from memory once
+today. Next time: passes locally, fails on
+
+296
+00:21:42,898 --> 00:21:47,884
+GitHub Actions, and the documented causes.
+Until then, look at the state first and
+
+297
+00:21:47,924 --> 00:21:50,151
+type second. See you in the next one.

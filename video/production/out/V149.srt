@@ -1,0 +1,1558 @@
+1
+00:00:04,500 --> 00:00:08,438
+Production is the live system that real
+users depend on, and a commit is one saved
+
+2
+00:00:08,478 --> 00:00:12,367
+snapshot of the project. The textbook's
+comment on that question is the lesson of
+
+3
+00:00:12,407 --> 00:00:16,248
+this video: the answer isn't in Git. It's
+in GitHub objects: an environment, its
+
+4
+00:00:16,288 --> 00:00:19,935
+protection rules, a deployment record.
+If you can't say which rules gate the
+
+5
+00:00:19,975 --> 00:00:23,428
+production job and who can bypass
+them, you don't control your releases.
+
+6
+00:00:23,768 --> 00:00:28,679
+And here's how a team finds out that it
+doesn't. The workflow file says environment:
+
+7
+00:00:28,719 --> 00:00:32,157
+production. Everyone has read
+that line and assumed a gate.
+
+8
+00:00:32,197 --> 00:00:36,165
+One day a deployment goes to production
+without anyone approving it.
+
+9
+00:00:36,205 --> 00:00:40,056
+The YAML was correct. So what was
+missing? Take a guess, out loud.
+
+10
+00:00:44,896 --> 00:00:49,702
+The gate had never been configured, and
+naming an environment that doesn't exist
+
+11
+00:00:49,742 --> 00:00:53,337
+creates it, without any rule.
+So what does make a real gate?
+
+12
+00:00:53,377 --> 00:00:58,425
+Three things together, and before this video
+ends you'll be able to say all three to
+
+13
+00:00:58,465 --> 00:00:58,789
+a CTO.
+
+14
+00:01:00,629 --> 00:01:04,435
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+15
+00:01:04,475 --> 00:01:09,354
+A workflow is a file that tells GitHub
+Actions which jobs to run when an event
+
+16
+00:01:09,394 --> 00:01:13,831
+happens, and a job is a list of steps
+on one fresh machine, the runner.
+
+17
+00:01:13,871 --> 00:01:19,066
+Chapter 20A taught the parts of a workflow.
+Chapter 20B uses those parts to deliver
+
+18
+00:01:19,106 --> 00:01:21,462
+software, and this is its first video.
+
+19
+00:01:21,802 --> 00:01:26,108
+The textbook is firm about the layers
+here. Nothing in this chapter is a Git
+
+20
+00:01:26,148 --> 00:01:29,195
+feature. Git supplies the
+commit, the ref and the tag.
+
+21
+00:01:29,235 --> 00:01:33,255
+GitHub Actions decides when to run,
+on which machine, with which token.
+
+22
+00:01:33,295 --> 00:01:36,515
+And GitHub decides what a
+"deployment" and a "check" are.
+
+23
+00:01:36,855 --> 00:01:41,929
+Three topics. Environments: what they are,
+what their rules do, and what you must
+
+24
+00:01:41,969 --> 00:01:46,853
+configure outside the workflow file.
+Workflow 8, which deploys to staging, the
+
+25
+00:01:46,893 --> 00:01:51,778
+rehearsal system, what was built once.
+And workflow 9, which promotes the same
+
+26
+00:01:51,818 --> 00:01:57,018
+artifact to production behind an approval.
+An artifact is a set of files that a job
+
+27
+00:01:57,058 --> 00:01:58,155
+uploads to GitHub.
+
+28
+00:01:58,495 --> 00:02:03,081
+Git still earns its place in the
+demonstration, because three questions about a
+
+29
+00:02:03,121 --> 00:02:06,302
+deployment are Git questions.
+Are these the same bytes?
+
+30
+00:02:06,342 --> 00:02:10,635
+Which commits am I about to ship? And
+is this deployment going forwards or
+
+31
+00:02:10,675 --> 00:02:11,220
+backwards?
+
+32
+00:02:11,560 --> 00:02:15,834
+The deployments in the labs are simulated.
+The script prints what it would deploy
+
+33
+00:02:15,874 --> 00:02:17,378
+and changes nothing anywhere.
+
+34
+00:02:19,218 --> 00:02:20,796
+Here's what you'll walk away with.
+
+35
+00:02:21,136 --> 00:02:22,548
+After this video you can:
+
+36
+00:02:22,888 --> 00:02:27,769
+list what must be configured on GitHub,
+outside the workflow file, for environment:
+
+37
+00:02:27,809 --> 00:02:28,954
+to protect anything;
+
+38
+00:02:29,294 --> 00:02:33,864
+explain required reviewers, deployment
+branch rules and environment secrets;
+
+39
+00:02:34,204 --> 00:02:39,303
+explain workflow 8 line by line and say
+which commit range a deployment contains;
+
+40
+00:02:39,643 --> 00:02:44,188
+explain workflow 9 and what "the bytes
+that were tested are the bytes that ship"
+
+41
+00:02:44,228 --> 00:02:44,704
+requires;
+
+42
+00:02:45,044 --> 00:02:47,375
+guard a deployment
+against going backwards.
+
+43
+00:02:49,215 --> 00:02:54,497
+In one sentence. An environment is a named
+GitHub object that a job can reference,
+
+44
+00:02:54,537 --> 00:02:59,884
+and that holds protection rules the job
+must pass before it starts, and secrets and
+
+45
+00:02:59,924 --> 00:03:05,335
+variables the job can read only after that.
+A secret is an encrypted value stored in
+
+46
+00:03:05,375 --> 00:03:06,503
+GitHub's settings.
+
+47
+00:03:06,843 --> 00:03:11,955
+Precisely. A job references an environment
+with the environment key, either as a
+
+48
+00:03:11,995 --> 00:03:15,432
+name or as a mapping with a
+name and a URL. The rules:
+
+49
+00:03:15,772 --> 00:03:19,501
+Required reviewers: the job waits until
+a listed person or team approves.
+
+50
+00:03:19,541 --> 00:03:23,683
+Up to six users or teams. One approval is
+enough. And "prevent self-review" stops
+
+51
+00:03:23,723 --> 00:03:26,212
+the person who started the
+run from approving it.
+
+52
+00:03:26,552 --> 00:03:32,359
+Wait timer: the job waits a fixed time
+after it is triggered, from 1 to 43,200
+
+53
+00:03:32,399 --> 00:03:35,957
+minutes, which is 30 days.
+Waiting isn't billed.
+
+54
+00:03:36,297 --> 00:03:40,298
+Deployment branches and tags: only
+runs on matching refs may deploy.
+
+55
+00:03:40,338 --> 00:03:45,172
+The choices are "No restriction", "Protected
+branches only", or "Selected branches
+
+56
+00:03:45,212 --> 00:03:50,046
+and tags". Patterns are matched against
+the ref, and a star doesn't match a slash.
+
+57
+00:03:50,386 --> 00:03:54,746
+Allow administrators to bypass: lets
+a repository administrator force the
+
+58
+00:03:54,786 --> 00:03:59,026
+deployment. It's on by default and
+can be switched off per environment.
+
+59
+00:03:59,366 --> 00:04:03,737
+Custom deployment protection rules, where
+a GitHub App decides: public preview.
+
+60
+00:04:04,077 --> 00:04:08,587
+Environment secrets: secrets that
+exist only for jobs that reference the
+
+61
+00:04:08,627 --> 00:04:13,264
+environment, and that aren't readable
+before a required approval is given.
+
+62
+00:04:13,304 --> 00:04:16,866
+Environment variables: the
+same scoping, without secrecy.
+
+63
+00:04:17,206 --> 00:04:19,708
+Two details decide how safe this is.
+
+64
+00:04:20,048 --> 00:04:25,079
+First: all protection rules must pass before
+a job that references the environment
+
+65
+00:04:25,119 --> 00:04:28,603
+is sent to a runner. The gate
+is in front of the machine.
+
+66
+00:04:28,643 --> 00:04:32,004
+It's not a step inside the
+job that the job could skip.
+
+67
+00:04:32,344 --> 00:04:37,551
+Quick quiz. A workflow names an environment
+with a typing error in the name.
+
+68
+00:04:37,591 --> 00:04:43,074
+What happens? A, the run stops with an
+error. B, the job starts, with no gate at
+
+69
+00:04:43,114 --> 00:04:44,248
+all. Your answer?
+
+70
+00:04:49,088 --> 00:04:53,882
+B, and that's the second detail. A workflow
+that names an environment that doesn't
+
+71
+00:04:53,922 --> 00:04:58,835
+exist creates it, without any rule. Anyone
+who can edit workflows can do that, while
+
+72
+00:04:58,875 --> 00:05:02,372
+only repository administrators
+can configure an environment.
+
+73
+00:05:02,412 --> 00:05:07,147
+So a typing error in the name gives you
+an unprotected environment, not an error.
+
+74
+00:05:07,487 --> 00:05:12,610
+Plan gates. Check these before you design
+a gate. Required reviewers, wait timers,
+
+75
+00:05:12,650 --> 00:05:17,331
+custom rules and disabling the administrator
+bypass are available in public
+
+76
+00:05:17,371 --> 00:05:21,612
+repositories on any plan, and in
+private repositories on Enterprise.
+
+77
+00:05:21,652 --> 00:05:25,831
+They aren't available in private
+repositories on Free, Pro or Team.
+
+78
+00:05:25,871 --> 00:05:31,119
+Deployment branch and tag rules and environment
+secrets: public on any plan, private
+
+79
+00:05:31,159 --> 00:05:32,819
+on Pro, Team or Enterprise.
+
+80
+00:05:33,159 --> 00:05:38,115
+Whether a private repository on a Free
+plan can use environments at all is a
+
+81
+00:05:38,155 --> 00:05:43,373
+conflict inside GitHub's own material. A
+changelog entry of the fifteenth of May
+
+82
+00:05:43,413 --> 00:05:48,040
+2025 says environments are available
+on all plans in public and private
+
+83
+00:05:48,080 --> 00:05:53,562
+repositories. The managing-environments page
+on the first of October 2026 still says
+
+84
+00:05:53,602 --> 00:05:58,558
+users on Free plans can configure
+environments only for public repositories.
+
+85
+00:05:58,898 --> 00:06:04,220
+The Phase 0 report couldn't resolve it.
+The practice repository of the labs is
+
+86
+00:06:04,260 --> 00:06:09,789
+public, so the labs aren't affected. For
+a private repository, test it before you
+
+87
+00:06:09,829 --> 00:06:10,820
+promise a gate.
+
+88
+00:06:11,160 --> 00:06:16,095
+Inside .git. Nothing. An environment, its
+rules, its secrets and the deployment
+
+89
+00:06:16,135 --> 00:06:21,070
+records it produces are GitHub objects.
+The only trace in Git is the word after
+
+90
+00:06:21,110 --> 00:06:25,982
+environment: in the workflow file. That's
+why a repository that is mirrored to
+
+91
+00:06:26,022 --> 00:06:31,272
+another host loses its gates, and why the
+YAML line proves nothing until you've read
+
+92
+00:06:31,312 --> 00:06:32,972
+the environment's settings.
+
+93
+00:06:33,312 --> 00:06:37,356
+Creating environments. The documented
+path in the interface is the repository's
+
+94
+00:06:37,396 --> 00:06:41,595
+settings, then Environments. The same can
+be done with the REST API, which is what
+
+95
+00:06:41,635 --> 00:06:44,283
+you want for configuration
+that is reviewed as code.
+
+96
+00:06:44,623 --> 00:06:49,689
+The two reading commands are 🟢 SAFE. gh
+secret set and gh variable set are 🟡
+
+97
+00:06:49,729 --> 00:06:55,064
+CAUTION: they overwrite the stored value,
+and the old secret value can't be read
+
+98
+00:06:55,104 --> 00:07:00,506
+back. gh secret set without --body reads
+the value from standard input or prompts
+
+99
+00:07:00,546 --> 00:07:06,016
+for it, which keeps it out of your shell
+history. Never put a real secret value on
+
+100
+00:07:06,056 --> 00:07:06,486
+screen.
+
+101
+00:07:06,826 --> 00:07:11,810
+The PUT is 🔴 DANGEROUS. Five answers. What
+it changes: it replaces the environment's
+
+102
+00:07:11,850 --> 00:07:16,775
+protection settings with the body sent.
+What it can destroy: the previous settings,
+
+103
+00:07:16,815 --> 00:07:21,320
+required reviewers included, which exist
+nowhere else unless you saved them.
+
+104
+00:07:21,360 --> 00:07:24,550
+How to preview: read the
+environment with a GET first.
+
+105
+00:07:24,590 --> 00:07:27,780
+How to recover: send the
+previous configuration again.
+
+106
+00:07:27,820 --> 00:07:31,249
+When it's appropriate: for
+environment rules kept as code.
+
+107
+00:07:31,589 --> 00:07:33,851
+Workflow 8: deploying to staging.
+
+108
+00:07:34,191 --> 00:07:38,892
+The build job installs from the lock file,
+runs the tests, builds, and uploads the
+
+109
+00:07:38,932 --> 00:07:39,413
+artifact.
+
+110
+00:07:39,753 --> 00:07:44,599
+The deploy-staging job needs build, names
+the environment staging with a URL taken
+
+111
+00:07:44,639 --> 00:07:49,367
+from a variable, checks out the repository,
+downloads the artifact, and runs the
+
+112
+00:07:49,407 --> 00:07:51,751
+deployment script with the token in env.
+
+113
+00:07:52,091 --> 00:07:55,309
+The textbook names four decisions
+worth defending in a review.
+
+114
+00:07:55,649 --> 00:08:00,373
+Build once, deploy what was built. The
+deploy job doesn't run the build again.
+
+115
+00:08:00,413 --> 00:08:05,382
+It downloads the artifact. Every job starts
+on a fresh machine, so the artifact is
+
+116
+00:08:05,422 --> 00:08:10,512
+the only way the bytes travel, and it's also
+the point: the thing that was tested is
+
+117
+00:08:10,552 --> 00:08:15,521
+the thing that is deployed. The download
+action at version 8 fails by default when
+
+118
+00:08:15,561 --> 00:08:18,941
+the content doesn't match the
+digest recorded at upload.
+
+119
+00:08:19,281 --> 00:08:24,008
+The environment belongs to the job that
+deploys. Only deploy-staging names it.
+
+120
+00:08:24,048 --> 00:08:28,836
+The build job can't read the deployment
+token, because an environment secret is
+
+121
+00:08:28,876 --> 00:08:32,809
+"only available to workflow jobs
+that reference the environment".
+
+122
+00:08:32,849 --> 00:08:37,942
+So test code and build scripts, including
+those of your dependencies, never run in a
+
+123
+00:08:37,982 --> 00:08:40,326
+job that holds a deployment credential.
+
+124
+00:08:40,666 --> 00:08:45,256
+The secret reaches the script through env.
+It's never interpolated into the text of
+
+125
+00:08:45,296 --> 00:08:46,038
+a run command.
+
+126
+00:08:46,378 --> 00:08:51,550
+And environment.url: shown with the deployment
+on GitHub, taken from an environment
+
+127
+00:08:51,590 --> 00:08:54,878
+variable, so the workflow
+file contains no host name.
+
+128
+00:08:55,218 --> 00:08:59,685
+Every job that references an environment
+creates a deployment object, unless
+
+129
+00:08:59,725 --> 00:09:04,666
+deployment: false is set under environment.
+That form was added on the nineteenth of
+
+130
+00:09:04,706 --> 00:09:09,648
+March 2026. Required reviewers and wait
+timers still apply, and it can't be combined
+
+131
+00:09:09,688 --> 00:09:14,511
+with custom protection rules. Use it for
+a job that needs an environment's secrets
+
+132
+00:09:14,551 --> 00:09:19,255
+but deploys nothing, for example an
+integration test against a staging database.
+
+133
+00:09:19,595 --> 00:09:22,107
+Workflow 9: promotion to production.
+
+134
+00:09:22,447 --> 00:09:24,662
+deploy-production needs deploy-staging.
+
+135
+00:09:25,002 --> 00:09:29,537
+It has a concurrency group named
+production with cancel-in-progress: false.
+
+136
+00:09:29,577 --> 00:09:33,930
+The next video explains that block.
+It names the environment production.
+
+137
+00:09:33,970 --> 00:09:38,810
+Its steps are the same checkout, the same
+download, the same script with another
+
+138
+00:09:38,850 --> 00:09:39,359
+argument.
+
+139
+00:09:39,699 --> 00:09:44,690
+The two deploy jobs are textually almost
+the same. The difference is on GitHub: each
+
+140
+00:09:44,730 --> 00:09:49,660
+environment has a variable and a secret of
+the same name with different values, and
+
+141
+00:09:49,700 --> 00:09:54,332
+only production has rules. The textbook
+calls this the pattern to aim for: the
+
+142
+00:09:54,372 --> 00:09:58,464
+workflow describes the procedure,
+the environments hold what differs.
+
+143
+00:09:58,804 --> 00:10:03,758
+What the reviewer sees, from the documentation.
+Nothing of it was captured for the
+
+144
+00:10:03,798 --> 00:10:08,814
+book, and the labels are GitHub's and may
+change. The run shows the job as waiting.
+
+145
+00:10:08,854 --> 00:10:13,503
+A required reviewer opens the run, chooses
+to review deployments, selects the
+
+146
+00:10:13,543 --> 00:10:17,706
+environment, and approves or rejects.
+A rejection fails the workflow.
+
+147
+00:10:17,746 --> 00:10:21,421
+A job that nobody approves fails
+automatically after 30 days.
+
+148
+00:10:21,761 --> 00:10:26,495
+What an approval releases. The reviewer
+approves a job of a run, and a run is bound
+
+149
+00:10:26,535 --> 00:10:31,268
+to one commit. The useful habit is to look
+at the range between what production has
+
+150
+00:10:31,308 --> 00:10:32,706
+and what the run carries.
+
+151
+00:10:33,046 --> 00:10:37,934
+What the branch rule guarantees. A deployment
+branch rule compares the run's ref
+
+152
+00:10:37,974 --> 00:10:42,616
+with name patterns. Since the eighth of
+December 2025, for runs triggered by
+
+153
+00:10:42,656 --> 00:10:47,236
+pull_request events the ref that is
+evaluated is refs/pull/N/merge, and for
+
+154
+00:10:47,276 --> 00:10:51,980
+pull_request_target it's the default
+branch. A rule "Selected branches: main"
+
+155
+00:10:52,020 --> 00:10:55,861
+therefore rejects pull request
+runs and runs on other branches.
+
+156
+00:10:55,901 --> 00:10:59,065
+It says nothing about review
+of the commits on main.
+
+157
+00:10:59,105 --> 00:11:03,931
+That's the job of the ruleset on main,
+the named list of rules for that branch.
+
+158
+00:11:05,771 --> 00:11:06,744
+A picture helps.
+
+159
+00:11:07,084 --> 00:11:12,040
+Analogy, from the textbook. An environment
+is the locked door of a server room with
+
+160
+00:11:12,080 --> 00:11:15,170
+its own key cabinet inside.
+The job is a technician.
+
+161
+00:11:15,210 --> 00:11:20,105
+The door has rules: someone must sign the
+visitor in, the visitor must come from a
+
+162
+00:11:20,145 --> 00:11:24,981
+known department, there may be a waiting
+period. The keys in the cabinet are only
+
+163
+00:11:25,021 --> 00:11:27,148
+reachable after the door has opened.
+
+164
+00:11:27,488 --> 00:11:32,181
+The analogy breaks in one place, and it's
+the place that matters in an audit: the
+
+165
+00:11:32,221 --> 00:11:36,680
+door is guarded by GitHub, not by the
+server room. If your cloud account also
+
+166
+00:11:36,720 --> 00:11:41,004
+accepts credentials from somewhere
+else, the environment protects nothing.
+
+167
+00:11:41,344 --> 00:11:44,305
+Now the sentence I promised,
+the one to say to a CTO.
+
+168
+00:11:44,345 --> 00:11:48,835
+The gate is a combination of three things.
+A ruleset that forces changes to main
+
+169
+00:11:48,875 --> 00:11:52,798
+through reviewed pull requests. An
+environment that accepts only main.
+
+170
+00:11:52,838 --> 00:11:57,554
+And a required reviewer. In the textbook's
+words: remove any one and there is a path
+
+171
+00:11:57,594 --> 00:11:58,743
+around the other two.
+
+172
+00:11:59,083 --> 00:12:03,598
+Without the ruleset, anyone can push to
+main and the branch rule is satisfied.
+
+173
+00:12:03,638 --> 00:12:08,095
+Without the branch rule, a run on any
+branch can ask for approval, or with no
+
+174
+00:12:08,135 --> 00:12:12,241
+reviewer, deploy. Without the reviewer,
+every merge deploys on its own.
+
+175
+00:12:12,581 --> 00:12:17,059
+And two more conditions from section
+20B.17 that sit outside all three.
+
+176
+00:12:17,099 --> 00:12:22,340
+Administrators can bypass protection rules
+unless that is switched off, and whoever
+
+177
+00:12:22,380 --> 00:12:27,367
+can edit the environment can remove the
+rule. And the credential itself must be
+
+178
+00:12:27,407 --> 00:12:32,393
+bound to the environment at the cloud
+provider, or it also works from a laptop.
+
+179
+00:12:34,233 --> 00:12:37,605
+Three boxes, and the security
+argument is in the right one.
+
+180
+00:12:37,645 --> 00:12:41,942
+While the production job waits, there's
+no runner and there are no secrets.
+
+181
+00:12:42,282 --> 00:12:46,870
+Read the root-cause line: the gate was
+assumed from the YAML and never configured or
+
+182
+00:12:46,910 --> 00:12:47,366
+verified.
+
+183
+00:12:49,206 --> 00:12:49,966
+Into the lab.
+
+184
+00:12:50,306 --> 00:12:58,213
+Step 1: the same bytes. Replay labs/run
+ch20b/lab-27-2-artifact-digest.
+
+185
+00:12:58,553 --> 00:13:03,470
+git archive only reads the repository, and
+it writes an archive to standard output.
+
+186
+00:13:03,510 --> 00:13:07,173
+The digest of a file is a
+fingerprint computed from its bytes.
+
+187
+00:13:07,513 --> 00:13:10,928
+Three digests. Which are
+equal? Say it out loud.
+
+188
+00:13:15,768 --> 00:13:20,704
+The first two are equal, because git
+archive of one commit is deterministic.
+
+189
+00:13:20,744 --> 00:13:24,108
+The third differs, because
+v1.1.0 is another commit.
+
+190
+00:13:24,148 --> 00:13:29,346
+A build tool isn't always this reproducible.
+That's the reason to move the built
+
+191
+00:13:29,386 --> 00:13:31,965
+file between jobs and not to rebuild it.
+
+192
+00:13:32,305 --> 00:13:36,934
+One byte appended between "build" and
+"deploy". The recorded digest no longer
+
+193
+00:13:36,974 --> 00:13:42,028
+matches: FAILED, exit status 1. This is what
+the download action's digest check does
+
+194
+00:13:42,068 --> 00:13:42,513
+for you.
+
+195
+00:13:42,853 --> 00:13:46,403
+And the recovery has a rule in its
+comment: don't repair the file.
+
+196
+00:13:46,443 --> 00:13:48,850
+Produce it again from
+the commit and compare.
+
+197
+00:13:49,190 --> 00:13:56,891
+Step 2: what a deployment contains. Replay
+labs/run ch20b/lab-27-3-deploy-range.
+
+198
+00:13:56,931 --> 00:14:03,760
+Staging runs v1.1.0. A push to main
+is about to deploy the tip of main.
+
+199
+00:14:04,100 --> 00:14:07,590
+A two-dot range, from what is
+deployed to what will be deployed.
+
+200
+00:14:07,630 --> 00:14:11,727
+It lists the commits reachable from the
+second name and not from the first.
+
+201
+00:14:11,767 --> 00:14:14,210
+What does it list here?
+Make your prediction.
+
+202
+00:14:19,050 --> 00:14:22,473
+Two commits and two files:
+a runbook and a lock file.
+
+203
+00:14:22,513 --> 00:14:27,569
+That's the question "what am I about to
+ship?", answered with a range, and the
+
+204
+00:14:27,609 --> 00:14:32,012
+textbook says it's worth one line
+in every deployment's job summary.
+
+205
+00:14:32,052 --> 00:14:34,103
+The script would deploy 57c8425.
+
+206
+00:14:34,443 --> 00:14:36,615
+Step 3: going backwards.
+
+207
+00:14:36,955 --> 00:14:42,377
+Try it now, on paper. Thirty seconds. Draw
+three commits in a row, with v1.1.0 under
+
+208
+00:14:42,417 --> 00:14:47,319
+the first and main under the last. Now
+somebody re-runs an old workflow run.
+
+209
+00:14:47,359 --> 00:14:52,326
+A re-run uses the commit of the original
+run, and the replay imitates that by
+
+210
+00:14:52,366 --> 00:14:56,032
+detaching HEAD on the old tag.
+Mark HEAD on your drawing.
+
+211
+00:14:56,072 --> 00:15:01,234
+What would the script deploy, and how do
+you ask Git whether that is behind what
+
+212
+00:15:01,274 --> 00:15:02,534
+staging already has?
+
+213
+00:15:04,874 --> 00:15:09,899
+It would deploy c4b5de2, the old commit.
+git merge-base --is-ancestor HEAD main
+
+214
+00:15:09,939 --> 00:15:14,836
+exits with 0: yes, the commit to be
+deployed is an ancestor of what is there.
+
+215
+00:15:14,876 --> 00:15:18,618
+And the log shows the two commits
+that would be taken away.
+
+216
+00:15:18,958 --> 00:15:24,817
+Compare it with your drawing. Three commits,
+the tag v1.1.0 under the first, and
+
+217
+00:15:24,857 --> 00:15:26,292
+main under the last.
+
+218
+00:15:26,632 --> 00:15:30,351
+Now HEAD sits on the old tag,
+two commits behind main.
+
+219
+00:15:30,391 --> 00:15:34,736
+Section 20B.17 has a name for
+this: a re-run is a time machine.
+
+220
+00:15:34,776 --> 00:15:38,494
+On a deploy workflow it's a
+rollback nobody announced.
+
+221
+00:15:38,834 --> 00:15:43,960
+The guard is the same command with the
+arguments in the other order: is what is
+
+222
+00:15:44,000 --> 00:15:49,190
+deployed an ancestor of what I am about
+to deploy? Exit status 0 means forwards.
+
+223
+00:15:49,230 --> 00:15:54,159
+A deploy script that runs that test and
+refuses on any other status can't go
+
+224
+00:15:54,199 --> 00:15:57,690
+backwards by accident. Exercise
+27.4 has you write it.
+
+225
+00:15:58,030 --> 00:16:03,260
+Step 4: what an approval releases. Replay
+labs/run ch20b/lab-27-4-promotion.
+
+226
+00:16:03,300 --> 00:16:08,184
+Two refs under refs/deployed/ stand
+in for GitHub's deployment records.
+
+227
+00:16:08,224 --> 00:16:11,998
+They're the author's bookkeeping
+for the demonstration.
+
+228
+00:16:12,038 --> 00:16:16,020
+GitHub keeps deployments as
+platform objects, not as refs.
+
+229
+00:16:16,360 --> 00:16:20,691
+Production is at c4b5de2,
+staging at 57c8425.
+
+230
+00:16:21,031 --> 00:16:24,942
+An approval of the production job would
+release the two commits between them.
+
+231
+00:16:24,982 --> 00:16:28,072
+That's what a reviewer should
+read before choosing "approve".
+
+232
+00:16:28,412 --> 00:16:31,283
+Step 5: the hotfix that wants a shortcut.
+
+233
+00:16:31,623 --> 00:16:36,913
+An urgent fix on a branch. The rule on
+production says: selected branches, main.
+
+234
+00:16:37,253 --> 00:16:42,233
+A branch rule looks at one fact. Which
+of these commands computes that fact?
+
+235
+00:16:42,273 --> 00:16:43,290
+Say it out loud.
+
+236
+00:16:48,130 --> 00:16:52,391
+The ref is refs/heads/hotfix/lead-days,
+so the comparison with refs/heads/main
+
+237
+00:16:52,431 --> 00:16:56,581
+fails. The second test shows that the
+commit isn't contained in main either.
+
+238
+00:16:56,621 --> 00:17:00,826
+The branch rule looks at the first fact
+only: the name of the ref the run was
+
+239
+00:17:00,866 --> 00:17:01,488
+started for.
+
+240
+00:17:01,828 --> 00:17:06,533
+The comment in the transcript is the
+policy: the fix reaches production the way
+
+241
+00:17:06,573 --> 00:17:11,338
+everything else does, through main. git
+merge --no-ff is 🟡 CAUTION: it moves the
+
+242
+00:17:11,378 --> 00:17:12,239
+current branch.
+
+243
+00:17:12,579 --> 00:17:17,277
+Before the merge, HEAD is on the hotfix
+branch, and the fix, e39e6de, isn't
+
+244
+00:17:17,317 --> 00:17:18,414
+contained in main.
+
+245
+00:17:18,754 --> 00:17:23,622
+After the merge the ref is main, the
+hotfix is an ancestor, and the range from
+
+246
+00:17:23,662 --> 00:17:28,216
+production to main now lists four
+commits, with the merge fe34a26 on top.
+
+247
+00:17:28,556 --> 00:17:33,050
+On your practice repository, in your
+normal shell. The interface changes.
+
+248
+00:17:33,090 --> 00:17:36,776
+The lab text and the linked
+documentation are the reference.
+
+249
+00:17:36,816 --> 00:17:41,559
+No GitHub output was captured by the
+authors. Never show a real secret value.
+
+250
+00:17:41,899 --> 00:17:49,049
+Lab 27.3. Create the staging environment
+before you add workflow 8, set its variable
+
+251
+00:17:49,089 --> 00:17:56,069
+and its secret with a made-up value, and
+read both back with the listing commands.
+
+252
+00:17:56,109 --> 00:18:03,088
+Then add the workflow. After the push to
+main, open the run: find the two jobs and
+
+253
+00:18:03,128 --> 00:18:09,765
+the order between them. Open the repository's
+list of deployments and find the
+
+254
+00:18:09,805 --> 00:18:13,532
+record for staging with
+the commit it names.
+
+255
+00:18:13,872 --> 00:18:18,538
+Lab 27.4. Add the reviewer and the
+branch rule to production, then read the
+
+256
+00:18:18,578 --> 00:18:21,989
+environment back before you
+rely on it. Add workflow 9.
+
+257
+00:18:22,029 --> 00:18:27,260
+After the next push to main, open the run
+and find the production job in its waiting
+
+258
+00:18:27,300 --> 00:18:32,342
+state. Before you approve, run the range
+command in your clone and say aloud what
+
+259
+00:18:32,382 --> 00:18:37,425
+you are approving. Then approve, and
+afterwards try the lab's failure case, a run
+
+260
+00:18:37,465 --> 00:18:40,186
+from another branch,
+and see where it stops.
+
+261
+00:18:42,026 --> 00:18:43,674
+Five mistakes to watch for.
+
+262
+00:18:44,014 --> 00:18:47,085
+Assuming a gate from the line
+environment: production.
+
+263
+00:18:47,125 --> 00:18:51,924
+Root cause: protection rules are properties
+of the environment object on GitHub, and
+
+264
+00:18:51,964 --> 00:18:55,208
+naming a missing environment
+creates it without any rule.
+
+265
+00:18:55,548 --> 00:19:00,594
+A misspelled environment name. Root cause:
+the misspelling names a new, unprotected
+
+266
+00:19:00,634 --> 00:19:02,494
+environment; there is no error.
+
+267
+00:19:02,834 --> 00:19:07,528
+Rebuilding in the deploy job. Root cause:
+a second build is not guaranteed to
+
+268
+00:19:07,568 --> 00:19:11,832
+produce the same bytes, so the deployed
+thing is not the tested thing.
+
+269
+00:19:12,172 --> 00:19:17,361
+Re-running an old deploy run. Root cause:
+a re-run uses the commit of the original
+
+270
+00:19:17,401 --> 00:19:19,721
+run, so it deploys old code over new.
+
+271
+00:19:20,061 --> 00:19:23,552
+Treating the environment as
+the only production control.
+
+272
+00:19:23,592 --> 00:19:28,785
+Root cause: it is enforced by GitHub, and
+credentials that also work from elsewhere
+
+273
+00:19:28,825 --> 00:19:29,416
+bypass it.
+
+274
+00:19:31,256 --> 00:19:36,216
+Now, out of the lab. The textbook's case:
+a team serving an LLM application keeps
+
+275
+00:19:36,256 --> 00:19:41,339
+two cloud roles. One can update the staging
+service, and one can update production.
+
+276
+00:19:41,379 --> 00:19:45,783
+The production role's credentials are
+reachable only from the production
+
+277
+00:19:45,823 --> 00:19:50,289
+environment, which requires one approval
+from the on-call group, prevents
+
+278
+00:19:50,329 --> 00:19:52,388
+self-review and accepts only main.
+
+279
+00:19:52,728 --> 00:19:56,826
+An engineer edits a workflow on a
+feature branch to "quickly deploy".
+
+280
+00:19:56,866 --> 00:20:00,124
+The job fails the branch rule
+before any runner starts.
+
+281
+00:20:00,164 --> 00:20:04,802
+The textbook's remark: the gate did its
+work without anybody reading the diff.
+
+282
+00:20:05,142 --> 00:20:10,372
+And the next layer, which Part 7 covers:
+with federated credentials the same idea is
+
+283
+00:20:10,412 --> 00:20:15,203
+enforced by the cloud provider as well,
+because the token's subject names the
+
+284
+00:20:15,243 --> 00:20:15,955
+environment.
+
+285
+00:20:17,795 --> 00:20:23,331
+Your turn. Do Lab 27.3, "Deploy
+to staging (workflow 8)", in
+
+286
+00:20:23,371 --> 00:20:27,048
+lab-manual/m27-build-package-deliver.md.
+
+287
+00:20:27,388 --> 00:20:31,617
+Before the push that starts the deployment,
+run the range from the last deployed
+
+288
+00:20:31,657 --> 00:20:35,833
+commit to the tip of main and write down
+which commits and files the deployment
+
+289
+00:20:35,873 --> 00:20:40,209
+contains. Then predict what will exist on
+GitHub after the run: how many jobs, how
+
+290
+00:20:40,249 --> 00:20:42,557
+many artifacts, and
+which deployment record.
+
+291
+00:20:42,897 --> 00:20:49,035
+The challenge is Exercise 27.2, "A
+deployment with five flaws", in
+
+292
+00:20:49,075 --> 00:20:52,592
+exercises/m26-m31-actions-security.md.
+
+293
+00:20:56,432 --> 00:21:00,674
+Answer out loud. A strong answer is a
+list, and every item is a GitHub object or
+
+294
+00:21:00,714 --> 00:21:05,009
+setting, not a line of YAML: that the
+environment exists under exactly that name,
+
+295
+00:21:05,049 --> 00:21:09,291
+which rules it has, what plan and visibility
+make those rules available, who can
+
+296
+00:21:09,331 --> 00:21:13,519
+bypass and who can edit them, where the
+credential lives, and what protects the
+
+297
+00:21:13,559 --> 00:21:15,179
+branch the environment accepts.
+
+298
+00:21:15,519 --> 00:21:19,982
+Say how you would read each item back as
+evidence. The follow-up assumes all of it
+
+299
+00:21:20,022 --> 00:21:23,497
+is in place and asks for the
+remaining ways around the approval.
+
+300
+00:21:23,537 --> 00:21:27,891
+Think about re-runs, about who can change
+the environment, and about credentials
+
+301
+00:21:27,931 --> 00:21:29,539
+that work from somewhere else.
+
+302
+00:21:31,379 --> 00:21:32,306
+Let's land this.
+
+303
+00:21:32,646 --> 00:21:34,306
+You should now be able to say:
+
+304
+00:21:34,646 --> 00:21:39,811
+An environment is a GitHub object; its
+rules must pass before the job is sent to a
+
+305
+00:21:39,851 --> 00:21:43,175
+runner, and its secrets are
+readable only after that.
+
+306
+00:21:43,515 --> 00:21:48,624
+Naming an environment that does not exist
+creates it without rules, so a gate must
+
+307
+00:21:48,664 --> 00:21:51,827
+be configured and read back,
+not assumed from YAML.
+
+308
+00:21:52,167 --> 00:21:56,735
+Build once and pass the artifact: the
+bytes that were tested are the bytes that
+
+309
+00:21:56,775 --> 00:21:58,252
+ship, checked by a digest.
+
+310
+00:21:58,592 --> 00:22:02,934
+What a deployment contains is the two-dot
+range from the deployed commit to the new
+
+311
+00:22:02,974 --> 00:22:07,263
+one, and a deploy script should refuse
+unless the old commit is an ancestor of the
+
+312
+00:22:07,303 --> 00:22:07,474
+new.
+
+313
+00:22:07,814 --> 00:22:12,718
+The gate is a ruleset on main, an environment
+that accepts only main, and a required
+
+314
+00:22:12,758 --> 00:22:16,602
+reviewer; remove any one and there
+is a path around the other two.
+
+315
+00:22:18,442 --> 00:22:25,757
+Read sections 20B.1 to 20B.4 of Chapter
+20B. Do Lab 27.4, "Staging, then production
+
+316
+00:22:25,797 --> 00:22:32,580
+behind an approval (workflow 9)", in
+lab-manual/m27-build-package-deliver.md.
+
+317
+00:22:32,620 --> 00:22:39,580
+Then do Exercise 27.1, "An environment,
+read back", and Exercise 27.4, "A guard
+
+318
+00:22:39,620 --> 00:22:45,516
+against going backwards", in
+exercises/m26-m31-actions-security.md.
+
+319
+00:22:45,856 --> 00:22:50,923
+You can now say where a production gate
+really lives, and how to read it back as
+
+320
+00:22:50,963 --> 00:22:55,391
+evidence. Try the range command once
+before your next real deployment.
+
+321
+00:22:55,431 --> 00:23:00,688
+Next time: concurrency groups, reusable
+workflows, composite actions, and container
+
+322
+00:23:00,728 --> 00:23:04,582
+actions. Until then, look at the
+state first and type second.
+
+323
+00:23:04,622 --> 00:23:06,114
+See you in the next one.

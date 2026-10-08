@@ -1,0 +1,1204 @@
+1
+00:00:04,500 --> 00:00:09,680
+Three messages. CI here means the automated
+checks that GitHub Actions runs on each
+
+2
+00:00:09,720 --> 00:00:13,327
+change, and a commit is one
+saved snapshot of the project.
+
+3
+00:00:13,667 --> 00:00:18,696
+"The loader test passes on my Mac. In CI
+it says the configuration file does not
+
+4
+00:00:18,736 --> 00:00:21,864
+exist. The file is right
+there in the repository."
+
+5
+00:00:22,204 --> 00:00:27,256
+"The deploy script works when I run it. In
+CI the very first line fails, something
+
+6
+00:00:27,296 --> 00:00:29,492
+about bash and a strange character."
+
+7
+00:00:29,832 --> 00:00:33,845
+"The version step works on
+every laptop in the team.
+
+8
+00:00:33,885 --> 00:00:35,793
+In CI it exits with 128."
+
+9
+00:00:36,133 --> 00:00:40,002
+Each of them ends the message the same
+way: "and it is the same commit."
+
+10
+00:00:40,042 --> 00:00:43,694
+They're right about that. Same
+commit, and still not the same input.
+
+11
+00:00:43,734 --> 00:00:48,091
+The machine is different, the clone is
+different, and in the first two cases what
+
+12
+00:00:48,131 --> 00:00:51,131
+they have on their own disk
+isn't what Git has recorded.
+
+13
+00:00:51,471 --> 00:00:55,706
+All three can be proven on your own
+machine, with Git alone, without re-running
+
+14
+00:00:55,746 --> 00:00:59,278
+anything on GitHub. And keep the
+phrase "the same commit" in mind.
+
+15
+00:00:59,318 --> 00:01:02,850
+By the end you'll have four questions
+to ask whenever you hear it.
+
+16
+00:01:04,690 --> 00:01:08,229
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+17
+00:01:08,269 --> 00:01:11,398
+In the last video you learned
+the investigation order.
+
+18
+00:01:11,438 --> 00:01:16,269
+This video is the catalogue that the order
+leads you into: the documented causes of
+
+19
+00:01:16,309 --> 00:01:19,496
+a test that passes locally
+and fails on GitHub Actions.
+
+20
+00:01:19,836 --> 00:01:25,076
+The textbook lists fourteen. Twelve are
+GitHub Actions behavior, and you've met most
+
+21
+00:01:25,116 --> 00:01:30,104
+of them in the last ten videos. Two are
+Git. The demonstration takes the two Git
+
+22
+00:01:30,144 --> 00:01:35,257
+causes, case sensitivity and line endings,
+and adds the shallow clone, because all
+
+23
+00:01:35,297 --> 00:01:37,269
+three can be reproduced locally.
+
+24
+00:01:37,609 --> 00:01:41,976
+For each of the three the form is the
+same: the symptom as the developer would
+
+25
+00:01:42,016 --> 00:01:46,270
+report it, then the one command that
+proves the cause, then the fix that Git
+
+26
+00:01:46,310 --> 00:01:46,722
+records.
+
+27
+00:01:47,062 --> 00:01:51,786
+One caveat about the transcripts. The
+case-sensitivity demonstration depends on a
+
+28
+00:01:51,826 --> 00:01:54,844
+case-insensitive volume,
+which is the macOS default.
+
+29
+00:01:54,884 --> 00:01:59,313
+On a case-sensitive volume the first
+command fails and there is no collision
+
+30
+00:01:59,353 --> 00:01:59,783
+warning.
+
+31
+00:02:01,623 --> 00:02:03,202
+Here's what you'll walk away with.
+
+32
+00:02:03,542 --> 00:02:04,954
+After this video you can:
+
+33
+00:02:05,294 --> 00:02:09,770
+list the documented causes of a test that
+passes on a Mac and fails on the runner;
+
+34
+00:02:10,110 --> 00:02:12,480
+prove a case-sensitivity
+cause with Git alone;
+
+35
+00:02:12,820 --> 00:02:17,859
+prove a line-ending cause with git
+ls-files --eol and fix it with attributes;
+
+36
+00:02:18,199 --> 00:02:20,915
+prove a shallow-clone cause
+and give the minimal fix;
+
+37
+00:02:21,255 --> 00:02:24,108
+explain why "same commit"
+is not the same input.
+
+38
+00:02:25,948 --> 00:02:29,479
+Here are the fourteen rows of the
+textbook's table, in two pages.
+
+39
+00:02:29,819 --> 00:02:34,128
+Go through the fourteen rows grouped by
+where they sit in the investigation order.
+
+40
+00:02:34,468 --> 00:02:39,564
+About the commit and the clone. A shallow,
+tagless clone: the checkout fetches one
+
+41
+00:02:39,604 --> 00:02:43,697
+commit and no tags, so git describe
+and tag-derived versions fail.
+
+42
+00:02:43,737 --> 00:02:48,832
+A tag is a fixed name for one commit, and
+git describe builds a name from a tag in
+
+43
+00:02:48,872 --> 00:02:49,584
+the history.
+
+44
+00:02:49,924 --> 00:02:54,526
+The remedy is fetch-depth: 0. And the
+job isn't testing the pushed commit: on
+
+45
+00:02:54,566 --> 00:02:59,410
+pull_request it checks out the test merge
+in detached HEAD, and it doesn't run at
+
+46
+00:02:59,450 --> 00:03:04,173
+all while the pull request conflicts. The
+remedy is to merge or rebase the base
+
+47
+00:03:04,213 --> 00:03:05,439
+locally to reproduce.
+
+48
+00:03:05,779 --> 00:03:11,101
+About authority. Missing secrets. A secret
+is an encrypted value stored in GitHub's
+
+49
+00:03:11,141 --> 00:03:15,622
+settings. Secrets aren't passed to
+runs from forks or from Dependabot.
+
+50
+00:03:15,662 --> 00:03:19,692
+The token is read-only. And an
+unset secret is an empty string.
+
+51
+00:03:19,732 --> 00:03:25,053
+The remedy is fork-safe jobs, and the
+textbook adds: never pull_request_target as a
+
+52
+00:03:25,093 --> 00:03:25,634
+shortcut.
+
+53
+00:03:25,974 --> 00:03:31,722
+About the machine. Shell differences: the
+implicit shell on Linux and macOS is bash
+
+54
+00:03:31,762 --> 00:03:37,510
+-e without pipefail, and shell: bash adds
+it. In a job container the default is sh.
+
+55
+00:03:37,550 --> 00:03:43,018
+On Windows it's PowerShell. Moving images
+and tools: weekly image rebuilds, and
+
+56
+00:03:43,058 --> 00:03:48,876
+every -latest label moved in 2026. Out of
+memory or time: smaller runners in private
+
+57
+00:03:48,916 --> 00:03:54,524
+repositories, and the six-hour limit.
+Environment differences: the variable CI is
+
+58
+00:03:54,564 --> 00:03:59,544
+set to true, steps share no shell
+state, and every job is a new machine.
+
+59
+00:03:59,884 --> 00:04:05,079
+About what the run depends on. Old action
+majors: actions written for Node 20 now
+
+60
+00:04:05,119 --> 00:04:10,508
+run on Node 24. A stale or missing cache:
+a cache is immutable per key, restore keys
+
+61
+00:04:10,548 --> 00:04:15,807
+take the most recent prefix match, and pull
+request caches are scoped to the merge
+
+62
+00:04:15,847 --> 00:04:16,066
+ref.
+
+63
+00:04:16,406 --> 00:04:21,943
+About whether a run exists. A required check
+that stays pending, because a workflow
+
+64
+00:04:21,983 --> 00:04:27,521
+skipped by a filter or by [skip ci] never
+reports. Runs cancelled by a newer run in
+
+65
+00:04:27,561 --> 00:04:32,964
+the same concurrency group. And a workflow
+that never fires: events made with the
+
+66
+00:04:33,004 --> 00:04:38,541
+job token start no runs, and scheduled
+workflows are disabled after 60 days without
+
+67
+00:04:38,581 --> 00:04:41,431
+repository activity in
+public repositories.
+
+68
+00:04:41,771 --> 00:04:47,222
+And the two that are Git. Case sensitivity:
+macOS and Windows filesystems ignore
+
+69
+00:04:47,262 --> 00:04:52,920
+case by default, and a Linux runner doesn't.
+The remedy is to fix the names in Git.
+
+70
+00:04:52,960 --> 00:04:57,862
+Line endings: CRLF committed, or
+converted on checkout by core.autocrlf.
+
+71
+00:04:57,902 --> 00:05:03,629
+CRLF is a line ending of two characters, a
+carriage return and then a line feed, and
+
+72
+00:05:03,669 --> 00:05:07,473
+LF is the line feed alone.
+The remedy is .gitattributes.
+
+73
+00:05:07,813 --> 00:05:12,709
+The textbook attaches a caveat here and I
+keep it. The official Actions pages read
+
+74
+00:05:12,749 --> 00:05:17,404
+for the Phase 0 report don't state the
+time zone and locale of hosted runners,
+
+75
+00:05:17,444 --> 00:05:22,040
+whether Windows runners check out with
+CRLF by default, or whether the hosted
+
+76
+00:05:22,080 --> 00:05:26,976
+runners' filesystems are case-sensitive.
+Only the Git mechanisms are sourced, from
+
+77
+00:05:27,016 --> 00:05:31,852
+Git's documentation and from real runs.
+Linux filesystems being case-sensitive is
+
+78
+00:05:31,892 --> 00:05:34,200
+the general rule the chapter relies on.
+
+79
+00:05:34,540 --> 00:05:39,486
+Why the two Git causes happen at all. For
+case: when Git creates a repository it
+
+80
+00:05:39,526 --> 00:05:44,722
+tests the filesystem, and on a case-insensitive
+one it sets core.ignorecase to true.
+
+81
+00:05:44,762 --> 00:05:49,896
+Git's own records compare names byte by
+byte. Those records are the index, which is
+
+82
+00:05:49,936 --> 00:05:54,821
+the proposed next commit, and the trees,
+the directory listings inside commits.
+
+83
+00:05:55,161 --> 00:05:59,999
+So Git can hold a name with a capital
+letter, your code can ask for the lower-case
+
+84
+00:06:00,039 --> 00:06:04,579
+name, and on your Mac the file opens,
+because the filesystem answers for both
+
+85
+00:06:04,619 --> 00:06:08,327
+spellings. On a filesystem that
+distinguishes case, it doesn't.
+
+86
+00:06:08,667 --> 00:06:12,679
+For line endings: a blob, the stored
+content of one file, is bytes.
+
+87
+00:06:12,719 --> 00:06:17,759
+If the bytes contain carriage returns, every
+checkout that doesn't convert them gets
+
+88
+00:06:17,799 --> 00:06:22,840
+carriage returns. A shell script whose first
+line ends in a carriage return asks the
+
+89
+00:06:22,880 --> 00:06:26,468
+kernel for an interpreter whose
+name ends in that character.
+
+90
+00:06:26,808 --> 00:06:31,728
+In both cases, the laptop is the forgiving
+machine, and the forgiveness hides what
+
+91
+00:06:31,768 --> 00:06:32,878
+is recorded in Git.
+
+92
+00:06:34,718 --> 00:06:36,231
+Let's take that phrase apart.
+
+93
+00:06:36,571 --> 00:06:41,694
+"Same commit" means: the same tree, the
+same bytes in every blob, the same names.
+
+94
+00:06:41,734 --> 00:06:44,243
+It says nothing about four other inputs.
+
+95
+00:06:44,583 --> 00:06:49,332
+The filesystem that the names are written
+onto. A name is recorded once in Git and
+
+96
+00:06:49,372 --> 00:06:51,727
+interpreted by each machine's filesystem.
+
+97
+00:06:52,067 --> 00:06:55,696
+How much of the repository came
+along. The commit is the same.
+
+98
+00:06:55,736 --> 00:06:58,181
+The history and the tags around it aren't.
+
+99
+00:06:58,521 --> 00:07:02,640
+Which commit the job took. On a pull
+request it's not your commit at all.
+
+100
+00:07:02,980 --> 00:07:06,351
+And the process that runs your
+command: the shell and its options.
+
+101
+00:07:06,691 --> 00:07:11,002
+So when someone says "it is the same
+commit", agree, and then ask the four
+
+102
+00:07:11,042 --> 00:07:14,059
+questions. There they are,
+as promised at the start.
+
+103
+00:07:14,099 --> 00:07:18,703
+For each there is a Git-side test that
+needs no re-run of the workflow, and the
+
+104
+00:07:18,743 --> 00:07:20,702
+demonstration shows three of them.
+
+105
+00:07:21,042 --> 00:07:25,649
+Where this model has an edge: the first two
+demonstrations aren't really differences
+
+106
+00:07:25,689 --> 00:07:30,296
+between the Mac and the runner. They're
+differences between what is on your disk and
+
+107
+00:07:30,336 --> 00:07:33,173
+what is in Git. The runner
+only sees what is in Git.
+
+108
+00:07:33,213 --> 00:07:37,820
+That's why the proof in each case is a Git
+command that reads the index or a commit,
+
+109
+00:07:37,860 --> 00:07:39,811
+and not a command that reads a file.
+
+110
+00:07:41,651 --> 00:07:46,123
+Try it now. Thirty seconds, in any
+repository on your own machine.
+
+111
+00:07:46,163 --> 00:07:49,747
+Run git config get
+core.ignorecase, which only reads.
+
+112
+00:07:49,787 --> 00:07:51,046
+What does it print?
+
+113
+00:07:53,386 --> 00:07:58,296
+If it prints true, Git found a filesystem
+that ignores case when it created that
+
+114
+00:07:58,336 --> 00:08:03,493
+repository, which is the macOS default. Then
+the left column of this table describes
+
+115
+00:08:03,533 --> 00:08:04,359
+your own disk.
+
+116
+00:08:04,699 --> 00:08:10,055
+Read the root-cause line: actions/checkout
+defaults to fetch-depth 1 and fetch-tags
+
+117
+00:08:10,095 --> 00:08:10,445
+false.
+
+118
+00:08:12,285 --> 00:08:13,045
+Into the lab.
+
+119
+00:08:13,385 --> 00:08:20,437
+Case 1: a name that differs only in
+case. Replay labs/run ch20b/case-clash.
+
+120
+00:08:20,777 --> 00:08:24,865
+The developer's report: "The
+loader test passes on my Mac.
+
+121
+00:08:24,905 --> 00:08:26,502
+In CI: file not found."
+
+122
+00:08:26,842 --> 00:08:30,674
+Look at the three results
+together. core.ignorecase is true.
+
+123
+00:08:30,714 --> 00:08:34,287
+Git recorded the name
+Thresholds.yaml, with a capital T.
+
+124
+00:08:34,327 --> 00:08:39,127
+And cat with a lower-case t opens the
+file. On this machine the code works.
+
+125
+00:08:39,467 --> 00:08:41,650
+Now the one command that proves the cause.
+
+126
+00:08:41,990 --> 00:08:46,676
+git cat-file -e tests whether an object
+exists at that path in the commit.
+
+127
+00:08:46,716 --> 00:08:47,251
+It reads.
+
+128
+00:08:47,591 --> 00:08:53,173
+Quick quiz. Git compares names byte by
+byte. Which of the two commands succeeds?
+
+129
+00:08:53,213 --> 00:08:57,038
+A, the lower-case name. B,
+the name with the capital T.
+
+130
+00:08:57,078 --> 00:08:58,514
+C, both. Your answer?
+
+131
+00:09:03,354 --> 00:09:08,729
+B. 128 for the lower-case name, with a
+message that is almost a diagnosis in itself:
+
+132
+00:09:08,769 --> 00:09:13,628
+the path "exists on disk, but not in
+HEAD". 0 for the name with the capital.
+
+133
+00:09:13,968 --> 00:09:17,138
+Git answered the way a
+case-sensitive filesystem will.
+
+134
+00:09:17,178 --> 00:09:22,131
+If you said C, that's the Mac's answer, not
+Git's. You've proven the cause without a
+
+135
+00:09:22,171 --> 00:09:22,547
+runner.
+
+136
+00:09:22,887 --> 00:09:26,838
+git mv is 🟢 SAFE: it renames
+the file and its index entry.
+
+137
+00:09:26,878 --> 00:09:28,283
+git commit is 🟢 SAFE.
+
+138
+00:09:28,623 --> 00:09:33,674
+The status shows a rename, R, and after the
+commit git ls-files shows the lower-case
+
+139
+00:09:33,714 --> 00:09:38,402
+name. The comment in the transcript is
+the point: the fix is a rename that Git
+
+140
+00:09:38,442 --> 00:09:42,099
+records. Renaming in Finder
+changes nothing that Git notices.
+
+141
+00:09:42,439 --> 00:09:47,148
+The opposite accident: a commit made
+on Linux that holds both README.md and
+
+142
+00:09:47,188 --> 00:09:52,339
+Readme.md. A clone on this Mac prints a
+warning that paths have collided, and only
+
+143
+00:09:52,379 --> 00:09:56,708
+one of the two is in the working
+tree. Two files in Git, one on disk.
+
+144
+00:09:57,048 --> 00:10:04,398
+Case 2: a script with CRLF line endings.
+Replay labs/run ch20b/line-endings.
+
+145
+00:10:04,738 --> 00:10:08,788
+The developer's report: "The first
+line of the deploy script fails."
+
+146
+00:10:09,128 --> 00:10:14,057
+Exit status 127, and the message names an
+interpreter: bash followed by a carriage
+
+147
+00:10:14,097 --> 00:10:19,026
+return. The kernel read the first line of
+the script and looked for a program with
+
+148
+00:10:19,066 --> 00:10:19,632
+that name.
+
+149
+00:10:19,972 --> 00:10:21,876
+The one command that proves the cause:
+
+150
+00:10:22,216 --> 00:10:27,695
+The output has three columns per file. i/
+is the index, which is what is committed.
+
+151
+00:10:27,735 --> 00:10:33,081
+w/ is the working tree, the files on your
+disk. attr/ is the attributes in force.
+
+152
+00:10:33,121 --> 00:10:36,473
+What do you expect in the
+i/ column for the script?
+
+153
+00:10:36,513 --> 00:10:37,536
+Say it out loud.
+
+154
+00:10:42,376 --> 00:10:47,477
+i/crlf. The committed blob itself
+contains CRLF. The README is i/lf.
+
+155
+00:10:47,517 --> 00:10:53,373
+The attribute column is empty for both,
+and core.autocrlf is unset, so nothing
+
+156
+00:10:53,413 --> 00:10:58,287
+normalised anything. Every clone
+of this commit gets those bytes.
+
+157
+00:10:58,627 --> 00:11:04,018
+git add --renormalize is 🟡 CAUTION: it
+rewrites index entries to normalised line
+
+158
+00:11:04,058 --> 00:11:08,771
+endings. The preview is git ls-files
+--eol, and git status afterwards.
+
+159
+00:11:08,811 --> 00:11:13,184
+Before committing you can take it
+back with git restore --staged.
+
+160
+00:11:13,524 --> 00:11:17,160
+After the commit, what will the
+three columns say for the script?
+
+161
+00:11:17,200 --> 00:11:18,348
+Make your prediction.
+
+162
+00:11:23,188 --> 00:11:28,795
+i/lf, the attribute text
+eol=lf, and still w/crlf.
+
+163
+00:11:29,135 --> 00:11:33,969
+The index is fixed. This working tree
+still has the old bytes until the file is
+
+164
+00:11:34,009 --> 00:11:38,411
+checked out again. A fresh clone,
+which is what a runner makes, gets LF.
+
+165
+00:11:38,751 --> 00:11:41,955
+The last snippet makes your
+own working tree catch up.
+
+166
+00:11:41,995 --> 00:11:45,019
+It deletes the file and
+restores it from the index.
+
+167
+00:11:45,059 --> 00:11:48,503
+git restore on a path is 🔴
+DANGEROUS, so the five answers.
+
+168
+00:11:48,543 --> 00:11:52,228
+What it changes: the file in the
+working tree, from the index.
+
+169
+00:11:52,268 --> 00:11:56,793
+What it can destroy: uncommitted content
+of that file that was never staged.
+
+170
+00:11:57,133 --> 00:12:01,594
+How to preview: git diff for the path.
+How to recover: none for content that was
+
+171
+00:12:01,634 --> 00:12:06,151
+never staged. When it's appropriate: here,
+where the committed version is the one
+
+172
+00:12:06,191 --> 00:12:09,808
+you want and git status shows
+nothing else pending for that file.
+
+173
+00:12:10,148 --> 00:12:13,013
+Now all three columns
+agree, and the script runs.
+
+174
+00:12:13,353 --> 00:12:17,104
+In the three-trees picture: the
+working tree holds LF now, too.
+
+175
+00:12:17,444 --> 00:12:23,215
+Case 3: a shallow clone has no
+tags to describe. Replay labs/run
+
+176
+00:12:23,255 --> 00:12:25,303
+ch20b/shallow-describe.
+
+177
+00:12:25,643 --> 00:12:30,578
+The developer's report: "The
+version step exits with 128 in CI."
+
+178
+00:12:30,918 --> 00:12:38,981
+On the laptop: six commits, two tags,
+and the description v1.1.0-2-g57c8425.
+
+179
+00:12:39,321 --> 00:12:43,948
+Here's that history as a picture: six
+commits in a row, two tags, and main on the
+
+180
+00:12:43,988 --> 00:12:47,462
+newest. The runner is about to
+receive only that last commit.
+
+181
+00:12:47,802 --> 00:12:49,227
+git clone is 🟢 SAFE.
+
+182
+00:12:49,567 --> 00:12:53,535
+One commit, marked "grafted".
+No tags. Shallow: true.
+
+183
+00:12:53,575 --> 00:12:59,358
+And git describe exits with 128: "No
+names found". You have reproduced the CI
+
+184
+00:12:59,398 --> 00:13:02,004
+failure in a directory on your Mac.
+
+185
+00:13:02,344 --> 00:13:07,312
+Fetching the tags alone, still at depth
+1: both tags exist now, and the error
+
+186
+00:13:07,352 --> 00:13:09,523
+changes to "No tags can describe".
+
+187
+00:13:09,863 --> 00:13:13,723
+The textbook's comment: both
+messages mean the same root cause.
+
+188
+00:13:13,763 --> 00:13:15,642
+The history is one commit long.
+
+189
+00:13:15,982 --> 00:13:20,046
+🟢 SAFE: it adds objects and
+tags and removes .git/shallow.
+
+190
+00:13:20,386 --> 00:13:24,296
+Not shallow, six commits, and the
+same description as on the laptop.
+
+191
+00:13:24,636 --> 00:13:29,769
+In the workflow, the minimal fix is
+fetch-depth: 0 on the checkout step of the one
+
+192
+00:13:29,809 --> 00:13:30,905
+job that needs it.
+
+193
+00:13:32,745 --> 00:13:34,393
+Five mistakes to watch for.
+
+194
+00:13:34,733 --> 00:13:38,069
+Fixing a case problem by
+renaming the file in Finder.
+
+195
+00:13:38,109 --> 00:13:43,356
+Root cause: on a case-insensitive filesystem
+Git does not see that as a change; the
+
+196
+00:13:43,396 --> 00:13:47,560
+name in the index stays as it was
+until git mv records the rename.
+
+197
+00:13:47,900 --> 00:13:53,201
+Checking line endings by opening the file.
+Root cause: the question is what the
+
+198
+00:13:53,241 --> 00:13:58,812
+committed blob contains, and only the i/
+column of git ls-files --eol answers that.
+
+199
+00:13:59,152 --> 00:14:04,538
+Relying on each developer's core.autocrlf.
+Root cause: that is local configuration;
+
+200
+00:14:04,578 --> 00:14:09,311
+a rule in .gitattributes is in the
+repository and applies to every clone.
+
+201
+00:14:09,651 --> 00:14:14,102
+Adding --always or a fallback version
+to make the describe step pass.
+
+202
+00:14:14,142 --> 00:14:19,440
+Root cause: the step then ships a wrong
+version; the cause is the shallow, tagless
+
+203
+00:14:19,480 --> 00:14:19,830
+clone.
+
+204
+00:14:20,170 --> 00:14:24,527
+Saying "it is the same commit" and stopping
+there. Root cause: the filesystem, the
+
+205
+00:14:24,567 --> 00:14:28,816
+depth of the clone, the commit the job
+checked out and the shell are inputs too.
+
+206
+00:14:30,656 --> 00:14:35,582
+Now, out of the lab. A team trains and
+evaluates models from one repository, with
+
+207
+00:14:35,622 --> 00:14:40,670
+engineers on Macs and CI on Linux. A new
+engineer adds a configuration loader and a
+
+208
+00:14:40,710 --> 00:14:45,759
+configuration file. The file was first saved
+with a capital letter and added to Git
+
+209
+00:14:45,799 --> 00:14:46,310
+that way.
+
+210
+00:14:46,650 --> 00:14:51,539
+Later the engineer "renamed" it in the
+editor's file tree, and the code refers to
+
+211
+00:14:51,579 --> 00:14:56,588
+the lower-case name. Every test passes on
+every Mac in the team for a week, because
+
+212
+00:14:56,628 --> 00:15:01,638
+each Mac answers for both spellings. The
+first pull request that makes CI load that
+
+213
+00:15:01,678 --> 00:15:03,524
+file fails with file-not-found.
+
+214
+00:15:03,864 --> 00:15:07,640
+Step 2 of the investigation
+order says the commit is right.
+
+215
+00:15:07,680 --> 00:15:13,008
+Step 4 says the machine differs. One command,
+git ls-files for the directory, shows
+
+216
+00:15:13,048 --> 00:15:17,923
+the recorded name. One git mv, one
+commit, and it's fixed for every machine.
+
+217
+00:15:18,263 --> 00:15:23,003
+The prevention the team adopts is a check
+that asks Git, not the disk, for the names
+
+218
+00:15:23,043 --> 00:15:23,857
+the code needs.
+
+219
+00:15:25,697 --> 00:15:30,743
+Your turn. Do Lab 28.1,
+"Six broken workflows", in
+
+220
+00:15:30,783 --> 00:15:34,710
+lab-manual/m28-runners-debugging-ci.md.
+
+221
+00:15:35,050 --> 00:15:39,740
+The lab tells you how to start: first
+write, for each of the six files, your
+
+222
+00:15:39,780 --> 00:15:44,781
+hypothesis and the line you suspect. Only
+then collect the evidence Git can give.
+
+223
+00:15:44,821 --> 00:15:50,010
+For each, also write the layer the cause
+belongs to: Git, GitHub, or GitHub Actions.
+
+224
+00:15:50,350 --> 00:15:54,415
+The challenge is Incident 7,
+incidents/07-ci-passes-locally.
+
+225
+00:15:54,455 --> 00:16:00,093
+Read the symptoms file only. The generator
+script is the answer to "what happened".
+
+226
+00:16:03,933 --> 00:16:08,849
+Answer out loud. A strong answer names the
+suspected mechanism in one sentence and
+
+227
+00:16:08,889 --> 00:16:13,925
+then gives the proof as commands that read
+what Git has recorded, not what is on the
+
+228
+00:16:13,965 --> 00:16:18,881
+disk, and says what result confirms it. It
+gives the fix as something Git records,
+
+229
+00:16:18,921 --> 00:16:23,957
+and says why a rename outside Git doesn't
+work. The follow-up reverses the accident,
+
+230
+00:16:23,997 --> 00:16:28,973
+with a commit from Linux that holds two
+names differing only in case, and then asks
+
+231
+00:16:29,013 --> 00:16:32,055
+which other Git-level cause
+the chapter reproduces.
+
+232
+00:16:32,095 --> 00:16:33,928
+You've seen both in this video.
+
+233
+00:16:35,768 --> 00:16:36,695
+Let's land this.
+
+234
+00:16:37,035 --> 00:16:38,695
+You should now be able to say:
+
+235
+00:16:39,035 --> 00:16:43,856
+The same commit is not the same input: the
+filesystem, the depth of the clone, the
+
+236
+00:16:43,896 --> 00:16:46,939
+commit the job checked out
+and the shell all differ.
+
+237
+00:16:47,279 --> 00:16:52,665
+A case problem is proven with git cat-file
+-e or git ls-files, which compare names
+
+238
+00:16:52,705 --> 00:16:55,047
+byte by byte, and fixed with git mv.
+
+239
+00:16:55,387 --> 00:17:01,271
+A line-ending problem is proven with git
+ls-files --eol, where i/crlf means the
+
+240
+00:17:01,311 --> 00:17:07,345
+committed blob has CRLF, and fixed with
+.gitattributes and git add --renormalize.
+
+241
+00:17:07,685 --> 00:17:12,665
+A shallow-clone problem is reproduced
+with a clone at depth 1 without tags, and
+
+242
+00:17:12,705 --> 00:17:16,224
+fixed with fetch-depth: 0 in
+the job that needs history.
+
+243
+00:17:16,564 --> 00:17:20,132
+Each cause has a Git-side test that
+needs no re-run of the workflow.
+
+244
+00:17:21,972 --> 00:17:30,354
+Read section 20B.12 of Chapter 20B. Do
+Exercise 28.6, "The machine changed, the code
+
+245
+00:17:30,394 --> 00:17:35,467
+did not", in
+exercises/m26-m31-actions-security.md.
+
+246
+00:17:35,807 --> 00:17:40,712
+Three reports, three proofs, and not one
+re-run. The next time someone says "it's
+
+247
+00:17:40,752 --> 00:17:45,292
+the same commit", you have four questions
+ready. Try the --eol listing on a
+
+248
+00:17:45,332 --> 00:17:50,359
+repository of your own. Next time: required
+checks that stay pending, the debugging
+
+249
+00:17:50,399 --> 00:17:54,267
+instruments, linting, and what a
+local emulator can't reproduce.
+
+250
+00:17:54,307 --> 00:17:57,442
+Until then, look at the
+state first and type second.
+
+251
+00:17:57,482 --> 00:17:58,907
+See you in the next one.

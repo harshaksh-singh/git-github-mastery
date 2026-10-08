@@ -343,7 +343,7 @@ Workflows 3 and 4 you diagnose by reading. The reports: for 3, the step that com
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthrough.
 
-Part B of Lab 28.1, on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. These six reports are constructed descriptions written from the documented behavior. They aren't captured logs.
+**Part B of Lab 28.1, on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors. These six reports are constructed descriptions written from the documented behavior. They aren't captured logs.
 
 Add one broken file at a time. For each: observe, fix it yourself, observe again, remove it. The lab asks for at least workflows 1, 3 and 5.
 

@@ -392,7 +392,7 @@ The other one still runs: you know that from the `if`. And the lab manual record
 
 **[ON SCREEN]** Lower third: GitHub Actions. Screen walkthroughs.
 
-On your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
+**On your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference. No GitHub output was captured by the authors.
 
 Lab 26.1. After the push, open the run of the "Tests" workflow, open the job "Unit tests", and expand the step "Show what was checked out". Compare its six lines with what you wrote. Then push the breaking branch as a pull request and read the same step again: the ref and the commit are different in kind. That comparison is the lab.
 

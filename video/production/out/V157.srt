@@ -1,0 +1,1387 @@
+1
+00:00:04,500 --> 00:00:09,851
+An open-source evaluation harness wants to
+show benchmark scores on contributor pull
+
+2
+00:00:09,891 --> 00:00:15,177
+requests. The scores need a provider API
+key. For every outside contributor the job
+
+3
+00:00:15,217 --> 00:00:17,423
+fails, because the key isn't there.
+
+4
+00:00:17,763 --> 00:00:22,705
+A maintainer searches for the error, finds
+an answer with many upvotes, and changes
+
+5
+00:00:22,745 --> 00:00:27,267
+one word in the trigger, the line that
+says which event starts the workflow:
+
+6
+00:00:27,307 --> 00:00:31,049
+pull_request becomes pull_request_target.
+The check goes green.
+
+7
+00:00:31,089 --> 00:00:35,910
+The contributor is happy. The maintainer
+has handed the API key, and a read-write
+
+8
+00:00:35,950 --> 00:00:39,572
+token for the repository, to
+anyone who opens a pull request.
+
+9
+00:00:39,912 --> 00:00:44,709
+The failing check was the security model
+working. The one-word change removed it.
+
+10
+00:00:44,749 --> 00:00:49,666
+In this video you learn exactly what that
+word changes, and which line, usually two
+
+11
+00:00:49,706 --> 00:00:54,324
+steps further down, completes the
+vulnerability. Keep those two steps in mind.
+
+12
+00:00:56,164 --> 00:00:59,911
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:59,951 --> 00:01:04,754
+In the last video you saw the model in
+five parts. This video is parts two and
+
+14
+00:01:04,794 --> 00:01:07,920
+three: fork pull requests,
+and privileged triggers.
+
+15
+00:01:08,260 --> 00:01:13,300
+A reminder of four words. A workflow is a
+file that says: when this event happens,
+
+16
+00:01:13,340 --> 00:01:16,769
+run these jobs, each on a
+fresh machine called a runner.
+
+17
+00:01:16,809 --> 00:01:20,300
+A fork is a second repository
+on GitHub, made from yours.
+
+18
+00:01:20,340 --> 00:01:23,521
+A pull request proposes
+merging a branch into yours.
+
+19
+00:01:23,561 --> 00:01:27,176
+A secret is an encrypted value
+stored in GitHub's settings.
+
+20
+00:01:27,516 --> 00:01:32,104
+Part two is a protection. A workflow triggered
+by pull_request from a fork runs the
+
+21
+00:01:32,144 --> 00:01:36,676
+contributor's version of the code with a
+read-only token and without your secrets.
+
+22
+00:01:36,716 --> 00:01:41,193
+You'll learn what that protects and what
+it leaves exposed, and what the approval
+
+23
+00:01:41,233 --> 00:01:44,148
+gate for first-time contributors
+does and doesn't do.
+
+24
+00:01:44,488 --> 00:01:48,223
+Part three is where the protection
+is switched off on purpose.
+
+25
+00:01:48,263 --> 00:01:53,276
+pull_request_target runs your workflow with
+your token and your secrets in response
+
+26
+00:01:53,316 --> 00:01:56,685
+to a stranger's pull request.
+That can be exactly right.
+
+27
+00:01:56,725 --> 00:01:59,851
+It becomes a vulnerability
+at one identifiable step.
+
+28
+00:02:00,191 --> 00:02:05,211
+This video is defensive, like the chapter.
+You'll see the unsafe pattern as GitHub's
+
+29
+00:02:05,251 --> 00:02:09,067
+own documentation prints it, marked
+insecure, next to its fixes.
+
+30
+00:02:09,107 --> 00:02:14,007
+You won't see anything that could be used
+as it stands, and nothing is run against
+
+31
+00:02:14,047 --> 00:02:14,428
+GitHub.
+
+32
+00:02:16,268 --> 00:02:17,847
+Here's what you'll walk away with.
+
+33
+00:02:18,187 --> 00:02:19,599
+After this video you can:
+
+34
+00:02:19,939 --> 00:02:24,903
+explain why a fork pull request under
+pull_request gets no secrets and a read-only
+
+35
+00:02:24,943 --> 00:02:26,856
+token, and what remains exposed;
+
+36
+00:02:27,196 --> 00:02:30,525
+say what the approval gate for
+first-time contributors does;
+
+37
+00:02:30,865 --> 00:02:35,917
+explain what pull_request_target and
+workflow_run change: whose workflow file, which
+
+38
+00:02:35,957 --> 00:02:37,190
+token, which secrets;
+
+39
+00:02:37,530 --> 00:02:41,072
+name the step that turns a privileged
+trigger into a vulnerability;
+
+40
+00:02:41,412 --> 00:02:46,903
+state when pull_request_target is the right
+trigger and what changes on 2 November
+
+41
+00:02:46,943 --> 00:02:48,926
+2026, as the section gives it.
+
+42
+00:02:50,766 --> 00:02:55,445
+Fork pull requests. In one sentence: a
+workflow triggered by pull_request from a
+
+43
+00:02:55,485 --> 00:03:00,282
+fork runs the contributor's version of the
+code with a read-only token and without
+
+44
+00:03:00,322 --> 00:03:01,048
+your secrets.
+
+45
+00:03:01,388 --> 00:03:06,322
+Precisely. The documentation: "With the
+exception of GITHUB_TOKEN, secrets are not
+
+46
+00:03:06,362 --> 00:03:10,870
+passed to the runner when a workflow
+is triggered from a forked repository.
+
+47
+00:03:10,910 --> 00:03:15,176
+The GITHUB_TOKEN has read-only
+permissions in pull requests from forked
+
+48
+00:03:15,216 --> 00:03:19,846
+repositories." Pull requests opened by
+Dependabot, GitHub's dependency update
+
+49
+00:03:19,886 --> 00:03:21,908
+feature, are treated the same way.
+
+50
+00:03:22,248 --> 00:03:26,872
+The approval gate. Whether such a run
+starts at all is a separate setting.
+
+51
+00:03:26,912 --> 00:03:32,167
+For public repositories, by default, all
+first-time contributors require approval to
+
+52
+00:03:32,207 --> 00:03:37,335
+run workflows. The options are approval
+for first-time contributors who are new to
+
+53
+00:03:37,375 --> 00:03:41,999
+GitHub, for all first-time contributors,
+or for all external contributors.
+
+54
+00:03:42,339 --> 00:03:47,208
+The documentation attaches a warning. A
+user who has had any commit or pull request
+
+55
+00:03:47,248 --> 00:03:50,342
+merged into the repository
+will not require approval.
+
+56
+00:03:50,382 --> 00:03:54,954
+And a malicious user could meet that
+requirement by getting a small typing fix
+
+57
+00:03:54,994 --> 00:03:59,685
+accepted. So the gate at its default is
+a first-contact check, not a per-request
+
+58
+00:03:59,725 --> 00:04:00,099
+review.
+
+59
+00:04:00,439 --> 00:04:04,773
+What the fork model protects. Your
+secrets: they aren't sent to the runner.
+
+60
+00:04:04,813 --> 00:04:07,048
+Your repository: the token can't write.
+
+61
+00:04:07,388 --> 00:04:12,376
+What it doesn't protect. The runner itself:
+the contributor's code still executes on
+
+62
+00:04:12,416 --> 00:04:17,404
+it. Readable data: a public repository's
+contents, and the caches a pull request may
+
+63
+00:04:17,444 --> 00:04:21,475
+restore. A cache is a stored directory
+that a later run can restore.
+
+64
+00:04:21,515 --> 00:04:26,383
+A self-hosted runner, which is your machine.
+And workflows on privileged triggers,
+
+65
+00:04:26,423 --> 00:04:30,992
+which, in the documentation's words,
+"will always run, regardless of approval
+
+66
+00:04:31,032 --> 00:04:31,591
+settings".
+
+67
+00:04:31,931 --> 00:04:36,153
+The textbook calls that last row the
+hinge. The approval gate applies to
+
+68
+00:04:36,193 --> 00:04:39,349
+pull_request. It doesn't
+apply to pull_request_target.
+
+69
+00:04:39,689 --> 00:04:44,487
+Quick quiz. A stranger's fork pull
+request starts a pull_request run.
+
+70
+00:04:44,527 --> 00:04:48,904
+What does the job hold? A, a
+read-write token and your secrets.
+
+71
+00:04:48,944 --> 00:04:52,339
+B, a read-only token and
+no secrets. Your answer?
+
+72
+00:04:57,179 --> 00:05:00,129
+B. The token can read, and
+your secrets stay behind.
+
+73
+00:05:00,169 --> 00:05:02,947
+But the stranger's code
+still runs on the runner.
+
+74
+00:05:03,287 --> 00:05:08,192
+Privileged triggers. In one sentence:
+pull_request_target runs your workflow, from
+
+75
+00:05:08,232 --> 00:05:13,137
+your default branch, with your token and
+your secrets, in response to a stranger's
+
+76
+00:05:13,177 --> 00:05:18,082
+pull request. It's safe exactly as long as
+it never executes that stranger's code.
+
+77
+00:05:18,122 --> 00:05:21,761
+The default branch is the branch
+a repository presents first.
+
+78
+00:05:22,101 --> 00:05:27,238
+Precisely. GitHub's reference says such
+workflows "run with elevated trust: the job
+
+79
+00:05:27,278 --> 00:05:31,729
+receives the base repository's
+GITHUB_TOKEN and access to repository and
+
+80
+00:05:31,769 --> 00:05:36,470
+organization secrets". The base repository
+is the one that receives the pull
+
+81
+00:05:36,510 --> 00:05:41,709
+request. The trigger is safe by default
+because the workflow, and any later checkout
+
+82
+00:05:41,749 --> 00:05:46,637
+that doesn't specify a ref, is taken from
+the base repository's default branch.
+
+83
+00:05:46,977 --> 00:05:50,965
+A checkout fetches code onto the
+runner, and a ref says which commit.
+
+84
+00:05:51,005 --> 00:05:55,811
+Then the sentence that locates the risk:
+"You introduce risk when a workflow author
+
+85
+00:05:55,851 --> 00:05:58,555
+overrides this default
+to run the fork's code."
+
+86
+00:05:58,895 --> 00:06:03,306
+And the sentence that locates the step.
+Quoting the reference: "The checkout step
+
+87
+00:06:03,346 --> 00:06:07,756
+alone does not execute untrusted code… The
+vulnerability is completed by the next
+
+88
+00:06:07,796 --> 00:06:11,493
+step that runs code checked out into
+the current working directory."
+
+89
+00:06:11,533 --> 00:06:16,054
+The documentation gives this pattern a name
+and says it "has been the root cause of
+
+90
+00:06:16,094 --> 00:06:17,977
+multiple supply-chain compromises".
+
+91
+00:06:18,317 --> 00:06:22,330
+The token isn't read-only here. The
+workflow syntax reference: under
+
+92
+00:06:22,370 --> 00:06:27,097
+pull_request_target the token "is granted
+read/write repository permission, even
+
+93
+00:06:27,137 --> 00:06:29,540
+when it is triggered from a public fork".
+
+94
+00:06:29,880 --> 00:06:33,190
+The unsafe pattern, as the
+documentation prints it.
+
+95
+00:06:33,230 --> 00:06:38,444
+The checkout line with @v6 is the
+documentation's own example, quoted unchanged.
+
+96
+00:06:38,484 --> 00:06:43,896
+The workflows of this course pin the checkout
+action at version 7.0.1 by commit ID,
+
+97
+00:06:43,936 --> 00:06:49,150
+and since version 7 and its back-ports
+the action refuses this checkout unless a
+
+98
+00:06:49,190 --> 00:06:50,595
+specific input is set.
+
+99
+00:06:50,935 --> 00:06:54,626
+Read it with the question from
+the last video. Whose code runs?
+
+100
+00:06:54,666 --> 00:06:58,772
+make test runs the Makefile of the
+pull request, so the contributor's.
+
+101
+00:06:58,812 --> 00:07:03,570
+What can the job reach? A read-write token,
+and every repository and organization
+
+102
+00:07:03,610 --> 00:07:08,427
+secret the workflow names. What an attacker
+achieves is whatever those credentials
+
+103
+00:07:08,467 --> 00:07:13,402
+allow. There's the line from the opening:
+not the trigger, not the checkout, but the
+
+104
+00:07:13,442 --> 00:07:14,231
+step after it.
+
+105
+00:07:14,571 --> 00:07:18,514
+And the textbook widens one word.
+"Run" is wider than it looks.
+
+106
+00:07:18,554 --> 00:07:22,498
+A build. An install step with
+lifecycle scripts. A test runner.
+
+107
+00:07:22,538 --> 00:07:26,797
+A linter that loads a configuration
+file from the working directory.
+
+108
+00:07:26,837 --> 00:07:30,275
+Each executes or is steered
+by files from the checkout.
+
+109
+00:07:30,615 --> 00:07:34,080
+The shapes to look for in
+review, from the same reference.
+
+110
+00:07:34,120 --> 00:07:39,036
+Checking out the pull request's head or
+merge commit, through a ref built from the
+
+111
+00:07:39,076 --> 00:07:43,328
+event. Pointing the checkout at the
+fork, through the repository input.
+
+112
+00:07:43,368 --> 00:07:48,163
+Or fetching the code another way and
+running it: a git fetch of the pull request
+
+113
+00:07:48,203 --> 00:07:51,910
+ref, gh pr checkout, or downloading
+an artifact built from it.
+
+114
+00:07:51,950 --> 00:07:55,718
+An artifact is a set of files a
+job uploads for later download.
+
+115
+00:07:56,058 --> 00:08:01,127
+And the scope is wider than one trigger.
+The reference: such patterns "are also not
+
+116
+00:08:01,167 --> 00:08:05,868
+unique to pull_request_target… an
+issue_comment or workflow_run workflow that
+
+117
+00:08:05,908 --> 00:08:10,485
+fetches and runs a fork's pull request
+code is vulnerable in the same way."
+
+118
+00:08:10,525 --> 00:08:15,656
+For workflow_run, remember from video 143:
+it's about the default branch, and it can
+
+119
+00:08:15,696 --> 00:08:18,795
+read secrets even when the
+first workflow couldn't.
+
+120
+00:08:18,835 --> 00:08:23,351
+Its privilege comes from its position,
+not from the run that triggered it.
+
+121
+00:08:23,691 --> 00:08:25,376
+The fix, in order of preference.
+
+122
+00:08:25,716 --> 00:08:30,370
+One. Don't use the trigger. The
+reference: "If the workflow does not need
+
+123
+00:08:30,410 --> 00:08:35,385
+pull_request_target, update it to use a
+safer event where appropriate, such as
+
+124
+00:08:35,425 --> 00:08:40,657
+pull_request." Most CI, the automated
+testing of each change, needs no secrets and
+
+125
+00:08:40,697 --> 00:08:41,621
+no write token.
+
+126
+00:08:41,961 --> 00:08:46,253
+Two. If a privileged action is needed,
+such as a comment or a label, keep
+
+127
+00:08:46,293 --> 00:08:50,466
+pull_request_target but never check
+out or run the pull request's code.
+
+128
+00:08:50,506 --> 00:08:55,154
+Operate on metadata only, facts about the
+pull request, not its files, with the
+
+129
+00:08:55,194 --> 00:08:59,961
+narrowest permissions. This is the case
+in which pull_request_target is the right
+
+130
+00:09:00,001 --> 00:09:00,435
+trigger.
+
+131
+00:09:00,775 --> 00:09:05,818
+Three. If the privileged action needs a
+result computed from the contributor's code,
+
+132
+00:09:05,858 --> 00:09:10,538
+separate the two. GitHub Security Lab's
+design is an unprivileged pull_request
+
+133
+00:09:10,578 --> 00:09:15,076
+workflow that builds and tests and
+uploads its result as an artifact, and a
+
+134
+00:09:15,116 --> 00:09:19,553
+privileged workflow_run workflow that
+downloads the artifact and comments.
+
+135
+00:09:19,593 --> 00:09:24,273
+Artifact data is safe there when it's
+used, in the article's words, "in a safe
+
+136
+00:09:24,313 --> 00:09:29,174
+manner, like reading PR numbers or reading
+a code coverage text to comment on the
+
+137
+00:09:29,214 --> 00:09:29,416
+PR".
+
+138
+00:09:29,756 --> 00:09:34,880
+A label as a gate, "run only when a maintainer
+adds a certain label", is weaker than
+
+139
+00:09:34,920 --> 00:09:39,860
+it looks. The Security Lab article notes
+it's still prone to a race condition, in
+
+140
+00:09:39,900 --> 00:09:45,024
+which the attacker may push new changes
+after the workflow was approved by the label
+
+141
+00:09:45,064 --> 00:09:46,438
+but hasn't started yet.
+
+142
+00:09:46,778 --> 00:09:51,325
+The platform now leans against the pattern.
+Four changes matter in review, and the
+
+143
+00:09:51,365 --> 00:09:54,905
+textbook is exact that none of
+them removes the need for review.
+
+144
+00:09:55,245 --> 00:10:00,443
+The eighth of December 2025: the workflow
+file for pull_request_target always comes
+
+145
+00:10:00,483 --> 00:10:05,743
+from the default branch. What it doesn't
+cover: a vulnerable workflow that is on the
+
+146
+00:10:05,783 --> 00:10:06,690
+default branch.
+
+147
+00:10:07,030 --> 00:10:12,715
+actions/checkout version 7, the eighteenth
+of June 2026, back-ported to older lines
+
+148
+00:10:12,755 --> 00:10:18,233
+on the twentieth of July 2026: the action
+refuses to fetch a fork pull request's
+
+149
+00:10:18,273 --> 00:10:23,752
+head or merge ref under pull_request_target,
+and under workflow_run started by a
+
+150
+00:10:23,792 --> 00:10:28,235
+pull request event, unless
+allow-unsafe-pr-checkout: true is set.
+
+151
+00:10:28,275 --> 00:10:34,029
+What it doesn't cover: a git fetch or gh pr
+checkout in a run step, and other events
+
+152
+00:10:34,069 --> 00:10:35,547
+such as issue_comment.
+
+153
+00:10:35,887 --> 00:10:40,352
+Read-only caches for low-trust triggers,
+the twenty-sixth of June 2026: a
+
+154
+00:10:40,392 --> 00:10:44,178
+privileged-trigger run can't
+write the default branch's cache.
+
+155
+00:10:44,218 --> 00:10:48,313
+What it doesn't cover: restoring a
+cache that was already poisoned.
+
+156
+00:10:48,653 --> 00:10:53,478
+And workflow execution protections,
+generally available on the seventeenth of
+
+157
+00:10:53,518 --> 00:10:58,722
+September 2026. GitHub announced that a
+default rule will block pull_request_target
+
+158
+00:10:58,762 --> 00:11:03,903
+in public repositories from the second of
+November 2026 unless a maintainer allows
+
+159
+00:11:03,943 --> 00:11:09,021
+it. Check the changelog on the day you
+watch this. What it doesn't cover: private
+
+160
+00:11:09,061 --> 00:11:10,663
+and internal repositories.
+
+161
+00:11:11,003 --> 00:11:15,798
+One input deserves a sentence of its own.
+The changelog says the opt-out flag "is
+
+162
+00:11:15,838 --> 00:11:20,275
+intentionally named to be easy to spot
+in code review and static analysis".
+
+163
+00:11:20,315 --> 00:11:25,050
+The reference says: "Only do this after
+confirming the checked-out code is never
+
+164
+00:11:25,090 --> 00:11:29,647
+executed." In a pull request, the line
+allow-unsafe-pr-checkout: true needs a
+
+165
+00:11:29,687 --> 00:11:30,960
+written justification.
+
+166
+00:11:32,800 --> 00:11:37,387
+Analogy for the fork model. A visitor
+may use the lobby computer, which has no
+
+167
+00:11:37,427 --> 00:11:39,227
+access to the internal network.
+
+168
+00:11:39,567 --> 00:11:44,347
+It breaks in two places. By default a
+visitor who has been in the building once is
+
+169
+00:11:44,387 --> 00:11:49,050
+waved through without a check from then
+on. And the lobby computer may be one of
+
+170
+00:11:49,090 --> 00:11:51,401
+your own machines: a self-hosted runner.
+
+171
+00:11:51,741 --> 00:11:56,549
+Analogy for the privileged trigger. The
+front desk has a procedure for parcels from
+
+172
+00:11:56,589 --> 00:12:00,580
+unknown senders: log the parcel, put
+a sticker on it, send a receipt.
+
+173
+00:12:00,620 --> 00:12:04,201
+The procedure is safe because
+the desk never opens the parcel.
+
+174
+00:12:04,241 --> 00:12:08,932
+The vulnerability is the day someone amends
+the procedure to "open the parcel and
+
+175
+00:12:08,972 --> 00:12:13,372
+follow the instructions inside", while
+the clerk still holds the master key.
+
+176
+00:12:13,712 --> 00:12:18,505
+Where that breaks: the parcel can also
+influence the clerk without being opened.
+
+177
+00:12:18,545 --> 00:12:21,345
+Its label is event text.
+That's the next video.
+
+178
+00:12:21,685 --> 00:12:25,578
+So carry two questions into every
+review of a privileged trigger.
+
+179
+00:12:25,618 --> 00:12:29,028
+Does anything bring the
+stranger's files onto the runner?
+
+180
+00:12:29,068 --> 00:12:33,930
+And does any later step execute or get
+steered by files in the working directory?
+
+181
+00:12:33,970 --> 00:12:38,711
+If both answers are yes, the trigger is
+no longer safe, whatever the intentions
+
+182
+00:12:38,751 --> 00:12:39,013
+were.
+
+183
+00:12:40,853 --> 00:12:45,335
+Try it now, thirty seconds, on paper.
+Draw two columns, pull_request and
+
+184
+00:12:45,375 --> 00:12:50,609
+pull_request_target, and four rows: where
+the workflow file is read from, the token,
+
+185
+00:12:50,649 --> 00:12:55,633
+the secrets, the approval gate. Fill in
+both columns, and say each row out loud.
+
+186
+00:13:05,173 --> 00:13:09,732
+Now check your rows. The left lane
+gives the stranger's code no privilege.
+
+187
+00:13:09,772 --> 00:13:13,896
+The right lane gives privilege and,
+by default, no stranger's code.
+
+188
+00:13:13,936 --> 00:13:19,117
+The vulnerability is a workflow that takes
+the token and secrets from the right lane
+
+189
+00:13:19,157 --> 00:13:20,795
+and the code from the left.
+
+190
+00:13:22,635 --> 00:13:25,896
+Step 1: the triggers, read
+with this video's question.
+
+191
+00:13:26,236 --> 00:13:31,395
+Two of the five files run with the base
+repository's token in response to something
+
+192
+00:13:31,435 --> 00:13:36,594
+an outsider can do: file 1, on an opened
+issue, and file 2, on pull_request_target.
+
+193
+00:13:36,634 --> 00:13:41,605
+Those two are where you now read every
+line. File 4 uses plain pull_request: the
+
+194
+00:13:41,645 --> 00:13:43,172
+left lane of the diagram.
+
+195
+00:13:46,512 --> 00:13:49,148
+Step 2: every expression in the files.
+
+196
+00:13:49,488 --> 00:13:54,229
+The lab calls this the wide scan: every
+expression, with its line number, to be
+
+197
+00:13:54,269 --> 00:13:59,252
+classified by hand. An expression is the
+dollar-brace formula that Actions replaces
+
+198
+00:13:59,292 --> 00:14:04,275
+with its value. In file 2, which line would
+tell you whether the stranger's code is
+
+199
+00:14:04,315 --> 00:14:08,270
+brought onto the runner? You know
+the shape from the review table.
+
+200
+00:14:08,310 --> 00:14:09,238
+Say it out loud.
+
+201
+00:14:14,078 --> 00:14:18,713
+Line 28 of file 2: a ref built from
+the head commit of the pull request.
+
+202
+00:14:18,753 --> 00:14:24,167
+That's the first shape in the documentation's
+table: checking out the pull request's
+
+203
+00:14:24,207 --> 00:14:26,244
+head. Under pull_request_target.
+
+204
+00:14:26,584 --> 00:14:31,322
+Remember what the reference says about
+that line: the checkout step alone doesn't
+
+205
+00:14:31,362 --> 00:14:34,447
+execute untrusted code. So
+the review isn't finished.
+
+206
+00:14:34,487 --> 00:14:39,048
+You open the file and read what comes
+after the checkout, and ask of each step
+
+207
+00:14:39,088 --> 00:14:42,822
+whether it runs or is steered by
+files in the working directory.
+
+208
+00:14:42,862 --> 00:14:47,482
+That reading is yours to do in the lab.
+And you look for one more line near the
+
+209
+00:14:47,522 --> 00:14:51,315
+checkout, the one that the changelog
+says is named to be spotted.
+
+210
+00:14:51,655 --> 00:14:54,267
+Step 3: a scan that looks convincing.
+
+211
+00:14:54,607 --> 00:14:59,773
+Exit status 1: no match. A reviewer who
+stops here reports that no script contains
+
+212
+00:14:59,813 --> 00:15:05,107
+an expression. Why can that be wrong? Think
+about how a multi-line script is written
+
+213
+00:15:05,147 --> 00:15:08,917
+in YAML, the format of workflow
+files. Make your prediction.
+
+214
+00:15:13,757 --> 00:15:16,717
+Step 4: the lines of
+every multi-line script.
+
+215
+00:15:17,057 --> 00:15:21,854
+The awk program, a small text-processing
+tool, prints expression lines that lie
+
+216
+00:15:21,894 --> 00:15:25,283
+inside a block that starts
+with run: and a vertical bar.
+
+217
+00:15:25,323 --> 00:15:30,242
+One line comes back, in file 1. The narrow
+scan missed it, because the expression
+
+218
+00:15:30,282 --> 00:15:33,732
+isn't on the line that says
+run:. It's on the line after.
+
+219
+00:15:33,772 --> 00:15:38,692
+This is the subject of the next video. For
+now the lesson is about method: a scan
+
+220
+00:15:38,732 --> 00:15:43,652
+tells you where to look, and a scan that
+returns nothing tells you only what that
+
+221
+00:15:43,692 --> 00:15:44,448
+scan can see.
+
+222
+00:15:46,288 --> 00:15:47,936
+Five mistakes to watch for.
+
+223
+00:15:48,276 --> 00:15:52,733
+Switching to pull_request_target so that
+fork pull requests get the secrets.
+
+224
+00:15:52,773 --> 00:15:57,527
+Root cause: that trigger gives the job the
+base repository's read-write token and
+
+225
+00:15:57,567 --> 00:16:02,380
+secrets and is not subject to the approval
+gate; the textbook lists this advice as
+
+226
+00:16:02,420 --> 00:16:05,694
+outdated and as the vulnerability
+class of this chapter.
+
+227
+00:16:06,034 --> 00:16:10,647
+Treating the checkout of the pull request's
+head as the whole problem, or as no
+
+228
+00:16:10,687 --> 00:16:15,240
+problem. Root cause: the checkout alone
+executes nothing; the vulnerability is
+
+229
+00:16:15,280 --> 00:16:19,303
+completed by the next step that runs
+code from the working directory.
+
+230
+00:16:19,643 --> 00:16:24,556
+Thinking only of make test as "running
+code". Root cause: a build, an install with
+
+231
+00:16:24,596 --> 00:16:29,630
+lifecycle scripts, a test runner or a linter
+that loads a configuration file are all
+
+232
+00:16:29,670 --> 00:16:31,744
+steered by files from the checkout.
+
+233
+00:16:32,084 --> 00:16:36,409
+Relying on the approval gate. Root
+cause: by default it covers first-time
+
+234
+00:16:36,449 --> 00:16:40,655
+contributors only, and it does not
+apply to privileged triggers at all.
+
+235
+00:16:40,995 --> 00:16:45,781
+Using a label as the gate for a privileged
+run. Root cause: the contributor can push
+
+236
+00:16:45,821 --> 00:16:49,745
+new changes after the label was added
+and before the workflow starts.
+
+237
+00:16:51,585 --> 00:16:56,494
+Now, out of the lab. The textbook's case
+was the hook: an open-source evaluation
+
+238
+00:16:56,534 --> 00:17:01,566
+harness wants benchmark scores on contributor
+pull requests, and the scores need a
+
+239
+00:17:01,606 --> 00:17:06,639
+provider API key. Under pull_request the
+key is absent, so the job fails for every
+
+240
+00:17:06,679 --> 00:17:11,341
+outside contributor. The textbook's
+comment: this is the fork model working.
+
+241
+00:17:11,681 --> 00:17:16,704
+The wrong fix is the one-word change. The
+right ones, as the textbook lists them:
+
+242
+00:17:16,744 --> 00:17:21,704
+run the keyed evaluation after merge. Or
+run it on demand, by a maintainer, on a
+
+243
+00:17:21,744 --> 00:17:23,517
+branch inside the repository.
+
+244
+00:17:23,857 --> 00:17:28,378
+Or split the work into an unprivileged
+run and a privileged follow-up that never
+
+245
+00:17:28,418 --> 00:17:32,882
+executes the contributor's code, and that
+treats what the first run produced as
+
+246
+00:17:32,922 --> 00:17:36,702
+data. It never executes it and never
+interpolates it into a script.
+
+247
+00:17:37,042 --> 00:17:41,626
+Each of the three costs something: later
+feedback, a manual step, or a second
+
+248
+00:17:41,666 --> 00:17:46,610
+workflow to maintain. That cost is the price
+of not putting an outsider's code next
+
+249
+00:17:46,650 --> 00:17:47,751
+to your credential.
+
+250
+00:17:49,591 --> 00:17:55,502
+Your turn. Do Lab 29.1, "Find and
+fix five planted weaknesses", in
+
+251
+00:17:55,542 --> 00:18:02,805
+lab-manual/m29-actions-security.md. Part
+A runs in labs/shell and needs no GitHub
+
+252
+00:18:02,845 --> 00:18:03,436
+access.
+
+253
+00:18:03,776 --> 00:18:07,538
+Collect the evidence with the scans,
+then read each file completely.
+
+254
+00:18:07,578 --> 00:18:12,011
+Before you change anything, write one row
+per file: the line, the class, what an
+
+255
+00:18:12,051 --> 00:18:15,981
+attacker could achieve and under which
+condition, and the smallest fix.
+
+256
+00:18:16,021 --> 00:18:20,118
+For the file with the privileged trigger,
+predict which step completes the
+
+257
+00:18:20,158 --> 00:18:22,858
+vulnerability before you
+read below the checkout.
+
+258
+00:18:23,198 --> 00:18:28,595
+The challenge is Exercise 29.2,
+"The comment workflow", in
+
+259
+00:18:28,635 --> 00:18:32,158
+exercises/m26-m31-actions-security.md.
+
+260
+00:18:33,998 --> 00:18:37,213
+Read the question on screen.
+Say your answer out loud.
+
+261
+00:18:42,053 --> 00:18:46,710
+A strong answer describes the pattern in
+terms of the two lanes: which trigger, what
+
+262
+00:18:46,750 --> 00:18:51,350
+that trigger gives the job, what the workflow
+then brings onto the runner, and what
+
+263
+00:18:51,390 --> 00:18:55,990
+happens next. It quotes the idea that the
+checkout alone executes nothing and names
+
+264
+00:18:56,030 --> 00:18:57,500
+the kind of step that does.
+
+265
+00:18:57,840 --> 00:19:01,860
+It says what an attacker can reach and
+why the approval gate doesn't help.
+
+266
+00:19:01,900 --> 00:19:06,469
+The follow-up notes that the checkout action
+has refused that checkout since version
+
+267
+00:19:06,509 --> 00:19:10,968
+7 and asks whether the pattern is closed.
+Answer from the "what it does not cover"
+
+268
+00:19:11,008 --> 00:19:13,712
+column, and say what you
+still look for in review.
+
+269
+00:19:15,552 --> 00:19:16,479
+Let's land this.
+
+270
+00:19:16,819 --> 00:19:18,479
+You should now be able to say:
+
+271
+00:19:18,819 --> 00:19:23,862
+Under pull_request, a fork's code runs
+with a read-only token and no secrets; the
+
+272
+00:19:23,902 --> 00:19:27,565
+runner, readable data and
+restorable caches remain exposed.
+
+273
+00:19:27,905 --> 00:19:32,436
+The approval gate covers first-time
+contributors by default and does not apply to
+
+274
+00:19:32,476 --> 00:19:33,565
+privileged triggers.
+
+275
+00:19:33,905 --> 00:19:38,778
+pull_request_target takes the workflow from
+the default branch and gives the job a
+
+276
+00:19:38,818 --> 00:19:41,534
+read-write token and the
+repository's secrets.
+
+277
+00:19:41,874 --> 00:19:46,641
+The vulnerability is completed by the step
+that runs code checked out from the pull
+
+278
+00:19:46,681 --> 00:19:50,753
+request, and "run" includes builds,
+installs, tests and tools that read
+
+279
+00:19:50,793 --> 00:19:53,128
+configuration from the working directory.
+
+280
+00:19:53,468 --> 00:19:58,662
+The trigger is right for metadata-only
+work; GitHub announced that from 2 November
+
+281
+00:19:58,702 --> 00:20:03,960
+2026 a default rule blocks it in public
+repositories unless a maintainer allows it.
+
+282
+00:20:05,800 --> 00:20:10,856
+Read sections 21A.4 and
+21A.5 of Chapter 21A.
+
+283
+00:20:11,196 --> 00:20:15,859
+Today you learned to read a privileged
+trigger in two lanes, and to point at the
+
+284
+00:20:15,899 --> 00:20:19,327
+step that matters. Run the scans
+yourself in the lab shell.
+
+285
+00:20:19,367 --> 00:20:22,795
+Next time: script injection
+through untrusted event fields.
+
+286
+00:20:22,835 --> 00:20:25,851
+Until then, look at the
+state first and type second.
+
+287
+00:20:25,891 --> 00:20:27,262
+See you in the next one.

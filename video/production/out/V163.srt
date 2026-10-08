@@ -1,0 +1,1325 @@
+1
+00:00:04,500 --> 00:00:08,348
+There are two versions of this story,
+and they have opposite answers.
+
+2
+00:00:08,388 --> 00:00:11,673
+To clone is to make your own
+copy of a repository with Git.
+
+3
+00:00:12,013 --> 00:00:15,093
+In the first, the intern
+typed git clone with a URL.
+
+4
+00:00:15,133 --> 00:00:20,013
+What Git ran on the laptop because of that:
+nothing the repository's author chose.
+
+5
+00:00:20,353 --> 00:00:24,655
+In the second, the footnote linked to
+a tarball, an archive file, called a
+
+6
+00:00:24,695 --> 00:00:29,466
+"reproduction package", and the intern
+unpacked it and changed into the directory.
+
+7
+00:00:29,506 --> 00:00:33,045
+The shell prompt showed the
+branch name, as shell prompts do.
+
+8
+00:00:33,085 --> 00:00:37,974
+To show it, the prompt ran git status. And
+git status read a configuration file that
+
+9
+00:00:38,014 --> 00:00:39,558
+the package's author wrote.
+
+10
+00:00:39,898 --> 00:00:44,647
+Same repository, same content, same intern.
+The difference is how the .git directory
+
+11
+00:00:44,687 --> 00:00:47,555
+got onto the disk. Keep the
+second version in mind.
+
+12
+00:00:47,595 --> 00:00:50,234
+You'll watch it happen,
+harmlessly, in the lab.
+
+13
+00:00:52,074 --> 00:00:55,974
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:00:56,014 --> 00:01:01,334
+This video opens Module 30, repository
+security, and it starts on your own machine.
+
+15
+00:01:01,374 --> 00:01:04,886
+For two modules the question
+was what runs on a runner.
+
+16
+00:01:04,926 --> 00:01:10,052
+Now the question is what runs on your
+laptop, with your SSH agent and your cloud
+
+17
+00:01:10,092 --> 00:01:11,409
+credentials in reach.
+
+18
+00:01:11,749 --> 00:01:17,655
+Everything in this video is Git, not GitHub.
+Three topics, in the order of sections
+
+19
+00:01:17,695 --> 00:01:21,667
+21B.2 to 21B.4. What a clone
+copies and what it doesn't.
+
+20
+00:01:21,707 --> 00:01:26,323
+The three standing guards that Git
+added in 2022: safe.directory,
+
+21
+00:01:26,363 --> 00:01:32,270
+safe.bareRepository and protocol.file.allow.
+And the places where "cloning is safe"
+
+22
+00:01:32,310 --> 00:01:38,287
+has had exceptions: recursive clones. Plus
+what hooks can and can't do as a control,
+
+23
+00:01:38,327 --> 00:01:39,792
+and what stars prove.
+
+24
+00:01:40,132 --> 00:01:45,160
+The demonstration uses a repository prepared
+by "somebody else" that contains a hook
+
+25
+00:01:45,200 --> 00:01:50,229
+and an alias. A hook is a file that Git runs
+at a defined point of a command, and an
+
+26
+00:01:50,269 --> 00:01:55,056
+alias is a short name you define for a
+command. Both are harmless here: the hook
+
+27
+00:01:55,096 --> 00:01:58,797
+appends a line to a log file,
+and the alias prints a sentence.
+
+28
+00:01:58,837 --> 00:02:01,995
+They stand for what a hostile
+author could put there.
+
+29
+00:02:02,035 --> 00:02:03,503
+Nothing hostile is shown.
+
+30
+00:02:05,343 --> 00:02:06,921
+Here's what you'll walk away with.
+
+31
+00:02:07,261 --> 00:02:08,674
+After this video you can:
+
+32
+00:02:09,014 --> 00:02:13,788
+explain why cloning an untrusted repository
+is generally safe and unpacking an
+
+33
+00:02:13,828 --> 00:02:15,146
+archive of one is not;
+
+34
+00:02:15,486 --> 00:02:20,323
+explain "dubious ownership" and what
+safe.directory does and should not be set to;
+
+35
+00:02:20,663 --> 00:02:25,801
+say what safe.bareRepository=explicit
+refuses and which attack it answers;
+
+36
+00:02:26,141 --> 00:02:31,022
+explain protocol.file.allow and the risk
+of a recursive clone of an untrusted
+
+37
+00:02:31,062 --> 00:02:31,725
+repository;
+
+38
+00:02:32,065 --> 00:02:34,900
+say what stars and popularity
+do and do not prove.
+
+39
+00:02:36,740 --> 00:02:41,772
+In one sentence. Cloning a repository copies
+its objects and refs and nothing that
+
+40
+00:02:41,812 --> 00:02:45,483
+Git would execute, so cloning
+and reading is generally safe.
+
+41
+00:02:45,523 --> 00:02:49,627
+Running Git inside a .git directory
+that somebody else wrote isn't.
+
+42
+00:02:49,667 --> 00:02:54,266
+Objects are the stored snapshots and
+files, and refs are the names, such as
+
+43
+00:02:54,306 --> 00:02:56,060
+branches, that point at them.
+
+44
+00:02:56,400 --> 00:03:01,101
+Precisely. Two kinds of file under
+.git can make Git execute a program.
+
+45
+00:03:01,441 --> 00:03:06,406
+Hooks: the files in .git/hooks, or
+wherever core.hooksPath points.
+
+46
+00:03:06,746 --> 00:03:12,555
+And configuration: .git/config. An alias
+beginning with an exclamation mark names a
+
+47
+00:03:12,595 --> 00:03:18,194
+shell command. So do core.pager, core.editor,
+core.fsmonitor, core.sshCommand, a
+
+48
+00:03:18,234 --> 00:03:22,634
+credential helper, a filter driver,
+and several other settings.
+
+49
+00:03:22,974 --> 00:03:26,294
+Git's manual states the rule
+in its SECURITY section.
+
+50
+00:03:26,334 --> 00:03:29,528
+Configuration and hooks
+aren't copied by git clone.
+
+51
+00:03:29,568 --> 00:03:34,854
+So cloning a remote repository with untrusted
+content and inspecting it with git log
+
+52
+00:03:34,894 --> 00:03:39,926
+is generally safe. Running Git commands
+in a .git directory, or the working tree
+
+53
+00:03:39,966 --> 00:03:43,223
+around it, that came from
+an untrusted source isn't.
+
+54
+00:03:43,263 --> 00:03:47,979
+And the documented way to get a clean
+copy of such a directory is git clone
+
+55
+00:03:48,019 --> 00:03:48,676
+--no-local.
+
+56
+00:03:49,016 --> 00:03:54,444
+Inside .git. A clone creates a new .git
+from the template directory of your own Git
+
+57
+00:03:54,484 --> 00:03:59,121
+installation. Its hooks directory
+holds only the inactive sample files.
+
+58
+00:03:59,161 --> 00:04:04,655
+Its config holds what git clone writes: the
+repository format, the origin remote and
+
+59
+00:04:04,695 --> 00:04:09,925
+the branch's upstream. From the source it
+receives objects, in a pack, and refs.
+
+60
+00:04:09,965 --> 00:04:11,309
+Nothing else crosses.
+
+61
+00:04:11,649 --> 00:04:15,434
+The three guards. Git added
+three standing defenses in 2022.
+
+62
+00:04:15,474 --> 00:04:20,663
+Each closes one way of getting you to run
+Git inside configuration that you didn't
+
+63
+00:04:20,703 --> 00:04:21,046
+write.
+
+64
+00:04:21,386 --> 00:04:25,993
+safe.directory. In one sentence: Git
+refuses to read the configuration of a
+
+65
+00:04:26,033 --> 00:04:31,197
+repository whose directory is owned by a
+different operating-system user, unless you
+
+66
+00:04:31,237 --> 00:04:33,366
+have listed that directory as safe.
+
+67
+00:04:33,706 --> 00:04:38,592
+Why it exists: Git discovers a repository
+by walking up from the current directory.
+
+68
+00:04:38,632 --> 00:04:43,578
+On a shared machine another user can create
+a .git directory high up, in a temporary
+
+69
+00:04:43,618 --> 00:04:48,089
+or scratch directory. Without this check,
+any Git command you run below that
+
+70
+00:04:48,129 --> 00:04:51,116
+directory would load their
+configuration and hooks.
+
+71
+00:04:51,456 --> 00:04:56,571
+The check compares the owner of the repository
+directory with the user running Git.
+
+72
+00:04:56,611 --> 00:04:59,800
+safe.directory lists
+exceptions. It is multi-valued.
+
+73
+00:04:59,840 --> 00:05:05,017
+It accepts a path ending in a star for
+everything under a directory, and a lone star
+
+74
+00:05:05,057 --> 00:05:10,110
+to switch the check off. And it's honored
+only in protected configuration: system,
+
+75
+00:05:10,150 --> 00:05:14,333
+global and command scope. So a
+repository can't declare itself safe.
+
+76
+00:05:14,673 --> 00:05:20,285
+safe.bareRepository. In one sentence:
+with the value explicit, Git uses a bare
+
+77
+00:05:20,325 --> 00:05:25,865
+repository only when you name it with
+--git-dir or GIT_DIR, never because you
+
+78
+00:05:25,905 --> 00:05:27,749
+happened to be inside one.
+
+79
+00:05:28,089 --> 00:05:33,125
+The attack it answers. A bare repository
+is a repository with no working tree: a
+
+80
+00:05:33,165 --> 00:05:38,137
+directory with HEAD, objects, refs and
+config, and it doesn't need to be called
+
+81
+00:05:38,177 --> 00:05:42,705
+.git. A project can therefore contain
+one as ordinary tracked files in a
+
+82
+00:05:42,745 --> 00:05:43,530
+subdirectory.
+
+83
+00:05:43,870 --> 00:05:47,662
+A clone does copy it, because to
+Git those are ordinary files.
+
+84
+00:05:47,702 --> 00:05:52,855
+If you then change into that subdirectory
+and run any Git command, Git discovers the
+
+85
+00:05:52,895 --> 00:05:58,047
+embedded bare repository and reads its
+config. So this is a way around the rule that
+
+86
+00:05:58,087 --> 00:06:00,210
+a clone doesn't copy configuration.
+
+87
+00:06:00,550 --> 00:06:05,383
+The default in Git 2.x is all. explicit
+will be the default in Git 3.0.
+
+88
+00:06:05,423 --> 00:06:10,736
+The textbook's advice: if you don't work
+inside bare repositories by hand, set
+
+89
+00:06:10,776 --> 00:06:12,245
+explicit globally now.
+
+90
+00:06:12,585 --> 00:06:17,911
+protocol.file.allow. In one sentence: since
+2022 the file transport defaults to the
+
+91
+00:06:17,951 --> 00:06:23,276
+policy user: you may use it directly, and
+commands that start a clone on their own,
+
+92
+00:06:23,316 --> 00:06:28,707
+such as submodule initialization, may not.
+A submodule is another repository checked
+
+93
+00:06:28,747 --> 00:06:30,711
+out in a subdirectory of yours.
+
+94
+00:06:31,051 --> 00:06:34,456
+The setting has three values:
+always, never and user.
+
+95
+00:06:34,496 --> 00:06:39,657
+The safe network protocols default to
+always, ext to never, and everything else,
+
+96
+00:06:39,697 --> 00:06:45,052
+file included, to user. The risk it closes:
+a .gitmodules file, the file that lists
+
+97
+00:06:45,092 --> 00:06:50,448
+each submodule's path and URL, that names
+a local path makes a recursive clone read
+
+98
+00:06:50,488 --> 00:06:53,958
+from a directory on your disk
+that the attacker chose.
+
+99
+00:06:54,298 --> 00:06:58,964
+Recursive clones. The textbook says the
+statement "cloning is safe" has had
+
+100
+00:06:59,004 --> 00:07:03,795
+exceptions, and they share a shape: a
+repository with submodules, cloned with
+
+101
+00:07:03,835 --> 00:07:08,876
+--recurse-submodules, tricks Git into
+writing a file where a hook is expected and
+
+102
+00:07:08,916 --> 00:07:13,644
+then running it. Each has a CVE number,
+its entry in the public catalogue of
+
+103
+00:07:13,684 --> 00:07:14,648
+vulnerabilities.
+
+104
+00:07:14,988 --> 00:07:20,449
+CVE-2024-32002, critical, fixed in
+2.45.1 and backports in May 2024: on a
+
+105
+00:07:20,489 --> 00:07:26,779
+case-insensitive filesystem with symbolic
+links, a submodule could write a hook into
+
+106
+00:07:26,819 --> 00:07:32,281
+.git that ran during the clone. The
+textbook notes that macOS meets those
+
+107
+00:07:32,321 --> 00:07:38,535
+conditions: its default filesystem is
+case-insensitive and supports symbolic links.
+
+108
+00:07:38,875 --> 00:07:45,446
+CVE-2025-48384, high, fixed in 2.50.1
+and backports in July 2025: a trailing
+
+109
+00:07:45,486 --> 00:07:52,491
+carriage return in a submodule path checked
+content out to an unintended location
+
+110
+00:07:52,531 --> 00:07:54,491
+where a hook could run.
+
+111
+00:07:54,831 --> 00:08:04,156
+CVE-2025-48385, fixed in 2.50.1 and backports:
+bundle URIs, which aren't enabled by
+
+112
+00:08:04,196 --> 00:08:05,059
+default.
+
+113
+00:08:05,399 --> 00:08:12,682
+And CVE-2024-52005, with the default changed
+in core Git 2.55: unfiltered terminal
+
+114
+00:08:12,722 --> 00:08:15,719
+escape sequences sent by a remote.
+
+115
+00:08:16,059 --> 00:08:21,226
+Where you stand: no core-Git advisory
+was published in 2026 up to the first of
+
+116
+00:08:21,266 --> 00:08:26,500
+October. Your Git 2.55.0 contains every
+published core fix, and so does Apple's
+
+117
+00:08:26,540 --> 00:08:32,042
+2.50.1. And the advisory for the second CVE
+names the standing workaround, which is
+
+118
+00:08:32,082 --> 00:08:37,316
+the rule to keep: don't recursively clone
+submodules of untrusted repositories.
+
+119
+00:08:37,656 --> 00:08:43,348
+Hooks as a control. The manual documents 28
+hooks, six of which run on the receiving
+
+120
+00:08:43,388 --> 00:08:48,944
+side of a push. Client-side hooks aren't
+cloned, and pre-commit and commit-msg are
+
+121
+00:08:48,984 --> 00:08:54,608
+skipped by --no-verify. Since Git 2.54 hooks
+can also be declared in configuration,
+
+122
+00:08:54,648 --> 00:09:00,067
+including global and system configuration,
+so the question "why did a hook run?"
+
+123
+00:09:00,107 --> 00:09:04,639
+is now answered with git hook list
+--show-scope and the event name.
+
+124
+00:09:04,979 --> 00:09:10,608
+Quick quiz. A team wants to stop a certain
+kind of commit, and installs a pre-commit
+
+125
+00:09:10,648 --> 00:09:15,805
+hook on every laptop. Is that a control?
+A, yes, it runs before every commit.
+
+126
+00:09:15,845 --> 00:09:18,910
+B, no, the committer can
+skip it. Your answer?
+
+127
+00:09:23,750 --> 00:09:28,582
+B. A client-side hook isn't a control,
+because the person it is meant to stop can
+
+128
+00:09:28,622 --> 00:09:29,064
+skip it.
+
+129
+00:09:29,404 --> 00:09:34,644
+Fake popularity. For an engineer who clones
+research code weekly, the textbook says,
+
+130
+00:09:34,684 --> 00:09:39,862
+the ecosystem is a larger risk than the
+client. Researchers documented a network of
+
+131
+00:09:39,902 --> 00:09:45,017
+more than 3,000 GitHub accounts that
+distributed malware through repositories made
+
+132
+00:09:45,057 --> 00:09:50,172
+to look popular. Hundreds of fake project
+repositories that stole about 5 bitcoin.
+
+133
+00:09:50,212 --> 00:09:55,390
+And about six million suspected fake stars.
+Each figure is from the source cited in
+
+134
+00:09:55,430 --> 00:10:00,545
+the section. The conclusion: stars, forks
+and a polished README aren't evidence of
+
+135
+00:10:00,585 --> 00:10:01,237
+legitimacy.
+
+136
+00:10:03,076 --> 00:10:08,256
+Analogy, from the textbook. A clone is a
+photocopy of a book: you get every page,
+
+137
+00:10:08,296 --> 00:10:13,411
+and none of the previous owner's sticky
+notes that say "when you open this, also
+
+138
+00:10:13,451 --> 00:10:18,631
+call this number". An unpacked archive
+that contains .git is the previous owner's
+
+139
+00:10:18,671 --> 00:10:22,110
+own copy, sticky notes
+included, and Git follows them.
+
+140
+00:10:22,450 --> 00:10:27,113
+The analogy breaks in one place, and it
+matters for an ML engineer more than for
+
+141
+00:10:27,153 --> 00:10:31,933
+most. The pages can still contain code that
+you later choose to run: a Makefile, a
+
+142
+00:10:31,973 --> 00:10:35,107
+notebook. Git protects you
+from Git running something.
+
+143
+00:10:35,147 --> 00:10:38,457
+It doesn't protect you from
+yourself running the project.
+
+144
+00:10:38,797 --> 00:10:41,503
+So there are three rings
+of trust, from inside out.
+
+145
+00:10:41,843 --> 00:10:47,489
+Reading: git clone, git log, git show,
+git diff. Git executes nothing the author
+
+146
+00:10:47,529 --> 00:10:47,915
+chose.
+
+147
+00:10:48,255 --> 00:10:52,566
+Git acting on the author's own metadata:
+an unpacked .git, an embedded bare
+
+148
+00:10:52,606 --> 00:10:57,438
+repository, a recursive clone. Here Git may
+execute or be steered by what the author
+
+149
+00:10:57,478 --> 00:10:57,786
+wrote.
+
+150
+00:10:58,126 --> 00:11:03,226
+And running the project: pip install
+-e ., make, a notebook's first cell.
+
+151
+00:11:03,266 --> 00:11:06,254
+That's the author's
+code, by your decision.
+
+152
+00:11:06,594 --> 00:11:10,181
+The four rules of the section
+follow from the rings.
+
+153
+00:11:10,221 --> 00:11:15,972
+One: clone. Don't unpack somebody else's
+.git. If you must, git clone --no-local it
+
+154
+00:11:16,012 --> 00:11:21,762
+first. Two: treat a recursive clone of an
+untrusted repository as running its code.
+
+155
+00:11:21,802 --> 00:11:25,669
+Clone without submodules, read
+.gitmodules, then decide.
+
+156
+00:11:25,709 --> 00:11:31,250
+Three: set safe.bareRepository to explicit,
+leave protocol.file.allow alone, and
+
+157
+00:11:31,290 --> 00:11:34,878
+never set safe.directory to
+a star on a workstation.
+
+158
+00:11:34,918 --> 00:11:40,598
+Four: cloning is the safe part. Read before
+you run, or run in a container without
+
+159
+00:11:40,638 --> 00:11:41,784
+your credentials.
+
+160
+00:11:43,624 --> 00:11:48,695
+Try it now, thirty seconds, on paper. Draw
+a source repository as a box with three
+
+161
+00:11:48,735 --> 00:11:52,185
+lines: objects and refs, the
+config file, and the hooks.
+
+162
+00:11:52,225 --> 00:11:56,111
+Draw one arrow labelled git clone,
+and a second labelled unzip.
+
+163
+00:11:56,151 --> 00:12:00,100
+For each arrow, which of the three
+lines cross? Say it out loud.
+
+164
+00:12:04,940 --> 00:12:09,084
+Check your arrows. With a clone,
+one line crosses: objects and refs.
+
+165
+00:12:09,124 --> 00:12:12,960
+Config and hooks stay behind.
+With an archive, all three cross.
+
+166
+00:12:13,000 --> 00:12:17,575
+That's the whole difference between the
+two versions of the intern's story.
+
+167
+00:12:19,415 --> 00:12:21,244
+Step 1: what the author has.
+
+168
+00:12:21,584 --> 00:12:26,048
+A post-checkout hook that appends
+a line to a log file inside .git.
+
+169
+00:12:26,088 --> 00:12:31,360
+And an alias, st, whose value begins with
+an exclamation mark: a shell command.
+
+170
+00:12:31,400 --> 00:12:33,377
+Both harmless, both stand-ins.
+
+171
+00:12:33,717 --> 00:12:35,346
+Step 2: clone it.
+
+172
+00:12:35,686 --> 00:12:39,771
+git clone --no-local is 🟢 SAFE:
+it creates a new repository.
+
+173
+00:12:39,811 --> 00:12:45,340
+--no-local forces the normal transport
+even for a path on the same disk, which is
+
+174
+00:12:45,380 --> 00:12:51,116
+what the manual prescribes for untrusted
+sources. git switch -c is 🟢 SAFE: it adds a
+
+175
+00:12:51,156 --> 00:12:56,754
+ref. In the clone: how many active hooks,
+is the alias defined, and does switching
+
+176
+00:12:56,794 --> 00:12:59,435
+branches run the hook? Say it out loud.
+
+177
+00:13:04,275 --> 00:13:08,398
+Zero active hooks. The alias
+lookup exits with 1: not defined.
+
+178
+00:13:08,438 --> 00:13:11,150
+And after a branch switch: "no hook ran".
+
+179
+00:13:11,490 --> 00:13:13,792
+Step 3: receive the same
+repository as an archive.
+
+180
+00:13:14,132 --> 00:13:19,662
+cp -R stands for what unpacking a zip or
+a tarball that includes .git gives you:
+
+181
+00:13:19,702 --> 00:13:23,769
+every file under .git arrives
+as written. Two Git commands.
+
+182
+00:13:23,809 --> 00:13:26,623
+What does each run? Make your prediction.
+
+183
+00:13:31,463 --> 00:13:35,625
+git st printed the author's sentence:
+it ran the author's shell command.
+
+184
+00:13:35,665 --> 00:13:39,185
+git switch ran the author's hook,
+and the log file proves it.
+
+185
+00:13:39,225 --> 00:13:43,912
+That's the intern's second story, with a
+harmless sentence in place of a program.
+
+186
+00:13:43,952 --> 00:13:48,172
+With a hostile archive those would
+have been any program, running as you.
+
+187
+00:13:48,512 --> 00:13:50,646
+Step 4: dubious ownership.
+
+188
+00:13:50,986 --> 00:13:55,789
+The sandbox can't change file ownership
+without sudo, so the transcript uses the
+
+189
+00:13:55,829 --> 00:13:59,905
+variable that Git's own test suite
+uses to simulate a foreign owner.
+
+190
+00:13:59,945 --> 00:14:04,930
+The real message appears in containers and
+CI, where the checkout is often owned by
+
+191
+00:14:04,970 --> 00:14:05,898
+another user ID.
+
+192
+00:14:06,238 --> 00:14:11,366
+"Detected dubious ownership", exit status
+128, and Git prints the command for an
+
+193
+00:14:11,406 --> 00:14:13,498
+exception for this one directory.
+
+194
+00:14:13,838 --> 00:14:19,350
+git config set --global --append safe.directory
+is 🟡 CAUTION: it makes Git trust
+
+195
+00:14:19,390 --> 00:14:24,971
+that directory's configuration and hooks.
+The preview is to read that directory's
+
+196
+00:14:25,011 --> 00:14:29,898
+.git/config and hooks first. After
+the exception is removed from global
+
+197
+00:14:29,938 --> 00:14:34,963
+configuration, a star is written into
+the repository's own configuration.
+
+198
+00:14:35,003 --> 00:14:38,641
+Does Git accept the repository
+then? Say it out loud.
+
+199
+00:14:43,481 --> 00:14:46,949
+With the exception in global
+configuration, status works.
+
+200
+00:14:46,989 --> 00:14:51,564
+With a star in the repository's own
+configuration: dubious ownership again.
+
+201
+00:14:51,604 --> 00:14:55,195
+The textbook calls the last
+three lines the important ones.
+
+202
+00:14:55,235 --> 00:14:59,995
+That file is exactly what Git declined
+to trust, so writing "trust me" into it
+
+203
+00:15:00,035 --> 00:15:04,117
+changes nothing. Almost everyone
+expects it to work the first time.
+
+204
+00:15:04,457 --> 00:15:06,980
+Step 5: an embedded bare repository.
+
+205
+00:15:07,320 --> 00:15:12,403
+git config set --global safe.bareRepository
+explicit is 🟡 CAUTION: global
+
+206
+00:15:12,443 --> 00:15:18,017
+configuration keeps no history, and the
+setting changes how later commands treat
+
+207
+00:15:18,057 --> 00:15:19,280
+bare repositories.
+
+208
+00:15:19,620 --> 00:15:24,521
+By default, changing into the bare
+repository is enough for Git to use it.
+
+209
+00:15:24,561 --> 00:15:28,326
+With explicit, Git refuses:
+"cannot use bare repository".
+
+210
+00:15:28,366 --> 00:15:33,868
+Naming it with --git-dir works. The script
+unsets the value again, because the labs
+
+211
+00:15:33,908 --> 00:15:36,405
+inspect the bare "server" with git -C.
+
+212
+00:15:36,745 --> 00:15:39,257
+Step 6: a clone you did not ask for.
+
+213
+00:15:39,597 --> 00:15:44,540
+A submodule whose URL is a local path.
+The setting isn't configured at all.
+
+214
+00:15:44,580 --> 00:15:46,865
+What happens? Make your prediction.
+
+215
+00:15:51,705 --> 00:15:56,548
+"Transport 'file' not allowed." The default
+policy let you use the file transport
+
+216
+00:15:56,588 --> 00:16:00,345
+yourself and refused it to a clone
+that Git started on its own.
+
+217
+00:16:00,385 --> 00:16:05,228
+The one-off -c on the command line is
+correct for a local experiment such as this
+
+218
+00:16:05,268 --> 00:16:08,965
+one. Setting it globally removes
+the guard. Leave the default.
+
+219
+00:16:10,805 --> 00:16:12,453
+Five mistakes to watch for.
+
+220
+00:16:12,793 --> 00:16:16,119
+Unpacking an archive that
+contains .git and working in it.
+
+221
+00:16:16,159 --> 00:16:20,530
+Root cause: every file under .git arrives
+as written, including the author's
+
+222
+00:16:20,570 --> 00:16:23,200
+configuration and hooks,
+and Git follows them.
+
+223
+00:16:23,540 --> 00:16:28,725
+Setting safe.directory to a star. Root
+cause: that switches the ownership check off
+
+224
+00:16:28,765 --> 00:16:33,823
+for every repository on the machine; list
+the one directory or fix the ownership.
+
+225
+00:16:34,163 --> 00:16:37,685
+Cloning an untrusted repository
+with --recurse-submodules.
+
+226
+00:16:37,725 --> 00:16:42,537
+Root cause: the published exceptions to
+"cloning is safe" share that shape; the
+
+227
+00:16:42,577 --> 00:16:44,748
+standing workaround is not to do it.
+
+228
+00:16:45,088 --> 00:16:50,107
+Relying on a client-side hook as a control.
+Root cause: hooks are not cloned, and
+
+229
+00:16:50,147 --> 00:16:54,167
+the person they are meant to stop
+can skip them with --no-verify.
+
+230
+00:16:54,507 --> 00:16:59,237
+Trusting a repository because it has many
+stars. Root cause: stars, forks and a
+
+231
+00:16:59,277 --> 00:17:03,525
+polished README can be manufactured
+and are not evidence of legitimacy.
+
+232
+00:17:05,365 --> 00:17:10,594
+Now, out of the lab. The textbook's case.
+An ML team receives a "reproduction
+
+233
+00:17:10,634 --> 00:17:15,110
+package" for a paper as a tarball
+that contains a full repository.
+
+234
+00:17:15,150 --> 00:17:20,858
+A shell prompt that shows the branch name
+runs git status as soon as someone changes
+
+235
+00:17:20,898 --> 00:17:26,401
+into the directory. And git status consults
+core.fsmonitor from the package's own
+
+236
+00:17:26,441 --> 00:17:27,222
+.git/config.
+
+237
+00:17:27,562 --> 00:17:30,903
+Nobody typed a Git command.
+Nobody ran the project.
+
+238
+00:17:30,943 --> 00:17:32,891
+Changing directory was enough.
+
+239
+00:17:33,231 --> 00:17:38,233
+The safe procedure is the manual's: git
+clone --no-local package clean, and work in
+
+240
+00:17:38,273 --> 00:17:42,606
+clean. The clone takes the objects
+and the refs, and leaves the author's
+
+241
+00:17:42,646 --> 00:17:47,587
+configuration and hooks behind. After that
+the team is in the first ring: reading.
+
+242
+00:17:47,627 --> 00:17:52,446
+Whether to enter the third ring and run
+the paper's code is a separate decision,
+
+243
+00:17:52,486 --> 00:17:56,516
+made after reading, or made inside
+a container without credentials.
+
+244
+00:17:58,356 --> 00:18:03,927
+Your turn. Do Exercise 30.1,
+"What could that have run?", in
+
+245
+00:18:03,967 --> 00:18:07,481
+exercises/m26-m31-actions-security.md.
+
+246
+00:18:07,821 --> 00:18:12,595
+For each situation in the exercise, before
+you answer, say which of the three rings
+
+247
+00:18:12,635 --> 00:18:17,178
+it is in: reading, Git acting on the
+author's metadata, or running the project.
+
+248
+00:18:17,218 --> 00:18:21,122
+Predict for each which file, if any,
+could cause a program to start.
+
+249
+00:18:21,462 --> 00:18:26,342
+The challenge is Exercise 30.7, "The
+reproduction package", in the same file.
+
+250
+00:18:28,182 --> 00:18:31,398
+Read the question on screen.
+Say your answer out loud.
+
+251
+00:18:36,238 --> 00:18:40,870
+A strong answer names the two kinds of
+file under .git that can make Git start a
+
+252
+00:18:40,910 --> 00:18:45,541
+program, with examples of each, and says
+what a clone creates in their place and
+
+253
+00:18:45,581 --> 00:18:50,388
+from where. It then describes what an
+unpacked copy contains and gives one ordinary
+
+254
+00:18:50,428 --> 00:18:55,059
+command that would trigger each kind. It
+names the documented way to get a clean
+
+255
+00:18:55,099 --> 00:18:59,731
+copy. The follow-up says that "cloning is
+safe" has had exceptions and asks what
+
+256
+00:18:59,771 --> 00:19:04,110
+shape they share and what standing rule
+follows. You have the table and the
+
+257
+00:19:04,150 --> 00:19:04,753
+workaround.
+
+258
+00:19:06,593 --> 00:19:07,520
+Let's land this.
+
+259
+00:19:07,860 --> 00:19:09,520
+You should now be able to say:
+
+260
+00:19:09,860 --> 00:19:15,011
+A clone copies objects and refs; hooks and
+configuration are not copied, so cloning
+
+261
+00:19:15,051 --> 00:19:16,887
+and reading is generally safe.
+
+262
+00:19:17,227 --> 00:19:22,459
+An unpacked .git brings the author's
+configuration and hooks; get a clean copy with
+
+263
+00:19:22,499 --> 00:19:23,793
+git clone --no-local.
+
+264
+00:19:24,133 --> 00:19:29,350
+safe.directory is the exception list for
+repositories owned by another user, honored
+
+265
+00:19:29,390 --> 00:19:34,356
+only in protected configuration, and never
+to be set to a star on a workstation.
+
+266
+00:19:34,696 --> 00:19:40,184
+safe.bareRepository=explicit refuses
+bare repositories that were not named
+
+267
+00:19:40,224 --> 00:19:46,460
+explicitly, and protocol.file.allow keeps
+Git from starting file-transport clones on
+
+268
+00:19:46,500 --> 00:19:47,058
+its own.
+
+269
+00:19:47,398 --> 00:19:52,233
+A recursive clone of an untrusted repository
+is to be treated as running its code,
+
+270
+00:19:52,273 --> 00:19:54,017
+and popularity proves nothing.
+
+271
+00:19:55,857 --> 00:20:01,224
+Read sections 21B.2 to
+21B.4 of Chapter 21B.
+
+272
+00:20:01,564 --> 00:20:06,422
+Today you watched the same repository
+arrive twice, as a clone and as an archive,
+
+273
+00:20:06,462 --> 00:20:11,380
+and you know which one runs the author's
+files. Replay that demo in the lab shell.
+
+274
+00:20:11,420 --> 00:20:14,767
+Next time: credentials, and
+what a stolen one can reach.
+
+275
+00:20:14,807 --> 00:20:17,911
+Until then, look at the
+state first and type second.
+
+276
+00:20:17,951 --> 00:20:19,362
+See you in the next one.

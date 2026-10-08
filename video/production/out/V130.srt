@@ -1,0 +1,939 @@
+1
+00:00:04,500 --> 00:00:10,999
+The release page says v0.3.0. The build
+machine runs git describe and prints v0.2.0,
+
+2
+00:00:11,039 --> 00:00:16,448
+dash one, dash a commit ID. Support
+asks which version customers have.
+
+3
+00:00:16,488 --> 00:00:19,561
+Your CTO asks: which one is the version?
+
+4
+00:00:19,901 --> 00:00:24,600
+Both are. A release and a tag are different
+objects made by different programs.
+
+5
+00:00:24,640 --> 00:00:29,158
+The release was created on the platform
+for a tag that did not exist, so the
+
+6
+00:00:29,198 --> 00:00:34,196
+platform made a tag, at whatever commit was
+at the tip of the default branch at that
+
+7
+00:00:34,236 --> 00:00:39,234
+second. Nobody chose that commit with git
+tag. And the build's git describe does not
+
+8
+00:00:39,274 --> 00:00:42,533
+count that kind of tag. Keep
+those two strings in mind.
+
+9
+00:00:42,573 --> 00:00:43,613
+You'll print both.
+
+10
+00:00:45,452 --> 00:00:49,158
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:49,198 --> 00:00:54,132
+You learned tags in Part 3: lightweight,
+a bare name for a commit, and annotated,
+
+12
+00:00:54,172 --> 00:00:58,799
+with its own object, tagger and message.
+They live under refs/tags/, and git
+
+13
+00:00:58,839 --> 00:01:03,711
+describe reads them. In video 115 you
+sorted "release" into the column of GitHub
+
+14
+00:01:03,751 --> 00:01:08,869
+objects and "tag" into the column of Git
+data. This video is the place where the two
+
+15
+00:01:08,909 --> 00:01:13,598
+columns touch, and where a platform
+action writes Git data that nobody typed.
+
+16
+00:01:13,938 --> 00:01:20,896
+One section, 15.12. Two replays:
+labs/ch15/tag-vs-release.sh, in which a plain git
+
+17
+00:01:20,936 --> 00:01:28,065
+tag on a bare repository stands in for what
+the platform does, and the replay of Lab
+
+18
+00:01:28,105 --> 00:01:34,295
+22.2. Then the walkthrough of Lab 22.2,
+Part B, on a practice repository.
+
+19
+00:01:34,635 --> 00:01:40,387
+Labels: git tag -a adds a tag object and a
+ref. git push origin <tag> publishes it.
+
+20
+00:01:40,427 --> 00:01:46,110
+gh release create is a state change on
+GitHub and, when the tag does not exist, on
+
+21
+00:01:46,150 --> 00:01:51,972
+the repository's refs. The textbook labels
+it 🔴 DANGEROUS without --verify-tag and 🟡
+
+22
+00:01:52,012 --> 00:01:55,879
+CAUTION with it, and I always
+show it with --verify-tag.
+
+23
+00:01:57,719 --> 00:01:59,132
+After this video you can:
+
+24
+00:01:59,472 --> 00:02:04,213
+Separate the tag, which is Git data, from
+the Release, which is a GitHub object.
+
+25
+00:02:04,553 --> 00:02:09,370
+Explain how creating a release can create
+a tag on the server, and of which kind.
+
+26
+00:02:09,710 --> 00:02:12,984
+Explain why git describe and
+the release page can disagree.
+
+27
+00:02:13,324 --> 00:02:16,455
+Cut a release from an annotated
+tag that was pushed first.
+
+28
+00:02:16,795 --> 00:02:20,217
+Say what an immutable release
+adds, as the section states it.
+
+29
+00:02:22,057 --> 00:02:25,618
+In one sentence: a tag is a
+Git ref that names a commit.
+
+30
+00:02:25,658 --> 00:02:30,699
+A release is a GitHub record that points
+at a tag name and adds a title, notes,
+
+31
+00:02:30,739 --> 00:02:31,728
+files and flags.
+
+32
+00:02:32,068 --> 00:02:37,526
+The Git side you know. The GitHub side,
+from the documentation: "Releases are based
+
+33
+00:02:37,566 --> 00:02:43,089
+on Git tags." A release adds a title, notes,
+uploaded assets and three flags: draft,
+
+34
+00:02:43,129 --> 00:02:46,467
+pre-release, latest. Managing
+releases needs Write.
+
+35
+00:02:46,807 --> 00:02:50,489
+Inside .git: a release leaves
+no trace in any clone.
+
+36
+00:02:50,529 --> 00:02:53,138
+The tag does, and only after a fetch.
+
+37
+00:02:53,478 --> 00:02:57,895
+Now the mechanism of the hook, on one
+branch. A tag was made on purpose, and
+
+38
+00:02:57,935 --> 00:03:00,182
+afterwards main moved on by one commit.
+
+39
+00:03:00,522 --> 00:03:05,145
+Creating a release can create the tag.
+The REST reference describes a field,
+
+40
+00:03:05,185 --> 00:03:10,236
+target_commitish, as the value "that
+determines where the Git tag is created from".
+
+41
+00:03:10,276 --> 00:03:15,021
+It is unused if the tag already exists,
+and it defaults to the default branch.
+
+42
+00:03:15,061 --> 00:03:20,051
+The GitHub CLI says the same about itself
+in its help text: "If a matching git tag
+
+43
+00:03:20,091 --> 00:03:25,143
+does not yet exist, one will automatically
+get created from the latest state of the
+
+44
+00:03:25,183 --> 00:03:26,125
+default branch."
+
+45
+00:03:26,465 --> 00:03:30,885
+Of which kind is that tag? The
+textbook is careful here, and so am I.
+
+46
+00:03:30,925 --> 00:03:35,798
+That a tag created by the release API
+is lightweight is an inference, marked
+
+47
+00:03:35,838 --> 00:03:41,164
+unverified: the CLI help tells you to create
+annotated tags yourself, and a lab has
+
+48
+00:03:41,204 --> 00:03:46,465
+you check with git cat-file -t. In the
+replay, a lightweight tag stands in for it.
+
+49
+00:03:46,805 --> 00:03:52,240
+Why would the kind matter? Because git
+describe uses annotated tags only, unless you
+
+50
+00:03:52,280 --> 00:03:57,454
+give --tags. Annotated tags are meant for
+releases, lightweight tags for private
+
+51
+00:03:57,494 --> 00:04:02,017
+labels. A lightweight tag has no tag
+object, no tagger and no message.
+
+52
+00:04:02,357 --> 00:04:06,886
+The prevention has an order. Create
+and push the annotated tag first.
+
+53
+00:04:06,926 --> 00:04:12,383
+Then create the release with --verify-tag,
+which aborts the release if the tag does
+
+54
+00:04:12,423 --> 00:04:17,946
+not already exist. The CLI's own help gives
+the procedure: "To create a release from
+
+55
+00:04:17,986 --> 00:04:23,244
+an annotated git tag, first create one
+locally with git, push the tag to GitHub,
+
+56
+00:04:23,284 --> 00:04:28,740
+then run this command." --notes-from-tag
+takes the release notes from the annotated
+
+57
+00:04:28,780 --> 00:04:29,668
+tag's message.
+
+58
+00:04:30,008 --> 00:04:35,355
+Generated notes. They list merged pull
+requests and contributors, and are configured
+
+59
+00:04:35,395 --> 00:04:40,229
+in .github/release.yml, where labels
+and authors can be excluded or grouped.
+
+60
+00:04:40,269 --> 00:04:44,591
+Their quality is the quality of your
+pull request titles and labels.
+
+61
+00:04:44,931 --> 00:04:49,785
+Immutable releases, generally available
+since the twenty-eighth of October 2025.
+
+62
+00:04:49,825 --> 00:04:54,618
+Once published: the tag is locked to its
+commit and cannot be deleted while the
+
+63
+00:04:54,658 --> 00:04:59,207
+release exists. Assets cannot be changed.
+The tag name can never be reused.
+
+64
+00:04:59,247 --> 00:05:03,979
+And a signed release attestation is
+generated, checked with gh release verify.
+
+65
+00:05:04,019 --> 00:05:08,139
+The documented order is: create a
+draft, attach the assets, publish.
+
+66
+00:05:08,479 --> 00:05:13,306
+Two more items the textbook marks unverified,
+which I repeat as unverified: what
+
+67
+00:05:13,346 --> 00:05:18,172
+happens to a release when its tag is
+deleted, and whether immutable releases are
+
+68
+00:05:18,212 --> 00:05:22,917
+limited to certain plans, are not stated
+in the documentation the course read.
+
+69
+00:05:23,257 --> 00:05:28,257
+The recovery, when the wrong thing has
+happened: decide which commit is the version.
+
+70
+00:05:28,297 --> 00:05:31,976
+Then either describe with --tags,
+or replace the tag properly.
+
+71
+00:05:32,016 --> 00:05:36,955
+And the root-cause box adds that a new
+annotated tag under a new name is safer than
+
+72
+00:05:36,995 --> 00:05:37,615
+moving one.
+
+73
+00:05:40,955 --> 00:05:47,159
+git tag -a then git push origin v0.2.0:
+locally, a tag ref and a tag object.
+
+74
+00:05:47,199 --> 00:05:54,060
+On the remote, both are created. On GitHub,
+the tag is listed and no release exists.
+
+75
+00:05:54,100 --> 00:06:00,469
+gh release create v0.2.0 --verify-tag
+--generate-notes: nothing changes in Git
+
+76
+00:06:00,509 --> 00:06:05,891
+anywhere, and GitHub gains a release
+pointing at the existing tag.
+
+77
+00:06:09,231 --> 00:06:15,609
+gh release create v0.3.0 when no such tag
+exists: your clone is unchanged until you
+
+78
+00:06:15,649 --> 00:06:21,718
+fetch. The remote gains a tag created
+from the default branch or from --target.
+
+79
+00:06:21,758 --> 00:06:28,136
+GitHub has a release, and a tag you did not
+make. gh release delete: the tag stays,
+
+80
+00:06:28,176 --> 00:06:32,389
+unless --cleanup-tag is given,
+and the release is gone.
+
+81
+00:06:32,729 --> 00:06:37,318
+Quick quiz on that last row, from
+memory now that the table is gone.
+
+82
+00:06:37,358 --> 00:06:41,403
+gh release delete, no other
+option: what happens to the tag?
+
+83
+00:06:41,443 --> 00:06:44,194
+A: deleted too. B: it stays. Your answer?
+
+84
+00:06:49,034 --> 00:06:52,613
+B. The release is GitHub's record,
+the tag is Git data, and it stays.
+
+85
+00:06:54,453 --> 00:06:58,085
+The textbook's analogy: a tag is
+the mark stamped on a casting.
+
+86
+00:06:58,125 --> 00:07:02,398
+A release is the catalogue page for
+it, with a description and a download.
+
+87
+00:07:02,438 --> 00:07:05,487
+The page can be rewritten
+without touching the metal.
+
+88
+00:07:05,827 --> 00:07:10,513
+The analogy breaks in one dangerous place:
+asking for a page for a mark that does
+
+89
+00:07:10,553 --> 00:07:15,356
+not exist makes the platform stamp the mark
+for you, on whatever is at the front of
+
+90
+00:07:15,396 --> 00:07:15,881
+the line.
+
+91
+00:07:16,221 --> 00:07:20,927
+So the discipline is the order of work.
+Stamp first, by hand, on the casting you
+
+92
+00:07:20,967 --> 00:07:25,672
+chose. Then ask for the page, and tell
+the catalogue to refuse if it cannot find
+
+93
+00:07:25,712 --> 00:07:26,325
+your stamp.
+
+94
+00:07:26,665 --> 00:07:31,697
+Try it now, thirty seconds, on paper: write
+the three commands of a release, in that
+
+95
+00:07:31,737 --> 00:07:32,724
+order. I'll wait.
+
+96
+00:07:37,564 --> 00:07:43,894
+git tag -a, then git push origin with the
+tag name, then gh release create with
+
+97
+00:07:43,934 --> 00:07:44,942
+--verify-tag.
+
+98
+00:07:46,782 --> 00:07:52,601
+On the left, Git. The first tag goes
+through a tag object, db476fe, which has a
+
+99
+00:07:52,641 --> 00:07:58,683
+tagger, a date and a message, to commit
+bf7889c. The second tag points directly at
+
+100
+00:07:58,723 --> 00:08:01,427
+commit 89837fa: no object in between.
+
+101
+00:08:01,767 --> 00:08:06,717
+On the right, the platform. Two release
+records, each pointing at a tag name.
+
+102
+00:08:06,757 --> 00:08:08,986
+Nothing on the right is in a clone.
+
+103
+00:08:09,326 --> 00:08:15,581
+At the bottom, the hook as two commands.
+git describe counts from the nearest
+
+104
+00:08:15,621 --> 00:08:22,204
+annotated tag: v0.2.0, one commit later.
+With --tags it sees the lightweight one:
+
+105
+00:08:22,244 --> 00:08:22,776
+v0.3.0.
+
+106
+00:08:23,116 --> 00:08:27,923
+Read the root-cause line: the release was
+created for a tag that did not exist, so
+
+107
+00:08:27,963 --> 00:08:31,587
+the platform created the tag at
+the tip of the default branch.
+
+108
+00:08:35,927 --> 00:08:40,579
+You create an annotated tag on the tip of
+the branch and push it, the way a release
+
+109
+00:08:40,619 --> 00:08:41,597
+is cut on purpose.
+
+110
+00:08:43,937 --> 00:08:49,403
+One tag was pushed. How many lines will
+git ls-remote --tags print for it?
+
+111
+00:08:49,743 --> 00:08:56,207
+Two lines for one tag: the tag object, and
+with the ^{} suffix the commit it points
+
+112
+00:08:56,247 --> 00:08:56,442
+at.
+
+113
+00:08:56,782 --> 00:09:02,050
+Then Asha merges one more commit. Then
+someone creates a release v0.3.0 on the
+
+114
+00:09:02,090 --> 00:09:07,359
+platform, without creating a tag first.
+A plain git tag on the bare repository
+
+115
+00:09:07,399 --> 00:09:10,830
+stands in for what the
+platform does at that point.
+
+116
+00:09:11,170 --> 00:09:16,785
+The server has a tag that your clone has
+never seen: git tag --list still shows one.
+
+117
+00:09:16,825 --> 00:09:22,104
+And for the new tag there is one line
+this time: no tag object, only a ref that
+
+118
+00:09:22,144 --> 00:09:27,154
+names a commit. Predict: after a fetch,
+how many tags will your clone list?
+
+119
+00:09:27,194 --> 00:09:28,231
+Say it out loud.
+
+120
+00:09:33,071 --> 00:09:35,641
+Two. The fetch brings
+the commit and the tag.
+
+121
+00:09:35,981 --> 00:09:42,308
+Two kinds, in one listing. v0.2.0 has object
+type tag, a tagger and its own message.
+
+122
+00:09:42,348 --> 00:09:48,068
+v0.3.0 has object type commit, an empty
+tagger, and the subject shown is the
+
+123
+00:09:48,108 --> 00:09:48,751
+commit's.
+
+124
+00:09:51,091 --> 00:09:56,980
+The tip of main carries the tag v0.3.0.
+What does plain git describe print?
+
+125
+00:09:57,320 --> 00:10:05,422
+v0.2.0-1-g89837fa: one commit
+after the last annotated tag.
+
+126
+00:10:05,462 --> 00:10:08,182
+With --tags: v0.3.0.
+
+127
+00:10:08,522 --> 00:10:13,030
+Both are true statements about the same
+commit. That's the build log and the release
+
+128
+00:10:13,070 --> 00:10:14,058
+page from the hook.
+
+129
+00:10:16,898 --> 00:10:21,947
+An annotated tag is an object of its own:
+type tag, and inside it the object it
+
+130
+00:10:21,987 --> 00:10:25,683
+names, the type, the tag name,
+the tagger and the message.
+
+131
+00:10:26,023 --> 00:10:31,067
+What a release would point at: the tag
+ref, of type tag, peeled to a commit.
+
+132
+00:10:31,107 --> 00:10:35,416
+On GitHub the next step is the
+release command with --verify-tag.
+
+133
+00:10:35,756 --> 00:10:40,175
+Say what each line creates and where. The
+tag: an object and a ref in your clone.
+
+134
+00:10:40,215 --> 00:10:44,744
+The push: the same two on the server.
+According to the documentation the tag is now
+
+135
+00:10:44,784 --> 00:10:48,268
+listed on the repository's tags
+page, and no release exists yet.
+
+136
+00:10:48,608 --> 00:10:53,831
+gh release create: a GitHub object and
+nothing in Git, because --verify-tag found
+
+137
+00:10:53,871 --> 00:10:59,290
+the tag. In the browser, the releases page
+shows the title, the notes taken from the
+
+138
+00:10:59,330 --> 00:11:02,734
+tag message, and the source
+archives GitHub attaches.
+
+139
+00:11:02,774 --> 00:11:07,673
+Finally git ls-remote --tags: predict
+the number of lines before you run it.
+
+140
+00:11:08,013 --> 00:11:12,993
+The lab then has you create a release first,
+for a tag that does not exist, look at
+
+141
+00:11:13,033 --> 00:11:16,743
+the tag the platform made with
+git cat-file -t, and repair it.
+
+142
+00:11:16,783 --> 00:11:21,037
+Record what you find: it is the
+observation behind the unverified note.
+
+143
+00:11:22,877 --> 00:11:24,525
+Five mistakes to watch for.
+
+144
+00:11:24,865 --> 00:11:29,069
+Creating a release in the web interface
+for a version that has no tag.
+
+145
+00:11:29,109 --> 00:11:34,162
+Root cause: the platform creates the tag,
+from the default branch unless a target is
+
+146
+00:11:34,202 --> 00:11:36,891
+given, at a commit nobody
+chose with git tag.
+
+147
+00:11:37,231 --> 00:11:41,756
+Deriving a version with git describe
+and wondering why a tag is ignored.
+
+148
+00:11:41,796 --> 00:11:46,448
+Root cause: git describe uses annotated
+tags only, unless --tags is given.
+
+149
+00:11:46,788 --> 00:11:50,886
+Deleting a release to "undo" it
+and assuming the tag is gone.
+
+150
+00:11:50,926 --> 00:11:55,974
+Root cause: gh release delete leaves
+the tag unless --cleanup-tag is given.
+
+151
+00:11:56,314 --> 00:12:00,939
+Expecting release notes, assets or the
+"latest" flag in a clone or a mirror.
+
+152
+00:12:00,979 --> 00:12:05,051
+Root cause: a release is a GitHub
+object; only the tag is Git data.
+
+153
+00:12:05,391 --> 00:12:10,508
+Moving a published tag to fix a wrong
+release. Root cause: clones that fetched the
+
+154
+00:12:10,548 --> 00:12:14,470
+old tag keep it; a new annotated
+tag under a new name is safer.
+
+155
+00:12:16,310 --> 00:12:21,448
+Now, out of the lab. A workflow builds a
+container image for an inference service
+
+156
+00:12:21,488 --> 00:12:26,371
+whenever a tag matching v* is pushed,
+and derives the version string with git
+
+157
+00:12:26,411 --> 00:12:31,293
+describe. A product manager creates
+"v1.9.0" in the web interface on a Friday
+
+158
+00:12:31,333 --> 00:12:36,599
+evening. The tag lands on whatever main was
+at that second, the workflow fires, and
+
+159
+00:12:36,639 --> 00:12:41,905
+the version string inside the artifact is
+wrong, because the tag is lightweight and
+
+160
+00:12:41,945 --> 00:12:45,805
+git describe reports the previous
+annotated tag plus a count.
+
+161
+00:12:46,145 --> 00:12:49,702
+The textbook names three
+controls that close the gap.
+
+162
+00:12:49,742 --> 00:12:55,405
+A tag ruleset that restricts who may create
+v* tags, which is three videos from now.
+
+163
+00:12:55,445 --> 00:13:01,039
+--verify-tag in every release script. And
+immutable releases for anything you ship.
+
+164
+00:13:01,379 --> 00:13:06,186
+The team adds a fourth, procedural one,
+which is this video's lab in one line: the
+
+165
+00:13:06,226 --> 00:13:10,974
+release engineer creates and pushes the
+annotated tag, and the release is created
+
+166
+00:13:11,014 --> 00:13:11,447
+from it.
+
+167
+00:13:13,287 --> 00:13:17,391
+Your turn. Do Lab 22.2, "A release
+from an annotated tag", in
+
+168
+00:13:17,431 --> 00:13:23,029
+lab-manual/m22-merge-methods-releases.md.
+Before each git ls-remote --tags, predict
+
+169
+00:13:23,069 --> 00:13:28,532
+the number of lines and what each names.
+Before the failure scenario, predict the
+
+170
+00:13:28,572 --> 00:13:33,966
+object type of the tag the platform will
+create and what git describe will print
+
+171
+00:13:34,006 --> 00:13:36,412
+afterwards, with and without --tags.
+
+172
+00:13:36,752 --> 00:13:43,644
+The challenge is Exercise 22.5, "The
+release that does not contain its fix", in
+
+173
+00:13:43,684 --> 00:13:46,101
+exercises/m19-m25-github.md.
+
+174
+00:13:47,941 --> 00:13:51,239
+Question 227 of the CTO question bank:
+
+175
+00:13:53,579 --> 00:13:58,292
+Answer out loud. A strong answer puts each
+of the two in its layer and says what
+
+176
+00:13:58,332 --> 00:14:03,044
+travels with a clone. It describes the
+sequence that makes the platform create a
+
+177
+00:14:03,084 --> 00:14:07,855
+tag, where that tag is placed, and why a
+build's version string can then disagree
+
+178
+00:14:07,895 --> 00:14:12,667
+with the release page. For prevention it
+gives the order of operations, the flag,
+
+179
+00:14:12,707 --> 00:14:17,419
+and at least one platform control, and it
+is honest about what the documentation
+
+180
+00:14:17,459 --> 00:14:18,310
+does not state.
+
+181
+00:14:20,150 --> 00:14:25,406
+Let's land this. A tag is Git's, a release
+is GitHub's, and the order of work keeps
+
+182
+00:14:25,446 --> 00:14:26,555
+them in agreement.
+
+183
+00:14:26,895 --> 00:14:28,554
+You should now be able to say:
+
+184
+00:14:28,894 --> 00:14:33,835
+A tag is a ref, lightweight or annotated;
+a release is a GitHub record that points
+
+185
+00:14:33,875 --> 00:14:34,686
+at a tag name.
+
+186
+00:14:35,026 --> 00:14:39,339
+Creating a release for a tag that does not
+exist makes the platform create the tag,
+
+187
+00:14:39,379 --> 00:14:41,909
+from the default branch
+unless a target is given.
+
+188
+00:14:42,249 --> 00:14:46,828
+git describe counts annotated tags only,
+so it can disagree with the release page.
+
+189
+00:14:47,168 --> 00:14:52,754
+The order is: annotated tag, push,
+then gh release create --verify-tag.
+
+190
+00:14:53,094 --> 00:14:57,698
+An immutable release locks the tag to its
+commit, fixes the assets, and adds an
+
+191
+00:14:57,738 --> 00:14:58,403
+attestation.
+
+192
+00:15:00,243 --> 00:15:03,345
+Read section 15.12 of Chapter 15.
+
+193
+00:15:03,685 --> 00:15:08,117
+You can now cut a release on the commit
+you chose. Practise with Lab 22.2.
+
+194
+00:15:08,157 --> 00:15:13,013
+Next: rulesets, layering and bypass. Until
+then, look at the state first and type
+
+195
+00:15:13,053 --> 00:15:14,947
+second. See you in the next one.

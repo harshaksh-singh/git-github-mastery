@@ -1,0 +1,1220 @@
+1
+00:00:04,500 --> 00:00:09,203
+A reviewer approves a pull request, a proposal
+to merge one branch into another, for
+
+2
+00:00:09,243 --> 00:00:12,705
+that reason. The three commits
+carry her name and her address.
+
+3
+00:00:12,745 --> 00:00:16,319
+A compromised contributor account
+authored them under her email.
+
+4
+00:00:16,359 --> 00:00:20,215
+The reviewer looked at a displayed
+identity and took it for evidence.
+
+5
+00:00:20,555 --> 00:00:25,139
+In the next twenty-four minutes you'll
+forge an author yourself, in the sandbox,
+
+6
+00:00:25,179 --> 00:00:29,706
+push the forgery to a server that accepts
+it without comment, and then find out
+
+7
+00:00:29,746 --> 00:00:34,446
+exactly which check catches an unsigned
+forgery, which check catches a signed one,
+
+8
+00:00:34,486 --> 00:00:38,550
+and which popular check catches
+neither. Keep that third check in mind.
+
+9
+00:00:38,590 --> 00:00:40,400
+It's the last thing in the demo.
+
+10
+00:00:40,740 --> 00:00:45,232
+This is a defensive video. You need to
+see how little it takes, so that you stop
+
+11
+00:00:45,272 --> 00:00:48,404
+trusting the author line and
+know what to trust instead.
+
+12
+00:00:50,244 --> 00:00:53,807
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:53,847 --> 00:00:58,767
+In the last video you signed a commit, one
+saved snapshot of a project, and verified
+
+14
+00:00:58,807 --> 00:01:02,901
+it. A signature is made with a key,
+over the bytes of that one object.
+
+15
+00:01:02,941 --> 00:01:06,208
+You learned that a good
+signature is a fact about a key.
+
+16
+00:01:06,248 --> 00:01:09,692
+This video draws the boundary
+of that fact from both sides.
+
+17
+00:01:10,032 --> 00:01:14,541
+First, identity without signatures: the
+author and committer lines are assertions,
+
+18
+00:01:14,581 --> 00:01:19,146
+and neither Git nor a push checks them.
+Second, what a signature covers: every byte
+
+19
+00:01:19,186 --> 00:01:23,585
+in the object, and nothing outside it.
+Not the refs, not later rewrites, not the
+
+20
+00:01:23,625 --> 00:01:27,801
+push. Third, the forgery again in a
+repository where everyone signs, and the
+
+21
+00:01:27,841 --> 00:01:31,352
+difference between verifying a
+signature and enforcing a policy.
+
+22
+00:01:31,692 --> 00:01:36,138
+The scripts signature-scope and spoof-signed
+generate fresh keys, so they're
+
+23
+00:01:36,178 --> 00:01:40,329
+volatile: your IDs and key fingerprints
+differ from the ones on screen.
+
+24
+00:01:40,369 --> 00:01:44,107
+The other two are deterministic,
+and their IDs equal the book's.
+
+25
+00:01:45,947 --> 00:01:47,525
+Here's what you'll walk away with.
+
+26
+00:01:47,865 --> 00:01:49,278
+After this video you can:
+
+27
+00:01:49,618 --> 00:01:54,226
+show that anyone can commit under any
+author name and address, and that a server
+
+28
+00:01:54,266 --> 00:01:54,865
+accepts it;
+
+29
+00:01:55,205 --> 00:01:59,788
+list what a signature does not cover:
+refs, later rewrites, the push;
+
+30
+00:02:00,128 --> 00:02:02,870
+explain what happens to
+signatures in a rebase;
+
+31
+00:02:03,210 --> 00:02:07,540
+tell an unsigned forgery from a signed
+forgery and say which check catches each;
+
+32
+00:02:07,880 --> 00:02:13,294
+enforce a signature policy at merge time
+with --verify-signatures, and say what that
+
+33
+00:02:13,334 --> 00:02:14,722
+option does not check.
+
+34
+00:02:16,562 --> 00:02:21,082
+Identity. In one sentence: the author and
+committer of a commit are two lines of
+
+35
+00:02:21,122 --> 00:02:25,699
+text that the person running Git supplies,
+and neither Git nor a push checks them
+
+36
+00:02:25,739 --> 00:02:26,668
+against anything.
+
+37
+00:02:27,008 --> 00:02:31,221
+Precisely. git commit takes the
+author from the environment variables
+
+38
+00:02:31,261 --> 00:02:35,966
+GIT_AUTHOR_NAME and GIT_AUTHOR_EMAIL,
+or from --author, or from user.name and
+
+39
+00:02:36,006 --> 00:02:40,835
+user.email. It takes the committer from
+the GIT_COMMITTER variables or the same
+
+40
+00:02:40,875 --> 00:02:45,889
+configuration. Those strings become the
+author and committer headers of the commit
+
+41
+00:02:45,929 --> 00:02:48,354
+object and are covered by the commit ID.
+
+42
+00:02:48,694 --> 00:02:53,039
+The transport authenticates the pusher. It
+doesn't compare the pusher with the names
+
+43
+00:02:53,079 --> 00:02:57,215
+inside the commits being pushed, and the
+textbook adds that it couldn't: pushing
+
+44
+00:02:57,255 --> 00:03:01,392
+other people's commits is what a merge,
+a rebase and a cherry-pick do every day.
+
+45
+00:03:01,432 --> 00:03:04,054
+There's no bug here to fix.
+The design requires it.
+
+46
+00:03:04,394 --> 00:03:07,526
+Not every use of another
+person's name is a forgery.
+
+47
+00:03:07,566 --> 00:03:12,468
+--author changes one field and leaves you
+as committer, which is how a patch from
+
+48
+00:03:12,508 --> 00:03:17,470
+someone else is honestly recorded. The
+forgery is the claim of both fields, and to
+
+49
+00:03:17,510 --> 00:03:19,972
+Git the two cases are the same operation.
+
+50
+00:03:20,312 --> 00:03:25,494
+What a signature covers. Everything in the
+object. Tree, parents, author, committer,
+
+51
+00:03:25,534 --> 00:03:30,716
+dates and message are all signed bytes.
+Through the tree and parent IDs, a signature
+
+52
+00:03:30,756 --> 00:03:33,327
+vouches for every file and every ancestor.
+
+53
+00:03:33,667 --> 00:03:36,837
+What it does not cover.
+Nothing outside the object.
+
+54
+00:03:36,877 --> 00:03:38,410
+Three things matter most.
+
+55
+00:03:38,750 --> 00:03:43,931
+Refs aren't signed. A ref is a name, such
+as a branch or a tag, that points at an
+
+56
+00:03:43,971 --> 00:03:49,023
+object. Which branch or tag name points
+at the object isn't part of the object.
+
+57
+00:03:49,063 --> 00:03:53,535
+A signed commit stays validly signed
+on any branch, in any repository.
+
+58
+00:03:53,575 --> 00:03:58,176
+Anyone who can push can serve your
+signed tag object under another name.
+
+59
+00:03:58,216 --> 00:04:03,526
+The object still says its original tag name
+inside, which is why a careful verifier
+
+60
+00:04:03,566 --> 00:04:06,427
+compares that name with
+the one it asked for.
+
+61
+00:04:06,767 --> 00:04:12,312
+Quick quiz. A colleague rebases your two
+signed commits, and signs while doing it.
+
+62
+00:04:12,352 --> 00:04:15,923
+Whose key is on the new
+commits? A, yours. B, theirs.
+
+63
+00:04:15,963 --> 00:04:16,740
+Your answer?
+
+64
+00:04:21,580 --> 00:04:26,225
+B, theirs. Rewrites aren't covered. Amend,
+rebase and cherry-pick, three commands
+
+65
+00:04:26,265 --> 00:04:31,025
+that replace or copy commits, write new
+commits. The new commits are signed only if
+
+66
+00:04:31,065 --> 00:04:35,594
+the person running the command signs, and
+then with their key, not the original
+
+67
+00:04:35,634 --> 00:04:36,115
+author's.
+
+68
+00:04:36,455 --> 00:04:40,694
+The push isn't covered. Who pushed
+is known only to the server's logs.
+
+69
+00:04:41,034 --> 00:04:45,501
+Key lifetime and revocation. An allowed-signers
+entry can carry valid-after and
+
+70
+00:04:45,541 --> 00:04:49,952
+valid-before. Git passes the committer
+date of the object as the time to check
+
+71
+00:04:49,992 --> 00:04:53,547
+against. And the committer date
+is whatever the committer says.
+
+72
+00:04:53,587 --> 00:04:58,226
+So validity windows let you rotate keys
+without invalidating old signatures, which
+
+73
+00:04:58,266 --> 00:05:03,019
+is what the manual offers them for. They
+don't protect against a stolen key, because
+
+74
+00:05:03,059 --> 00:05:04,560
+the thief chooses the date.
+
+75
+00:05:04,900 --> 00:05:09,791
+For a stolen key there's the revocation
+file, gpg.ssh.revocationFile.
+
+76
+00:05:09,831 --> 00:05:15,723
+A revoked key fails for every date, including
+all the honest signatures made before
+
+77
+00:05:15,763 --> 00:05:17,724
+the theft. That's the price.
+
+78
+00:05:18,064 --> 00:05:23,290
+Verification is not policy. git verify-commit
+verifies a signature against the list
+
+79
+00:05:23,330 --> 00:05:27,605
+of trusted keys. It doesn't compare
+the signer with the author line.
+
+80
+00:05:27,645 --> 00:05:30,905
+That comparison is a policy,
+and you have to run it.
+
+81
+00:05:30,945 --> 00:05:35,854
+And git merge --verify-signatures isn't
+that policy either: the manual says it
+
+82
+00:05:35,894 --> 00:05:39,471
+verifies "the tip commit of
+the side branch". One commit.
+
+83
+00:05:39,811 --> 00:05:45,222
+When not to rely on it. From section 14B.20:
+a signature is evidence about a key.
+
+84
+00:05:45,262 --> 00:05:50,876
+A passphrase-less key on a laptop, a key
+copied into CI, or a shared team key reduce
+
+85
+00:05:50,916 --> 00:05:55,116
+"signed by Asha" to "signed by
+something that had Asha's file".
+
+86
+00:05:56,956 --> 00:06:02,039
+Analogy, from section 21B.5. The author
+line is the return address on an envelope.
+
+87
+00:06:02,079 --> 00:06:06,038
+The postal service delivers the
+letter whatever you write there.
+
+88
+00:06:06,078 --> 00:06:11,286
+A signature is the wax seal: it proves which
+seal pressed the wax, and it still says
+
+89
+00:06:11,326 --> 00:06:14,097
+nothing about what the
+letter asks you to do.
+
+90
+00:06:14,437 --> 00:06:19,038
+Where it breaks: a wax seal sits on the
+outside and you can look at it without
+
+91
+00:06:19,078 --> 00:06:24,036
+opening anything. A Git signature is inside
+the object and covers the return address
+
+92
+00:06:24,076 --> 00:06:29,033
+too. So a signed commit does protect its
+author line against later change by a third
+
+93
+00:06:29,073 --> 00:06:33,674
+party. What it can't do is make the author
+line true at the moment of signing.
+
+94
+00:06:33,714 --> 00:06:34,983
+The signer wrote both.
+
+95
+00:06:35,323 --> 00:06:39,424
+The textbook separates four questions
+that hide behind "who made this commit".
+
+96
+00:06:39,764 --> 00:06:43,257
+Who is displayed? Answered by
+email matching, on GitHub.
+
+97
+00:06:43,297 --> 00:06:45,969
+Forgeable by someone
+with push access: yes.
+
+98
+00:06:46,309 --> 00:06:51,250
+Who pushed it? Answered by the authenticated
+credential, recorded in the Activity
+
+99
+00:06:51,290 --> 00:06:56,353
+view and the audit log, on GitHub. Forgeable:
+no, but a stolen credential pushes as
+
+100
+00:06:56,393 --> 00:06:56,968
+its owner.
+
+101
+00:06:57,308 --> 00:07:01,191
+Who signed it? Answered by a
+signature verified against a key.
+
+102
+00:07:01,231 --> 00:07:05,620
+Git locally, GitHub for display.
+Forgeable: only with the private key.
+
+103
+00:07:05,960 --> 00:07:11,478
+What's enforced? Answered by a rule that
+rejects unsigned or unverified commits, on
+
+104
+00:07:11,518 --> 00:07:12,952
+GitHub. Forgeable: no.
+
+105
+00:07:13,292 --> 00:07:17,999
+When someone asks you "who made this commit",
+answer with those four, in that order,
+
+106
+00:07:18,039 --> 00:07:20,146
+and say which layer gives each answer.
+
+107
+00:07:20,487 --> 00:07:25,680
+Try it now, thirty seconds, on paper. Draw
+two boxes, "signed" and "not signed".
+
+108
+00:07:25,720 --> 00:07:31,044
+Sort these five into them: the tree, the
+author line, the branch name, who pushed,
+
+109
+00:07:31,084 --> 00:07:33,399
+and the review approvals. I'll wait.
+
+110
+00:07:39,739 --> 00:07:43,148
+Check your paper. The tree and
+the author line are signed bytes.
+
+111
+00:07:43,188 --> 00:07:46,867
+The branch name, the pusher and the
+approvals are outside the object.
+
+112
+00:07:46,907 --> 00:07:51,339
+Now read the last line of the right box
+twice. The author line is inside the signed
+
+113
+00:07:51,379 --> 00:07:55,381
+bytes, and whether it's true is outside
+them. Both statements hold at once.
+
+114
+00:07:57,221 --> 00:07:59,007
+Step 1: assert anything.
+
+115
+00:07:59,347 --> 00:08:03,877
+git commit adds an object and moves the
+branch. Four environment variables.
+
+116
+00:08:03,917 --> 00:08:08,997
+Will Git ask for anything, warn about
+anything, or record anything that says the lab
+
+117
+00:08:09,037 --> 00:08:11,374
+user made this commit? Say it out loud.
+
+118
+00:08:16,214 --> 00:08:19,035
+Commit 42f5693: author Asha,
+committer Asha, signature N.
+
+119
+00:08:19,075 --> 00:08:21,946
+Nothing else distinguishes this
+commit from one Asha made.
+
+120
+00:08:22,286 --> 00:08:27,310
+The object is unremarkable. Tree,
+parent, two lines of text, a message.
+
+121
+00:08:27,650 --> 00:08:33,250
+Step 2: the same on a shared repository.
+Replay labs/run ch14b/spoof-author, an
+
+122
+00:08:33,290 --> 00:08:35,534
+inference gateway with a server.
+
+123
+00:08:35,874 --> 00:08:38,954
+Asha has one genuine commit, 39f0449.
+
+124
+00:08:39,294 --> 00:08:42,932
+--author changed one field.
+You're still the committer.
+
+125
+00:08:42,972 --> 00:08:44,537
+This is the honest form.
+
+126
+00:08:44,877 --> 00:08:50,105
+Two configuration values on the command
+line, and commit 6e10a38 claims both fields.
+
+127
+00:08:50,445 --> 00:08:53,884
+Now compare her real commit and
+the forgery header by header.
+
+128
+00:08:53,924 --> 00:08:57,021
+Which field will tell them
+apart? Make your prediction.
+
+129
+00:09:01,861 --> 00:09:05,642
+None. Only the timestamps
+differ, as for any two commits.
+
+130
+00:09:05,982 --> 00:09:11,082
+git push is 🟡 CAUTION: it changes refs on
+the server, and published commits aren't
+
+131
+00:09:11,122 --> 00:09:14,906
+taken back. The pusher is the
+lab user. The commits say Asha.
+
+132
+00:09:14,946 --> 00:09:17,288
+Will the server refuse? Say yes or no.
+
+133
+00:09:19,628 --> 00:09:24,520
+Accepted. The server's own log shows three
+commits by Asha, and git shortlog credits
+
+134
+00:09:24,560 --> 00:09:28,630
+her with three. Git has no rule that
+the pusher must be the committer.
+
+135
+00:09:28,970 --> 00:09:34,078
+And all three are N. With no signatures
+anywhere, her real commit and the two others
+
+136
+00:09:34,118 --> 00:09:35,488
+are equally unprovable.
+
+137
+00:09:35,828 --> 00:09:41,422
+Step 3: the scope of a signature.
+Replay labs/run ch14b/signature-scope.
+
+138
+00:09:41,462 --> 00:09:42,127
+Volatile.
+
+139
+00:09:42,467 --> 00:09:47,512
+git hash-object -w is 🟢: it adds one
+object. The command copies a signed commit,
+
+140
+00:09:47,552 --> 00:09:51,136
+changes one word of the message,
+and keeps the signature.
+
+141
+00:09:51,176 --> 00:09:54,886
+What does verification say about
+the copy? Say it out loud.
+
+142
+00:09:59,726 --> 00:10:04,511
+"Incorrect signature", exit status 1,
+letter B. The copy has another ID and a bad
+
+143
+00:10:04,551 --> 00:10:07,310
+signature. Everything in
+the object is covered.
+
+144
+00:10:07,650 --> 00:10:13,065
+git branch is 🟢 SAFE, git update-ref
+is 🟡 CAUTION: it writes a ref.
+
+145
+00:10:13,105 --> 00:10:18,114
+A second tag name pointing at
+the signed tag object of v1.0.0.
+
+146
+00:10:18,154 --> 00:10:22,185
+Does git verify-tag v9.9.9
+succeed? Say yes or no.
+
+147
+00:10:24,525 --> 00:10:30,155
+It succeeds: a good signature, exit status
+0. Then look inside the object: the third
+
+148
+00:10:30,195 --> 00:10:35,757
+line still says tag v1.0.0. The name you
+asked for and the name in the signed bytes
+
+149
+00:10:35,797 --> 00:10:40,954
+differ, and only you can notice that.
+The script deletes the extra tag again.
+
+150
+00:10:40,994 --> 00:10:44,531
+git tag -d is 🟡 CAUTION, a
+deleted tag has no reflog.
+
+151
+00:10:44,871 --> 00:10:50,087
+git commit --amend and git rebase are 🟡
+CAUTION: they replace commits with new ones.
+
+152
+00:10:50,127 --> 00:10:55,092
+The reflog has the old ones. Two signed
+commits. After an amend without signing,
+
+153
+00:10:55,132 --> 00:11:00,035
+then a rebase without signing, then a
+rebase with signing: write down the three
+
+154
+00:11:00,075 --> 00:11:01,787
+pairs of letters you expect.
+
+155
+00:11:04,127 --> 00:11:09,143
+G G, then N G, then N N, then G G again,
+and every rewritten commit has a new ID.
+
+156
+00:11:09,183 --> 00:11:14,074
+The last pair is signed by whoever ran
+the rebase. If that had been a colleague
+
+157
+00:11:14,114 --> 00:11:17,632
+rebasing your branch, the
+signatures would now be theirs.
+
+158
+00:11:22,972 --> 00:11:27,775
+A commit signed with a stranger's key. The
+mathematics is fine: "Good signature".
+
+159
+00:11:27,815 --> 00:11:32,497
+The answer is still a failure: "No principal
+matched", exit status 1, letter U.
+
+160
+00:11:32,537 --> 00:11:34,948
+Nobody you trust is attached to that key.
+
+161
+00:11:35,288 --> 00:11:39,723
+The key's window ended on the thirty-first
+of August and the lab clock says the
+
+162
+00:11:39,763 --> 00:11:43,518
+seventh of September, so the commit
+is rejected: "key has expired".
+
+163
+00:11:43,558 --> 00:11:48,163
+Then one environment variable, GIT_COMMITTER_DATE,
+set to the thirtieth of August,
+
+164
+00:11:48,203 --> 00:11:52,808
+and a commit made now verifies as good.
+The verify time is the committer date, and
+
+165
+00:11:52,848 --> 00:11:54,224
+the committer chooses it.
+
+166
+00:11:54,564 --> 00:11:57,710
+With the key in the revocation
+file, the same commit is B.
+
+167
+00:11:57,750 --> 00:11:58,534
+For every date.
+
+168
+00:11:58,874 --> 00:12:06,202
+Step 4: the forgery where everyone signs.
+Replay labs/run ch14b/spoof-signed.
+
+169
+00:12:06,242 --> 00:12:07,063
+Volatile.
+
+170
+00:12:07,403 --> 00:12:12,079
+Two principals in the allowed-signers file,
+and Asha's genuine commit is signed by
+
+171
+00:12:12,119 --> 00:12:12,539
+her key.
+
+172
+00:12:12,879 --> 00:12:18,190
+The unsigned forgery stands out now: N,
+no signer, in a history where her real
+
+173
+00:12:18,230 --> 00:12:19,013
+commit is G.
+
+174
+00:12:19,353 --> 00:12:23,185
+You can't sign as Asha, because
+you don't have her private key.
+
+175
+00:12:23,225 --> 00:12:27,610
+You can sign with your own. The commit
+claims Asha and is signed by you.
+
+176
+00:12:27,650 --> 00:12:31,359
+What's the exit status of git
+verify-commit? Say it out loud.
+
+177
+00:12:36,199 --> 00:12:41,442
+Zero. A good signature for you@example.com.
+Git verified a signature against the
+
+178
+00:12:41,482 --> 00:12:46,990
+list of trusted keys, and your key is on
+the list. It didn't compare the signer with
+
+179
+00:12:47,030 --> 00:12:51,480
+the author line. Read the three log
+lines: author Asha in all three.
+
+180
+00:12:51,520 --> 00:12:53,395
+Signer Asha, nobody, and you.
+
+181
+00:12:53,735 --> 00:12:58,850
+The policy check is one line of awk over
+four placeholders: the result must be G and
+
+182
+00:12:58,890 --> 00:13:03,207
+the author address must equal the
+signer. Two of three commits fail it.
+
+183
+00:13:03,547 --> 00:13:08,005
+git merge that fast-forwards is 🟡. The
+first merge target is the unsigned forgery.
+
+184
+00:13:08,045 --> 00:13:11,845
+The second is the signed forgery,
+with the unsigned one underneath it.
+
+185
+00:13:11,885 --> 00:13:13,985
+Which is refused? Make your prediction.
+
+186
+00:13:18,825 --> 00:13:22,894
+The unsigned tip is refused:
+commit bc6a046 has no signature.
+
+187
+00:13:22,934 --> 00:13:24,712
+The signed tip is accepted.
+
+188
+00:13:25,052 --> 00:13:29,588
+Look at what came with it. The branch
+integration started two commits behind main.
+
+189
+00:13:29,628 --> 00:13:33,996
+The fast-forward moves it to the signed
+tip, and the unsigned commit underneath
+
+190
+00:13:34,036 --> 00:13:38,237
+comes along. The option looks at one
+commit: the tip of what's being merged.
+
+191
+00:13:38,277 --> 00:13:42,646
+That's the popular check from the opening.
+With a signed forgery at the tip, it
+
+192
+00:13:42,686 --> 00:13:43,483
+caught neither.
+
+193
+00:13:45,323 --> 00:13:46,971
+Five mistakes to watch for.
+
+194
+00:13:47,311 --> 00:13:51,470
+Treating the author line or git shortlog
+as evidence of who made a commit.
+
+195
+00:13:51,510 --> 00:13:56,067
+Root cause: author and committer are text
+supplied by whoever creates the commit.
+
+196
+00:13:56,407 --> 00:14:00,666
+Treating exit status 0 of git
+verify-commit as "the author signed this".
+
+197
+00:14:00,706 --> 00:14:05,562
+Root cause: Git verifies the signature
+against the trusted keys and never compares
+
+198
+00:14:05,602 --> 00:14:07,472
+the signer with the author line.
+
+199
+00:14:07,812 --> 00:14:11,586
+Relying on git merge --verify-signatures
+as a history policy.
+
+200
+00:14:11,626 --> 00:14:15,524
+Root cause: it verifies only the
+tip commit of the side branch.
+
+201
+00:14:15,864 --> 00:14:19,845
+Removing an old key from the
+allowed-signers file at rotation.
+
+202
+00:14:19,885 --> 00:14:25,294
+Root cause: verification looks the key up
+in the file, so old commits turn from G to
+
+203
+00:14:25,334 --> 00:14:27,434
+U; rotation adds, never replaces.
+
+204
+00:14:27,774 --> 00:14:32,311
+Expecting signatures to survive a
+rebase, a squash or a history filter.
+
+205
+00:14:32,351 --> 00:14:37,596
+Root cause: a rewrite writes new objects,
+signed by the operator's key or by none.
+
+206
+00:14:39,436 --> 00:14:44,569
+Now, out of the lab. The CTO's question
+from the last video, answered properly.
+
+207
+00:14:44,609 --> 00:14:49,152
+A commit on main of the inference
+gateway raised a rate limit tenfold.
+
+208
+00:14:49,192 --> 00:14:52,819
+The author line names Asha.
+She says she didn't make it.
+
+209
+00:14:53,159 --> 00:14:56,793
+If the commit is unsigned,
+Git can't say who made it.
+
+210
+00:14:56,833 --> 00:15:02,409
+The honest answer is "anyone with push
+access", and the investigation goes to the
+
+211
+00:15:02,449 --> 00:15:08,233
+server's record of who pushed. If the commit
+is signed, Git can say which key signed
+
+212
+00:15:08,273 --> 00:15:11,908
+it: run the log with %G?,
+the author address and %GS.
+
+213
+00:15:11,948 --> 00:15:17,316
+If the signer isn't the author, you have
+a named key and its owner to talk to.
+
+214
+00:15:17,356 --> 00:15:23,001
+Section 14B.19 says how to treat a signed
+history that contains a commit its named
+
+215
+00:15:23,041 --> 00:15:25,359
+author never made: as an incident.
+
+216
+00:15:25,699 --> 00:15:30,286
+The textbook then widens the view with
+the case from the Phase 0 report: the
+
+217
+00:15:30,326 --> 00:15:35,339
+xz-utils backdoor of 2024, introduced by a
+contributor who had earned commit rights
+
+218
+00:15:35,379 --> 00:15:40,331
+over two years and activated by a script
+that existed only in the release tarball.
+
+219
+00:15:40,371 --> 00:15:44,653
+Every commit could have been perfectly
+signed. Provenance isn't safety.
+
+220
+00:15:46,493 --> 00:15:50,765
+Your turn. Do Lab 24.2, "A
+spoofed-author commit", in
+
+221
+00:15:50,805 --> 00:15:57,111
+lab-manual/m24-signing-local.md, in
+labs/shell. The keys are generated in your
+
+222
+00:15:57,151 --> 00:15:59,389
+sandbox, so your IDs differ.
+
+223
+00:15:59,729 --> 00:16:05,407
+Before each verification, predict three
+things and write them down: the letter %G?
+
+224
+00:16:05,447 --> 00:16:10,986
+will print, the signer %GS will print,
+and the exit status of git verify-commit.
+
+225
+00:16:11,026 --> 00:16:16,565
+Then predict which of your commits a
+comparison of signer and author would flag.
+
+226
+00:16:16,905 --> 00:16:23,197
+The challenge is Exercise 24.2,
+"Five commits, five claims", in
+
+227
+00:16:23,237 --> 00:16:26,012
+exercises/m19-m25-github.md.
+
+228
+00:16:29,852 --> 00:16:34,841
+Answer out loud first. A strong answer starts
+with the object: which bytes go to the
+
+229
+00:16:34,881 --> 00:16:39,691
+signing program, and why the tree and
+parent IDs extend the coverage to files and
+
+230
+00:16:39,731 --> 00:16:44,721
+ancestors. Then it moves outside the object
+and names things from the right-hand box
+
+231
+00:16:44,761 --> 00:16:48,433
+of the diagram, with one sentence
+each on why they're outside.
+
+232
+00:16:48,773 --> 00:16:52,108
+It keeps "the key signed" apart
+from "the person signed".
+
+233
+00:16:52,148 --> 00:16:57,021
+The follow-up asks how a signed tag can
+verify under a name it wasn't created with.
+
+234
+00:16:57,061 --> 00:17:01,047
+Answer from what a ref is, and say
+what a careful verifier compares.
+
+235
+00:17:02,887 --> 00:17:08,244
+Let's land this. Three checks, as promised.
+The result letter catches the unsigned
+
+236
+00:17:08,284 --> 00:17:12,259
+forgery. Comparing signer with
+author catches the signed one.
+
+237
+00:17:12,299 --> 00:17:17,196
+And --verify-signatures, which looks
+at the tip only, can let both through.
+
+238
+00:17:17,536 --> 00:17:19,196
+You should now be able to say:
+
+239
+00:17:19,536 --> 00:17:23,987
+Author and committer are assertions; Git
+and the push check them against nothing,
+
+240
+00:17:24,027 --> 00:17:26,593
+and a plain Git server
+accepts a forged author.
+
+241
+00:17:26,933 --> 00:17:31,755
+A signature covers every byte of one object
+and nothing outside it: not refs, not
+
+242
+00:17:31,795 --> 00:17:33,496
+the push, not later rewrites.
+
+243
+00:17:33,836 --> 00:17:38,331
+Amend, rebase and cherry-pick write new
+commits, signed by the operator or not at
+
+244
+00:17:38,371 --> 00:17:38,555
+all.
+
+245
+00:17:38,895 --> 00:17:43,738
+git verify-commit answers "did a trusted
+key sign this", not "did the named author
+
+246
+00:17:43,778 --> 00:17:47,847
+sign this"; comparing signer and
+author is a policy you run yourself.
+
+247
+00:17:48,187 --> 00:17:51,850
+git merge --verify-signatures
+checks only the tip.
+
+248
+00:17:53,690 --> 00:18:02,654
+Read sections 14B.17 to 14B.21 of Chapter
+14B and section 21B.5 of Chapter 21B.
+
+249
+00:18:02,694 --> 00:18:06,187
+Do the Practice section 14B.23.
+
+250
+00:18:06,527 --> 00:18:11,339
+Today you forged an author in a sandbox,
+and you know which check sees the forgery
+
+251
+00:18:11,379 --> 00:18:16,192
+and which doesn't. Before the next video,
+run a log with the result letter and the
+
+252
+00:18:16,232 --> 00:18:21,045
+signer on a repository of yours. Next time:
+signatures on GitHub, the verification
+
+253
+00:18:21,085 --> 00:18:25,838
+states, and what Verified does not prove.
+Until then, look at the state first and
+
+254
+00:18:25,878 --> 00:18:28,028
+type second. See you in the next one.

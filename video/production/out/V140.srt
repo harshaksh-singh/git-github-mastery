@@ -1,0 +1,1414 @@
+1
+00:00:04,500 --> 00:00:09,298
+Both come from one script, written in an
+afternoon, that calls gh api in a loop.
+
+2
+00:00:09,338 --> 00:00:14,378
+gh is GitHub's command-line program, and gh
+api sends a request to GitHub's API, the
+
+3
+00:00:14,418 --> 00:00:19,035
+interface that programs use to talk to
+GitHub. Nobody intended either result.
+
+4
+00:00:19,075 --> 00:00:23,812
+The first is a default of the API. The
+second is a default of the CLI: one flag
+
+5
+00:00:23,852 --> 00:00:28,529
+changed the HTTP method, the verb of the
+request, without the author noticing.
+
+6
+00:00:28,869 --> 00:00:33,928
+If you're going to automate anything on
+GitHub, and on an AI and ML team you will,
+
+7
+00:00:33,968 --> 00:00:38,965
+you need to know what the CLI does on your
+behalf. This video gives you that, and
+
+8
+00:00:39,005 --> 00:00:43,007
+the two defaults behind those two
+lines. Keep both lines in mind.
+
+9
+00:00:43,047 --> 00:00:44,624
+Each gets its explanation.
+
+10
+00:00:46,464 --> 00:00:50,186
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:50,226 --> 00:00:55,121
+Through Part 5 you've used gh in almost
+every lab without a formal introduction.
+
+12
+00:00:55,161 --> 00:00:59,994
+This video is that introduction, and it
+closes the GitHub part before the gate.
+
+13
+00:01:00,334 --> 00:01:05,813
+Four topics. First, what gh is: a client of
+GitHub's API that knows which repository
+
+14
+00:01:05,853 --> 00:01:11,266
+you're in. Second, gh pr: a full pull request
+cycle from the terminal, and which of
+
+15
+00:01:11,306 --> 00:01:16,653
+its commands change state. A pull request
+is GitHub's proposal to merge one branch
+
+16
+00:01:16,693 --> 00:01:21,712
+into another. Third, gh api: the REST
+API, its method, fields, pagination and
+
+17
+00:01:21,752 --> 00:01:25,851
+version header, then GraphQL at
+concept level, and rate limits.
+
+18
+00:01:25,891 --> 00:01:31,107
+Fourth, the integration model: webhooks
+and GitHub Apps, and when an integration
+
+19
+00:01:31,147 --> 00:01:34,064
+should be an App and not
+your personal token.
+
+20
+00:01:34,404 --> 00:01:38,450
+A word on evidence. The authors
+captured no GitHub output.
+
+21
+00:01:38,490 --> 00:01:44,015
+The local replays show two things only:
+the --help output of the installed CLI,
+
+22
+00:01:44,055 --> 00:01:48,876
+version 2.88.1, and the jq program
+run on a stored practice document.
+
+23
+00:01:48,916 --> 00:01:54,512
+Everything else is described from the
+documentation and performed by you on your
+
+24
+00:01:54,552 --> 00:01:55,921
+practice repository.
+
+25
+00:01:57,761 --> 00:01:59,339
+Here's what you'll walk away with.
+
+26
+00:01:59,679 --> 00:02:01,091
+After this video you can:
+
+27
+00:02:01,431 --> 00:02:04,925
+drive a complete feature cycle
+from the terminal with gh;
+
+28
+00:02:05,265 --> 00:02:08,785
+say which gh commands change
+state and which only read;
+
+29
+00:02:09,125 --> 00:02:14,557
+query pull request and ruleset data with
+gh api and shape the result with a jq
+
+30
+00:02:14,597 --> 00:02:15,048
+filter;
+
+31
+00:02:15,388 --> 00:02:21,020
+explain REST API versioning, pagination
+and rate limits as the section gives them;
+
+32
+00:02:21,360 --> 00:02:23,575
+say when an integration
+should be a GitHub App.
+
+33
+00:02:25,415 --> 00:02:30,790
+In one sentence. gh is a client for GitHub's
+API that knows which repository you're
+
+34
+00:02:30,830 --> 00:02:36,075
+in, so the GitHub objects become reachable
+from the directory where your Git data
+
+35
+00:02:36,115 --> 00:02:36,271
+is.
+
+36
+00:02:36,611 --> 00:02:41,925
+Precisely. gh isn't Git and doesn't replace
+it. It calls the REST and GraphQL APIs
+
+37
+00:02:41,965 --> 00:02:47,084
+with a stored token, a string that stands
+for your account with a subset of its
+
+38
+00:02:47,124 --> 00:02:52,439
+rights. It runs git for you where a task
+needs both, as in gh repo clone and gh pr
+
+39
+00:02:52,479 --> 00:02:55,835
+checkout. And it can act as
+Git's credential helper.
+
+40
+00:02:56,175 --> 00:02:58,638
+Four behaviors explain most surprises.
+
+41
+00:02:58,978 --> 00:03:04,406
+Which repository? Inside a clone, gh
+picks the repository from your remotes.
+
+42
+00:03:04,446 --> 00:03:10,307
+With a fork there are two candidates, and
+gh repo set-default records which one to
+
+43
+00:03:10,347 --> 00:03:16,279
+use. Outside a clone, or to override, you
+pass -R with owner and repository, or set
+
+44
+00:03:16,319 --> 00:03:16,855
+GH_REPO.
+
+45
+00:03:17,195 --> 00:03:23,310
+Machine-readable output. Most listing
+commands take --json with a list of fields,
+
+46
+00:03:23,350 --> 00:03:29,465
+then --jq with an expression, or --template.
+JSON is a text format for structured
+
+47
+00:03:29,505 --> 00:03:34,177
+data. --json without a field list
+prints the available fields.
+
+48
+00:03:34,517 --> 00:03:39,155
+Exit codes. 0 for success, 1 for failure,
+2 when cancelled, 4 when authentication is
+
+49
+00:03:39,195 --> 00:03:43,833
+required. gh pr checks adds 8 for pending
+checks. Scripts should test exit codes and
+
+50
+00:03:43,873 --> 00:03:45,615
+not parse human-readable output.
+
+51
+00:03:45,955 --> 00:03:51,264
+Its own token. GH_TOKEN in the environment
+takes precedence over the stored login.
+
+52
+00:03:51,304 --> 00:03:56,221
+A stale one in a shell profile explains
+"gh works in one terminal and not in
+
+53
+00:03:56,261 --> 00:03:56,808
+another".
+
+54
+00:03:57,148 --> 00:04:02,617
+gh pr. In one sentence: gh pr drives the
+pull request object from the terminal.
+
+55
+00:04:02,657 --> 00:04:05,266
+The Git work around it stays with git.
+
+56
+00:04:05,606 --> 00:04:09,784
+Every flag was checked against
+the help of version 2.88.1.
+
+57
+00:04:09,824 --> 00:04:12,912
+None was run against
+GitHub by the authors.
+
+58
+00:04:13,252 --> 00:04:17,700
+Now the labels, because this
+is the objective people skip.
+
+59
+00:04:17,740 --> 00:04:22,884
+gh pr view, gh pr checks, gh pr
+diff and gh pr status read: 🟢 SAFE.
+
+60
+00:04:22,924 --> 00:04:28,068
+gh pr checkout is 🟢 SAFE too. It
+changes local files and refs only.
+
+61
+00:04:28,108 --> 00:04:34,335
+gh pr create is 🟡 CAUTION: it may push the
+branch, and it creates a GitHub object
+
+62
+00:04:34,375 --> 00:04:35,960
+that notifies people.
+
+63
+00:04:36,300 --> 00:04:42,067
+The preview is --dry-run, and the textbook
+notes that even the dry run may still
+
+64
+00:04:42,107 --> 00:04:47,874
+push. gh pr merge, gh pr update-branch
+and gh pr edit --base are 🟡 CAUTION: they
+
+65
+00:04:47,914 --> 00:04:53,608
+write to the base branch, move the head
+branch or change the base, and they can
+
+66
+00:04:53,648 --> 00:04:54,915
+dismiss approvals.
+
+67
+00:04:55,255 --> 00:05:00,649
+One flag is 🔴 DANGEROUS: gh pr merge
+--admin. What it changes: the base branch,
+
+68
+00:05:00,689 --> 00:05:05,396
+without the required reviews or
+checks. What it can destroy: no data.
+
+69
+00:05:05,436 --> 00:05:09,868
+What's lost is the review and the
+checks that the rules required.
+
+70
+00:05:09,908 --> 00:05:15,371
+Preview: gh pr checks --required. Recovery:
+gh pr revert, and record the reason.
+
+71
+00:05:15,411 --> 00:05:20,186
+Appropriate: a documented emergency,
+by someone the bypass list names.
+
+72
+00:05:20,526 --> 00:05:26,014
+Two details from the help text. gh pr create
+takes the base from --base, else from a
+
+73
+00:05:26,054 --> 00:05:30,751
+Git configuration value for the current
+branch, else the default branch.
+
+74
+00:05:30,791 --> 00:05:36,213
+And --match-head-commit merges only if the
+head is the given commit: you merge what
+
+75
+00:05:36,253 --> 00:05:39,569
+you reviewed, and not what
+was pushed a second ago.
+
+76
+00:05:39,909 --> 00:05:45,816
+gh api. In one sentence: everything GitHub
+shows you comes from an API that you can
+
+77
+00:05:45,856 --> 00:05:51,834
+call yourself. gh api adds your token, the
+host and the placeholders, and prints the
+
+78
+00:05:51,874 --> 00:05:52,192
+JSON.
+
+79
+00:05:52,532 --> 00:05:58,093
+The REST API is a set of URLs, one per
+resource. gh api takes the path and fills in
+
+80
+00:05:58,133 --> 00:06:03,356
+the placeholders for owner, repository
+and branch from the current repository.
+
+81
+00:06:03,696 --> 00:06:08,775
+The paths and field names were checked
+against the REST reference on the second of
+
+82
+00:06:08,815 --> 00:06:11,210
+October 2026. The commands weren't run.
+
+83
+00:06:11,550 --> 00:06:12,829
+Five rules of the road.
+
+84
+00:06:13,169 --> 00:06:17,933
+First, a quick quiz. A GET request
+reads, and a POST creates.
+
+85
+00:06:17,973 --> 00:06:22,895
+You call gh api to list issues,
+and you add one filter with -f.
+
+86
+00:06:22,935 --> 00:06:27,462
+What does the CLI send? A, a
+GET with a filter. B, a POST.
+
+87
+00:06:27,502 --> 00:06:28,408
+Your answer?
+
+88
+00:06:33,248 --> 00:06:39,393
+B, a POST. Method. GET by default, and
+POST as soon as you add a field with -f or
+
+89
+00:06:39,433 --> 00:06:45,501
+-F. To send parameters with a GET, you
+say -X GET. That's the second line of the
+
+90
+00:06:45,541 --> 00:06:49,549
+hook: a filter parameter
+turned a read into a create.
+
+91
+00:06:49,889 --> 00:06:56,381
+Fields. -f sends a string. -F converts true,
+false, null and integers to JSON types
+
+92
+00:06:56,421 --> 00:06:57,955
+and can read a file.
+
+93
+00:06:58,295 --> 00:07:03,056
+Pagination. Lists return 30 items
+per page unless you ask otherwise.
+
+94
+00:07:03,096 --> 00:07:07,574
+--paginate follows the pages.
+--slurp wraps them into one array.
+
+95
+00:07:07,614 --> 00:07:09,975
+That's the first line of the hook.
+
+96
+00:07:10,315 --> 00:07:16,982
+Versioning. The REST API is versioned by
+date through the X-GitHub-Api-Version
+
+97
+00:07:17,022 --> 00:07:23,947
+header. Without the header, a request gets
+version 2022-11-28, which is supported
+
+98
+00:07:23,987 --> 00:07:30,482
+until the tenth of March 2028. 2026-03-10
+is the first version with breaking
+
+99
+00:07:30,522 --> 00:07:37,705
+changes. An unsupported version answers 410
+Gone. The CLI pins its own REST calls to
+
+100
+00:07:37,745 --> 00:07:44,929
+2022-11-28 since version 2.87.0. In a script
+that must keep working, send the header
+
+101
+00:07:44,969 --> 00:07:45,874
+explicitly.
+
+102
+00:07:46,214 --> 00:07:51,641
+Not found means "not for you". For a private
+resource and a token without access,
+
+103
+00:07:51,681 --> 00:07:57,243
+the API answers 404, not 403, in the
+documentation's words "to avoid confirming the
+
+104
+00:07:57,283 --> 00:07:59,605
+existence of private repositories".
+
+105
+00:07:59,945 --> 00:08:05,034
+Every gh api call with GET is 🟢 SAFE. Every
+call with POST, PATCH, PUT or DELETE,
+
+106
+00:08:05,074 --> 00:08:10,163
+and every GraphQL mutation, is 🔴 DANGEROUS,
+and section 15.22 gives the reason in
+
+107
+00:08:10,203 --> 00:08:14,912
+one line: it changes whatever the
+endpoint says, with all your permissions.
+
+108
+00:08:14,952 --> 00:08:20,232
+The preview is always the GET first. The
+recovery depends on the endpoint, and often
+
+109
+00:08:20,272 --> 00:08:21,055
+there's none.
+
+110
+00:08:21,395 --> 00:08:26,899
+GraphQL is the second API: one endpoint,
+a typed schema, and a query that names
+
+111
+00:08:26,939 --> 00:08:32,021
+exactly the fields wanted, so one call
+can replace several REST requests.
+
+112
+00:08:32,061 --> 00:08:35,951
+gh api graphql -f query=
+followed by the query calls it.
+
+113
+00:08:35,991 --> 00:08:39,951
+A GraphQL query only reads,
+although it's sent as a POST.
+
+114
+00:08:39,991 --> 00:08:43,320
+Some features exist in
+only one of the two APIs.
+
+115
+00:08:43,660 --> 00:08:48,998
+Rate limits. With no authentication:
+60 requests per hour, per IP address.
+
+116
+00:08:49,038 --> 00:08:53,795
+An authenticated user, which is
+your token and gh: 5,000 per hour.
+
+117
+00:08:53,835 --> 00:08:59,609
+A GitHub App installation: 5,000 per hour
+at minimum, 15,000 on Enterprise Cloud
+
+118
+00:08:59,649 --> 00:09:04,987
+organizations. The GITHUB_TOKEN in a
+workflow: 1,000 requests per hour per
+
+119
+00:09:05,027 --> 00:09:05,787
+repository.
+
+120
+00:09:06,127 --> 00:09:12,419
+Secondary limits apply on top: at most 100
+concurrent requests, and a points budget
+
+121
+00:09:12,459 --> 00:09:18,828
+per minute. Exceeding a limit returns 403
+or 429. So a 403 isn't always a permission
+
+122
+00:09:18,868 --> 00:09:22,872
+problem. gh api rate_limit
+tells you where you stand.
+
+123
+00:09:23,212 --> 00:09:28,418
+Webhooks and GitHub Apps. Polling asks GitHub
+repeatedly whether something happened.
+
+124
+00:09:28,458 --> 00:09:33,602
+A webhook reverses the direction: you
+register a URL and the events you care about,
+
+125
+00:09:33,642 --> 00:09:37,911
+and GitHub sends an HTTP request
+with a JSON payload when one occurs.
+
+126
+00:09:37,951 --> 00:09:42,657
+A push webhook carries the ref and the
+commit IDs before and after the push.
+
+127
+00:09:42,697 --> 00:09:47,779
+The textbook's remark is worth repeating:
+that's the information of a reflog line,
+
+128
+00:09:47,819 --> 00:09:49,340
+delivered to your server.
+
+129
+00:09:49,680 --> 00:09:53,102
+A GitHub App is the identity
+an integration should have.
+
+130
+00:09:53,142 --> 00:09:57,614
+It's installed on chosen repositories.
+It holds fine-grained permissions.
+
+131
+00:09:57,654 --> 00:10:02,683
+It receives webhooks. It acts with installation
+tokens that expire after one hour.
+
+132
+00:10:02,723 --> 00:10:07,505
+And it isn't tied to a person, so it
+doesn't stop working when someone leaves.
+
+133
+00:10:07,845 --> 00:10:12,937
+The alternatives are a personal token, which
+acts as you everywhere you have access,
+
+134
+00:10:12,977 --> 00:10:17,764
+and a machine user. One fact for tool
+writers: the API for check runs and check
+
+135
+00:10:17,804 --> 00:10:22,713
+suites is available only to GitHub Apps.
+The older commit statuses can be created
+
+136
+00:10:22,753 --> 00:10:23,813
+with Write access.
+
+137
+00:10:30,653 --> 00:10:33,552
+There's one API. Everything
+else is a client.
+
+138
+00:10:33,892 --> 00:10:38,711
+The browser is a client. gh is a
+client. A script with curl is a client.
+
+139
+00:10:38,751 --> 00:10:44,380
+A GitHub App is a client. What differs
+between them is the credential each presents,
+
+140
+00:10:44,420 --> 00:10:47,417
+and therefore what each
+may do and how often.
+
+141
+00:10:47,757 --> 00:10:51,271
+So for any automation question,
+ask three things in this order.
+
+142
+00:10:51,311 --> 00:10:54,148
+Which endpoint am I calling,
+and with which method?
+
+143
+00:10:54,188 --> 00:10:58,323
+Which credential is making the call,
+and what else can that credential do?
+
+144
+00:10:58,363 --> 00:11:02,779
+And what happens to this automation when
+the person who wrote it changes teams?
+
+145
+00:11:03,119 --> 00:11:07,836
+The model breaks slightly for gh,
+because gh is two clients in one.
+
+146
+00:11:07,876 --> 00:11:11,954
+It talks to the API, and it
+also runs git on your machine.
+
+147
+00:11:12,294 --> 00:11:18,042
+Try it now, thirty seconds, on paper. Two
+commands: gh pr checkout and gh pr create.
+
+148
+00:11:18,082 --> 00:11:23,830
+For each, write what it does to Git data on
+your machine and what it does on GitHub.
+
+149
+00:11:23,870 --> 00:11:24,519
+I'll wait.
+
+150
+00:11:29,359 --> 00:11:34,417
+gh pr checkout creates a local branch:
+it changes local files and refs only.
+
+151
+00:11:34,457 --> 00:11:39,986
+gh pr create may push, which is Git data,
+and it creates a pull request, which is a
+
+152
+00:11:40,026 --> 00:11:45,554
+GitHub object. When you read a gh command,
+split it in your head into the part that
+
+153
+00:11:45,594 --> 00:11:49,445
+touches Git data and the part
+that touches GitHub objects.
+
+154
+00:11:51,285 --> 00:11:54,809
+Three clients, one API, and
+a credential on every arrow.
+
+155
+00:11:54,849 --> 00:11:59,263
+The last arrow points the other way.
+Only the App is called by GitHub.
+
+156
+00:11:59,303 --> 00:12:00,981
+The other two can only ask.
+
+157
+00:12:02,821 --> 00:12:04,540
+Step 1: the families.
+
+158
+00:12:10,880 --> 00:12:14,573
+Find four lines. pr, where
+you'll spend most of your time.
+
+159
+00:12:14,613 --> 00:12:19,592
+api, the one command that reaches everything
+else. ruleset, described as "View
+
+160
+00:12:19,632 --> 00:12:24,933
+info", which you met in video 134. And under
+the Actions heading, run and workflow,
+
+161
+00:12:24,973 --> 00:12:27,765
+which belong to the next
+part of the course.
+
+162
+00:12:28,105 --> 00:12:31,042
+Step 2: the release
+command explains itself.
+
+163
+00:12:34,382 --> 00:12:39,298
+Read the first sentence of the help text
+aloud: if a matching Git tag doesn't yet
+
+164
+00:12:39,338 --> 00:12:44,071
+exist, one will automatically get created
+from the latest state of the default
+
+165
+00:12:44,111 --> 00:12:49,149
+branch. That's why section 15.22 labels gh
+release create without --verify-tag as 🔴
+
+166
+00:12:49,189 --> 00:12:52,453
+DANGEROUS, and with --verify-tag
+--draft as 🟡 CAUTION.
+
+167
+00:12:52,493 --> 00:12:57,348
+The textbook's production case: a release
+script on the day the version variable
+
+168
+00:12:57,388 --> 00:13:02,182
+holds a typo. --verify-tag turns that
+into an error before anything is created.
+
+169
+00:13:02,522 --> 00:13:05,194
+Step 3: the flags of gh api.
+
+170
+00:13:05,534 --> 00:13:10,356
+Before the output: which flag's default
+is "GET", and which two flags will change
+
+171
+00:13:10,396 --> 00:13:13,476
+that default without mentioning
+it? Say it out loud.
+
+172
+00:13:18,316 --> 00:13:23,666
+--method says default "GET". --field
+and --raw-field add parameters.
+
+173
+00:13:23,706 --> 00:13:30,086
+And --paginate says what it does in plain
+words: make additional HTTP requests to
+
+174
+00:13:30,126 --> 00:13:32,226
+fetch all pages of results.
+
+175
+00:13:32,566 --> 00:13:37,554
+Three subcommands: check, list,
+view. No create, no edit.
+
+176
+00:13:37,894 --> 00:13:43,094
+Step 4: rehearse the filters offline.
+Replay labs/run ch15/jq-rehearsal.
+
+177
+00:13:43,134 --> 00:13:49,207
+The input is a practice document written
+for the course, with the field names of the
+
+178
+00:13:49,247 --> 00:13:55,248
+pull request list. It isn't output from
+GitHub. And jq is a command-line filter for
+
+179
+00:13:55,288 --> 00:13:55,612
+JSON.
+
+180
+00:13:55,952 --> 00:14:01,417
+.[] iterates over the array. -r
+prints strings without quotes.
+
+181
+00:14:01,457 --> 00:14:07,189
+With gh api, the same filter goes
+after --jq and no -r is needed.
+
+182
+00:14:07,529 --> 00:14:11,328
+The backslash-parenthesis form
+interpolates a field into a string.
+
+183
+00:14:11,368 --> 00:14:14,352
+Three pull requests, two
+authors, two base branches.
+
+184
+00:14:14,692 --> 00:14:18,986
+Three pull requests. One is a draft,
+one targets a release branch.
+
+185
+00:14:19,026 --> 00:14:22,006
+Which number is printed?
+Make your prediction.
+
+186
+00:14:26,846 --> 00:14:30,120
+select keeps the elements for
+which the condition holds.
+
+187
+00:14:30,160 --> 00:14:32,546
+Only number 14 is ready and targets main.
+
+188
+00:14:32,886 --> 00:14:36,119
+And building a new object per
+element, with a renamed field.
+
+189
+00:14:36,459 --> 00:14:40,972
+Step 5: the Git half of a
+feature cycle. Replay labs/run
+
+190
+00:14:41,012 --> 00:14:47,639
+ch15/lab-25-1-feature-cycle. It runs against
+a local bare server, so it shows only
+
+191
+00:14:47,679 --> 00:14:51,949
+what Git does. The platform
+steps appear as comments.
+
+192
+00:14:52,289 --> 00:14:56,209
+git push -u is 🟡 CAUTION: it
+creates a ref on the server.
+
+193
+00:14:56,249 --> 00:14:59,684
+On GitHub, the next command
+would be gh pr create.
+
+194
+00:15:00,024 --> 00:15:04,516
+A review comment asks for documentation.
+You commit and push again.
+
+195
+00:15:04,556 --> 00:15:08,439
+The pull request now has two
+commits: c0b29a8 and 8e723d1.
+
+196
+00:15:08,779 --> 00:15:12,031
+The pull request was
+squash-merged on the platform.
+
+197
+00:15:12,071 --> 00:15:16,809
+git pull --ff-only is 🟡 CAUTION: it
+fetches and moves your branch forward.
+
+198
+00:15:16,849 --> 00:15:22,168
+On main there's one new commit, 9477a3f,
+and its subject ends with the pull request
+
+199
+00:15:22,208 --> 00:15:23,588
+number in parentheses.
+
+200
+00:15:23,928 --> 00:15:28,743
+Here's that moment as a graph. Before the
+pull, your branch feature/list-names is
+
+201
+00:15:28,783 --> 00:15:30,302
+two commits ahead of main.
+
+202
+00:15:30,642 --> 00:15:36,152
+After the pull, main moves to the squash
+commit. Your two commits, 8e723d1 and
+
+203
+00:15:36,192 --> 00:15:38,358
+c0b29a8, aren't in its history.
+
+204
+00:15:38,698 --> 00:15:44,124
+git fetch --prune is 🟡 CAUTION: it deletes
+stale remote-tracking refs and their
+
+205
+00:15:44,164 --> 00:15:49,797
+reflogs. The branch was merged on the
+platform. Will git branch -d agree that it's
+
+206
+00:15:49,837 --> 00:15:51,320
+merged? Say yes or no.
+
+207
+00:15:53,660 --> 00:15:58,699
+It refuses: "not fully merged". After
+a squash merge your two commits aren't
+
+208
+00:15:58,739 --> 00:16:02,174
+ancestors of main. Git checks
+ancestry, not content.
+
+209
+00:16:02,214 --> 00:16:07,588
+So the script checks content: git diff
+--quiet between main and the branch prints
+
+210
+00:16:07,628 --> 00:16:08,590
+"same content".
+
+211
+00:16:08,930 --> 00:16:14,028
+Only then comes git branch -D, which is
+🔴 DANGEROUS, so the five answers first.
+
+212
+00:16:14,068 --> 00:16:19,231
+What it changes: it deletes a ref and its
+reflog. What it can destroy: your only
+
+213
+00:16:19,271 --> 00:16:24,499
+name for commits that are on no other
+branch. How to preview: the tree comparison
+
+214
+00:16:24,539 --> 00:16:29,832
+you saw. How to recover: git branch with
+the name and the ID, and the ID is in the
+
+215
+00:16:29,872 --> 00:16:35,296
+output, c0b29a8. When it's appropriate:
+here, after you've shown that the content is
+
+216
+00:16:35,336 --> 00:16:35,816
+on main.
+
+217
+00:16:36,156 --> 00:16:40,717
+And the picture after the deletion: the
+branch name is gone, and no branch reaches
+
+218
+00:16:40,757 --> 00:16:42,119
+the two commits any more.
+
+219
+00:16:42,459 --> 00:16:51,860
+Step 6: the lab replay for API queries.
+Replay labs/run ch15/lab-25-2-api-queries.
+
+220
+00:16:52,200 --> 00:16:57,069
+Before you filter a response, ask for its
+shape: the type, the length, the keys of
+
+221
+00:16:57,109 --> 00:17:00,301
+the first element. Keep that
+habit for real responses.
+
+222
+00:17:00,641 --> 00:17:05,764
+Lab 25.1 on your practice repository, in
+your normal shell and not in labs/shell,
+
+223
+00:17:05,804 --> 00:17:10,863
+because the lab shell switches off the
+system configuration where the credential
+
+224
+00:17:10,903 --> 00:17:16,089
+helper lives. The interface changes. The
+lab text and the linked documentation are
+
+225
+00:17:16,129 --> 00:17:16,982
+the reference.
+
+226
+00:17:17,322 --> 00:17:22,699
+The cycle is: an issue, a branch, commits,
+a pull request whose body closes the
+
+227
+00:17:22,739 --> 00:17:28,459
+issue, a review comment, a squash merge,
+local clean-up, then an annotated tag and a
+
+228
+00:17:28,499 --> 00:17:34,219
+release with --verify-tag. After each gh
+command, say aloud which object was created
+
+229
+00:17:34,259 --> 00:17:38,744
+and in which layer. gh issue create:
+a GitHub object, no Git data.
+
+230
+00:17:39,084 --> 00:17:44,924
+git push: Git data on the server. gh pr
+create: a GitHub object, and according to
+
+231
+00:17:44,964 --> 00:17:50,732
+Chapter 17 also refs under refs/pull/. gh
+pr merge --squash: a new commit on the
+
+232
+00:17:50,772 --> 00:17:56,757
+server's main, made by GitHub. Keep the
+browser closed until the end, then open the
+
+233
+00:17:56,797 --> 00:18:02,056
+pull request page once and compare it
+with what the JSON fields told you.
+
+234
+00:18:03,896 --> 00:18:05,544
+Five mistakes to watch for.
+
+235
+00:18:05,884 --> 00:18:11,829
+A script reports exactly 30 items. Root
+cause: lists return 30 items per page and
+
+236
+00:18:11,869 --> 00:18:14,416
+the script did not pass --paginate.
+
+237
+00:18:14,756 --> 00:18:20,438
+A script created something by accident. Root
+cause: a field flag switched the method
+
+238
+00:18:20,478 --> 00:18:23,231
+from GET to POST; -X GET keeps it a read.
+
+239
+00:18:23,571 --> 00:18:28,517
+gh acts on the wrong one of fork and
+upstream. Root cause: with two remotes there
+
+240
+00:18:28,557 --> 00:18:33,010
+are two candidates, and no default was
+recorded with gh repo set-default.
+
+241
+00:18:33,350 --> 00:18:39,491
+Reading a 404 as "the repository does not
+exist". Root cause: for a private resource
+
+242
+00:18:39,531 --> 00:18:43,759
+and a token without access the
+API answers 404 on purpose.
+
+243
+00:18:44,099 --> 00:18:48,127
+Building tooling on a personal
+token and on human-readable output.
+
+244
+00:18:48,167 --> 00:18:52,934
+Root cause: the token acts as one person
+everywhere and stops when that person
+
+245
+00:18:52,974 --> 00:18:57,742
+leaves, and the text output is not a
+stable interface; use --json, the version
+
+246
+00:18:57,782 --> 00:18:59,283
+header, and a GitHub App.
+
+247
+00:19:01,123 --> 00:19:06,421
+Now, out of the lab. The textbook's case.
+A nightly job lists the pull requests of
+
+248
+00:19:06,461 --> 00:19:10,979
+sixty repositories with unauthenticated
+curl. It worked from a laptop.
+
+249
+00:19:11,019 --> 00:19:16,057
+It fails on the shared CI runner, where
+the sixty requests per hour of that IP
+
+250
+00:19:16,097 --> 00:19:21,461
+address are spent before the job starts.
+Unauthenticated limits were lowered on the
+
+251
+00:19:21,501 --> 00:19:24,847
+eighth of May 2025, anonymous
+HTTPS clones included.
+
+252
+00:19:25,187 --> 00:19:30,278
+The tempting repair is a retry loop. The
+textbook's verdict: the fix is an identity
+
+253
+00:19:30,318 --> 00:19:35,472
+for the job, not a retry loop. For an
+evaluation dashboard on an AI and ML team that
+
+254
+00:19:35,512 --> 00:19:40,666
+reads pull request data every night, the
+identity is a GitHub App installed on those
+
+255
+00:19:40,706 --> 00:19:44,252
+sixty repositories with read
+permission for pull requests.
+
+256
+00:19:44,292 --> 00:19:49,384
+The job then has its own rate limit, and
+it survives the departure of whoever wrote
+
+257
+00:19:49,424 --> 00:19:49,569
+it.
+
+258
+00:19:51,409 --> 00:19:56,517
+Your turn. Do Lab 25.1, "A full
+feature cycle with gh", in
+
+259
+00:19:56,557 --> 00:20:03,883
+lab-manual/m25-github-cli-api.md, on your
+practice repository in your normal shell.
+
+260
+00:20:04,223 --> 00:20:09,722
+Before each step, predict which objects
+will be created in Git and which on GitHub.
+
+261
+00:20:09,762 --> 00:20:15,127
+Before step 6, predict what git branch -d
+will say after a squash merge, and why.
+
+262
+00:20:15,467 --> 00:20:22,012
+The challenge is Exercise 25.4, "Five
+scripts that stopped working", in
+
+263
+00:20:22,052 --> 00:20:24,610
+exercises/m19-m25-github.md.
+
+264
+00:20:28,450 --> 00:20:33,202
+Answer out loud first. A strong answer
+treats them as two separate defaults and
+
+265
+00:20:33,242 --> 00:20:37,267
+names each precisely: one belongs
+to the API, the other to the CLI.
+
+266
+00:20:37,307 --> 00:20:42,121
+For each, say what the default is, what
+in the script triggered it, and the flag
+
+267
+00:20:42,161 --> 00:20:44,002
+that makes the intent explicit.
+
+268
+00:20:44,342 --> 00:20:47,865
+Then generalize: what you put
+in every script regardless.
+
+269
+00:20:47,905 --> 00:20:52,866
+The follow-up is about a 403 on a shared
+CI runner with a token that has access.
+
+270
+00:20:52,906 --> 00:20:58,055
+Think about what else returns that status,
+and about what a script must pin to keep
+
+271
+00:20:58,095 --> 00:20:59,243
+working over years.
+
+272
+00:21:01,083 --> 00:21:06,618
+Let's land this. The two lines from the
+opening are now two defaults you can name.
+
+273
+00:21:06,658 --> 00:21:10,493
+Exactly 30: lists come in pages
+of 30 without --paginate.
+
+274
+00:21:10,533 --> 00:21:14,505
+The accidental issue: a field
+flag turns a GET into a POST.
+
+275
+00:21:14,845 --> 00:21:16,504
+You should now be able to say:
+
+276
+00:21:16,844 --> 00:21:22,305
+gh is a client of GitHub's API with your
+credentials; it also runs git where a task
+
+277
+00:21:22,345 --> 00:21:23,034
+needs both.
+
+278
+00:21:23,374 --> 00:21:29,780
+Reading commands are safe; gh pr create
+and gh pr merge are caution; --admin and
+
+279
+00:21:29,820 --> 00:21:33,003
+every non-GET gh api call are dangerous.
+
+280
+00:21:33,343 --> 00:21:39,095
+gh api defaults to GET, switches to POST
+when a field is passed, and returns 30
+
+281
+00:21:39,135 --> 00:21:41,587
+items per page without --paginate.
+
+282
+00:21:41,927 --> 00:21:48,316
+The REST API is versioned by a date
+header; without it you get 2022-11-28.
+
+283
+00:21:48,656 --> 00:21:52,647
+An integration that must outlive you
+should be a GitHub App, with installation
+
+284
+00:21:52,687 --> 00:21:54,198
+tokens and its own rate limit.
+
+285
+00:21:56,038 --> 00:22:05,082
+Read sections 15.16 to 15.18 and 15.20 to
+15.22 of Chapter 15, and section 17.16 of
+
+286
+00:22:05,122 --> 00:22:14,275
+Chapter 17. Do Lab 25.2, "Queries with gh
+api", in lab-manual/m25-github-cli-api.md.
+
+287
+00:22:14,315 --> 00:22:23,359
+Then Exercise 25.1, "Ask the CLI, not the
+browser", to Exercise 25.3, "Six filters,
+
+288
+00:22:23,399 --> 00:22:28,393
+offline", in
+exercises/m19-m25-github.md. Read
+
+289
+00:22:28,433 --> 00:22:32,552
+cheatsheets/github-cli-cheat-sheet.md.
+
+290
+00:22:32,892 --> 00:22:38,433
+Today you took the CLI apart into its Git
+half and its GitHub half, and you met the
+
+291
+00:22:38,473 --> 00:22:43,812
+two defaults that surprise every script
+once. Before the next video, read gh api
+
+292
+00:22:43,852 --> 00:22:49,258
+--help and find the default method yourself.
+Next time: the gate briefing for the
+
+293
+00:22:49,298 --> 00:22:53,628
+GitHub part. Until then, look at
+the state first and type second.
+
+294
+00:22:53,668 --> 00:22:55,242
+See you in the next one.

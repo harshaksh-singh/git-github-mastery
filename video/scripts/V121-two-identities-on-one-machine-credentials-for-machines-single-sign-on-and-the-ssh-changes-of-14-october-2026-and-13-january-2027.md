@@ -366,8 +366,6 @@ Question 246 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: route.3
-
 Answer out loud. A strong answer names what must differ between the two accounts and keeps the three identities apart. It gives a design in which nothing is chosen by hand per repository, states where each piece is configured, and names the case the design misses. For the proof it gives commands that read configuration and resolve the connection without making one.
 
 ## RECAP

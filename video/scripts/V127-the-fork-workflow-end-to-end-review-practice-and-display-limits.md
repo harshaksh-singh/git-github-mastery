@@ -183,7 +183,7 @@ $ git rev-list --left-right --count upstream/main...origin/main
 
 Zero. Here: one and zero. Upstream has one commit your fork lacks, and the fork has nothing of its own.
 
-**[ANIMATION]** graph: 9a383e5-01822ed upstream/main; 9a383e5 main origin/main; HEAD=main => 01822ed upstream/main; 9a383e5 main origin/main; ^01822ed-0c6455c fix/empty-subject origin/fix/empty-subject; HEAD=fix/empty-subject => 01822ed upstream/main; 9a383e5 main origin/main; 0c6455c-ef0b9f0 fix/empty-subject origin/fix/empty-subject; HEAD=fix/empty-subject => 01822ed-fafe8b6 upstream/main; ef0b9f0-fafe8b6; 9a383e5 main origin/main; ef0b9f0 fix/empty-subject origin/fix/empty-subject; HEAD=main => fafe8b6 upstream/main main origin/main; ef0b9f0 fix/empty-subject origin/fix/empty-subject; HEAD=main => fafe8b6 upstream/main main origin/main; HEAD=main title=Your_clone:_three_names_for_main id=clone
+**[ANIMATION]** graph: 9a383e5-01822ed upstream/main; 9a383e5 main origin/main; HEAD=main => 01822ed upstream/main; 9a383e5 main origin/main; ^01822ed-0c6455c fix/empty-subject origin/fix/empty-subject; HEAD=fix/empty-subject => 01822ed upstream/main; 9a383e5 main origin/main; 0c6455c-ef0b9f0 fix/empty-subject origin/fix/empty-subject; HEAD=fix/empty-subject => 01822ed-fafe8b6 upstream/main; ef0b9f0-fafe8b6; 9a383e5 main origin/main; ef0b9f0 fix/empty-subject origin/fix/empty-subject; HEAD=main => fafe8b6 upstream/main main origin/main; ef0b9f0 fix/empty-subject origin/fix/empty-subject; HEAD=main => + drop:fix/empty-subject,origin/fix/empty-subject title=Your_clone:_three_names_for_main id=clone
 
 **[ANIMATION]** step: state-1
 

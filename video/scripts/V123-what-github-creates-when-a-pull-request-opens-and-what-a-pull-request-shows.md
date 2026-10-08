@@ -45,7 +45,7 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** graph: fbbcc8d-53e7f57-f3e7ca9-9a383e5-9aa221a main; 9a383e5-44c1e7b-12ae95d-16d4788 feature/priority-routing; HEAD=main => 9aa221a main; 16d4788 feature/priority-routing refs/pull/1/head; HEAD=main => 9aa221a main; 16d4788 feature/priority-routing refs/pull/1/head; ^9aa221a-135aad1 refs/pull/1/merge; 16d4788-135aad1; HEAD=main => 9aa221a-028b1de main; 16d4788 feature/priority-routing refs/pull/1/head; 135aad1 refs/pull/1/merge; HEAD=main title=The_base_repository_on_the_server id=refs
+**[ANIMATION]** graph: ...older-f3e7ca9-9a383e5-9aa221a main; 9a383e5-44c1e7b-12ae95d-16d4788 feature/priority-routing; HEAD=main => 9aa221a main; 16d4788 feature/priority-routing refs/pull/1/head; HEAD=main => 9aa221a main; 16d4788 feature/priority-routing refs/pull/1/head; ^9aa221a-135aad1 refs/pull/1/merge; 16d4788-135aad1; HEAD=main => 9aa221a-028b1de main; 16d4788 feature/priority-routing refs/pull/1/head; 135aad1 refs/pull/1/merge; HEAD=main title=The_base_repository_on_the_server id=refs dx=240 dy=105
 
 **[ANIMATION]** step: state-1
 
@@ -651,6 +651,8 @@ Answer out loud. A strong answer lists the items and sorts each into a layer. It
 ## RECAP
 
 **[ANIMATION]** step: refs.state-4
+
+**[ANIMATION]** say: off
 
 Let's land this. One picture holds the video: two branches, two refs GitHub wrote, and a test merge that can go stale.
 

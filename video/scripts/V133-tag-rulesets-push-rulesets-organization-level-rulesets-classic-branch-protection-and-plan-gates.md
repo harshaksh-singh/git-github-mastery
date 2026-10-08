@@ -179,7 +179,7 @@ Read the first row. `v*` matches `v1.0.0` and `v2`, as intended. It also matches
 
 The second row, `v[0-9]*`, requires a digit after the `v`: `v1.0.0` matches and `version-notes` does not.
 
-The lower block repeats what you saw two videos ago for branches. The cells marked "n/a" were not run in the course transcripts, so I do not fill them in from memory. That is the habit to copy: test a pattern, do not reason about it.
+The lower block repeats what you saw two videos ago for branches. The cells marked with the letters n and a were not run in the course transcripts, so I do not fill them in from memory. That is the habit to copy: test a pattern, do not reason about it.
 
 ## LIVE TERMINAL DEMO
 

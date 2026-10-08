@@ -363,8 +363,6 @@ Question 241 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: gone.2
-
 Answer out loud. A strong answer has the three parts the question asks for, in that order. It separates what is documented from what is unknown, and says so. Its first action doesn't depend on the platform. It closes with prevention, and it doesn't claim that anything was "removed from history".
 
 ## RECAP

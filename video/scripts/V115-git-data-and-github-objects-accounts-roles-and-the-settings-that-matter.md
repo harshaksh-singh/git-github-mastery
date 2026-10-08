@@ -393,8 +393,6 @@ Question 219 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: table.6
-
 Answer out loud. A strong answer picks items from every region of the page, includes at least one from the middle category of Git data that the platform interprets, and gives for each a command, not an opinion. It states the test that separates the two columns and mentions what GitHub writes into Git on your behalf.
 
 ## RECAP

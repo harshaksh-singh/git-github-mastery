@@ -549,8 +549,6 @@ Question 233 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: changed.path
-
 Answer out loud. A strong answer names both explanations without ranking one as "probably", and bases the decision on evidence from outside the affected connection. It knows the documented rotation and its date as an example. It gives the repair commands in order, and it's unambiguous about the forbidden shortcut and why it's forbidden.
 
 ## RECAP

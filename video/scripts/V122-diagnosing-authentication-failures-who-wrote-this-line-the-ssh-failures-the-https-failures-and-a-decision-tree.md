@@ -324,6 +324,8 @@ Correct fix       : Read the line above. If there is none, run the transport alo
 Prevention        : Quote the whole error in a ticket, never only the last line.
 ```
 
+Read the root-cause line: the cause is not in this message. It is in the line above it, written by ssh, by the server, or by Git's own check of a local path.
+
 **[TERMINAL]** The lab replay collects evidence for each failure without a network.
 
 ```bash
@@ -371,6 +373,8 @@ Correct fix       : Find out who the server thinks you are (gh auth status, ssh 
                     right identity answer, or grant it access.
 Prevention        : One identity per host or alias, chosen by configuration and not by habit.
 ```
+
+Read the mechanism line: the server authenticated the request as an account or token that cannot see the repository, and answered as if it did not exist.
 
 **[ON SCREEN]** GitHub walkthrough, Lab 20.3 Part B, in the normal shell. None of these commands changes your configuration, your keys, your `known_hosts` or your stored credentials. No output is shown; the documentation pages the lab links describe what GitHub answers.
 

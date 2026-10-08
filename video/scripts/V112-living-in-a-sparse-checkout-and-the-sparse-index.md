@@ -541,8 +541,6 @@ Question 431 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: narrow.3
-
 Answer out loud. A strong answer separates three kinds of file, tracked, untracked and ignored, and gives a different outcome for each. It says which outcome comes with a warning and which without, names the command that removes leftovers and its preview, and names the only preview there is for the silent case. It states plainly what can't be recovered from Git.
 
 ## RECAP

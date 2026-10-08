@@ -45,7 +45,7 @@ After this video you can:
 
 ## CONCEPT
 
-**[ANIMATION]** lifecycle: id=life nodes=draft:draft|ready:ready_for_review|rev:reviews_and_checks|merged:merged|closed:closed edges=draft>ready:mark_ready|ready>rev:review_submitted|rev>merged:merge|rev>closed:close|ready>draft:convert_to_draft grid=draft:1.1,ready:2.1,rev:3.1,merged:4.1,closed:4.2 at_5=55 title=Each_state_is_GitHub_data
+**[ANIMATION]** lifecycle: id=life nodes=draft:draft|ready:ready_for_review|rev:reviews_and_checks|merged:merged|closed:closed edges=draft>ready:mark_ready|ready>rev:review_submitted|rev>merged:merge|rev>closed:close|ready>draft:convert_to_draft grid=draft:1.1,ready:2.2,rev:3.1,merged:4.1,closed:4.2 at_5=55 title=Each_state_is_GitHub_data
 
 **[ANIMATION]** step: 4
 
@@ -79,8 +79,6 @@ Stale approvals. In one sentence: an approval is attached to the diff, the set o
 
 Setting 1: dismiss stale approvals. GitHub records the state of the diff at the point of approval. If the diff changes from this state, the approving review is dismissed as stale, and the pull request cannot be merged until someone approves again. Listen to the causes the documentation gives: a contributor pushes new changes, someone clicks Update branch, or a related pull request is merged into the target branch. The diff can change without anyone touching your branch.
 
-**[ANIMATION]** say: Setting 2: nothing is dismissed. Someone other than the last pusher must approve
-
 Setting 2: require approval of the most recent reviewable push. It requires "an approval from someone other than the last person to push to a branch". With this option stale reviews are not dismissed, and the pull request remains approved as long as someone other than the person who made the most recent changes approves it. GitHub presents it as a compromise for large pull requests with many reviewers, and says which one is stricter: "it is safer to dismiss stale reviews."
 
 **[ANIMATION]** end
@@ -92,8 +90,6 @@ Quick quiz, back to the hook. Neither setting is on. A reviewer approves, then t
 **[PAUSE]**
 
 **[ANIMATION]** step: hook.merge
-
-**[ANIMATION]** say: Neither setting: the approval stands, on a diff that has since changed
 
 A. The approval stands, on a diff that has since changed. That's how unread code reached `main`.
 

@@ -123,6 +123,8 @@ Prevention        : Delete the head branch after a squash or rebase merge and st
                     main. Enable automatic deletion of head branches in the repository.
 ```
 
+Read the root-cause line: content merged without ancestry, then more work on top of the old ancestry.
+
 **[ANIMATION]** step: squash.range
 
 **[DIAGRAM]** The graph behind that box.

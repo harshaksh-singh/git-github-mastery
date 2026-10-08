@@ -15,7 +15,7 @@ An audit asks a plain question about a release: which commit did the reviewer ap
 
 Your CTO asks: where did the reviewed commit go?
 
-**[ANIMATION]** graph: id=hook *1-*2-?same_change main; *1-*3-?the_reviewed_commit special:the-pull-request-ref; HEAD=none; say:The_reviewed_commit_never_reached_main dx=250 pace=quick
+**[ANIMATION]** graph: id=hook *1-*2-?same_change main; *1-*3-?the_reviewed_commit special:refs/pull/N/head; HEAD=none; say:The_reviewed_commit_never_reached_main dx=250 pace=quick
 
 Nowhere. It is still in the repository, under the pull request's ref. It never reached `main`, because of which button was pressed at merge time. This video is about the three buttons and what each one writes. Keep the audit question in mind: one bit answers it, and you'll measure that bit in the demo.
 
@@ -454,6 +454,8 @@ $ git log --format="%h author=%an committer=%cn %s" main..pr-1
 And with `--no-keep-empty`, the empty commit "Trigger CI again" is gone: three commits. Those two options together are what the documentation describes for the button.
 
 **[ON SCREEN]** The state table: any of the three merge buttons leaves your clone unchanged until you fetch. The base branch on the remote gains your commits and a merge commit, or one new commit, or new copies of your commits. After squash and rebase your original commits are on no branch, still under `refs/pull/N/head`. On GitHub, the pull request becomes merged, and the head branch is deleted if the repository setting or the option says so.
+
+Read the state table before the walkthrough. Any of the three merge buttons leaves your clone unchanged until you fetch. After squash and rebase your original commits are on no branch, still under `refs/pull/N/head`.
 
 **[ON SCREEN]** GitHub walkthrough, Lab 22.1 Part B, on the starter repository with all three merge methods enabled, using three pull requests. The interface changes; the documentation pages cited in section 17.8 are the reference. No output is shown.
 

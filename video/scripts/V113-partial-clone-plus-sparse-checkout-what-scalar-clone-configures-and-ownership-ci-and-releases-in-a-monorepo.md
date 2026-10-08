@@ -557,8 +557,6 @@ Question 446 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: dots.shallow
-
 Answer out loud. A strong answer explains what the two notations compare, with the merge base named. It then says which object the corrected command needs that a shallow clone doesn't have, and what the failure looks like, including the dangerous silent variant. It finishes with the clone shape that fixes it and why that shape is enough, in terms of commits, trees and blobs.
 
 ## RECAP

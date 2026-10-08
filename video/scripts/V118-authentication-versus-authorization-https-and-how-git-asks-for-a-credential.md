@@ -502,8 +502,6 @@ Question 244 of the CTO question bank:
 
 **[PAUSE]**
 
-**[ANIMATION]** step: ask.7
-
 Answer out loud. A strong answer walks the sequence in order and uses the three operation names correctly. It says where the prompt fits in when no helper answers. For the 403 it states precisely what Git doesn't do, and derives the symptom that a user sees days later. It ends with the evidence you would collect and the fix.
 
 ## RECAP

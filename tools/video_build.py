@@ -423,10 +423,14 @@ def pace_fault(said, seconds, rate):
     words, letters = pace_units(said)
     if seconds <= 0.05: return "fast", 99.0, 999.0
     wps, lps = words / seconds, letters / seconds
+    # A number is one token and several spoken words ("17.15" is "seventeen point fifteen"): for the "slow" test only, a token
+    # with digits counts as about four words per five digits, so a sentence full of section numbers is not taken for a padded one.
+    spoken_words = sum(max(1, round(0.8 * len(re.findall(r"\d", tok)))) if re.search(r"\d", tok) else 1 for tok in said.split())
+    wps_slow = spoken_words / seconds
     lo, hi = PACE_FACTOR[0] * rate / 60.0, PACE_FACTOR[1] * rate / 60.0
     if words >= PACE_MIN_WORDS:
         if wps > hi or lps > PACE_LETTERS[1]: return "fast", wps, lps
-        if wps < lo or lps < PACE_LETTERS[0]: return "slow", wps, lps
+        if wps_slow < lo or lps < PACE_LETTERS[0]: return "slow", wps, lps
     else:
         if wps > PACE_SHORT_FAST[0] or lps > PACE_SHORT_FAST[1]: return "fast", wps, lps
         if wps < PACE_SHORT_SLOW[0] and lps < PACE_SHORT_SLOW[1]: return "slow", wps, lps

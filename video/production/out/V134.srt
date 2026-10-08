@@ -1,0 +1,1402 @@
+1
+00:00:04,500 --> 00:00:09,268
+A developer writes in the team channel:
+"Everything is green and I still cannot
+
+2
+00:00:09,308 --> 00:00:14,197
+merge." Three people answer with three
+guesses. One says to push an empty commit.
+
+3
+00:00:14,237 --> 00:00:17,301
+One says to ask an
+administrator. One says to wait.
+
+4
+00:00:17,341 --> 00:00:20,527
+Which of the three would you
+follow? Say it out loud.
+
+5
+00:00:25,367 --> 00:00:30,009
+Whichever you chose, notice what's missing.
+None of them asked the two questions
+
+6
+00:00:30,049 --> 00:00:34,926
+that end the discussion in five minutes:
+which rules apply to this branch, and which
+
+7
+00:00:34,966 --> 00:00:39,374
+Git fact does each rule look at. In this
+video you learn where the rules are
+
+8
+00:00:39,414 --> 00:00:43,998
+visible, how to ask Git the questions the
+rules ask, and how to defend a set of
+
+9
+00:00:44,038 --> 00:00:48,505
+rules for a branch that deploys to
+production. Keep that grey button in mind.
+
+10
+00:00:48,545 --> 00:00:50,437
+It gets its answer in nine steps.
+
+11
+00:00:52,277 --> 00:00:56,185
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:56,225 --> 00:01:01,622
+In the last videos you learned what a rule
+is: a check on a ref update, evaluated by
+
+13
+00:01:01,662 --> 00:01:07,059
+GitHub and not by Git. A ref is a name, such
+as a branch or a tag, that holds the ID
+
+14
+00:01:07,099 --> 00:01:07,836
+of a commit.
+
+15
+00:01:08,176 --> 00:01:13,300
+A ruleset is a named list of rules with a
+target, an enforcement status and a bypass
+
+16
+00:01:13,340 --> 00:01:18,341
+list. You know that rulesets layer, that
+every applicable rule applies, and that a
+
+17
+00:01:18,381 --> 00:01:23,136
+classic branch protection rule, the older
+mechanism, can sit beside a ruleset.
+
+18
+00:01:23,476 --> 00:01:28,112
+This video turns that knowledge into
+a working procedure, in three parts.
+
+19
+00:01:28,152 --> 00:01:33,427
+First, how you see the rules: the rules
+page, the gh ruleset commands, and the REST
+
+20
+00:01:33,467 --> 00:01:38,679
+API. Second, the nine-step procedure of
+section 18.17 for a blocked merge, and its
+
+21
+00:01:38,719 --> 00:01:44,059
+mirror case, "why could they merge?". A pull
+request is GitHub's proposal to merge a
+
+22
+00:01:44,099 --> 00:01:49,439
+head branch into a base branch. Third, a
+worked design: one ruleset for a production
+
+23
+00:01:49,479 --> 00:01:53,474
+branch, with the reason for each
+rule and what each rule costs.
+
+24
+00:01:53,814 --> 00:01:59,153
+The local demonstration replays the first
+half of Lab 23.3 in the lab sandbox.
+
+25
+00:01:59,193 --> 00:02:03,636
+The second half is a walkthrough
+on your own practice repository.
+
+26
+00:02:05,476 --> 00:02:07,054
+Here's what you'll walk away with.
+
+27
+00:02:07,394 --> 00:02:08,806
+After this video you can:
+
+28
+00:02:09,146 --> 00:02:14,306
+find every rule that applies to a branch
+from the /rules page and from the command
+
+29
+00:02:14,346 --> 00:02:14,623
+line;
+
+30
+00:02:14,963 --> 00:02:20,398
+explain why gh ruleset is read-only and
+how rulesets are changed through the API;
+
+31
+00:02:20,738 --> 00:02:24,624
+follow the procedure for "everything
+is green and I still cannot merge";
+
+32
+00:02:24,964 --> 00:02:28,186
+diagnose three blocked merges
+on the practice repository;
+
+33
+00:02:28,526 --> 00:02:32,511
+defend each rule of the worked
+production-branch design and name its cost.
+
+34
+00:02:34,351 --> 00:02:38,867
+Start with why. A blocked merge is a
+refusal by GitHub to update a ref.
+
+35
+00:02:38,907 --> 00:02:44,192
+The refusal has a cause, the cause is one
+specific rule, and that rule looks at one
+
+36
+00:02:44,232 --> 00:02:48,748
+specific thing. If you guess, you
+change things that weren't the cause.
+
+37
+00:02:48,788 --> 00:02:54,009
+And on a branch where a new push dismisses
+earlier approvals as stale, every extra
+
+38
+00:02:54,049 --> 00:02:59,206
+push costs you a review. So the order is
+evidence first: which rules apply, which
+
+39
+00:02:59,246 --> 00:03:00,810
+one says no, and to what.
+
+40
+00:03:01,150 --> 00:03:05,698
+Seeing the rules. The textbook quotes the
+documentation: "Anyone with read access to
+
+41
+00:03:05,738 --> 00:03:10,067
+the repository can view the active rulesets."
+There are three documented places.
+
+42
+00:03:10,107 --> 00:03:13,726
+The first is the Rulesets page that
+you reach from the branch list.
+
+43
+00:03:13,766 --> 00:03:18,041
+The second is the merge box of a pull
+request, the panel with the merge button,
+
+44
+00:03:18,081 --> 00:03:22,519
+which shows rules, in the words of the
+documentation, "if there are rules blocking
+
+45
+00:03:22,559 --> 00:03:27,052
+the merging of a pull request". The third
+is the address of the repository with the
+
+46
+00:03:27,092 --> 00:03:28,035
+slug /rules added.
+
+47
+00:03:28,375 --> 00:03:34,172
+Quick quiz, from the last video. Are classic
+branch protection rules on that page
+
+48
+00:03:34,212 --> 00:03:38,567
+too? A, yes, for anyone with
+read access. B, no. Your answer?
+
+49
+00:03:43,407 --> 00:03:46,630
+B. Classic branch protection
+rules aren't on that page.
+
+50
+00:03:46,670 --> 00:03:51,495
+They're under the repository settings,
+Branches, and only administrators see them.
+
+51
+00:03:51,535 --> 00:03:56,479
+Keep that sentence in mind, because it
+explains a whole class of "I cannot see why".
+
+52
+00:03:56,819 --> 00:04:02,481
+The command line. The GitHub CLI is a
+client for GitHub's API, the interface that
+
+53
+00:04:02,521 --> 00:04:06,282
+programs use to talk to
+GitHub, and its command is gh.
+
+54
+00:04:06,322 --> 00:04:10,295
+It has a gh ruleset family,
+and that family is read-only.
+
+55
+00:04:10,335 --> 00:04:15,715
+Its own help says: "These commands allow
+you to view information about them."
+
+56
+00:04:15,755 --> 00:04:20,502
+In version 2.88.1 there are three
+subcommands: list, view and check.
+
+57
+00:04:20,842 --> 00:04:25,923
+All of these are 🟢 SAFE: they change
+nothing. The one to remember is gh ruleset
+
+58
+00:04:25,963 --> 00:04:31,109
+check. You give it a branch name, the
+branch doesn't need to exist, and it lists
+
+59
+00:04:31,149 --> 00:04:36,230
+every rule that would apply. That's the
+answer to the silent-pattern problem of
+
+60
+00:04:36,270 --> 00:04:41,222
+section 18.3: you ask which rules apply
+to a name before you trust a pattern.
+
+61
+00:04:41,562 --> 00:04:46,922
+Changing rules. Creating and changing a
+ruleset goes through the REST API, with gh
+
+62
+00:04:46,962 --> 00:04:51,400
+api. The ruleset travels as JSON,
+a text format for structured data.
+
+63
+00:04:51,440 --> 00:04:56,933
+The textbook lists the documented endpoints,
+the addresses of the API, and says that
+
+64
+00:04:56,973 --> 00:04:59,633
+none of them was executed by the authors.
+
+65
+00:04:59,973 --> 00:05:04,650
+The read calls are 🟢 SAFE. Every call
+with POST, PUT or DELETE is 🔴 DANGEROUS.
+
+66
+00:05:04,690 --> 00:05:09,669
+Here are the five answers for the three of
+them. What they change: a POST creates a
+
+67
+00:05:09,709 --> 00:05:13,781
+ruleset, and if it's Active it binds
+everyone at once, you included.
+
+68
+00:05:13,821 --> 00:05:18,801
+A PUT replaces the settings of a ruleset.
+A DELETE removes the protection for every
+
+69
+00:05:18,841 --> 00:05:21,099
+ref the ruleset targeted, immediately.
+
+70
+00:05:21,439 --> 00:05:26,507
+What they can destroy: the POST destroys
+nothing, and carries the label because, as
+
+71
+00:05:26,547 --> 00:05:31,678
+Chapter 15 says, the call does whatever the
+endpoint and the JSON say, with all your
+
+72
+00:05:31,718 --> 00:05:36,848
+permissions. The PUT destroys the previous
+settings, which exist nowhere else unless
+
+73
+00:05:36,888 --> 00:05:41,157
+you saved the JSON, because ruleset
+history exists only on Enterprise.
+
+74
+00:05:41,197 --> 00:05:46,266
+The DELETE destroys nothing directly. It
+makes force pushes and deletions possible.
+
+75
+00:05:46,606 --> 00:05:51,215
+How to preview: create with enforcement
+disabled and run gh ruleset check.
+
+76
+00:05:51,255 --> 00:05:55,740
+Before a PUT or a DELETE, read the
+ruleset with a GET and keep the JSON.
+
+77
+00:05:55,780 --> 00:06:00,892
+How to recover: set enforcement to disabled,
+PUT the saved JSON back, or re-create
+
+78
+00:06:00,932 --> 00:06:06,170
+from the saved JSON. When it's appropriate:
+for rules kept as reviewed JSON, and for
+
+79
+00:06:06,210 --> 00:06:11,386
+a deletion, in a planned migration or a
+declared emergency, by a named person, with
+
+80
+00:06:11,426 --> 00:06:14,402
+the reason written where
+the audit will find it.
+
+81
+00:06:14,742 --> 00:06:19,296
+Two details about the read endpoints.
+"Get rules for a branch" returns, in the
+
+82
+00:06:19,336 --> 00:06:24,125
+documentation's words, "all active rules
+that apply to the specified branch", from
+
+83
+00:06:24,165 --> 00:06:28,719
+every level, and it leaves out rulesets
+that are disabled or in evaluate mode.
+
+84
+00:06:28,759 --> 00:06:33,431
+And the bypass_actors field is returned
+only to callers with write access to the
+
+85
+00:06:33,471 --> 00:06:33,902
+ruleset.
+
+86
+00:06:34,242 --> 00:06:38,332
+Rulesets can be exported and imported
+as JSON in the web interface.
+
+87
+00:06:38,372 --> 00:06:43,018
+Keeping that JSON in a repository gives
+you review and history for the rules
+
+88
+00:06:43,058 --> 00:06:48,073
+themselves. The bypass list is excluded
+from the Enterprise history export, so you
+
+89
+00:06:48,113 --> 00:06:49,368
+record it separately.
+
+90
+00:06:49,708 --> 00:06:55,058
+Rule Insights lists ref updates that passed,
+failed or bypassed rulesets, and the
+
+91
+00:06:55,098 --> 00:07:00,315
+rule-suites endpoint returns the same
+data. It's your evidence for the question
+
+92
+00:07:00,355 --> 00:07:05,638
+"would we know if someone skipped the
+rules", with one exception: exempt actors,
+
+93
+00:07:05,678 --> 00:07:07,901
+from section 18.5, leave no entry.
+
+94
+00:07:09,741 --> 00:07:14,012
+In one sentence, in the textbook's
+words: work from the outside in.
+
+95
+00:07:14,052 --> 00:07:19,418
+What the merge box says, which rules apply
+to the base branch from every layer, then
+
+96
+00:07:19,458 --> 00:07:21,477
+one local Git question per rule.
+
+97
+00:07:21,817 --> 00:07:26,531
+Think of it as two lanes. In one lane you
+ask GitHub about platform state: reviews,
+
+98
+00:07:26,571 --> 00:07:29,795
+checks, conversations, the
+allowed merge methods, bypass.
+
+99
+00:07:29,835 --> 00:07:34,606
+In the other lane you ask Git about facts
+of the commit graph: is the branch behind,
+
+100
+00:07:34,646 --> 00:07:39,074
+does the test merge conflict, are there
+merge commits, are the commits signed.
+
+101
+00:07:39,114 --> 00:07:43,484
+Many rules are a platform decision about
+a Git fact, and the Git fact you can
+
+102
+00:07:43,524 --> 00:07:45,661
+compute yourself, offline, in a clone.
+
+103
+00:07:46,001 --> 00:07:50,385
+The model breaks in one place, and you
+should say so when you explain it.
+
+104
+00:07:50,425 --> 00:07:55,234
+Git can tell you whether a fact holds.
+Git can't tell you whether a rule exists.
+
+105
+00:07:55,274 --> 00:08:00,144
+A clone contains no rulesets. So the Git
+lane never replaces the first two steps.
+
+106
+00:08:00,484 --> 00:08:05,709
+Try it now, thirty seconds, on paper. Draw
+two columns, "ask GitHub" and "ask Git".
+
+107
+00:08:05,749 --> 00:08:10,658
+Sort these four into them: reviews,
+conflicts, required checks, merge commits.
+
+108
+00:08:10,698 --> 00:08:12,244
+Say your answer out loud.
+
+109
+00:08:17,084 --> 00:08:20,890
+Reviews and required checks go under
+GitHub: they're platform state.
+
+110
+00:08:20,930 --> 00:08:25,640
+Conflicts and merge commits go under Git:
+they're facts of the commit graph, and you
+
+111
+00:08:25,680 --> 00:08:29,599
+can compute them offline, in a clone,
+your own copy of the repository.
+
+112
+00:08:29,939 --> 00:08:31,268
+Here are the nine steps.
+
+113
+00:08:31,608 --> 00:08:36,783
+One: read the merge box and the CLI's
+view. gh pr view with the JSON fields
+
+114
+00:08:36,823 --> 00:08:42,415
+mergeable, mergeStateStatus and reviewDecision,
+and gh pr checks with --required.
+
+115
+00:08:42,455 --> 00:08:48,186
+mergeable is MERGEABLE, CONFLICTING or
+UNKNOWN, and UNKNOWN means not computed yet:
+
+116
+00:08:48,226 --> 00:08:53,540
+ask again. mergeStateStatus has values
+such as BEHIND, BLOCKED, DIRTY, DRAFT,
+
+117
+00:08:53,580 --> 00:08:57,295
+UNSTABLE and CLEAN. BLOCKED
+says that a rule is unmet.
+
+118
+00:08:57,335 --> 00:09:01,050
+It doesn't say which one.
+The remaining steps find it.
+
+119
+00:09:01,390 --> 00:09:07,056
+Two: list every rule on the base branch. gh
+ruleset check with the base branch name,
+
+120
+00:09:07,096 --> 00:09:12,491
+or the /rules page, then the classic rule,
+then remember the organization level.
+
+121
+00:09:12,831 --> 00:09:18,909
+Three: conflicts. Fetch, then git
+merge-tree --write-tree --name-only.
+
+122
+00:09:18,949 --> 00:09:21,531
+Exit status 1 names the files.
+
+123
+00:09:21,871 --> 00:09:26,970
+Four: up to date, for strict checks. Strict
+means the tested commit must include the
+
+124
+00:09:27,010 --> 00:09:31,742
+current base branch. git merge-base
+--is-ancestor with the base and your HEAD.
+
+125
+00:09:31,782 --> 00:09:36,881
+If the base isn't an ancestor, you update
+the branch, and then you expect the checks
+
+126
+00:09:36,921 --> 00:09:39,879
+to run again and stale
+approvals to be dismissed.
+
+127
+00:09:40,219 --> 00:09:45,356
+Five: checks. For each required name,
+is there a result on the newest commit?
+
+128
+00:09:45,396 --> 00:09:50,264
+Pending forever means a skipped workflow,
+a wrong name, or a wrong event.
+
+129
+00:09:50,604 --> 00:09:55,421
+Six: reviews. Count approvals from people
+with write access given after the last
+
+130
+00:09:55,461 --> 00:10:00,217
+change of the diff. Look for an outstanding
+"changes requested", a missing code
+
+131
+00:10:00,257 --> 00:10:05,134
+owner, an approval by the last pusher,
+unresolved threads, a twin pull request on
+
+132
+00:10:05,174 --> 00:10:06,106
+the same commit.
+
+133
+00:10:06,446 --> 00:10:10,966
+Seven: commits. Which commits would land,
+and do they satisfy the commit-level
+
+134
+00:10:11,006 --> 00:10:15,877
+rules: signatures, merge commits under linear
+history, and under Enterprise metadata
+
+135
+00:10:15,917 --> 00:10:18,274
+rules the author and committer addresses.
+
+136
+00:10:18,614 --> 00:10:23,444
+Eight: method. Is the method you chose
+allowed by the ruleset and also enabled in
+
+137
+00:10:23,484 --> 00:10:24,887
+the repository settings?
+
+138
+00:10:25,227 --> 00:10:29,650
+Nine: you. Do you have write permission,
+and is the pull request still a draft?
+
+139
+00:10:29,990 --> 00:10:34,565
+If everything passes and the button is
+still grey, a rule you can't see is the
+
+140
+00:10:34,605 --> 00:10:39,475
+likely cause: an organization or enterprise
+ruleset, or a classic rule visible only
+
+141
+00:10:39,515 --> 00:10:43,438
+to administrators. Ask an administrator
+for the output of step two.
+
+142
+00:10:45,278 --> 00:10:49,763
+The nine steps as one picture: GitHub's
+questions on the left, Git's on the right.
+
+143
+00:10:51,603 --> 00:10:56,330
+Into the lab. The situation: a repository
+called ticket-router on a local bare
+
+144
+00:10:56,370 --> 00:11:01,036
+server, a repository with no working
+tree that plays the server in this demo.
+
+145
+00:11:01,076 --> 00:11:05,925
+Three branches are open as if they were
+pull requests: feature/priority-routing,
+
+146
+00:11:05,965 --> 00:11:10,080
+which is yours, and fix/threshold
+and docs/queues, which are Ravi's.
+
+147
+00:11:10,120 --> 00:11:13,014
+Your local main is one
+commit behind the server.
+
+148
+00:11:13,354 --> 00:11:16,992
+Step 1. Read the tool before
+you trust it, then fetch.
+
+149
+00:11:17,332 --> 00:11:21,285
+git fetch is 🟢 SAFE: it adds objects
+and moves remote-tracking refs.
+
+150
+00:11:21,325 --> 00:11:25,984
+Before the output appears, read the script
+aloud. It asks four questions about a
+
+151
+00:11:26,024 --> 00:11:30,271
+branch, each with one command you know:
+how many commits the pull request
+
+152
+00:11:30,311 --> 00:11:35,087
+introduces, whether origin/main is an
+ancestor of the branch, whether a test merge
+
+153
+00:11:35,127 --> 00:11:39,198
+is clean, and how many merge commits
+are among the introduced commits.
+
+154
+00:11:39,538 --> 00:11:45,004
+Point at the last line of the fetch output.
+origin/main, your clone's record of the
+
+155
+00:11:45,044 --> 00:11:50,576
+server's main, moved from 9a383e5 to 9aa221a.
+Every answer from here on is about the
+
+156
+00:11:50,616 --> 00:11:53,296
+server's main, not about your local main.
+
+157
+00:11:53,636 --> 00:11:56,434
+Step 2. Run the script for each branch.
+
+158
+00:11:56,774 --> 00:12:01,766
+Predict first. The main branch requires
+linear history, which means no commit with
+
+159
+00:12:01,806 --> 00:12:06,553
+two parents, and strict, up-to-date
+checks. For each branch, which line of the
+
+160
+00:12:06,593 --> 00:12:09,560
+report would make GitHub
+refuse? Say it out loud.
+
+161
+00:12:14,400 --> 00:12:19,354
+Read it one branch at a time. Your branch:
+three commits, a clean test merge, no
+
+162
+00:12:19,394 --> 00:12:24,410
+merge commits, and "up to date with main:
+no". Under a strict status check policy
+
+163
+00:12:24,450 --> 00:12:29,466
+that one line blocks it. Ravi's fix/threshold:
+not up to date, and the test merge
+
+164
+00:12:29,506 --> 00:12:34,584
+reports a conflict. docs/queues: up to
+date, clean, and one merge commit among its
+
+165
+00:12:34,624 --> 00:12:38,954
+two commits. Under a linear history
+rule that's the line that matters.
+
+166
+00:12:39,294 --> 00:12:43,379
+Three branches, three different answers,
+and no browser has been opened.
+
+167
+00:12:43,719 --> 00:12:47,021
+Step 3. Get the details for
+the two that aren't yours.
+
+168
+00:12:47,361 --> 00:12:50,496
+What will the first command
+print besides a tree ID?
+
+169
+00:12:50,536 --> 00:12:51,778
+Make your prediction.
+
+170
+00:12:56,618 --> 00:13:01,277
+The first command wrote a tree,
+338b4c9, and named the conflicted file:
+
+171
+00:13:01,317 --> 00:13:05,910
+config/routing.yaml. A tree is Git's
+object for one directory listing.
+
+172
+00:13:05,950 --> 00:13:11,204
+Nothing in your working tree or index
+changed. merge-tree works on objects only.
+
+173
+00:13:11,544 --> 00:13:18,814
+The second command shows why docs/queues
+has a merge commit: 9042b9e, "Merge main
+
+174
+00:13:18,854 --> 00:13:25,853
+into docs/queues". Ravi brought the branch
+up to date by merging main into it.
+
+175
+00:13:26,193 --> 00:13:30,608
+That satisfied the up-to-date rule and
+broke the linear history rule in the same
+
+176
+00:13:30,648 --> 00:13:35,007
+step. Leave the question of how docs/queues
+could still be merged for the lab's
+
+177
+00:13:35,047 --> 00:13:35,620
+checkpoint.
+
+178
+00:13:35,960 --> 00:13:39,516
+The replay continues with a
+failure scenario and a recovery.
+
+179
+00:13:39,556 --> 00:13:42,573
+Stop here. Those belong to
+your own run of the lab.
+
+180
+00:13:42,913 --> 00:13:47,816
+Now the platform side, on your own practice
+repository, following Part B of Lab
+
+181
+00:13:47,856 --> 00:13:53,072
+23.3. The GitHub interface changes. The text
+of the lab and the linked documentation
+
+182
+00:13:53,112 --> 00:13:56,889
+are the reference, and the authors
+captured no GitHub output.
+
+183
+00:13:56,929 --> 00:14:01,644
+Run this part in your normal shell, not
+in labs/shell, because the lab shell
+
+184
+00:14:01,684 --> 00:14:06,150
+switches off the system configuration
+where the credential helper lives.
+
+185
+00:14:06,490 --> 00:14:11,716
+The lab adds a third ruleset that requires
+a status check named ci/unit, strict.
+
+186
+00:14:11,756 --> 00:14:14,679
+Nothing in the repository
+reports that check.
+
+187
+00:14:15,019 --> 00:14:19,487
+This POST is the 🔴 DANGEROUS call whose
+five answers you heard in the concept
+
+188
+00:14:19,527 --> 00:14:23,585
+section. On a practice repository
+that only you use, it's appropriate.
+
+189
+00:14:23,925 --> 00:14:27,693
+Open the address of your practice
+repository with /rules added.
+
+190
+00:14:27,733 --> 00:14:32,588
+You should find the rulesets that are
+active, and for each the rules it contains.
+
+191
+00:14:32,628 --> 00:14:35,671
+Then compare with what gh
+ruleset check main lists.
+
+192
+00:14:36,011 --> 00:14:39,648
+Case A is a pull request whose
+required check nobody reports.
+
+193
+00:14:39,688 --> 00:14:44,711
+Open it in the browser and look at the merge
+box. According to the documentation the
+
+194
+00:14:44,751 --> 00:14:48,267
+box names the rule that blocks
+the merge. Then ask the CLI:
+
+195
+00:14:48,607 --> 00:14:53,623
+Name what you see by its function: the
+list of required checks GitHub is waiting
+
+196
+00:14:53,663 --> 00:14:58,870
+for, and the merge state. Case B moves main
+while case A is open, so that case A is
+
+197
+00:14:58,910 --> 00:15:04,179
+no longer up to date. The lab has you confirm
+that with git merge-base --is-ancestor
+
+198
+00:15:04,219 --> 00:15:09,046
+before you touch anything. Case C leaves
+no merge method: the ruleset and the
+
+199
+00:15:09,086 --> 00:15:13,976
+repository settings no longer agree on
+one. For each case, open the rules page
+
+200
+00:15:14,016 --> 00:15:16,694
+first, name the rule,
+and only then repair.
+
+201
+00:15:18,534 --> 00:15:20,182
+Five mistakes to watch for.
+
+202
+00:15:20,522 --> 00:15:24,007
+Relaxing one ruleset and
+expecting the block to go away.
+
+203
+00:15:24,047 --> 00:15:28,853
+Root cause: a second ruleset, an
+organization ruleset, or a classic rule also
+
+204
+00:15:28,893 --> 00:15:31,560
+applies, and every
+applicable rule applies.
+
+205
+00:15:31,900 --> 00:15:36,287
+Waiting for a check that says
+"Waiting for status to be reported".
+
+206
+00:15:36,327 --> 00:15:41,922
+Root cause: the workflow was skipped by a
+path or branch filter or [skip ci], or the
+
+207
+00:15:41,962 --> 00:15:46,551
+required name is wrong, or the run
+used an event that does not count.
+
+208
+00:15:46,891 --> 00:15:51,754
+Treating an approval as permanent. Root
+cause: the approval was dismissed as stale,
+
+209
+00:15:51,794 --> 00:15:56,479
+or was given by the last pusher, or a code
+owner is missing, or another reviewer
+
+210
+00:15:56,519 --> 00:15:57,542
+requested changes.
+
+211
+00:15:57,882 --> 00:16:02,302
+Allowing only one merge method in the
+ruleset and disabling that method in the
+
+212
+00:16:02,342 --> 00:16:06,934
+repository settings. Root cause: both
+layers must permit the method, and they are
+
+213
+00:16:06,974 --> 00:16:08,707
+configured in different places.
+
+214
+00:16:09,047 --> 00:16:13,776
+Trusting a new branch pattern without
+testing it. Root cause: * does not cross a
+
+215
+00:16:13,816 --> 00:16:18,723
+slash, so the pattern matches fewer names
+than you meant; gh ruleset check with the
+
+216
+00:16:18,763 --> 00:16:19,975
+branch name shows it.
+
+217
+00:16:21,815 --> 00:16:26,374
+Now, out of the lab. The textbook's
+worked design is for a service called
+
+218
+00:16:26,414 --> 00:16:29,587
+inventory-api. It deploys
+from main on every merge.
+
+219
+00:16:29,627 --> 00:16:34,628
+Six engineers, pull requests of a few
+hundred lines, and CI, the automated tests
+
+220
+00:16:34,668 --> 00:16:39,479
+that run on each change, of about eight
+minutes. An ML platform team owns the
+
+221
+00:16:39,519 --> 00:16:40,739
+deployment workflow.
+
+222
+00:16:41,079 --> 00:16:45,714
+The team has decided on squash merges,
+where each pull request lands as one new
+
+223
+00:16:45,754 --> 00:16:50,566
+commit. The textbook says this is one
+defensible design for that context, and that
+
+224
+00:16:50,606 --> 00:16:55,241
+another team should make other choices.
+The ruleset file was assembled from the
+
+225
+00:16:55,281 --> 00:16:59,620
+documented schema and syntax-checked.
+The author didn't send it to GitHub.
+
+226
+00:16:59,960 --> 00:17:04,747
+Walk through the choices with their costs.
+The target is ~DEFAULT_BRANCH, which
+
+227
+00:17:04,787 --> 00:17:09,819
+survives a rename and has no pattern to get
+wrong. The cost is that it protects one
+
+228
+00:17:09,859 --> 00:17:14,769
+branch only. Deletions and force pushes
+are blocked, because main is deployed and
+
+229
+00:17:14,809 --> 00:17:19,841
+its history is an audit record. The cost
+is that a bad merge is undone by a revert,
+
+230
+00:17:19,881 --> 00:17:20,879
+never by a reset.
+
+231
+00:17:21,219 --> 00:17:25,481
+Linear history with squash only gives
+one commit per pull request and trivial
+
+232
+00:17:25,521 --> 00:17:29,727
+reverts. The cost is that the reviewed
+commit IDs aren't the commit on main.
+
+233
+00:17:30,067 --> 00:17:34,335
+One approval with stale approvals
+dismissed means nothing lands unseen.
+
+234
+00:17:34,375 --> 00:17:39,006
+The cost is re-approval after each update.
+Approval of the last push covers a
+
+235
+00:17:39,046 --> 00:17:43,738
+reviewer who pushes a fix and approves
+it. Code owner review is on because the
+
+236
+00:17:43,778 --> 00:17:48,774
+deployment workflow has named owners. Owners
+become a bottleneck if the file is too
+
+237
+00:17:48,814 --> 00:17:49,138
+broad.
+
+238
+00:17:49,478 --> 00:17:53,937
+One required check, strict, means the
+tested commit includes current main.
+
+239
+00:17:53,977 --> 00:17:58,557
+With eight-minute CI and a few merges
+a day that costs some waiting, and the
+
+240
+00:17:58,597 --> 00:18:03,117
+textbook names a merge queue as the
+alternative when updates start to race.
+
+241
+00:18:03,157 --> 00:18:08,102
+The bypass list is empty, so administrators
+follow the same path, and an emergency
+
+242
+00:18:08,142 --> 00:18:12,966
+needs a deliberate, recorded edit of the
+ruleset. There's no signed-commit rule,
+
+243
+00:18:13,006 --> 00:18:18,012
+because squash commits are signed by GitHub
+anyway and requiring signatures on head
+
+244
+00:18:18,052 --> 00:18:20,869
+branches would block
+contributors without keys.
+
+245
+00:18:21,209 --> 00:18:25,815
+Then the two things this ruleset doesn't
+do. It doesn't protect release tags.
+
+246
+00:18:25,855 --> 00:18:30,703
+That's a tag ruleset. And it doesn't stop
+a required check from being reported by
+
+247
+00:18:30,743 --> 00:18:35,228
+anyone with write access. For that you
+pin the check to its GitHub App with
+
+248
+00:18:35,268 --> 00:18:36,133
+integration_id.
+
+249
+00:18:36,473 --> 00:18:41,849
+Rolling it out: create it Disabled, run gh
+ruleset check main and read the result,
+
+250
+00:18:41,889 --> 00:18:45,020
+open a test pull request,
+then switch to Active.
+
+251
+00:18:46,860 --> 00:18:51,437
+Your turn. Do Lab 23.3, "Three
+blocked merges to diagnose", in
+
+252
+00:18:51,477 --> 00:18:55,607
+lab-manual/m23-governance.md.
+Part A runs in labs/shell.
+
+253
+00:18:55,647 --> 00:19:01,490
+The clock is real there, so your commit
+IDs differ from the ones in this video.
+
+254
+00:19:01,530 --> 00:19:06,033
+Part B runs in your normal shell
+on your practice repository.
+
+255
+00:19:06,373 --> 00:19:10,958
+Before you run anything in Part A, write
+down for each of the three branches which
+
+256
+00:19:10,998 --> 00:19:15,584
+rule of Chapter 18 would refuse it. Before
+each repair in Part B, write down which
+
+257
+00:19:15,624 --> 00:19:19,307
+rule blocks, and what GitHub will
+require again after your repair.
+
+258
+00:19:19,347 --> 00:19:22,014
+Then check your prediction
+against what you see.
+
+259
+00:19:22,354 --> 00:19:27,994
+The challenge is Exercise
+23.7, "Protect a monorepo", in
+
+260
+00:19:28,034 --> 00:19:30,834
+exercises/m19-m25-github.md.
+
+261
+00:19:34,674 --> 00:19:39,599
+Answer out loud first. A strong answer has
+an order, and says why the order is that
+
+262
+00:19:39,639 --> 00:19:43,546
+way. It starts with evidence from
+the platform, not with a repair.
+
+263
+00:19:43,586 --> 00:19:48,451
+It names every layer where a rule can live,
+including the ones the developer can't
+
+264
+00:19:48,491 --> 00:19:53,177
+see. For each rule it names the Git fact
+the rule inspects and the command that
+
+265
+00:19:53,217 --> 00:19:54,792
+computes that fact locally.
+
+266
+00:19:55,132 --> 00:19:59,206
+It mentions what an update of the
+branch costs under strict checks and
+
+267
+00:19:59,246 --> 00:20:04,026
+stale-approval dismissal. And it's ready
+for the follow-up, the mirror case: how a
+
+268
+00:20:04,066 --> 00:20:07,200
+colleague was able to merge
+without meeting the rules.
+
+269
+00:20:07,240 --> 00:20:10,374
+Say which layer acts in every
+sentence: Git or GitHub.
+
+270
+00:20:12,214 --> 00:20:17,332
+Let's land this. The grey button from the
+opening has its answer: read the merge
+
+271
+00:20:17,372 --> 00:20:22,103
+box, list every rule from every layer,
+then ask Git one question per rule.
+
+272
+00:20:22,443 --> 00:20:24,103
+You should now be able to say:
+
+273
+00:20:24,443 --> 00:20:29,609
+Anyone with read access can see the active
+rulesets on the /rules page; classic
+
+274
+00:20:29,649 --> 00:20:34,815
+rules are visible only to administrators,
+and disabled rulesets are not on that
+
+275
+00:20:34,855 --> 00:20:35,144
+page.
+
+276
+00:20:35,484 --> 00:20:40,668
+gh ruleset only reads; rulesets are created
+and changed through the REST API, and
+
+277
+00:20:40,708 --> 00:20:44,279
+every such call that is not
+a GET is labelled dangerous.
+
+278
+00:20:44,619 --> 00:20:49,918
+A blocked merge is diagnosed from the
+outside in: the merge box, every rule from
+
+279
+00:20:49,958 --> 00:20:52,854
+every layer, then one
+Git question per rule.
+
+280
+00:20:53,194 --> 00:20:56,054
+BLOCKED says that a rule is
+unmet, and not which one.
+
+281
+00:20:56,394 --> 00:21:00,068
+Every rule in a production ruleset
+has a cost, and you can name it.
+
+282
+00:21:01,908 --> 00:21:09,136
+Read sections 18.16 to 18.21 of Chapter
+18 and do the Practice section 18.23.
+
+283
+00:21:09,476 --> 00:21:14,465
+Today you turned "why can't I merge" from
+three guesses into one procedure, and you
+
+284
+00:21:14,505 --> 00:21:17,736
+can name what each rule of
+a production ruleset costs.
+
+285
+00:21:17,776 --> 00:21:22,825
+Practise the four preflight questions on a
+branch of your own before the next video.
+
+286
+00:21:22,865 --> 00:21:27,610
+Next time: CODEOWNERS, what it is, where
+it lives, its syntax, and why the last
+
+287
+00:21:27,650 --> 00:21:31,487
+match wins. Until then, look at
+the state first and type second.
+
+288
+00:21:31,527 --> 00:21:32,941
+See you in the next one.

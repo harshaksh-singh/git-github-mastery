@@ -89,7 +89,7 @@ The recovery, when the wrong thing has happened: decide which commit is the vers
 
 **[ANIMATION]** step: 2
 
-Quick quiz on that last row. `gh release delete`, no other option: what happens to the tag? A: deleted too. B: it stays. Your answer?
+Quick quiz on that last row, from memory now that the table is gone. `gh release delete`, no other option: what happens to the tag? A: deleted too. B: it stays. Your answer?
 
 **[PAUSE]**
 
@@ -166,6 +166,8 @@ Correct fix       : Decide which commit is the version. Then either describe wit
 Prevention        : Create and push the annotated tag first; create the release with --verify-tag.
                     Protect tags with a tag ruleset; use immutable releases for anything you ship.
 ```
+
+Read the root-cause line: the release was created for a tag that did not exist, so the platform created the tag at the tip of the default branch.
 
 ## LIVE TERMINAL DEMO
 

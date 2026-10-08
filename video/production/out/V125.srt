@@ -1,0 +1,1137 @@
+1
+00:00:04,500 --> 00:00:09,377
+The pull request changed one line. The
+page lists four commits and three files.
+
+2
+00:00:09,417 --> 00:00:14,543
+The author says "I only changed one line".
+The reviewer says "then why am I looking
+
+3
+00:00:14,583 --> 00:00:17,406
+at three files?" Your
+CTO asks: which is true?
+
+4
+00:00:17,746 --> 00:00:22,108
+Both. The author is describing a
+commit. The page is describing a range.
+
+5
+00:00:22,148 --> 00:00:25,594
+And the range starts somewhere
+the author did not expect.
+
+6
+00:00:25,934 --> 00:00:30,537
+By the end of this video you will be able
+to take any pull request that shows too
+
+7
+00:00:30,577 --> 00:00:35,181
+much, name the cause from a short documented
+list, prove it with one Git command,
+
+8
+00:00:35,221 --> 00:00:39,939
+and choose the repair that fits. One question
+does most of the work: where does the
+
+9
+00:00:39,979 --> 00:00:40,627
+range start?
+
+10
+00:00:42,467 --> 00:00:46,299
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:46,339 --> 00:00:50,870
+Two videos ago you learned the sentence
+that the whole chapter hangs on.
+
+12
+00:00:50,910 --> 00:00:55,631
+A pull request, a proposal to merge a
+head branch into a base branch, shows
+
+13
+00:00:55,671 --> 00:00:59,313
+base..head in its commit list
+and base...head in its diff.
+
+14
+00:00:59,353 --> 00:01:04,519
+And everything is computed from three
+commits: the tip of the base, the tip of the
+
+15
+00:01:04,559 --> 00:01:09,534
+head, and their merge base, the most
+recent commit that both histories contain.
+
+16
+00:01:09,874 --> 00:01:15,054
+So every surprise on a pull request page
+is a surprise about one of those three.
+
+17
+00:01:15,094 --> 00:01:20,338
+Either the head contains commits that the
+base does not reach, or the base is not
+
+18
+00:01:20,378 --> 00:01:25,623
+the branch the work started from. That is
+section 17.12 in one sentence, and this
+
+19
+00:01:25,663 --> 00:01:27,058
+video is that section.
+
+20
+00:01:27,398 --> 00:01:34,967
+GitHub documents five causes. The first two
+can be reproduced in plain Git, and they
+
+21
+00:01:35,007 --> 00:01:41,761
+are the two replays: labs/ch17/wrong-base.sh
+and labs/ch17/squash-reuse.sh.
+
+22
+00:01:41,801 --> 00:01:47,468
+Then a walkthrough following Lab
+21.2 on a practice repository.
+
+23
+00:01:47,808 --> 00:01:52,911
+Labels: git rebase --onto is 🟡 CAUTION:
+it rewrites the current branch.
+
+24
+00:01:52,951 --> 00:01:58,778
+Preview with git log <upstream>..HEAD.
+Recover with ORIG_HEAD, the reflog, or git
+
+25
+00:01:58,818 --> 00:02:04,863
+rebase --abort. Republishing a rewritten
+branch needs git push --force-with-lease, 🔴
+
+26
+00:02:04,903 --> 00:02:10,875
+DANGEROUS, with the five answers from the
+last video: appropriate for your own pull
+
+27
+00:02:10,915 --> 00:02:16,815
+request branch after a rebase. gh pr edit
+--base is 🟡: it changes the base and can
+
+28
+00:02:16,855 --> 00:02:18,119
+dismiss approvals.
+
+29
+00:02:19,959 --> 00:02:21,371
+After this video you can:
+
+30
+00:02:21,711 --> 00:02:26,333
+Give the documented causes of a pull request
+with many unrelated commits or files.
+
+31
+00:02:26,673 --> 00:02:31,248
+Diagnose a pull request opened against
+the wrong base and fix it by changing the
+
+32
+00:02:31,288 --> 00:02:33,325
+base or by transplanting the branch.
+
+33
+00:02:33,665 --> 00:02:38,540
+Explain why a branch reused after a squash
+merge lists its old commits again and may
+
+34
+00:02:38,580 --> 00:02:39,067
+conflict.
+
+35
+00:02:39,407 --> 00:02:42,760
+Repair the reused branch
+with git rebase --onto.
+
+36
+00:02:43,100 --> 00:02:45,624
+Name the Git command
+that tests each cause.
+
+37
+00:02:47,464 --> 00:02:52,131
+Cause one: the head branch was reused after
+a squash merge, the merge that replaces
+
+38
+00:02:52,171 --> 00:02:56,839
+your commits by one new commit. You see
+commits that were "already squashed" listed
+
+39
+00:02:56,879 --> 00:03:01,490
+again, and repeated conflicts. The mechanism:
+the squash commit has no parent link
+
+40
+00:03:01,530 --> 00:03:04,042
+to the branch, so the
+merge base never moved.
+
+41
+00:03:04,382 --> 00:03:08,985
+Cause two: a wrong or changed base branch.
+You see every commit of the branch the
+
+42
+00:03:09,025 --> 00:03:13,801
+work was really based on. The mechanism:
+the range is taken against a base that does
+
+43
+00:03:13,841 --> 00:03:15,291
+not contain those commits.
+
+44
+00:03:15,631 --> 00:03:20,183
+Cause three: the base branch moved. The
+pull request page and a compare page
+
+45
+00:03:20,223 --> 00:03:25,018
+disagree, because they "can calculate
+changed files from different merge bases".
+
+46
+00:03:25,058 --> 00:03:28,583
+Nothing is wrong. If the two
+must agree, update the branch.
+
+47
+00:03:28,923 --> 00:03:33,976
+Cause four: rewritten or force-pushed history.
+You see old and new copies of commits
+
+48
+00:03:34,016 --> 00:03:38,827
+and outdated review comments. GitHub's
+words: "Force pushing rewrites repository
+
+49
+00:03:38,867 --> 00:03:43,678
+history and can ... corrupt pull requests."
+And if someone force-pushes the base
+
+50
+00:03:43,718 --> 00:03:47,862
+branch, every open pull request
+against it lists the removed commits.
+
+51
+00:03:47,902 --> 00:03:51,379
+That is a reason to block force
+pushes on shared branches.
+
+52
+00:03:51,719 --> 00:03:57,142
+Cause five: the diff is truncated or hidden.
+Files are missing from "Files changed"
+
+53
+00:03:57,182 --> 00:04:02,079
+because of display limits, or because
+a .gitattributes rule hides the file.
+
+54
+00:04:02,119 --> 00:04:07,344
+The file changed and the page does not
+render it. git diff --stat base...head on
+
+55
+00:04:07,384 --> 00:04:09,385
+your machine has no such limit.
+
+56
+00:04:09,725 --> 00:04:12,090
+Now the two causes that
+deserve a mechanism.
+
+57
+00:04:12,430 --> 00:04:17,577
+The wrong base. On screen is today's example:
+a branch created from main, for a fix
+
+58
+00:04:17,617 --> 00:04:22,765
+meant for a release branch. Why does it
+happen? Because people create branches from
+
+59
+00:04:22,805 --> 00:04:27,827
+main by habit, and open the pull request
+against wherever the fix is meant to go.
+
+60
+00:04:27,867 --> 00:04:32,827
+If those are two different branches, the
+range base..head contains everything on
+
+61
+00:04:32,867 --> 00:04:38,015
+main that the release branch does not have.
+Merging such a pull request would carry
+
+62
+00:04:38,055 --> 00:04:40,515
+unreleased work into the release branch.
+
+63
+00:04:40,855 --> 00:04:44,108
+There are two repairs, and
+they are not interchangeable.
+
+64
+00:04:44,148 --> 00:04:47,519
+If the base is wrong, change
+the base of the pull request.
+
+65
+00:04:47,559 --> 00:04:52,400
+GitHub warns about the side effect: "some
+commits may be removed from the timeline.
+
+66
+00:04:52,440 --> 00:04:56,988
+Review comments may also become outdated."
+If the base is right and the branch
+
+67
+00:04:57,028 --> 00:05:01,340
+started in the wrong place, transplant
+the commits with git rebase --onto.
+
+68
+00:05:01,380 --> 00:05:06,103
+A plain git rebase onto the release branch
+would replay every commit, the foreign
+
+69
+00:05:06,143 --> 00:05:10,749
+ones included, and change nothing about
+the pull request except the commit IDs.
+
+70
+00:05:11,089 --> 00:05:15,311
+Quick quiz. In our picture the
+fix really is for the release.
+
+71
+00:05:15,351 --> 00:05:19,433
+Which repair? A: change the
+base. B: transplant the branch.
+
+72
+00:05:19,473 --> 00:05:20,271
+Your answer?
+
+73
+00:05:25,111 --> 00:05:28,921
+B. The base is right, and the
+branch started in the wrong place.
+
+74
+00:05:28,961 --> 00:05:31,508
+So the one commit moves,
+and gets a new ID.
+
+75
+00:05:31,848 --> 00:05:36,562
+Squash, then reuse. On screen: main after
+a squash merge, and the branch that was
+
+76
+00:05:36,602 --> 00:05:41,374
+squashed. This one needs the internals of
+the merge base, which you learned in the
+
+77
+00:05:41,414 --> 00:05:44,778
+merge videos. The merge base
+comes from parent links only.
+
+78
+00:05:44,818 --> 00:05:48,828
+Git never compares patches to guess
+that a commit "is already there".
+
+79
+00:05:49,168 --> 00:05:54,010
+A squash merge creates one new commit on
+the base that copies the content of the
+
+80
+00:05:54,050 --> 00:05:59,135
+branch and records no link to it. So after
+the squash, for Git, the branch's commits
+
+81
+00:05:59,175 --> 00:06:04,139
+were never merged. The merge base of main
+and the old branch is still the original
+
+82
+00:06:04,179 --> 00:06:04,810
+fork point.
+
+83
+00:06:05,150 --> 00:06:08,154
+Keep working on that branch,
+and two things follow.
+
+84
+00:06:08,194 --> 00:06:13,108
+The range base..head lists the old commits
+again. And the three-way merge sees that
+
+85
+00:06:13,148 --> 00:06:17,824
+both sides added the same files since the
+fork point, with different content: a
+
+86
+00:06:17,864 --> 00:06:20,510
+conflict in a file that
+only you ever edited.
+
+87
+00:06:20,850 --> 00:06:25,723
+GitHub's page says the same: "If you keep
+working on the same head branch after a
+
+88
+00:06:25,763 --> 00:06:30,576
+squash merge, later pull requests can
+include commits that were already squashed
+
+89
+00:06:30,616 --> 00:06:31,911
+into the base branch."
+
+90
+00:06:32,251 --> 00:06:38,116
+Three ways out. One: move only what is new,
+with git rebase --onto origin/main <last
+
+91
+00:06:38,156 --> 00:06:43,951
+squashed commit>. Two: merge main into the
+branch and resolve once, which moves the
+
+92
+00:06:43,991 --> 00:06:49,646
+merge base. Three, the prevention: a new
+branch from main for every pull request,
+
+93
+00:06:49,686 --> 00:06:53,864
+and automatic deletion of head
+branches, set by gh repo edit
+
+94
+00:06:53,904 --> 00:06:55,621
+--delete-branch-on-merge.
+
+95
+00:06:55,961 --> 00:07:00,314
+When not to transplant: when other
+people have based work on the branch.
+
+96
+00:07:00,354 --> 00:07:03,914
+A rebase replaces its commits,
+and the push must be forced.
+
+97
+00:07:05,754 --> 00:07:10,428
+Think of the page as a ruler laid between
+two points, the merge base and the head.
+
+98
+00:07:10,468 --> 00:07:15,257
+Everything between the points is shown. When
+the page shows too much, don't stare at
+
+99
+00:07:15,297 --> 00:07:18,361
+what is shown. Ask where the
+left end of the ruler is.
+
+100
+00:07:18,701 --> 00:07:23,177
+Try it now, thirty seconds, on paper:
+draw a branch that was squashed and then
+
+101
+00:07:23,217 --> 00:07:26,130
+reused, and mark where the
+ruler starts. I'll wait.
+
+102
+00:07:30,970 --> 00:07:35,330
+git merge-base base head tells you. If
+the left end is further back than you
+
+103
+00:07:35,370 --> 00:07:40,078
+expected, there are only two reasons. The
+head carries history that the base never
+
+104
+00:07:40,118 --> 00:07:44,767
+received as history: that is squash-then-reuse,
+where the content arrived and the
+
+105
+00:07:44,807 --> 00:07:49,052
+ancestry did not. Or you are measuring
+against the wrong base: that is the
+
+106
+00:07:49,092 --> 00:07:49,978
+wrong-base case.
+
+107
+00:07:50,318 --> 00:07:54,761
+The model breaks for the fifth cause.
+Truncated and hidden diffs are a property of
+
+108
+00:07:54,801 --> 00:07:59,025
+the page, not of the range. There the
+ruler is right and the display is short.
+
+109
+00:08:00,865 --> 00:08:05,902
+Read the root-cause line: content merged
+without ancestry, then more work on top of
+
+110
+00:08:05,942 --> 00:08:06,942
+the old ancestry.
+
+111
+00:08:07,282 --> 00:08:11,357
+The top line is main. Its tip
+1b2b8ed is the squash commit.
+
+112
+00:08:11,397 --> 00:08:16,868
+Look at its parents: one, 9aa221a. There
+is no line from it down to the branch.
+
+113
+00:08:17,208 --> 00:08:22,064
+The lower line is the branch: the three
+commits of pull request 1, still there, and
+
+114
+00:08:22,104 --> 00:08:23,362
+one new commit on top.
+
+115
+00:08:23,702 --> 00:08:27,418
+Now lay the ruler. The merge base
+is 9a383e5, at the far left.
+
+116
+00:08:27,458 --> 00:08:32,022
+Between it and the head are four commits.
+That's the question from the hook,
+
+117
+00:08:32,062 --> 00:08:35,900
+answered: the range starts further
+back than the author thought.
+
+118
+00:08:36,240 --> 00:08:40,415
+And the repair: the one new commit,
+replayed on main, with a new ID.
+
+119
+00:08:44,755 --> 00:08:48,933
+Ravi created the branch
+fix/empty-subject from main, by habit.
+
+120
+00:08:48,973 --> 00:08:54,376
+The fix is meant for the release branch,
+so he opened the pull request with base
+
+121
+00:08:54,416 --> 00:08:55,193
+release/1.0.
+
+122
+00:08:55,533 --> 00:09:00,261
+One commit of his own, a1ae0eb, on top of
+two commits that are on main and not on
+
+123
+00:09:00,301 --> 00:09:01,379
+the release branch.
+
+124
+00:09:03,719 --> 00:09:08,815
+One commit of his own. What will the
+pull request against release/1.0 list?
+
+125
+00:09:09,155 --> 00:09:14,042
+Three commits and three files for a one-line
+fix. The two extra commits are main's.
+
+126
+00:09:14,082 --> 00:09:18,851
+In a real repository this is the pull
+request with hundreds of unrelated changes.
+
+127
+00:09:19,191 --> 00:09:23,155
+The diagnosis is one question:
+which base makes this branch small?
+
+128
+00:09:23,195 --> 00:09:27,281
+Predict the two counts, against main
+and against the release branch.
+
+129
+00:09:27,321 --> 00:09:28,374
+Say them out loud.
+
+130
+00:09:33,214 --> 00:09:36,624
+One commit against main, three
+against the release branch.
+
+131
+00:09:36,664 --> 00:09:40,491
+And the two merge bases show where
+the ruler starts in each case.
+
+132
+00:09:40,831 --> 00:09:45,305
+Fix A: the change belongs on main
+after all. Same branch, other base.
+
+133
+00:09:45,645 --> 00:09:50,061
+On GitHub that is gh pr edit --base
+main. Nothing in Git changes.
+
+134
+00:09:50,101 --> 00:09:55,681
+The pull request object gets a different
+base, and the same branch is a one-commit
+
+135
+00:09:55,721 --> 00:09:56,573
+pull request.
+
+136
+00:09:56,913 --> 00:10:02,137
+Fix B: the change does belong on
+release/1.0. Move the one commit there.
+
+137
+00:10:04,477 --> 00:10:09,125
+Read the command aloud before I run it.
+Which commits does it take, and where does
+
+138
+00:10:09,165 --> 00:10:09,811
+it put them?
+
+139
+00:10:10,151 --> 00:10:16,080
+"Take the commits of fix/empty-subject that
+are not on origin/main and replay them
+
+140
+00:10:16,120 --> 00:10:17,754
+on origin/release/1.0."
+
+141
+00:10:18,094 --> 00:10:20,404
+One commit, with a new ID, one file.
+
+142
+00:10:20,744 --> 00:10:25,169
+The branch was rewritten, so
+republishing it is a forced push, with
+
+143
+00:10:25,209 --> 00:10:28,767
+--force-with-lease, on Ravi's
+own pull request branch.
+
+144
+00:10:31,607 --> 00:10:36,771
+The branch of pull request 1 is still here:
+it was squash-merged, and nobody deleted
+
+145
+00:10:36,811 --> 00:10:36,957
+it.
+
+146
+00:10:37,297 --> 00:10:42,324
+The squash commit 1b2b8ed is on main. The
+three original commits are still under the
+
+147
+00:10:42,364 --> 00:10:45,220
+branch, and no line connects
+them to the squash.
+
+148
+00:10:50,060 --> 00:10:54,978
+You make one small follow-up commit on the
+old branch, push, and open pull request
+
+149
+00:10:55,018 --> 00:10:55,099
+2.
+
+150
+00:10:57,439 --> 00:11:01,853
+One new commit since the squash. How
+many commits will pull request 2 list?
+
+151
+00:11:02,193 --> 00:11:04,885
+Four commits and two files
+for a one-line change.
+
+152
+00:11:05,225 --> 00:11:10,942
+And the test merge fails: an add/add
+conflict in router/priority.py, a file that
+
+153
+00:11:10,982 --> 00:11:12,453
+only you ever edited.
+
+154
+00:11:12,793 --> 00:11:18,127
+The two facts of the root-cause box, measured:
+the merge base is still 9a383e5, and
+
+155
+00:11:18,167 --> 00:11:20,134
+the tip of main has one parent.
+
+156
+00:11:20,474 --> 00:11:22,615
+Way out 1: move only what is new.
+
+157
+00:11:22,955 --> 00:11:26,602
+Everything up to HEAD~1 is
+already on main as content.
+
+158
+00:11:26,942 --> 00:11:30,580
+One commit, one file, a clean
+test merge, and a forced push.
+
+159
+00:11:32,920 --> 00:11:37,741
+Would a plain git rebase origin/main do
+the same? It replays all four commits.
+
+160
+00:11:37,781 --> 00:11:41,044
+Predict what happens to the
+first, and to the second.
+
+161
+00:11:41,384 --> 00:11:46,333
+Git dropped the first commit, "patch contents
+already upstream", because replaying
+
+162
+00:11:46,373 --> 00:11:51,261
+it changed nothing. The second conflicts,
+because the squash already contains the
+
+163
+00:11:51,301 --> 00:11:55,763
+third commit's fix of the same line.
+A plain rebase relies on Git noticing
+
+164
+00:11:55,803 --> 00:11:59,109
+duplicates. --onto tells Git
+where the new work starts.
+
+165
+00:11:59,449 --> 00:12:03,998
+Way out 2, in another copy: merge main
+into the branch and resolve once.
+
+166
+00:12:07,338 --> 00:12:11,920
+The branch has everything main has plus
+the new word, so the branch side is the
+
+167
+00:12:11,960 --> 00:12:16,659
+answer. The diff is correct afterwards.
+The commit list still shows five commits,
+
+168
+00:12:16,699 --> 00:12:20,111
+which does not matter if the
+pull request is squash-merged.
+
+169
+00:12:20,451 --> 00:12:25,087
+Way out 3, the prevention: a new branch
+from main for every pull request.
+
+170
+00:12:25,427 --> 00:12:30,717
+Create a second long-lived branch in your
+practice repository, for example a release
+
+171
+00:12:30,757 --> 00:12:35,983
+branch from an older commit, and open a
+pull request from a branch that was created
+
+172
+00:12:36,023 --> 00:12:41,122
+from main against that release branch. On
+the page, read the commit count and the
+
+173
+00:12:41,162 --> 00:12:46,262
+file count, and compare with your prediction
+from git log --oneline <base>..HEAD.
+
+174
+00:12:46,602 --> 00:12:48,388
+Then apply fix A on the platform:
+
+175
+00:12:48,728 --> 00:12:53,712
+In the browser the same control is next
+to the title: the edit control, then the
+
+176
+00:12:53,752 --> 00:12:58,799
+base branch menu. Read the page again: the
+documentation says some commits may be
+
+177
+00:12:58,839 --> 00:13:02,943
+removed from the timeline and review
+comments may become outdated.
+
+178
+00:13:02,983 --> 00:13:08,092
+And note the prevention from the textbook:
+gh pr create uses the default branch as
+
+179
+00:13:08,132 --> 00:13:09,851
+base unless you pass --base.
+
+180
+00:13:11,691 --> 00:13:13,339
+Five mistakes to watch for.
+
+181
+00:13:13,679 --> 00:13:17,159
+Continuing on a branch after its
+pull request was squash-merged.
+
+182
+00:13:17,199 --> 00:13:21,615
+Root cause: the squash commit has no parent
+link to the branch, so the merge base
+
+183
+00:13:21,655 --> 00:13:24,311
+never moved and the old
+commits are listed again.
+
+184
+00:13:24,651 --> 00:13:28,627
+Fixing a wrong-base pull request
+with a plain git rebase <base>.
+
+185
+00:13:28,667 --> 00:13:33,586
+Root cause: it replays every commit, the
+foreign ones included; --onto with the
+
+186
+00:13:33,626 --> 00:13:36,159
+right upstream selects only your commits.
+
+187
+00:13:36,499 --> 00:13:40,621
+Changing the base when the branch started
+in the wrong place, or the reverse.
+
+188
+00:13:40,661 --> 00:13:45,000
+Root cause: the two repairs answer different
+questions: where the change belongs,
+
+189
+00:13:45,040 --> 00:13:46,352
+and where the work began.
+
+190
+00:13:46,692 --> 00:13:50,056
+Opening a pull request
+without looking at the range.
+
+191
+00:13:50,096 --> 00:13:55,228
+Root cause: gh pr create uses the default
+branch as base unless told otherwise.
+
+192
+00:13:55,568 --> 00:14:00,991
+Trusting the "Files changed" tab to be
+complete on a very large pull request.
+
+193
+00:14:01,031 --> 00:14:06,880
+Root cause: display limits and .gitattributes
+rules hide files that git diff --stat
+
+194
+00:14:06,920 --> 00:14:08,157
+base...head shows.
+
+195
+00:14:09,997 --> 00:14:15,668
+Now, out of the lab. An ML platform team
+maintains main and a release/2.4 branch for
+
+196
+00:14:15,708 --> 00:14:21,242
+a customer deployment. An engineer fixes
+a tokenizer bug for the release, branches
+
+197
+00:14:21,282 --> 00:14:25,797
+from main by habit, and opens the
+pull request against release/2.4.
+
+198
+00:14:25,837 --> 00:14:29,400
+The page shows 212 commits
+and several hundred files.
+
+199
+00:14:29,440 --> 00:14:32,527
+The reviewer refuses to
+look at it, correctly.
+
+200
+00:14:32,867 --> 00:14:38,415
+The engineer runs the diagnosis from this
+video: the count of commits against each
+
+201
+00:14:38,455 --> 00:14:42,845
+candidate base. One against main,
+212 against the release branch.
+
+202
+00:14:42,885 --> 00:14:48,365
+The base is right, the fix is needed in
+the release, so the branch started in the
+
+203
+00:14:48,405 --> 00:14:54,022
+wrong place: fix B. One git rebase --onto
+origin/release/2.4 origin/main, one check
+
+204
+00:14:54,062 --> 00:14:59,678
+of the range, one push with --force-with-lease,
+and the pull request is one commit.
+
+205
+00:15:00,018 --> 00:15:05,060
+The team adds two lines to its
+contribution guide: run git log --oneline
+
+206
+00:15:05,100 --> 00:15:10,919
+<base>..HEAD before opening a pull request,
+and head branches are deleted on merge.
+
+207
+00:15:12,759 --> 00:15:17,156
+Your turn. Do Lab 21.2, "A pull
+request against the wrong base", in
+
+208
+00:15:17,196 --> 00:15:22,652
+lab-manual/m21-pull-requests-forks.md.
+Before you run the diagnosis, write down how
+
+209
+00:15:22,692 --> 00:15:27,354
+many commits the pull request lists
+and which of them are the author's.
+
+210
+00:15:27,394 --> 00:15:31,857
+Before each repair, predict the
+commit list and the diff afterwards.
+
+211
+00:15:32,197 --> 00:15:37,087
+The challenge is Lab 21.3, "The
+squash-then-reuse problem", in the same file.
+
+212
+00:15:37,127 --> 00:15:40,225
+Predict the merge base
+before you ask Git for it.
+
+213
+00:15:42,065 --> 00:15:45,320
+Question 263 of the CTO question bank:
+
+214
+00:15:47,660 --> 00:15:52,057
+Answer out loud. A strong answer starts
+from what the commit list is, as a Git
+
+215
+00:15:52,097 --> 00:15:56,836
+range, and then gives causes as statements
+about the endpoints of that range, not as
+
+216
+00:15:56,876 --> 00:16:01,045
+a list of anecdotes. For each cause it
+names the command that confirms it.
+
+217
+00:16:01,085 --> 00:16:05,141
+It treats squash-then-reuse with the
+mechanism of the merge base, and it
+
+218
+00:16:05,181 --> 00:16:07,815
+distinguishes the two
+repairs for a wrong base.
+
+219
+00:16:09,655 --> 00:16:14,728
+Let's land this. When a pull request shows
+too much, you now ask one thing first:
+
+220
+00:16:14,768 --> 00:16:16,433
+where does the range start?
+
+221
+00:16:16,773 --> 00:16:18,433
+You should now be able to say:
+
+222
+00:16:18,773 --> 00:16:23,491
+A pull request that shows too much has a
+head with commits the base does not reach,
+
+223
+00:16:23,531 --> 00:16:25,670
+or a base the work did not start from.
+
+224
+00:16:26,010 --> 00:16:31,186
+The five documented causes are: reuse after
+a squash merge, a wrong or changed base,
+
+225
+00:16:31,226 --> 00:16:35,408
+a base that moved, rewritten history,
+and truncated or hidden diffs.
+
+226
+00:16:35,748 --> 00:16:40,649
+git merge-base and git rev-list
+--count base..head test the first two.
+
+227
+00:16:40,989 --> 00:16:46,232
+A wrong base is fixed by changing the base
+or by git rebase --onto, depending on
+
+228
+00:16:46,272 --> 00:16:47,882
+where the change belongs.
+
+229
+00:16:48,222 --> 00:16:52,821
+After a squash merge the branch's commits
+are not ancestors of the base; delete the
+
+230
+00:16:52,861 --> 00:16:54,330
+branch and start from main.
+
+231
+00:16:56,170 --> 00:17:04,671
+Read section 17.12 of Chapter 17. Do Exercise
+21.6, "Five commits for a two-commit
+
+232
+00:17:04,711 --> 00:17:08,525
+fix", in exercises/m19-m25-github.md.
+
+233
+00:17:08,865 --> 00:17:13,635
+You can now name the cause of an oversized
+pull request and prove it with one
+
+234
+00:17:13,675 --> 00:17:18,696
+command. Practise with Lab 21.2. Next:
+indirect merges and stacked pull requests.
+
+235
+00:17:18,736 --> 00:17:21,944
+Until then, look at the
+state first and type second.
+
+236
+00:17:21,984 --> 00:17:23,444
+See you in the next one.

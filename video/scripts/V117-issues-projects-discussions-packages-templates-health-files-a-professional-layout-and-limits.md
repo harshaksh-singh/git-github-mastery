@@ -407,7 +407,7 @@ gh issue create --web
 
 Say what each step created. `gh repo create` created a GitHub object, the repository, added a remote to your `.git/config`, and pushed Git data. `gh repo edit` changed three settings: GitHub objects.
 
-Now show the files taking effect after the push. With `gh issue create --web`, the browser opens the chooser: according to the documentation, it offers the two forms by their `name` and `description`, and no blank issue for a reader. Open the bug form: the required fields are the ones the YAML declared. Close the tab without creating an issue. Then start a pull request from any branch in the browser: the description field is pre-filled with the template. Finally open the community profile, under Insights, Community Standards, and read the checklist against your files.
+Now watch the files take effect after the push. With `gh issue create --web`, the browser opens the chooser: according to the documentation, it offers the two forms by their `name` and `description`, and no blank issue for a reader. Open the bug form: the required fields are the ones the YAML declared. Close the tab without creating an issue. Then start a pull request from any branch in the browser: the description field is pre-filled with the template. Finally open the community profile, under Insights, Community Standards, and read the checklist against your files.
 
 ## COMMON MISTAKES
 
@@ -448,8 +448,6 @@ Question 228 of the CTO question bank:
 > "A pull request said "Fixes #812" and the issue is still open after the merge. Give three causes and how to tell them apart."
 
 **[PAUSE]**
-
-**[ANIMATION]** step: why.path
 
 Answer out loud. A strong answer gives three distinct causes that follow from documented rules, not three guesses, and for each one the observation that confirms or excludes it. It says which layer holds the keyword and which layer acts on it. It ends with what a team that merges into non-default branches should do instead.
 

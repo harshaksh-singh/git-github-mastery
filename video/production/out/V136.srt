@@ -1,0 +1,1323 @@
+1
+00:00:04,500 --> 00:00:09,712
+A developer wants a documentation change
+merged today, and the docs team is slow.
+
+2
+00:00:09,752 --> 00:00:15,158
+So the same pull request also deletes the
+docs team's line from CODEOWNERS, the file
+
+3
+00:00:15,198 --> 00:00:20,020
+that maps path patterns to the users
+and teams whom GitHub asks for review.
+
+4
+00:00:20,060 --> 00:00:25,272
+The reasoning: if the team is no longer
+an owner, the team is no longer required.
+
+5
+00:00:25,312 --> 00:00:27,865
+Does that work? Say yes or no, out loud.
+
+6
+00:00:32,705 --> 00:00:37,392
+No. If it did, every required reviewer could
+be removed by the person who needs the
+
+7
+00:00:37,432 --> 00:00:42,005
+review. In this video you see why it doesn't
+work, which Git command tells you so
+
+8
+00:00:42,045 --> 00:00:46,618
+before you open the pull request, and what
+you have to configure so that the file
+
+9
+00:00:46,658 --> 00:00:51,288
+that names the reviewers is itself protected.
+Watch for the moment in the terminal
+
+10
+00:00:51,328 --> 00:00:53,509
+where that deleted line is still there.
+
+11
+00:00:55,349 --> 00:00:59,617
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:59,657 --> 00:01:05,337
+In the last video you learned what a
+CODEOWNERS file says: patterns, owners, last
+
+13
+00:01:05,377 --> 00:01:10,915
+match wins. This video is about the file
+in force. Five topics, in the order of
+
+14
+00:01:10,955 --> 00:01:12,539
+sections 19.7 to 19.11.
+
+15
+00:01:12,879 --> 00:01:15,935
+Which version of the file
+applies to a pull request.
+
+16
+00:01:15,975 --> 00:01:19,507
+How you protect the file itself
+and the workflows directory.
+
+17
+00:01:19,547 --> 00:01:24,270
+How to lay out ownership in a monorepo,
+one repository that holds many projects.
+
+18
+00:01:24,310 --> 00:01:28,497
+The newer "required reviewers" rule
+and when it complements CODEOWNERS.
+
+19
+00:01:28,537 --> 00:01:32,843
+And three documented instruments that
+tell you how GitHub read your file.
+
+20
+00:01:33,183 --> 00:01:37,504
+The local demonstration answers every
+question that a clone can answer.
+
+21
+00:01:37,544 --> 00:01:42,418
+The enforcement itself happens on GitHub,
+and you'll prove it in Lab 23.2 with a
+
+22
+00:01:42,458 --> 00:01:43,339
+second account.
+
+23
+00:01:45,179 --> 00:01:46,758
+Here's what you'll walk away with.
+
+24
+00:01:47,098 --> 00:01:48,510
+After this video you can:
+
+25
+00:01:48,850 --> 00:01:53,333
+say from which branch the CODEOWNERS file
+is read for a pull request and why that
+
+26
+00:01:53,373 --> 00:01:53,779
+matters;
+
+27
+00:01:54,119 --> 00:01:58,893
+explain why a pull request cannot remove
+its own required reviewer by editing the
+
+28
+00:01:58,933 --> 00:01:59,190
+file;
+
+29
+00:01:59,530 --> 00:02:04,207
+protect CODEOWNERS and the workflows directory
+and name the conditions that make the
+
+30
+00:02:04,247 --> 00:02:05,105
+protection real;
+
+31
+00:02:05,445 --> 00:02:09,928
+lay out ownership for a monorepo and
+decide when the "required reviewers" rule
+
+32
+00:02:09,968 --> 00:02:11,957
+replaces or complements CODEOWNERS;
+
+33
+00:02:12,297 --> 00:02:15,754
+check the file for errors
+before merging a change to it.
+
+34
+00:02:17,594 --> 00:02:22,650
+The base branch decides. In one sentence:
+a pull request is judged by the CODEOWNERS
+
+35
+00:02:22,690 --> 00:02:27,625
+file on its base branch, so a pull request
+that edits CODEOWNERS is reviewed under
+
+36
+00:02:27,665 --> 00:02:28,413
+the old file.
+
+37
+00:02:28,753 --> 00:02:33,533
+Two words first. The base branch is the
+branch a pull request asks to merge into,
+
+38
+00:02:33,573 --> 00:02:38,235
+and the head branch holds the commits it
+offers. The documentation: "To trigger
+
+39
+00:02:38,275 --> 00:02:43,233
+review requests, pull requests use the
+version of CODEOWNERS from the base branch of
+
+40
+00:02:43,273 --> 00:02:44,304
+the pull request."
+
+41
+00:02:44,644 --> 00:02:50,745
+For a pull request from a fork, a second
+repository on GitHub connected to the one
+
+42
+00:02:50,785 --> 00:02:54,939
+it was made from, into upstream,
+that's upstream's file.
+
+43
+00:02:54,979 --> 00:03:00,630
+In a stack of pull requests, where each
+targets the branch of the one below,
+
+44
+00:03:00,670 --> 00:03:06,397
+CODEOWNERS is, in the documentation's
+words, "evaluated from the stack base".
+
+45
+00:03:06,737 --> 00:03:11,208
+Why is it designed like this? Because
+the alternative has no security value.
+
+46
+00:03:11,248 --> 00:03:14,887
+The head branch is written by
+the person asking for the merge.
+
+47
+00:03:14,927 --> 00:03:19,754
+If their copy of the file decided, the
+control would be in the hands of the person
+
+48
+00:03:19,794 --> 00:03:24,325
+it's meant to check. The base branch is
+the state everyone already agreed to.
+
+49
+00:03:24,665 --> 00:03:29,432
+There's a second consequence that people
+meet more often than the first: a fix to
+
+50
+00:03:29,472 --> 00:03:32,815
+CODEOWNERS takes effect one
+merge later than they expect.
+
+51
+00:03:32,855 --> 00:03:37,148
+The pull request that carries the fix
+is still judged under the old file.
+
+52
+00:03:37,488 --> 00:03:42,217
+Protecting the file. In one sentence: the
+file that names the reviewers, and the
+
+53
+00:03:42,257 --> 00:03:47,165
+directory that defines what automation runs,
+need owners themselves, or anyone with
+
+54
+00:03:47,205 --> 00:03:50,087
+write access can change
+both in one pull request.
+
+55
+00:03:50,427 --> 00:03:55,004
+GitHub's advice, quoted in the textbook:
+"To protect a repository fully against
+
+56
+00:03:55,044 --> 00:03:59,562
+unauthorized changes, you also need to
+define an owner for the CODEOWNERS file
+
+57
+00:03:59,602 --> 00:04:04,471
+itself." The most secure method, according
+to the documentation, is to keep the file
+
+58
+00:04:04,511 --> 00:04:09,380
+in the .github directory and to define an
+owner either for the file or for the whole
+
+59
+00:04:09,420 --> 00:04:09,965
+directory.
+
+60
+00:04:10,305 --> 00:04:14,772
+Owning the whole .github/ directory
+also covers .github/workflows/.
+
+61
+00:04:14,812 --> 00:04:20,288
+A workflow file, the YAML file that tells
+GitHub Actions what to run, decides what
+
+62
+00:04:20,328 --> 00:04:25,871
+runs with the repository's token and secrets,
+so a change to it is a change to your
+
+63
+00:04:25,911 --> 00:04:30,513
+deployment and security posture.
+Part 7 of this course is about that.
+
+64
+00:04:30,853 --> 00:04:35,848
+Three conditions make the protection real.
+The line must come last, so that no later
+
+65
+00:04:35,888 --> 00:04:40,584
+pattern such as *.yaml takes workflow
+files away. The code-owner option must be
+
+66
+00:04:40,624 --> 00:04:45,379
+required by a rule on the default branch.
+And the owning team must hold explicit
+
+67
+00:04:45,419 --> 00:04:50,055
+write access. If one of the three is
+missing, you have a line in a file and no
+
+68
+00:04:50,095 --> 00:04:50,535
+control.
+
+69
+00:04:50,875 --> 00:04:55,768
+Monorepos. In one sentence: in a monorepo
+the file is the map of the organization,
+
+70
+00:04:55,808 --> 00:04:59,858
+and its order has to follow the rule
+"general first, specific last".
+
+71
+00:05:00,198 --> 00:05:04,399
+Four blocks. A default, so that
+somebody always owns a new directory.
+
+72
+00:05:04,439 --> 00:05:09,316
+One block per component, anchored at the
+root. Then the cross-cutting file types
+
+73
+00:05:09,356 --> 00:05:14,109
+that must override the components. And
+last, the files that control review and
+
+74
+00:05:14,149 --> 00:05:14,785
+automation.
+
+75
+00:05:15,125 --> 00:05:19,768
+Use the directory form for subtrees,
+because dir/* covers one level only.
+
+76
+00:05:19,808 --> 00:05:25,093
+Anchor component paths with a leading slash,
+or router/ also matches a directory of
+
+77
+00:05:25,133 --> 00:05:30,032
+that name inside another component.
+Prefer teams to people, so that ownership
+
+78
+00:05:30,072 --> 00:05:35,421
+survives holidays and departures. And one
+caveat that the textbook attaches to block
+
+79
+00:05:35,461 --> 00:05:40,425
+three: the patterns with two stars follow
+the gitignore rules and aren't among
+
+80
+00:05:40,465 --> 00:05:45,685
+GitHub's documented examples, except **/logs.
+Confirm them with the instruments at
+
+81
+00:05:45,725 --> 00:05:47,225
+the end of this section.
+
+82
+00:05:47,565 --> 00:05:53,069
+Quick quiz. You need both the routing team
+and the data team to approve one path.
+
+83
+00:05:53,109 --> 00:05:57,791
+Where does that requirement go? A,
+both teams on one CODEOWNERS line.
+
+84
+00:05:57,831 --> 00:06:00,050
+B, a different rule. Your answer?
+
+85
+00:06:04,890 --> 00:06:09,727
+B, a different rule. What the file can't
+express: "both teams must approve", "two
+
+86
+00:06:09,767 --> 00:06:13,279
+members of this team", or
+"everyone except this directory".
+
+87
+00:06:13,319 --> 00:06:18,276
+The first two belong to the next rule. The
+third has only the documented workaround
+
+88
+00:06:18,316 --> 00:06:19,600
+of an owner-less line.
+
+89
+00:06:19,940 --> 00:06:25,046
+The required reviewers rule. In one
+sentence: since February 2026 a ruleset can
+
+90
+00:06:25,086 --> 00:06:30,387
+require approvals from named teams for file
+patterns, with a count per team, which
+
+91
+00:06:30,427 --> 00:06:33,123
+covers the cases CODEOWNERS can't express.
+
+92
+00:06:33,463 --> 00:06:38,400
+The documentation: you can specify up to
+15 different teams, and for each team a
+
+93
+00:06:38,440 --> 00:06:41,759
+number of required approvals.
+Counts run from 0 to 10.
+
+94
+00:06:41,799 --> 00:06:46,985
+Zero adds the team "for visibility". The
+team must have write permissions or higher.
+
+95
+00:06:47,025 --> 00:06:51,900
+The rule isn't available on user-owned
+repositories, because they don't contain
+
+96
+00:06:51,940 --> 00:06:56,441
+teams. It became generally available
+on the seventeenth of February 2026.
+
+97
+00:06:56,481 --> 00:07:01,667
+And GitHub positions it with care: it
+"augments CODEOWNERS files but doesn't replace
+
+98
+00:07:01,707 --> 00:07:02,040
+them".
+
+99
+00:07:02,380 --> 00:07:07,492
+Compare the two. CODEOWNERS lives in a file
+in the repository and is reviewed like
+
+100
+00:07:07,532 --> 00:07:11,639
+code. The rule lives in a ruleset
+and is edited by administrators.
+
+101
+00:07:11,679 --> 00:07:16,163
+CODEOWNERS accepts users, teams and
+emails. The rule accepts teams only.
+
+102
+00:07:16,203 --> 00:07:19,367
+With several owners in
+CODEOWNERS any one suffices.
+
+103
+00:07:19,407 --> 00:07:22,886
+In the rule each listed team
+has its own required count.
+
+104
+00:07:22,926 --> 00:07:28,101
+CODEOWNERS is one file per repository and
+branch. An organization ruleset can cover
+
+105
+00:07:28,141 --> 00:07:32,625
+many repositories. CODEOWNERS takes
+effect when it's on the base branch.
+
+106
+00:07:32,665 --> 00:07:35,703
+The rule takes effect when
+the ruleset is active.
+
+107
+00:07:36,043 --> 00:07:41,614
+One caveat stays attached. Chapter 18,
+section 18.7 records an unresolved point: the
+
+108
+00:07:41,654 --> 00:07:46,891
+documentation page and the REST schema
+describe the pattern syntax of this rule
+
+109
+00:07:46,931 --> 00:07:49,696
+differently. Test before you depend on it.
+
+110
+00:07:50,036 --> 00:07:53,471
+Finding out what GitHub thinks.
+Three documented instruments.
+
+111
+00:07:53,511 --> 00:07:57,915
+First: when you navigate to the CODEOWNERS
+file in your repository, errors are
+
+112
+00:07:57,955 --> 00:08:02,643
+highlighted. Second: when you browse to a
+file, hovering over the shield icon shows
+
+113
+00:08:02,683 --> 00:08:06,802
+a tool tip with code ownership details,
+for the branch you're looking at.
+
+114
+00:08:06,842 --> 00:08:11,416
+Third: a REST endpoint, an address of
+GitHub's API, lists the errors of the file,
+
+115
+00:08:11,456 --> 00:08:12,612
+with an optional ref.
+
+116
+00:08:12,952 --> 00:08:17,309
+All three are 🟢 SAFE: they read. They use
+documented endpoints and weren't executed
+
+117
+00:08:17,349 --> 00:08:21,653
+by the authors. Each error has a line, a
+column, a kind, a message and sometimes a
+
+118
+00:08:21,693 --> 00:08:25,256
+suggestion. The CLI has no dedicated
+command for linting CODEOWNERS.
+
+119
+00:08:25,296 --> 00:08:29,706
+The second command is the one to make a
+habit: it asks for the errors of the file as
+
+120
+00:08:29,746 --> 00:08:32,196
+it is on your branch,
+before the change merges.
+
+121
+00:08:34,036 --> 00:08:38,871
+Hold two copies of the file in your head,
+one on each branch, and ask of every
+
+122
+00:08:38,911 --> 00:08:40,871
+question: which copy answers it?
+
+123
+00:08:41,211 --> 00:08:44,583
+The directory analogy from the
+last video extends to this.
+
+124
+00:08:44,623 --> 00:08:49,467
+A visitor to the building is announced
+according to the directory that hangs in the
+
+125
+00:08:49,507 --> 00:08:54,056
+lobby today. A visitor who brings a
+corrected directory under the arm is still
+
+126
+00:08:54,096 --> 00:08:58,998
+announced by the old one. The new one is
+hung up only after someone who is listed on
+
+127
+00:08:59,038 --> 00:09:00,528
+the old one has let it in.
+
+128
+00:09:00,868 --> 00:09:05,806
+The analogy breaks where it did before: this
+directory is read top to bottom and the
+
+129
+00:09:05,846 --> 00:09:09,244
+last line that fits wins. And
+it breaks in a second place.
+
+130
+00:09:09,284 --> 00:09:13,985
+A lobby directory is one object. Here
+there's one file per branch, and a release
+
+131
+00:09:14,025 --> 00:09:17,304
+branch can legitimately have
+different owners from main.
+
+132
+00:09:17,644 --> 00:09:23,061
+When the copy on the base branch is the
+control, the control has three ways to fail
+
+133
+00:09:23,101 --> 00:09:28,517
+without anyone editing it in bad faith: a
+later line takes the protected path away,
+
+134
+00:09:28,557 --> 00:09:33,908
+the rule that makes owner review required
+is missing or doesn't target the branch,
+
+135
+00:09:33,948 --> 00:09:39,298
+or the owner has no explicit write access.
+And it has two ways to be bypassed that
+
+136
+00:09:39,338 --> 00:09:43,177
+no file can prevent: a bypass
+actor, and an indirect merge.
+
+137
+00:09:43,217 --> 00:09:48,305
+Those were covered in Chapter 17, section
+17.13, and Chapter 18, section 18.5.
+
+138
+00:09:48,645 --> 00:09:53,511
+Before the next picture, a prediction.
+Two copies of the file, one on the base
+
+139
+00:09:53,551 --> 00:09:57,789
+branch and one on the head branch,
+with a pull request between them.
+
+140
+00:09:57,829 --> 00:10:01,626
+From which copy do the review
+requests come? Say it out loud.
+
+141
+00:10:07,966 --> 00:10:13,307
+The arrow goes to the left box, the base
+branch. The right box becomes the left box
+
+142
+00:10:13,347 --> 00:10:17,846
+only by merging, and merging needs
+the owners that the left box names.
+
+143
+00:10:19,686 --> 00:10:23,229
+Into the lab. The situation:
+the repository ticket-router.
+
+144
+00:10:23,269 --> 00:10:28,109
+You're on a branch that changes four
+paths. One of them is the CODEOWNERS file.
+
+145
+00:10:28,449 --> 00:10:30,783
+Step 1: which file, on which branch.
+
+146
+00:10:31,123 --> 00:10:35,077
+Notice what the command asks about:
+origin/main, not your working tree.
+
+147
+00:10:35,117 --> 00:10:37,326
+That's the whole lesson in one argument.
+
+148
+00:10:37,666 --> 00:10:43,270
+Two files exist on main. The documented
+order makes the one in .github/ the one that
+
+149
+00:10:43,310 --> 00:10:43,741
+counts.
+
+150
+00:10:44,081 --> 00:10:46,204
+Step 2: read the base version.
+
+151
+00:10:46,544 --> 00:10:50,079
+Read it as you learned in the
+last video: general first.
+
+152
+00:10:50,119 --> 00:10:55,313
+The last line gives the whole .github/
+directory to the repository administrators.
+
+153
+00:10:55,353 --> 00:10:59,207
+Check the first of the three
+conditions: is it the last line?
+
+154
+00:10:59,247 --> 00:10:59,590
+It is.
+
+155
+00:10:59,930 --> 00:11:01,906
+Step 3: the changed paths.
+
+156
+00:11:02,246 --> 00:11:06,903
+Three dots, as on the Files changed tab
+of a pull request: the changes since the
+
+157
+00:11:06,943 --> 00:11:07,548
+merge base.
+
+158
+00:11:07,888 --> 00:11:13,471
+Try it now, thirty seconds, on paper. Four
+paths. For each, which line of the base
+
+159
+00:11:13,511 --> 00:11:17,791
+version decides? Write the four
+lines down before you continue.
+
+160
+00:11:17,831 --> 00:11:21,494
+One hint from the last video:
+docs/* covers one level.
+
+161
+00:11:23,834 --> 00:11:26,603
+Step 4: the pull request edits the file.
+
+162
+00:11:26,943 --> 00:11:31,985
+The diff removes the docs line. Which of
+the two grep commands will find a line, and
+
+163
+00:11:32,025 --> 00:11:34,828
+which will exit with
+status 1? Say it out loud.
+
+164
+00:11:39,668 --> 00:11:44,271
+The base version still has the line,
+at line 12. The head version doesn't.
+
+165
+00:11:44,311 --> 00:11:48,160
+grep exits with 1. Review requests
+come from the base version.
+
+166
+00:11:48,200 --> 00:11:53,367
+So the docs team is requested for docs/README.md
+although your branch deleted their
+
+167
+00:11:53,407 --> 00:11:58,637
+line. That's the opening question, answered:
+you can't remove a reviewer in the pull
+
+168
+00:11:58,677 --> 00:12:00,143
+request that needs them.
+
+169
+00:12:00,483 --> 00:12:05,626
+And look at what else this pull request
+changes: .github/CODEOWNERS itself.
+
+170
+00:12:05,666 --> 00:12:09,635
+Under the base version, who
+owns that path? The last line.
+
+171
+00:12:09,675 --> 00:12:13,159
+So the repository administrators
+are requested too.
+
+172
+00:12:13,499 --> 00:12:19,484
+Step 5: the lab replay. Replay
+labs/run ch18/lab-23-2-codeowners.
+
+173
+00:12:19,524 --> 00:12:26,991
+It asks the same questions in the order
+of the lab, and then walks into a trap on
+
+174
+00:12:27,031 --> 00:12:27,733
+purpose.
+
+175
+00:12:28,073 --> 00:12:32,617
+The non-comment lines with their line
+numbers: this is the form in which you reason
+
+176
+00:12:32,657 --> 00:12:33,667
+about "last match".
+
+177
+00:12:34,007 --> 00:12:41,384
+Now check your paper. .github/CODEOWNERS:
+line 15. config/routing.yaml: line 9,
+
+178
+00:12:41,424 --> 00:12:46,737
+platform and SRE. docs/README.md:
+line 12, the docs team.
+
+179
+00:12:46,777 --> 00:12:54,154
+And docs/runbooks/escalation.md: line 2
+only, the platform team, because docs/*
+
+180
+00:12:54,194 --> 00:12:56,690
+doesn't match nested files.
+
+181
+00:12:57,030 --> 00:13:01,225
+One deletion in the file on your branch,
+and it doesn't decide this pull request.
+
+182
+00:13:01,565 --> 00:13:06,349
+Now the failure scenario of the lab. The
+shortcut is tempting: strip the owners from
+
+183
+00:13:06,389 --> 00:13:10,311
+the file and let Git match the
+patterns as if they were ignore rules.
+
+184
+00:13:10,651 --> 00:13:16,115
+Look at the first three lines of the
+result. Git names line 2, the star, for
+
+185
+00:13:16,155 --> 00:13:20,460
+config/routing.yaml, for
+docs/README.md and for the runbook.
+
+186
+00:13:20,500 --> 00:13:25,167
+Is that what GitHub is documented
+to do? Compare with your paper.
+
+187
+00:13:27,507 --> 00:13:30,322
+It isn't, and the recovery
+snippet isolates why.
+
+188
+00:13:30,662 --> 00:13:36,124
+With a catch-all line followed by *.yaml,
+Git names line 2 for routing.yaml at the
+
+189
+00:13:36,164 --> 00:13:41,492
+top level and line 1 for config/routing.yaml.
+Git decided the second path at the
+
+190
+00:13:41,532 --> 00:13:45,249
+directory config/, which the
+first line already matches.
+
+191
+00:13:45,289 --> 00:13:50,684
+That's the directory-first behavior of
+gitignore, and CODEOWNERS is documented to
+
+192
+00:13:50,724 --> 00:13:56,320
+assign owners per file. So the shortcut
+gives wrong owners with complete confidence.
+
+193
+00:13:56,360 --> 00:14:00,010
+Reason from the documented
+rules and confirm on GitHub.
+
+194
+00:14:00,350 --> 00:14:04,856
+Part B of Lab 23.2, on your practice
+repository, in your normal shell.
+
+195
+00:14:04,896 --> 00:14:10,246
+The interface changes. The lab text and the
+linked documentation are the reference.
+
+196
+00:14:10,286 --> 00:14:15,182
+No GitHub output was captured by the
+authors. You need a second account or a
+
+197
+00:14:15,222 --> 00:14:15,766
+teammate.
+
+198
+00:14:16,106 --> 00:14:19,982
+The lab has five stages. You give
+the second account write access.
+
+199
+00:14:20,022 --> 00:14:24,728
+You add a CODEOWNERS file through a pull
+request, and before merging you ask the
+
+200
+00:14:24,768 --> 00:14:29,237
+errors endpoint about the file on your
+branch. You add a second ruleset that
+
+201
+00:14:29,277 --> 00:14:30,839
+requires code owner review.
+
+202
+00:14:31,179 --> 00:14:37,061
+That's a gh api call with POST, which Chapter
+18 labels 🔴 DANGEROUS, and whose five
+
+203
+00:14:37,101 --> 00:14:42,840
+answers you heard in video 134: create,
+read back with gh ruleset check main, and
+
+204
+00:14:42,880 --> 00:14:48,618
+disable or delete to recover. Then you
+open a pull request that touches /router/,
+
+205
+00:14:48,658 --> 00:14:50,759
+which the second account owns.
+
+206
+00:14:51,099 --> 00:14:55,745
+On screen, name the controls by function.
+In the pull request, find the list of
+
+207
+00:14:55,785 --> 00:14:59,007
+requested reviewers and see
+whether the owner is in it.
+
+208
+00:14:59,047 --> 00:15:02,092
+Find the merge box and read
+what it says is missing.
+
+209
+00:15:02,132 --> 00:15:06,956
+The merge attempt is expected to be refused.
+Then the second account approves, and
+
+210
+00:15:06,996 --> 00:15:11,642
+you read the review decision again and
+merge. What you have then proved: a code
+
+211
+00:15:11,682 --> 00:15:16,150
+owner's approval is required when a rule
+says so, and the base branch's file
+
+212
+00:15:16,190 --> 00:15:16,625
+decides.
+
+213
+00:15:18,465 --> 00:15:20,113
+Five mistakes to watch for.
+
+214
+00:15:20,453 --> 00:15:24,859
+Expecting an edit to CODEOWNERS to apply
+to the pull request that makes it.
+
+215
+00:15:24,899 --> 00:15:29,306
+Root cause: review requests use the
+version of the file on the base branch.
+
+216
+00:15:29,646 --> 00:15:34,794
+Leaving CODEOWNERS itself without an
+owner. Root cause: the file is an ordinary
+
+217
+00:15:34,834 --> 00:15:39,720
+tracked file, so anyone with write
+access can rewrite it unless a line owns
+
+218
+00:15:39,760 --> 00:15:42,544
+/.github/ and a rule
+requires owner review.
+
+219
+00:15:42,884 --> 00:15:48,537
+Placing the /.github/ line anywhere but
+last. Root cause: a later pattern such as
+
+220
+00:15:48,577 --> 00:15:52,332
+*.yaml matches workflow files
+and replaces the owners.
+
+221
+00:15:52,672 --> 00:15:57,782
+Listing one person as sole owner. Root
+cause: authors cannot approve their own pull
+
+222
+00:15:57,822 --> 00:16:02,808
+requests, so the owner's own changes have
+nobody who can satisfy the requirement.
+
+223
+00:16:03,148 --> 00:16:08,044
+Testing the file with git check-ignore. Root
+cause: Git's matcher stops at a matched
+
+224
+00:16:08,084 --> 00:16:10,982
+directory, and CODEOWNERS
+assigns owners per file.
+
+225
+00:16:12,822 --> 00:16:18,108
+Now, out of the lab. A team that serves
+models keeps its deployment workflow in
+
+226
+00:16:18,148 --> 00:16:23,569
+.github/workflows/. CODEOWNERS gives
+/.github/ to the platform team, and the file
+
+227
+00:16:23,609 --> 00:16:29,030
+has had that line for a year. A change to
+the deployment workflow merges with one
+
+228
+00:16:29,070 --> 00:16:31,255
+approval from a product engineer.
+
+229
+00:16:31,595 --> 00:16:35,222
+Work through the three
+conditions. Is the line last?
+
+230
+00:16:35,262 --> 00:16:41,005
+Someone appended a *.yaml line for the SRE
+team three months ago, and the workflow
+
+231
+00:16:41,045 --> 00:16:44,179
+file is a YAML file, so
+SRE became its owner.
+
+232
+00:16:44,519 --> 00:16:48,128
+Does a rule require code owner
+review on the default branch?
+
+233
+00:16:48,168 --> 00:16:52,385
+Check the rules page. Does the owning
+team have explicit write access?
+
+234
+00:16:52,425 --> 00:16:57,251
+Ask the errors endpoint. In this case the
+first condition failed, and the errors
+
+235
+00:16:57,291 --> 00:17:01,569
+endpoint has nothing to report, because
+nothing in the file is invalid.
+
+236
+00:17:01,609 --> 00:17:04,915
+The file says exactly what
+its last matching line says.
+
+237
+00:17:05,255 --> 00:17:08,472
+The repair is to move the
+/.github/ line to the end.
+
+238
+00:17:08,512 --> 00:17:13,484
+And remember the timing: the pull request
+that moves it is judged by the file on
+
+239
+00:17:13,524 --> 00:17:18,747
+main, so it needs the approval of whoever
+owns .github/CODEOWNERS under the current,
+
+240
+00:17:18,787 --> 00:17:19,499
+wrong order.
+
+241
+00:17:21,339 --> 00:17:27,081
+Your turn. Do Lab 23.2, "CODEOWNERS
+enforcement with a second account", in
+
+242
+00:17:27,121 --> 00:17:31,456
+lab-manual/m23-governance.md.
+Part A runs in labs/shell.
+
+243
+00:17:31,496 --> 00:17:37,941
+The IDs there differ from the ones in this
+video. Part B runs in your normal shell.
+
+244
+00:17:38,281 --> 00:17:43,263
+In Part A, after the four observation steps,
+stop and predict on paper, for each of
+
+245
+00:17:43,303 --> 00:17:47,800
+the four changed paths: which line
+decides, and which owners are requested.
+
+246
+00:17:47,840 --> 00:17:52,822
+In Part B, before each merge attempt, predict
+whether GitHub will allow it and what
+
+247
+00:17:52,862 --> 00:17:54,940
+the merge box will name as missing.
+
+248
+00:17:55,280 --> 00:17:59,748
+The challenge is Exercise
+23.8, ""Main is protected.
+
+249
+00:17:59,788 --> 00:18:05,644
+How did a force push get through?"",
+in exercises/m19-m25-github.md.
+
+250
+00:18:09,484 --> 00:18:14,293
+Answer out loud first. A strong answer names
+the rule and its source: which version
+
+251
+00:18:14,333 --> 00:18:18,616
+of the file GitHub uses, and that this
+is GitHub's behavior and not Git's.
+
+252
+00:18:18,656 --> 00:18:23,348
+It explains the design reason, not only
+the fact. It shows the local evidence you
+
+253
+00:18:23,388 --> 00:18:26,444
+would look at, with the
+branch named in each command.
+
+254
+00:18:26,784 --> 00:18:31,580
+It adds the consequence in the other
+direction, for a legitimate fix to the file.
+
+255
+00:18:31,620 --> 00:18:36,178
+And it says what must also be true for
+the control to hold: who owns the file
+
+256
+00:18:36,218 --> 00:18:39,283
+itself, and which rule makes
+that ownership binding.
+
+257
+00:18:41,123 --> 00:18:45,679
+Let's land this. The developer from the
+opening deleted a line and removed nobody,
+
+258
+00:18:45,719 --> 00:18:48,146
+because the copy on the
+base branch decides.
+
+259
+00:18:48,486 --> 00:18:50,146
+You should now be able to say:
+
+260
+00:18:50,486 --> 00:18:55,338
+A pull request is judged by the CODEOWNERS
+file on its base branch; an edit takes
+
+261
+00:18:55,378 --> 00:18:56,727
+effect one merge later.
+
+262
+00:18:57,067 --> 00:19:01,831
+The file and the workflows directory need
+an owner, and that protection is real only
+
+263
+00:19:01,871 --> 00:19:06,577
+if the line is last, a rule requires owner
+review, and the owning team has explicit
+
+264
+00:19:06,617 --> 00:19:07,320
+write access.
+
+265
+00:19:07,660 --> 00:19:13,162
+In a monorepo: default first, components
+next, cross-cutting patterns after them,
+
+266
+00:19:13,202 --> 00:19:14,188
+/.github/ last.
+
+267
+00:19:14,528 --> 00:19:18,896
+CODEOWNERS means "any one owner"; where
+several teams or counts are needed, the
+
+268
+00:19:18,936 --> 00:19:21,072
+required reviewers rule complements it.
+
+269
+00:19:21,412 --> 00:19:25,103
+The errors endpoint with a ref
+tests an edit before it merges.
+
+270
+00:19:26,943 --> 00:19:31,384
+Read sections 19.7 to 19.14 of Chapter 19.
+
+271
+00:19:31,724 --> 00:19:37,200
+Today you asked a clone which CODEOWNERS
+file counts, and you saw why the file can't
+
+272
+00:19:37,240 --> 00:19:42,650
+be edited around. Before the next video,
+ask a repository of yours which CODEOWNERS
+
+273
+00:19:42,690 --> 00:19:48,165
+file exists on origin/main. Next time:
+signatures. What is signed, by which program,
+
+274
+00:19:48,205 --> 00:19:53,418
+and SSH signing end to end. Until then,
+look at the state first and type second.
+
+275
+00:19:53,458 --> 00:19:54,994
+See you in the next one.

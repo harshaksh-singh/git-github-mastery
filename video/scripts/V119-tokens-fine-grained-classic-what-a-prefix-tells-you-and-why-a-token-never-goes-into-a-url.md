@@ -86,7 +86,7 @@ Expiry and revocation. A token found in a public repository or gist is revoked a
 
 A version note for people who write tooling: newly minted installation tokens, including the Actions `GITHUB_TOKEN`, use a format of about 520 characters, in a staged rollout from the twenty-seventh of April 2026. Older code assumed 40 characters. Never validate a token by length or pattern in your own code.
 
-**[ANIMATION]** stores: id=leak boxes=.git/config:plain_text|printed_by:two_everyday_commands|ends_up_in:logs_and_backups rows=1:A:remote.origin.url@bad|2:B:git_remote_-v|2:B:git_config_list|3:C:CI_logs|3:C:tickets,_chat|3:C:screen_shares|3:C:a_copy_or_backup arrows=2:A1>B1:|2:A1>B2:|3:B>C:pasted|3:A1>C4:copied mono=on title=https://USER:TOKEN@github.com/OWNER/REPO.git at_1=72 at_2=3 at_3=35
+**[ANIMATION]** stores: id=leak boxes=.git/config:plain_text|printed_by:two_everyday_commands|ends_up_in:logs_and_backups rows=1:A:remote.origin.url@bad|2:B:git_remote_-v|2:B:git_config_list|3:C:CI_logs|3:C:tickets,_chat|3:C:screen_shares|3:C:a_copy_or_backup arrows=2:A1>B1:|2:A1>B2:|3:B>C:pasted|3:A1>C4:copied mono=on title=https://USER:TOKEN@github.com/OWNER/REPO.git at_1=30 at_2=3 at_3=35
 
 **[ANIMATION]** step: 1
 
@@ -117,22 +117,6 @@ The model breaks in one place that matters: a lost key card has to be found by s
 And a URL isn't a pocket. It's a label on the outside of the box, read by every tool that handles the box.
 
 ## DIAGRAM
-
-**[ON SCREEN]** The root-cause box of section 16.7. It describes a surprise you will meet while repairing.
-
-```text
-Observed behavior : With transfer.credentialsInUrl=die, "git remote set-url" refuses to replace the bad URL.
-Git state         : remote.origin.url contains user:secret@. Nothing else is wrong.
-Mechanism         : set-url reads the remote's configuration before changing it, and reading a URL
-                    with a plaintext credential is what "die" forbids.
-Root cause        : The check sits where remotes are parsed, not where connections are opened.
-Why Git does this : So that no command can use such a URL by accident.
-Correct fix       : Write the key directly: git config set remote.origin.url <clean URL>.
-Prevention        : Set "die" globally before the first bad URL exists, and revoke any token that
-                    was ever in a URL. Cleaning the file does not un-leak it.
-```
-
-Keep this box for the demo. It describes a surprise you'll meet while repairing.
 
 **[ANIMATION]** step: leak.3
 
@@ -262,6 +246,22 @@ origin	https://github.com/acme-pay/billing-api.git (push)
 
 And the last line of the transcript is the one to read aloud: the token is still compromised. It sat in a file and on a screen. Revoke it.
 
+**[ON SCREEN]** The root-cause box of section 16.7. It describes a surprise you will meet while repairing.
+
+```text
+Observed behavior : With transfer.credentialsInUrl=die, "git remote set-url" refuses to replace the bad URL.
+Git state         : remote.origin.url contains user:secret@. Nothing else is wrong.
+Mechanism         : set-url reads the remote's configuration before changing it, and reading a URL
+                    with a plaintext credential is what "die" forbids.
+Root cause        : The check sits where remotes are parsed, not where connections are opened.
+Why Git does this : So that no command can use such a URL by accident.
+Correct fix       : Write the key directly: git config set remote.origin.url <clean URL>.
+Prevention        : Set "die" globally before the first bad URL exists, and revoke any token that
+                    was ever in a URL. Cleaning the file does not un-leak it.
+```
+
+Here is that surprise as the textbook's root-cause box. Read the root-cause line: the check sits where remotes are parsed, not where connections are opened.
+
 Try it now, thirty seconds, alone and not on a shared screen. In a repository of your own, run `git remote -v` and look between "https://" and the host name. I'll wait.
 
 **[PAUSE]**
@@ -303,8 +303,6 @@ Question 310 of the CTO question bank:
 > "Why must a token never be written into a remote URL? Name four places where it then appears, and the Git setting that refuses such URLs."
 
 **[PAUSE]**
-
-**[ANIMATION]** step: leak.3
 
 Answer out loud. A strong answer starts with where a remote URL is stored and who reads it. It lists four concrete places, names the setting with its three values and the version it needs, and mentions the repair surprise. It finishes with the step that cleaning doesn't replace.
 

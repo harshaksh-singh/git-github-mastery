@@ -158,6 +158,8 @@ Correct fix       : Verify that nothing would be lost, then delete with git bran
 Prevention        : None needed. Expect it under these two methods, and verify before -D.
 ```
 
+Read the root-cause line: squash and rebase merges transfer content without ancestry.
+
 **[DIAGRAM]** A queue of three entries, the second failing.
 
 ```text

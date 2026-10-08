@@ -1,0 +1,1348 @@
+1
+00:00:04,500 --> 00:00:09,516
+A team turns on a merge queue for main on
+a Friday: a waiting line that merges pull
+
+2
+00:00:09,556 --> 00:00:14,449
+requests in order. On Monday there are
+eleven pull requests in the queue and none
+
+3
+00:00:14,489 --> 00:00:19,566
+has merged. Every one shows the same line:
+a required check, a test result the rules
+
+4
+00:00:19,606 --> 00:00:22,733
+demand, expected, waiting
+for status to be reported.
+
+5
+00:00:22,773 --> 00:00:25,535
+The same check is green
+on every pull request.
+
+6
+00:00:25,875 --> 00:00:29,768
+Your CTO asks: the check passed.
+What is the queue waiting for?
+
+7
+00:00:30,108 --> 00:00:33,505
+For a result on a commit that
+no pull request run ever saw.
+
+8
+00:00:33,545 --> 00:00:38,167
+The queue tests a different commit from
+the one the pull request tested, and the
+
+9
+00:00:38,207 --> 00:00:43,003
+workflow was never told to run there. This
+video explains which commit, and why one
+
+10
+00:00:43,043 --> 00:00:47,897
+extra line in the workflow fixes it. Before
+that, it finishes the story of the three
+
+11
+00:00:47,937 --> 00:00:50,869
+merge methods: what each
+one costs you weeks later.
+
+12
+00:00:52,709 --> 00:00:56,341
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:56,381 --> 00:01:01,037
+In the last video you saw what each merge
+method writes at merge time: a merge
+
+14
+00:01:01,077 --> 00:01:06,034
+commit that keeps your commits, a squash
+that replaces them by one new commit, or a
+
+15
+00:01:06,074 --> 00:01:10,850
+rebase that puts new copies in a straight
+line. This video is about what happens
+
+16
+00:01:10,890 --> 00:01:12,476
+afterwards, in three parts.
+
+17
+00:01:12,816 --> 00:01:18,968
+Part one, section 17.9: bisect, blame,
+revert and traceability under each method,
+
+18
+00:01:19,008 --> 00:01:22,867
+and what your own clone
+looks like after the merge.
+
+19
+00:01:22,907 --> 00:01:28,831
+The replay is the second half of
+labs/ch17/merge-methods.sh, in the same three
+
+20
+00:01:28,871 --> 00:01:30,360
+copies as last time.
+
+21
+00:01:30,700 --> 00:01:36,366
+Part two, section 17.10: auto-merge, a
+stored instruction on a pull request.
+
+22
+00:01:36,706 --> 00:01:41,751
+Part three, section 17.11: the merge
+queue, with labs/ch17/merge-queue.sh.
+
+23
+00:01:41,791 --> 00:01:45,531
+In that replay the branch
+prefix is the documented one.
+
+24
+00:01:45,571 --> 00:01:49,448
+The rest is the textbook
+author's imitation in plain Git.
+
+25
+00:01:49,488 --> 00:01:54,464
+Auto-merge and the queue are described
+from the documentation, with their
+
+26
+00:01:54,504 --> 00:01:59,069
+availability conditions. The queue
+is not walked through on GitHub.
+
+27
+00:01:59,409 --> 00:02:05,135
+Labels: git revert is 🟡 CAUTION: it adds a
+commit and rewrites nothing, and it moves
+
+28
+00:02:05,175 --> 00:02:09,391
+the current branch and updates
+the index and the working tree.
+
+29
+00:02:09,431 --> 00:02:13,442
+git branch -D is 🔴 DANGEROUS,
+and it gets its five answers.
+
+30
+00:02:13,482 --> 00:02:19,071
+gh pr merge is 🟡 CAUTION. gh pr merge
+--admin is 🔴: it merges without the required
+
+31
+00:02:19,111 --> 00:02:20,376
+reviews and checks.
+
+32
+00:02:22,216 --> 00:02:23,628
+After this video you can:
+
+33
+00:02:23,968 --> 00:02:27,080
+Compare the three methods for
+bisect, blame and revert.
+
+34
+00:02:27,420 --> 00:02:32,309
+Say whether git branch -d accepts the
+local branch after each method and why.
+
+35
+00:02:32,649 --> 00:02:35,136
+Revert a merged pull
+request under each method.
+
+36
+00:02:35,476 --> 00:02:38,510
+Explain what auto-merge waits
+for and what it does not check.
+
+37
+00:02:38,850 --> 00:02:43,198
+Explain what a merge queue tests that
+a pull request run does not, and why a
+
+38
+00:02:43,238 --> 00:02:46,200
+required check can stay
+unreported on queue entries.
+
+39
+00:02:48,040 --> 00:02:52,996
+In one sentence: the method decides which
+commits exist on main, and every later
+
+40
+00:02:53,036 --> 00:02:57,868
+tool, bisect, blame, revert, an audit
+that follows a commit ID, works on those
+
+41
+00:02:57,908 --> 00:03:03,051
+commits and no others. Three reminders.
+Bisect searches history for the commit that
+
+42
+00:03:03,091 --> 00:03:07,423
+changed something. Blame names the
+commit that last changed each line.
+
+43
+00:03:07,463 --> 00:03:09,984
+Revert adds a commit that undoes another.
+
+44
+00:03:10,324 --> 00:03:15,331
+Start from the one bit you measured last
+time, with last video's branch on screen:
+
+45
+00:03:15,371 --> 00:03:19,947
+is your head commit an ancestor of main?
+Yes after a merge commit, as here.
+
+46
+00:03:19,987 --> 00:03:24,687
+No after squash. No after rebase. After
+those two the content arrived and the
+
+47
+00:03:24,727 --> 00:03:27,272
+commits did not. Four observations follow.
+
+48
+00:03:27,612 --> 00:03:32,760
+Observation one: git branch -d refuses.
+It deletes only when the branch is merged
+
+49
+00:03:32,800 --> 00:03:37,565
+into its upstream, or into HEAD when
+it has no upstream, and "merged" means
+
+50
+00:03:37,605 --> 00:03:42,048
+reachable. Squash and rebase merges
+transfer content without ancestry.
+
+51
+00:03:42,088 --> 00:03:47,109
+There is nothing to prevent here. Expect
+it under these two methods, and verify
+
+52
+00:03:47,149 --> 00:03:48,774
+before you delete with -D.
+
+53
+00:03:49,114 --> 00:03:54,004
+One caveat from the textbook: this refusal
+is an inference from the documented new
+
+54
+00:03:54,044 --> 00:03:57,972
+commit IDs, confirmed in the
+transcript for the local equivalents.
+
+55
+00:03:58,012 --> 00:04:02,841
+And the other half of the rule: while the
+remote-tracking branch still exists, -d
+
+56
+00:04:02,881 --> 00:04:07,110
+deletes with a warning, because the
+branch is merged into its upstream.
+
+57
+00:04:07,450 --> 00:04:10,623
+Observation two: blame and
+log name different commits.
+
+58
+00:04:10,663 --> 00:04:15,620
+After a squash, every line points to one
+commit. Under squash the unit of history is
+
+59
+00:04:15,660 --> 00:04:20,202
+the pull request, so the squash commit's
+message must link to it, as the pull
+
+60
+00:04:20,242 --> 00:04:22,522
+request number in a default title does.
+
+61
+00:04:22,862 --> 00:04:27,389
+Observation three: untested commits
+can land. Under merge and rebase, an
+
+62
+00:04:27,429 --> 00:04:32,526
+intermediate commit of the branch is on
+main, and CI tested the final result, not
+
+63
+00:04:32,566 --> 00:04:37,220
+each commit. In this picture, think of
+12ae95d. git bisect can stop on it.
+
+64
+00:04:37,260 --> 00:04:41,850
+git bisect start --first-parent treats
+a merged pull request as one step.
+
+65
+00:04:41,890 --> 00:04:46,734
+For the rebase method no flag helps, and
+every commit has to pass on its own.
+
+66
+00:04:46,774 --> 00:04:50,222
+Squash removes the problem
+and the granularity with it.
+
+67
+00:04:50,562 --> 00:04:54,101
+Observation four: reverting is
+three different operations.
+
+68
+00:04:54,141 --> 00:04:59,100
+A merge commit needs -m 1, and carries the
+trap from the merge videos: re-merging
+
+69
+00:04:59,140 --> 00:05:02,742
+the branch brings nothing back
+until you revert the revert.
+
+70
+00:05:02,782 --> 00:05:07,926
+A squash commit reverts like any commit. A
+rebased series has no marker of where the
+
+71
+00:05:07,966 --> 00:05:12,925
+pull request began: one revert per commit.
+On GitHub, the Revert button and gh pr
+
+72
+00:05:12,965 --> 00:05:17,368
+revert create a new pull request that
+reverts the original merge commit.
+
+73
+00:05:17,708 --> 00:05:23,626
+Quick quiz. Your main is built with squash
+merges, and one pull request must be
+
+74
+00:05:23,666 --> 00:05:28,755
+undone. How many reverts? A: one,
+with -m 1. B: one ordinary revert.
+
+75
+00:05:28,795 --> 00:05:31,772
+C: one per original commit. Your answer?
+
+76
+00:05:36,612 --> 00:05:40,686
+B. A squash commit has one parent,
+so it reverts like any commit.
+
+77
+00:05:40,726 --> 00:05:43,914
+A is the merge commit, and
+C is the rebased series.
+
+78
+00:05:44,254 --> 00:05:48,110
+No method is best. Each one
+buys something and pays for it.
+
+79
+00:05:48,150 --> 00:05:53,394
+Commit IDs reviewed equal commit IDs on
+main: yes for a merge commit, no for the
+
+80
+00:05:53,434 --> 00:05:58,876
+other two. Bisect granularity: for a merge
+commit, a commit, or a pull request with
+
+81
+00:05:58,916 --> 00:06:01,716
+--first-parent. For
+squash, a pull request.
+
+82
+00:06:02,056 --> 00:06:07,414
+For rebase, a commit. Revert: one command
+with -m 1 and the re-merge trap, then one
+
+83
+00:06:07,454 --> 00:06:12,552
+command, then one per commit. Reusing the
+branch afterwards: safe after a merge
+
+84
+00:06:12,592 --> 00:06:15,999
+commit. After a squash, old
+commits are listed again.
+
+85
+00:06:16,039 --> 00:06:20,487
+After a rebase the same, though a
+plain rebase skips the old commits.
+
+86
+00:06:20,827 --> 00:06:25,849
+The contexts the textbook gives. Merge
+commits where the reviewed commit IDs must be
+
+87
+00:06:25,889 --> 00:06:30,489
+the deployed ones: audits, signed-commit
+policies, long-lived branches merged
+
+88
+00:06:30,529 --> 00:06:35,491
+repeatedly. Squash where pull requests are
+small and short-lived and commit hygiene
+
+89
+00:06:35,531 --> 00:06:40,553
+inside a branch is not enforced. Rebase
+where the team curates every commit, wants a
+
+90
+00:06:40,593 --> 00:06:44,289
+linear history, and does not
+require signatures on the target.
+
+91
+00:06:44,629 --> 00:06:49,652
+Auto-merge. In one sentence: auto-merge is
+a stored instruction on a pull request:
+
+92
+00:06:49,692 --> 00:06:53,294
+merge with this method as soon
+as every requirement is met.
+
+93
+00:06:53,634 --> 00:06:58,479
+"Auto-merge merges a pull request
+automatically after all required reviews and
+
+94
+00:06:58,519 --> 00:07:03,676
+status checks pass." It must first be enabled
+for the repository, and the option is
+
+95
+00:07:03,716 --> 00:07:07,558
+shown only on pull requests that
+cannot be merged immediately.
+
+96
+00:07:07,598 --> 00:07:12,693
+One safety property is documented: auto-merge
+is disabled if someone without write
+
+97
+00:07:12,733 --> 00:07:17,577
+permissions pushes new changes to the
+head branch or switches the base branch.
+
+98
+00:07:17,617 --> 00:07:22,775
+Availability: public repositories on GitHub
+Free, public and private on paid plans.
+
+99
+00:07:23,115 --> 00:07:27,121
+What it does not check. Auto-merge
+waits for required things only.
+
+100
+00:07:27,161 --> 00:07:32,210
+In a repository with no required checks and
+no required reviews there is nothing to
+
+101
+00:07:32,250 --> 00:07:37,054
+wait for. And the documentation names one
+event that switches it off, a push by
+
+102
+00:07:37,094 --> 00:07:41,653
+someone without write permission. For
+a commit pushed by someone with write
+
+103
+00:07:41,693 --> 00:07:46,374
+permission after the approval, whether
+it merges unreviewed is decided by the
+
+104
+00:07:46,414 --> 00:07:49,930
+stale-approval settings from
+video 124, not by auto-merge.
+
+105
+00:07:49,970 --> 00:07:54,528
+Decide those settings before you allow
+auto-merge on a branch that deploys.
+
+106
+00:07:54,868 --> 00:07:59,607
+The merge queue. In one sentence: a merge
+queue merges pull requests one group at a
+
+107
+00:07:59,647 --> 00:08:04,329
+time and runs the required checks on the
+exact commit that will become the new tip
+
+108
+00:08:04,369 --> 00:08:05,423
+of the base branch.
+
+109
+00:08:05,763 --> 00:08:10,613
+The problem it solves: without "strict"
+required checks, two pull requests can each
+
+110
+00:08:10,653 --> 00:08:13,853
+be green against an older
+main and break main together.
+
+111
+00:08:13,893 --> 00:08:17,683
+With them, every merge makes all
+other pull requests out of date.
+
+112
+00:08:17,723 --> 00:08:20,393
+GitHub calls that "a
+race-to-merge situation".
+
+113
+00:08:20,733 --> 00:08:25,298
+How it works, from the documentation: the
+queue "creates temporary branches with a
+
+114
+00:08:25,338 --> 00:08:29,903
+special prefix", and the changes in a pull
+request "are grouped into a merge_group
+
+115
+00:08:29,943 --> 00:08:34,395
+with the latest version of the base_branch
+as well as changes from pull requests
+
+116
+00:08:34,435 --> 00:08:35,856
+ahead of it in the queue".
+
+117
+00:08:36,196 --> 00:08:41,052
+The temporary branches begin with
+gh-readonly-queue/ and the base branch name, and
+
+118
+00:08:41,092 --> 00:08:45,770
+"contain a different sha from the pull
+request". If a group fails its checks or
+
+119
+00:08:45,810 --> 00:08:50,607
+conflicts, the pull request is removed
+from the queue, and the branches behind it
+
+120
+00:08:50,647 --> 00:08:52,099
+are recreated without it.
+
+121
+00:08:52,439 --> 00:08:56,513
+The trap. Checks on queue branches
+are triggered by their own event.
+
+122
+00:08:56,553 --> 00:09:01,292
+A workflow, remember, is the file that
+says: when this event happens, run these
+
+123
+00:09:01,332 --> 00:09:06,192
+jobs. "You must use the merge_group event
+to trigger your GitHub Actions workflow
+
+124
+00:09:06,232 --> 00:09:11,214
+when a pull request is added to a merge
+queue ... Otherwise, status checks will not
+
+125
+00:09:11,254 --> 00:09:15,872
+be triggered ... The merge will fail as
+the required status check will not be
+
+126
+00:09:15,912 --> 00:09:16,477
+reported."
+
+127
+00:09:16,817 --> 00:09:22,802
+Also documented: the queue fixes the merge
+method, and gh pr merge --admin bypasses
+
+128
+00:09:22,842 --> 00:09:23,528
+the queue.
+
+129
+00:09:23,868 --> 00:09:28,398
+Availability: merge queues are available
+"in any public repository owned by an
+
+130
+00:09:28,438 --> 00:09:32,850
+organization, or in private repositories
+owned by organizations using GitHub
+
+131
+00:09:32,890 --> 00:09:35,838
+Enterprise Cloud". So not
+under a personal account.
+
+132
+00:09:35,878 --> 00:09:40,349
+And one statement the textbook marks
+unverified: the merge-queue ruleset rule
+
+133
+00:09:40,389 --> 00:09:45,270
+appears only in the Enterprise Cloud view
+of the documentation, and the course could
+
+134
+00:09:45,310 --> 00:09:49,839
+not confirm whether a Free or Team
+organization can enable the queue through a
+
+135
+00:09:49,879 --> 00:09:52,124
+ruleset or only through a classic rule.
+
+136
+00:09:52,464 --> 00:09:57,208
+When not to use a queue: it adds a CI
+run per group and latency per merge.
+
+137
+00:09:57,248 --> 00:10:01,022
+For a few merges a day, "strict"
+required checks cost less.
+
+138
+00:10:02,862 --> 00:10:08,386
+For the first part, keep the filing analogy
+from the last video: drafts stapled in,
+
+139
+00:10:08,426 --> 00:10:13,816
+one clean page retyped, or every draft
+retyped. Everything in section 17.9 is the
+
+140
+00:10:13,856 --> 00:10:19,380
+question "what can I still look up in the
+folder?" With stapled drafts: everything,
+
+141
+00:10:19,420 --> 00:10:24,676
+including the one draft that had a mistake
+in it. With one clean page: only the
+
+142
+00:10:24,716 --> 00:10:30,106
+final text. With retyped drafts: every
+step, and no cover note saying which pages
+
+143
+00:10:30,146 --> 00:10:31,178
+belong together.
+
+144
+00:10:31,518 --> 00:10:36,415
+For the queue, think of a rehearsal. A pull
+request's CI rehearses your change alone
+
+145
+00:10:36,455 --> 00:10:41,293
+on the stage as it was. The queue rehearses
+the whole evening in running order: the
+
+146
+00:10:41,333 --> 00:10:44,702
+stage as it is now, plus every
+act ahead of you, plus you.
+
+147
+00:10:44,742 --> 00:10:49,463
+If an act ahead of you is pulled, your
+rehearsal no longer describes the evening,
+
+148
+00:10:49,503 --> 00:10:50,638
+and it is run again.
+
+149
+00:10:50,978 --> 00:10:55,379
+The model breaks at one point: in a
+theatre, a rehearsal you already did still
+
+150
+00:10:55,419 --> 00:11:00,104
+happened. In the queue, a result on a commit
+that will not land counts for nothing,
+
+151
+00:11:00,144 --> 00:11:02,154
+because checks belong to commit IDs.
+
+152
+00:11:03,994 --> 00:11:08,419
+Read the root-cause line: squash and
+rebase merges transfer content without
+
+153
+00:11:08,459 --> 00:11:08,955
+ancestry.
+
+154
+00:11:09,295 --> 00:11:13,323
+Three approved pull requests with
+their head commits on the top line.
+
+155
+00:11:13,363 --> 00:11:18,157
+Below, what the queue builds: one temporary
+branch per entry, each containing main
+
+156
+00:11:18,197 --> 00:11:22,991
+and everything ahead of it. Compare the
+IDs on the left of each line with the pull
+
+157
+00:11:23,031 --> 00:11:25,998
+request heads at the top:
+none of them is the same.
+
+158
+00:11:26,038 --> 00:11:29,476
+The checks must run on commits
+that no contributor created.
+
+159
+00:11:29,816 --> 00:11:36,288
+The second entry fails. It leaves the
+queue, and the third is rebuilt without it.
+
+160
+00:11:36,328 --> 00:11:41,675
+Its ID changes from 0569767 to
+3bda42c, so it must be tested again.
+
+161
+00:11:41,715 --> 00:11:45,695
+When it passes, main moves
+to exactly that commit.
+
+162
+00:11:46,035 --> 00:11:51,083
+Try it now, thirty seconds, on paper: copy
+the queue's commit IDs from the picture,
+
+163
+00:11:51,123 --> 00:11:54,761
+and tick every one that a pull
+request's own run has tested.
+
+164
+00:11:54,801 --> 00:11:55,375
+I'll wait.
+
+165
+00:12:00,215 --> 00:12:05,053
+No ticks. And that's the hook: a workflow
+that only runs on pull request events
+
+166
+00:12:05,093 --> 00:12:07,462
+never runs on any line of this picture.
+
+167
+00:12:09,302 --> 00:12:13,633
+You are the contributor now. The maintainer
+deleted the head branch on the server,
+
+168
+00:12:13,673 --> 00:12:15,018
+and you update your clone.
+
+169
+00:12:15,358 --> 00:12:19,529
+Copy 1, the merge commit: -d deletes
+the branch without complaint.
+
+170
+00:12:19,569 --> 00:12:21,507
+Its tip is an ancestor of main.
+
+171
+00:12:23,847 --> 00:12:29,150
+Copy 2, squash. Your work is on
+main. What does git branch -d say?
+
+172
+00:12:29,490 --> 00:12:34,586
+"Not fully merged." git branch -vv shows
+the upstream as gone, so Git compares with
+
+173
+00:12:34,626 --> 00:12:37,804
+HEAD and finds three commits
+that are not reachable.
+
+174
+00:12:38,144 --> 00:12:41,011
+Copy 3, rebase: the same refusal.
+
+175
+00:12:41,351 --> 00:12:43,964
+How do you verify before -D?
+
+176
+00:12:44,304 --> 00:12:48,448
+In the rebase copy, git cherry marks
+every commit with a minus sign: a
+
+177
+00:12:48,488 --> 00:12:53,170
+patch-equivalent commit is on main. In
+the squash copy every commit gets a plus
+
+178
+00:12:53,210 --> 00:12:58,011
+sign, because no single commit on main
+matches. The test that works for both asks
+
+179
+00:12:58,051 --> 00:13:03,032
+whether merging the branch would change main
+at all: the merged tree equals the tree
+
+180
+00:13:03,072 --> 00:13:05,722
+of main. The branch has
+nothing left to give.
+
+181
+00:13:06,062 --> 00:13:11,015
+Then the 🔴 command, git branch -D. What
+it changes: the branch ref and its reflog
+
+182
+00:13:11,055 --> 00:13:16,007
+are deleted. What it can destroy: nothing
+at once. The commits stay in the object
+
+183
+00:13:16,047 --> 00:13:21,185
+database and, if you ever had the branch
+checked out, in the reflog of HEAD, for the
+
+184
+00:13:21,225 --> 00:13:24,945
+retention periods. Preview: the
+tree comparison you just saw.
+
+185
+00:13:24,985 --> 00:13:29,013
+Recovery: git branch <name> <id>,
+with the ID the command printed.
+
+186
+00:13:29,053 --> 00:13:33,451
+Appropriate: after you have verified
+that the base contains the content.
+
+187
+00:13:33,791 --> 00:13:39,399
+Blame on the same three lines. Under the
+merge commit, each line names the commit
+
+188
+00:13:39,439 --> 00:13:43,514
+that introduced it. Under squash,
+every line names da48bba.
+
+189
+00:13:45,854 --> 00:13:49,980
+The second commit of the branch used a
+wrong queue name and the third fixed it.
+
+190
+00:13:50,020 --> 00:13:54,145
+Under which methods does main contain a
+commit with the wrong name in its tree?
+
+191
+00:13:54,485 --> 00:13:58,457
+Under merge and under rebase: one
+commit each. Under squash: none.
+
+192
+00:13:58,497 --> 00:14:03,563
+That intermediate commit was never tested
+on its own, and git bisect can stop on it.
+
+193
+00:14:03,903 --> 00:14:04,564
+Reverting.
+
+194
+00:14:04,904 --> 00:14:08,657
+One revert, and you must
+name the mainline with -m 1.
+
+195
+00:14:08,997 --> 00:14:10,192
+One ordinary revert.
+
+196
+00:14:10,532 --> 00:14:15,003
+One revert per commit, and you must know
+where the pull request began: here, three
+
+197
+00:14:15,043 --> 00:14:15,719
+commits back.
+
+198
+00:14:18,559 --> 00:14:22,129
+Three approved one-commit pull
+requests against the same main.
+
+199
+00:14:22,469 --> 00:14:27,918
+The queue in order 1, 2, 3. Each temporary
+branch is created from the one before and
+
+200
+00:14:27,958 --> 00:14:29,813
+merges one more pull request.
+
+201
+00:14:32,153 --> 00:14:35,720
+Six refs: three pull request
+heads, three queue entries.
+
+202
+00:14:35,760 --> 00:14:37,653
+How many different commit IDs?
+
+203
+00:14:37,993 --> 00:14:43,112
+Six. The checks must run on the three queue
+commits, which no pull_request run ever
+
+204
+00:14:43,152 --> 00:14:43,360
+saw.
+
+205
+00:14:43,700 --> 00:14:48,853
+The checks fail on the group of pull request
+2. It leaves the queue, and number 3 is
+
+206
+00:14:48,893 --> 00:14:50,523
+rebuilt on top of number 1.
+
+207
+00:14:50,863 --> 00:14:55,193
+Here are the branch names after that:
+one entry left from before, and now a
+
+208
+00:14:55,233 --> 00:14:59,912
+different commit for number 3, tested
+again. Predict: when its checks pass, where
+
+209
+00:14:59,952 --> 00:15:03,641
+does main go, and does that commit's
+ID change? Say it out loud.
+
+210
+00:15:08,481 --> 00:15:13,183
+The checks pass, and the base branch moves
+to the tested commit by a fast-forward,
+
+211
+00:15:13,223 --> 00:15:13,761
+unchanged.
+
+212
+00:15:14,101 --> 00:15:15,762
+What was tested is what landed.
+
+213
+00:15:16,102 --> 00:15:20,514
+One more trigger. With it, the workflow
+runs on the queue's temporary branches and
+
+214
+00:15:20,554 --> 00:15:24,966
+reports the required check there. That's
+what the eleven pull requests in the hook
+
+215
+00:15:25,006 --> 00:15:25,889
+were waiting for.
+
+216
+00:15:26,229 --> 00:15:31,221
+The first is the repository setting, once.
+The second stores the instruction on pull
+
+217
+00:15:31,261 --> 00:15:33,318
+request 12. The third withdraws it.
+
+218
+00:15:35,158 --> 00:15:36,806
+Five mistakes to watch for.
+
+219
+00:15:37,146 --> 00:15:40,415
+Enabling a merge queue without
+adding the merge_group trigger.
+
+220
+00:15:40,455 --> 00:15:44,739
+Root cause: checks on queue branches are
+triggered by their own event; without it
+
+221
+00:15:44,779 --> 00:15:47,034
+the required check is
+never reported there.
+
+222
+00:15:47,374 --> 00:15:51,460
+Deleting a branch with -D after
+a squash merge without checking.
+
+223
+00:15:51,500 --> 00:15:56,681
+Root cause: -d refused because the commits
+are unreachable from main; verify that
+
+224
+00:15:56,721 --> 00:15:59,002
+the base contains the content first.
+
+225
+00:15:59,342 --> 00:16:04,083
+Reverting a merge commit without -m, or
+re-merging the branch after the revert and
+
+226
+00:16:04,123 --> 00:16:08,982
+expecting the change back. Root cause: a
+merge has two parents, and a reverted merge
+
+227
+00:16:09,022 --> 00:16:11,548
+is still an ancestor;
+you revert the revert.
+
+228
+00:16:11,888 --> 00:16:17,038
+Assuming every commit on main passed CI.
+Root cause: under merge and rebase methods,
+
+229
+00:16:17,078 --> 00:16:21,733
+intermediate commits land that were only
+tested as part of the final result.
+
+230
+00:16:22,073 --> 00:16:26,825
+Trusting auto-merge to stop an unreviewed
+push. Root cause: auto-merge waits only
+
+231
+00:16:26,865 --> 00:16:31,380
+for required reviews and checks; a later
+push by someone with write access is
+
+232
+00:16:31,420 --> 00:16:33,747
+governed by the stale-approval settings.
+
+233
+00:16:35,587 --> 00:16:40,275
+Now, out of the lab. Picture three teams
+in one company, with three choices, each
+
+234
+00:16:40,315 --> 00:16:42,319
+defensible with this video's table.
+
+235
+00:16:42,659 --> 00:16:47,502
+The payments team must show that the reviewed
+commit is the deployed commit: merge
+
+236
+00:16:47,542 --> 00:16:52,444
+commits, and git bisect start --first-parent
+when they hunt a regression, so that a
+
+237
+00:16:52,484 --> 00:16:53,933
+pull request is one step.
+
+238
+00:16:54,273 --> 00:16:59,055
+The evaluation-tools team has small,
+short-lived pull requests full of "fix typo"
+
+239
+00:16:59,095 --> 00:17:03,877
+commits: squash, with the pull request
+number in the squash message so that blame
+
+240
+00:17:03,917 --> 00:17:08,818
+leads back to the discussion. They delete
+head branches on merge and tell newcomers
+
+241
+00:17:08,858 --> 00:17:10,663
+that git branch -d will refuse.
+
+242
+00:17:11,003 --> 00:17:15,720
+The inference-runtime team curates every
+commit and wants a straight line: rebase,
+
+243
+00:17:15,760 --> 00:17:20,477
+on a branch that does not require signatures,
+with a rule that every commit passes
+
+244
+00:17:20,517 --> 00:17:23,784
+the tests on its own, because
+bisect will visit each one.
+
+245
+00:17:24,124 --> 00:17:28,449
+The team from the hook adds the
+merge_group trigger on Monday morning.
+
+246
+00:17:28,489 --> 00:17:33,562
+The eleven queued pull requests start
+reporting. Then they ask the honest question
+
+247
+00:17:33,602 --> 00:17:38,676
+from the end of section 17.11: at a few
+merges a day, do they need a queue at all,
+
+248
+00:17:38,716 --> 00:17:41,419
+or would "strict" required
+checks cost less?
+
+249
+00:17:43,259 --> 00:17:47,915
+Your turn. Do Exercise 22.4, "A
+merge method for three teams", in
+
+250
+00:17:47,955 --> 00:17:53,912
+exercises/m19-m25-github.md. For each team,
+write down the requirement that decides
+
+251
+00:17:53,952 --> 00:17:59,836
+the method before you name the method, and
+for the method you choose, the cost the
+
+252
+00:17:59,876 --> 00:18:02,726
+team accepts in bisect, blame or revert.
+
+253
+00:18:03,066 --> 00:18:08,549
+The challenge is Exercise 22.7, "The
+approved commit is not on main", in the same
+
+254
+00:18:08,589 --> 00:18:08,890
+file.
+
+255
+00:18:10,730 --> 00:18:13,974
+Question 271 of the CTO question bank:
+
+256
+00:18:16,314 --> 00:18:20,904
+Answer out loud. A strong answer names
+the commit each one tests and what that
+
+257
+00:18:20,944 --> 00:18:25,712
+commit contains. It explains why the two
+have different IDs and what follows from
+
+258
+00:18:25,752 --> 00:18:30,520
+checks being attached to IDs. For the
+second part it names the event, states what
+
+259
+00:18:30,560 --> 00:18:34,615
+happens to the merge when the check
+never reports, and gives the fix.
+
+260
+00:18:34,655 --> 00:18:37,168
+It adds when a queue
+is not worth its cost.
+
+261
+00:18:39,008 --> 00:18:43,875
+Let's land this. You can now say what each
+merge button costs weeks later, and what
+
+262
+00:18:43,915 --> 00:18:45,471
+a merge queue really tests.
+
+263
+00:18:45,811 --> 00:18:47,471
+You should now be able to say:
+
+264
+00:18:47,811 --> 00:18:53,670
+Only a merge commit makes your commits
+ancestors of main; after squash and rebase
+
+265
+00:18:53,710 --> 00:18:57,165
+git branch -d refuses,
+and you verify before -D.
+
+266
+00:18:57,505 --> 00:19:02,607
+Squash gives coarse blame and bisect and
+a one-command revert; merge commits keep
+
+267
+00:19:02,647 --> 00:19:07,367
+fine steps and revert with -m 1; rebase
+keeps steps and loses the grouping.
+
+268
+00:19:07,707 --> 00:19:12,196
+Under merge and rebase, intermediate commits
+that were never tested alone land on
+
+269
+00:19:12,236 --> 00:19:12,476
+main.
+
+270
+00:19:12,816 --> 00:19:17,387
+Auto-merge is a stored instruction that
+waits for required reviews and checks, and
+
+271
+00:19:17,427 --> 00:19:18,343
+for nothing else.
+
+272
+00:19:18,683 --> 00:19:23,101
+A merge queue tests the commit that will
+become the tip of the base, on temporary
+
+273
+00:19:23,141 --> 00:19:26,294
+branches, and workflows must
+run on the merge_group event.
+
+274
+00:19:28,134 --> 00:19:36,412
+Read sections 17.9 to 17.11 of Chapter 17.
+Do Exercise 22.3, "The queue that never
+
+275
+00:19:36,452 --> 00:19:43,208
+finishes", and Exercise 22.6,
+"Auto-merge did what it was told", in
+
+276
+00:19:43,248 --> 00:19:46,048
+exercises/m19-m25-github.md.
+
+277
+00:19:46,388 --> 00:19:50,061
+That closes the merge button,
+from the click to the audit.
+
+278
+00:19:50,101 --> 00:19:54,478
+Practise with Exercise 22.4. Next:
+a Git tag versus a GitHub release.
+
+279
+00:19:54,518 --> 00:19:57,807
+Until then, look at the
+state first and type second.
+
+280
+00:19:57,847 --> 00:19:59,344
+See you in the next one.

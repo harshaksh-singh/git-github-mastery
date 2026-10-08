@@ -214,7 +214,7 @@ $ git commit --amend -m "Add request router"
 
 The same four, and then `post-rewrite` with the argument `amend`, and on standard input the old commit ID and the new one.
 
-**[ANIMATION]** graph: 3f5eb96 main; HEAD=main => 9533ef0 main; HEAD=main; reflog:3f5eb96 title=An_amend_writes_a_new_commit
+**[ANIMATION]** graph: 3f5eb96 main; HEAD=main => 9533ef0 main; HEAD=main; reflog:3f5eb96 title=An_amend_writes_a_new_commit at_state_1=12 at_state_2=38
 
 **[ANIMATION]** step: state-2
 
@@ -631,7 +631,7 @@ $ git log --oneline --graph --all
 
 It counts the commits to be rebased, and the ones among them that no remote-tracking branch contains.
 
-**[ANIMATION]** graph: id=rb 0443504-eb2bc26 main; 0443504-6c7937a feature/local; 0443504-8cd8387 feature/shared origin/feature/shared; HEAD=main; say:Only_feature/shared_is_on_a_remote => 0443504-eb2bc26 main; 0443504-6c7937a; eb2bc26-?copy_of_6c7937a feature/local; ^eb2bc26-?copy_of_8cd8387 feature/shared; 0443504-8cd8387 origin/feature/shared; HEAD=feature/shared; reflog:6c7937a; name:after; say:feature/shared:_ahead_2,_behind_1; cmd:git_rebase_--no-verify_main dx=250
+**[ANIMATION]** graph: id=rb 0443504-eb2bc26 main; ^0443504-6c7937a feature/local; 0443504-8cd8387 feature/shared origin/feature/shared; HEAD=main; say:Only_feature/shared_is_on_a_remote => 0443504-eb2bc26 main; ^0443504-6c7937a; ^eb2bc26-?copy_of_6c7937a feature/local; eb2bc26-?copy_of_8cd8387 feature/shared; 0443504-8cd8387 origin/feature/shared; HEAD=feature/shared; reflog:6c7937a; name:after; say:feature/shared:_ahead_2,_behind_1; cmd:git_rebase_--no-verify_main dx=250
 
 **[ANIMATION]** step: rb.state-1
 

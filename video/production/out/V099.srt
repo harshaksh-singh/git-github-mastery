@@ -1,1120 +1,1120 @@
 1
-00:00:04,500 --> 00:00:09,155
+00:00:04,500 --> 00:00:09,544
 "A laptop lost power during a commit, and
 Git now says fatal: index file corrupt.
 
 2
-00:00:09,195 --> 00:00:12,923
+00:00:09,584 --> 00:00:13,623
 What did we lose: the history, the
 work in progress, or nothing?"
 
 3
-00:00:13,263 --> 00:00:20,461
+00:00:13,963 --> 00:00:18,747
 "The release script stamps builds
 by reading .git/refs/heads/main.
 
 4
-00:00:20,501 --> 00:00:28,795
+00:00:18,787 --> 00:00:24,302
 On the new build image that file does
 not exist. Is the repository damaged?"
 
 5
-00:00:29,135 --> 00:00:31,819
+00:00:24,642 --> 00:00:28,266
 "git fsck reports a dangling
 commit on the build server.
 
 6
-00:00:31,859 --> 00:00:34,153
+00:00:28,306 --> 00:00:31,408
 Is data at risk? Should
 somebody run a cleanup?"
 
 7
-00:00:34,493 --> 00:00:43,465
+00:00:31,748 --> 00:00:37,534
 "We keep four hundred versions of a 16
 MB evaluation set in one repository.
 
 8
-00:00:43,505 --> 00:00:45,988
+00:00:37,574 --> 00:00:39,165
 Are we storing 6 GB?"
 
 9
-00:00:46,328 --> 00:00:50,026
+00:00:39,505 --> 00:00:43,546
 None of these can be answered with the
 commands of the earlier parts alone.
 
 10
-00:00:50,066 --> 00:00:52,369
+00:00:43,586 --> 00:00:46,104
 They are questions about
 how Git stores things.
 
 11
-00:00:52,709 --> 00:00:56,948
+00:00:46,444 --> 00:00:50,689
 The short answers, which this part
 of the course will earn one by one.
 
 12
-00:00:56,988 --> 00:01:01,900
+00:00:50,729 --> 00:00:55,648
 The index is rebuilt with one command, and
 only content that was staged and never
 
 13
-00:01:01,940 --> 00:01:06,913
+00:00:55,688 --> 00:01:00,668
 committed needs a second look. The ref is
 in packed-refs or in a reftable, and the
 
 14
-00:01:06,953 --> 00:01:11,926
+00:01:00,708 --> 00:01:05,688
 script should have asked Git. "Dangling"
 describes where git fsck started looking,
 
 15
-00:01:11,966 --> 00:01:15,594
+00:01:05,728 --> 00:01:09,361
 not what will be deleted, and
 the cleanup is the risky part.
 
 16
-00:01:15,634 --> 00:01:20,730
+00:01:09,401 --> 00:01:14,503
 And probably not: a pack stores versions
 that differ in a few lines as deltas, while
 
 17
-00:01:20,770 --> 00:01:22,564
+00:01:14,543 --> 00:01:16,340
 every snapshot stays complete.
 
 18
-00:01:24,404 --> 00:01:29,756
+00:01:18,180 --> 00:01:23,533
 Welcome back to Git and GitHub Deep Mastery.
 Pull up a chair: this video opens Part
 
 19
-00:01:29,796 --> 00:01:34,564
+00:01:23,573 --> 00:01:28,340
 4, Git internals. Since the first part
 of the course you have had a model.
 
 20
-00:01:34,604 --> 00:01:39,567
+00:01:28,380 --> 00:01:33,343
 Four object types: blobs for file content,
 trees for directories, commits for
 
 21
-00:01:39,607 --> 00:01:43,401
+00:01:33,383 --> 00:01:37,177
 snapshots, and tags. Names that
 point at them, called refs.
 
 22
-00:01:43,441 --> 00:01:47,429
+00:01:37,217 --> 00:01:41,205
 And a staging area, the index.
 In this part you open each box.
 
 23
-00:01:47,769 --> 00:01:52,703
+00:01:41,545 --> 00:01:46,481
 I'll say this once for the part: the replays
 use the fixed lab clock, so the commit
 
 24
-00:01:52,743 --> 00:01:57,497
+00:01:46,521 --> 00:01:51,276
 IDs on screen equal the IDs in the book
 and the ones you'll get when you replay.
 
 25
-00:01:57,837 --> 00:02:03,082
+00:01:51,616 --> 00:01:56,861
 Today, two things. The .git directory, file
 by file: what git init creates, what the
 
 26
-00:02:03,122 --> 00:02:08,051
+00:01:56,901 --> 00:02:01,830
 first commit adds, and which of those
 files Git can rebuild and which it can't.
 
 27
-00:02:08,091 --> 00:02:12,455
+00:02:01,870 --> 00:02:06,234
 And the smallest unit of storage:
 one loose object, down to its bytes.
 
 28
-00:02:12,495 --> 00:02:16,921
+00:02:06,274 --> 00:02:10,700
 You'll recompute an object ID with a
 tool that knows nothing about Git.
 
 29
-00:02:16,961 --> 00:02:18,431
+00:02:10,740 --> 00:02:12,210
 Hold on to that promise.
 
 30
-00:02:18,771 --> 00:02:22,196
+00:02:12,550 --> 00:02:15,975
 Two habits come out of this
 chapter, and both begin today.
 
 31
-00:02:22,236 --> 00:02:27,156
+00:02:16,015 --> 00:02:20,935
 Read repository state through plumbing
 commands, the low-level commands with stable
 
 32
-00:02:27,196 --> 00:02:31,159
+00:02:20,975 --> 00:02:24,938
 output, because the files underneath
 exist in more than one format.
 
 33
-00:02:31,199 --> 00:02:36,118
+00:02:24,978 --> 00:02:29,897
 And before you delete or repair anything
 under .git, decide whether it's primary or
 
 34
-00:02:36,158 --> 00:02:36,895
+00:02:29,937 --> 00:02:30,674
 derived data.
 
 35
-00:02:38,735 --> 00:02:43,213
+00:02:32,514 --> 00:02:36,992
 name every entry of a fresh .git directory
 and say what reads or writes it;
 
 36
-00:02:43,553 --> 00:02:47,628
+00:02:37,332 --> 00:02:41,407
 say which files of .git can be deleted
 without breaking the repository;
 
 37
-00:02:47,968 --> 00:02:51,546
+00:02:41,747 --> 00:02:45,325
 describe the bytes of a loose object:
 header, content, compression;
 
 38
-00:02:51,886 --> 00:02:56,770
+00:02:45,665 --> 00:02:50,549
 compute a blob's object ID by hand and
 explain why the compression level does not
 
 39
-00:02:56,810 --> 00:02:57,195
+00:02:50,589 --> 00:02:50,974
 matter;
 
 40
-00:02:57,535 --> 00:02:59,925
+00:02:51,314 --> 00:02:53,704
 find the file that holds a given object.
 
 41
-00:03:01,765 --> 00:03:06,993
+00:02:55,543 --> 00:03:00,772
 The .git directory. In one sentence: the
 .git directory is the repository: an object
 
 42
-00:03:07,033 --> 00:03:12,137
+00:03:00,812 --> 00:03:05,916
 database, names for objects, a log of how
 those names moved, one staging file, and
 
 43
-00:03:12,177 --> 00:03:17,092
+00:03:05,956 --> 00:03:10,871
 settings. The files next to it are a
 working tree that Git can rebuild from it.
 
 44
-00:03:17,432 --> 00:03:22,632
+00:03:11,211 --> 00:03:16,442
 Now precisely. A repository is either a .git
 directory at the top of a working tree,
 
 45
-00:03:22,672 --> 00:03:27,873
+00:03:16,482 --> 00:03:21,713
 or a bare directory without one. A .git
 that's a plain file containing gitdir: and a
 
 46
-00:03:27,913 --> 00:03:32,802
+00:03:21,753 --> 00:03:26,671
 path points at a repository stored
 elsewhere, which is how linked worktrees and
 
 47
-00:03:32,842 --> 00:03:33,800
+00:03:26,711 --> 00:03:27,675
 submodules work.
 
 48
-00:03:34,140 --> 00:03:39,424
+00:03:28,015 --> 00:03:33,299
 You saw both in the last part. The official
 data model names four kinds of data
 
 49
-00:03:39,464 --> 00:03:42,861
+00:03:33,339 --> 00:03:36,736
 inside: objects, references,
 the index and reflogs.
 
 50
-00:03:42,901 --> 00:03:47,848
+00:03:36,776 --> 00:03:41,723
 Everything else is configuration or
 the state of an operation in progress.
 
 51
-00:03:47,888 --> 00:03:51,891
+00:03:41,763 --> 00:03:45,766
 Ask Git where the directory is
 with git rev-parse --git-dir.
 
 52
-00:03:51,931 --> 00:03:53,239
+00:03:45,806 --> 00:03:47,114
 Never assume ./.git.
 
 53
-00:03:53,579 --> 00:03:59,243
+00:03:47,454 --> 00:03:53,176
 Primary or derived. "Primary" means that
 Git can't recreate the file from anything
 
 54
-00:03:59,283 --> 00:04:05,087
+00:03:53,216 --> 00:03:59,079
 else. Objects, loose or packed, are primary.
 Refs, HEAD, config, hooks, info/exclude
 
 55
-00:04:05,127 --> 00:04:10,791
+00:03:59,119 --> 00:04:04,841
 and reflogs are primary. The lookup tables
 beside a pack, the .idx and .rev files,
 
 56
-00:04:10,831 --> 00:04:16,008
+00:04:04,881 --> 00:04:10,111
 are derived from the pack. The index
 is derived, except for what is staged.
 
 57
-00:04:16,048 --> 00:04:20,391
+00:04:10,151 --> 00:04:14,538
 COMMIT_EDITMSG is scratch.
 description is unused by Git itself.
 
 58
-00:04:20,731 --> 00:04:24,897
+00:04:14,878 --> 00:04:19,121
 That column answers the objective
 "which files can be deleted".
 
 59
-00:04:24,937 --> 00:04:29,438
+00:04:19,161 --> 00:04:23,744
 Derived data is rebuilt. Primary
 data is restored from another copy.
 
 60
-00:04:29,478 --> 00:04:35,046
+00:04:23,784 --> 00:04:29,455
 And three kinds of primary data are never
 cloned or pushed: hooks, info/exclude, and
 
 61
-00:04:35,086 --> 00:04:35,580
+00:04:29,495 --> 00:04:29,999
 reflogs.
 
 62
-00:04:35,920 --> 00:04:40,632
+00:04:30,339 --> 00:04:35,053
 The loose object. In one sentence: a
 loose object is one compressed file whose
 
 63
-00:04:40,672 --> 00:04:45,689
+00:04:35,093 --> 00:04:40,110
 content is a short header, a NUL byte and
 the data, and whose file name is the hash
 
 64
-00:04:45,729 --> 00:04:50,624
+00:04:40,150 --> 00:04:45,047
 of exactly those bytes. A NUL byte is a
 byte whose value is zero, and a hash is a
 
 65
-00:04:50,664 --> 00:04:53,365
+00:04:45,087 --> 00:04:47,789
 fixed-length fingerprint
 computed from bytes.
 
 66
-00:04:53,705 --> 00:04:59,253
+00:04:48,129 --> 00:04:53,250
 Now precisely, in the manual's three
 sentences. The object is the prefix, type,
 
 67
-00:04:59,293 --> 00:05:05,123
+00:04:53,290 --> 00:04:58,673
 space, size, NUL, followed by the data,
 where the type is blob, tree, commit or tag
 
 68
-00:05:05,163 --> 00:05:10,710
+00:04:58,713 --> 00:05:03,835
 and the size is the length of the data
 in decimal. Prefix and data together are
 
 69
-00:05:10,750 --> 00:05:15,236
+00:05:03,875 --> 00:05:08,017
 compressed with zlib, a standard
 compression format, and stored.
 
 70
-00:05:15,276 --> 00:05:20,965
+00:05:08,057 --> 00:05:13,309
 And "the object ID of the object is the
 SHA-1 or SHA-256 (as appropriate) hash of
 
 71
-00:05:21,005 --> 00:05:22,592
+00:05:13,349 --> 00:05:14,812
 the uncompressed data".
 
 72
-00:05:22,932 --> 00:05:27,584
+00:05:15,152 --> 00:05:20,249
 The file sits under objects/, in a directory
 named after the first two hexadecimal
 
 73
-00:05:27,624 --> 00:05:28,557
+00:05:20,289 --> 00:05:21,314
 digits of the ID.
 
 74
-00:05:28,897 --> 00:05:33,797
+00:05:21,654 --> 00:05:26,554
 🟢 SAFE: git hash-object <file> computes
 the ID that the file's content has as a
 
 75
-00:05:33,837 --> 00:05:38,988
+00:05:26,594 --> 00:05:31,744
 blob, and writes the object with -w. It
 hashes what git add would store: if a clean
 
 76
-00:05:39,028 --> 00:05:43,740
+00:05:31,784 --> 00:05:36,497
 filter or a line-ending conversion
 applies to the path, that's the converted
 
 77
-00:05:43,780 --> 00:05:46,679
+00:05:36,537 --> 00:05:39,436
 content. --no-filters
 hashes the file as it is.
 
 78
-00:05:47,019 --> 00:05:53,296
+00:05:39,776 --> 00:05:46,374
 Inside .git, git hash-object -w creates
 one new file under objects/, read-only.
 
 79
-00:05:53,336 --> 00:05:57,534
+00:05:46,414 --> 00:05:50,827
 Nothing else: no index entry,
 no ref, no reflog line.
 
 80
-00:05:57,874 --> 00:06:02,237
+00:05:51,167 --> 00:05:55,531
 Why does the compression level not
 matter? Because the ID is the hash of the
 
 81
-00:06:02,277 --> 00:06:06,698
+00:05:55,571 --> 00:05:59,992
 uncompressed bytes. The compression is
 a storage detail and isn't part of the
 
 82
-00:06:06,738 --> 00:06:07,220
+00:06:00,032 --> 00:06:00,513
 identity.
 
 83
-00:06:07,559 --> 00:06:12,684
+00:06:00,853 --> 00:06:05,977
 When should you not work at this level? In
 scripts that need a branch's value or a
 
 84
-00:06:12,724 --> 00:06:16,651
+00:06:06,017 --> 00:06:09,945
 file's content. The loose form
 is one of several storage forms.
 
 85
-00:06:16,691 --> 00:06:21,815
+00:06:09,985 --> 00:06:15,109
 Use plumbing, git rev-parse, git for-each-ref,
 git cat-file, git ls-files, and let
 
 86
-00:06:21,855 --> 00:06:23,012
+00:06:15,149 --> 00:06:16,305
 Git find the bytes.
 
 87
-00:06:24,852 --> 00:06:27,574
+00:06:18,145 --> 00:06:20,867
 The textbook has two
 analogies, one for each half.
 
 88
-00:06:27,914 --> 00:06:32,898
+00:06:21,207 --> 00:06:26,362
 For the directory: a records office. The
 vault holds sealed documents filed under a
 
 89
-00:06:32,938 --> 00:06:37,740
+00:06:26,402 --> 00:06:31,369
 number computed from their content: objects.
 A card index says which document is
 
 90
-00:06:37,780 --> 00:06:42,583
+00:06:31,409 --> 00:06:36,376
 current for each project: refs. A visitors'
 book records every change to a card:
 
 91
-00:06:42,623 --> 00:06:47,667
+00:06:36,416 --> 00:06:41,633
 reflogs. One tray on the clerk's desk holds
 the draft of the next filing: the index.
 
 92
-00:06:47,707 --> 00:06:52,268
+00:06:41,673 --> 00:06:46,389
 The analogy breaks in one place that
 matters. A sealed document can never be
 
 93
-00:06:52,308 --> 00:06:57,110
+00:06:46,429 --> 00:06:51,396
 amended, not even by the office. Every
 "change" files a new document and moves a
 
 94
-00:06:57,150 --> 00:06:57,413
+00:06:51,436 --> 00:06:51,709
 card.
 
 95
-00:06:57,753 --> 00:07:01,975
+00:06:52,049 --> 00:06:56,982
 For the object: a sealed envelope filed
 under a number that's computed from what is
 
 96
-00:07:02,015 --> 00:07:06,135
+00:06:57,022 --> 00:07:01,836
 inside it. Two envelopes with the same
 content get the same number, so the office
 
 97
-00:07:06,175 --> 00:07:06,649
+00:07:01,876 --> 00:07:02,435
 keeps one.
 
 98
-00:07:06,989 --> 00:07:12,391
+00:07:02,775 --> 00:07:07,096
 An envelope whose content differs by
 one character gets an unrelated number.
 
 99
-00:07:12,431 --> 00:07:17,905
+00:07:07,136 --> 00:07:11,515
 This analogy breaks at correction: a
 real archive can fix a filing mistake by
 
 100
-00:07:17,945 --> 00:07:23,490
+00:07:11,555 --> 00:07:15,991
 relabelling, and here the label can't be
 changed without changing the content.
 
 101
-00:07:25,330 --> 00:07:30,234
+00:07:17,831 --> 00:07:22,735
 Four numbered lines. Everything else in the
 directory is settings or the state of an
 
 102
-00:07:30,274 --> 00:07:34,766
+00:07:22,775 --> 00:07:27,267
 operation in progress. The rest of this
 part takes these lines one at a time.
 
 103
-00:07:35,106 --> 00:07:40,426
+00:07:27,607 --> 00:07:32,926
 Sixteen bytes of content. A header of seven
 characters, "blob 16", and one NUL byte:
 
 104
-00:07:40,466 --> 00:07:45,019
+00:07:32,966 --> 00:07:37,520
 twenty-four bytes. Two things are
 computed from those twenty-four bytes,
 
 105
-00:07:45,059 --> 00:07:50,187
+00:07:37,560 --> 00:07:42,688
 independently: the hash, which is the ID,
 and the compressed stream, which is the
 
 106
-00:07:50,227 --> 00:07:54,271
+00:07:42,728 --> 00:07:46,771
 file. The left arrow never looks
 at the output of the right one.
 
 107
-00:07:58,611 --> 00:08:02,860
+00:07:51,111 --> 00:07:55,362
 Predict: in a repository with
 no commit, is there an index?
 
 108
-00:08:02,900 --> 00:08:06,132
+00:07:55,402 --> 00:07:58,634
 A ref? An object? Say
 it out loud. I'll wait.
 
 109
-00:08:10,972 --> 00:08:15,096
+00:08:03,474 --> 00:08:08,634
 No object, no ref, no index. The listing
 leaves out the fourteen sample hooks.
 
 110
-00:08:15,136 --> 00:08:19,260
+00:08:08,674 --> 00:08:13,833
 refs/heads is an empty directory, and
 yet the repository already has a current
 
 111
-00:08:19,300 --> 00:08:19,634
+00:08:13,873 --> 00:08:14,300
 branch.
 
 112
-00:08:19,974 --> 00:08:24,336
+00:08:14,640 --> 00:08:20,253
 HEAD names refs/heads/main, a ref that
 doesn't exist yet: an "unborn" branch, which
 
 113
-00:08:24,376 --> 00:08:28,685
+00:08:20,293 --> 00:08:25,838
 is legal. The first commit creates the ref.
 In config, repositoryformatversion = 0
 
 114
-00:08:28,725 --> 00:08:33,088
+00:08:25,878 --> 00:08:31,491
 says that no extension is in use. ignorecase
 was probed from this Mac's filesystem,
 
 115
-00:08:33,128 --> 00:08:37,437
+00:08:31,531 --> 00:08:37,076
 and precomposeunicode is set on macOS.
 description is read by the gitweb interface
 
 116
-00:08:37,477 --> 00:08:40,195
+00:08:37,116 --> 00:08:40,617
 and by one sample hook, and
 no Git command needs it.
 
 117
-00:08:40,535 --> 00:08:41,698
+00:08:40,957 --> 00:08:42,121
 Now the first commit.
 
 118
-00:08:42,038 --> 00:08:47,262
+00:08:42,461 --> 00:08:47,799
 A quick quiz: two files in two directories.
 How many objects does the first commit
 
 119
-00:08:47,302 --> 00:08:50,022
+00:08:47,839 --> 00:08:50,620
 write: two, three or
 five? Say it out loud.
 
 120
-00:08:54,862 --> 00:09:00,069
+00:08:55,460 --> 00:09:00,977
 Five. Two files in the working tree became
 five objects: two blobs, the tree for
 
 121
-00:09:00,109 --> 00:09:05,512
+00:09:01,017 --> 00:09:06,743
 src, the top-level tree, and the commit.
 Three things appeared besides the objects:
 
 122
-00:09:05,552 --> 00:09:09,251
+00:09:06,783 --> 00:09:10,703
 the index, the ref refs/heads/main,
 and two reflog files.
 
 123
-00:09:09,291 --> 00:09:10,497
+00:09:10,743 --> 00:09:12,023
 And COMMIT_EDITMSG.
 
 124
-00:09:13,837 --> 00:09:18,288
+00:09:15,363 --> 00:09:19,815
 If you said two or three, you counted the
 files and forgot the directories and the
 
 125
-00:09:18,328 --> 00:09:20,041
+00:09:19,855 --> 00:09:21,568
 commit, which is the usual slip.
 
 126
-00:09:20,381 --> 00:09:26,044
+00:09:21,908 --> 00:09:27,477
 The whole branch is one line of 41 bytes:
 forty hexadecimal digits and a newline.
 
 127
-00:09:26,084 --> 00:09:29,636
+00:09:27,517 --> 00:09:31,008
 It holds 08ffd04, the commit
 you made a moment ago.
 
 128
-00:09:29,676 --> 00:09:35,410
+00:09:31,048 --> 00:09:36,687
 The reflog line reads: old value, all zeros
 because the ref didn't exist, then new
 
 129
-00:09:35,450 --> 00:09:39,565
+00:09:36,727 --> 00:09:40,772
 value, who, when, and why. git
 count-objects confirms five.
 
 130
-00:09:51,905 --> 00:09:57,299
+00:09:53,112 --> 00:09:58,507
 Without -w, an ID is printed and nothing
 is stored: the first find prints nothing.
 
 131
-00:09:57,339 --> 00:10:02,800
+00:09:58,547 --> 00:10:04,007
 With -w, one file appears. Look at its path:
 the directory f7, the first two digits
 
 132
-00:10:02,840 --> 00:10:06,909
+00:10:04,047 --> 00:10:08,116
 of the ID, and a file name made
 of the remaining thirty-eight.
 
 133
-00:10:07,249 --> 00:10:10,993
+00:10:08,456 --> 00:10:12,200
 The object file isn't the working
 tree file. Decompress it.
 
 134
-00:10:11,333 --> 00:10:15,517
+00:10:12,540 --> 00:10:16,724
 The content is sixteen bytes. Predict
 the bytes that come before it.
 
 135
-00:10:15,557 --> 00:10:16,138
+00:10:16,764 --> 00:10:17,345
 I'll wait.
 
 136
-00:10:20,978 --> 00:10:26,349
+00:10:22,185 --> 00:10:27,843
 Read the header bytes aloud:
 b, l, o, b. A space. One, six.
 
 137
-00:10:26,389 --> 00:10:32,128
+00:10:27,883 --> 00:10:33,927
 Then \x00, the NUL byte. Then the
 content, ending in a newline.
 
 138
-00:10:32,168 --> 00:10:34,237
+00:10:33,967 --> 00:10:36,149
 wc -c confirms sixteen.
 
 139
-00:10:34,577 --> 00:10:37,952
+00:10:36,489 --> 00:10:39,976
 And the last command. shasum
 knows nothing about Git.
 
 140
-00:10:37,992 --> 00:10:43,106
+00:10:40,016 --> 00:10:45,299
 You hand it the same twenty-four bytes
 with printf, and it prints the same forty
 
 141
-00:10:43,146 --> 00:10:46,843
+00:10:45,339 --> 00:10:49,159
 digits: f784b584 and the rest.
 That's all an object ID is.
 
 142
-00:10:46,883 --> 00:10:47,681
+00:10:49,199 --> 00:10:50,024
 Promise kept.
 
 143
-00:10:48,021 --> 00:10:51,387
+00:10:50,364 --> 00:10:53,730
 Notice also what wasn't involved
 in that computation: zlib.
 
 144
-00:10:51,427 --> 00:10:54,735
+00:10:53,770 --> 00:10:57,079
 The ID was computed from bytes
 that were never compressed.
 
 145
-00:10:55,075 --> 00:11:00,144
+00:10:57,419 --> 00:11:02,524
 Try it now, thirty seconds, in any terminal.
 Type that printf line, pipe it into
 
 146
-00:11:00,184 --> 00:11:04,358
+00:11:02,564 --> 00:11:06,769
 shasum, and predict the first four
 digits before you press return.
 
 147
-00:11:04,398 --> 00:11:04,997
+00:11:06,809 --> 00:11:07,412
 I'll wait.
 
 148
-00:11:09,837 --> 00:11:15,780
+00:11:12,252 --> 00:11:18,195
 You should see f784, on your machine as
 on mine, because the ID depends only on
 
 149
-00:11:15,820 --> 00:11:16,688
+00:11:18,235 --> 00:11:19,104
 those bytes.
 
 150
-00:11:17,028 --> 00:11:22,239
+00:11:19,444 --> 00:11:24,655
 -t prints the type, -s the size of the
 data without the header, -p the content.
 
 151
-00:11:22,279 --> 00:11:26,958
+00:11:24,695 --> 00:11:29,374
 Then three experiments. Another name
 in another directory: the same ID.
 
 152
-00:11:26,998 --> 00:11:31,544
+00:11:29,414 --> 00:11:33,960
 The same bytes from standard input,
 with no file at all: the same ID.
 
 153
-00:11:31,584 --> 00:11:36,928
+00:11:34,000 --> 00:11:39,343
 One changed byte, a 4 for a 3: an ID that
 has nothing in common with the old one.
 
 154
-00:11:36,968 --> 00:11:42,444
+00:11:39,383 --> 00:11:44,860
 The ID depends on nothing except the content.
 Not the file name, not the directory,
 
 155
-00:11:42,484 --> 00:11:45,701
+00:11:44,900 --> 00:11:48,117
 not the time, not the
 author, not the repository.
 
 156
-00:11:46,041 --> 00:11:50,340
+00:11:48,457 --> 00:11:52,756
 One more distinction. An object in
 the database isn't a tracked file.
 
 157
-00:11:50,380 --> 00:11:55,559
+00:11:52,796 --> 00:11:57,975
 Predict what git status says about config.toml,
 whose blob you stored a moment ago.
 
 158
-00:11:55,899 --> 00:12:00,220
+00:11:58,315 --> 00:12:02,633
 Untracked. Tracking is a matter of the
 index, and the index is still empty.
 
 159
-00:12:00,260 --> 00:12:05,045
+00:12:02,673 --> 00:12:07,455
 git add then created the index entry and
 wrote no second object: the blob it needed
 
 160
-00:12:05,085 --> 00:12:08,359
+00:12:07,495 --> 00:12:10,767
 was already there, under the
 name it would have computed.
 
 161
-00:12:10,199 --> 00:12:11,847
+00:12:12,607 --> 00:12:14,255
 Five mistakes to watch for.
 
 162
-00:12:12,187 --> 00:12:17,367
+00:12:14,595 --> 00:12:20,503
 A script that reads .git/refs/heads/main.
 Root cause: a ref can be stored as a loose
 
 163
-00:12:17,407 --> 00:12:22,402
+00:12:20,543 --> 00:12:26,237
 file, in packed-refs, or in a reftable;
 only plumbing such as git rev-parse reads
 
 164
-00:12:22,442 --> 00:12:23,023
+00:12:26,277 --> 00:12:26,945
 all forms.
 
 165
-00:12:23,363 --> 00:12:29,365
+00:12:27,285 --> 00:12:32,685
 Assuming the repository is at ./.git.
 Root cause: in a linked worktree or a
 
 166
-00:12:29,405 --> 00:12:35,971
+00:12:32,725 --> 00:12:38,632
 submodule, .git is a file that points
 elsewhere; git rev-parse --git-dir gives the
 
 167
-00:12:36,011 --> 00:12:36,697
+00:12:38,672 --> 00:12:39,285
 location.
 
 168
-00:12:37,037 --> 00:12:44,417
+00:12:39,625 --> 00:12:43,755
 Deleting something under .git without
 asking "primary or derived?".
 
 169
-00:12:44,457 --> 00:12:53,499
+00:12:43,795 --> 00:12:48,860
 Root cause: an index or a pack index can
 be rebuilt; an object or a reflog cannot.
 
 170
-00:12:53,839 --> 00:12:57,291
+00:12:49,200 --> 00:12:52,709
 Hashing the file's bytes alone
 and getting a different ID.
 
 171
-00:12:57,331 --> 00:13:02,108
+00:12:52,749 --> 00:12:57,604
 Root cause: the ID is the hash of header,
 NUL and content, not of the content by
 
 172
-00:13:02,148 --> 00:13:02,529
+00:12:57,644 --> 00:12:58,033
 itself.
 
 173
-00:13:02,869 --> 00:13:06,352
+00:12:58,373 --> 00:13:01,855
 Believing that storing an
 object makes a file tracked.
 
 174
-00:13:06,392 --> 00:13:11,636
+00:13:01,895 --> 00:13:07,139
 Root cause: tracking is an index entry;
 git hash-object -w writes one object file
 
 175
-00:13:11,676 --> 00:13:12,745
+00:13:07,179 --> 00:13:08,248
 and nothing else.
 
 176
-00:13:14,585 --> 00:13:20,204
+00:13:10,088 --> 00:13:15,707
 Now, out of the lab. A release pipeline
 for an inference service stamps each build
 
 177
-00:13:20,244 --> 00:13:24,689
+00:13:15,747 --> 00:13:20,192
 with the commit of main by reading
 the file .git/refs/heads/main.
 
 178
-00:13:24,729 --> 00:13:29,451
+00:13:20,232 --> 00:13:24,954
 After the build image is updated,
 the stamp step fails: no such file.
 
 179
-00:13:29,491 --> 00:13:32,970
+00:13:24,994 --> 00:13:28,473
 The on-call engineer's first
 thought is corruption.
 
 180
-00:13:33,310 --> 00:13:38,220
+00:13:28,813 --> 00:13:33,338
 A colleague who knows the layout runs one
 plumbing command, git rev-parse on the
 
 181
-00:13:38,260 --> 00:13:42,613
+00:13:33,378 --> 00:13:37,389
 branch name, and gets the commit ID
 at once. The repository is healthy.
 
 182
-00:13:42,653 --> 00:13:47,500
+00:13:37,429 --> 00:13:41,896
 The ref is stored in another form on that
 image, and the loose file was never a
 
 183
-00:13:47,540 --> 00:13:52,635
+00:13:41,936 --> 00:13:46,632
 contract. The script is changed to ask Git,
 and the review comment quotes the first
 
 184
-00:13:52,675 --> 00:13:53,935
+00:13:46,672 --> 00:13:47,830
 habit of the chapter.
 
 185
-00:13:54,275 --> 00:13:59,427
+00:13:48,170 --> 00:13:53,324
 The same week a container image for a
 different service is found to include .git.
 
 186
-00:13:59,467 --> 00:14:04,620
+00:13:53,364 --> 00:13:58,517
 The team's security note uses the other
 lesson from section 3.2: the directory is
 
 187
-00:14:04,660 --> 00:14:09,684
+00:13:58,557 --> 00:14:03,583
 the whole history. An image, a CI cache
 or a backup that includes .git includes
 
 188
-00:14:09,724 --> 00:14:15,005
+00:14:03,623 --> 00:14:08,904
 every version of every file, also the
 credentials file that was "deleted" two years
 
 189
-00:14:15,045 --> 00:14:15,261
+00:14:08,944 --> 00:14:09,161
 ago.
 
 190
-00:14:15,601 --> 00:14:20,480
+00:14:09,501 --> 00:14:14,603
 Content addressing pays the team back in
 three ways, as the textbook lists them.
 
 191
-00:14:20,520 --> 00:14:24,537
+00:14:14,643 --> 00:14:18,845
 Deduplication: the same lock file
 on forty branches is one object.
 
 192
-00:14:24,577 --> 00:14:29,579
+00:14:18,885 --> 00:14:24,115
 Integrity: an ID is a checksum, so a copy
 of an object from any clone or backup is
 
 193
-00:14:29,619 --> 00:14:34,374
+00:14:24,155 --> 00:14:29,128
 known to be the right bytes if its ID
 matches. Idempotence: recording the same
 
 194
-00:14:34,414 --> 00:14:39,416
+00:14:29,168 --> 00:14:34,399
 content twice changes nothing. You relied
 on the second property in every recovery
 
 195
-00:14:39,456 --> 00:14:40,461
+00:14:34,439 --> 00:14:35,491
 of the last part.
 
 196
-00:14:42,301 --> 00:14:49,100
+00:14:37,331 --> 00:14:44,130
 Your turn. Do Exercise 16.1, Level
 1, "An object ID by hand", in
 
 197
-00:14:49,140 --> 00:14:52,413
+00:14:44,170 --> 00:14:47,443
 exercises/m16-m18-internals.md.
 
 198
-00:14:52,753 --> 00:14:56,895
+00:14:47,783 --> 00:14:52,682
 Before you run git hash-object, write down
 the exact bytes you'll hash: the type
 
 199
-00:14:56,935 --> 00:15:01,130
+00:14:52,722 --> 00:14:57,682
 word, the size in decimal, where the NUL
 goes, and whether your content ends in a
 
 200
-00:15:01,170 --> 00:15:04,111
+00:14:57,722 --> 00:15:01,201
 newline. Predict the path of
 the object file from the ID.
 
 201
-00:15:04,151 --> 00:15:08,398
+00:15:01,241 --> 00:15:06,263
 Work in labs/shell. The object ID of a
 given content is the same on every machine,
 
 202
-00:15:08,438 --> 00:15:10,855
+00:15:06,303 --> 00:15:09,164
 although commit IDs there
 differ from the book.
 
 203
-00:15:11,195 --> 00:15:17,032
+00:15:09,504 --> 00:15:15,340
 The challenge is Exercise 17.9, Level 4,
 "Not a git repository", in the same file.
 
 204
-00:15:20,872 --> 00:15:23,413
+00:15:19,180 --> 00:15:21,722
 Answer out loud, with
 a concrete small file.
 
 205
-00:15:23,753 --> 00:15:28,601
+00:15:22,062 --> 00:15:26,864
 A strong answer writes out the byte sequence
 for a specific content, field by field,
 
 206
-00:15:28,641 --> 00:15:33,489
+00:15:26,904 --> 00:15:31,707
 including the two bytes people forget: the
 separator after the size and the trailing
 
 207
-00:15:33,529 --> 00:15:38,318
+00:15:31,747 --> 00:15:36,491
 newline of the content if there is one. It
 names a tool outside Git that reproduces
 
 208
-00:15:38,358 --> 00:15:38,725
+00:15:36,531 --> 00:15:36,895
 the ID.
 
 209
-00:15:39,065 --> 00:15:41,804
+00:15:37,235 --> 00:15:41,760
 It explains the order of operations in
 storage, hashing and compression as two
 
 210
-00:15:41,844 --> 00:15:44,618
+00:15:41,800 --> 00:15:46,383
 independent computations on the same
 input, and concludes about the compression
 
 211
-00:15:44,658 --> 00:15:47,575
+00:15:46,423 --> 00:15:51,241
 level from that. It may add what else the
 ID doesn't depend on, and one consequence
 
 212
-00:15:47,615 --> 00:15:48,537
+00:15:51,281 --> 00:15:52,821
 that matters in production.
 
 213
-00:15:50,377 --> 00:16:00,615
+00:15:54,661 --> 00:15:59,437
 Let's land this. Bytes in, ID out, and
 nothing else counts: not the file name, not
 
 214
-00:16:00,655 --> 00:16:04,501
+00:15:59,477 --> 00:16:01,258
 the place, not the compression.
 
 215
-00:16:04,841 --> 00:16:23,557
+00:16:01,598 --> 00:16:03,258
 You should now be able to say:
 
 216
-00:16:23,897 --> 00:16:29,352
+00:16:03,598 --> 00:16:09,052
 .git holds four kinds of data, objects,
 refs, reflogs and the index, plus settings
 
 217
-00:16:29,392 --> 00:16:32,032
+00:16:09,092 --> 00:16:11,732
 and the state of operations in progress.
 
 218
-00:16:32,372 --> 00:16:35,950
+00:16:12,072 --> 00:16:17,234
 A fresh repository has HEAD naming an unborn
 branch and no object, ref or index; the
 
 219
-00:16:35,990 --> 00:16:38,534
+00:16:17,274 --> 00:16:20,949
 first commit adds objects, the
 index, a ref and two reflogs.
 
 220
-00:16:38,874 --> 00:16:42,617
+00:16:21,289 --> 00:16:25,690
 Before I delete or repair anything under
 .git I ask whether it is primary or
 
 221
-00:16:42,657 --> 00:16:44,757
+00:16:25,730 --> 00:16:28,203
 derived, and I read
 state through plumbing.
 
 222
-00:16:45,097 --> 00:16:49,580
+00:16:28,543 --> 00:16:33,855
 A loose object is zlib-compressed "type,
 space, size, NUL, content", stored under
 
 223
-00:16:49,620 --> 00:16:53,154
+00:16:33,895 --> 00:16:38,083
 objects/ in a directory named by
 the first two digits of its ID.
 
 224
-00:16:53,494 --> 00:16:58,231
+00:16:38,423 --> 00:16:43,160
 The object ID is the hash of the uncompressed
 bytes, so it depends only on type,
 
 225
-00:16:58,271 --> 00:17:01,814
+00:16:43,200 --> 00:16:46,743
 size and content, and not on
 compression, file name or time.
 
 226
-00:17:03,654 --> 00:17:11,204
+00:16:48,583 --> 00:16:56,116
 Read sections 3.1 to 3.3 of Chapter 3.
 Repeat Lab 0.2, "Read every file in an empty
 
 227
-00:17:11,244 --> 00:17:17,697
+00:16:56,156 --> 00:17:02,594
 .git", in lab-manual/m00-lab-setup.md,
 and name every file from memory.
 
 228
-00:17:18,037 --> 00:17:22,959
+00:17:02,934 --> 00:17:07,856
 Today you opened the dot git folder and
 computed an object ID with a tool that knows
 
 229
-00:17:22,999 --> 00:17:26,799
+00:17:07,896 --> 00:17:11,696
 nothing about Git. That's the
 foundation for the whole of Part 4.
 
 230
-00:17:26,839 --> 00:17:31,643
+00:17:11,736 --> 00:17:16,540
 Practise with the exercise before you move
 on. Next time: the four object types in
 
 231
-00:17:31,683 --> 00:17:36,605
+00:17:16,580 --> 00:17:21,502
 full, and reading objects with git cat-file.
 Until then, look at the state first and
 
 232
-00:17:36,645 --> 00:17:38,790
+00:17:21,542 --> 00:17:23,687
 type second. See you in the next one.

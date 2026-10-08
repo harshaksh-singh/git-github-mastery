@@ -1,0 +1,1144 @@
+1
+00:00:04,500 --> 00:00:09,535
+CI, the automatic testing of every change,
+was green on the pull request, your
+
+2
+00:00:09,575 --> 00:00:14,675
+proposal to merge a branch into main. Ten
+minutes after the merge it was red on
+
+3
+00:00:14,715 --> 00:00:18,840
+main. Nobody pushed anything in
+between except the merge itself.
+
+4
+00:00:18,880 --> 00:00:20,922
+Your CTO asks: what did CI test?
+
+5
+00:00:21,262 --> 00:00:26,228
+It tested a commit, one saved snapshot of
+the project, that is on no branch and in
+
+6
+00:00:26,268 --> 00:00:31,296
+nobody's clone: a test merge that GitHub
+made, of your branch with main as main was
+
+7
+00:00:31,336 --> 00:00:35,875
+at that moment. main moved on before
+you merged, and the test merge was not
+
+8
+00:00:35,915 --> 00:00:36,608
+regenerated.
+
+9
+00:00:36,948 --> 00:00:41,579
+To answer questions like this one you need
+to know exactly what a pull request is
+
+10
+00:00:41,619 --> 00:00:45,789
+made of, and which three commits every
+part of its page is computed from.
+
+11
+00:00:45,829 --> 00:00:49,710
+Keep that green check in mind. In
+the demo you'll watch it go stale.
+
+12
+00:00:51,550 --> 00:00:55,428
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:55,468 --> 00:00:59,410
+This is the first of five videos
+on pull requests, Chapter 17.
+
+14
+00:00:59,450 --> 00:01:04,548
+Hold on to one sentence through all of
+them, from the first page of the chapter:
+
+15
+00:01:04,888 --> 00:01:08,691
+The page changes when one of the three
+changes, and for no other reason.
+
+16
+00:01:09,031 --> 00:01:13,162
+Today, two questions. What does GitHub
+create when a pull request opens?
+
+17
+00:01:13,202 --> 00:01:16,812
+And what do the "Commits" tab and
+the "Files changed" tab show?
+
+18
+00:01:17,152 --> 00:01:22,318
+The sample project is ticket-router, a small
+service that reads a support ticket and
+
+19
+00:01:22,358 --> 00:01:27,090
+names the queue that should answer it.
+A bare repository on disk, one with no
+
+20
+00:01:27,130 --> 00:01:31,243
+working tree, plays the shared
+repository. You are the contributor.
+
+21
+00:01:31,283 --> 00:01:35,023
+Asha maintains the repository
+and merges. Ravi is a teammate.
+
+22
+00:01:35,363 --> 00:01:40,561
+Two replays, labs/ch17/pr-refs.sh
+and labs/ch17/pr-anatomy.sh.
+
+23
+00:01:40,601 --> 00:01:47,320
+One caution about the first: the commands
+on the "server" are plain Git that the
+
+24
+00:01:47,360 --> 00:01:52,135
+textbook's author chose to
+produce the documented result.
+
+25
+00:01:52,175 --> 00:01:55,937
+GitHub does not publish
+the commands it runs.
+
+26
+00:01:56,277 --> 00:02:01,734
+Labels: opening a pull request, gh pr
+create, is 🟡 CAUTION: it creates a GitHub
+
+27
+00:02:01,774 --> 00:02:05,910
+object and starts review requests,
+checks and notifications.
+
+28
+00:02:05,950 --> 00:02:08,972
+git fetch origin
+pull/N/head:pr-N is 🟢 SAFE.
+
+29
+00:02:10,812 --> 00:02:12,224
+After this video you can:
+
+30
+00:02:12,564 --> 00:02:17,326
+List what GitHub creates when a pull request
+is opened and which parts are Git data.
+
+31
+00:02:17,666 --> 00:02:19,970
+Fetch a pull request's
+head with plain Git.
+
+32
+00:02:20,310 --> 00:02:24,504
+Explain the test merge commit, when it is
+regenerated and what it means when it is
+
+33
+00:02:24,544 --> 00:02:24,865
+absent.
+
+34
+00:02:25,205 --> 00:02:29,984
+Explain why the commit list is a two-dot
+range and the diff a three-dot comparison.
+
+35
+00:02:30,324 --> 00:02:34,731
+Construct a case where the two differ and
+say how merging the base into the branch
+
+36
+00:02:34,771 --> 00:02:35,436
+changes each.
+
+37
+00:02:37,276 --> 00:02:40,584
+In one sentence: opening a
+pull request moves no branch.
+
+38
+00:02:40,624 --> 00:02:45,607
+It creates a GitHub object and a little Git
+data in the base repository: a read-only
+
+39
+00:02:45,647 --> 00:02:50,031
+ref for the head commit and, when the
+merge is clean, a test merge commit.
+
+40
+00:02:50,071 --> 00:02:54,695
+The base is the branch you merge into,
+here main. The head is the branch whose
+
+41
+00:02:54,735 --> 00:02:58,163
+commits you offer. A ref is a
+name that holds a commit ID.
+
+42
+00:02:58,503 --> 00:03:01,467
+You should be able to say
+which layer owns each item.
+
+43
+00:03:01,807 --> 00:03:04,789
+Your commits, the head
+branch, the base branch: Git.
+
+44
+00:03:04,829 --> 00:03:07,753
+Objects and refs in the
+head and base repositories.
+
+45
+00:03:08,093 --> 00:03:13,740
+The pull request number, title, description,
+labels, reviewers, reviews, comments,
+
+46
+00:03:13,780 --> 00:03:17,347
+review threads: GitHub's
+database, not in any clone.
+
+47
+00:03:17,687 --> 00:03:20,737
+refs/pull/<number>/head:
+Git data written by GitHub.
+
+48
+00:03:20,777 --> 00:03:23,588
+A ref in the base repository,
+read-only for you.
+
+49
+00:03:23,928 --> 00:03:28,139
+The test merge commit and refs/pull/<number>/merge:
+Git data written by GitHub.
+
+50
+00:03:28,179 --> 00:03:31,314
+A commit and a ref in the base
+repository, "when possible".
+
+51
+00:03:31,654 --> 00:03:36,445
+Checks and commit statuses: GitHub and
+Actions, attached to commit IDs in GitHub's
+
+52
+00:03:36,485 --> 00:03:36,976
+database.
+
+53
+00:03:37,316 --> 00:03:41,548
+The "Commits" and "Files changed" tabs:
+GitHub, computed from the three commits,
+
+54
+00:03:41,588 --> 00:03:42,723
+stored nowhere in Git.
+
+55
+00:03:43,063 --> 00:03:47,999
+GitHub's reference says: "When you open a
+pull request, GitHub creates temporary Git
+
+56
+00:03:48,039 --> 00:03:52,738
+references that point to the pull request's
+head branch and, when possible, to a
+
+57
+00:03:52,778 --> 00:03:56,826
+simulated merge result." The page
+no longer spells out the ref names.
+
+58
+00:03:56,866 --> 00:04:01,802
+Two other pages of the documentation confirm
+them: the checkout instructions and the
+
+59
+00:04:01,842 --> 00:04:03,106
+Actions documentation.
+
+60
+00:04:03,446 --> 00:04:08,246
+The test merge. GitHub "creates a merge
+commit to test whether the pull request can
+
+61
+00:04:08,286 --> 00:04:13,028
+be automatically merged into the base
+branch. This test commit is not added to the
+
+62
+00:04:13,068 --> 00:04:17,577
+base branch or the head branch". Its
+parents are the latest commit on the base
+
+63
+00:04:17,617 --> 00:04:21,834
+branch and the pull request's head
+commit. In our picture that's 135aad1.
+
+64
+00:04:22,174 --> 00:04:27,140
+Three facts about it. First, CI uses it.
+For a pull_request event, the Actions
+
+65
+00:04:27,180 --> 00:04:31,953
+documentation states that the checkout
+action "checks out the merge branch.
+
+66
+00:04:31,993 --> 00:04:36,894
+Your CI tests run against the merged
+result, not just the head branch alone".
+
+67
+00:04:37,234 --> 00:04:42,620
+Second, it is a stored commit, so it can
+be stale: main moves on, and its parent is
+
+68
+00:04:42,660 --> 00:04:47,849
+still the old tip. The version note: before
+the nineteenth of February 2026, the
+
+69
+00:04:47,889 --> 00:04:53,209
+test merge commit was also regenerated when
+somebody viewed the pull request page.
+
+70
+00:04:53,549 --> 00:04:58,433
+Since then, it is generated only when changes
+are pushed to the pull request branch,
+
+71
+00:04:58,473 --> 00:05:03,299
+when the merge base changes, or when the
+current test merge commit is older than 12
+
+72
+00:05:03,339 --> 00:05:07,109
+hours. Do not build automation on
+the freshness of the merge ref.
+
+73
+00:05:07,449 --> 00:05:11,707
+One caveat marked unverified in the book:
+a REST guide still says the commit "is
+
+74
+00:05:11,747 --> 00:05:16,006
+created when you view the pull request in
+the UI". That conflicts with the later
+
+75
+00:05:16,046 --> 00:05:17,940
+changelog, which the course follows.
+
+76
+00:05:18,280 --> 00:05:21,647
+Third, when the merge conflicts,
+there is no merge ref.
+
+77
+00:05:21,687 --> 00:05:26,727
+Two documented consequences: the merge
+button is deactivated until the conflict is
+
+78
+00:05:26,767 --> 00:05:30,569
+resolved, and workflows will not
+run on pull_request activity.
+
+79
+00:05:30,609 --> 00:05:35,091
+A pull request with no CI run at all
+is often a conflicting pull request.
+
+80
+00:05:35,431 --> 00:05:40,072
+Two more properties. The head ref outlives
+the head branch: delete the branch, and
+
+81
+00:05:40,112 --> 00:05:44,752
+the commits are still one fetch away. Nobody
+can rewrite or delete these refs with
+
+82
+00:05:44,792 --> 00:05:49,090
+Git. And the base is pinned: GitHub
+"sets the base to the commit that branch
+
+83
+00:05:49,130 --> 00:05:53,884
+references" when you open the pull request,
+and does not update that commit when the
+
+84
+00:05:53,924 --> 00:05:58,336
+branch moves. That is why the pull request
+page and a compare page of the same
+
+85
+00:05:58,376 --> 00:06:00,277
+branches can show different diffs.
+
+86
+00:06:00,617 --> 00:06:04,024
+Now the second question, with
+both branches on screen.
+
+87
+00:06:04,064 --> 00:06:09,068
+In one sentence: the "Commits" tab is the
+output of git log base..head, and the
+
+88
+00:06:09,108 --> 00:06:14,175
+"Files changed" tab is the output of git
+diff base...head, a diff from the merge
+
+89
+00:06:14,215 --> 00:06:19,154
+base to the head. The merge base is the
+most recent commit that both histories
+
+90
+00:06:19,194 --> 00:06:20,623
+contain: here, 9a383e5.
+
+91
+00:06:20,963 --> 00:06:26,344
+You learned both notations in the history
+videos. For git log, A..B means "reachable
+
+92
+00:06:26,384 --> 00:06:31,443
+from B and not from A". For git diff,
+which compares two snapshots, A...B means
+
+93
+00:06:31,483 --> 00:06:36,671
+"from the merge base of A and B to B".
+GitHub's documentation states which one it
+
+94
+00:06:36,711 --> 00:06:41,835
+uses: "Pull requests on GitHub show a
+three-dot diff", and gives the reason: "it
+
+95
+00:06:41,875 --> 00:06:44,739
+focuses on 'what a pull
+request introduces'".
+
+96
+00:06:45,079 --> 00:06:49,643
+The limit of the three-dot diff, as a
+one-line root cause from the textbook: a
+
+97
+00:06:49,683 --> 00:06:53,302
+three-dot diff is not "what will
+change on main when I merge".
+
+98
+00:06:53,342 --> 00:06:56,313
+It is "what the head changed
+since the merge base".
+
+99
+00:06:56,353 --> 00:06:59,972
+The two differ exactly when both
+sides changed the same thing.
+
+100
+00:07:00,012 --> 00:07:03,572
+The test merge is the object
+that answers the first question.
+
+101
+00:07:03,912 --> 00:07:07,246
+Quick quiz. main gained a
+commit after you branched.
+
+102
+00:07:07,286 --> 00:07:10,815
+Does the "Files changed" tab
+show that commit's change?
+
+103
+00:07:10,855 --> 00:07:13,216
+A: yes, reversed. B: no. Your answer?
+
+104
+00:07:18,056 --> 00:07:22,691
+B. Three dots start at the merge base,
+so later commits on main stay out.
+
+105
+00:07:22,731 --> 00:07:25,765
+A is what two dots show,
+and the demo proves it.
+
+106
+00:07:27,605 --> 00:07:32,579
+The textbook's analogy: a pull request is
+a change request clipped to two bookmarks
+
+107
+00:07:32,619 --> 00:07:37,471
+in a shared book. The form, who asks, who
+must sign, the discussion, lives in the
+
+108
+00:07:37,511 --> 00:07:38,861
+office's filing system.
+
+109
+00:07:39,201 --> 00:07:43,624
+The analogy breaks at one point that
+matters. The office also keeps a copy of the
+
+110
+00:07:43,664 --> 00:07:48,087
+proposed pages in its own drawer under
+your request number, where you can read it
+
+111
+00:07:48,127 --> 00:07:52,054
+and cannot change it, and where it
+stays after you remove your bookmark.
+
+112
+00:07:52,394 --> 00:07:57,038
+That drawer is refs/pull/N/head. It is the
+reason a deleted branch is not a deleted
+
+113
+00:07:57,078 --> 00:07:57,433
+commit.
+
+114
+00:07:57,773 --> 00:08:02,571
+And keep the three commits as a triangle
+in your head: base tip, head tip, merge
+
+115
+00:08:02,611 --> 00:08:07,288
+base. Try it now, thirty seconds, on
+paper: draw the two branches and mark the
+
+116
+00:08:07,328 --> 00:08:08,316
+three. I'll wait.
+
+117
+00:08:13,156 --> 00:08:17,944
+Here's mine: base tip 9aa221a, head
+tip 16d4788, merge base 9a383e5.
+
+118
+00:08:17,984 --> 00:08:23,624
+Every question about a pull request page
+begins with "which of the three moved?"
+
+119
+00:08:25,464 --> 00:08:31,278
+The top line is main, ending at 9aa221a.
+The branch forks at 9a383e5 and has three
+
+120
+00:08:31,318 --> 00:08:36,277
+commits ending at 16d4788. Two refs
+name that commit: your branch, and
+
+121
+00:08:36,317 --> 00:08:37,490
+refs/pull/1/head.
+
+122
+00:08:37,830 --> 00:08:43,003
+Between them, 135aad1: a merge commit
+with two parents, the tip of main and the
+
+123
+00:08:43,043 --> 00:08:47,358
+head. One ref names it, refs/pull/1/merge,
+and it is on no branch.
+
+124
+00:08:47,398 --> 00:08:51,779
+The bottom line is the GitHub object:
+two names and the discussion.
+
+125
+00:08:52,119 --> 00:08:55,649
+The bracket at the bottom is the
+"Commits" tab: three commits.
+
+126
+00:08:55,689 --> 00:08:59,046
+On the right, the two diffs.
+Two dots compare tip with tip.
+
+127
+00:08:59,086 --> 00:09:03,596
+Three dots compare the merge base with
+the head. The "Files changed" tab is the
+
+128
+00:09:03,636 --> 00:09:04,402
+three-dot one.
+
+129
+00:09:06,242 --> 00:09:08,996
+On the server, "pull
+request 1" becomes a ref.
+
+130
+00:09:09,336 --> 00:09:14,882
+Two refs name commit 16d4788. receive.hideRefs
+is the stock Git setting that hides a
+
+131
+00:09:14,922 --> 00:09:18,074
+namespace from pushes
+while leaving it readable.
+
+132
+00:09:20,414 --> 00:09:25,282
+The server advertises refs/pull/1/head.
+After a plain git fetch, does Asha's clone
+
+133
+00:09:25,322 --> 00:09:25,761
+have it?
+
+134
+00:09:26,101 --> 00:09:31,683
+It does not. A clone fetches refs/heads/*
+only. To take a pull request into your
+
+135
+00:09:31,723 --> 00:09:33,369
+clone, you name the ref.
+
+136
+00:09:33,709 --> 00:09:39,479
+pull/1/head is shorthand for refs/pull/1/head.
+gh pr checkout 1 does this fetch for
+
+137
+00:09:39,519 --> 00:09:39,759
+you.
+
+138
+00:09:40,099 --> 00:09:43,515
+"Deny updating a hidden ref."
+The namespace is read-only.
+
+139
+00:09:43,855 --> 00:09:48,733
+Now the test merge. A server has no working
+tree, so the merge is computed in the
+
+140
+00:09:48,773 --> 00:09:53,104
+object database, with git merge-tree,
+which you met in the merge videos.
+
+141
+00:10:03,444 --> 00:10:05,750
+Which branches contain
+the test merge commit?
+
+142
+00:10:06,090 --> 00:10:11,124
+None. 135aad1 is a real merge commit
+with two parents, reachable only from
+
+143
+00:10:11,164 --> 00:10:13,867
+refs/pull/1/merge. Neither branch moved.
+
+144
+00:10:14,207 --> 00:10:19,065
+This is what a CI job does for a pull
+request event: it checks out the merge ref.
+
+145
+00:10:19,105 --> 00:10:23,902
+It tests your commits merged with main as
+main was when the test merge was made.
+
+146
+00:10:24,242 --> 00:10:29,145
+Now one more commit lands on main. Predict:
+does the stored test merge follow it?
+
+147
+00:10:29,185 --> 00:10:30,121
+Say it out loud.
+
+148
+00:10:34,961 --> 00:10:40,503
+It doesn't. The first parent of the stored
+merge is still 9aa221a, and main is at
+
+149
+00:10:40,543 --> 00:10:44,294
+028b1de. The merge ref is as
+fresh as its first parent.
+
+150
+00:10:44,634 --> 00:10:49,432
+And there's the green check from the hook:
+green on a stale test merge, red on the
+
+151
+00:10:49,472 --> 00:10:49,963
+real one.
+
+152
+00:10:50,303 --> 00:10:54,407
+A second pull request changes a
+line that main has changed since.
+
+153
+00:10:54,447 --> 00:10:59,698
+git merge-tree exits with status 1. There
+is no clean tree, so no test merge commit
+
+154
+00:10:59,738 --> 00:11:03,141
+and no refs/pull/2/merge.
+That is the "when possible".
+
+155
+00:11:05,481 --> 00:11:09,949
+The head branch is deleted on the server.
+Can Ravi still fetch the three commits?
+
+156
+00:11:10,289 --> 00:11:15,451
+He can: git fetch origin pull/1/head. So
+for a leaked secret, deleting the branch
+
+157
+00:11:15,491 --> 00:11:18,533
+removes nothing. The
+credential must be rotated.
+
+158
+00:11:35,873 --> 00:11:41,212
+The "Commits" tab: three commits. 9aa221a,
+the newer commit on main, is not among
+
+159
+00:11:41,252 --> 00:11:45,395
+them: it is reachable from the
+base. The merge base is 9a383e5.
+
+160
+00:11:47,735 --> 00:11:52,253
+Your branch changed two files. How
+many files will the two-dot diff list?
+
+161
+00:11:56,793 --> 00:12:01,836
+Three. A third file appears, backwards:
+the diff claims your branch lowers the
+
+162
+00:12:01,876 --> 00:12:05,942
+threshold from 0.7 to 0.6. Your
+branch never touched that file.
+
+163
+00:12:05,982 --> 00:12:11,351
+A two-dot diff compares the two tips, so
+every change that landed on main after you
+
+164
+00:12:11,391 --> 00:12:16,369
+branched shows up as its own reversal.
+It is what git diff main shows on your
+
+165
+00:12:16,409 --> 00:12:21,192
+machine, and the usual source of "GitHub
+shows something different from my
+
+166
+00:12:21,232 --> 00:12:21,844
+terminal".
+
+167
+00:12:22,184 --> 00:12:26,360
+The three-dot diff is a two-dot diff
+whose left side is the merge base.
+
+168
+00:12:26,700 --> 00:12:31,386
+GitHub's advice for keeping the two views
+equal is to merge the base into the topic
+
+169
+00:12:31,426 --> 00:12:36,168
+branch. The merge base moved to the tip of
+main, the two diffs agree, and the commit
+
+170
+00:12:36,208 --> 00:12:37,705
+list gained a merge commit.
+
+171
+00:12:38,045 --> 00:12:42,375
+Here it is as a picture: the merge base
+is now the tip of main, and the list has
+
+172
+00:12:42,415 --> 00:12:46,689
+four commits. That is the price, and the
+next video weighs it against rebasing.
+
+173
+00:12:47,029 --> 00:12:50,260
+Push a small branch and open
+a pull request against main.
+
+174
+00:12:50,300 --> 00:12:54,850
+On the pull request page, open the tab
+that lists commits and the tab that lists
+
+175
+00:12:54,890 --> 00:12:58,522
+changed files. Before you look,
+predict both from your terminal:
+
+176
+00:12:58,862 --> 00:13:03,791
+Then look for the Git data GitHub created,
+and take the pull request into your clone
+
+177
+00:13:03,831 --> 00:13:04,620
+by its number:
+
+178
+00:13:04,960 --> 00:13:10,020
+According to the documentation you will
+find a head ref for the pull request and,
+
+179
+00:13:10,060 --> 00:13:15,184
+when the merge is clean, a merge ref. Lab
+21.1 itself runs the whole cycle locally
+
+180
+00:13:15,224 --> 00:13:20,222
+in the lab shell with three repositories.
+Its step "predict the pull request" is
+
+181
+00:13:20,262 --> 00:13:21,103
+this exercise.
+
+182
+00:13:22,943 --> 00:13:24,591
+Five mistakes to watch for.
+
+183
+00:13:24,931 --> 00:13:29,434
+Believing CI tested the head commit.
+Root cause: for a pull request event the
+
+184
+00:13:29,474 --> 00:13:34,332
+checkout is the test merge, a stored commit
+that can be older than the base branch.
+
+185
+00:13:34,672 --> 00:13:39,427
+Deleting a branch to remove a pushed
+secret. Root cause: refs/pull/N/head still
+
+186
+00:13:39,467 --> 00:13:43,007
+names the commits, and nobody
+can delete that ref with Git.
+
+187
+00:13:43,347 --> 00:13:47,841
+Comparing with git diff main and concluding
+that GitHub shows something else.
+
+188
+00:13:47,881 --> 00:13:52,788
+Root cause: that is a two-dot diff of the
+tips; the page shows a three-dot diff from
+
+189
+00:13:52,828 --> 00:13:53,671
+the merge base.
+
+190
+00:13:54,011 --> 00:13:57,714
+Reading the "Files changed" tab
+as "what will change on main".
+
+191
+00:13:57,754 --> 00:14:02,604
+Root cause: it is what the head changed
+since the merge base; the two differ when
+
+192
+00:14:02,644 --> 00:14:04,657
+both sides changed the same thing.
+
+193
+00:14:04,997 --> 00:14:08,518
+Waiting for CI on a pull request
+that never starts a run.
+
+194
+00:14:08,558 --> 00:14:13,766
+Root cause: with a merge conflict there is
+no test merge, and pull_request workflows
+
+195
+00:14:13,806 --> 00:14:14,453
+do not run.
+
+196
+00:14:16,293 --> 00:14:21,254
+Now, out of the lab. An evaluation job
+posts a metric to every pull request of an
+
+197
+00:14:21,294 --> 00:14:24,465
+LLM application: answer
+quality on a fixed test set.
+
+198
+00:14:24,505 --> 00:14:28,170
+A week later someone tries to
+reproduce a number and cannot.
+
+199
+00:14:28,210 --> 00:14:33,109
+The job recorded the commit it checked
+out, and that commit is the test merge: a
+
+200
+00:14:33,149 --> 00:14:36,999
+commit in nobody's clone, which
+may be regenerated at any time.
+
+201
+00:14:37,339 --> 00:14:42,265
+The fix from the textbook: record
+github.event.pull_request.head.sha next to the
+
+202
+00:14:42,305 --> 00:14:46,984
+metric, or the number cannot be reproduced.
+And for the hook, the team stops
+
+203
+00:14:47,024 --> 00:14:51,951
+treating a green pull request as a statement
+about main: the statement was about
+
+204
+00:14:51,991 --> 00:14:54,682
+main as it was when the
+test merge was made.
+
+205
+00:14:55,022 --> 00:15:01,072
+Before opening any pull request, the team's
+habit is three commands: git fetch, git
+
+206
+00:15:01,112 --> 00:15:06,355
+log --oneline origin/main..HEAD, and
+git diff --stat origin/main...HEAD.
+
+207
+00:15:06,395 --> 00:15:10,757
+A commit you did not write will
+be seen by the reviewer too.
+
+208
+00:15:12,597 --> 00:15:16,734
+Your turn. Do Lab 21.1, "A full
+fork and pull request cycle", in
+
+209
+00:15:16,774 --> 00:15:22,216
+lab-manual/m21-pull-requests-forks.md. At
+this stage, concentrate on the steps up to
+
+210
+00:15:22,256 --> 00:15:27,176
+opening the pull request. Before the
+step that opens it, write down what the
+
+211
+00:15:27,216 --> 00:15:32,267
+"Commits" tab and the "Files changed"
+tab would show, as the output of two Git
+
+212
+00:15:32,307 --> 00:15:36,900
+commands, and which refs will exist
+in which of the three repositories.
+
+213
+00:15:37,240 --> 00:15:43,038
+The challenge is Exercise 21.4,
+"Three small mysteries", in
+
+214
+00:15:43,078 --> 00:15:45,808
+exercises/m19-m25-github.md.
+
+215
+00:15:47,648 --> 00:15:50,835
+Question 262 of the CTO question bank:
+
+216
+00:15:53,175 --> 00:15:57,995
+Answer out loud. A strong answer lists
+the items and sorts each into a layer.
+
+217
+00:15:58,035 --> 00:16:03,170
+It names the two refs, says which repository
+holds them, and says what you can and
+
+218
+00:16:03,210 --> 00:16:08,219
+cannot do to them with Git. It explains
+the condition under which the second one
+
+219
+00:16:08,259 --> 00:16:12,637
+does not exist, and it mentions what
+does not happen: no branch moves.
+
+220
+00:16:14,477 --> 00:16:19,548
+Let's land this. One picture holds the
+video: two branches, two refs GitHub wrote,
+
+221
+00:16:19,588 --> 00:16:21,729
+and a test merge that can go stale.
+
+222
+00:16:22,069 --> 00:16:23,729
+You should now be able to say:
+
+223
+00:16:24,069 --> 00:16:29,153
+A pull request is a GitHub object over two
+names; the page is computed from the base
+
+224
+00:16:29,193 --> 00:16:31,532
+tip, the head tip and their merge base.
+
+225
+00:16:31,872 --> 00:16:36,767
+GitHub writes refs/pull/N/head and, when
+the merge is clean, a test merge under
+
+226
+00:16:36,807 --> 00:16:39,392
+refs/pull/N/merge, in the base repository.
+
+227
+00:16:39,732 --> 00:16:44,822
+CI for a pull request tests the test merge,
+which is stored and can be stale; with a
+
+228
+00:16:44,862 --> 00:16:46,227
+conflict there is none.
+
+229
+00:16:46,567 --> 00:16:51,905
+"Commits" is git log base..head; "Files
+changed" is git diff base...head.
+
+230
+00:16:52,245 --> 00:16:56,570
+Merging the base into the branch makes
+the two-dot and three-dot diffs equal and
+
+231
+00:16:56,610 --> 00:16:58,316
+adds a merge commit to the list.
+
+232
+00:17:00,156 --> 00:17:08,846
+Read sections 17.1 to 17.3 of Chapter 17.
+Do Exercise 21.1, "A draft, a range, and
+
+233
+00:17:08,886 --> 00:17:13,743
+the head ref", in
+exercises/m19-m25-github.md.
+
+234
+00:17:14,083 --> 00:17:18,259
+You can now predict a pull request's
+two tabs from your terminal.
+
+235
+00:17:18,299 --> 00:17:23,577
+Practise with Lab 21.1. Next: the pull
+request lifecycle, from draft to mergeable.
+
+236
+00:17:23,617 --> 00:17:26,950
+Until then, look at the
+state first and type second.
+
+237
+00:17:26,990 --> 00:17:28,507
+See you in the next one.

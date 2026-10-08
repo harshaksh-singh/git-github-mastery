@@ -1,0 +1,1121 @@
+1
+00:00:04,500 --> 00:00:08,511
+You gave Ravi write access to
+the work repository on Monday.
+
+2
+00:00:08,551 --> 00:00:13,844
+On Wednesday his push, the upload of his
+commits, still fails with 403, and Git
+
+3
+00:00:13,884 --> 00:00:19,312
+never asks him for anything. No prompt,
+no chance to type a different credential.
+
+4
+00:00:19,352 --> 00:00:20,595
+Your CTO asks: why?
+
+5
+00:00:20,935 --> 00:00:26,072
+Because his keychain, the Mac's password
+store, holds a credential for another
+
+6
+00:00:26,112 --> 00:00:30,585
+account. A 403 doesn't make Git
+discard it, so Git keeps sending it.
+
+7
+00:00:30,625 --> 00:00:35,828
+Granting access to his work account changed
+nothing, because that account never
+
+8
+00:00:35,868 --> 00:00:37,288
+arrives at the server.
+
+9
+00:00:37,628 --> 00:00:42,363
+To see that in five minutes and not five
+hours, you need to know exactly what Git
+
+10
+00:00:42,403 --> 00:00:46,667
+does between "the server wants
+authentication" and "the token is stored".
+
+11
+00:00:46,707 --> 00:00:50,322
+Keep Ravi's Wednesday in mind.
+You'll solve it before the end.
+
+12
+00:00:52,162 --> 00:00:55,954
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:55,994 --> 00:00:59,913
+This is the first of five videos
+on authentication, Chapter 16.
+
+14
+00:00:59,953 --> 00:01:03,934
+The whole chapter rests on three
+questions, asked in this order.
+
+15
+00:01:04,274 --> 00:01:09,687
+Which transport and which server? That's
+decided by the remote URL, after rewrites,
+
+16
+00:01:09,727 --> 00:01:14,681
+and the evidence is git remote -v. Which
+credential does the client present?
+
+17
+00:01:14,721 --> 00:01:20,200
+Decided by Git's credential helpers for
+HTTPS, and by ssh, its configuration and the
+
+18
+00:01:20,240 --> 00:01:25,653
+agent for SSH. And: who does the server say
+you are, and what may that identity do?
+
+19
+00:01:25,693 --> 00:01:26,836
+Decided by GitHub.
+
+20
+00:01:27,176 --> 00:01:31,841
+A failure is always in exactly one of
+the three. Commands copied from a search
+
+21
+00:01:31,881 --> 00:01:34,133
+result usually change a different one.
+
+22
+00:01:34,473 --> 00:01:39,308
+Today: the distinction between
+authentication and authorization, the HTTPS
+
+23
+00:01:39,348 --> 00:01:44,709
+transport, and the credential helper
+protocol. The replays, credential-protocol.sh
+
+24
+00:01:44,749 --> 00:01:49,321
+and credential-scope.sh, use a stand-in
+helper and no real credential.
+
+25
+00:01:49,361 --> 00:01:52,746
+Every token on screen is a
+fake string from the lab.
+
+26
+00:01:52,786 --> 00:01:56,106
+Then a walkthrough of Lab
+20.2 in the normal shell.
+
+27
+00:01:56,146 --> 00:01:59,070
+I never show a token,
+and neither should you.
+
+28
+00:01:59,410 --> 00:02:05,004
+Labels from the chapter's table: git
+credential fill and gh auth status are 🟢 SAFE,
+
+29
+00:02:05,044 --> 00:02:10,569
+though fill prints a secret on your screen.
+git config set --global credential...,
+
+30
+00:02:10,609 --> 00:02:15,931
+gh auth setup-git and gh auth login are
+🟡 CAUTION: they change which credential
+
+31
+00:02:15,971 --> 00:02:21,225
+answers, for every repository. git
+credential reject is 🟡: it deletes a stored
+
+32
+00:02:21,265 --> 00:02:21,972
+credential.
+
+33
+00:02:23,812 --> 00:02:25,224
+After this video you can:
+
+34
+00:02:25,564 --> 00:02:28,453
+Separate "who are you" from "what
+may you do" in an error message.
+
+35
+00:02:28,793 --> 00:02:34,019
+Describe what Git does from the server's
+401 to the stored token, naming the helper
+
+36
+00:02:34,059 --> 00:02:34,717
+operations.
+
+37
+00:02:35,057 --> 00:02:39,543
+Find out which credential helper answers
+for a host and where the token lives.
+
+38
+00:02:39,882 --> 00:02:42,360
+Scope a helper to one host or one path.
+
+39
+00:02:42,700 --> 00:02:44,130
+Read a credential trace.
+
+40
+00:02:45,970 --> 00:02:50,656
+In one sentence: authentication establishes
+which account a connection belongs to,
+
+41
+00:02:50,696 --> 00:02:54,690
+and authorization decides what that
+account may do to this repository.
+
+42
+00:02:55,030 --> 00:03:00,218
+Git has no accounts and no passwords. It
+delegates the connection to a transport.
+
+43
+00:03:00,258 --> 00:03:05,381
+Over HTTPS, Git speaks HTTP and attaches
+a username and a secret obtained from a
+
+44
+00:03:05,421 --> 00:03:10,415
+credential helper or a prompt. For GitHub
+the secret is a token, a string that
+
+45
+00:03:10,455 --> 00:03:15,514
+stands for an account with a subset of
+its rights. Over SSH, Git starts the ssh
+
+46
+00:03:15,554 --> 00:03:20,290
+program, which proves possession of a
+private key. Git never sees the key.
+
+47
+00:03:20,630 --> 00:03:24,996
+The server maps the token or key to
+an account, which is authentication.
+
+48
+00:03:25,036 --> 00:03:29,463
+Then it evaluates roles, token permissions
+and organization rules for the
+
+49
+00:03:29,503 --> 00:03:31,605
+repository, which is authorization.
+
+50
+00:03:31,945 --> 00:03:36,393
+Three identities are involved in
+everyday work, and they're independent.
+
+51
+00:03:36,433 --> 00:03:41,505
+The commit identity: the author and committer
+name and email written into commits,
+
+52
+00:03:41,545 --> 00:03:44,685
+set by user.name and
+user.email, checked by nobody.
+
+53
+00:03:44,725 --> 00:03:49,797
+It's an assertion. The authentication
+identity: the GitHub account that a token or
+
+54
+00:03:49,837 --> 00:03:53,412
+SSH key belongs to, checked by
+GitHub on every connection.
+
+55
+00:03:53,752 --> 00:03:57,198
+The signing identity: the key
+that signed a commit or tag.
+
+56
+00:03:57,238 --> 00:04:02,247
+You can push commits written by anyone, as
+any account that has Write, signed by any
+
+57
+00:04:02,287 --> 00:04:06,394
+key or none. "It says Asha in the
+log" is not evidence of who pushed.
+
+58
+00:04:06,734 --> 00:04:12,233
+HTTPS. In one sentence: over HTTPS, GitHub
+accepts a token in the place where HTTP
+
+59
+00:04:12,273 --> 00:04:17,839
+expects a password, and nothing else. GitHub
+has not accepted account passwords for
+
+60
+00:04:17,879 --> 00:04:23,175
+Git since the thirteenth of August 2021.
+Git still calls the secret a password,
+
+61
+00:04:23,215 --> 00:04:28,375
+because to Git it is one: the prompt
+reads "Password for", and you'll see it.
+
+62
+00:04:28,415 --> 00:04:33,779
+In practice nobody should type a token:
+the GitHub CLI or Git Credential Manager
+
+63
+00:04:33,819 --> 00:04:37,291
+obtains one through the
+browser and hands it to Git.
+
+64
+00:04:37,631 --> 00:04:42,728
+One caveat the textbook marks unverified:
+the exact text GitHub's server sends when
+
+65
+00:04:42,768 --> 00:04:47,865
+a password is used is not quoted in any
+GitHub documentation the course could find.
+
+66
+00:04:47,905 --> 00:04:53,064
+Recognize the situation by Git's own last
+line, fatal: Authentication failed for and
+
+67
+00:04:53,104 --> 00:04:55,168
+the URL, which is in Git's source.
+
+68
+00:04:55,508 --> 00:05:00,267
+Now the protocol. In one sentence: when a
+server demands authentication, Git asks
+
+69
+00:05:00,307 --> 00:05:04,770
+each configured credential helper in
+turn, then falls back to prompting, and
+
+70
+00:05:04,810 --> 00:05:08,266
+afterwards tells the helpers
+whether the credential worked.
+
+71
+00:05:08,606 --> 00:05:13,684
+A helper is a program that Git runs with
+one argument, get, store or erase, and a
+
+72
+00:05:13,724 --> 00:05:18,992
+description of the request on standard input
+as key=value lines: protocol, host, and
+
+73
+00:05:19,032 --> 00:05:24,300
+optionally path and username. git credential
+fill, approve and reject drive the same
+
+74
+00:05:24,340 --> 00:05:28,912
+machinery by hand, so the whole exchange
+can be watched without a server.
+
+75
+00:05:29,252 --> 00:05:35,317
+Quick quiz, before the table. Git sends a
+stored credential, and the server answers
+
+76
+00:05:35,357 --> 00:05:39,804
+403. What does Git tell the
+helper: store, erase, or nothing?
+
+77
+00:05:39,844 --> 00:05:40,980
+Say it out loud.
+
+78
+00:05:45,820 --> 00:05:50,223
+A request needs a credential:
+the helper's store is read, get.
+
+79
+00:05:50,263 --> 00:05:53,950
+The server accepted it: the
+store is written, store.
+
+80
+00:05:53,990 --> 00:05:57,748
+The server answered 401: the
+entry is removed, erase.
+
+81
+00:05:57,788 --> 00:06:01,690
+The server answered 403 or
+404: the store is unchanged.
+
+82
+00:06:01,730 --> 00:06:07,566
+So the quiz answer is nothing. If you said
+erase, you expected Git to tidy up, and
+
+83
+00:06:07,606 --> 00:06:10,146
+that's a reasonable thing to expect.
+
+84
+00:06:10,486 --> 00:06:15,581
+That last row is from Git's source: the
+reject is called for a 401 with a credential
+
+85
+00:06:15,621 --> 00:06:20,717
+that was sent, and for nothing else on this
+path. In all four rows the working tree,
+
+86
+00:06:20,757 --> 00:06:24,751
+the index, HEAD, the refs and the
+Git configuration are unchanged.
+
+87
+00:06:25,091 --> 00:06:30,665
+Which helper answers? credential.helper is
+a list. Git asks each helper in order and
+
+88
+00:06:30,705 --> 00:06:34,541
+stops at the first that returns
+a username and a password.
+
+89
+00:06:34,581 --> 00:06:39,888
+An empty value resets the list, which is
+how a later configuration file discards
+
+90
+00:06:39,928 --> 00:06:45,501
+helpers set by an earlier one.
+credential.<URL>.helper and credential.<URL>.username
+
+91
+00:06:45,541 --> 00:06:50,914
+apply only to matching URLs, and
+credential.useHttpPath makes the repository path
+
+92
+00:06:50,954 --> 00:06:55,993
+part of the lookup. By default a credential
+is per host, not per repository.
+
+93
+00:06:56,333 --> 00:07:02,176
+osxkeychain ships with Git on macOS and
+keeps the secret in the login keychain.
+
+94
+00:07:02,216 --> 00:07:07,984
+It stores whatever you typed. The GitHub
+CLI configures itself as a helper for
+
+95
+00:07:08,024 --> 00:07:13,867
+https://github.com, and keeps its token
+in the system credential store, or in a
+
+96
+00:07:13,907 --> 00:07:16,622
+plain text file if none is available.
+
+97
+00:07:16,962 --> 00:07:21,487
+Git Credential Manager, value manager,
+obtains tokens through the browser and is
+
+98
+00:07:21,527 --> 00:07:24,511
+installed separately. store
+writes a plain text file.
+
+99
+00:07:24,551 --> 00:07:29,018
+The manual calls it discouraged, so don't
+use it. cache keeps the secret in the
+
+100
+00:07:29,058 --> 00:07:33,640
+memory of a background process and isn't
+used in this course, because it starts a
+
+101
+00:07:33,680 --> 00:07:34,039
+daemon.
+
+102
+00:07:34,379 --> 00:07:39,524
+Inside .git: nothing. A credential is never
+stored in the repository unless you put
+
+103
+00:07:39,564 --> 00:07:44,395
+it there. The helper list is configuration,
+usually at system or global scope.
+
+104
+00:07:44,735 --> 00:07:49,833
+And that explains a rule of this course:
+labs/shell and the replays switch off the
+
+105
+00:07:49,873 --> 00:07:54,344
+system configuration, where macOS
+installations of Git usually configure
+
+106
+00:07:54,384 --> 00:07:59,231
+osxkeychain. That's why the labs that
+contact GitHub run in your normal shell.
+
+107
+00:07:59,271 --> 00:08:04,243
+In the lab, Git finds no helper. In your
+normal shell, it finds whichever one is
+
+108
+00:08:04,283 --> 00:08:04,932
+configured.
+
+109
+00:08:06,772 --> 00:08:08,538
+Two analogies from the textbook.
+
+110
+00:08:08,878 --> 00:08:11,869
+For the distinction: a badge
+reader and a door list.
+
+111
+00:08:11,909 --> 00:08:15,192
+The reader checks that the
+badge is real and whose it is.
+
+112
+00:08:15,232 --> 00:08:18,515
+The list on each door says
+which badge holders may enter.
+
+113
+00:08:18,555 --> 00:08:23,295
+The analogy breaks because GitHub often
+gives the same answer to both failures: an
+
+114
+00:08:23,335 --> 00:08:28,192
+unknown badge and a known badge without
+access can both get "there is no such door".
+
+115
+00:08:28,232 --> 00:08:31,515
+The error text alone doesn't
+tell you which check failed.
+
+116
+00:08:31,855 --> 00:08:34,987
+For the protocol: a receptionist
+with a key cabinet.
+
+117
+00:08:35,027 --> 00:08:38,647
+Asked for a key, the receptionist
+looks in the cabinet: get.
+
+118
+00:08:38,687 --> 00:08:43,648
+If the visitor had to bring their own key
+and it opened the door, it's hung in the
+
+119
+00:08:43,688 --> 00:08:48,589
+cabinet: store. If a key from the cabinet
+didn't open the door, it's thrown away:
+
+120
+00:08:48,629 --> 00:08:53,651
+erase. The analogy breaks at the last step:
+the receptionist throws a key away only
+
+121
+00:08:53,691 --> 00:08:58,470
+when the door says "wrong key", 401, not
+when it says "you may not enter", 403.
+
+122
+00:08:58,810 --> 00:09:01,468
+That break is the hook.
+It's Ravi's Wednesday.
+
+123
+00:09:03,308 --> 00:09:06,778
+Git sends a request, and the
+server demands authentication.
+
+124
+00:09:06,818 --> 00:09:10,169
+Git asks the helper: get, with
+the protocol and the host.
+
+125
+00:09:10,209 --> 00:09:14,868
+The helper answers with a username and a
+password, which for GitHub is a token.
+
+126
+00:09:14,908 --> 00:09:16,772
+Git repeats the request with it.
+
+127
+00:09:17,112 --> 00:09:21,231
+Then three outcomes. Accepted:
+Git tells the helper store.
+
+128
+00:09:21,271 --> 00:09:26,824
+A 401, wrong credential: Git tells the
+helper erase, and next time it will ask
+
+129
+00:09:26,864 --> 00:09:30,553
+again. A 403 or a 404: Git
+tells the helper nothing.
+
+130
+00:09:30,593 --> 00:09:35,644
+The wrong account stays in the cabinet
+and answers every later request.
+
+131
+00:09:37,484 --> 00:09:42,872
+No helper is configured in the sandbox,
+and the lab forbids terminal prompts, as a
+
+132
+00:09:42,912 --> 00:09:45,056
+CI job, an automated build, does.
+
+133
+00:09:45,396 --> 00:09:48,733
+"Could not read Username ...
+terminal prompts disabled".
+
+134
+00:09:48,773 --> 00:09:53,376
+This is the error of every CI job that
+reaches a private repository without a
+
+135
+00:09:53,416 --> 00:09:54,040
+credential.
+
+136
+00:09:54,380 --> 00:09:58,626
+A stand-in for the person at the keyboard
+shows what Git would ask: two prompts, a
+
+137
+00:09:58,666 --> 00:09:59,986
+username and a "password".
+
+138
+00:10:00,326 --> 00:10:05,711
+The lab's helper, a short shell script.
+Read its case statement: get prints what is
+
+139
+00:10:05,751 --> 00:10:11,202
+stored, store writes it, erase deletes it.
+It also logs every call with the password
+
+140
+00:10:11,242 --> 00:10:13,752
+hidden. Do not use it for real secrets.
+
+141
+00:10:14,092 --> 00:10:19,068
+Git asked the helper, get. The helper had
+nothing. So Git fell through to the prompt
+
+142
+00:10:19,108 --> 00:10:20,323
+that the lab forbids.
+
+143
+00:10:20,663 --> 00:10:25,147
+What Git does after a server accepted a
+credential that you typed: approve, and the
+
+144
+00:10:25,187 --> 00:10:26,073
+helper stores it.
+
+145
+00:10:26,413 --> 00:10:31,522
+The second request names a repository
+path. Will the answer be specific to that
+
+146
+00:10:31,562 --> 00:10:34,064
+repository? Say it out loud. I'll wait.
+
+147
+00:10:38,904 --> 00:10:43,432
+The same credential. The path was dropped:
+by default a credential is per host.
+
+148
+00:10:43,772 --> 00:10:48,477
+GIT_TRACE=1 names the program that
+answered. This line is the evidence for the
+
+149
+00:10:48,517 --> 00:10:50,302
+second of the three questions.
+
+150
+00:10:50,642 --> 00:10:55,156
+What Git does after a 401: reject,
+and the stored credential is gone.
+
+151
+00:11:00,496 --> 00:11:05,356
+The log is the protocol: get before a
+request, store after success, erase after a
+
+152
+00:11:05,396 --> 00:11:06,566
+rejected credential.
+
+153
+00:11:09,406 --> 00:11:14,189
+Two helpers, two stored accounts. Which
+account answers, and is the second helper
+
+154
+00:11:14,229 --> 00:11:16,272
+asked at all? Make your prediction.
+
+155
+00:11:21,112 --> 00:11:24,138
+The first helper answered and
+the second was never asked.
+
+156
+00:11:24,178 --> 00:11:25,428
+Order is the whole rule.
+
+157
+00:11:28,768 --> 00:11:33,629
+An empty value resets the list for that
+host, and what follows it replaces every
+
+158
+00:11:33,669 --> 00:11:38,469
+helper configured before. Now github.com
+gets the work account and another host
+
+159
+00:11:38,509 --> 00:11:40,184
+still gets the personal one.
+
+160
+00:11:40,524 --> 00:11:45,915
+The same reset for a single command, with
+-c: no stored credential is read, changed
+
+161
+00:11:45,955 --> 00:11:46,569
+or erased.
+
+162
+00:11:46,909 --> 00:11:51,949
+With useHttpPath, the helper receives
+path=, so it can keep one credential per
+
+163
+00:11:51,989 --> 00:11:56,116
+repository. With a fixed username,
+it is asked for that account.
+
+164
+00:11:56,456 --> 00:12:01,637
+According to its help text, gh auth status
+prints, per host, the active account,
+
+165
+00:12:01,677 --> 00:12:06,335
+where its token is stored and the
+token's scopes, with the token masked.
+
+166
+00:12:06,375 --> 00:12:11,816
+The two git config commands tell you which
+helpers are configured and in which file.
+
+167
+00:12:11,856 --> 00:12:17,036
+If the second prints nothing, gh auth
+setup-git configures the GitHub CLI as the
+
+168
+00:12:17,076 --> 00:12:18,472
+helper for github.com.
+
+169
+00:12:18,812 --> 00:12:23,737
+The textbook read what it writes from the
+CLI's source and did not run it: first an
+
+170
+00:12:23,777 --> 00:12:27,925
+empty value, to cut off helpers
+configured elsewhere, then the gh auth
+
+171
+00:12:27,965 --> 00:12:32,531
+git-credential helper. It is the
+reset-then-add pattern you saw a minute ago.
+
+172
+00:12:32,871 --> 00:12:37,175
+Try it now, thirty seconds, in your
+normal shell, not the lab shell.
+
+173
+00:12:37,215 --> 00:12:42,222
+Run the first git config line and read
+two things: which helper, and which file
+
+174
+00:12:42,262 --> 00:12:43,500
+names it. I'll wait.
+
+175
+00:12:48,340 --> 00:12:51,816
+Whatever it printed, you now know
+which program answers for you.
+
+176
+00:12:52,156 --> 00:12:57,050
+The dry-run push sends nothing and shows
+which program Git runs when a credential is
+
+177
+00:12:57,090 --> 00:13:00,163
+needed. The last command
+shows which account answers.
+
+178
+00:13:00,203 --> 00:13:03,394
+The sed hides the secret
+before it reaches your screen.
+
+179
+00:13:03,434 --> 00:13:06,448
+Never run it without the
+sed while sharing a screen.
+
+180
+00:13:08,288 --> 00:13:09,936
+Five mistakes to watch for.
+
+181
+00:13:10,276 --> 00:13:14,307
+Granting access and expecting a
+failing push to start working.
+
+182
+00:13:14,347 --> 00:13:19,493
+Root cause: a stored credential for another
+account answers, and a 403 does not
+
+183
+00:13:19,533 --> 00:13:20,084
+erase it.
+
+184
+00:13:20,424 --> 00:13:24,348
+Typing the account password
+at Git's "Password" prompt.
+
+185
+00:13:24,388 --> 00:13:29,249
+Root cause: GitHub accepts only a
+token there, since 13 August 2021.
+
+186
+00:13:29,589 --> 00:13:32,708
+Treating the author in git
+log as the person who pushed.
+
+187
+00:13:32,748 --> 00:13:37,051
+Root cause: the commit identity is an
+unchecked assertion; the authentication
+
+188
+00:13:37,091 --> 00:13:38,236
+identity is separate.
+
+189
+00:13:38,576 --> 00:13:41,847
+Adding a helper and seeing
+the old account still answer.
+
+190
+00:13:41,887 --> 00:13:46,756
+Root cause: Git stops at the first helper
+that returns a credential; reset the list
+
+191
+00:13:46,796 --> 00:13:48,708
+for the host with an empty value.
+
+192
+00:13:49,048 --> 00:13:53,882
+Running a GitHub command inside labs/shell
+and getting "could not read Username".
+
+193
+00:13:53,922 --> 00:13:58,936
+Root cause: the lab shell switches off the
+system configuration, where the helper is
+
+194
+00:13:58,976 --> 00:13:59,598
+configured.
+
+195
+00:14:01,438 --> 00:14:06,556
+Now, out of the lab. Ravi's Wednesday,
+worked through the three questions.
+
+196
+00:14:06,596 --> 00:14:11,365
+Transport and server: git remote -v
+shows an HTTPS URL on github.com.
+
+197
+00:14:11,405 --> 00:14:17,150
+Fine. Which credential does the client
+present? GIT_TRACE=1 on a dry-run push names
+
+198
+00:14:17,190 --> 00:14:23,005
+the helper, and gh auth status names the
+account. It's his personal account: he once
+
+199
+00:14:23,045 --> 00:14:27,535
+cloned a personal project over
+HTTPS, and the keychain stored it.
+
+200
+00:14:27,575 --> 00:14:32,484
+Who does the server say he is? A valid
+account without permission: 403.
+
+201
+00:14:32,824 --> 00:14:37,681
+So the failure is in the second question,
+and the fix is there too: make the right
+
+202
+00:14:37,721 --> 00:14:42,220
+account answer for that host, by resetting
+the helper list for github.com or
+
+203
+00:14:42,260 --> 00:14:46,818
+deleting the keychain entry. Nothing on
+GitHub needed to change after Monday.
+
+204
+00:14:46,858 --> 00:14:51,477
+The prevention, from the chapter's table:
+one helper per host, set on purpose.
+
+205
+00:14:53,317 --> 00:14:58,951
+Your turn. Do Lab 20.2, "HTTPS through the
+GitHub CLI, and the helper behind it", in
+
+206
+00:14:58,991 --> 00:15:04,288
+lab-manual/m20-authentication-ssh.md.
+Part A runs in the lab shell with the toy
+
+207
+00:15:04,328 --> 00:15:09,625
+helpers, and Part B runs in your normal
+shell. Before each git credential fill,
+
+208
+00:15:09,665 --> 00:15:15,030
+predict whether it will print a credential
+or fail, and what line the helper log
+
+209
+00:15:15,070 --> 00:15:20,367
+will gain. In Part B, predict which file
+configures your helper before you ask.
+
+210
+00:15:20,707 --> 00:15:26,902
+The challenge is Exercise 20.3,
+"403, and Git never asks", in
+
+211
+00:15:26,942 --> 00:15:29,764
+exercises/m19-m25-github.md.
+
+212
+00:15:31,604 --> 00:15:34,789
+Question 244 of the CTO question bank:
+
+213
+00:15:37,129 --> 00:15:41,873
+Answer out loud. A strong answer walks
+the sequence in order and uses the three
+
+214
+00:15:41,913 --> 00:15:46,899
+operation names correctly. It says where
+the prompt fits in when no helper answers.
+
+215
+00:15:46,939 --> 00:15:51,925
+For the 403 it states precisely what Git
+doesn't do, and derives the symptom that a
+
+216
+00:15:51,965 --> 00:15:56,649
+user sees days later. It ends with the
+evidence you would collect and the fix.
+
+217
+00:15:58,489 --> 00:15:59,416
+Let's land this.
+
+218
+00:15:59,756 --> 00:16:01,416
+You should now be able to say:
+
+219
+00:16:01,756 --> 00:16:06,257
+Authentication is which account; authorization
+is what that account may do; the
+
+220
+00:16:06,297 --> 00:16:08,326
+error text can be the same for both.
+
+221
+00:16:08,666 --> 00:16:13,808
+Over HTTPS the secret is a token, and
+Git obtains it from a list of credential
+
+222
+00:16:13,848 --> 00:16:15,403
+helpers, asked in order.
+
+223
+00:16:15,743 --> 00:16:22,391
+Git calls get before a request, store after
+success and erase after a 401; after a
+
+224
+00:16:22,431 --> 00:16:24,837
+403 or 404 it changes nothing.
+
+225
+00:16:25,177 --> 00:16:30,279
+GIT_TRACE=1 shows which helper ran;
+gh auth status shows which account.
+
+226
+00:16:30,619 --> 00:16:35,468
+A helper can be scoped to a host, a username
+or a path, and an empty value resets
+
+227
+00:16:35,508 --> 00:16:36,011
+the list.
+
+228
+00:16:37,851 --> 00:16:46,647
+Read sections 16.1 to 16.5 of Chapter 16.
+Do Exercise 20.1, "Who wrote this line?",
+
+229
+00:16:46,687 --> 00:16:49,947
+in exercises/m19-m25-github.md.
+
+230
+00:16:50,287 --> 00:16:55,617
+Today you followed a credential from the
+server's 401 into the store, and you solved
+
+231
+00:16:55,657 --> 00:17:00,667
+Ravi's Wednesday with three questions.
+If the three operation names still blur,
+
+232
+00:17:00,707 --> 00:17:05,718
+replay the log once more. Next time:
+tokens, what a prefix tells you, and why a
+
+233
+00:17:05,758 --> 00:17:10,896
+token never goes into a URL. Until then,
+look at the state first and type second.
+
+234
+00:17:10,936 --> 00:17:12,431
+See you in the next one.

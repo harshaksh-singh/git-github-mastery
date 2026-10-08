@@ -66,6 +66,8 @@ So `.git/HEAD` has three possible contents. On a branch: the name of a ref that 
 
 **[ON SCREEN]** The state table of section 7.4: `git commit` on `feature/retry-backoff`: working tree and index unchanged; HEAD unchanged; current branch ref moves to the new commit; `main` unchanged; new objects; one line in each of two reflogs.
 
+Here is that same commit as the state table of this section. Only the current branch ref moves.
+
 **[ANIMATION]** remotes: steps=setup,teammate-push
 
 **When this matters.** Because a branch is a name for a commit, "the branch" has a different value in every repository that holds a copy of it: your clone, each colleague's clone, the server. Watch: a teammate pushes a commit, and the server's `main` moves while yours stays put. `main` on the server and `main` in your clone are two refs that happen to share a name. A statement such as "the fix is on `main`" is only meaningful with a repository attached.

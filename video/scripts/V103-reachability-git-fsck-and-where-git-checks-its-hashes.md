@@ -434,11 +434,9 @@ Prevention        : read "dangling" as information; compare with git reflog befo
 
 The version note: older Git treated every reflog entry as a starting point.
 
-**[ANIMATION]** graph: [dated-2001] 2cc599e-778d03a; 2cc599e main; HEAD=main; reflog:778d03a; note:778d03a:git_fsck_prints_nothing || [dated-2099] a3c4e27-279be34; a3c4e27 main; HEAD=main; reflog:279be34; dangling:279be34 title=The_same_shape,_two_dates id=clock pace=quick
+**[ANIMATION]** graph: [dated-2001] 2cc599e-778d03a; 2cc599e main; HEAD=main; reflog:778d03a; note:778d03a:git_fsck_prints_nothing || [dated-2099] a3c4e27-279be34; a3c4e27 main; HEAD=main; reflog:279be34; dangling:279be34 title=The_same_shape,_two_dates id=clock pace=quick say_state_1=Since_Git_2.53.0,_fsck_skips_reflog_entries_dated_after_it_starts
 
 **[ANIMATION]** step: state-1
-
-**[ANIMATION]** say: Since_Git_2.53.0,_fsck_skips_reflog_entries_dated_after_it_starts
 
 Since Git 2.53.0, entries dated after the moment fsck starts are skipped, and fsck reads the system clock for this. The textbook verified it locally: Git 2.55.0 applies the rule, Apple's Git 2.50.1 does not. So the two Gits on your Mac can disagree about one repository.
 

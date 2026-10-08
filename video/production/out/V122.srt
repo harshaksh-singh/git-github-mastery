@@ -1,0 +1,1081 @@
+1
+00:00:04,500 --> 00:00:09,724
+The deploy job, the automated run that ships
+your code, says "Repository not found".
+
+2
+00:00:09,764 --> 00:00:14,738
+Your CTO turns the laptop around: "I am
+looking at the repository in my browser.
+
+3
+00:00:14,778 --> 00:00:16,430
+Which of the two is wrong?"
+
+4
+00:00:16,770 --> 00:00:21,254
+Neither is wrong. The job's credential,
+its proof of identity, can't see the
+
+5
+00:00:21,294 --> 00:00:24,468
+repository, and GitHub answers
+"not found" on purpose.
+
+6
+00:00:24,508 --> 00:00:27,385
+The browser is signed in
+as a different identity.
+
+7
+00:00:27,725 --> 00:00:32,601
+A ticket for this incident usually quotes
+one line: "fatal: Could not read from
+
+8
+00:00:32,641 --> 00:00:36,025
+remote repository." That line
+never contains the cause.
+
+9
+00:00:36,065 --> 00:00:41,128
+Today you learn to read the whole stack of
+lines, to say which program wrote each,
+
+10
+00:00:41,168 --> 00:00:44,925
+and to walk from the text to the
+root cause without guessing.
+
+11
+00:00:44,965 --> 00:00:47,725
+Keep the CTO's laptop
+in mind. It comes back.
+
+12
+00:00:49,565 --> 00:00:53,381
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:53,421 --> 00:00:58,247
+This video closes the authentication
+module. Authentication establishes which
+
+14
+00:00:58,287 --> 00:01:03,430
+account a connection belongs to. Authorization,
+a separate step, decides what that
+
+15
+00:01:03,470 --> 00:01:08,297
+account may do. Four videos gave you the
+mechanisms: the three questions, the
+
+16
+00:01:08,337 --> 00:01:13,416
+credential helper protocol, tokens, SSH
+with its configuration and host keys, and
+
+17
+00:01:13,456 --> 00:01:18,599
+identities for people and machines. Now we
+use all of it in one direction: from an
+
+18
+00:01:18,639 --> 00:01:20,116
+error message backwards.
+
+19
+00:01:20,456 --> 00:01:25,325
+The method has one first step, attribution:
+which program printed this line?
+
+20
+00:01:25,365 --> 00:01:30,556
+Then two tables, the SSH failures and the
+HTTPS failures, one for each transport,
+
+21
+00:01:30,596 --> 00:01:35,271
+each way Git reaches GitHub. And a
+decision tree that puts them in order.
+
+22
+00:01:35,611 --> 00:01:41,601
+The replays reproduce the failures inside
+the lab, against local stand-ins, with no
+
+23
+00:01:41,641 --> 00:01:46,324
+network: labs/ch16/failure-anatomy.sh
+and the replay of Lab 20.3.
+
+24
+00:01:46,364 --> 00:01:52,064
+Your real setup stays outside. Then the
+walkthrough of Lab 20.3, Part B, in the
+
+25
+00:01:52,104 --> 00:01:58,021
+normal shell, which reproduces three failures
+against your own practice repository
+
+26
+00:01:58,061 --> 00:02:00,637
+without changing your working setup.
+
+27
+00:02:00,977 --> 00:02:07,164
+The diagnostic commands in this video are
+🟢 SAFE: git remote -v, ssh -G, ssh-add -l,
+
+28
+00:02:07,204 --> 00:02:13,317
+ssh -T, gh auth status. One reminder from
+the chapter's table: gh auth token and gh
+
+29
+00:02:13,357 --> 00:02:19,100
+auth status --show-token are 🔴 DANGEROUS,
+because they print a live token, the
+
+30
+00:02:19,140 --> 00:02:24,437
+string that stands for your account,
+to the terminal and its scrollback.
+
+31
+00:02:24,477 --> 00:02:27,403
+They are not part of any diagnosis here.
+
+32
+00:02:29,243 --> 00:02:30,655
+After this video you can:
+
+33
+00:02:30,995 --> 00:02:35,757
+Say for an error line whether Git,
+SSH, the helper or GitHub wrote it.
+
+34
+00:02:36,097 --> 00:02:41,241
+Tell Permission denied (publickey) from
+Permission to OWNER/REPO denied to USER and
+
+35
+00:02:41,281 --> 00:02:43,615
+say what has been proved in each case.
+
+36
+00:02:43,955 --> 00:02:49,276
+Diagnose Repository not found, Host key
+verification failed, and Could not read from
+
+37
+00:02:49,316 --> 00:02:50,424
+remote repository.
+
+38
+00:02:50,764 --> 00:02:54,249
+Diagnose a 403 where Git
+never asks for a credential.
+
+39
+00:02:54,589 --> 00:02:57,812
+Walk the decision tree from the
+error text to the root cause.
+
+40
+00:02:59,652 --> 00:03:03,940
+An authentication error on your screen
+is a short stack of lines written by
+
+41
+00:03:03,980 --> 00:03:07,691
+different programs. Reading it
+starts with attributing each line.
+
+42
+00:03:08,031 --> 00:03:12,823
+Lines that begin with ssh: are written by
+your ssh client, the program that opens
+
+43
+00:03:12,863 --> 00:03:17,358
+the connection. So are Permission denied
+(publickey), "Host key verification
+
+44
+00:03:17,398 --> 00:03:21,713
+failed." and the warning that the
+remote host identification has changed.
+
+45
+00:03:21,753 --> 00:03:26,725
+They mean the SSH connection or authentication
+failed before Git's protocol started.
+
+46
+00:03:27,065 --> 00:03:32,670
+Lines that begin with remote: over HTTPS
+are written by GitHub's server and passed
+
+47
+00:03:32,710 --> 00:03:37,075
+through. Over SSH, so are lines
+such as the SSH key audit error.
+
+48
+00:03:37,115 --> 00:03:42,857
+The server knows something and tells you:
+repository not found, permission denied to
+
+49
+00:03:42,897 --> 00:03:44,302
+a named user, a rule.
+
+50
+00:03:44,642 --> 00:03:49,059
+"fatal: Could not read from remote
+repository." and the two lines after it are
+
+51
+00:03:49,099 --> 00:03:52,659
+written by Git. They mean the
+other side closed the connection.
+
+52
+00:03:52,699 --> 00:03:54,659
+This line never contains the cause.
+
+53
+00:03:54,999 --> 00:03:59,175
+"fatal: Authentication failed
+for", "fatal: repository ...
+
+54
+00:03:59,215 --> 00:04:05,282
+not found" and "The requested URL returned
+error" with a number are written by Git's
+
+55
+00:04:05,322 --> 00:04:09,790
+HTTPS code, for the HTTP statuses
+401, 404, or another status.
+
+56
+00:04:10,130 --> 00:04:14,783
+And "fatal: could not read Username for"
+is written by Git: no helper answered and
+
+57
+00:04:14,823 --> 00:04:19,305
+prompting was impossible. A helper is the
+program that stores your username and
+
+58
+00:04:19,345 --> 00:04:19,649
+token.
+
+59
+00:04:19,989 --> 00:04:25,619
+Now the SSH failures. Quick quiz: Permission
+denied (publickey): has the server, A,
+
+60
+00:04:25,659 --> 00:04:30,402
+refused your account this repository,
+or B, matched no account at all?
+
+61
+00:04:30,442 --> 00:04:31,222
+Your answer?
+
+62
+00:04:36,062 --> 00:04:39,403
+B. Permission denied (publickey):
+the server rejected the connection.
+
+63
+00:04:39,743 --> 00:04:44,151
+None of the keys offered, the key pairs
+that prove who you are, belongs to an
+
+64
+00:04:44,191 --> 00:04:47,329
+account, or no key was offered,
+or the user is not git.
+
+65
+00:04:47,369 --> 00:04:50,448
+Almost everyone picks A at
+first, so say it precisely.
+
+66
+00:04:50,488 --> 00:04:53,741
+It does not mean "you lack
+permission on the repository".
+
+67
+00:04:53,781 --> 00:04:58,594
+The server hasn't looked at the repository
+yet. It means the server could not attach
+
+68
+00:04:58,634 --> 00:05:02,869
+your connection to any account. Nothing
+has been proved about who you are.
+
+69
+00:05:03,209 --> 00:05:08,399
+Permission to OWNER/REPO denied to USER:
+the server again, and now something has
+
+70
+00:05:08,439 --> 00:05:13,695
+been proved. The key authenticated as an
+account that has no access here, or as a
+
+71
+00:05:13,735 --> 00:05:18,663
+deploy key of another repository. A
+deploy key is an SSH key attached to one
+
+72
+00:05:18,703 --> 00:05:22,520
+repository, not to a person.
+The message names who you are.
+
+73
+00:05:22,560 --> 00:05:25,593
+Authentication succeeded.
+Authorization failed.
+
+74
+00:05:25,933 --> 00:05:31,919
+"Repository not found" over SSH is the
+same deliberate answer as over HTTPS.
+
+75
+00:05:31,959 --> 00:05:35,091
+ssh -T git@github.com names the account.
+
+76
+00:05:35,431 --> 00:05:38,641
+"Host key verification failed."
+comes from your client.
+
+77
+00:05:38,681 --> 00:05:43,604
+The server's host key, its proof of who it
+is, differs from the one ssh remembers in
+
+78
+00:05:43,644 --> 00:05:47,149
+known_hosts. If no announcement
+explains it, do not connect.
+
+79
+00:05:47,489 --> 00:05:53,654
+A connect error on port 22, refused or
+timed out, is your client reporting the
+
+80
+00:05:53,694 --> 00:05:55,404
+network. Try port 443.
+
+81
+00:05:55,744 --> 00:05:57,648
+Now the HTTPS failures.
+
+82
+00:05:57,988 --> 00:06:03,364
+"Repository not found" in a remote: line,
+then Git's "not found": the server answers
+
+83
+00:06:03,404 --> 00:06:08,651
+404 when the repository doesn't exist, or
+when the credential has no access to it.
+
+84
+00:06:08,991 --> 00:06:14,529
+"Authentication failed" is a 401. The
+credential was rejected outright: a revoked or
+
+85
+00:06:14,569 --> 00:06:19,377
+expired token, a password, a typo. Git
+then tells the helper to erase it.
+
+86
+00:06:19,717 --> 00:06:25,030
+"The requested URL returned error: 403":
+the server knows who you are and refuses.
+
+87
+00:06:25,070 --> 00:06:30,188
+No write permission, a classic token
+without the needed scope or without single
+
+88
+00:06:30,228 --> 00:06:34,301
+sign-on authorization, an
+organization policy, or a rate limit.
+
+89
+00:06:34,341 --> 00:06:39,785
+Git does not erase the credential. So this
+is the 403 where Git never asks: a stored
+
+90
+00:06:39,825 --> 00:06:43,049
+credential for another
+account answers every time.
+
+91
+00:06:43,389 --> 00:06:48,531
+"Could not read Username ... terminal
+prompts disabled": no helper answered, and
+
+92
+00:06:48,571 --> 00:06:51,511
+there is no terminal:
+CI, cron, the lab shell.
+
+93
+00:06:51,851 --> 00:06:55,823
+And "uses plaintext credentials":
+the setting from the tokens video.
+
+94
+00:06:56,163 --> 00:07:01,956
+One caveat the textbook marks unverified:
+no GitHub documentation page explains HTTP
+
+95
+00:07:01,996 --> 00:07:07,649
+403 on git push specifically. The list of
+causes combines the cloning-errors page,
+
+96
+00:07:07,689 --> 00:07:13,204
+the token documentation and the REST guide.
+And the statement that Git keeps the
+
+97
+00:07:13,244 --> 00:07:18,967
+credential after a 403 is from Git's source,
+and was not observed against GitHub in
+
+98
+00:07:19,007 --> 00:07:19,730
+the course.
+
+99
+00:07:20,070 --> 00:07:23,872
+Why does GitHub answer "not
+found" for something that exists?
+
+100
+00:07:23,912 --> 00:07:29,036
+In the words of its REST troubleshooting
+guide: "To avoid confirming the existence
+
+101
+00:07:29,076 --> 00:07:33,885
+of private repositories". A 403 would
+tell a stranger that the name is taken.
+
+102
+00:07:35,725 --> 00:07:40,010
+A picture helps. Think of a relay of
+three messengers between you and the
+
+103
+00:07:40,050 --> 00:07:43,328
+repository. Your client program,
+ssh or Git's HTTP code.
+
+104
+00:07:43,368 --> 00:07:46,349
+The server's front door,
+which decides who you are.
+
+105
+00:07:46,389 --> 00:07:50,141
+And the server's repository rules,
+which decide what you may do.
+
+106
+00:07:50,181 --> 00:07:54,762
+Each messenger can come back with a
+refusal, and each speaks in its own voice.
+
+107
+00:07:55,102 --> 00:07:59,561
+The last line on your screen is usually
+Git reporting that a messenger came back
+
+108
+00:07:59,601 --> 00:08:01,923
+empty-handed. That's why you read upwards.
+
+109
+00:08:02,263 --> 00:08:07,305
+The model breaks in one place, on purpose:
+the front door and the repository rules
+
+110
+00:08:07,345 --> 00:08:12,200
+sometimes give the same answer, "not
+found", so that a stranger learns nothing.
+
+111
+00:08:12,240 --> 00:08:16,786
+When you see that answer, you don't
+try to guess which of the two refused.
+
+112
+00:08:16,826 --> 00:08:21,806
+You ask the front door directly who it
+thinks you are: ssh -T, or gh auth status.
+
+113
+00:08:23,646 --> 00:08:27,372
+The root is the first of the
+three questions: which transport?
+
+114
+00:08:27,412 --> 00:08:29,619
+git remote get-url origin answers it.
+
+115
+00:08:29,959 --> 00:08:35,081
+Try it now, thirty seconds: run
+it in any repository of yours.
+
+116
+00:08:35,121 --> 00:08:37,079
+SSH or HTTPS? I'll wait.
+
+117
+00:08:41,919 --> 00:08:46,288
+Starting with git and an
+at sign, or with ssh: SSH.
+
+118
+00:08:46,328 --> 00:08:48,623
+Starting with https: HTTPS.
+
+119
+00:08:48,963 --> 00:08:53,470
+The SSH branch goes outside in.
+Network first: is there an ssh: line?
+
+120
+00:08:53,510 --> 00:08:58,677
+Then the server's identity: the host key.
+Then your identity: Permission denied
+
+121
+00:08:58,717 --> 00:09:03,027
+(publickey) means no account matched,
+and three commands show why.
+
+122
+00:09:03,067 --> 00:09:08,366
+Then authorization: a named user, or "not
+found", means you were authenticated as
+
+123
+00:09:08,406 --> 00:09:10,607
+someone. ssh -T tells you as whom.
+
+124
+00:09:10,947 --> 00:09:15,325
+The HTTPS branch has the same
+order. No credential at all.
+
+125
+00:09:15,365 --> 00:09:21,495
+A rejected credential, 401. Then 404 or
+403: authenticated, or anonymous, and not
+
+126
+00:09:21,535 --> 00:09:26,370
+allowed. Two commands: which helper
+answered, and which account.
+
+127
+00:09:26,710 --> 00:09:32,289
+And the last line, for both: does the same
+identity work in the browser, or with gh
+
+128
+00:09:32,329 --> 00:09:36,689
+repo view? That's the CTO's laptop
+from the hook, used correctly.
+
+129
+00:09:41,029 --> 00:09:46,344
+Exit status 2: no agent can be reached. The
+agent is a background process that holds
+
+130
+00:09:46,384 --> 00:09:51,381
+your decrypted keys. The replays run
+without one. On your machine you meet this
+
+131
+00:09:51,421 --> 00:09:53,804
+under sudo, in cron and in containers.
+
+132
+00:09:54,144 --> 00:09:59,086
+Nothing listens on port 1 of this machine,
+so the next failure is a real ssh error
+
+133
+00:09:59,126 --> 00:10:00,301
+without any network.
+
+134
+00:10:02,641 --> 00:10:06,048
+The same failing connection,
+once alone and once under Git.
+
+135
+00:10:06,088 --> 00:10:09,552
+Which lines will the second
+output add, and who writes them?
+
+136
+00:10:09,892 --> 00:10:14,697
+Alone, ssh reports the cause in one line.
+Under Git, the same line is followed by
+
+137
+00:10:14,737 --> 00:10:18,645
+Git's three-line trailer. The cause
+is the line above the trailer.
+
+138
+00:10:18,985 --> 00:10:22,627
+A stand-in for ssh that prints
+its arguments and exits.
+
+139
+00:10:22,667 --> 00:10:23,765
+The same trailer.
+
+140
+00:10:26,105 --> 00:10:29,866
+This stand-in exits with
+status 255 and prints nothing.
+
+141
+00:10:29,906 --> 00:10:31,732
+What is left on the screen?
+
+142
+00:10:32,072 --> 00:10:35,814
+Only the trailer. When ssh is
+silent, there is no line above.
+
+143
+00:10:36,154 --> 00:10:41,054
+A local path that does not exist: Git's
+own check writes the cause, and then the
+
+144
+00:10:41,094 --> 00:10:41,857
+same trailer.
+
+145
+00:10:42,197 --> 00:10:46,099
+And a configured ssh program that
+does not exist: "cannot exec".
+
+146
+00:10:46,139 --> 00:10:49,240
+No trailer this time: Git
+could not start anything.
+
+147
+00:11:00,280 --> 00:11:05,639
+A wrong user in the URL. The stand-in shows
+that Git hands lab-user@github.com to
+
+148
+00:11:05,679 --> 00:11:11,172
+ssh, and ssh -G confirms the user. On GitHub
+that is Permission denied (publickey),
+
+149
+00:11:11,212 --> 00:11:14,105
+because all connections
+must be made as git.
+
+150
+00:11:14,445 --> 00:11:19,056
+A command line that offers no key
+at all: no agent, no identity file.
+
+151
+00:11:19,096 --> 00:11:24,178
+-G shows it without connecting. This is
+the form Part B uses against GitHub.
+
+152
+00:11:32,718 --> 00:11:34,877
+Failure 1: no key is offered.
+
+153
+00:11:35,217 --> 00:11:39,391
+Before you run it, predict both
+outputs and what they prove about you.
+
+154
+00:11:39,431 --> 00:11:41,016
+Say it out loud. I'll wait.
+
+155
+00:11:45,856 --> 00:11:49,159
+The first is ssh alone. The
+second adds Git's trailer.
+
+156
+00:11:49,199 --> 00:11:51,388
+Proved about your identity: nothing.
+
+157
+00:11:51,728 --> 00:11:55,512
+Failure 2: a stale host key,
+in a scratch known_hosts file.
+
+158
+00:11:55,552 --> 00:11:57,586
+Run this from the course folder.
+
+159
+00:11:57,926 --> 00:12:02,177
+Your real known_hosts is not touched:
+the command names a scratch file.
+
+160
+00:12:02,217 --> 00:12:06,408
+Predict who writes the message: your
+client. That's the check working.
+
+161
+00:12:06,748 --> 00:12:11,816
+Failure 3: a wrong credential for a repository
+that does not exist, then the right
+
+162
+00:12:11,856 --> 00:12:12,501
+credential.
+
+163
+00:12:12,841 --> 00:12:17,477
+The first command uses the one-command
+reset from video 118, so your stored
+
+164
+00:12:17,517 --> 00:12:22,341
+credential is neither read nor erased.
+Predict the status for each: a rejected
+
+165
+00:12:22,381 --> 00:12:26,518
+credential, then a valid credential
+for a name that does not exist.
+
+166
+00:12:26,558 --> 00:12:31,381
+Compare the two messages and decide which
+of them tells you anything about the
+
+167
+00:12:31,421 --> 00:12:32,067
+repository.
+
+168
+00:12:33,907 --> 00:12:35,555
+Five mistakes to watch for.
+
+169
+00:12:35,895 --> 00:12:39,503
+Quoting only "Could not read from
+remote repository" in a ticket.
+
+170
+00:12:39,543 --> 00:12:44,104
+Root cause: Git writes that line when the
+other program exits; the cause is in the
+
+171
+00:12:44,144 --> 00:12:44,889
+line above it.
+
+172
+00:12:45,229 --> 00:12:49,032
+Reading Permission denied (publickey)
+as missing repository access.
+
+173
+00:12:49,072 --> 00:12:53,677
+Root cause: the server could not attach
+the connection to any account; it has not
+
+174
+00:12:53,717 --> 00:12:55,110
+looked at the repository.
+
+175
+00:12:55,450 --> 00:12:59,134
+Concluding from "Repository not
+found" that the URL is wrong.
+
+176
+00:12:59,174 --> 00:13:04,139
+Root cause: the server gives the same answer
+when the credential has no access, to
+
+177
+00:13:04,179 --> 00:13:07,130
+avoid confirming that
+private repositories exist.
+
+178
+00:13:07,470 --> 00:13:12,806
+Re-entering credentials after a 403.
+Root cause: Git does not erase a stored
+
+179
+00:13:12,846 --> 00:13:18,182
+credential on 403, so the same wrong
+account answers again without a prompt.
+
+180
+00:13:18,522 --> 00:13:22,801
+Changing SSH settings to fix an
+HTTPS remote, or the reverse.
+
+181
+00:13:22,841 --> 00:13:27,119
+Root cause: the first question,
+which transport, was skipped.
+
+182
+00:13:28,959 --> 00:13:34,208
+Now, out of the lab. The deploy job
+from the hook, walked down the tree.
+
+183
+00:13:34,248 --> 00:13:39,790
+Step 1: git remote get-url origin in
+the job's checkout prints an HTTPS URL.
+
+184
+00:13:39,830 --> 00:13:45,887
+HTTPS branch. The full error has a remote:
+line, "Repository not found", then Git's
+
+185
+00:13:45,927 --> 00:13:51,029
+"not found": a 404. Step 4h: which
+helper answered, and which account?
+
+186
+00:13:51,369 --> 00:13:56,112
+The trace shows the helper. The job's token
+turns out to be a fine-grained token,
+
+187
+00:13:56,152 --> 00:14:00,482
+the kind that can be limited to selected
+repositories, created for another
+
+188
+00:14:00,522 --> 00:14:05,029
+repository of the same organization. The
+repository in question is not in its
+
+189
+00:14:05,069 --> 00:14:09,930
+selection. The server authenticated the
+token and answered as if the repository did
+
+190
+00:14:09,970 --> 00:14:10,520
+not exist.
+
+191
+00:14:10,860 --> 00:14:14,108
+The CTO's browser was right
+too: his account can see it.
+
+192
+00:14:14,148 --> 00:14:18,628
+The last line of the tree would have
+caught the difference at once: the job's
+
+193
+00:14:18,668 --> 00:14:21,857
+identity does not work with
+gh repo view, and his does.
+
+194
+00:14:22,197 --> 00:14:27,123
+The fix is in the token's repository
+selection, or better, an app installation that
+
+195
+00:14:27,163 --> 00:14:32,030
+includes the repository. The team's prevention
+is the one in the box: one identity
+
+196
+00:14:32,070 --> 00:14:35,620
+per host or alias, chosen by
+configuration and not by habit.
+
+197
+00:14:35,660 --> 00:14:38,372
+And a rule for tickets:
+quote the whole error.
+
+198
+00:14:40,212 --> 00:14:43,889
+Your turn. Do Lab 20.3, "Three
+failures, reproduced and diagnosed", in
+
+199
+00:14:43,929 --> 00:14:48,349
+lab-manual/m20-authentication-ssh.md. For
+each failure, before you produce it, write
+
+200
+00:14:48,389 --> 00:14:52,650
+down three things: the exact error text
+you expect, which program will write each
+
+201
+00:14:52,690 --> 00:14:56,526
+line, and what will have been proved
+about your identity when you see it.
+
+202
+00:14:56,866 --> 00:15:03,146
+The challenge is Exercise 20.6,
+"Three faults, no connection", in
+
+203
+00:15:03,186 --> 00:15:05,869
+exercises/m19-m25-github.md.
+
+204
+00:15:07,709 --> 00:15:10,850
+Question 232 of the CTO question bank:
+
+205
+00:15:13,190 --> 00:15:17,250
+Answer out loud. A strong answer says
+for each message which check failed,
+
+206
+00:15:17,290 --> 00:15:21,738
+authentication or authorization, and
+therefore what the server knows about you at
+
+207
+00:15:21,778 --> 00:15:26,226
+that moment. It names the commands that
+produce the evidence in each case and the
+
+208
+00:15:26,266 --> 00:15:30,658
+different fixes that follow. It does not
+use the word "permission" for the first
+
+209
+00:15:30,698 --> 00:15:32,320
+message without correcting it.
+
+210
+00:15:34,160 --> 00:15:35,087
+Let's land this.
+
+211
+00:15:35,427 --> 00:15:37,087
+You should now be able to say:
+
+212
+00:15:37,427 --> 00:15:42,690
+Attribute every line first: ssh: lines are
+the client, remote: lines are the server,
+
+213
+00:15:42,730 --> 00:15:45,405
+and Git's trailer never
+contains the cause.
+
+214
+00:15:45,745 --> 00:15:50,079
+Permission denied (publickey) means no
+account matched; a message naming a user
+
+215
+00:15:50,119 --> 00:15:52,737
+means you were authenticated
+and not authorized.
+
+216
+00:15:53,077 --> 00:15:57,299
+"Repository not found" is also what a
+credential without access receives.
+
+217
+00:15:57,639 --> 00:16:04,033
+A 401 erases the stored credential; a 403
+does not, so Git keeps sending the wrong
+
+218
+00:16:04,073 --> 00:16:05,838
+account without asking.
+
+219
+00:16:06,178 --> 00:16:10,765
+The decision tree starts with the transport
+and ends with one question: does the
+
+220
+00:16:10,805 --> 00:16:12,442
+same identity work elsewhere?
+
+221
+00:16:14,282 --> 00:16:21,863
+Read sections 16.17 to 16.23 of Chapter
+16 and do the Practice section 16.25.
+
+222
+00:16:22,203 --> 00:16:25,632
+You can now name the program
+behind every error line.
+
+223
+00:16:25,672 --> 00:16:30,607
+Practise with Lab 20.3. Next: what GitHub
+creates when a pull request opens.
+
+224
+00:16:30,647 --> 00:16:34,011
+Until then, look at the
+state first and type second.
+
+225
+00:16:34,051 --> 00:16:35,582
+See you in the next one.

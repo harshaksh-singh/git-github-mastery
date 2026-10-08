@@ -74,6 +74,8 @@ This is why `git rebase` and `git merge` take the target as an argument: Git can
 
 **[ON SCREEN]** Lower third: **GitHub**. A pull request has a base branch, chosen when it is opened, and stored by GitHub, not by Git. It is the one place where "created from" is recorded. And GitHub computes a pull request's changes from a merge base too.
 
+One note on the platform side. A pull request has a base branch, chosen when it's opened, and it's stored by GitHub, not by Git.
+
 **[ANIMATION]** remotes: with Asha steps=setup,teammate-push,fetch
 
 **Remote-tracking branches and upstream.** In one sentence: a remote-tracking branch such as `origin/main` is a ref in your own repository that records the last position of a branch in another repository, and an upstream is two configuration lines that pair a local branch with one.

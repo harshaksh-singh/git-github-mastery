@@ -1,0 +1,972 @@
+1
+00:00:04,500 --> 00:00:09,344
+An engineer is asked which files use the
+tenant field before a schema change.
+
+2
+00:00:09,384 --> 00:00:14,418
+She runs git grep in her clone, gets no
+match, and reports that nothing uses it.
+
+3
+00:00:14,458 --> 00:00:17,653
+Three files use it. The
+change breaks two services.
+
+4
+00:00:17,993 --> 00:00:21,415
+Her repository wasn't damaged,
+and her command wasn't wrong.
+
+5
+00:00:21,455 --> 00:00:26,204
+Her clone was a sparse checkout, a working
+tree that holds only chosen directories.
+
+6
+00:00:26,244 --> 00:00:30,358
+She asked a working-tree question
+where a repository question was meant.
+
+7
+00:00:30,698 --> 00:00:35,580
+Later the same week she narrows her cone,
+the set of directories she chose, and
+
+8
+00:00:35,620 --> 00:00:39,380
+loses a downloaded evaluation
+set that took an hour to fetch.
+
+9
+00:00:39,420 --> 00:00:44,551
+Git printed nothing and exited with status
+0. Both events follow from one rule, and
+
+10
+00:00:44,591 --> 00:00:47,728
+that rule comes first. Hold
+on to that silent exit.
+
+11
+00:00:49,568 --> 00:00:53,299
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:53,339 --> 00:00:58,183
+Here's the rule, from section 24.5: a
+path with the skip-worktree bit is in the
+
+13
+00:00:58,223 --> 00:01:01,768
+index and in history, and Git
+does not look at it on disk.
+
+14
+00:01:01,808 --> 00:01:06,961
+The index is Git's record of every tracked
+path, and the skip-worktree bit is a flag
+
+15
+00:01:07,001 --> 00:01:08,321
+on one of its entries.
+
+16
+00:01:08,661 --> 00:01:11,781
+In the last video you set a
+cone. Now you live in one.
+
+17
+00:01:11,821 --> 00:01:16,580
+You'll see which commands see the cone and
+which see everything, what git add does
+
+18
+00:01:16,620 --> 00:01:21,497
+outside the cone, and what happens to
+untracked and ignored files when the cone gets
+
+19
+00:01:21,537 --> 00:01:26,120
+narrower. Then the sparse index: a way
+to make the index itself shrink with the
+
+20
+00:01:26,160 --> 00:01:26,413
+cone.
+
+21
+00:01:26,753 --> 00:01:37,085
+Two replays: labs/ch24/sparse-behaviour.sh
+and labs/ch24/sparse-index.sh.
+
+22
+00:01:37,425 --> 00:01:42,680
+Labels. git grep is 🟢 SAFE. git sparse-checkout
+reapply and set --sparse-index are 🟡
+
+23
+00:01:42,720 --> 00:01:47,660
+CAUTION. git sparse-checkout clean is 🔴
+DANGEROUS, and it gets its five answers
+
+24
+00:01:47,700 --> 00:01:48,606
+before it runs.
+
+25
+00:01:50,446 --> 00:01:51,858
+After this video you can:
+
+26
+00:01:52,198 --> 00:01:55,679
+Predict what search, status and
+add do for paths outside the cone.
+
+27
+00:01:56,019 --> 00:02:00,185
+Explain what happens to untracked and
+ignored files when a cone is narrowed.
+
+28
+00:02:00,525 --> 00:02:04,061
+Clean leftovers after narrowing
+a cone, with a dry run first.
+
+29
+00:02:04,401 --> 00:02:09,724
+Say what the sparse index changes, why only
+in cone mode, and what makes a command
+
+30
+00:02:09,764 --> 00:02:10,379
+expand it.
+
+31
+00:02:12,219 --> 00:02:14,508
+Start from the rule and
+derive the behaviour.
+
+32
+00:02:14,848 --> 00:02:19,827
+Commands that read commits, trees and blobs
+see the whole repository: git log on a
+
+33
+00:02:19,867 --> 00:02:23,439
+path outside the cone, git show
+of a file outside the cone.
+
+34
+00:02:23,479 --> 00:02:28,274
+Commands that read the working tree, the
+files on your disk, see only the cone.
+
+35
+00:02:28,314 --> 00:02:31,396
+git grep without options
+searches the working tree.
+
+36
+00:02:31,436 --> 00:02:35,741
+It finds nothing in files that aren't
+there, and exits with "no match".
+
+37
+00:02:35,781 --> 00:02:40,883
+That's a wrong answer without a warning.
+git grep --cached searches the index, which
+
+38
+00:02:40,923 --> 00:02:41,801
+has every path.
+
+39
+00:02:42,141 --> 00:02:45,991
+Why accept that? Because the cone
+pays off in work per command.
+
+40
+00:02:46,031 --> 00:02:51,116
+git status asks the file system only about
+files inside the cone and walks only the
+
+41
+00:02:51,156 --> 00:02:52,536
+directories that exist.
+
+42
+00:02:52,876 --> 00:02:57,536
+Now files outside the cone. A working
+tree gets them in two everyday ways.
+
+43
+00:02:57,576 --> 00:03:02,618
+The first: you or a tool create one. git
+add then refuses with exit status 1 and
+
+44
+00:03:02,658 --> 00:03:07,763
+names the ways forward. With git add
+--sparse the file is staged, and it stays on
+
+45
+00:03:07,803 --> 00:03:12,972
+disk until git sparse-checkout reapply
+removes it. The second way, in the manual's
+
+46
+00:03:13,012 --> 00:03:18,118
+description of reapply: a merge or rebase
+may "materialize paths to do their work
+
+47
+00:03:18,158 --> 00:03:23,009
+(e.g. in order to show you a conflict)".
+The same reapply cleans up after the
+
+48
+00:03:23,049 --> 00:03:23,708
+resolution.
+
+49
+00:03:24,048 --> 00:03:27,189
+Then narrowing. Narrowing a
+cone removes tracked files.
+
+50
+00:03:27,229 --> 00:03:31,239
+That's safe: they're in the index
+and in history. What about the rest?
+
+51
+00:03:31,579 --> 00:03:35,812
+Untracked files have no index
+entry and match no ignore pattern.
+
+52
+00:03:35,852 --> 00:03:39,218
+Git keeps such a file and
+its directory, and warns.
+
+53
+00:03:39,258 --> 00:03:44,693
+Removing such directories is the job of
+git sparse-checkout clean, which needs Git
+
+54
+00:03:44,733 --> 00:03:45,628
+2.52 or later.
+
+55
+00:03:45,968 --> 00:03:50,543
+Ignored files, the ones an ignore
+pattern matches, get no warning.
+
+56
+00:03:50,583 --> 00:03:56,347
+The manual states the rule: if everything
+untracked in a directory outside the cone
+
+57
+00:03:56,387 --> 00:04:01,662
+is ignored, "then the directory will be
+deleted". For a build cache that's a
+
+58
+00:04:01,702 --> 00:04:07,256
+convenience. For an ignored file you can't
+regenerate, such as a local .env or a
+
+59
+00:04:07,296 --> 00:04:13,130
+downloaded evaluation set, narrowing the
+cone is a 🔴 operation whose only preview is
+
+60
+00:04:13,170 --> 00:04:15,158
+git status --short --ignored.
+
+61
+00:04:15,498 --> 00:04:20,600
+Now the sparse index. The problem it solves:
+after everything above, each command
+
+62
+00:04:20,640 --> 00:04:25,616
+still reads, and often rewrites, an index
+proportional to the whole repository.
+
+63
+00:04:25,656 --> 00:04:30,949
+In one sentence: a sparse index replaces
+all entries of a directory outside the cone
+
+64
+00:04:30,989 --> 00:04:36,092
+by one entry that names the directory's
+tree, so the index shrinks with the cone.
+
+65
+00:04:36,132 --> 00:04:39,520
+A tree is the object that
+holds one directory listing.
+
+66
+00:04:39,860 --> 00:04:44,760
+Now precisely. With index.sparse=true,
+written by git sparse-checkout set
+
+67
+00:04:44,800 --> 00:04:50,445
+--sparse-index, the index may hold sparse
+directory entries: mode 040000, a tree ID,
+
+68
+00:04:50,485 --> 00:04:53,963
+the skip-worktree bit, and
+a path ending in a slash.
+
+69
+00:04:54,003 --> 00:04:59,310
+It needs cone mode, because only cone
+mode guarantees that a whole directory is
+
+70
+00:04:59,350 --> 00:05:04,182
+either in or out. The manual marks it
+separately: "This feature is still
+
+71
+00:05:04,222 --> 00:05:09,663
+experimental", and it warns that external
+tools may not understand such an index.
+
+72
+00:05:10,003 --> 00:05:14,844
+The cost: a command that needs paths inside
+a collapsed directory expands the index
+
+73
+00:05:14,884 --> 00:05:18,489
+in memory first, and Git itself
+calls that "a slow operation".
+
+74
+00:05:18,829 --> 00:05:23,718
+When should you use the sparse index? When
+the index itself is the bottleneck, which
+
+75
+00:05:23,758 --> 00:05:28,354
+means hundreds of thousands of tracked
+files, and when the tools that share the
+
+76
+00:05:28,394 --> 00:05:33,165
+working tree cope with it: the editor
+integration, the prompt, the hook framework,
+
+77
+00:05:33,205 --> 00:05:37,860
+an older Git. When not? When a tool runs
+an expanding command on every prompt or
+
+78
+00:05:37,900 --> 00:05:39,679
+save. That cancels the benefit.
+
+79
+00:05:41,519 --> 00:05:46,168
+The textbook's analogy for the sparse
+index: a table of contents that lists every
+
+80
+00:05:46,208 --> 00:05:50,162
+section of the chapters you read and
+one line for each other chapter.
+
+81
+00:05:50,202 --> 00:05:54,909
+Whoever needs a section of a collapsed
+chapter must expand the line first, and the
+
+82
+00:05:54,949 --> 00:05:56,472
+expansion is the slow part.
+
+83
+00:05:56,812 --> 00:06:00,587
+The analogy breaks at who decides.
+A reader chooses to expand.
+
+84
+00:06:00,627 --> 00:06:05,387
+Git expands whenever a command asks for
+a path that the collapsed entry cannot
+
+85
+00:06:05,427 --> 00:06:05,817
+answer.
+
+86
+00:06:06,157 --> 00:06:11,114
+For the first half of the video, keep the
+question you learned to ask in the last
+
+87
+00:06:11,154 --> 00:06:14,568
+video: which of the three
+places does this command read?
+
+88
+00:06:14,608 --> 00:06:19,564
+HEAD and history, the index, or the disk.
+If it reads the disk, it sees the cone.
+
+89
+00:06:19,904 --> 00:06:24,664
+Try it now, thirty seconds, on paper.
+Write those three places down.
+
+90
+00:06:24,704 --> 00:06:30,383
+Next to each, put the one that reads it:
+git log, git grep, or git grep --cached.
+
+91
+00:06:30,423 --> 00:06:31,089
+I'll wait.
+
+92
+00:06:35,929 --> 00:06:40,077
+git log reads history. git
+grep --cached reads the index.
+
+93
+00:06:40,117 --> 00:06:44,192
+Plain git grep reads the disk,
+so it sees only the cone.
+
+94
+00:06:46,032 --> 00:06:51,072
+On the left, the index you know: 33
+entries, most of them marked S, for
+
+95
+00:06:51,112 --> 00:06:56,726
+skip-worktree. On the right, the same
+content with index.sparse on: 14 entries.
+
+96
+00:06:56,766 --> 00:07:02,307
+Each directory that lies wholly outside
+the cone has become one line with mode
+
+97
+00:07:02,347 --> 00:07:03,810
+040000 and a tree ID.
+
+98
+00:07:04,150 --> 00:07:08,290
+Look at services. It isn't collapsed,
+because the cone reaches into it.
+
+99
+00:07:08,330 --> 00:07:13,234
+Its two outside subdirectories collapse
+separately, and the four files of the ranker
+
+100
+00:07:13,274 --> 00:07:14,471
+stay as file entries.
+
+101
+00:07:14,811 --> 00:07:19,232
+Read the root-cause line: a working-tree
+question was asked where a repository
+
+102
+00:07:19,272 --> 00:07:21,634
+question was meant. The fix is to ask Git.
+
+103
+00:07:23,474 --> 00:07:26,792
+The cone is services/ranker
+and libs/tokenizer.
+
+104
+00:07:27,132 --> 00:07:30,694
+The gateway is outside the cone. Which of
+these four commands give an answer about
+
+105
+00:07:30,734 --> 00:07:32,056
+it? Say it out loud. I'll wait.
+
+106
+00:07:36,896 --> 00:07:41,035
+git log and git show answer:
+history and objects are complete.
+
+107
+00:07:41,075 --> 00:07:45,887
+git grep finds nothing and exits 1.
+git grep --cached finds three files.
+
+108
+00:07:45,927 --> 00:07:46,966
+That's the hook.
+
+109
+00:07:47,306 --> 00:07:52,599
+The work of one git status, counted. The
+index still has 33 entries to read, but Git
+
+110
+00:07:52,639 --> 00:07:57,742
+asked the file system about nine files
+where a full checkout needs 33, and walked
+
+111
+00:07:57,782 --> 00:08:00,473
+six directories where
+it would walk twenty.
+
+112
+00:08:00,813 --> 00:08:02,446
+A new file outside the cone.
+
+113
+00:08:02,786 --> 00:08:08,047
+Quick quiz, two options. A plain git add
+of a new file in a directory outside the
+
+114
+00:08:08,087 --> 00:08:10,730
+cone: staged or refused? Say it out loud.
+
+115
+00:08:15,570 --> 00:08:19,483
+Refused, with exit status 1,
+and the hint names --sparse.
+
+116
+00:08:19,523 --> 00:08:24,478
+If you said staged, that's a fair
+guess: staging is what git add is for.
+
+117
+00:08:24,818 --> 00:08:29,146
+The file is committed and still on
+disk, an H entry among S entries.
+
+118
+00:08:29,186 --> 00:08:34,350
+git sparse-checkout reapply, 🟡, enforces
+the cone again: the file leaves the disk
+
+119
+00:08:34,390 --> 00:08:35,892
+and its entry becomes S.
+
+120
+00:08:36,232 --> 00:08:37,492
+Now untracked files.
+
+121
+00:08:37,832 --> 00:08:40,861
+Git kept the untracked file
+and its directory, and warned.
+
+122
+00:08:41,201 --> 00:08:46,852
+Now the 🔴 command, git sparse-checkout
+clean. Twig looks worried, and fairly so.
+
+123
+00:08:46,892 --> 00:08:50,551
+The five answers. What it
+changes: the working tree.
+
+124
+00:08:50,591 --> 00:08:56,314
+What it can destroy: untracked files there,
+here results.tmp, which were never in
+
+125
+00:08:56,354 --> 00:09:02,147
+Git, so no reflog and no git fsck returns
+them. Preview: --dry-run, with --verbose
+
+126
+00:09:02,187 --> 00:09:08,051
+for every file. Recovery: none from Git.
+Appropriate: after reading the preview and
+
+127
+00:09:08,091 --> 00:09:09,901
+moving away what you need.
+
+128
+00:09:10,241 --> 00:09:14,915
+The dry run says it would remove
+the whole directory pipelines/.
+
+129
+00:09:14,955 --> 00:09:21,103
+Without --force or --dry-run the command
+refuses. With -f the directory is gone, the
+
+130
+00:09:21,143 --> 00:09:22,798
+untracked file with it.
+
+131
+00:09:23,138 --> 00:09:27,724
+The same sequence with an ignored file.
+build/ is ignored in this repository.
+
+132
+00:09:28,064 --> 00:09:32,488
+Last time Git warned and kept the
+file. This time the file is ignored.
+
+133
+00:09:32,528 --> 00:09:36,250
+What does narrowing print? Make
+your prediction. I'll wait.
+
+134
+00:09:41,090 --> 00:09:47,133
+Nothing. Exit status 0, and the cache is
+gone. That's the silent exit from the hook.
+
+135
+00:09:49,973 --> 00:09:55,237
+A sparse checkout with an ordinary
+index: 33 entries for 7 files on disk.
+
+136
+00:10:00,777 --> 00:10:05,738
+Fourteen entries. This is the right-hand
+side of the diagram, with the real tree
+
+137
+00:10:05,778 --> 00:10:05,988
+IDs.
+
+138
+00:10:06,328 --> 00:10:10,617
+The entry for docs/ holds exactly
+the ID of the docs tree in HEAD.
+
+139
+00:10:10,657 --> 00:10:14,947
+So Git can compare such an entry
+with a commit without opening it.
+
+140
+00:10:15,287 --> 00:10:19,633
+Both counters now follow the cone:
+14 entries read, 7 lstat calls.
+
+141
+00:10:19,673 --> 00:10:25,216
+On orbit that saves nothing you can feel.
+The textbook cites GitHub's engineers, who
+
+142
+00:10:25,256 --> 00:10:30,799
+reported an index shrinking from about 180
+megabytes to under 10 megabytes on a test
+
+143
+00:10:30,839 --> 00:10:34,388
+repository of two million
+files. The figure is theirs.
+
+144
+00:10:34,728 --> 00:10:38,211
+git ls-files without --sparse
+must list every path.
+
+145
+00:10:38,251 --> 00:10:41,528
+What does Git have to do
+first? Say it out loud.
+
+146
+00:10:46,368 --> 00:10:50,544
+It expands the index in memory
+and says so: "a slow operation".
+
+147
+00:10:50,584 --> 00:10:55,765
+The hint's guess at the cause is wrong
+here. The file on disk stays sparse: 14
+
+148
+00:10:55,805 --> 00:10:56,301
+entries.
+
+149
+00:10:56,641 --> 00:11:00,731
+And the way back: git sparse-checkout
+set --no-sparse-index.
+
+150
+00:11:02,571 --> 00:11:04,219
+Five mistakes to watch for.
+
+151
+00:11:04,559 --> 00:11:09,532
+Searching a sparse checkout with plain git
+grep or a directory listing and trusting
+
+152
+00:11:09,572 --> 00:11:14,121
+"no match". Root cause: a working-tree
+question was asked where a repository
+
+153
+00:11:14,161 --> 00:11:18,348
+question was meant; git grep --cached
+and git ls-files read the index.
+
+154
+00:11:18,688 --> 00:11:23,033
+Narrowing a cone over a directory with
+ignored files that cannot be regenerated.
+
+155
+00:11:23,073 --> 00:11:27,582
+Root cause: if everything untracked in a
+directory outside the cone is ignored, the
+
+156
+00:11:27,622 --> 00:11:29,720
+directory is deleted without a warning.
+
+157
+00:11:30,060 --> 00:11:33,444
+Running git sparse-checkout
+clean -f without the dry run.
+
+158
+00:11:33,484 --> 00:11:38,431
+Root cause: it removes whole directories,
+including untracked files that were never
+
+159
+00:11:38,471 --> 00:11:38,851
+in Git.
+
+160
+00:11:39,191 --> 00:11:42,938
+Expecting git add to stage a
+new file outside the cone.
+
+161
+00:11:42,978 --> 00:11:48,722
+Root cause: Git does not update index entries
+outside the sparse-checkout definition
+
+162
+00:11:48,762 --> 00:11:50,443
+unless --sparse is given.
+
+163
+00:11:50,783 --> 00:11:56,068
+Enabling the sparse index and seeing no
+gain. Root cause: a tool that asks for every
+
+164
+00:11:56,108 --> 00:11:58,921
+path makes Git expand
+the index on each call.
+
+165
+00:12:00,761 --> 00:12:05,598
+Now, out of the lab. A search team's
+pre-merge script lists Python files with find
+
+166
+00:12:05,638 --> 00:12:10,594
+and checks that each has a test. In one
+engineer's clone it reports that most of the
+
+167
+00:12:10,634 --> 00:12:14,698
+repository has no tests, and in CI,
+the automated checks, it's right.
+
+168
+00:12:14,738 --> 00:12:19,516
+Her clone is a sparse checkout: git status
+prints "You are in a sparse checkout".
+
+169
+00:12:19,556 --> 00:12:24,512
+The script is changed to read from Git, with
+git ls-files, so that it sees all files
+
+170
+00:12:24,552 --> 00:12:25,404
+in every clone.
+
+171
+00:12:25,744 --> 00:12:31,694
+The same team adopts a rule for narrowing
+a cone: run git status --short --ignored
+
+172
+00:12:31,734 --> 00:12:37,611
+first, and move away any ignored file that
+cannot be regenerated, such as a local
+
+173
+00:12:37,651 --> 00:12:43,455
+.env or a downloaded evaluation set. Then
+narrow, then git sparse-checkout clean
+
+174
+00:12:43,495 --> 00:12:45,062
+--dry-run, then clean.
+
+175
+00:12:46,902 --> 00:12:51,364
+Your turn. Do Exercise 18.8, "A
+file that is not on disk", in
+
+176
+00:12:51,404 --> 00:12:57,121
+exercises/m16-m18-internals.md. Before
+you run anything, state for the file in
+
+177
+00:12:57,161 --> 00:13:01,328
+question where it exists: on
+disk, in the index, in HEAD.
+
+178
+00:13:01,368 --> 00:13:07,307
+Then predict what each command of the
+exercise will report, and only then run it.
+
+179
+00:13:07,647 --> 00:13:12,981
+The challenge is Exercise 18.9, "The clone
+that believes it is up to date", in the
+
+180
+00:13:13,021 --> 00:13:13,637
+same file.
+
+181
+00:13:15,477 --> 00:13:18,655
+Question 431 of the CTO question bank:
+
+182
+00:13:20,995 --> 00:13:25,830
+Answer out loud. A strong answer separates
+three kinds of file, tracked, untracked
+
+183
+00:13:25,870 --> 00:13:28,921
+and ignored, and gives a
+different outcome for each.
+
+184
+00:13:28,961 --> 00:13:33,914
+It says which outcome comes with a warning
+and which without, names the command that
+
+185
+00:13:33,954 --> 00:13:38,551
+removes leftovers and its preview, and
+names the only preview there is for the
+
+186
+00:13:38,591 --> 00:13:42,355
+silent case. It states plainly
+what can't be recovered from Git.
+
+187
+00:13:44,195 --> 00:13:45,122
+Let's land this.
+
+188
+00:13:45,462 --> 00:13:47,122
+You should now be able to say:
+
+189
+00:13:47,462 --> 00:13:51,972
+A path with the skip-worktree bit is in
+the index and in history, and Git does not
+
+190
+00:13:52,012 --> 00:13:53,026
+look at it on disk.
+
+191
+00:13:53,366 --> 00:13:58,688
+Working-tree commands see the cone; index
+and history commands see everything; git
+
+192
+00:13:58,728 --> 00:13:59,996
+grep needs --cached.
+
+193
+00:14:00,336 --> 00:14:04,907
+Narrowing a cone keeps untracked files with
+a warning and deletes directories whose
+
+194
+00:14:04,947 --> 00:14:07,296
+untracked content is
+all ignored, silently.
+
+195
+00:14:07,636 --> 00:14:12,916
+git sparse-checkout clean removes leftovers
+and cannot be undone; run it with
+
+196
+00:14:12,956 --> 00:14:14,021
+--dry-run first.
+
+197
+00:14:14,361 --> 00:14:19,330
+The sparse index stores one tree entry per
+directory outside the cone, needs cone
+
+198
+00:14:19,370 --> 00:14:22,792
+mode, and expands when a
+command asks for a path inside.
+
+199
+00:14:24,632 --> 00:14:29,396
+Read sections 24.5 and 24.6 of Chapter 24.
+
+200
+00:14:29,736 --> 00:14:34,570
+Today you watched a correct command give a
+wrong answer, and you know which place to
+
+201
+00:14:34,610 --> 00:14:39,270
+ask instead. Practise the three places on
+one file before the next video: partial
+
+202
+00:14:39,310 --> 00:14:43,911
+clone plus sparse checkout. Until then,
+look at the state first and type second.
+
+203
+00:14:43,951 --> 00:14:45,304
+See you in the next one.

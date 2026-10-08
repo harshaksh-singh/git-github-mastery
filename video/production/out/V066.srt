@@ -49,1095 +49,1095 @@ Keep those 40 lines in
 mind. We'll shrink them.
 
 11
-00:00:52,391 --> 00:00:56,622
+00:00:52,391 --> 00:00:56,161
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 12
-00:00:56,662 --> 00:01:00,333
+00:00:56,201 --> 00:00:59,472
 This video opens the module
 on history investigation.
 
 13
-00:01:00,373 --> 00:01:05,795
+00:00:59,512 --> 00:01:04,344
 The textbook's central fact for the whole
 module: history stores snapshots and
 
 14
-00:01:05,835 --> 00:01:11,467
+00:01:04,384 --> 00:01:09,403
 parent links, nothing else. A commit is
 one saved snapshot of the project, and it
 
 15
-00:01:11,507 --> 00:01:13,777
+00:01:09,443 --> 00:01:11,464
 names the commit it was built on.
 
 16
-00:01:14,117 --> 00:01:18,685
+00:01:11,804 --> 00:01:16,372
 Diffs, renames, "who wrote this line" and
 "which commit broke it" are not recorded
 
 17
-00:01:18,725 --> 00:01:23,294
+00:01:16,412 --> 00:01:20,981
 anywhere. Git computes them when you ask,
 with heuristics that have thresholds and
 
 18
-00:01:23,334 --> 00:01:27,902
+00:01:21,021 --> 00:01:25,589
 blind spots. An investigator has to know
 which answers are facts read from objects
 
 19
-00:01:27,942 --> 00:01:29,307
+00:01:25,629 --> 00:01:26,994
 and which are inferences.
 
 20
-00:01:29,647 --> 00:01:33,330
+00:01:27,334 --> 00:01:31,259
 Today that principle is applied
 to the most basic tool, the diff.
 
 21
-00:01:33,370 --> 00:01:37,740
+00:01:31,299 --> 00:01:35,956
 Four things. Summaries and filters, which
 answer "what changed" before "how".
 
 22
-00:01:37,780 --> 00:01:41,005
+00:01:35,996 --> 00:01:39,433
 Renames and copies, which are
 computed and can be missed.
 
 23
-00:01:41,045 --> 00:01:44,727
+00:01:39,473 --> 00:01:43,398
 Whitespace and word-level views,
 which read through reformatting.
 
 24
-00:01:44,767 --> 00:01:49,023
+00:01:43,438 --> 00:01:47,974
 And diff algorithms, which decide how
 one and the same change is displayed.
 
 25
-00:01:49,063 --> 00:01:53,204
+00:01:48,014 --> 00:01:52,427
 At the end comes --check, a small guard
 that belongs before every commit.
 
 26
-00:01:53,544 --> 00:01:58,573
+00:01:52,767 --> 00:01:57,796
 Every command today is 🟢 SAFE. Nothing
 is written. The project is scorekit.
 
 27
-00:02:00,413 --> 00:02:01,992
+00:01:59,636 --> 00:02:01,214
 Here's what you'll walk away with.
 
 28
-00:02:02,332 --> 00:02:03,744
+00:02:01,554 --> 00:02:02,966
 After this video you can:
 
 29
-00:02:04,084 --> 00:02:09,369
+00:02:03,306 --> 00:02:08,591
 Summarize a diff by files, by status and by
 counts, and filter it by kind of change.
 
 30
-00:02:09,709 --> 00:02:13,004
+00:02:08,931 --> 00:02:12,227
 Explain a rename score and
 change the detection threshold.
 
 31
-00:02:13,344 --> 00:02:16,808
+00:02:12,567 --> 00:02:16,031
 Separate real changes from
 whitespace and reformatting noise.
 
 32
-00:02:17,148 --> 00:02:19,766
+00:02:16,371 --> 00:02:18,989
 Compare two diff algorithms
 on the same change.
 
 33
-00:02:20,106 --> 00:02:24,333
+00:02:19,329 --> 00:02:23,555
 Find whitespace errors and leftover
 conflict markers before committing.
 
 34
-00:02:26,173 --> 00:02:31,170
+00:02:25,395 --> 00:02:30,392
 Summaries and filters. A patch between two
 releases can run to thousands of lines.
 
 35
-00:02:31,210 --> 00:02:36,023
+00:02:30,432 --> 00:02:35,245
 Start with a summary and descend from
 there. All of these options work with git
 
 36
-00:02:36,063 --> 00:02:40,753
+00:02:35,285 --> 00:02:39,976
 diff, git show and git log alike, because
 the three share one diff machinery.
 
 37
-00:02:41,093 --> 00:02:45,129
+00:02:40,316 --> 00:02:44,351
 --stat draws one line per
 file with a scaled histogram.
 
 38
-00:02:45,169 --> 00:02:51,057
+00:02:44,391 --> 00:02:50,280
 --shortstat keeps only the total. --numstat
 prints the same numbers unscaled and
 
 39
-00:02:51,097 --> 00:02:55,578
+00:02:50,320 --> 00:02:54,801
 tab-separated, the form for
 scripts. --name-only lists paths.
 
 40
-00:02:55,618 --> 00:02:58,468
+00:02:54,841 --> 00:02:57,691
 --name-status adds one letter per path.
 
 41
-00:02:58,808 --> 00:03:04,067
+00:02:58,031 --> 00:03:03,289
 --diff-filter selects by those letters.
 An uppercase letter includes, a lowercase
 
 42
-00:03:04,107 --> 00:03:05,113
+00:03:03,329 --> 00:03:04,336
 letter excludes.
 
 43
-00:03:05,453 --> 00:03:10,685
+00:03:04,676 --> 00:03:09,908
 Renames and copies. In one sentence: a
 commit does not say "this file was renamed".
 
 44
-00:03:10,725 --> 00:03:15,894
+00:03:09,948 --> 00:03:15,116
 git diff notices that a path disappeared,
 another appeared, and their contents are
 
 45
-00:03:15,934 --> 00:03:21,229
+00:03:15,156 --> 00:03:20,452
 similar enough. On screen, one stored file:
 run_eval.py, with the ID of its content,
 
 46
-00:03:21,269 --> 00:03:21,992
+00:03:20,492 --> 00:03:21,214
 its blob ID.
 
 47
-00:03:22,332 --> 00:03:26,708
+00:03:21,554 --> 00:03:25,930
 Precisely. Rename detection is a
 pass over the list of changed paths.
 
 48
-00:03:26,748 --> 00:03:31,508
+00:03:25,970 --> 00:03:30,730
 A deleted path and an added path with
 the same blob ID are an exact rename.
 
 49
-00:03:31,548 --> 00:03:36,820
+00:03:30,770 --> 00:03:36,042
 For the remaining pairs Git computes a
 similarity index, and a pair at or above the
 
 50
-00:03:36,860 --> 00:03:42,003
+00:03:36,082 --> 00:03:41,226
 threshold becomes a rename. On screen the
 two blob IDs differ, so this pair needs
 
 51
-00:03:42,043 --> 00:03:43,347
+00:03:41,266 --> 00:03:42,570
 the similarity index.
 
 52
-00:03:43,687 --> 00:03:49,120
+00:03:42,910 --> 00:03:49,169
 The threshold is 50 percent by default.
 -M<n> changes it, and --no-renames switches
 
 53
-00:03:49,160 --> 00:03:53,537
+00:03:49,209 --> 00:03:54,253
 the pass off. For the porcelain
 commands the pass is on by default.
 
 54
-00:03:53,577 --> 00:03:58,812
+00:03:54,293 --> 00:04:00,324
 -C also looks for copies, with the sources
 limited to files that the same commit
 
 55
-00:03:58,852 --> 00:04:04,350
+00:04:00,364 --> 00:04:06,699
 modified. --find-copies-harder, or -C given
 twice, considers every file of the older
 
 56
-00:04:04,390 --> 00:04:06,130
+00:04:06,739 --> 00:04:08,748
 tree and costs accordingly.
 
 57
-00:04:06,470 --> 00:04:11,742
+00:04:09,088 --> 00:04:14,569
 The limit: similarity is a heuristic over
 content. Rename a file and rewrite half of
 
 58
-00:04:11,782 --> 00:04:16,611
+00:04:14,609 --> 00:04:19,630
 it in the same commit, and the link is
 gone. Everything that relies on rename
 
 59
-00:04:16,651 --> 00:04:21,859
+00:04:19,670 --> 00:04:25,085
 detection inherits this limit: git log
 --follow, git blame, and the rename handling
 
 60
-00:04:21,899 --> 00:04:26,917
+00:04:25,125 --> 00:04:30,343
 of git merge, which you met in the merge
 module as a modify/delete conflict that
 
 61
-00:04:26,957 --> 00:04:27,929
+00:04:30,383 --> 00:04:31,395
 nobody intended.
 
 62
-00:04:28,269 --> 00:04:33,935
+00:04:31,735 --> 00:04:37,401
 Noise. Two kinds of change bury the lines
 you are looking for: whitespace, and small
 
 63
-00:04:33,975 --> 00:04:39,437
+00:04:37,441 --> 00:04:42,903
 edits inside long lines. -w treats lines
 that differ only in whitespace as equal.
 
 64
-00:04:39,477 --> 00:04:42,902
+00:04:42,943 --> 00:04:46,367
 --word-diff compares words
 and marks them in place.
 
 65
-00:04:43,242 --> 00:04:47,947
+00:04:46,707 --> 00:04:51,413
 Algorithms. In one sentence: for two given
 files there are many correct diffs, and
 
 66
-00:04:47,987 --> 00:04:50,320
+00:04:51,453 --> 00:04:53,785
 the algorithm decides which one you read.
 
 67
-00:04:50,660 --> 00:04:55,372
+00:04:54,125 --> 00:04:58,839
 Git has four. myers, the default, which
 the manual calls "the basic greedy diff
 
 68
-00:04:55,412 --> 00:04:59,823
+00:04:58,879 --> 00:05:03,291
 algorithm". minimal, which spends extra
 time to produce the smallest diff.
 
 69
-00:04:59,863 --> 00:05:04,213
+00:05:03,331 --> 00:05:07,684
 patience. And histogram, which "extends
 the patience algorithm to support
 
 70
-00:05:04,253 --> 00:05:09,025
+00:05:07,724 --> 00:05:12,497
 low-occurrence common elements". The last
 two anchor on lines that occur rarely,
 
 71
-00:05:09,065 --> 00:05:13,957
+00:05:12,537 --> 00:05:17,431
 which tends to keep moved blocks together.
 Choose with --diff-algorithm=<name> and
 
 72
-00:05:13,997 --> 00:05:16,724
+00:05:17,471 --> 00:05:20,199
 make the choice permanent
 with diff.algorithm.
 
 73
-00:05:17,064 --> 00:05:22,121
+00:05:20,539 --> 00:05:25,595
 --check is not about reading diffs at all.
 It inspects the lines a diff adds and
 
 74
-00:05:22,161 --> 00:05:27,090
+00:05:25,635 --> 00:05:30,564
 reports whitespace errors and leftover
 conflict markers, with an exit status a
 
 75
-00:05:27,130 --> 00:05:28,109
+00:05:30,604 --> 00:05:31,584
 script can test.
 
 76
-00:05:29,949 --> 00:05:32,289
+00:05:33,424 --> 00:05:35,763
 Sort what a diff tells you into two piles.
 
 77
-00:05:32,629 --> 00:05:36,524
+00:05:36,103 --> 00:05:39,999
 Facts: this path exists in the
 left tree and not in the right.
 
 78
-00:05:36,564 --> 00:05:41,475
+00:05:40,039 --> 00:05:44,950
 These two blobs have different IDs. These
 are read from objects, and no option
 
 79
-00:05:41,515 --> 00:05:42,301
+00:05:44,990 --> 00:05:45,775
 changes them.
 
 80
-00:05:42,641 --> 00:05:47,394
+00:05:46,115 --> 00:05:50,868
 Inferences: "this file was renamed". "These
 six lines were edited" as opposed to
 
 81
-00:05:47,434 --> 00:05:52,308
+00:05:50,908 --> 00:05:55,782
 "this block moved". "42 lines changed".
 Each of those depends on a threshold or an
 
 82
-00:05:52,348 --> 00:05:56,801
+00:05:55,822 --> 00:06:00,276
 algorithm, and a different setting gives
 a different, equally valid answer.
 
 83
-00:05:57,141 --> 00:06:01,079
+00:06:00,616 --> 00:06:04,553
 Think of a map drawn from two aerial
 photographs taken a year apart.
 
 84
-00:06:01,119 --> 00:06:05,993
+00:06:04,593 --> 00:06:09,467
 The photographs are facts. "This building
 was moved" is the cartographer's inference
 
 85
-00:06:06,033 --> 00:06:09,619
+00:06:09,507 --> 00:06:13,094
 from "a building vanished here,
 a similar one appeared there".
 
 86
-00:06:09,659 --> 00:06:13,187
+00:06:13,134 --> 00:06:16,662
 Usually right. Wrong when the
 building was also half rebuilt.
 
 87
-00:06:13,527 --> 00:06:18,237
+00:06:17,002 --> 00:06:20,389
 Where does the picture break?
 A cartographer can go and ask.
 
 88
-00:06:18,277 --> 00:06:24,571
+00:06:20,429 --> 00:06:24,958
 Git can't: there's nothing recorded to
 ask. So when an inference matters to your
 
 89
-00:06:24,611 --> 00:06:30,033
+00:06:24,998 --> 00:06:28,900
 investigation, change the setting
 and see whether the answer changes.
 
 90
-00:06:31,873 --> 00:06:37,330
+00:06:30,740 --> 00:06:36,197
 One moved and edited file, three ways.
 Without rename detection: a deletion and an
 
 91
-00:06:37,370 --> 00:06:40,883
+00:06:36,237 --> 00:06:39,750
 addition. By default: one
 rename, 82 percent similar.
 
 92
-00:06:40,923 --> 00:06:44,302
+00:06:39,790 --> 00:06:43,169
 With word diff: the changed
 words, marked in place.
 
 93
-00:06:44,342 --> 00:06:46,045
+00:06:43,209 --> 00:06:44,912
 Same two trees every time.
 
 94
-00:06:47,885 --> 00:06:49,792
+00:06:46,752 --> 00:06:48,655
 Part 1: from the outside in.
 
 95
-00:06:50,132 --> 00:06:55,441
+00:06:48,995 --> 00:06:54,304
 Ten files, 104 insertions, 31 deletions.
 One line per file, with a histogram.
 
 96
-00:06:55,481 --> 00:07:00,582
+00:06:54,344 --> 00:06:59,445
 You now know where the bulk is before
 you have read a single changed line.
 
 97
-00:07:03,922 --> 00:07:11,645
+00:07:02,785 --> 00:07:10,567
 --name-status: A for added, M for modified,
 and one D: scorekit/bleu.py was deleted
 
 98
-00:07:11,685 --> 00:07:13,890
+00:07:10,607 --> 00:07:12,829
 between v0.1.0 and main.
 
 99
-00:07:14,230 --> 00:07:18,349
+00:07:13,169 --> 00:07:17,288
 --numstat gives the form for
 scripts: added, removed, path.
 
 100
-00:07:18,689 --> 00:07:24,831
+00:07:17,628 --> 00:07:23,926
 --diff-filter=A lists only additions, =D
 only deletions, and lowercase ad excludes
 
 101
-00:07:24,871 --> 00:07:31,089
+00:07:23,966 --> 00:07:30,342
 both and leaves the modifications.
 --diff-filter=D with git log is the standard way
 
 102
-00:07:31,129 --> 00:07:35,235
+00:07:30,382 --> 00:07:34,593
 to find when a file was
 deleted. A later video uses it.
 
 103
-00:07:35,575 --> 00:07:40,217
+00:07:34,933 --> 00:07:39,574
 A pathspec, a pattern that limits a command
 to some paths, after the double dash
 
 104
-00:07:40,257 --> 00:07:43,201
+00:07:39,614 --> 00:07:42,559
 narrows any of these,
 including the exclusion form.
 
 105
-00:07:43,541 --> 00:07:48,321
+00:07:42,899 --> 00:07:47,788
 Part 2: renames are computed.
 labs/run ch14a/diff-renames.
 
 106
-00:07:48,361 --> 00:07:55,134
+00:07:47,828 --> 00:07:54,757
 Between commit d369eac and v0.1.0 the
 sources moved into a package, one module was
 
 107
-00:07:55,174 --> 00:08:00,120
+00:07:54,797 --> 00:07:59,856
 renamed a second time, and two
 files were edited on the way.
 
 108
-00:08:00,460 --> 00:08:06,411
+00:08:00,196 --> 00:08:06,148
 R100 is an exact rename: two commits moved
 scorer.py twice and never changed it, and
 
 109
-00:08:06,451 --> 00:08:12,117
+00:08:06,188 --> 00:08:11,854
 the diff of the endpoints sees one rename.
 R090 and R082 are renames with edits.
 
 110
-00:08:12,157 --> 00:08:16,611
+00:08:11,894 --> 00:08:16,348
 Predict the same comparison with
 --no-renames. Say it out loud.
 
 111
-00:08:16,651 --> 00:08:17,324
+00:08:16,388 --> 00:08:17,061
 I'll wait.
 
 112
-00:08:22,164 --> 00:08:27,310
+00:08:21,901 --> 00:08:27,047
 A list of unrelated deletions and additions.
 Same two trees, same facts, different
 
 113
-00:08:27,350 --> 00:08:29,397
+00:08:27,087 --> 00:08:29,134
 inference. The threshold decides.
 
 114
-00:08:29,737 --> 00:08:34,715
+00:08:29,474 --> 00:08:34,452
 At 90 percent the runner, whose similarity
 is 82 percent, is no longer a rename:
 
 115
-00:08:34,755 --> 00:08:35,844
+00:08:34,492 --> 00:08:35,581
 it's a D and an A.
 
 116
-00:08:36,184 --> 00:08:41,638
+00:08:35,921 --> 00:08:41,375
 In a patch, a detected rename is printed as
 extended header lines, "similarity index
 
 117
-00:08:41,678 --> 00:08:46,086
+00:08:41,415 --> 00:08:45,823
 82%", "rename from", "rename to",
 and only the changed lines follow.
 
 118
-00:08:46,426 --> 00:08:50,782
+00:08:46,163 --> 00:08:50,519
 And --stat shows a rename in one
 line, with the old and the new name.
 
 119
-00:08:51,122 --> 00:08:55,928
+00:08:50,859 --> 00:08:55,664
 Copies need the harder search when the
 source file was not modified by the same
 
 120
-00:08:55,968 --> 00:08:59,914
+00:08:55,704 --> 00:08:59,651
 commit. Here Asha seeded the nightly
 data set from the smoke set.
 
 121
-00:09:00,254 --> 00:09:05,599
+00:08:59,991 --> 00:09:05,862
 -C alone finds nothing, because
 data/smoke.jsonl itself did not change in that
 
 122
-00:09:05,639 --> 00:09:11,053
+00:09:05,902 --> 00:09:11,849
 commit. --find-copies-harder finds the
 copy with a similarity of 71 percent and
 
 123
-00:09:11,093 --> 00:09:14,781
+00:09:11,889 --> 00:09:15,941
 reduces fourteen added lines
 to the four that are new.
 
 124
-00:09:15,121 --> 00:09:19,249
+00:09:16,281 --> 00:09:20,409
 Now the limit. A file renamed
 and half rewritten in one step.
 
 125
-00:09:19,289 --> 00:09:22,050
+00:09:20,449 --> 00:09:23,210
 Predict what git status shows. I'll wait.
 
 126
-00:09:26,890 --> 00:09:32,388
+00:09:28,050 --> 00:09:33,703
 A deletion and an addition, because status
 uses the default threshold and this pair
 
 127
-00:09:32,428 --> 00:09:37,926
+00:09:33,743 --> 00:09:39,397
 is 43 percent similar. A lower threshold
 still finds it, but nobody reading the log
 
 128
-00:09:37,966 --> 00:09:43,197
+00:09:39,437 --> 00:09:44,815
 later will think to pass -M40%. Moving
 and tidying in one commit feels natural.
 
 129
-00:09:43,237 --> 00:09:45,132
+00:09:44,855 --> 00:09:46,805
 Almost everyone does it once.
 
 130
-00:09:45,472 --> 00:09:50,704
+00:09:47,145 --> 00:09:52,456
 Part 3: reading through noise.
 labs/run ch14a/diff-words-whitespace.
 
 131
-00:09:50,744 --> 00:09:57,216
+00:09:52,496 --> 00:09:59,067
 Commit 9c8df98 ran a formatter over the
 sources. That's the commit from the opening.
 
 132
-00:09:57,556 --> 00:10:03,949
+00:09:59,407 --> 00:10:05,799
 Without -w: five files, 40 lines.
 With -w: three files, 11 lines.
 
 133
-00:10:04,289 --> 00:10:10,758
+00:10:06,139 --> 00:10:10,999
 The 40 lines from the opening have shrunk.
 Two files drop out entirely: their only
 
 134
-00:10:10,798 --> 00:10:15,996
+00:10:11,039 --> 00:10:14,943
 change was the indentation. What
 are the eleven lines that remain?
 
 135
-00:10:19,336 --> 00:10:23,362
+00:10:18,283 --> 00:10:22,309
 The formatter also replaced
 single quotes with double quotes.
 
 136
-00:10:23,402 --> 00:10:26,361
+00:10:22,349 --> 00:10:25,308
 That is not whitespace,
 so -w cannot hide it.
 
 137
-00:10:26,701 --> 00:10:31,379
+00:10:25,648 --> 00:10:30,330
 Remember this split: it returns in the blame
 videos, where git blame -w sees through
 
 138
-00:10:31,419 --> 00:10:34,750
+00:10:30,370 --> 00:10:33,704
 the indentation and needs a
 different option for the quotes.
 
 139
-00:10:35,090 --> 00:10:39,833
+00:10:34,044 --> 00:10:38,787
 For prose, configuration strings and long
 lines, a line-based diff says "this line
 
 140
-00:10:39,873 --> 00:10:42,633
+00:10:38,827 --> 00:10:41,587
 changed" and leaves the
 comparison to your eyes.
 
 141
-00:10:42,973 --> 00:10:46,292
+00:10:41,927 --> 00:10:45,246
 Two long lines removed, two
 long lines added. Try it now.
 
 142
-00:10:46,332 --> 00:10:50,239
+00:10:45,286 --> 00:10:49,193
 Thirty seconds: find the difference
 in the last pair, without help.
 
 143
-00:10:52,579 --> 00:10:57,531
+00:10:51,533 --> 00:10:56,773
 --word-diff marks removed text in square
 brackets with minus signs and added text in
 
 144
-00:10:57,571 --> 00:11:00,681
+00:10:56,813 --> 00:11:00,104
 braces with plus signs.
 "token" became "token-level".
 
 145
-00:11:00,721 --> 00:11:04,900
+00:11:00,144 --> 00:11:04,567
 And in the last line, three words
 were removed: "lowercases the text,".
 
 146
-00:11:04,940 --> 00:11:07,990
+00:11:04,607 --> 00:11:07,835
 In the line-based diff that
 removal was hard to see.
 
 147
-00:11:08,030 --> 00:11:09,000
+00:11:07,875 --> 00:11:08,904
 Here it's marked.
 
 148
-00:11:09,340 --> 00:11:13,252
+00:11:09,244 --> 00:11:13,155
 The output of --word-diff is
 for reading, not for git apply.
 
 149
-00:11:13,592 --> 00:11:17,597
+00:11:13,495 --> 00:11:17,562
 Part 4: algorithms. labs/run
 ch14a/diff-algorithms.
 
 150
-00:11:17,637 --> 00:11:22,434
+00:11:17,602 --> 00:11:22,473
 One file, two similar functions,
 and an edit that swaps them.
 
 151
-00:11:22,474 --> 00:11:24,100
+00:11:22,513 --> 00:11:24,164
 Nothing else changed.
 
 152
-00:11:27,440 --> 00:11:31,058
+00:11:27,504 --> 00:11:31,123
 Myers found the shortest edit:
 six lines out, six lines in.
 
 153
-00:11:31,098 --> 00:11:36,143
+00:11:31,163 --> 00:11:36,208
 It is correct, and it tells a false story,
 that someone edited both functions line
 
 154
-00:11:36,183 --> 00:11:36,639
+00:11:36,248 --> 00:11:36,704
 by line.
 
 155
-00:11:39,979 --> 00:11:44,322
+00:11:40,044 --> 00:11:44,387
 Histogram tells what happened: one function
 removed from the top and added at the
 
 156
-00:11:44,362 --> 00:11:45,296
+00:11:44,427 --> 00:11:45,361
 bottom, unchanged.
 
 157
-00:11:45,636 --> 00:11:51,164
+00:11:45,701 --> 00:11:51,229
 And the line counts differ: 6 and 6
 under Myers, 7 and 7 under histogram and
 
 158
-00:11:51,204 --> 00:11:52,996
+00:11:51,269 --> 00:11:53,060
 patience. Same two files.
 
 159
-00:11:53,336 --> 00:11:55,769
+00:11:53,400 --> 00:11:55,833
 diff.algorithm makes the choice permanent.
 
 160
-00:11:56,109 --> 00:12:03,762
+00:11:56,173 --> 00:12:03,832
 Part 5: --check. labs/run ch14a/diff-check.
 A line with two trailing spaces in
 
 161
-00:12:03,802 --> 00:12:09,482
+00:12:03,872 --> 00:12:09,557
 config.py, a forgotten conflict
 marker in docs/metrics.md.
 
 162
-00:12:09,822 --> 00:12:13,501
+00:12:09,897 --> 00:12:13,644
 Both reported, with file and
 line, and exit status 2.
 
 163
-00:12:13,541 --> 00:12:18,062
+00:12:13,684 --> 00:12:18,289
 Now you run git add -A, which
 stages everything, and check again.
 
 164
-00:12:18,102 --> 00:12:22,132
+00:12:18,329 --> 00:12:22,433
 Quick quiz, two options. Option
 one: the same two reports.
 
 165
-00:12:22,172 --> 00:12:25,219
+00:12:22,473 --> 00:12:25,577
 Option two: nothing at
 all. Say it out loud.
 
 166
-00:12:30,059 --> 00:12:35,906
+00:12:30,417 --> 00:12:36,715
 Option two. After git add -A the unstaged
 diff is empty, so the first command finds
 
 167
-00:12:35,946 --> 00:12:37,537
+00:12:36,755 --> 00:12:38,471
 nothing: exit status 0.
 
 168
-00:12:37,877 --> 00:12:42,351
+00:12:38,811 --> 00:12:43,285
 git diff --cached --check inspects
 what the next commit would record.
 
 169
-00:12:42,391 --> 00:12:47,847
+00:12:43,325 --> 00:12:48,780
 As with every form of git diff, which changes
 are inspected depends on the operands.
 
 170
-00:12:48,187 --> 00:12:51,979
+00:12:49,120 --> 00:12:53,715
 With two commits as operands it's the form
 for continuous integration, the automated
 
 171
-00:12:52,019 --> 00:12:52,983
+00:12:53,755 --> 00:12:54,929
 checks on each change.
 
 172
-00:12:54,823 --> 00:12:56,377
+00:12:56,769 --> 00:12:58,323
 Six mistakes to watch for.
 
 173
-00:12:56,717 --> 00:13:07,354
+00:12:58,663 --> 00:13:04,778
 Reading a large diff top to bottom. Root
 cause: a patch is ordered by path, not by
 
 174
-00:13:07,394 --> 00:13:17,379
+00:13:04,818 --> 00:13:10,557
 importance; --stat, --name-status and
 --diff-filter show where to look first.
 
 175
-00:13:17,719 --> 00:13:23,321
+00:13:10,897 --> 00:13:16,464
 Treating "renamed" as a recorded fact. Root
 cause: Git stores no renames; the letter
 
 176
-00:13:23,361 --> 00:13:28,291
+00:13:16,504 --> 00:13:21,404
 R is an inference from similarity at
 or above a threshold, 50% by default.
 
 177
-00:13:28,631 --> 00:13:33,310
+00:13:21,744 --> 00:13:26,426
 Moving a file and rewriting it in the
 same commit. Root cause: similarity falls
 
 178
-00:13:33,350 --> 00:13:38,029
+00:13:26,466 --> 00:13:31,147
 below the threshold, and every tool that
 relies on rename detection then sees a
 
 179
-00:13:38,069 --> 00:13:39,522
+00:13:31,187 --> 00:13:32,641
 deletion and an addition.
 
 180
-00:13:39,862 --> 00:13:45,272
+00:13:32,981 --> 00:13:38,393
 Assuming -w hides everything a formatter
 did. Root cause: -w ignores whitespace
 
 181
-00:13:45,312 --> 00:13:48,929
+00:13:38,433 --> 00:13:42,051
 only; quote changes and line
 re-wrapping are content.
 
 182
-00:13:49,269 --> 00:13:54,061
+00:13:42,391 --> 00:13:47,183
 Comparing "lines changed" from two tools.
 Root cause: the count is a property of the
 
 183
-00:13:54,101 --> 00:13:56,017
+00:13:47,223 --> 00:13:49,139
 diff algorithm, not of the commit.
 
 184
-00:13:56,357 --> 00:14:01,133
+00:13:49,479 --> 00:13:54,525
 Running git diff --check after git
 add -A and seeing a clean result.
 
 185
-00:14:01,173 --> 00:14:06,869
+00:13:54,565 --> 00:14:00,583
 Root cause: the unstaged diff is empty;
 --cached inspects what will be committed.
 
 186
-00:14:08,709 --> 00:14:13,218
+00:14:02,423 --> 00:14:06,932
 Now, out of the lab. Three rules that a
 model-evaluation team can take from this
 
 187
-00:14:13,258 --> 00:14:14,412
+00:14:06,972 --> 00:14:08,126
 part of the textbook.
 
 188
-00:14:14,752 --> 00:14:19,673
+00:14:08,466 --> 00:14:13,387
 Rename in one commit, edit in the next. A
 commit that only moves files shows R100
 
 189
-00:14:19,713 --> 00:14:23,899
+00:14:13,427 --> 00:14:17,613
 everywhere, reviews in seconds, and
 keeps every history tool working.
 
 190
-00:14:23,939 --> 00:14:29,043
+00:14:17,653 --> 00:14:22,757
 The textbook adds two limits that matter on
 large changes: the inexact comparison is
 
 191
-00:14:29,083 --> 00:14:33,882
+00:14:22,797 --> 00:14:27,596
 quadratic in the number of unpaired files
 and is skipped above diff.renameLimit
 
 192
-00:14:33,922 --> 00:14:38,965
+00:14:27,636 --> 00:14:32,679
 candidates, 1000 by default according to
 the local manual, so a directory move with
 
 193
-00:14:39,005 --> 00:14:42,885
+00:14:32,719 --> 00:14:36,599
 hundreds of edited files can
 degrade to deletions and additions.
 
 194
-00:14:43,225 --> 00:14:48,677
+00:14:36,939 --> 00:14:42,398
 Set diff.algorithm=histogram. Many teams
 do, and the ort merge strategy already uses
 
 195
-00:14:48,717 --> 00:14:53,451
+00:14:42,438 --> 00:14:47,176
 histogram internally. Remember the
 three consequences the textbook lists.
 
 196
-00:14:53,491 --> 00:14:58,682
+00:14:47,216 --> 00:14:52,413
 "Lines changed" is a property of the
 algorithm. A patch is still valid under any
 
 197
-00:14:58,722 --> 00:15:04,043
+00:14:52,453 --> 00:14:57,781
 algorithm, because all of them transform
 the same old file into the same new file.
 
 198
-00:15:04,083 --> 00:15:09,340
+00:14:57,821 --> 00:15:03,084
 And the algorithm changes what git blame
 and git log -L attribute, since both run
 
 199
-00:15:09,380 --> 00:15:10,451
+00:15:03,124 --> 00:15:04,196
 diffs internally.
 
 200
-00:15:10,791 --> 00:15:15,743
+00:15:04,536 --> 00:15:09,488
 And git diff --cached --check in a pre-commit
 hook, a script Git runs before each
 
 201
-00:15:15,783 --> 00:15:20,735
+00:15:09,528 --> 00:15:14,480
 commit, with the two-commit form in CI.
 It's the same check that the merge module
 
 202
-00:15:20,775 --> 00:15:25,789
+00:15:14,520 --> 00:15:19,534
 recommended before concluding a merge:
 leftover conflict markers are caught before
 
 203
-00:15:25,829 --> 00:15:27,946
+00:15:19,574 --> 00:15:21,691
 they become a syntax error on main.
 
 204
-00:15:29,786 --> 00:15:36,117
+00:15:23,531 --> 00:15:29,927
 Your turn. Do Exercise 11.1, Level
 1, "Four questions for the log", in
 
 205
-00:15:36,157 --> 00:15:40,121
+00:15:29,967 --> 00:15:33,973
 exercises/m11-m15-investigation-recovery.md.
 
 206
-00:15:40,461 --> 00:15:41,991
+00:15:34,313 --> 00:15:35,843
 Predict before each command:
 
 207
-00:15:42,331 --> 00:15:47,611
+00:15:36,183 --> 00:15:41,511
 Which summary option answers the question
 most directly: files, statuses, or counts?
 
 208
-00:15:47,951 --> 00:15:52,145
+00:15:41,851 --> 00:15:46,045
 For any path you expect to see
 as renamed: exact or with edits?
 
 209
-00:15:52,185 --> 00:15:55,774
+00:15:46,085 --> 00:15:49,674
 What would the same comparison
 show with --no-renames?
 
 210
-00:15:56,114 --> 00:16:00,950
+00:15:50,014 --> 00:15:54,850
 For a reformatting commit: how many files
 do you expect to drop out of the stat
 
 211
-00:16:00,990 --> 00:16:03,789
+00:15:54,890 --> 00:15:57,689
 under -w, and what kind
 of change will remain?
 
 212
-00:16:04,129 --> 00:16:09,857
+00:15:58,029 --> 00:16:03,758
 The challenge is Exercise 11.7, Level 3,
 ""I only moved it"", in the same file.
 
 213
-00:16:11,697 --> 00:16:17,062
+00:16:05,598 --> 00:16:10,962
 Q399: "Git stores no renames. Name three
 commands whose output depends on rename
 
 214
-00:16:17,102 --> 00:16:20,439
+00:16:11,002 --> 00:16:14,340
 detection, and describe a
 commit that defeats it."
 
 215
-00:16:22,779 --> 00:16:27,503
+00:16:16,680 --> 00:16:21,414
 Answer out loud first. A strong answer
 starts by saying what Git does store and how
 
 216
-00:16:27,543 --> 00:16:31,979
+00:16:21,454 --> 00:16:25,901
 a rename is inferred from it, with the
 threshold. It names three commands from
 
 217
-00:16:32,019 --> 00:16:36,571
+00:16:25,941 --> 00:16:30,503
 different areas, so that the examiner sees
 you know the heuristic is shared: one
 
 218
-00:16:36,611 --> 00:16:40,072
+00:16:30,543 --> 00:16:34,012
 that compares, one that follows
 history, one that integrates.
 
 219
-00:16:40,112 --> 00:16:44,778
+00:16:34,052 --> 00:16:38,728
 The commit that defeats it should be
 described precisely enough that someone could
 
 220
-00:16:44,818 --> 00:16:49,541
+00:16:38,768 --> 00:16:43,503
 make it, with a number for the similarity.
 Finish with the practice that avoids the
 
 221
-00:16:49,581 --> 00:16:50,001
+00:16:43,543 --> 00:16:43,963
 problem.
 
 222
-00:16:51,841 --> 00:16:55,968
+00:16:45,803 --> 00:16:49,930
 Let's land this. You should now be
 able to say, in your own words:
 
 223
-00:16:56,308 --> 00:17:01,884
+00:16:50,270 --> 00:16:55,846
 I read a large diff from the outside
 in: --stat and --name-status first,
 
 224
-00:17:01,924 --> 00:17:06,174
+00:16:55,886 --> 00:17:00,136
 --diff-filter and a pathspec
 to narrow, the patch last.
 
 225
-00:17:06,514 --> 00:17:11,339
+00:17:00,476 --> 00:17:05,301
 Git stores no renames. R and C are
 computed from similarity with a 50 percent
 
 226
-00:17:11,379 --> 00:17:16,583
+00:17:05,341 --> 00:17:10,546
 default threshold, so a move plus a rewrite
 in one commit appears as a deletion and
 
 227
-00:17:16,623 --> 00:17:17,341
+00:17:10,586 --> 00:17:11,304
 an addition.
 
 228
-00:17:17,681 --> 00:17:22,979
+00:17:11,644 --> 00:17:16,942
 -w removes whitespace-only changes, and
 --word-diff shows what changed inside a
 
 229
-00:17:23,019 --> 00:17:28,317
+00:17:16,982 --> 00:17:22,279
 line. The same change can be displayed
 differently by myers and histogram, with
 
 230
-00:17:28,357 --> 00:17:33,452
+00:17:22,319 --> 00:17:27,414
 different line counts, and both are
 correct. git diff --cached --check finds
 
 231
-00:17:33,492 --> 00:17:38,654
+00:17:27,454 --> 00:17:32,617
 whitespace errors and leftover conflict
 markers in what I am about to commit.
 
 232
-00:17:40,494 --> 00:17:45,044
+00:17:34,457 --> 00:17:39,235
 Read sections 14A.3 to
 14A.6 of Chapter 14A.
 
 233
-00:17:45,384 --> 00:17:51,359
+00:17:39,575 --> 00:17:45,099
 Today you learned to read a diff from the
 outside in, and to tell its facts from its
 
 234
-00:17:51,399 --> 00:17:56,802
+00:17:45,139 --> 00:17:50,133
 inferences. Try --stat and -w on a change
 of your own before the next video.
 
 235
-00:17:56,842 --> 00:18:02,817
+00:17:50,173 --> 00:17:55,697
 Next time: git log is a graph query, with
 selection, filters, graph shape and output
 
 236
-00:18:02,857 --> 00:18:07,186
+00:17:55,737 --> 00:17:59,737
 formats. Until then, look at the
 state first and type second.
 
 237
-00:18:07,226 --> 00:18:08,905
+00:17:59,777 --> 00:18:01,327
 See you in the next one.

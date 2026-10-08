@@ -1,0 +1,892 @@
+1
+00:00:04,500 --> 00:00:08,625
+A CI job, an automated build,
+prints its remotes for debugging.
+
+2
+00:00:08,665 --> 00:00:13,187
+Someone copies the output into a
+ticket to ask why the fetch is slow.
+
+3
+00:00:13,227 --> 00:00:18,674
+In the middle of the line, between "https://"
+and "@github.com", is a classic token
+
+4
+00:00:18,714 --> 00:00:23,897
+with the repo scope. It was created two
+years ago "for the changelog bot" by an
+
+5
+00:00:23,937 --> 00:00:25,748
+engineer who has since left.
+
+6
+00:00:26,088 --> 00:00:29,852
+Your CTO asks two things. How
+far does this token reach?
+
+7
+00:00:29,892 --> 00:00:33,861
+And how did a secret end up in
+the output of git remote -v?
+
+8
+00:00:34,201 --> 00:00:38,969
+The first answer is in the token's prefix.
+The second is that somebody followed a
+
+9
+00:00:39,009 --> 00:00:43,539
+tutorial and wrote the token into the
+remote URL, which works, and that's the
+
+10
+00:00:43,579 --> 00:00:48,466
+problem. Hold on to both questions. You'll
+answer them for the changelog bot at the
+
+11
+00:00:48,506 --> 00:00:48,703
+end.
+
+12
+00:00:50,543 --> 00:00:54,259
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:54,299 --> 00:00:59,247
+In the last video the secret over HTTPS
+was "a token", handed to Git by a helper.
+
+14
+00:00:59,287 --> 00:01:04,173
+Now we look at the token itself: what
+kinds exist, what each can reach, how long
+
+15
+00:01:04,213 --> 00:01:08,484
+each lives, and what the first
+characters tell you during an incident.
+
+16
+00:01:08,524 --> 00:01:12,548
+Then one rule with a demonstration:
+a token never goes into a URL.
+
+17
+00:01:12,888 --> 00:01:18,854
+One replay, labs/ch16/token-in-url.sh. The
+token in the script is a made-up string,
+
+18
+00:01:18,894 --> 00:01:24,570
+FAKE-TOKEN-not-a-real-credential. There
+is no GitHub walkthrough in this video:
+
+19
+00:01:24,610 --> 00:01:26,958
+token pages must not be recorded.
+
+20
+00:01:27,298 --> 00:01:31,955
+The label for the practice we're about
+to demonstrate comes from the chapter's
+
+21
+00:01:31,995 --> 00:01:36,893
+safety table: writing a token into a URL,
+a file or a command line is 🔴 DANGEROUS.
+
+22
+00:01:36,933 --> 00:01:40,085
+It publishes the secret to
+logs, history and backups.
+
+23
+00:01:40,125 --> 00:01:44,722
+There's no preview. And the recovery is
+to revoke it, because cleaning is not
+
+24
+00:01:44,762 --> 00:01:47,251
+enough. Twig looks worried, and fairly so.
+
+25
+00:01:49,091 --> 00:01:50,503
+After this video you can:
+
+26
+00:01:50,843 --> 00:01:55,866
+Compare fine-grained and classic tokens by
+scope and lifetime, as the section gives
+
+27
+00:01:55,906 --> 00:01:56,171
+them.
+
+28
+00:01:56,511 --> 00:01:59,439
+Say when a documented gap
+forces a classic token.
+
+29
+00:01:59,779 --> 00:02:02,863
+Name the places a token
+in a remote URL ends up.
+
+30
+00:02:03,203 --> 00:02:06,358
+Find and repair a remote URL
+that contains a credential.
+
+31
+00:02:08,198 --> 00:02:13,204
+In one sentence: a token is a string that
+stands for an account with a subset of its
+
+32
+00:02:13,244 --> 00:02:17,770
+rights. The prefix says what kind it
+is, and the kind decides how far a leak
+
+33
+00:02:17,810 --> 00:02:18,251
+reaches.
+
+34
+00:02:21,591 --> 00:02:27,075
+A personal access token, classic. Prefix
+ghp_. Long-lived, and no expiry is
+
+35
+00:02:27,115 --> 00:02:32,820
+required. It belongs to a user and reaches
+by scope, such as repo or read:org,
+
+36
+00:02:32,860 --> 00:02:37,239
+across every repository and
+organization the user can reach.
+
+37
+00:02:37,579 --> 00:02:41,394
+A fine-grained personal access
+token. Prefix github_pat_.
+
+38
+00:02:41,434 --> 00:02:44,978
+Its lifetime is configurable,
+up to one year or none.
+
+39
+00:02:45,018 --> 00:02:50,524
+It belongs to a user and reaches one owner,
+a user or one organization, optionally
+
+40
+00:02:50,564 --> 00:02:54,379
+selected repositories, with
+per-permission read or write.
+
+41
+00:02:54,719 --> 00:03:00,859
+An OAuth app token. Prefix gho_. It belongs
+to a user, through an app, and reaches
+
+42
+00:03:00,899 --> 00:03:07,114
+by scope. gh auth login produces one.
+Expiring tokens are the default for new OAuth
+
+43
+00:03:07,154 --> 00:03:10,204
+apps since the fourteenth of August 2026.
+
+44
+00:03:10,544 --> 00:03:16,018
+A GitHub App user token. A GitHub App is
+an integration that acts with its own
+
+45
+00:03:16,058 --> 00:03:21,463
+identity. Prefix ghu_. Eight hours, with
+a refresh token, prefix ghr_, of six
+
+46
+00:03:21,503 --> 00:03:21,957
+months.
+
+47
+00:03:22,297 --> 00:03:25,800
+A GitHub App installation
+token. Prefix ghs_. One hour.
+
+48
+00:03:25,840 --> 00:03:31,017
+It belongs to an app installation and
+reaches the repositories and permissions of
+
+49
+00:03:31,057 --> 00:03:36,105
+that installation. The GITHUB_TOKEN in a
+workflow is an installation token that
+
+50
+00:03:36,145 --> 00:03:39,004
+lives for the job and
+reaches one repository.
+
+51
+00:03:39,344 --> 00:03:43,750
+Quick quiz. You find a token in
+a log, and it starts with ghp_.
+
+52
+00:03:43,790 --> 00:03:48,620
+Whose access is it: one job's, one
+app installation's, or a person's?
+
+53
+00:03:48,660 --> 00:03:49,749
+Say it out loud.
+
+54
+00:03:54,589 --> 00:03:59,302
+A person's. So during an incident,
+the prefix is your first fact.
+
+55
+00:03:59,342 --> 00:04:05,080
+ghp_ means a person's access, everywhere
+that person can go, possibly for ever.
+
+56
+00:04:05,120 --> 00:04:08,005
+ghs_ means one hour of one installation.
+
+57
+00:04:08,345 --> 00:04:13,126
+GitHub recommends fine-grained tokens
+over classic ones "whenever possible".
+
+58
+00:04:13,166 --> 00:04:17,567
+They have been generally available
+since the eighteenth of March 2025.
+
+59
+00:04:17,607 --> 00:04:22,198
+By default an organization owner must
+approve one before it can reach the
+
+60
+00:04:22,238 --> 00:04:26,703
+organization's resources. Until then
+it can read only public resources.
+
+61
+00:04:26,743 --> 00:04:29,177
+An account can hold at most 50 of them.
+
+62
+00:04:29,517 --> 00:04:33,611
+The documented gaps decide when
+a classic token is still needed.
+
+63
+00:04:33,651 --> 00:04:38,714
+A fine-grained token can't contribute to
+public repositories where you aren't a
+
+64
+00:04:38,754 --> 00:04:43,429
+member, or act for you as an outside
+collaborator. It can't reach several
+
+65
+00:04:43,469 --> 00:04:48,597
+organizations at once. It can't access
+Packages, including docker login ghcr.io.
+
+66
+00:04:48,637 --> 00:04:52,731
+And it can't call the Checks API,
+or a few other REST endpoints.
+
+67
+00:04:52,771 --> 00:04:57,834
+For open-source contribution that rules
+fine-grained tokens out, and the answer
+
+68
+00:04:57,874 --> 00:05:03,002
+there is the browser login of gh or an
+SSH key, not a classic token typed into a
+
+69
+00:05:03,042 --> 00:05:03,454
+prompt.
+
+70
+00:05:03,794 --> 00:05:08,668
+Expiry and revocation. A token found in
+a public repository or gist is revoked
+
+71
+00:05:08,708 --> 00:05:13,141
+automatically. Personal and OAuth
+tokens unused for a year are removed.
+
+72
+00:05:13,181 --> 00:05:18,433
+Anyone who holds a leaked token value can
+submit it to an unauthenticated revocation
+
+73
+00:05:18,473 --> 00:05:23,410
+API. And organizations can restrict each
+token type and set a maximum lifetime.
+
+74
+00:05:23,750 --> 00:05:28,732
+A version note for people who write
+tooling: newly minted installation tokens,
+
+75
+00:05:28,772 --> 00:05:33,754
+including the Actions GITHUB_TOKEN, use
+a format of about 520 characters, in a
+
+76
+00:05:33,794 --> 00:05:37,167
+staged rollout from the
+twenty-seventh of April 2026.
+
+77
+00:05:37,207 --> 00:05:42,318
+Older code assumed 40 characters. Never
+validate a token by length or pattern in
+
+78
+00:05:42,358 --> 00:05:43,219
+your own code.
+
+79
+00:05:43,559 --> 00:05:50,289
+Now the rule. A URL of the form
+https://USER:TOKEN@github.com/OWNER/REPO.git works,
+
+80
+00:05:50,329 --> 00:05:56,162
+which is the problem. Why is it a
+problem? The URL is configuration, and
+
+81
+00:05:56,202 --> 00:06:02,769
+configuration isn't a secret store. The
+token is then in a plain text file inside
+
+82
+00:06:02,809 --> 00:06:04,808
+the repository directory.
+
+83
+00:06:05,148 --> 00:06:10,325
+It's printed by git remote -v and by git
+config list, which people paste into
+
+84
+00:06:10,365 --> 00:06:15,136
+tickets and CI logs. And it's copied
+by every backup of that directory.
+
+85
+00:06:15,176 --> 00:06:20,691
+That's four places: the file .git/config,
+the output of two everyday commands, the
+
+86
+00:06:20,731 --> 00:06:24,553
+logs and tickets that output
+is pasted into, and backups.
+
+87
+00:06:24,893 --> 00:06:30,955
+Git can be told to refuse such URLs.
+transfer.credentialsInUrl takes allow, which is
+
+88
+00:06:30,995 --> 00:06:36,330
+the default, warn or die. The setting
+exists since Git 2.37, and it covers
+
+89
+00:06:36,370 --> 00:06:42,140
+remote.<name>.url and not pushurl. The
+recommendation is git config set --global
+
+90
+00:06:42,180 --> 00:06:44,319
+transfer.credentialsInUrl die.
+
+91
+00:06:44,659 --> 00:06:48,332
+The recovery has two halves,
+and people forget the second.
+
+92
+00:06:48,372 --> 00:06:53,709
+Clean the URL. And revoke the token. Erasing
+isn't revoking: removing a token from a
+
+93
+00:06:53,749 --> 00:06:57,614
+URL, from the keychain or from
+a file leaves the token valid.
+
+94
+00:06:57,654 --> 00:06:59,278
+Only GitHub can revoke it.
+
+95
+00:06:59,618 --> 00:07:04,824
+The same reasoning excludes every other
+place where a token ends up in plain sight.
+
+96
+00:07:04,864 --> 00:07:08,301
+A command line, because ps
+and shell history record it.
+
+97
+00:07:08,341 --> 00:07:13,294
+An environment file under version control.
+A .netrc in a home directory that is
+
+98
+00:07:13,334 --> 00:07:18,414
+backed up. Hand a token to a program on
+standard input, and let a helper keep it.
+
+99
+00:07:20,254 --> 00:07:25,227
+Think of a token as a copy of your office
+key card that opens only some doors and
+
+100
+00:07:25,267 --> 00:07:30,178
+stops working at a set time. Two questions
+size up a lost card: which doors, and
+
+101
+00:07:30,218 --> 00:07:35,005
+until when. The prefix answers "which
+kind of card", and the kind answers both
+
+102
+00:07:35,045 --> 00:07:35,624
+questions.
+
+103
+00:07:35,964 --> 00:07:40,730
+The model breaks in one place that matters:
+a lost key card has to be found by
+
+104
+00:07:40,770 --> 00:07:45,660
+someone who walks to your building. A
+token works from anywhere, the moment it's
+
+105
+00:07:45,700 --> 00:07:49,912
+read. So "it was only in a log for
+an hour" is not a mitigating fact.
+
+106
+00:07:49,952 --> 00:07:53,054
+The only fact that ends the
+exposure is revocation.
+
+107
+00:07:53,394 --> 00:07:58,765
+And a URL isn't a pocket. It's a label on
+the outside of the box, read by every tool
+
+108
+00:07:58,805 --> 00:08:00,117
+that handles the box.
+
+109
+00:08:01,957 --> 00:08:06,518
+Keep this box for the demo. It describes
+a surprise you'll meet while repairing.
+
+110
+00:08:06,858 --> 00:08:09,845
+One line of configuration,
+and three ways out of it.
+
+111
+00:08:09,885 --> 00:08:13,745
+Two of them are commands that nobody
+thinks of as printing secrets.
+
+112
+00:08:15,585 --> 00:08:19,232
+What an old tutorial tells you
+to do. The token here is fake.
+
+113
+00:08:19,572 --> 00:08:24,845
+Three commands that read configuration. In
+how many of them will the token appear:
+
+114
+00:08:24,885 --> 00:08:28,084
+one, two or all three? Say
+it out loud. I'll wait.
+
+115
+00:08:32,924 --> 00:08:38,378
+In all three. Twice in git remote -v, once
+in the file, once in git config list,
+
+116
+00:08:38,418 --> 00:08:43,185
+where --show-scope tells you it's
+local: it's in this repository's own
+
+117
+00:08:43,225 --> 00:08:44,146
+configuration.
+
+118
+00:08:44,486 --> 00:08:49,135
+Git itself treats the URL as a credential:
+it splits out the username and the
+
+119
+00:08:49,175 --> 00:08:51,266
+password. That's why the URL works.
+
+120
+00:08:51,606 --> 00:08:53,078
+Now tell Git to refuse.
+
+121
+00:08:53,418 --> 00:08:56,555
+"Uses plaintext credentials",
+for fetch and for push.
+
+122
+00:08:56,595 --> 00:08:59,791
+Notice that Git redacts the
+secret in its own message.
+
+123
+00:09:00,131 --> 00:09:00,733
+The repair.
+
+124
+00:09:01,073 --> 00:09:04,737
+With die in force, we run the
+command that would fix the URL.
+
+125
+00:09:04,777 --> 00:09:06,861
+Does it work? Make your prediction.
+
+126
+00:09:11,701 --> 00:09:16,281
+git remote set-url refuses, with the
+same message: it reads the remote's
+
+127
+00:09:16,321 --> 00:09:21,414
+configuration before changing it. Almost
+everyone is surprised by that the first
+
+128
+00:09:21,454 --> 00:09:25,905
+time. The way through is to write
+the key directly with git config set
+
+129
+00:09:25,945 --> 00:09:28,472
+remote.origin.url. The URL is now clean.
+
+130
+00:09:28,812 --> 00:09:33,514
+And the last line of the transcript is
+the one to read aloud: the token is still
+
+131
+00:09:33,554 --> 00:09:36,894
+compromised. It sat in a file
+and on a screen. Revoke it.
+
+132
+00:09:37,234 --> 00:09:41,626
+Try it now, thirty seconds, alone
+and not on a shared screen.
+
+133
+00:09:41,666 --> 00:09:47,585
+In a repository of your own, run git remote
+-v and look between "https://" and the
+
+134
+00:09:47,625 --> 00:09:49,111
+host name. I'll wait.
+
+135
+00:09:53,951 --> 00:09:58,479
+If there's nothing there, good. If there's
+a user, a colon and a string, you know
+
+136
+00:09:58,519 --> 00:10:02,146
+both halves of the recovery: clean
+the URL, and revoke the token.
+
+137
+00:10:03,986 --> 00:10:05,634
+Five mistakes to watch for.
+
+138
+00:10:05,974 --> 00:10:09,855
+Putting a token into the remote
+URL because a tutorial does.
+
+139
+00:10:09,895 --> 00:10:15,150
+Root cause: the URL is stored in .git/config
+and printed by git remote -v and git
+
+140
+00:10:15,190 --> 00:10:19,856
+config list; the textbook notes that
+the technique is wrong in any year.
+
+141
+00:10:20,196 --> 00:10:23,497
+Cleaning the URL and considering
+the incident closed.
+
+142
+00:10:23,537 --> 00:10:28,730
+Root cause: erasing is not revoking; the
+token stays valid until GitHub revokes it.
+
+143
+00:10:29,070 --> 00:10:34,425
+Using a classic token with repo scope for
+a bot. Root cause: a classic token reaches
+
+144
+00:10:34,465 --> 00:10:39,756
+every repository and organization its creator
+can, so the blast radius is a person.
+
+145
+00:10:40,096 --> 00:10:43,581
+Choosing a fine-grained token
+for docker login ghcr.io.
+
+146
+00:10:43,621 --> 00:10:48,323
+Root cause: Packages is one of the
+documented gaps of fine-grained tokens.
+
+147
+00:10:48,663 --> 00:10:53,567
+Validating tokens in code by length or
+pattern. Root cause: formats change;
+
+148
+00:10:53,607 --> 00:10:57,655
+installation tokens moved to a
+format of about 520 characters.
+
+149
+00:10:59,495 --> 00:11:03,002
+Now, out of the lab. The
+changelog bot from the hook.
+
+150
+00:11:03,042 --> 00:11:08,490
+The prefix in the ticket is ghp_: a classic
+token. With repo scope it can read and
+
+151
+00:11:08,530 --> 00:11:13,175
+write every private repository its
+creator can, in every organization.
+
+152
+00:11:13,215 --> 00:11:18,328
+That's how far it reaches. When it leaks
+through a log, the blast radius is a
+
+153
+00:11:18,368 --> 00:11:23,213
+person, not a bot. And since the person
+has left, nobody was watching it.
+
+154
+00:11:23,553 --> 00:11:28,800
+The response, in order. Revoke the token.
+Clean the URL in the job's checkout with
+
+155
+00:11:28,840 --> 00:11:34,152
+git config set remote.origin.url. Set
+transfer.credentialsInUrl to die on the build
+
+156
+00:11:34,192 --> 00:11:38,020
+machines. And find the other
+places the same token was used.
+
+157
+00:11:38,060 --> 00:11:43,307
+Then replace the design. The same job with
+an installation token leaks one hour of
+
+158
+00:11:43,347 --> 00:11:48,594
+access to one repository. That's the
+difference the table in this video describes,
+
+159
+00:11:48,634 --> 00:11:50,141
+measured in an incident.
+
+160
+00:11:51,981 --> 00:11:57,936
+Your turn. Do Exercise 20.2, "Pick the
+credential", in exercises/m19-m25-github.md.
+
+161
+00:11:57,976 --> 00:12:03,858
+For each situation, decide on the credential
+type before you look anything up, and
+
+162
+00:12:03,898 --> 00:12:09,564
+write down the two properties that decided
+it: what it reaches, and how long it
+
+163
+00:12:09,604 --> 00:12:09,997
+lives.
+
+164
+00:12:10,337 --> 00:12:15,499
+The challenge is Exercise 20.7, "The
+nightly sync says 'not found'", in the same
+
+165
+00:12:15,539 --> 00:12:15,824
+file.
+
+166
+00:12:17,664 --> 00:12:20,535
+Question 310 of the CTO question bank:
+
+167
+00:12:22,875 --> 00:12:27,746
+Answer out loud. A strong answer starts
+with where a remote URL is stored and who
+
+168
+00:12:27,786 --> 00:12:32,839
+reads it. It lists four concrete places,
+names the setting with its three values and
+
+169
+00:12:32,879 --> 00:12:36,173
+the version it needs, and
+mentions the repair surprise.
+
+170
+00:12:36,213 --> 00:12:39,568
+It finishes with the step that
+cleaning doesn't replace.
+
+171
+00:12:41,408 --> 00:12:42,336
+Let's land this.
+
+172
+00:12:42,676 --> 00:12:44,336
+You should now be able to say:
+
+173
+00:12:44,676 --> 00:12:49,368
+The prefix identifies the kind of token,
+and the kind decides reach and lifetime.
+
+174
+00:12:49,708 --> 00:12:54,452
+A classic token reaches everything its
+user can; a fine-grained token reaches one
+
+175
+00:12:54,492 --> 00:12:58,468
+owner with chosen permissions; an
+installation token lives one hour.
+
+176
+00:12:58,808 --> 00:13:03,691
+Fine-grained tokens have documented gaps,
+among them public repositories where you
+
+177
+00:13:03,731 --> 00:13:07,414
+are not a member, several
+organizations at once, and Packages.
+
+178
+00:13:07,754 --> 00:13:13,390
+A token in a URL lands in .git/config, in
+git remote -v, in git config list, and
+
+179
+00:13:13,430 --> 00:13:15,589
+from there in logs and backups.
+
+180
+00:13:15,929 --> 00:13:21,974
+transfer.credentialsInUrl=die refuses such
+URLs; the repair is to clean the URL and
+
+181
+00:13:22,014 --> 00:13:23,220
+revoke the token.
+
+182
+00:13:25,060 --> 00:13:29,413
+Read sections 16.6 and 16.7 of Chapter 16.
+
+183
+00:13:29,753 --> 00:13:34,665
+Today you learned to size up a leaked token
+from its first characters, and to clean
+
+184
+00:13:34,705 --> 00:13:39,618
+a URL without mistaking that for the fix.
+Next time: SSH key pairs, the agent, host
+
+185
+00:13:39,658 --> 00:13:44,272
+keys, and testing the connection. Until
+then, look at the state first and type
+
+186
+00:13:44,312 --> 00:13:46,182
+second. See you in the next one.

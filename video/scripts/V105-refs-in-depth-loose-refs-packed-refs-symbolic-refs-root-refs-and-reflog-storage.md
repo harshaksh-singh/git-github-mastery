@@ -19,7 +19,7 @@ It isn't. The branch exists and Git resolves it. The ref is stored somewhere els
 
 ## INTRODUCTION
 
-**[ANIMATION]** graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs
+**[ANIMATION]** graph: b602c1f-4f2cc0c-0c2cf43 main origin/main atag:v1.0.0#0b624ed; ^b602c1f-62001eb feature/batching; 62001eb-0c2cf43; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1 experiment; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed experiment; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 62001eb feature/batching; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43 main origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main => 0c2cf43-a8eea18 main; 0c2cf43 origin/main atag:v1.0.0#0b624ed; 4f2cc0c tag:v1.0.0-rc1; HEAD=main title=Refs:_names_that_point_at_commits id=refs at_state_5=0 at_state_6=22
 
 **[ANIMATION]** step: refs.state-1
 
@@ -437,6 +437,8 @@ Correct fix       : git rev-parse --verify refs/heads/main
 Prevention        : never read .git/refs or packed-refs from a script; use rev-parse, for-each-ref,
                     update-ref and symbolic-ref, which also work with reftable
 ```
+
+Read the root-cause line of the box: the scripts read one of several storage locations instead of asking Git.
 
 **[TERMINAL]** Root refs.
 

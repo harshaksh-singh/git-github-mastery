@@ -1,0 +1,1123 @@
+1
+00:00:04,500 --> 00:00:09,510
+A team migrates forty repositories to
+another host over a weekend with git clone
+
+2
+00:00:09,550 --> 00:00:14,433
+--mirror and git push --mirror. On Monday
+the code and the history are intact.
+
+3
+00:00:14,473 --> 00:00:19,357
+The open pull requests, three years of
+review comments, the release notes, the
+
+4
+00:00:19,397 --> 00:00:22,766
+protection on main and the
+deploy secrets are missing.
+
+5
+00:00:22,806 --> 00:00:26,111
+Nobody exported them, because
+they were never in Git.
+
+6
+00:00:26,451 --> 00:00:32,073
+And a second question from the same CTO: a
+new engineer got Write on one repository.
+
+7
+00:00:32,113 --> 00:00:34,836
+Why can she clone all forty private ones?
+
+8
+00:00:35,176 --> 00:00:39,925
+Neither question is about a Git command.
+Both are answered by one habit, and this
+
+9
+00:00:39,965 --> 00:00:44,359
+video builds it. Hold on to the second
+question. You'll answer it yourself.
+
+10
+00:00:46,199 --> 00:00:50,918
+Welcome back to Git and GitHub Deep
+Mastery. Pull up a chair: this is Part 5.
+
+11
+00:00:50,958 --> 00:00:55,801
+For four parts you worked with Git:
+objects, refs, the index, the working tree.
+
+12
+00:00:55,841 --> 00:01:00,869
+Everything was in a directory you could
+copy. From here on there's a second system
+
+13
+00:01:00,909 --> 00:01:05,134
+in the picture, GitHub, and the first
+skill is to keep the two apart.
+
+14
+00:01:05,474 --> 00:01:10,512
+The habit: for every thing you touch, know
+whether it's Git data or a GitHub object.
+
+15
+00:01:10,552 --> 00:01:15,227
+Git data lives in refs and objects, and
+it travels with clone, fetch and push.
+
+16
+00:01:15,267 --> 00:01:20,305
+Objects are the stored commits and files,
+and refs are the names that point at them,
+
+17
+00:01:20,345 --> 00:01:25,383
+such as branches and tags. A GitHub object
+lives in GitHub's database and is reached
+
+18
+00:01:25,423 --> 00:01:28,587
+through the web interface,
+the GitHub CLI or the API.
+
+19
+00:01:28,627 --> 00:01:33,665
+The best-known one is the pull request, a
+proposal to merge one branch into another.
+
+20
+00:01:34,005 --> 00:01:38,581
+A word on how Part 5 is recorded. Local
+scripts show the Git side of every
+
+21
+00:01:38,621 --> 00:01:43,696
+mechanism, with real output. The GitHub
+side is a screen walkthrough of a practice
+
+22
+00:01:43,736 --> 00:01:48,874
+repository. The authors captured no GitHub
+output. The interface changes, so I name
+
+23
+00:01:48,914 --> 00:01:54,052
+each control by its function, and the lab
+text and the linked documentation are the
+
+24
+00:01:54,092 --> 00:01:54,676
+reference.
+
+25
+00:01:55,016 --> 00:02:00,286
+GitHub-side labs run in your normal shell,
+not in labs/shell, because the lab shell
+
+26
+00:02:00,326 --> 00:02:04,893
+switches off the system configuration
+where the credential helper lives.
+
+27
+00:02:05,233 --> 00:02:10,623
+The demos use prompt-registry, a small
+Python package that stores versioned prompt
+
+28
+00:02:10,663 --> 00:02:16,120
+templates for an LLM application. The same
+files become your practice repository in
+
+29
+00:02:16,160 --> 00:02:16,716
+Lab 19.1.
+
+30
+00:02:17,056 --> 00:02:22,146
+The local commands in this video are 🟢
+SAFE: git clone, git clone --mirror, and
+
+31
+00:02:22,186 --> 00:02:23,380
+commands that read.
+
+32
+00:02:25,220 --> 00:02:26,632
+After this video you can:
+
+33
+00:02:26,972 --> 00:02:31,904
+Decide for any item on a repository page
+whether it is Git data or a GitHub object,
+
+34
+00:02:31,944 --> 00:02:33,462
+and prove it from a clone.
+
+35
+00:02:33,802 --> 00:02:37,134
+Say what a mirror clone carries and
+what it leaves on the platform.
+
+36
+00:02:37,474 --> 00:02:41,400
+Distinguish personal accounts,
+organizations and enterprise accounts.
+
+37
+00:02:41,740 --> 00:02:46,013
+Compute a member's effective access from
+base permission, team roles and direct
+
+38
+00:02:46,053 --> 00:02:46,395
+grants.
+
+39
+00:02:46,735 --> 00:02:51,152
+Name the repository settings the section
+singles out and what each changes.
+
+40
+00:02:52,992 --> 00:02:57,670
+In one sentence: a repository on GitHub
+is a Git repository, which you can copy
+
+41
+00:02:57,710 --> 00:03:02,567
+completely, surrounded by records in GitHub's
+database, which you cannot copy with
+
+42
+00:03:02,607 --> 00:03:03,224
+Git at all.
+
+43
+00:03:09,564 --> 00:03:14,976
+Git data first. Commits, trees, file contents
+and annotated tag objects are objects.
+
+44
+00:03:15,016 --> 00:03:19,194
+You read them with git cat-file
+-p, and they arrive with a clone.
+
+45
+00:03:19,234 --> 00:03:24,516
+Branches and tags are refs. You read them
+with git for-each-ref and git ls-remote,
+
+46
+00:03:24,556 --> 00:03:29,448
+and branches arrive as remote-tracking
+branches. Author, committer, message,
+
+47
+00:03:29,488 --> 00:03:32,823
+trailers and signature are
+inside the commit object.
+
+48
+00:03:33,163 --> 00:03:36,692
+A middle category: Git data
+that GitHub interprets.
+
+49
+00:03:36,732 --> 00:03:42,430
+README, LICENSE, and the files under
+.github/, issue forms, templates, CODEOWNERS,
+
+50
+00:03:42,470 --> 00:03:48,098
+workflow files, are tracked files. And
+Fixes #12 in a message is text in a commit
+
+51
+00:03:48,138 --> 00:03:51,387
+object. To Git it's two
+words. GitHub reads it.
+
+52
+00:03:51,727 --> 00:03:56,357
+Git refs that GitHub creates: pull request
+head refs, refs/pull/N/head on the
+
+53
+00:03:56,397 --> 00:03:59,754
+server, read-only. You can
+list them with git ls-remote.
+
+54
+00:03:59,794 --> 00:04:04,606
+They don't arrive with a clone, because
+they're outside the default refspec, the
+
+55
+00:04:04,646 --> 00:04:07,336
+rule that decides which
+refs a fetch touches.
+
+56
+00:04:07,676 --> 00:04:13,061
+GitHub objects, in GitHub's database. A
+pull request's title, description, reviews,
+
+57
+00:04:13,101 --> 00:04:18,487
+comments, checks and merge state. Issues,
+sub-issues, labels, milestones, projects,
+
+58
+00:04:18,527 --> 00:04:23,717
+discussions. A release: its title, notes,
+assets, and its draft, pre-release and
+
+59
+00:04:23,757 --> 00:04:27,900
+latest flags. The tag arrives with
+a clone, the release doesn't.
+
+60
+00:04:27,940 --> 00:04:32,215
+The "Verified" badge, and which
+account a commit is attributed to.
+
+61
+00:04:32,255 --> 00:04:34,960
+The fork relationship, stars and watchers.
+
+62
+00:04:35,300 --> 00:04:40,621
+Roles, teams, rulesets, classic branch
+protection, secrets, variables, webhooks,
+
+63
+00:04:40,661 --> 00:04:44,842
+deploy keys and settings. None
+of these arrives with git clone.
+
+64
+00:04:45,182 --> 00:04:50,564
+Three special cases. The wiki is Git, in
+a second repository with its own URL: a
+
+65
+00:04:50,604 --> 00:04:56,121
+separate clone. Packages, workflow runs,
+logs, artifacts and caches live in GitHub
+
+66
+00:04:56,161 --> 00:05:01,542
+Packages and GitHub Actions. And with Git
+LFS, the pointer files are Git and the
+
+67
+00:05:01,582 --> 00:05:03,440
+contents are in LFS storage.
+
+68
+00:05:03,780 --> 00:05:08,842
+Inside .git, a clone holds objects, refs,
+HEAD, the index, reflogs and config.
+
+69
+00:05:08,882 --> 00:05:14,139
+There's no file for an issue or a review.
+The only traces of the platform are the
+
+70
+00:05:14,179 --> 00:05:19,372
+URL in remote.origin.url and what a platform
+tool wrote into your configuration,
+
+71
+00:05:19,412 --> 00:05:21,530
+such as a credential helper line.
+
+72
+00:05:21,870 --> 00:05:26,491
+One more boundary rule, flagged in the
+book as "GitHub, not Git": GitHub also
+
+73
+00:05:26,531 --> 00:05:31,213
+creates Git data on your behalf. Merge
+commits, squash commits, tags made by a
+
+74
+00:05:31,253 --> 00:05:36,176
+release, the test merge of a pull request.
+When a commit or ref exists that nobody
+
+75
+00:05:36,216 --> 00:05:39,990
+created with a Git command, ask
+which platform action wrote it.
+
+76
+00:05:40,330 --> 00:05:45,908
+Try it now, thirty seconds, on paper. Make
+two columns, Git data and GitHub object.
+
+77
+00:05:45,948 --> 00:05:49,563
+Sort these four: a branch,
+an issue, a tag, a release.
+
+78
+00:05:49,603 --> 00:05:50,240
+I'll wait.
+
+79
+00:05:55,080 --> 00:06:00,470
+A branch and a tag are refs, so Git data.
+An issue and a release are GitHub objects.
+
+80
+00:06:00,510 --> 00:06:05,706
+If the release tripped you, that's normal:
+it points at a tag, and people mix the
+
+81
+00:06:05,746 --> 00:06:06,158
+two up.
+
+82
+00:06:06,498 --> 00:06:11,504
+Now accounts. In one sentence: people sign
+in to user accounts, and organizations
+
+83
+00:06:11,544 --> 00:06:16,488
+and enterprises are containers that own
+repositories and decide who may do what.
+
+84
+00:06:16,528 --> 00:06:21,721
+A personal account is one person, on GitHub
+Free or GitHub Pro, with an access model
+
+85
+00:06:21,761 --> 00:06:26,456
+of owner plus collaborators: two levels.
+Nobody signs in to an organization.
+
+86
+00:06:26,496 --> 00:06:31,502
+Members act through their user accounts,
+and the organization has five repository
+
+87
+00:06:31,542 --> 00:06:34,866
+roles, teams, base permissions
+and organization roles.
+
+88
+00:06:34,906 --> 00:06:38,978
+An enterprise owns organizations,
+with central policy and billing.
+
+89
+00:06:39,318 --> 00:06:43,261
+The plan decides which features
+work on private repositories.
+
+90
+00:06:43,301 --> 00:06:48,550
+Public repositories get the full feature
+set on every plan, which is why the labs
+
+91
+00:06:48,590 --> 00:06:54,035
+use public repositories in a free organization.
+Organization-level rulesets need the
+
+92
+00:06:54,075 --> 00:06:58,083
+Team plan. A ruleset is a named
+list of rules for chosen refs.
+
+93
+00:06:58,123 --> 00:07:03,437
+SAML single sign-on, custom roles and
+internal repositories need Enterprise Cloud.
+
+94
+00:07:03,777 --> 00:07:08,735
+Now roles. In one sentence: in an organization,
+what a person can do in a repository
+
+95
+00:07:08,775 --> 00:07:13,198
+is the highest of every grant that
+reaches them: the organization-wide base
+
+96
+00:07:13,238 --> 00:07:17,601
+permission, the roles of their teams,
+a direct grant, and ownership of the
+
+97
+00:07:17,641 --> 00:07:18,375
+organization.
+
+98
+00:07:18,715 --> 00:07:24,031
+The five repository roles, from least to
+most: Read, Triage, Write, Maintain, Admin.
+
+99
+00:07:24,071 --> 00:07:28,049
+Read can clone, fork, open issues,
+comment and submit a review.
+
+100
+00:07:28,089 --> 00:07:32,257
+Triage adds labels, closing and
+assigning, and requesting reviews.
+
+101
+00:07:32,597 --> 00:07:37,281
+Write adds pushing, merging a pull request,
+giving an approval that counts toward
+
+102
+00:07:37,321 --> 00:07:42,005
+required reviews, acting as a code owner,
+creating releases, and creating Actions
+
+103
+00:07:42,045 --> 00:07:43,288
+secrets and variables.
+
+104
+00:07:43,628 --> 00:07:48,628
+Maintain adds configuring pull request
+merges and pushing to branches under classic
+
+105
+00:07:48,668 --> 00:07:53,669
+protection. Admin adds rulesets and branch
+protection, visibility, access, webhooks
+
+106
+00:07:53,709 --> 00:07:56,706
+and deploy keys, and archive,
+transfer and delete.
+
+107
+00:07:57,046 --> 00:08:01,739
+Three rows surprise people. Write can
+create Actions secrets and edit workflow
+
+108
+00:08:01,779 --> 00:08:05,865
+files, so Write is enough to run
+code with the repository's secrets.
+
+109
+00:08:05,905 --> 00:08:10,841
+The Maintain role's right to push to
+protected branches doesn't apply to rulesets,
+
+110
+00:08:10,881 --> 00:08:14,482
+which "have a different bypass
+model" in the matrix's words.
+
+111
+00:08:14,522 --> 00:08:19,276
+And Read includes submitting a review,
+although only a review from someone with
+
+112
+00:08:19,316 --> 00:08:21,339
+Write counts toward a requirement.
+
+113
+00:08:21,679 --> 00:08:26,357
+The base permission is a role that every
+member has on every repository of the
+
+114
+00:08:26,397 --> 00:08:31,258
+organization. The textbook marks the
+combined "highest wins" rule as an inference
+
+115
+00:08:31,298 --> 00:08:34,464
+from GitHub's pages, not a
+sentence GitHub publishes.
+
+116
+00:08:34,504 --> 00:08:35,613
+I keep that caveat.
+
+117
+00:08:35,953 --> 00:08:40,692
+Visibility and settings. Visibility
+decides who can read a repository at all:
+
+118
+00:08:40,732 --> 00:08:45,036
+public, private, or internal for
+organizations owned by an enterprise.
+
+119
+00:08:45,076 --> 00:08:50,126
+Changing it has documented side effects.
+Public to private: stars and watchers are
+
+120
+00:08:50,166 --> 00:08:54,780
+erased, and public forks stay public,
+detached into a network of their own.
+
+121
+00:08:55,120 --> 00:09:00,288
+Private to public: everyone can read the
+code, the complete history, and the Actions
+
+122
+00:09:00,328 --> 00:09:04,999
+history and logs. Push rulesets are
+disabled. Stars and watchers are erased.
+
+123
+00:09:05,039 --> 00:09:09,958
+Neither direction changes a Git object.
+Making a repository private doesn't take
+
+124
+00:09:09,998 --> 00:09:13,120
+back what was cloned or
+forked while it was public.
+
+125
+00:09:13,460 --> 00:09:18,860
+Then the settings a professional sets on
+purpose. Each is a GitHub object, none is
+
+126
+00:09:18,900 --> 00:09:22,376
+in a clone, and none is
+restored by pushing a mirror.
+
+127
+00:09:22,416 --> 00:09:27,152
+The default branch. The features
+issues, wiki, discussions and projects.
+
+128
+00:09:27,192 --> 00:09:32,658
+Pull request access, which since the
+thirteenth of February 2026 can be disabled or
+
+129
+00:09:32,698 --> 00:09:36,107
+limited to collaborators.
+The allowed merge methods.
+
+130
+00:09:36,147 --> 00:09:39,822
+Automatic deletion of head
+branches. The forking policy.
+
+131
+00:09:39,862 --> 00:09:40,618
+And archive.
+
+132
+00:09:42,458 --> 00:09:45,895
+The textbook's analogy: a
+manuscript in a publisher's office.
+
+133
+00:09:45,935 --> 00:09:49,713
+You can carry a perfect copy of the
+manuscript out of the building.
+
+134
+00:09:49,753 --> 00:09:54,444
+The reviewers' notes, the list of who may
+edit it and the approval stamps belong to
+
+135
+00:09:54,484 --> 00:09:55,983
+the office's filing system.
+
+136
+00:09:56,323 --> 00:10:01,384
+The analogy breaks in two places. The
+office edits your manuscript when asked: a
+
+137
+00:10:01,424 --> 00:10:06,614
+merge button creates commits. And the office
+reads instructions written inside the
+
+138
+00:10:06,654 --> 00:10:11,588
+manuscript: files under .github/ and
+words such as Fixes #12 are Git data that
+
+139
+00:10:11,628 --> 00:10:12,736
+GitHub interprets.
+
+140
+00:10:13,076 --> 00:10:16,627
+For access, the analogy is key
+cards in an office building.
+
+141
+00:10:16,667 --> 00:10:21,739
+One rule opens some doors for every employee,
+your department's card opens more, and
+
+142
+00:10:21,779 --> 00:10:25,148
+a card issued to you personally
+may open one extra room.
+
+143
+00:10:25,188 --> 00:10:30,077
+A door opens if any card you hold opens
+it. That analogy breaks because buildings
+
+144
+00:10:30,117 --> 00:10:35,068
+have blacklists and GitHub has none: no
+grant can reduce what another grant gives.
+
+145
+00:10:36,908 --> 00:10:41,583
+The outer box is GitHub. Inside it is
+a database, and inside it a bare Git
+
+146
+00:10:41,623 --> 00:10:46,870
+repository, one with no working tree. The
+arrows at the bottom are the only way Git
+
+147
+00:10:46,910 --> 00:10:50,820
+data moves: clone, fetch, push.
+They touch the inner box only.
+
+148
+00:10:50,860 --> 00:10:56,108
+The arrow on the right is GitHub reading
+.github/ and messages out of the Git data.
+
+149
+00:10:56,448 --> 00:11:01,076
+Quick quiz. Meera joins an organization
+whose base permission is Read.
+
+150
+00:11:01,116 --> 00:11:06,543
+Her team has Write on one repository. On
+another, private repository, what can she
+
+151
+00:11:06,583 --> 00:11:09,477
+do: nothing, Read or
+Write? Say it out loud.
+
+152
+00:11:14,317 --> 00:11:17,585
+Read each column from top to
+bottom and take the highest.
+
+153
+00:11:17,625 --> 00:11:21,473
+On the right, the only grant is the
+base permission, and it's Read.
+
+154
+00:11:21,513 --> 00:11:26,174
+That's the answer to the CTO's second
+question. If you said nothing, you reasoned
+
+155
+00:11:26,214 --> 00:11:28,031
+the way the access was designed.
+
+156
+00:11:28,371 --> 00:11:33,297
+Read the line on why GitHub does it: grants
+only add, the highest grant wins, and
+
+157
+00:11:33,337 --> 00:11:34,400
+nothing subtracts.
+
+158
+00:11:38,740 --> 00:11:42,125
+How many refs will the clone
+have, and of which kinds?
+
+159
+00:11:42,165 --> 00:11:43,837
+Say it out loud. I'll wait.
+
+160
+00:11:48,677 --> 00:11:53,540
+Five refs, each naming an object. With
+the objects reachable from them, that is
+
+161
+00:11:53,580 --> 00:11:55,402
+everything the clone received.
+
+162
+00:11:55,742 --> 00:11:59,813
+The files that configure the platform came
+along because they are tracked files.
+
+163
+00:12:00,153 --> 00:12:06,379
+To Git, Fixes #12 is two words in a message.
+No issue 12 exists in this sandbox.
+
+164
+00:12:06,719 --> 00:12:11,688
+A mirror asks for every ref the server
+offers. What does it receive beyond refs and
+
+165
+00:12:11,728 --> 00:12:13,498
+objects? Make your prediction.
+
+166
+00:12:23,838 --> 00:12:28,816
+Nothing. Three refs, 33 objects. Against
+GitHub a mirror also receives the
+
+167
+00:12:28,856 --> 00:12:32,816
+refs/pull/* refs, and no issue,
+review, release or setting.
+
+168
+00:12:32,856 --> 00:12:35,257
+That's Monday morning from the hook.
+
+169
+00:12:38,097 --> 00:12:42,229
+Your local configuration and your
+reflog. No clone receives them.
+
+170
+00:12:42,569 --> 00:12:47,681
+Open your practice repository's page in the
+browser and walk it from top to bottom.
+
+171
+00:12:47,721 --> 00:12:52,213
+For each element, say the column. The
+file list and the README: Git data.
+
+172
+00:12:52,253 --> 00:12:56,621
+The branch selector and the tag count:
+refs. The commit count: objects.
+
+173
+00:12:56,661 --> 00:13:01,649
+The star and watch counters: database. The
+issue and pull request tabs: database.
+
+174
+00:13:01,689 --> 00:13:06,678
+The "About" description and topics: settings.
+The releases panel: a GitHub object
+
+175
+00:13:06,718 --> 00:13:07,795
+pointing at a tag.
+
+176
+00:13:08,135 --> 00:13:10,915
+Then prove it from the terminal
+with the commands of the lab.
+
+177
+00:13:11,255 --> 00:13:16,522
+The rule you're demonstrating: what git
+ls-remote can show is Git data, and what
+
+178
+00:13:16,562 --> 00:13:22,093
+only gh can show is a GitHub object. The
+lab also has you create one test issue with
+
+179
+00:13:22,133 --> 00:13:26,604
+gh issue create. Do that in your
+own repository when you do the lab.
+
+180
+00:13:28,444 --> 00:13:30,092
+Five mistakes to watch for.
+
+181
+00:13:30,432 --> 00:13:34,697
+Treating git clone --mirror as a
+backup of the repository page.
+
+182
+00:13:34,737 --> 00:13:40,232
+Root cause: a mirror receives refs and
+objects; issues, reviews, releases, rules,
+
+183
+00:13:40,272 --> 00:13:42,624
+roles and secrets are not Git data.
+
+184
+00:13:42,964 --> 00:13:47,354
+Granting Write on one repository and
+assuming the person sees nothing else.
+
+185
+00:13:47,394 --> 00:13:52,316
+Root cause: the base permission applies to
+every member on every repository, and the
+
+186
+00:13:52,356 --> 00:13:53,438
+highest grant wins.
+
+187
+00:13:53,778 --> 00:13:56,985
+Giving Write to someone who
+must not reach secrets.
+
+188
+00:13:57,025 --> 00:14:01,950
+Root cause: Write can edit workflow files
+and create Actions secrets, so it is
+
+189
+00:14:01,990 --> 00:14:05,069
+enough to run code with
+the repository's secrets.
+
+190
+00:14:05,409 --> 00:14:10,255
+Making a repository private to take back
+a leak. Root cause: visibility changes no
+
+191
+00:14:10,295 --> 00:14:13,651
+Git object and does not recall
+what was cloned or forked.
+
+192
+00:14:13,991 --> 00:14:18,309
+Expecting settings to return after
+pushing a mirror to a new repository.
+
+193
+00:14:18,349 --> 00:14:21,033
+Root cause: every setting
+is a GitHub object.
+
+194
+00:14:22,873 --> 00:14:28,012
+Now, out of the lab. A startup's code lives
+under the founder's personal account,
+
+195
+00:14:28,052 --> 00:14:33,191
+with ten collaborators. Every collaborator
+can push to everything they were added
+
+196
+00:14:33,231 --> 00:14:38,242
+to, there are no teams, and the company's
+access model is one person's account.
+
+197
+00:14:38,282 --> 00:14:40,672
+The fix is to move to an organization.
+
+198
+00:14:41,012 --> 00:14:46,190
+Transferring a repository keeps its Git
+data, issues, pull requests, wiki, stars and
+
+199
+00:14:46,230 --> 00:14:50,291
+watchers, and its webhooks, secrets
+and deploy keys stay attached.
+
+200
+00:14:50,331 --> 00:14:55,385
+What the company gains is the access model
+of this video: a base permission chosen
+
+201
+00:14:55,425 --> 00:14:58,553
+on purpose, and repositories
+granted through teams.
+
+202
+00:14:58,893 --> 00:15:03,612
+One warning from the same section for
+the day someone leaves: deploy keys are
+
+203
+00:15:03,652 --> 00:15:08,742
+outside this model. A deploy key is an SSH
+key attached to one repository, not to a
+
+204
+00:15:08,782 --> 00:15:13,562
+person. Anyone holding a deploy key's
+private half can use it, in the words of
+
+205
+00:15:13,602 --> 00:15:18,198
+GitHub's roles page, "even if they're
+later removed from the organization".
+
+206
+00:15:18,238 --> 00:15:22,338
+Offboarding a person doesn't offboard
+the credentials they created.
+
+207
+00:15:24,178 --> 00:15:29,005
+Your turn. Do Lab 19.2, "An inventory
+of Git data and GitHub objects", in
+
+208
+00:15:29,045 --> 00:15:34,205
+lab-manual/m19-github-platform.md. The
+lab gives you a table of twelve things.
+
+209
+00:15:34,245 --> 00:15:39,471
+Fill in the layer and the mirror column
+for every row on paper before you run a
+
+210
+00:15:39,511 --> 00:15:43,405
+single command. Then find the
+command that proves each row.
+
+211
+00:15:43,745 --> 00:15:51,733
+The challenge is Exercise 19.3, "Effective
+access", in exercises/m19-m25-github.md.
+
+212
+00:15:53,573 --> 00:15:56,616
+Question 219 of the CTO question bank:
+
+213
+00:15:58,956 --> 00:16:03,827
+Answer out loud. A strong answer picks items
+from every region of the page, includes
+
+214
+00:16:03,867 --> 00:16:08,680
+at least one from the middle category of
+Git data that the platform interprets, and
+
+215
+00:16:08,720 --> 00:16:13,534
+gives for each a command, not an opinion.
+It states the test that separates the two
+
+216
+00:16:13,574 --> 00:16:17,276
+columns and mentions what GitHub
+writes into Git on your behalf.
+
+217
+00:16:19,116 --> 00:16:20,043
+Let's land this.
+
+218
+00:16:20,383 --> 00:16:22,043
+You should now be able to say:
+
+219
+00:16:22,383 --> 00:16:27,634
+Git data is refs and objects and travels
+with clone, fetch and push; GitHub objects
+
+220
+00:16:27,674 --> 00:16:31,904
+live in a database and are reached
+with the browser, gh or the API.
+
+221
+00:16:32,244 --> 00:16:35,221
+A mirror carries refs and
+objects, and nothing else.
+
+222
+00:16:35,561 --> 00:16:40,727
+Files under .github/ and closing keywords
+are Git data that GitHub interprets.
+
+223
+00:16:41,067 --> 00:16:45,763
+Effective access is the highest of base
+permission, team grants, direct grants and
+
+224
+00:16:45,803 --> 00:16:47,438
+ownership; nothing subtracts.
+
+225
+00:16:47,778 --> 00:16:51,688
+Visibility and settings are GitHub
+objects and change no Git object.
+
+226
+00:16:53,528 --> 00:17:00,435
+Read sections 15.1 to 15.5 of Chapter 15.
+Do Exercise 19.1, "Git data or GitHub
+
+227
+00:17:00,475 --> 00:17:07,734
+object?", and Exercise 19.2, "Settings on
+purpose", in exercises/m19-m25-github.md.
+
+228
+00:17:07,774 --> 00:17:13,274
+Return to the five-item list from
+video 2 and prove each entry.
+
+229
+00:17:13,614 --> 00:17:18,642
+Today you sorted a repository page into two
+columns, and you can prove each row from
+
+230
+00:17:18,682 --> 00:17:22,081
+a terminal. Practise it on one
+real repository this week.
+
+231
+00:17:22,121 --> 00:17:27,089
+Next time: forks and the fork network. Until
+then, look at the state first and type
+
+232
+00:17:27,129 --> 00:17:29,019
+second. See you in the next one.

@@ -377,10 +377,36 @@ def _wav_seconds(path):
 # for each value are written down), so a clip the builder accepts is a clip the check accepts.
 PACE_FACTOR = (0.55, 1.65)   # words per second, as factors of the configured rate (165 wpm: 1.51 to 4.54), pieces of PACE_MIN_WORDS words or more
 PACE_LETTERS = (8.0, 19.0)   # letters per second of such a piece (a digit counts as four letters: "7" is said "seven")
-PACE_MIN_WORDS = 8           # shorter pieces are judged by the wide bounds below: one long or short word moves their pace a lot
-PACE_FLOOR_WPS = 10.0        # no piece of any length may be faster than this
-PACE_SHORT_FACTOR = 2.0      # a short piece may be this much slower or faster, in letters per second, than PACE_LETTERS (4 to 38)
+PACE_MIN_WORDS = 8           # shorter pieces are judged by the bounds below: one long or short word moves their pace a lot
+PACE_FLOOR_WPS = 10.0        # no piece of any length may be faster than this, by any rule (and the bound of a recorded narration's short beats)
+# Pieces of fewer than PACE_MIN_WORDS words.  Measured on 8 October 2026 on the 592 marked clips of one to seven words, and
+# confirmed with fresh takes of twelve of them (three takes each, every length the same as in the cache or, for the cut ones,
+# twice as long): 588 genuine clips run from 1.04 to 4.89 words/s and from 4.9 to 18.2 letters/s; with digits 7.2 to 15.4
+# letters/s.  Four marked clips were cut short: 22.9, 27.1, 34.4 and 35.2 letters/s (their true pace: 16.7, 12.4, 16.9 and
+# 13.4).  The old bounds (10 words/s, 4 to 38 letters/s) let all four through.
+PACE_SHORT_FAST = (5.4, 19.0)   # (words/s, letters/s): faster than either is "fast".  The fastest genuine: 4.89 words/s ("Give it a
+                             # ref."), 18.2 letters/s ("Reverting a pushed merge and stopping there."); the letters bound is the one
+                             # of long pieces.  With PACE_WIDE the limits are 6.21 and 21.85, still below every cut clip
+PACE_SHORT_SLOW = (1.3, 6.0)    # (words/s, letters/s): "slow" only if slower than BOTH.  One measure alone misleads for a short
+                             # piece: a single long word is slow in words ("Configuration.": 1.04 words/s, 13.6 letters/s), a
+                             # comma or colon between short words is slow in letters ("B, ours.": 4.9 letters/s, 1.96 words/s).
+                             # The closest genuine clip is "Step 6: status." (1.54 words/s, 7.2 letters/s: 20 % inside); the
+                             # clip this bound exists for, "You should now be able to say:" in 19 s, has 0.37 and 1.3
 VOICE_TRIES = 8              # attempts for one piece before it is split
+SAME_TAKES = 3               # so many takes of one length (within the agreement tolerance), clean in sound, are accepted outside the
+                             # bounds above, if inside the wide bounds below.  The engine's faults are not repeatable in length from
+                             # take to take; a length that comes three times is the length of that sentence, and the bounds are
+                             # wrong for its words ("None of the three needs a bug in Git.": nine short words, 4.63 words/s every
+                             # time; "... a model of 1,200,000 bytes ...": the digits are said faster than four letters each, 19.6 letters/s)
+PACE_WIDE = 1.15             # the wide bounds: the bounds above times and divided by this (1.31 to 5.22 words/s, 6.96 to 21.85
+                             # letters/s at 165 wpm; short pieces: PACE_SHORT_FAST and PACE_SHORT_SLOW likewise).  Measured on 8 October 2026: the
+                             # sentences that repeat outside the bounds are 2 to 3 % outside; of 7,841 verified whole takes the
+                             # fastest natural ones run at 4.51 words/s and 18.6 letters/s.  The clips known to be cut short begin
+                             # 23 % outside (V071 beat 39: 5.58 words/s, 23.4 letters/s, and that one came twice with one length),
+                             # padded ones at 1.2 words/s and less.  1.15 lies between the two groups, for short pieces too
+                             # (the slowest cut short clip has 22.9 letters/s, the wide bound is 21.85)
+MARK_TWO = "two takes inside the pace bounds"                    # how a clip was accepted, as written in its .ok file ...
+MARK_THREE = "three identical takes outside the pace bounds"     # ... and read again by tts() and by tools/video_qc.py (C1, C2)
 SENTENCE_GAP, CLAUSE_GAP = 0.33, 0.18   # silence between the parts of a piece that had to be spoken in parts (measured on whole
                                         # takes of this voice: 0.33 s between two sentences, 0.12 to 0.22 s at a comma)
 
@@ -402,8 +428,8 @@ def pace_fault(said, seconds, rate):
         if wps > hi or lps > PACE_LETTERS[1]: return "fast", wps, lps
         if wps < lo or lps < PACE_LETTERS[0]: return "slow", wps, lps
     else:
-        if wps > PACE_FLOOR_WPS or lps > PACE_LETTERS[1] * PACE_SHORT_FACTOR: return "fast", wps, lps
-        if lps < PACE_LETTERS[0] / PACE_SHORT_FACTOR: return "slow", wps, lps
+        if wps > PACE_SHORT_FAST[0] or lps > PACE_SHORT_FAST[1]: return "fast", wps, lps
+        if wps < PACE_SHORT_SLOW[0] and lps < PACE_SHORT_SLOW[1]: return "slow", wps, lps
     return None, wps, lps
 
 
@@ -412,7 +438,30 @@ def pace_range(said, rate):
     words, letters = pace_units(said)
     if words >= PACE_MIN_WORDS:
         return (max(words / (PACE_FACTOR[1] * rate / 60.0), letters / PACE_LETTERS[1]), min(words / (PACE_FACTOR[0] * rate / 60.0), letters / PACE_LETTERS[0]))
-    return max(words / PACE_FLOOR_WPS, letters / (PACE_LETTERS[1] * PACE_SHORT_FACTOR)), letters / (PACE_LETTERS[0] / PACE_SHORT_FACTOR)
+    return max(words / PACE_SHORT_FAST[0], letters / PACE_SHORT_FAST[1]), max(words / PACE_SHORT_SLOW[0], letters / PACE_SHORT_SLOW[1])
+
+
+def pace_wide_fault(said, seconds, rate):
+    """pace_fault() with the wide bounds of the three-identical-takes rule -> None or "fast" or "slow": every bound of the
+    piece, long or short, times or divided by PACE_WIDE.  The hard floor PACE_FLOOR_WPS holds for every piece."""
+    fault, wps, lps = pace_fault(said, seconds, rate)
+    if not fault or seconds <= 0.05: return fault
+    if len(said.split()) < PACE_MIN_WORDS:
+        if wps > min(PACE_SHORT_FAST[0] * PACE_WIDE, PACE_FLOOR_WPS) or lps > PACE_SHORT_FAST[1] * PACE_WIDE: return "fast"
+        if wps < PACE_SHORT_SLOW[0] / PACE_WIDE and lps < PACE_SHORT_SLOW[1] / PACE_WIDE: return "slow"
+        return None
+    lo, hi = PACE_FACTOR[0] * rate / 60.0 / PACE_WIDE, PACE_FACTOR[1] * rate / 60.0 * PACE_WIDE
+    if wps > min(hi, PACE_FLOOR_WPS) or lps > PACE_LETTERS[1] * PACE_WIDE: return "fast"
+    if wps < lo or lps < PACE_LETTERS[0] / PACE_WIDE: return "slow"
+    return None
+
+
+def clip_mark(path):
+    """The text of a clip's .ok file ('' if there is none) and whether it says the three-identical-takes rule accepted the clip
+    (or, for a clip joined from parts, one of its parts) -> (text, True or False)."""
+    try: note = pathlib.Path(path).with_suffix(".ok").read_text().strip()
+    except (OSError, UnicodeDecodeError): note = ""
+    return note, MARK_THREE in note
 
 
 def clip_seconds(path):
@@ -473,6 +522,23 @@ def clip_pace_fault(said, path, rate):
         return "unreadable", 0.0, 0.0
 
 
+def clip_fault(said, path, rate):
+    """Is a clip of the voice cache acceptable for its words, with its .ok mark taken into account?
+    -> (fault or None, words/s, letters/s, the pace fault that the mark excuses or None).
+    A clip outside the normal pace bounds is acceptable only if its mark says "three identical takes" and it is inside the wide
+    bounds; its sound must be clean in every case.  The one rule for a cached clip, in tts() and in the quality check (C2)."""
+    try:
+        wav = read_wav(path)
+        secs = len(trim_voice(wav)) / SR
+        fault, wps, lps = pace_fault(said, secs, rate)
+        excused = None
+        if fault and clip_mark(path)[1] and not pace_wide_fault(said, secs, rate):
+            fault, excused = None, fault
+        return (fault or sound_fault(wav)), wps, lps, excused
+    except Exception:
+        return "unreadable", 0.0, 0.0, None
+
+
 def split_spoken(said):
     """Smaller pieces of a spoken text for the voice -> (parts, gap in seconds), or ([], 0) if it cannot be split.
     Sentences first; a single sentence at its clause marks (comma, semicolon, colon, dash).  A part has at least two words,
@@ -482,10 +548,11 @@ def split_spoken(said):
         for x in parts:
             if out and (len(out[-1].split()) < 2 or not re.search(r"\w", out[-1])): out[-1] += " " + x
             else: out.append(x)
-        if len(out) > 1 and len(out[-1].split()) < 2: out[-2] += " " + out.pop()
+        if len(out) > 1 and len(out[-1].split()) < 2:
+            last = out.pop(); out[-1] += " " + last      # (out[-2] += " " + out.pop() fails for two parts: the list is shorter by then)
         return out
     said = said.strip()
-    for pat, gap in ((r"(?<=[.!?])(?<!\b[A-Za-z]\.)[\"”')]*\s+(?=[\"“(]?[A-Z0-9])", SENTENCE_GAP), (r"(?<=[,;:])[\"”')]?\s+|\s+-\s+", CLAUSE_GAP)):
+    for pat, gap in ((r"(?<=[.!?])(?<!(?<![\w'’])[A-Za-z]\.)[\"”')]*\s+(?=[\"“(]?[A-Z0-9])", SENTENCE_GAP), (r"(?<=[,;:])[\"”')]?\s+|\s+-\s+", CLAUSE_GAP)):
         cuts, parts, a = [m for m in re.finditer(pat, said)], [], 0
         for m in cuts:
             k = m.start() + len(m.group(0)) - len(m.group(0).lstrip("\"”')"))      # a closing quote stays with its sentence
@@ -514,34 +581,53 @@ def _say(spoken, voice, rate, out):
 
 
 def _speak_whole(spoken, voice, rate, p):
-    """Speak one piece in one go until two attempts agree in length (within 2 %) and that length is inside the pace bounds.
-    -> (True, seconds) with the clip written to p, or (False, why)."""
+    """Speak one piece in one go until the attempts prove a length.  Two attempts that agree in length (within 2 %) inside the
+    pace bounds are enough.  Outside the bounds it takes SAME_TAKES attempts of one length, inside the wide bounds
+    (pace_wide_fault): agreement is the evidence then, not the bounds.  An attempt that is too loud, clipped, too quiet or has
+    a hole in it never counts, however often it comes, and neither does one outside the wide bounds.
+    -> (True, the text for the .ok mark) with the clip written to p, or (False, why)."""
     lo, hi = pace_range(spoken, rate)
-    takes, notes = [], []                   # (seconds, path) of the attempts inside the bounds; what the others were
+    takes, outside, notes = [], [], []      # (seconds, path) of the attempts inside the bounds; of those outside them but inside the wide ones; what the others were
+    same = lambda a, b: abs(a - b) <= max(0.05, 0.02 * b)
+    words = {'fast': 'cut short', 'slow': 'too long', 'loud': 'too loud or clipped', 'quiet': 'too quiet', 'gap': 'silence inside'}
     try:
         for attempt in range(VOICE_TRIES):
             tmp = p.with_suffix(f".{os.getpid()}.{id(spoken) % 100000}.{attempt}.tmp.wav")
             err = _say(spoken, voice, rate, tmp)
             secs = 0.0 if err else _wav_seconds(tmp)
             if not err and secs <= 0: err = "no sound file was written"
+            keep = False
             if not err:
                 fault, wps, lps = clip_pace_fault(spoken, tmp, rate)
-                if fault:                   # cut short, or with silence added: such an attempt never counts, however often it comes
-                    err = f"{clip_seconds(tmp) if fault != 'unreadable' else 0:.2f} s ({ {'fast': 'cut short', 'slow': 'too long', 'loud': 'too loud or clipped', 'quiet': 'too quiet', 'gap': 'silence inside'}.get(fault, fault) })"
+                if fault:
+                    spoke = clip_seconds(tmp) if fault != 'unreadable' else 0
+                    err = f"{spoke:.2f} s ({words.get(fault, fault)})"
+                    # outside the bounds, clean in sound (clip_pace_fault names the pace first, so the sound is asked again) and
+                    # inside the wide bounds: counts towards SAME_TAKES
+                    if fault in ("fast", "slow") and not pace_wide_fault(spoken, spoke, rate) and not sound_fault(read_wav(tmp)):
+                        if sum(1 for other, _ in outside + takes if same(other, secs)) >= SAME_TAKES - 1:      # (a length right at a bound: takes on both sides count together)
+                            os.replace(tmp, p)
+                            return True, f"{secs:.3f} {MARK_THREE} ({'fast' if fault == 'fast' else 'slow'}: {wps:.2f} words/s, {lps:.1f} letters/s; the bounds expect {lo:.2f} to {hi:.2f} s, spoken {spoke:.2f} s)"
+                        outside.append((secs, tmp)); keep = True
             if err:
                 notes.append(err)
-                try: tmp.unlink()
-                except OSError: pass
+                if not keep:
+                    try: tmp.unlink()
+                    except OSError: pass
                 continue
             for other, _ in takes:
-                if abs(other - secs) <= max(0.05, 0.02 * secs):
+                if same(other, secs):
                     os.replace(tmp, p)
-                    return True, secs
+                    return True, f"{secs:.3f} {MARK_TWO} ({wps:.2f} words/s, {lps:.1f} letters/s)"
+            if sum(1 for other, _ in outside if same(other, secs)) >= SAME_TAKES - 1:
+                os.replace(tmp, p)
+                return True, f"{secs:.3f} {SAME_TAKES} takes of one length at the edge of the pace bounds, this one inside ({wps:.2f} words/s, {lps:.1f} letters/s)"
             takes.append((secs, tmp))
         said = ", ".join(notes[:8] + [f"{t:.2f} s (alone)" for t, _ in takes])
-        return False, f"{VOICE_TRIES} attempts, none twice with the same believable length ({lo:.1f} to {hi:.1f} s for these {len(spoken.split())} words): {said}"
+        return False, (f"{VOICE_TRIES} attempts, none twice with the same believable length ({lo:.1f} to {hi:.1f} s for these {len(spoken.split())} words) "
+                       f"and none {SAME_TAKES} times with one length near those bounds: {said}")
     finally:
-        for _, t in takes:
+        for _, t in takes + outside:
             try: t.unlink()
             except OSError: pass
 
@@ -551,10 +637,14 @@ def tts(spoken, voice, rate, _depth=0):
 
     The macOS synthesiser is not repeatable on a busy machine: the same sentence now and then comes out with words missing, or
     drawn out, or with silence added, and it can come out wrong the same way twice.  So a piece is accepted only if
-      1. two attempts agree in length (within 2 %), and
-      2. that length is inside the pace bounds (pace_fault: words and letters per second for the configured rate).
-    Only such a file is kept and marked with a ".ok" file beside it.  A cached file without the mark, or with a mark but outside
-    the bounds (marks from before the bounds existed), is spoken again.
+      1. two attempts agree in length (within 2 %) and that length is inside the pace bounds (pace_fault: words and letters
+         per second for the configured rate), or
+      2. SAME_TAKES attempts agree in length and that length is inside the wide bounds (pace_wide_fault): a length that keeps
+         coming is the length of the sentence, and the pace bounds misjudge its words,
+    and its sound is clean (sound_fault) in both cases.  Only such a file is kept and marked with a ".ok" file beside it, which
+    says by which of the two it was accepted and its pace (MARK_TWO, MARK_THREE; tools/video_qc.py reports the second kind as
+    a warning, for a person to listen to).  A cached file without the mark, or with a mark but outside the bounds its mark
+    allows (marks from before the bounds existed), is spoken again.
     A piece that does not pass after VOICE_TRIES attempts is split at its sentences (a single sentence at its clauses), the
     parts are spoken and checked one by one in the same way and joined with a short gap.  If a part still cannot pass, VoiceError
     is raised with the sentence in it and the video is not built."""
@@ -562,13 +652,13 @@ def tts(spoken, voice, rate, _depth=0):
     ok = p.with_suffix(".ok")
     p.parent.mkdir(parents=True, exist_ok=True)
     if p.exists() and p.stat().st_size > 44 and ok.exists():
-        if not clip_pace_fault(spoken, p, rate)[0]:
+        if not clip_fault(spoken, p, rate)[0]:
             return p
         try: ok.unlink()                    # marked, but too short or too long for its words: not a verified clip
         except OSError: pass
     done, why = _speak_whole(spoken, voice, rate, p)
     if done:
-        ok.write_text(f"{why:.3f}\n")
+        ok.write_text(why + "\n")
         return p
     parts, gap = split_spoken(spoken) if _depth < 2 else ([], 0.0)
     if not parts:
@@ -582,13 +672,17 @@ def tts(spoken, voice, rate, _depth=0):
         if k: whole.extend(silence(gap))
         whole.extend(trim_voice(read_wav(w), 2400 if k == len(wavs) - 1 else 480))
     secs = len(whole) / SR
-    fault = pace_fault(spoken, len(trim_voice(array.array("h", whole))) / SR, rate)[0]
+    spoke = len(trim_voice(array.array("h", whole))) / SR
+    fault, wps, lps = pace_fault(spoken, spoke, rate)
+    three = sum(1 for w in wavs if clip_mark(w)[1])          # parts that were accepted by the three-identical-takes rule
+    if fault and three and not pace_wide_fault(spoken, spoke, rate):
+        fault = None                                         # the whole is outside the bounds because such a part is: the same evidence
     if fault:
         raise VoiceError(f"the voice cannot speak this sentence correctly, not even in {len(parts)} parts ({secs:.2f} s, {'cut short' if fault == 'fast' else 'too long'}): {spoken!r}")
     tmp = p.with_suffix(f".{os.getpid()}.{id(spoken) % 100000}.join.tmp.wav")
     write_wav(tmp, whole)
     os.replace(tmp, p)
-    ok.write_text(f"{secs:.3f} joined from {len(parts)} parts\n")
+    ok.write_text(f"{secs:.3f} joined from {len(parts)} parts" + (f", {three} of them: {MARK_THREE}" if three else "") + f" ({wps:.2f} words/s, {lps:.1f} letters/s)\n")
     return p
 
 
@@ -710,7 +804,16 @@ def voice_selftest():
     s1, s2 = "Here are the candidates on the first-parent line again.", "HEAD now points at commit 0 7 4 d, and at no branch."
     # the bounds, on the lengths measured for these texts (V071 beat 39: 3.94 s was marked verified)
     for said, secs, want in ((full, 7.30, None), (full, 6.70, None), (full, 3.94, "fast"), (full, 16.0, "slow"), (s1, 2.72, None), (s1, 2.07, "fast"),
-                             ("Root cause.", 0.80, None), ("Root cause.", 0.15, "fast"), ("You should now be able to say:", 19.0, "slow")):
+                             ("Root cause.", 0.80, None), ("Root cause.", 0.15, "fast"), ("You should now be able to say:", 19.0, "slow"),
+                             # short pieces, as measured: four marked clips that were cut short, with the length of a whole take beside each ...
+                             ("Two pictures now.", 0.40, "fast"), ("Two pictures now.", 1.04, None), ("The two library commits have diverged.", 0.93, "fast"), ("The two library commits have diverged.", 1.90, None),
+                             ("Question 431 of the CTO question bank:", 1.47, "fast"), ("Question 431 of the CTO question bank:", 3.22, None),
+                             ("Looking in blame for who removed something.", 1.57, "fast"), ("Looking in blame for who removed something.", 2.15, None),
+                             # ... and the genuine extremes: one long word, a letter and a comma, a number, a spelled mode, the fastest in words and in letters
+                             ("Configuration.", 0.96, None), ("B, ours.", 1.01, None), ("C, theirs.", 1.02, None), ("Step 6: status.", 1.94, None), ("Still 132 bytes.", 1.94, None),
+                             ("No name, no date.", 1.75, None), ("Mode 040000, type tree. Two ordinary files.", 4.38, None), ("Give it a ref.", 0.82, None),
+                             ("Reverting a pushed merge and stopping there.", 2.03, None), ("Precisely.", 0.72, None), ("By date.", 0.65, None),
+                             ("Step 6: status.", 2.60, "slow"), ("B, ours.", 1.70, "slow"), ("Configuration.", 2.30, "slow"), ("Give it a ref.", 0.70, "fast")):
         got = pace_fault(said, secs, 165)[0]
         if got != want: bad.append(f"pace bounds: {said[:40]!r} in {secs} s is {got!r}, expected {want!r}")
     lo, hi = pace_range(full, 165)
@@ -718,23 +821,29 @@ def voice_selftest():
         bad.append(f"pace_range() and pace_fault() disagree for {lo:.2f} to {hi:.2f} s")
     for said, want in ((full, ([s1, s2], SENTENCE_GAP)), (s2, (["HEAD now points at commit 0 7 4 d,", "and at no branch."], CLAUSE_GAP)),
                        ('He said "stop." Then he left. Git 2.55 was out.', (['He said "stop."', "Then he left.", "Git 2.55 was out."], SENTENCE_GAP)),
-                       ("Yes, it is, as planned.", (["Yes, it is,", "as planned."], CLAUSE_GAP)), ("and at no branch.", ([], 0.0))):
+                       ("Yes, it is, as planned.", (["Yes, it is,", "as planned."], CLAUSE_GAP)), ("and at no branch.", ([], 0.0)),
+                       # V090 beat 28: "'s." is the end of a sentence, not a one-letter abbreviation (the whole piece has a burst of noise between its sentences)
+                       ("They do nothing in a colleague's. You can step over them.", (["They do nothing in a colleague's.", "You can step over them."], SENTENCE_GAP)),
+                       ("It is e. g. a file. Take step B. Then stop.", (["It is e. g. a file.", "Take step B. Then stop."], SENTENCE_GAP)),
+                       ("We'll meet them later, kindly.", ([], 0.0)), ("In the index, 60.", ([], 0.0)), ("First this, then that, kindly.", (["First this,", "then that, kindly."], CLAUSE_GAP))):
         if split_spoken(said) != want: bad.append(f"split_spoken({said!r}): {split_spoken(said)!r}, expected {want!r}")
     global tts_path, _say
     real = tts_path, _say
     with tempfile.TemporaryDirectory() as d:
         d = pathlib.Path(d)
         calls = []
-        def tone(path, seconds):
+        def tone(path, seconds, level=3500):          # level 3500 is -19.4 dBFS, the level of the voice; 20000 is a "loud" take
             n = int(seconds * SR) - 480 - 2400          # the length tts() measures: trim_voice() keeps 480 samples before and 2400 after
-            write_wav(path, silence(0.3) + array.array("h", [3500 if (k // 40) % 2 else -3500 for k in range(n)]) + silence(0.3))
+            write_wav(path, silence(0.3) + array.array("h", [level if (k // 40) % 2 else -level for k in range(n)]) + silence(0.3))
         def stand_in(plan):
             def say(spoken, voice, rate, out):
                 calls.append(spoken)
                 todo = plan.get(spoken, [])
                 secs = todo.pop(0) if len(todo) > 1 else (todo[0] if todo else None)
                 if secs is None: return "say did not finish within 120 s"
-                tone(out, secs); return None
+                if isinstance(secs, tuple): tone(out, secs[1], 20000)        # ("loud", seconds)
+                else: tone(out, secs)
+                return None
             return say
         def run_case(name, plan, said, want_secs=None, want_error=None, want_calls=None, mark=None):
             global _say
@@ -770,6 +879,58 @@ def voice_selftest():
             run_case("a marked clip outside the bounds is spoken again", {full: [7.30]}, full, want_secs=7.30, want_calls=2)
             fresh(); p = tts_path(full, "Tara", 165); tone(p, 7.30); p.with_suffix(".ok").write_text("7.300\n")
             run_case("a marked clip inside the bounds is reused", {}, full, want_secs=7.30, want_calls=0)
+            # agreement is the first evidence: SAME_TAKES takes of one length outside the bounds, inside the wide ones, are accepted.
+            # V037: nine short words that Tara says in 1.94 s every time (4.63 words/s); the bounds want 1.98 s at least
+            nine, digits = "None of the three needs a bug in Git.", "Now add a model of 1,200,000 bytes and commit it together with dot git attributes."
+            for said, secs in ((nine, 1.94), (digits, 4.38)):
+                if pace_fault(said, secs, 165)[0] != "fast" or pace_wide_fault(said, secs, 165): bad.append(f"wide bounds: {said[:30]!r} in {secs} s must be outside the pace bounds and inside the wide ones")
+            for said, secs, want in ((full, 3.94, "fast"), (full, 4.30, None), (nine, 1.60, "fast"), (nine, 1.75, None), (nine, 4.20, "slow"), (nine, 3.90, None), ("Root cause.", 0.15, "fast")):
+                if pace_wide_fault(said, secs, 165) != want: bad.append(f"wide bounds: {said[:30]!r} in {secs} s is {pace_wide_fault(said, secs, 165)!r}, expected {want!r}")
+            short, six = "and at no branch.", "The two library commits have diverged."      # under PACE_MIN_WORDS words: their own bounds, and the same factor
+            for said, secs, want, wide in ((six, 1.90, None, None), (six, 1.60, "fast", None), (six, 1.40, "fast", "fast"), (six, 0.93, "fast", "fast"), (six, 5.60, "slow", None), (six, 6.50, "slow", "slow"),
+                                           ("Looking in blame for who removed something.", 1.57, "fast", "fast"), ("Give it a ref.", 0.70, "fast", None), ("Give it a ref.", 0.60, "fast", "fast")):
+                got = pace_fault(said, secs, 165)[0], pace_wide_fault(said, secs, 165)
+                if got != (want, wide): bad.append(f"short bounds: {said[:30]!r} in {secs} s is {got!r} (pace, wide), expected {(want, wide)!r}")
+            lo6, hi6 = pace_range(six, 165)
+            if pace_fault(six, lo6 + 0.01, 165)[0] or pace_fault(six, hi6 - 0.01, 165)[0] or not pace_fault(six, lo6 - 0.01, 165)[0] or not pace_fault(six, hi6 + 0.01, 165)[0]:
+                bad.append(f"pace_range() and pace_fault() disagree for a short piece: {lo6:.2f} to {hi6:.2f} s")
+            fresh(); run_case("three identical takes outside the bounds", {nine: [1.94]}, nine, want_secs=1.94, want_calls=SAME_TAKES, mark=MARK_THREE)
+            if not re.search(r"fast: 4\.6\d words/s, 14\.\d letters/s", tts_path(nine, "Tara", 165).with_suffix(".ok").read_text()): bad.append("voice, three identical takes: the mark does not give the measured pace")
+            run_case("a clip accepted by three identical takes is reused", {}, nine, want_secs=1.94, want_calls=0)
+            fresh(); run_case("three identical takes after others", {nine: [("loud", 2.5), 1.94, 1.60, 1.94, 3.0, 1.95]}, nine, want_secs=1.95, want_calls=6, mark=MARK_THREE)
+            fresh(); run_case("two takes inside the bounds are marked as such", {nine: [1.94, 2.50, 1.94, 2.50]}, nine, want_secs=2.50, want_calls=4, mark=MARK_TWO)
+            if MARK_THREE in tts_path(nine, "Tara", 165).with_suffix(".ok").read_text(): bad.append("voice, two takes inside the bounds: marked as three identical takes")
+            fresh(); run_case("two identical takes outside the bounds are not enough", {nine: [1.94, 1.94, 1.60]}, nine, want_error=nine, want_calls=VOICE_TRIES)
+            fresh(); run_case("identical takes outside the wide bounds never count", {nine: [1.60]}, nine, want_error=nine, want_calls=VOICE_TRIES)
+            fresh(); run_case("identical takes that are too long for the wide bounds never count", {nine: [4.20]}, nine, want_error=nine, want_calls=VOICE_TRIES)
+            fresh(); run_case("a loud take never counts, outside the bounds", {nine: [("loud", 1.94)]}, nine, want_error=nine, want_calls=VOICE_TRIES)
+            fresh(); run_case("a loud take never counts, inside the bounds", {nine: [("loud", 2.50)]}, nine, want_error=nine, want_calls=VOICE_TRIES)
+            fresh(); run_case("two clean takes and loud ones of the same length", {nine: [("loud", 1.94), 1.94, ("loud", 1.94), 1.94, ("loud", 1.94)]}, nine, want_error=nine, want_calls=VOICE_TRIES)
+            fresh(); run_case("a short piece far too fast never counts", {short: [0.1]}, short, want_error=short, want_calls=VOICE_TRIES)
+            fresh(); run_case("a short piece cut short the same way every time", {six: [0.93]}, six, want_error=six, want_calls=VOICE_TRIES)
+            fresh(); run_case("a short piece cut short twice, then whole", {six: [0.93, 0.93, 1.90]}, six, want_secs=1.90, want_calls=4, mark=MARK_TWO)
+            fresh(); run_case("a short piece: three identical takes just outside its bounds", {six: [1.60]}, six, want_secs=1.60, want_calls=SAME_TAKES, mark=MARK_THREE)
+            fresh(); run_case("a short piece: two identical takes just outside its bounds are not enough", {six: [1.60, 1.60, 0.93]}, six, want_error=six, want_calls=VOICE_TRIES)
+            # a clip that the old short bounds let through (marked, 34 letters per second) is spoken again
+            fresh(); p = tts_path(six, "Tara", 165); tone(p, 0.93); p.with_suffix(".ok").write_text("0.972\n")
+            run_case("a marked short clip that was cut short is spoken again", {six: [1.90]}, six, want_secs=1.90, want_calls=2, mark=MARK_TWO)
+            # a mark alone excuses nothing: the clip must be inside the wide bounds, and a plain mark does not excuse a clip outside the normal ones
+            fresh(); p = tts_path(nine, "Tara", 165); tone(p, 1.60); p.with_suffix(".ok").write_text(f"1.600 {MARK_THREE}\n")
+            run_case("a three-takes mark on a clip outside the wide bounds is not trusted", {nine: [2.50]}, nine, want_secs=2.50, want_calls=2, mark=MARK_TWO)
+            fresh(); p = tts_path(nine, "Tara", 165); tone(p, 1.94); p.with_suffix(".ok").write_text("1.940\n")
+            run_case("a plain mark on a clip outside the bounds is not trusted", {nine: [2.50]}, nine, want_secs=2.50, want_calls=2)
+            fresh(); p = tts_path(nine, "Tara", 165); tone(p, 1.94, 20000); p.with_suffix(".ok").write_text(f"1.940 {MARK_THREE}\n")
+            run_case("a three-takes mark on a loud clip is not trusted", {nine: [2.50]}, nine, want_secs=2.50, want_calls=2)
+            # a piece that is spoken in parts, one of them accepted by three identical takes: the mark of the whole says so
+            two = nine + " " + s1
+            fresh(); run_case("a part accepted by three identical takes", {two: [1.0], nine: [1.94], s1: [2.72]}, two, want_secs=1.94 - 0.04 + SENTENCE_GAP + 2.72, want_calls=VOICE_TRIES + SAME_TAKES + 2, mark=f"1 of them: {MARK_THREE}")
+            # V090 beat 28: the whole piece is loud every time, its two sentences are clean
+            v090 = "They do nothing in a colleague's. You can step over them."
+            fresh(); run_case("loud as a whole, clean in sentences", {v090: [("loud", 2.97)], "They do nothing in a colleague's.": [1.41], "You can step over them.": [1.27]}, v090,
+                              want_secs=1.41 - 0.04 + SENTENCE_GAP + 1.27, want_calls=VOICE_TRIES + 4, mark="joined from 2 parts")
+            for vid, reason, want in (("V095", VoiceError("the voice cannot speak this sentence correctly: 'a b'\n      8 attempts"), "V095: FAILED: the voice cannot speak this sentence correctly: 'a b' 8 attempts"),
+                                      ("V037", SystemExit("V037: 3 slide image(s) are missing"), "V037: FAILED: 3 slide image(s) are missing"), ("V001", "", "V001: FAILED: no reason was given")):
+                if failed_line(vid, reason) != want: bad.append(f"failed_line({vid!r}, {str(reason)!r}): {failed_line(vid, reason)!r}")
         finally:
             tts_path, _say = real
     return bad
@@ -1540,10 +1701,27 @@ def build_one(vid, draft, opts):
         if not draft and info.get("takes_seconds"):
             print(f"      recording {fmt_dur(info['takes_seconds'])} -> kept {fmt_dur(info['kept_seconds'])}; "
                   f"{len(info['missing_beats'])} beat(s) missing")
+        if not ok:
+            why = [f"{pr['frames']} frames instead of {total_frames}"] if anim and pr["frames"] != total_frames else []
+            if (pr["width"], pr["height"]) != (W, H): why.append(f"picture {pr['width']}x{pr['height']} instead of {W}x{H}")
+            if pr["fps"] not in (f"{FPS}/1", str(FPS)): why.append(f"{pr['fps']} frames per second instead of {FPS}")
+            if pr["vcodec"] != "h264" or pr["acodec"] != "aac": why.append(f"codecs {pr['vcodec']}/{pr['acodec']} instead of h264/aac")
+            if abs(pr["video_seconds"] - pr["audio_seconds"]) > 0.1: why.append(f"video {pr['video_seconds']:.3f} s and audio {pr['audio_seconds']:.3f} s differ by more than 0.1 s")
+            if not pr["faststart"]: why.append("the file is not written for fast start")
+            print(failed_line(vid, f"{mp4.name} was written but did not pass the builder's checks: " + "; ".join(why or ["see the line above"])), flush=True)
         return ok
     finally:
         if not opts.get("keep_temp"):
             shutil.rmtree(work, ignore_errors=True)
+
+
+def failed_line(vid, reason):
+    """The one line every failed video gets, whatever went wrong: "VNNN: FAILED: reason".  The reason is put on one line, so
+    that a log which keeps only the last lines of a build (tail -2: this line and the totals) still says which video failed
+    and why, and so that counting the lines that start with "VNNN: FAILED:" counts the failed videos."""
+    reason = " ".join(str(reason).split()) or "no reason was given"
+    if reason.startswith(f"{vid}: "): reason = reason[len(vid) + 2:]
+    return f"{vid}: FAILED: {reason}"
 
 
 def main():
@@ -1586,9 +1764,9 @@ def main():
             built += 1
             if not ok: failed += 1
         except SystemExit as e:
-            print(e); failed += 1
+            print(failed_line(vid, e), flush=True); failed += 1
         except Exception as e:
-            print(f"{vid}: FAILED: {e}"); failed += 1
+            print(failed_line(vid, e if isinstance(e, VoiceError) else f"{type(e).__name__}: {e}"), flush=True); failed += 1
     print(f"{'drafts' if draft else 'videos'}: {built} built, {skipped} up to date, {failed} with problems")
     return 1 if failed else 0
 

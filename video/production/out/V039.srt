@@ -1,974 +1,974 @@
 1
-00:00:04,500 --> 00:00:07,737
+00:00:04,500 --> 00:00:08,875
 A release engineer tags from a laptop
 whose status said "up to date".
 
 2
-00:00:07,777 --> 00:00:11,062
+00:00:08,915 --> 00:00:13,354
 The last fetch was two days old, so
 the tag misses yesterday's hotfix.
 
 3
-00:00:11,102 --> 00:00:12,725
+00:00:13,394 --> 00:00:15,593
 The build goes out without the fix.
 
 4
-00:00:13,065 --> 00:00:17,761
+00:00:15,933 --> 00:00:20,630
 Git didn't lie. The sentence on screen
 compares two refs, and both of them are on
 
 5
-00:00:17,801 --> 00:00:22,556
+00:00:20,670 --> 00:00:25,424
 the laptop. In the next twenty minutes you
 learn exactly which refs a fetch moves,
 
 6
-00:00:22,596 --> 00:00:26,942
+00:00:25,464 --> 00:00:29,810
 which it never touches, and how to ask
 a server a question without changing
 
 7
-00:00:26,982 --> 00:00:27,468
+00:00:29,850 --> 00:00:30,336
 anything.
 
 8
-00:00:29,308 --> 00:00:32,895
+00:00:32,176 --> 00:00:35,763
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 9
-00:00:32,935 --> 00:00:37,652
+00:00:35,803 --> 00:00:40,521
 In the last video you saw that a remote
 is configuration that stands for another
 
 10
-00:00:37,692 --> 00:00:42,409
+00:00:40,561 --> 00:00:45,278
 repository, plus a set of remote-tracking
 branches such as origin/main, and that
 
 11
-00:00:42,449 --> 00:00:45,799
+00:00:45,318 --> 00:00:48,667
 those branches record the
 last-known state of the server.
 
 12
-00:00:45,839 --> 00:00:50,675
+00:00:48,707 --> 00:00:53,543
 This video is about the one command whose
 whole job is to refresh that record: git
 
 13
-00:00:50,715 --> 00:00:51,032
+00:00:53,583 --> 00:00:53,900
 fetch.
 
 14
-00:00:51,372 --> 00:00:55,427
+00:00:54,240 --> 00:00:58,295
 Fetch is the safest of the transfer
 commands and the most misunderstood.
 
 15
-00:00:55,467 --> 00:01:00,204
+00:00:58,335 --> 00:01:03,072
 Engineers avoid it because they think it
 might change their work, and they trust git
 
 16
-00:01:00,244 --> 00:01:04,868
+00:01:03,112 --> 00:01:07,736
 status because they think it asks the
 server. Both beliefs are wrong, and they are
 
 17
-00:01:04,908 --> 00:01:06,517
+00:01:07,776 --> 00:01:09,385
 wrong in opposite directions.
 
 18
-00:01:06,857 --> 00:01:12,055
+00:01:09,725 --> 00:01:14,923
 You will watch one fetch in detail: before,
 the server's answer, the fetch itself,
 
 19
-00:01:12,095 --> 00:01:16,910
+00:01:14,963 --> 00:01:19,778
 and after. Then two variations, fetching
 one branch and fetching from a URL.
 
 20
-00:01:16,950 --> 00:01:19,401
+00:01:19,818 --> 00:01:22,269
 Then tags, which follow their own rule.
 
 21
-00:01:21,241 --> 00:01:22,819
+00:01:24,109 --> 00:01:25,688
 Here's what you'll walk away with.
 
 22
-00:01:23,159 --> 00:01:24,572
+00:01:26,028 --> 00:01:27,440
 After this video you can:
 
 23
-00:01:24,912 --> 00:01:28,192
+00:01:27,780 --> 00:01:31,061
 State exactly what git fetch
 writes and what it never touches.
 
 24
-00:01:28,532 --> 00:01:32,399
+00:01:31,401 --> 00:01:35,267
 Explain why "up to date with
 origin/main" describes the last fetch.
 
 25
-00:01:32,739 --> 00:01:35,061
+00:01:35,607 --> 00:01:37,930
 Ask the server for its
 refs without fetching.
 
 26
-00:01:35,401 --> 00:01:38,068
+00:01:38,270 --> 00:01:40,936
 Inspect what a fetch brought
 before integrating it.
 
 27
-00:01:39,908 --> 00:01:44,356
+00:01:42,776 --> 00:01:46,889
 Here's today's situation. You
 cloned when main was at 510ee94.
 
 28
-00:01:44,396 --> 00:01:50,219
+00:01:46,929 --> 00:01:52,314
 Since then Asha has published ef22149 on
 the server, and your clone hasn't asked.
 
 29
-00:01:50,559 --> 00:01:55,266
+00:01:52,654 --> 00:01:57,361
 In one sentence: git fetch 🟢 SAFE asks a
 remote where its refs point, downloads the
 
 30
-00:01:55,306 --> 00:01:58,868
+00:01:57,401 --> 00:02:00,963
 objects you lack, and moves your
 remote-tracking refs to match.
 
 31
-00:01:58,908 --> 00:02:02,357
+00:02:01,003 --> 00:02:04,452
 It never moves a local branch,
 the index or the working tree.
 
 32
-00:02:02,697 --> 00:02:07,385
+00:02:04,792 --> 00:02:09,480
 Why does such a command exist as a separate
 step? Because looking and deciding are
 
 33
-00:02:07,425 --> 00:02:11,940
+00:02:09,520 --> 00:02:14,035
 different acts. Fetch lets you see what
 the other repository has, in full, with
 
 34
-00:02:11,980 --> 00:02:16,149
+00:02:14,075 --> 00:02:18,244
 every tool you already know, before
 you change one line of your own work.
 
 35
-00:02:16,489 --> 00:02:21,336
+00:02:18,584 --> 00:02:23,431
 Precisely. The command is git fetch,
 optionally a remote, optionally refspecs.
 
 36
-00:02:21,376 --> 00:02:26,411
+00:02:23,471 --> 00:02:28,506
 A refspec, remember, is the rule that says
 which refs are copied, and under which
 
 37
-00:02:26,451 --> 00:02:31,548
+00:02:28,546 --> 00:02:33,643
 names. The remote defaults to the upstream
 remote of the current branch, otherwise
 
 38
-00:02:31,588 --> 00:02:36,623
+00:02:33,683 --> 00:02:38,718
 origin. Without a refspec on the command
 line, the configured remote.<name>.fetch
 
 39
-00:02:36,663 --> 00:02:40,946
+00:02:38,758 --> 00:02:43,041
 values select the server's refs and
 say which local ref records each.
 
 40
-00:02:40,986 --> 00:02:46,146
+00:02:43,081 --> 00:02:48,241
 For every selected ref Git downloads missing
 objects and updates the destination if
 
 41
-00:02:46,186 --> 00:02:50,406
+00:02:48,281 --> 00:02:52,501
 the update is a fast-forward or the
 refspec begins with a plus sign.
 
 42
-00:02:50,746 --> 00:02:54,603
+00:02:52,841 --> 00:02:57,363
 There are three extras. Tags that point
 into the fetched history are created.
 
 43
-00:02:54,643 --> 00:02:57,286
+00:02:57,403 --> 00:03:00,503
 That's called tag following.
 FETCH_HEAD is rewritten.
 
 44
-00:02:57,326 --> 00:02:59,159
+00:03:00,543 --> 00:03:02,694
 And a missing origin/HEAD is created.
 
 45
-00:02:59,499 --> 00:03:04,935
+00:03:03,034 --> 00:03:08,470
 Quick quiz. You have uncommitted edits
 in three files, and you run git fetch.
 
 46
-00:03:04,975 --> 00:03:09,059
+00:03:08,510 --> 00:03:12,595
 What happens to them? A, nothing.
 B, they are overwritten.
 
 47
-00:03:09,099 --> 00:03:11,691
+00:03:12,635 --> 00:03:15,226
 C, Git refuses to fetch. Your answer?
 
 48
-00:03:16,531 --> 00:03:19,846
+00:03:20,066 --> 00:03:23,391
 A, nothing. Inside .git, a
 fetch writes new objects.
 
 49
-00:03:19,886 --> 00:03:23,461
+00:03:23,431 --> 00:03:27,014
 The refs under refs/remotes/<remote>/
 and their reflogs.
 
 50
-00:03:23,501 --> 00:03:28,688
+00:03:27,054 --> 00:03:32,254
 Possibly refs under refs/tags/. And
 FETCH_HEAD. And here is the list to memorize,
 
 51
-00:03:28,728 --> 00:03:32,818
+00:03:32,294 --> 00:03:36,395
 the things it does not touch:
 refs/heads/*, HEAD, and the index.
 
 52
-00:03:33,158 --> 00:03:36,472
+00:03:36,735 --> 00:03:40,048
 Now the other half. git status
 compares two local refs.
 
 53
-00:03:36,512 --> 00:03:41,593
+00:03:40,088 --> 00:03:45,169
 It opens no connection. git ls-remote does
 open a connection: it asks the server for
 
 54
-00:03:41,633 --> 00:03:44,519
+00:03:45,209 --> 00:03:48,096
 its refs and changes
 nothing in your repository.
 
 55
-00:03:44,859 --> 00:03:49,545
+00:03:48,436 --> 00:03:53,121
 When is a plain fetch not enough? When
 you expect it to update a tag you already
 
 56
-00:03:49,585 --> 00:03:53,443
+00:03:53,161 --> 00:03:57,019
 have. A fetch creates tags that
 point into the history it fetched.
 
 57
-00:03:53,483 --> 00:03:58,405
+00:03:57,059 --> 00:04:01,981
 It does not update a tag you already have.
 You will see the rejection and the forced
 
 58
-00:03:58,445 --> 00:03:58,818
+00:04:02,021 --> 00:04:02,394
 update.
 
 59
-00:03:59,158 --> 00:04:03,551
+00:04:02,734 --> 00:04:07,123
 And the failure mode is the hook: acting
 on a remote-tracking ref of unknown age as
 
 60
-00:04:03,591 --> 00:04:04,726
+00:04:07,163 --> 00:04:08,297
 if it were the server.
 
 61
-00:04:06,566 --> 00:04:13,815
+00:04:10,137 --> 00:04:15,097
 A picture helps. The textbook's analogy:
 a scout returns and you redraw the wall
 
 62
-00:04:13,855 --> 00:04:19,646
+00:04:15,137 --> 00:04:19,097
 map. The other team's flags are
 placed where the scout saw them.
 
 63
-00:04:19,686 --> 00:04:26,753
+00:04:19,137 --> 00:04:23,972
 Your own flags stay where they are, and
 the map starts to age the moment it is
 
 64
-00:04:26,793 --> 00:04:27,299
+00:04:24,012 --> 00:04:24,347
 drawn.
 
 65
-00:04:27,639 --> 00:04:32,788
+00:04:24,687 --> 00:04:29,836
 It breaks in one place: the scout also brings
 back a complete copy of everything the
 
 66
-00:04:32,828 --> 00:04:37,483
+00:04:29,876 --> 00:04:34,531
 other team built, not only the positions.
 After a fetch you hold the commits
 
 67
-00:04:37,523 --> 00:04:42,425
+00:04:34,571 --> 00:04:39,473
 themselves. You can log them, diff them,
 check them out, with no further network
 
 68
-00:04:42,465 --> 00:04:42,858
+00:04:39,513 --> 00:04:39,906
 access.
 
 69
-00:04:43,198 --> 00:04:47,955
+00:04:40,246 --> 00:04:45,283
 Two consequences to carry around. A fetch
 cannot hurt your work, because your flags
 
 70
-00:04:47,995 --> 00:04:52,521
+00:04:45,323 --> 00:04:50,115
 are not on its list. And no local command
 can tell you where the server is now.
 
 71
-00:04:52,561 --> 00:04:53,619
+00:04:50,155 --> 00:04:51,277
 Only the scout can.
 
 72
-00:04:55,459 --> 00:04:59,188
+00:04:53,117 --> 00:04:56,753
 main and HEAD stayed on 510ee94.
 Only origin/main moved.
 
 73
-00:04:59,228 --> 00:05:04,102
+00:04:56,793 --> 00:05:01,545
 That gap between the two labels is
 what you inspect before you integrate.
 
 74
-00:05:05,942 --> 00:05:07,912
+00:05:03,385 --> 00:05:05,354
 Step 1: the stale status.
 
 75
-00:05:08,252 --> 00:05:12,197
+00:05:05,694 --> 00:05:09,640
 Question for you: is your branch
 up to date? Say it out loud.
 
 76
-00:05:12,237 --> 00:05:12,850
+00:05:09,680 --> 00:05:10,293
 I'll wait.
 
 77
-00:05:17,690 --> 00:05:22,191
+00:05:15,133 --> 00:05:19,136
 The honest answer is: up to date
 with what? refs/heads/main and
 
 78
-00:05:22,231 --> 00:05:27,165
+00:05:19,176 --> 00:05:23,563
 refs/remotes/origin/main are both
 at 510ee94. No connection was made.
 
 79
-00:05:27,205 --> 00:05:32,499
+00:05:23,603 --> 00:05:28,312
 The sentence is true of your last fetch
 and says nothing about the server.
 
 80
-00:05:32,839 --> 00:05:34,653
+00:05:28,652 --> 00:05:30,465
 Step 2: ask the server.
 
 81
-00:05:34,993 --> 00:05:40,621
+00:05:30,805 --> 00:05:36,584
 One line per ref on the server. Its main
 starts with ef22149, not with 510ee94.
 
 82
-00:05:40,661 --> 00:05:46,575
+00:05:36,624 --> 00:05:42,697
 An annotated tag is a small object of its
 own, with its own ID, and the line ending
 
 83
-00:05:46,615 --> 00:05:50,449
+00:05:42,737 --> 00:05:46,675
 in ^{} is the commit that
 the annotated tag points to.
 
 84
-00:05:50,489 --> 00:05:56,404
+00:05:46,715 --> 00:05:52,788
 git ls-remote accepts --branches, --tags
 and name patterns, and with --exit-code it
 
 85
-00:05:56,444 --> 00:06:02,000
+00:05:52,828 --> 00:05:58,533
 fails when nothing matches, which is how
 a script should test whether a branch
 
 86
-00:06:02,040 --> 00:06:03,363
+00:05:58,573 --> 00:05:59,932
 exists on a server.
 
 87
-00:06:03,703 --> 00:06:09,599
+00:06:00,272 --> 00:06:06,169
 Step 3: fetch. Predict the lines of output:
 how many refs, and what kind of update
 
 88
-00:06:09,639 --> 00:06:10,251
+00:06:06,209 --> 00:06:06,821
 for each.
 
 89
-00:06:15,091 --> 00:06:21,630
+00:06:11,661 --> 00:06:17,266
 Three lines. 510ee94..ef22149 main ->
 origin/main is a fast-forward of a
 
 90
-00:06:21,670 --> 00:06:28,482
+00:06:17,306 --> 00:06:23,146
 remote-tracking branch, printed as a
 range that you can paste into git log.
 
 91
-00:06:28,522 --> 00:06:35,975
+00:06:23,186 --> 00:06:29,575
 * [new branch] and * [new tag] are creations.
 The name after the arrow is always a
 
 92
-00:06:36,015 --> 00:06:37,163
+00:06:29,615 --> 00:06:30,594
 ref of yours.
 
 93
-00:06:37,503 --> 00:06:42,344
+00:06:30,934 --> 00:06:35,776
 FETCH_HEAD holds one line per fetched
 ref: object ID, a marker, a description.
 
 94
-00:06:42,384 --> 00:06:47,602
+00:06:35,816 --> 00:06:41,033
 Exactly one line is not marked not-for-merge:
 the upstream of the branch you are on.
 
 95
-00:06:47,642 --> 00:06:51,169
+00:06:41,073 --> 00:06:44,600
 That line is what git pull
 integrates, in the next video.
 
 96
-00:06:51,509 --> 00:06:55,055
+00:06:44,941 --> 00:06:48,486
 Step 4: what moved.
 Predict refs/heads/main.
 
 97
-00:06:59,895 --> 00:07:05,110
+00:06:53,326 --> 00:06:58,452
 refs/heads/main is still at 510ee94. git
 status, still without any network access,
 
 98
-00:07:05,150 --> 00:07:10,366
+00:06:58,492 --> 00:07:03,618
 now gives a different answer, "behind by
 1 commit", because one of the two refs it
 
 99
-00:07:10,406 --> 00:07:11,712
+00:07:03,658 --> 00:07:04,941
 compares has changed.
 
 100
-00:07:12,052 --> 00:07:14,324
+00:07:05,281 --> 00:07:07,553
 Step 5: look before you decide.
 
 101
-00:07:14,664 --> 00:07:21,962
+00:07:07,893 --> 00:07:13,605
 Try it now. Thirty seconds, on paper. Your
 main is at 510ee94 and origin/main is at
 
 102
-00:07:22,002 --> 00:07:29,387
+00:07:13,645 --> 00:07:19,427
 ef22149. Write the git log command that
 lists exactly the commits the remote has and
 
 103
-00:07:29,427 --> 00:07:32,923
+00:07:19,467 --> 00:07:22,199
 your branch lacks. Then say it out loud.
 
 104
-00:07:37,763 --> 00:07:41,519
+00:07:27,039 --> 00:07:30,593
 The graph shows HEAD and main
 one commit below origin/main.
 
 105
-00:07:41,559 --> 00:07:46,795
+00:07:30,633 --> 00:07:35,589
 And the answer: git log main..origin/main
 lists exactly the commits the remote has
 
 106
-00:07:46,835 --> 00:07:50,785
+00:07:35,629 --> 00:07:39,366
 and your branch lacks. Two dots,
 with your branch on the left.
 
 107
-00:07:50,825 --> 00:07:56,061
+00:07:39,406 --> 00:07:44,361
 This is the practical argument for fetching
 instead of pulling: you look first and
 
 108
-00:07:56,101 --> 00:07:56,962
+00:07:44,401 --> 00:07:45,214
 decide second.
 
 109
-00:07:57,302 --> 00:07:59,754
+00:07:45,554 --> 00:07:48,006
 Step 6: the record of what you observed.
 
 110
-00:08:00,094 --> 00:08:04,544
+00:07:48,346 --> 00:07:52,795
 Every remote-tracking ref has a reflog.
 Its entries are a history of what you
 
 111
-00:08:04,584 --> 00:08:09,266
+00:07:52,835 --> 00:07:57,518
 observed on the server, and in plain Git
 it is the only such history, because the
 
 112
-00:08:09,306 --> 00:08:14,047
+00:07:57,558 --> 00:08:02,299
 bare server keeps none. The reflog of the
 local branch shows that it has not moved
 
 113
-00:08:14,087 --> 00:08:14,980
+00:08:02,339 --> 00:08:03,232
 since the clone.
 
 114
-00:08:15,320 --> 00:08:21,778
+00:08:03,572 --> 00:08:10,026
 Step 7: integrate, as a separate local step.
 git merge --ff-only 🟡 CAUTION: it moves
 
 115
-00:08:21,818 --> 00:08:22,707
+00:08:10,066 --> 00:08:10,954
 your branch.
 
 116
-00:08:23,047 --> 00:08:27,236
+00:08:11,294 --> 00:08:16,449
 ## main...origin/main with nothing in
 brackets means the two refs are equal.
 
 117
-00:08:27,576 --> 00:08:31,181
+00:08:16,789 --> 00:08:20,394
 Step 8: one branch. The
 server has moved again.
 
 118
-00:08:31,521 --> 00:08:36,522
+00:08:20,734 --> 00:08:25,735
 With a branch named on the command line
 only that branch is fetched, and FETCH_HEAD
 
 119
-00:08:36,562 --> 00:08:41,442
+00:08:25,775 --> 00:08:30,655
 has a single line. origin/main is updated
 as well, because the configured refspec
 
 120
-00:08:41,482 --> 00:08:43,750
+00:08:30,695 --> 00:08:32,963
 says where main of origin is recorded.
 
 121
-00:08:44,090 --> 00:08:49,519
+00:08:33,303 --> 00:08:38,732
 Step 9: from a URL. Same repository,
 addressed by path instead of by name.
 
 122
-00:08:49,559 --> 00:08:51,293
+00:08:38,772 --> 00:08:40,506
 Predict which refs move.
 
 123
-00:08:56,133 --> 00:09:01,860
+00:08:45,346 --> 00:08:51,073
 None. A fetch from a URL records its result
 in FETCH_HEAD and nowhere else, although
 
 124
-00:09:01,900 --> 00:09:07,353
+00:08:51,113 --> 00:08:56,566
 the URL is the same repository as origin.
 Git knows remotes by name, not by URL.
 
 125
-00:09:07,393 --> 00:09:10,991
+00:08:56,606 --> 00:09:00,205
 Use this form for a single
 look at somebody's branch.
 
 126
-00:09:11,331 --> 00:09:12,916
+00:09:00,545 --> 00:09:02,129
 Step 10: nothing new.
 
 127
-00:09:13,256 --> 00:09:17,612
+00:09:02,469 --> 00:09:07,771
 A fetch that finds nothing new prints
 nothing. With --verbose it lists each ref as
 
 128
-00:09:17,652 --> 00:09:22,060
+00:09:07,811 --> 00:09:13,178
 up to date. Silence from a fetch is
 information: the scout went and the map did not
 
 129
-00:09:22,100 --> 00:09:22,436
+00:09:13,218 --> 00:09:13,634
 change.
 
 130
-00:09:22,776 --> 00:09:33,346
+00:09:13,974 --> 00:09:20,429
 Tags. labs/run ch12/fetch-tags. A tag is a
 name for a commit that is not expected to
 
 131
-00:09:33,386 --> 00:09:43,956
+00:09:20,469 --> 00:09:26,923
 move. On the server, v0.1.0 has been moved
 all the same, by a forced tag push, and a
 
 132
-00:09:43,996 --> 00:09:50,146
+00:09:26,963 --> 00:09:30,712
 second tag sits on a commit
 that is on no branch.
 
 133
-00:09:50,486 --> 00:09:54,619
+00:09:31,052 --> 00:09:34,952
 The plain fetch moved origin/main
 and brought neither tag.
 
 134
-00:09:54,659 --> 00:10:00,519
+00:09:34,992 --> 00:09:40,524
 Your v0.1.0 already exists, and the other
 tag does not point into fetched history.
 
 135
-00:10:00,559 --> 00:10:05,268
+00:09:40,564 --> 00:09:45,008
 Now ask for every tag. Predict what
 happens to the one that moved.
 
 136
-00:10:10,108 --> 00:10:16,204
+00:09:49,848 --> 00:09:55,923
 The new one arrives. The moved one is
 rejected: "would clobber existing tag", exit
 
 137
-00:10:16,244 --> 00:10:20,844
+00:09:55,963 --> 00:10:00,547
 status 1. Only git fetch --tags
 --force 🟡 CAUTION replaces it.
 
 138
-00:10:21,184 --> 00:10:26,386
+00:10:00,887 --> 00:10:06,045
 Until someone forces, your v0.1.0 and the
 server's are different commits under one
 
 139
-00:10:26,426 --> 00:10:31,052
+00:10:06,085 --> 00:10:10,674
 name, and a build "by tag" gives
 different results on different machines.
 
 140
-00:10:31,092 --> 00:10:36,102
+00:10:10,714 --> 00:10:15,682
 That is why moving a published tag is a
 release incident and not a convenience.
 
 141
-00:10:37,942 --> 00:10:39,590
+00:10:17,522 --> 00:10:19,170
 Five mistakes to watch for.
 
 142
-00:10:39,930 --> 00:10:44,597
+00:10:19,510 --> 00:10:24,177
 Believing "up to date with 'origin/main'"
 means "up to date with the server".
 
 143
-00:10:44,637 --> 00:10:49,671
+00:10:24,217 --> 00:10:29,251
 Root cause: git status compares two local
 refs and opens no connection; origin/main
 
 144
-00:10:49,711 --> 00:10:51,566
+00:10:29,291 --> 00:10:31,146
 is a record of your last fetch.
 
 145
-00:10:51,906 --> 00:10:57,079
+00:10:31,486 --> 00:10:36,556
 Avoiding git fetch on a dirty working tree.
 Root cause: none in Git; fetch writes
 
 146
-00:10:57,119 --> 00:11:02,420
+00:10:36,596 --> 00:10:41,792
 remote-tracking refs, tags, FETCH_HEAD and
 objects, and never refs/heads/*, HEAD or
 
 147
-00:11:02,460 --> 00:11:03,064
+00:10:41,832 --> 00:10:42,423
 the index.
 
 148
-00:11:03,404 --> 00:11:07,032
+00:10:42,763 --> 00:10:46,391
 Fetching from a URL and
 expecting origin/main to move.
 
 149
-00:11:07,072 --> 00:11:12,467
+00:10:46,431 --> 00:10:51,826
 Root cause: Git knows remotes by name, so
 a URL fetch records its result only in
 
 150
-00:11:12,507 --> 00:11:13,214
+00:10:51,866 --> 00:10:52,573
 FETCH_HEAD.
 
 151
-00:11:13,554 --> 00:11:18,267
+00:10:52,913 --> 00:10:57,626
 Expecting a fetch to correct a
 tag that was moved on the server.
 
 152
-00:11:18,307 --> 00:11:24,283
+00:10:57,666 --> 00:11:03,642
 Root cause: a fetch does not update a tag
 you already have; --tags rejects it and
 
 153
-00:11:24,323 --> 00:11:26,659
+00:11:03,682 --> 00:11:06,018
 only --tags --force replaces it.
 
 154
-00:11:26,999 --> 00:11:30,978
+00:11:06,358 --> 00:11:10,337
 Scripts that compare against a
 remote-tracking ref of unknown age.
 
 155
-00:11:31,018 --> 00:11:35,910
+00:11:10,377 --> 00:11:15,269
 Root cause: the ref is as old as the last
 fetch in that clone; git ls-remote asks
 
 156
-00:11:35,950 --> 00:11:36,580
+00:11:15,309 --> 00:11:15,939
 the server.
 
 157
-00:11:36,920 --> 00:11:41,661
+00:11:16,279 --> 00:11:21,020
 And here is the root-cause box for the hook.
 The status compared two local refs, and
 
 158
-00:11:41,701 --> 00:11:44,108
+00:11:21,060 --> 00:11:23,467
 origin/main was a record
 of the last fetch.
 
 159
-00:11:45,948 --> 00:11:49,947
+00:11:25,307 --> 00:11:29,306
 Now, out of the lab. Return to the
 release engineer from the hook.
 
 160
-00:11:49,987 --> 00:11:55,086
+00:11:29,346 --> 00:11:34,445
 The tag missed yesterday's hotfix because
 the last fetch on that laptop was two days
 
 161
-00:11:55,126 --> 00:11:55,331
+00:11:34,485 --> 00:11:34,690
 old.
 
 162
-00:11:55,671 --> 00:11:59,995
+00:11:35,030 --> 00:11:38,889
 The textbook is direct about the
 control: it is not "be careful".
 
 163
-00:12:00,035 --> 00:12:05,635
+00:11:38,929 --> 00:11:43,929
 It is a release script that begins with git
 fetch and refuses to continue unless git
 
 164
-00:12:05,675 --> 00:12:10,873
+00:11:43,969 --> 00:11:48,608
 rev-parse HEAD equals the ID that git
 ls-remote origin refs/heads/main prints.
 
 165
-00:12:11,213 --> 00:12:15,666
+00:11:48,948 --> 00:11:53,401
 Notice the shape of that control. It does
 not trust a person to remember, and it
 
 166
-00:12:15,706 --> 00:12:20,159
+00:11:53,441 --> 00:11:57,895
 does not trust a remote-tracking ref. It
 compares the commit being released with
 
 167
-00:12:20,199 --> 00:12:24,708
+00:11:57,935 --> 00:12:02,444
 what the server reports at that moment.
 For a team that ships model-serving code,
 
 168
-00:12:24,748 --> 00:12:29,426
+00:12:02,484 --> 00:12:07,162
 where a tag triggers an image build and a
 rollout, that comparison is the difference
 
 169
-00:12:29,466 --> 00:12:31,336
+00:12:07,202 --> 00:12:09,071
 between a release and an incident.
 
 170
-00:12:33,176 --> 00:12:37,131
+00:12:10,911 --> 00:12:17,708
 Your turn. Do Exercise 7.2, Level 1,
 "fetch first, look, then integrate", in
 
 171
-00:12:37,171 --> 00:12:38,866
+00:12:17,748 --> 00:12:20,676
 exercises/m06-m10-integration.md.
 
 172
-00:12:39,206 --> 00:12:41,000
+00:12:21,016 --> 00:12:22,810
 Predict in writing before you type:
 
 173
-00:12:41,340 --> 00:12:45,729
+00:12:23,150 --> 00:12:27,539
 Before the fetch, what will git status
 say, and is that a statement about the
 
 174
-00:12:45,769 --> 00:12:46,132
+00:12:27,579 --> 00:12:27,942
 server?
 
 175
-00:12:46,472 --> 00:12:51,659
+00:12:28,282 --> 00:12:33,469
 After the fetch, which of these changed:
 refs/heads/main, refs/remotes/origin/main,
 
 176
-00:12:51,699 --> 00:12:53,801
+00:12:33,509 --> 00:12:35,611
 HEAD, the index, the working tree?
 
 177
-00:12:54,141 --> 00:12:57,969
+00:12:35,951 --> 00:12:39,779
 Which command lists the commits that
 arrived and are not yet in your branch?
 
 178
-00:12:58,309 --> 00:13:03,862
+00:12:40,119 --> 00:12:45,672
 The challenge is Exercise 7.9, Level 4, "a
 clone that has not talked to the server
 
 179
-00:13:03,902 --> 00:13:05,908
+00:12:45,712 --> 00:12:47,719
 for a week", in the same file.
 
 180
-00:13:07,748 --> 00:13:12,786
+00:12:49,559 --> 00:12:54,589
 Q215: "State exactly what git fetch writes
 in your repository and what it never
 
 181
-00:13:12,826 --> 00:13:17,927
+00:12:54,629 --> 00:12:59,723
 touches. Then name three things engineers
 expect a plain fetch to update that it
 
 182
-00:13:17,967 --> 00:13:18,570
+00:12:59,763 --> 00:13:00,365
 does not."
 
 183
-00:13:20,910 --> 00:13:26,108
+00:13:02,705 --> 00:13:07,903
 Answer out loud first. A strong answer gives
 two lists, without hedging, in terms of
 
 184
-00:13:26,148 --> 00:13:30,038
+00:13:07,943 --> 00:13:11,833
 refs and files in .git, not in
 terms of "it downloads changes".
 
 185
-00:13:30,078 --> 00:13:35,277
+00:13:11,873 --> 00:13:17,072
 For the second half it picks three expectations
 from real work and for each one says
 
 186
-00:13:35,317 --> 00:13:40,391
+00:13:17,112 --> 00:13:22,186
 what a plain fetch does do instead. The
 best answers explain one of the three from
 
 187
-00:13:40,431 --> 00:13:45,006
+00:13:22,226 --> 00:13:26,801
 the refspec or from the tag rule, which
 shows the list was derived and not
 
 188
-00:13:45,046 --> 00:13:45,630
+00:13:26,841 --> 00:13:27,425
 memorized.
 
 189
-00:13:47,470 --> 00:13:50,397
+00:13:29,265 --> 00:13:32,192
 Let's land this. You
 should now be able to say:
 
 190
-00:13:50,737 --> 00:13:54,757
+00:13:32,532 --> 00:13:36,243
 git fetch downloads objects and
 moves my remote-tracking refs.
 
 191
-00:13:54,797 --> 00:13:59,799
+00:13:36,283 --> 00:13:40,903
 It writes FETCH_HEAD, follows tags into
 fetched history and creates a missing
 
 192
-00:13:59,839 --> 00:14:05,037
+00:13:40,943 --> 00:13:45,744
 origin/HEAD. It never moves a local branch,
 HEAD, the index or the working tree.
 
 193
-00:14:05,377 --> 00:14:10,539
+00:13:46,084 --> 00:13:51,527
 "Up to date with origin/main" is true of
 my last fetch, because git status compares
 
 194
-00:14:10,579 --> 00:14:14,675
+00:13:51,567 --> 00:13:55,887
 two local refs. git ls-remote asks
 the server and changes nothing.
 
 195
-00:14:14,715 --> 00:14:19,814
+00:13:55,927 --> 00:14:01,304
 After a fetch, main..origin/main shows what
 arrived, and integration is a separate
 
 196
-00:14:19,854 --> 00:14:20,503
+00:14:01,344 --> 00:14:02,031
 local step.
 
 197
-00:14:22,343 --> 00:14:25,059
+00:14:03,871 --> 00:14:06,587
 Read section 12.4 of Chapter 12.
 
 198
-00:14:25,399 --> 00:14:31,850
+00:14:06,927 --> 00:14:13,317
 Do Exercise 7.4, Level 2, "what the clone
 knows before and after a fetch", and
 
 199
-00:14:31,890 --> 00:14:37,092
+00:14:13,357 --> 00:14:18,510
 Exercise 7.6, Level 2, "which
 refs does a fetch move?", both in
 
 200
-00:14:37,132 --> 00:14:39,839
+00:14:18,550 --> 00:14:21,230
 exercises/m06-m10-integration.md.
 
 201
-00:14:40,179 --> 00:14:47,937
+00:14:21,570 --> 00:14:26,791
 Today you separated looking from deciding:
 a fetch redraws your map and leaves your
 
 202
-00:14:47,977 --> 00:14:55,548
+00:14:26,831 --> 00:14:31,924
 own work alone. One git fetch would have
 shown that release laptop it was behind.
 
 203
-00:14:55,588 --> 00:15:03,065
+00:14:31,964 --> 00:14:36,995
 Do Exercise 7.2 while this is fresh. Next
 time: upstream branches, and git pull.
 
 204
-00:15:03,105 --> 00:15:07,951
+00:14:37,035 --> 00:14:40,290
 Until then, look at the
 state first and type second.
 
 205
-00:15:07,991 --> 00:15:10,207
+00:14:40,330 --> 00:14:41,811
 See you in the next one.

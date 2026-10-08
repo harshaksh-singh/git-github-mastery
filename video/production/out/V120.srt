@@ -1,0 +1,1227 @@
+1
+00:00:04,500 --> 00:00:08,309
+Picture a build machine restored
+from a disk image made in 2022.
+
+2
+00:00:08,349 --> 00:00:12,939
+This morning it fetches from GitHub for
+the first time since then, and stops.
+
+3
+00:00:12,979 --> 00:00:17,990
+The message says the remote host identification
+has changed, and ends with "Host key
+
+4
+00:00:18,030 --> 00:00:22,921
+verification failed." A search result offers
+a one-line fix: switch the check off.
+
+5
+00:00:23,261 --> 00:00:27,896
+Your CTO asks: is someone intercepting
+our connection, or did GitHub change
+
+6
+00:00:27,936 --> 00:00:30,077
+something? And what do we never do?
+
+7
+00:00:30,417 --> 00:00:34,958
+There are exactly two explanations, a
+published key rotation or an attack, and a
+
+8
+00:00:34,998 --> 00:00:39,768
+fixed way to decide between them. And the
+one-line fix is the thing you never do: it
+
+9
+00:00:39,808 --> 00:00:44,291
+makes the error disappear by removing the
+check. Hold on to that build machine.
+
+10
+00:00:44,331 --> 00:00:46,639
+You'll repair it properly before the end.
+
+11
+00:00:48,479 --> 00:00:52,314
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:52,354 --> 00:00:56,570
+The last two videos covered HTTPS,
+where a secret travels: a token.
+
+13
+00:00:56,610 --> 00:01:01,589
+SSH works on a different principle, and
+this video covers it end to end in five
+
+14
+00:01:01,629 --> 00:01:06,735
+steps. The key pair. The agent that holds
+it. The configuration file that decides
+
+15
+00:01:06,775 --> 00:01:11,880
+which key goes to which host. The host
+key, which is the server proving itself to
+
+16
+00:01:11,920 --> 00:01:15,882
+you. And the test that tells you
+who the server thinks you are.
+
+17
+00:01:16,222 --> 00:01:21,946
+Three replays from labs/ch16. ssh-keys.sh
+generates a throwaway key inside the
+
+18
+00:01:21,986 --> 00:01:27,782
+sandbox. It's volatile, so the key and
+its fingerprints differ on every run and
+
+19
+00:01:27,822 --> 00:01:33,176
+won't match the book. ssh-config.sh
+and known-hosts.sh are deterministic.
+
+20
+00:01:33,216 --> 00:01:37,018
+None of the replays reaches
+an agent or the network.
+
+21
+00:01:37,058 --> 00:01:40,934
+Then the walkthrough of Lab
+20.1 in the normal shell.
+
+22
+00:01:41,274 --> 00:01:47,959
+Labels from the chapter's table. ssh -G,
+ssh-add -l, ssh-keygen -l and ssh-keygen -F
+
+23
+00:01:47,999 --> 00:01:54,204
+are 🟢 SAFE. ssh -T git@github.com is 🟢,
+and on first contact may add a line to
+
+24
+00:01:54,244 --> 00:02:00,608
+known_hosts after asking you. ssh-keygen
+-t ed25519 is 🟡 CAUTION: it creates two
+
+25
+00:02:00,648 --> 00:02:05,011
+files and overwrites an
+existing key only after asking.
+
+26
+00:02:05,051 --> 00:02:11,176
+ssh-add is 🟡. ssh-keygen -R is 🟡: it
+removes a host's lines from known_hosts,
+
+27
+00:02:11,216 --> 00:02:16,380
+keeping a .old copy. And
+StrictHostKeyChecking no is 🔴 DANGEROUS.
+
+28
+00:02:18,220 --> 00:02:19,632
+After this video you can:
+
+29
+00:02:19,972 --> 00:02:23,741
+Generate a key pair and say what
+each half is for and where it goes.
+
+30
+00:02:24,081 --> 00:02:27,326
+Explain what the agent holds and
+what the passphrase protects.
+
+31
+00:02:27,666 --> 00:02:35,860
+Write a ~/.ssh/config entry with a host
+alias and show what SSH resolves it to.
+
+32
+00:02:36,200 --> 00:02:40,771
+Verify GitHub's host key against the
+published fingerprints and handle a changed
+
+33
+00:02:40,811 --> 00:02:41,002
+key.
+
+34
+00:02:41,342 --> 00:02:45,232
+Test the connection and
+use SSH over port 443.
+
+35
+00:02:47,072 --> 00:02:51,682
+In one sentence: with SSH you prove who
+you are by signing a challenge with a
+
+36
+00:02:51,722 --> 00:02:56,331
+private key that never leaves your
+machine. GitHub holds only the public key.
+
+37
+00:02:56,671 --> 00:03:01,979
+The key pair. ssh-keygen -t ed25519 -C
+"your_email@example.com" is the command
+
+38
+00:03:02,019 --> 00:03:07,464
+GitHub documents. It writes two files:
+the private key, and a .pub file with one
+
+39
+00:03:07,504 --> 00:03:11,646
+line, type, key and comment,
+that you upload to your account.
+
+40
+00:03:11,686 --> 00:03:16,103
+For hardware security keys the
+types are ed25519-sk and ecdsa-sk.
+
+41
+00:03:16,143 --> 00:03:21,520
+When you add a key to GitHub you choose
+whether it's an authentication key or a
+
+42
+00:03:21,560 --> 00:03:25,496
+signing key. To use one key
+for both, you upload it twice.
+
+43
+00:03:25,536 --> 00:03:29,747
+And GitHub deletes SSH keys that
+haven't been used for a year.
+
+44
+00:03:30,087 --> 00:03:33,903
+A fingerprint is a hash of the public
+key, short enough to compare by eye.
+
+45
+00:03:34,243 --> 00:03:40,782
+Inside .git: nothing. Keys live under ~/.ssh,
+and which key is offered is decided by
+
+46
+00:03:40,822 --> 00:03:45,638
+ssh, unless core.sshCommand or
+GIT_SSH_COMMAND says otherwise.
+
+47
+00:03:45,978 --> 00:03:50,980
+The agent. A passphrase encrypts the private
+key file, so that a copy of the file is
+
+48
+00:03:51,020 --> 00:03:56,023
+useless without it. But a passphrase that
+must be typed for every fetch gets removed
+
+49
+00:03:56,063 --> 00:04:00,885
+within a week. The agent is the remedy: a
+background process that holds decrypted
+
+50
+00:04:00,925 --> 00:04:05,747
+keys in memory and signs on request, so
+that ssh never needs the passphrase again
+
+51
+00:04:05,787 --> 00:04:09,409
+during the session and no program
+reads the private key file.
+
+52
+00:04:09,749 --> 00:04:14,944
+ssh-add PATH gives a key to the agent.
+ssh-add -l lists the keys it holds, and its
+
+53
+00:04:14,984 --> 00:04:18,391
+exit status distinguishes
+three states. 0 with a list.
+
+54
+00:04:18,431 --> 00:04:23,052
+1 with "The agent has no identities."
+And 2 when no agent can be reached.
+
+55
+00:04:23,092 --> 00:04:26,052
+macOS provides an agent
+for your login session.
+
+56
+00:04:26,392 --> 00:04:31,757
+GitHub's guide adds a Host github.com block
+with AddKeysToAgent yes and UseKeychain
+
+57
+00:04:31,797 --> 00:04:36,902
+yes, and ssh-add --apple-use-keychain,
+which stores the passphrase in the login
+
+58
+00:04:36,942 --> 00:04:40,809
+keychain so that the agent can
+load the key after a restart.
+
+59
+00:04:40,849 --> 00:04:44,195
+UseKeychain exists only in
+Apple's build of OpenSSH.
+
+60
+00:04:44,535 --> 00:04:50,055
+Try it now, thirty seconds, in your normal
+shell. Run ssh-add -l and decide which of
+
+61
+00:04:50,095 --> 00:04:54,225
+the three states you're in: a
+list, no identities, or no agent.
+
+62
+00:04:54,265 --> 00:04:54,887
+I'll wait.
+
+63
+00:04:59,727 --> 00:05:02,969
+Whichever you got, you now
+know what your agent holds.
+
+64
+00:05:03,009 --> 00:05:06,312
+That's the first thing to
+check when SSH surprises you.
+
+65
+00:05:06,652 --> 00:05:12,654
+You meet the third state, no agent, under
+sudo, in cron jobs and in containers: they
+
+66
+00:05:12,694 --> 00:05:18,121
+don't inherit SSH_AUTH_SOCK, the variable
+that tells ssh where the agent is.
+
+67
+00:05:18,461 --> 00:05:22,492
+One warning: agent forwarding lets a
+remote machine use your local agent.
+
+68
+00:05:22,532 --> 00:05:27,065
+The manual says it "should be enabled with
+caution": whoever controls that machine
+
+69
+00:05:27,105 --> 00:05:29,630
+can use your identity
+while you are connected.
+
+70
+00:05:29,970 --> 00:05:35,497
+Quick quiz. When you connect to GitHub over
+SSH, which user name does ssh send: your
+
+71
+00:05:35,537 --> 00:05:39,340
+account name, your email address,
+or git? Say it out loud.
+
+72
+00:05:44,180 --> 00:05:50,519
+The configuration file. In one sentence:
+~/.ssh/config maps the host name that Git
+
+73
+00:05:50,559 --> 00:05:56,587
+hands to ssh onto a real host, a user,
+a port and a key, and ssh -G prints the
+
+74
+00:05:56,627 --> 00:05:59,854
+result of that mapping without connecting.
+
+75
+00:06:00,194 --> 00:06:05,572
+The file is a list of Host blocks. For each
+setting, the first value obtained wins,
+
+76
+00:06:05,612 --> 00:06:09,227
+so specific blocks go first
+and Host * defaults go last.
+
+77
+00:06:09,267 --> 00:06:14,579
+The keywords that matter for GitHub. Host
+is the name or pattern that appears in a
+
+78
+00:06:14,619 --> 00:06:17,255
+URL: github.com, or an alias of your own.
+
+79
+00:06:17,595 --> 00:06:22,358
+HostName is the real host. User is
+always git, and that's the quiz answer.
+
+80
+00:06:22,398 --> 00:06:27,485
+IdentityFile is a private key to offer.
+IdentitiesOnly yes means offer only the
+
+81
+00:06:27,525 --> 00:06:30,860
+configured files, even if
+the agent holds more keys.
+
+82
+00:06:30,900 --> 00:06:36,051
+Your GitHub account name appears nowhere.
+GitHub identifies you by which key was
+
+83
+00:06:36,091 --> 00:06:36,635
+accepted.
+
+84
+00:06:36,975 --> 00:06:42,428
+Git's part is small: it splits the
+URL and runs ssh with what it found.
+
+85
+00:06:42,468 --> 00:06:44,827
+Git doesn't read ~/.ssh/config.
+
+86
+00:06:45,167 --> 00:06:51,050
+Host keys. In one sentence: before you
+prove who you are, the server proves who it
+
+87
+00:06:51,090 --> 00:06:56,611
+is with its host key, and ssh compares
+that key with the one it remembered in
+
+88
+00:06:56,651 --> 00:06:57,984
+~/.ssh/known_hosts.
+
+89
+00:06:58,324 --> 00:07:02,980
+Without this check, anyone on the network
+path could pose as GitHub, accept your
+
+90
+00:07:03,020 --> 00:07:07,384
+connection and relay it. On the first
+connection ssh shows the server key's
+
+91
+00:07:07,424 --> 00:07:12,198
+fingerprint and asks whether to continue.
+Your answer is the whole security of the
+
+92
+00:07:12,238 --> 00:07:15,779
+scheme, so compare it with the
+fingerprints GitHub publishes.
+
+93
+00:07:15,819 --> 00:07:20,710
+GitHub also publishes the three known_hosts
+lines, so you can install them and never
+
+94
+00:07:20,750 --> 00:07:21,239
+be asked.
+
+95
+00:07:21,579 --> 00:07:26,446
+A changed host key has two explanations.
+One: a published rotation.
+
+96
+00:07:26,486 --> 00:07:32,159
+GitHub replaced its RSA host key on the
+twenty-fourth of March 2023, after the
+
+97
+00:07:32,199 --> 00:07:36,187
+private key was briefly exposed
+in a public repository.
+
+98
+00:07:36,227 --> 00:07:41,313
+The ECDSA and Ed25519 keys didn't
+change. Two: someone is in the path.
+
+99
+00:07:41,653 --> 00:07:46,599
+How do you decide? GitHub states that a
+host key change "will be announced on the
+
+100
+00:07:46,639 --> 00:07:51,584
+GitHub Blog". So you find the announcement
+first, and you compare the fingerprint
+
+101
+00:07:51,624 --> 00:07:56,570
+with the published ones. Only then do you
+remove the old lines with ssh-keygen -R
+
+102
+00:07:56,610 --> 00:07:59,216
+github.com and install
+the published lines.
+
+103
+00:07:59,556 --> 00:08:03,955
+The 🔴 item: StrictHostKeyChecking no,
+and deleting known_hosts wholesale.
+
+104
+00:08:03,995 --> 00:08:09,002
+What it changes: ssh stops verifying the
+server. What it can destroy: the guarantee
+
+105
+00:08:09,042 --> 00:08:13,866
+that you're talking to GitHub, and with
+it the confidentiality of everything you
+
+106
+00:08:13,906 --> 00:08:18,609
+push. There's no preview and no recovery
+for a connection already intercepted.
+
+107
+00:08:18,649 --> 00:08:23,291
+It isn't appropriate. On a CI runner,
+the machine that runs an automated job,
+
+108
+00:08:23,331 --> 00:08:25,480
+install the published lines instead.
+
+109
+00:08:25,820 --> 00:08:29,843
+Testing. ssh -T git@github.com
+authenticates and runs nothing.
+
+110
+00:08:29,883 --> 00:08:35,216
+GitHub's documented answer is "Hi USERNAME!
+You've successfully authenticated, but
+
+111
+00:08:35,256 --> 00:08:40,589
+GitHub does not provide shell access.",
+and the command exits with status 1, which
+
+112
+00:08:40,629 --> 00:08:45,897
+is expected. The name in the greeting is
+the answer to "who does the server say I
+
+113
+00:08:45,937 --> 00:08:50,615
+am", and it is the first thing to read
+when a repository is "not found".
+
+114
+00:08:50,655 --> 00:08:56,119
+ssh -vT adds the client's reasoning: which
+configuration files were read, which host
+
+115
+00:08:56,159 --> 00:08:59,330
+and port were contacted,
+which keys were offered.
+
+116
+00:08:59,670 --> 00:09:05,099
+Some networks block port 22. GitHub accepts
+SSH on port 443 of a different host
+
+117
+00:09:05,139 --> 00:09:10,776
+name, ssh.github.com. GitHub's page notes
+that the first connection asks about the
+
+118
+00:09:10,816 --> 00:09:16,246
+host key again, under that other name,
+and that this is not available on GitHub
+
+119
+00:09:16,286 --> 00:09:21,854
+Enterprise Server. The textbook did not
+verify the host-key behaviour beyond that
+
+120
+00:09:21,894 --> 00:09:22,200
+page.
+
+121
+00:09:24,040 --> 00:09:27,611
+The textbook's analogy: a signet
+ring and its wax impression.
+
+122
+00:09:27,651 --> 00:09:30,807
+You give everyone a sample
+impression, the public key.
+
+123
+00:09:30,847 --> 00:09:35,247
+Only the ring, the private key, can
+make a new one, and anyone can compare.
+
+124
+00:09:35,587 --> 00:09:40,434
+The analogy breaks because a wax seal can
+be copied from a sample, and a private key
+
+125
+00:09:40,474 --> 00:09:42,587
+can't be derived from the public key.
+
+126
+00:09:42,926 --> 00:09:46,195
+Add the second ring to the
+picture: the server has one too.
+
+127
+00:09:46,235 --> 00:09:50,569
+An SSH connection is two proofs. First
+the server shows its impression and you
+
+128
+00:09:50,609 --> 00:09:54,888
+compare it with the sample in known_hosts.
+Then you show yours and the server
+
+129
+00:09:54,928 --> 00:09:59,430
+compares it with the samples in your
+account. The hook of this video is the first
+
+130
+00:09:59,470 --> 00:10:03,019
+proof failing. Most "permission
+denied" problems are the second.
+
+131
+00:10:04,859 --> 00:10:09,021
+On the left, the private key stays,
+and the agent holds it decrypted.
+
+132
+00:10:09,061 --> 00:10:13,832
+The public half was uploaded once and is
+attached to your account on the right.
+
+133
+00:10:13,872 --> 00:10:17,608
+On the left again, known_hosts
+holds GitHub's public host key.
+
+134
+00:10:17,948 --> 00:10:22,855
+Two arrows cross. First from right to left:
+the server proves itself, and your ssh
+
+135
+00:10:22,895 --> 00:10:27,742
+checks that against known_hosts. Then from
+left to right: a challenge signed with
+
+136
+00:10:27,782 --> 00:10:31,422
+your private key. Nothing secret
+travels in either direction.
+
+137
+00:10:31,762 --> 00:10:35,742
+Four layers. Git splits the URL.
+ssh applies its configuration.
+
+138
+00:10:35,782 --> 00:10:40,018
+The host key is checked. And GitHub
+authenticates, then authorizes.
+
+139
+00:10:44,358 --> 00:10:49,507
+Two files. The private file is readable by
+its owner only, and ssh ignores a private
+
+140
+00:10:49,547 --> 00:10:51,483
+key file that others can access.
+
+141
+00:10:51,823 --> 00:10:55,028
+The public half: one line
+of type, key and comment.
+
+142
+00:10:55,068 --> 00:11:00,309
+Below it the fingerprint in the SHA256 form,
+which is the form GitHub lists in your
+
+143
+00:11:00,349 --> 00:11:05,082
+account, and in the older MD5 form with
+colons that some tools still print.
+
+144
+00:11:05,422 --> 00:11:08,893
+Suppose you lose the .pub
+file. What have you lost?
+
+145
+00:11:08,933 --> 00:11:10,752
+Say it out loud. I'll wait.
+
+146
+00:11:15,592 --> 00:11:20,062
+Nothing: ssh-keygen -y recomputes
+the public key from the private one.
+
+147
+00:11:20,402 --> 00:11:25,022
+A passphrase is set, and a wrong guess
+fails: "incorrect passphrase supplied to
+
+148
+00:11:25,062 --> 00:11:29,269
+decrypt private key". On your machine
+ssh-keygen asks for the passphrase
+
+149
+00:11:29,309 --> 00:11:34,105
+interactively. It never belongs on a command
+line. The replay does it only because
+
+150
+00:11:34,145 --> 00:11:34,931
+it can't type.
+
+151
+00:11:45,771 --> 00:11:51,103
+Four blocks: a personal identity for
+github.com, a work identity behind the alias
+
+152
+00:11:51,143 --> 00:11:54,950
+github-work, the port-443
+fallback, and the defaults last.
+
+153
+00:11:55,290 --> 00:12:00,042
+The alias github-work. Which host will
+ssh connect to, and with which key?
+
+154
+00:12:00,082 --> 00:12:01,402
+Make your prediction.
+
+155
+00:12:15,842 --> 00:12:19,517
+The same host, github.com,
+as a different key holder.
+
+156
+00:12:19,557 --> 00:12:25,405
+Nothing was contacted: -G evaluates the Host
+blocks, prints the settings, and exits.
+
+157
+00:12:30,545 --> 00:12:36,320
+The port-443 block resolves
+to ssh.github.com, port 443.
+
+158
+00:12:36,660 --> 00:12:40,831
+A user written in the command or in
+the URL beats User git in the file.
+
+159
+00:12:40,871 --> 00:12:44,804
+That's how a well-meant USERNAME@github.com
+breaks a working setup.
+
+160
+00:12:45,144 --> 00:12:50,668
+Now the same file with a Host * block moved
+to the top, containing a default user
+
+161
+00:12:50,708 --> 00:12:55,132
+and an old key. What does github.com
+resolve to? Say it out loud.
+
+162
+00:12:59,972 --> 00:13:04,895
+User deploy won because it was obtained
+first, and an old RSA key is now offered
+
+163
+00:13:04,935 --> 00:13:09,796
+before the right one. On GitHub this
+configuration fails with Permission denied
+
+164
+00:13:09,836 --> 00:13:14,015
+(publickey), and the only place the
+cause is visible is this output.
+
+165
+00:13:14,355 --> 00:13:18,363
+A stand-in for ssh prints the
+arguments Git gives it and exits.
+
+166
+00:13:18,403 --> 00:13:23,569
+Git passed the alias github-work untouched.
+Git doesn't know that the alias means
+
+167
+00:13:23,609 --> 00:13:24,276
+github.com.
+
+168
+00:13:31,116 --> 00:13:36,080
+The three lines GitHub publishes, copied
+for the course on the second of October
+
+169
+00:13:36,120 --> 00:13:41,335
+2026, and their fingerprints computed locally.
+Compare these three with the table in
+
+170
+00:13:41,375 --> 00:13:45,026
+section 16.11 and with GitHub's
+page on the day you record.
+
+171
+00:13:45,366 --> 00:13:49,756
+ssh-keygen -F answers "what do
+I have on file for this host".
+
+172
+00:13:49,796 --> 00:13:55,494
+Three entries for github.com, and none
+for ssh.github.com, which is a different
+
+173
+00:13:55,534 --> 00:13:55,857
+name.
+
+174
+00:13:56,197 --> 00:14:00,805
+A different key filed under the name
+github.com: what a stale or forged entry looks
+
+175
+00:14:00,845 --> 00:14:04,781
+like. It looks like any other line.
+Only the fingerprint gives it away.
+
+176
+00:14:05,121 --> 00:14:09,598
+Here's that check as a picture. On the
+left, the key GitHub presents, and its
+
+177
+00:14:09,638 --> 00:14:10,302
+fingerprint.
+
+178
+00:14:10,642 --> 00:14:15,444
+On the right, the key on file. A fingerprint
+is a hash of the key, so the same key
+
+179
+00:14:15,484 --> 00:14:17,039
+gives the same fingerprint.
+
+180
+00:14:17,379 --> 00:14:21,852
+With the stale line on file, the two no
+longer match, and a connection to the real
+
+181
+00:14:21,892 --> 00:14:25,980
+GitHub fails with "Host key verification
+failed." That's the check working.
+
+182
+00:14:26,320 --> 00:14:31,374
+The repair: remove the lines for the host,
+which keeps a .old copy, then add the
+
+183
+00:14:31,414 --> 00:14:32,330
+published ones.
+
+184
+00:14:32,670 --> 00:14:39,321
+Narrate each step by what it changes.
+ssh-keygen asks for a file and a passphrase
+
+185
+00:14:39,361 --> 00:14:46,261
+and writes two files under ~/.ssh. If
+id_ed25519 already exists, choose another file
+
+186
+00:14:46,301 --> 00:14:53,118
+name. Between the second and third commands
+the lab has you add the Host github.com
+
+187
+00:14:53,158 --> 00:14:56,422
+block to ~/.ssh/config with your editor.
+
+188
+00:14:56,762 --> 00:15:01,290
+ssh-add gives the key to the agent
+and the passphrase to the keychain.
+
+189
+00:15:01,330 --> 00:15:04,879
+gh ssh-key add attaches the
+public key to your account.
+
+190
+00:15:04,919 --> 00:15:10,361
+If it refuses for a missing scope, the lab
+gives the web form: in your settings, the
+
+191
+00:15:10,401 --> 00:15:14,407
+page for SSH and GPG keys, a new
+key of type "authentication".
+
+192
+00:15:14,747 --> 00:15:19,980
+On the first ssh -T, stop at the fingerprint
+prompt and compare before you answer.
+
+193
+00:15:20,020 --> 00:15:25,125
+The documentation says the greeting names
+your account and the exit status is 1.
+
+194
+00:15:26,965 --> 00:15:28,613
+Five mistakes to watch for.
+
+195
+00:15:28,953 --> 00:15:32,234
+Silencing a host key error
+with StrictHostKeyChecking no.
+
+196
+00:15:32,274 --> 00:15:37,070
+Root cause: the error is the check working;
+switching it off removes the only proof
+
+197
+00:15:37,110 --> 00:15:38,585
+that the server is GitHub.
+
+198
+00:15:38,925 --> 00:15:43,190
+Writing your account name into the
+URL, as in USERNAME@github.com.
+
+199
+00:15:43,230 --> 00:15:48,474
+Root cause: all connections are made as
+the user git; a user in the URL overrides
+
+200
+00:15:48,514 --> 00:15:49,648
+the configuration.
+
+201
+00:15:49,988 --> 00:15:54,084
+Putting Host * defaults at
+the top of ~/.ssh/config.
+
+202
+00:15:54,124 --> 00:15:58,777
+Root cause: for each setting
+the first value obtained wins.
+
+203
+00:15:59,117 --> 00:16:05,505
+Expecting SSH to work under sudo, in cron
+or in a container because it works in your
+
+204
+00:16:05,545 --> 00:16:11,781
+terminal. Root cause: those environments
+do not inherit SSH_AUTH_SOCK, so no agent
+
+205
+00:16:11,821 --> 00:16:12,929
+can be reached.
+
+206
+00:16:13,269 --> 00:16:18,213
+Copying one private key to several machines.
+Root cause: a lost machine then forces
+
+207
+00:16:18,253 --> 00:16:22,956
+revocation everywhere at once; one key
+per machine limits that to one deletion.
+
+208
+00:16:24,796 --> 00:16:28,152
+Now, out of the lab. The
+build machine from the hook.
+
+209
+00:16:28,192 --> 00:16:31,419
+The engineer doesn't touch
+the configuration first.
+
+210
+00:16:31,459 --> 00:16:36,032
+She reads the fingerprint in the error,
+opens GitHub's page of published
+
+211
+00:16:36,072 --> 00:16:41,413
+fingerprints from another machine, and
+searches the GitHub Blog for an announcement.
+
+212
+00:16:41,453 --> 00:16:46,794
+The machine's known_hosts was written in
+2022. It holds the RSA host key that GitHub
+
+213
+00:16:46,834 --> 00:16:52,047
+replaced on the twenty-fourth of March
+2023. The published RSA fingerprint matches
+
+214
+00:16:52,087 --> 00:16:56,468
+what the server now presents.
+Explanation one: a rotation, announced.
+
+215
+00:16:56,508 --> 00:17:01,144
+She runs ssh-keygen -R github.com and
+installs the three published lines.
+
+216
+00:17:01,484 --> 00:17:05,817
+Had the fingerprint matched nothing GitHub
+publishes, the machine would have been
+
+217
+00:17:05,857 --> 00:17:09,002
+taken off that network and the
+incident handed to security.
+
+218
+00:17:09,342 --> 00:17:15,174
+A second habit from the same team: a support
+ticket that says "SSH is broken since
+
+219
+00:17:15,214 --> 00:17:20,975
+yesterday" gets one request before anything
+else, the output of ssh -G github.com
+
+220
+00:17:21,015 --> 00:17:24,770
+filtered to host name, user,
+port and identity files.
+
+221
+00:17:24,810 --> 00:17:30,355
+It shows a corporate tool that prepended
+a Host * block, an alias that someone
+
+222
+00:17:30,395 --> 00:17:34,867
+shadowed, or a port override, in
+less time than reading ssh -v.
+
+223
+00:17:36,707 --> 00:17:40,657
+Your turn. Do Lab 20.1, "SSH
+setup and verification", in
+
+224
+00:17:40,697 --> 00:17:46,571
+lab-manual/m20-authentication-ssh.md. Part
+A is a rehearsal in the lab shell with a
+
+225
+00:17:46,611 --> 00:17:51,203
+throwaway key, and Part B is the
+real setup in your normal shell.
+
+226
+00:17:51,243 --> 00:17:56,476
+Before each ssh -G, predict the host
+name, the user and the identity file.
+
+227
+00:17:56,516 --> 00:18:01,250
+Before your first connection, have
+the published fingerprints open.
+
+228
+00:18:01,590 --> 00:18:07,852
+The challenge is Exercise 20.4,
+"Permission denied (publickey)", in
+
+229
+00:18:07,892 --> 00:18:10,486
+exercises/m19-m25-github.md.
+
+230
+00:18:12,326 --> 00:18:15,557
+Question 233 of the CTO question bank:
+
+231
+00:18:17,897 --> 00:18:22,471
+Answer out loud. A strong answer names
+both explanations without ranking one as
+
+232
+00:18:22,511 --> 00:18:27,377
+"probably", and bases the decision on evidence
+from outside the affected connection.
+
+233
+00:18:27,417 --> 00:18:30,881
+It knows the documented rotation
+and its date as an example.
+
+234
+00:18:30,921 --> 00:18:35,495
+It gives the repair commands in order,
+and it's unambiguous about the forbidden
+
+235
+00:18:35,535 --> 00:18:37,364
+shortcut and why it's forbidden.
+
+236
+00:18:39,204 --> 00:18:40,131
+Let's land this.
+
+237
+00:18:40,471 --> 00:18:42,131
+You should now be able to say:
+
+238
+00:18:42,471 --> 00:18:46,822
+The private key never leaves the machine;
+GitHub holds the public key; a fingerprint
+
+239
+00:18:46,862 --> 00:18:48,285
+is a hash of the public key.
+
+240
+00:18:48,625 --> 00:18:53,340
+The agent holds decrypted keys in memory;
+the passphrase protects the file on disk.
+
+241
+00:18:53,680 --> 00:19:00,426
+~/.ssh/config maps a host or alias to a
+host name, user git, port and key, first
+
+242
+00:19:00,466 --> 00:19:05,176
+value wins; ssh -G prints the
+result without connecting.
+
+243
+00:19:05,516 --> 00:19:10,219
+A host key mismatch is a published rotation
+or an attack; the published fingerprints
+
+244
+00:19:10,259 --> 00:19:12,478
+decide; the check is never switched off.
+
+245
+00:19:12,818 --> 00:19:20,159
+ssh -T git@github.com tells you which
+account the server sees; ssh.github.com on
+
+246
+00:19:20,199 --> 00:19:24,680
+port 443 is the fallback
+when port 22 is blocked.
+
+247
+00:19:26,520 --> 00:19:30,143
+Read sections 16.8 to 16.12 of Chapter 16.
+
+248
+00:19:30,483 --> 00:19:35,363
+Today you followed an SSH connection through
+both proofs, and you repaired a host
+
+249
+00:19:35,403 --> 00:19:40,343
+key error without switching the check off.
+That's a lot of moving parts, so if one
+
+250
+00:19:40,383 --> 00:19:45,202
+of the five steps still blurs, replay its
+demo. Next time: two identities on one
+
+251
+00:19:45,242 --> 00:19:48,481
+machine, credentials for
+machines, and single sign-on.
+
+252
+00:19:48,521 --> 00:19:51,640
+Until then, look at the
+state first and type second.
+
+253
+00:19:51,680 --> 00:19:53,097
+See you in the next one.

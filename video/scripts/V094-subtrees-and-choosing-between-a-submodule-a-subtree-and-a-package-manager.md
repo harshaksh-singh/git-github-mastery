@@ -32,7 +32,7 @@ You'll add it, see what a teammate's clone contains, pull an upstream release in
 
 ## CONCEPT
 
-**[ANIMATION]** graph: id=plan 1d93b09-bf78eb9 main; HEAD=main => 1d93b09-bf78eb9-fb692e1 main; c77d389-fb692e1; HEAD=main; sub:c77d389:split:_e216665 => 1d93b09-bf78eb9-fb692e1-7241fca main; c77d389-c2dc1b7-7241fca; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b title=doc-qa_with_a_subtree
+**[ANIMATION]** graph: id=plan 1d93b09-bf78eb9 main; HEAD=main => 1d93b09-bf78eb9-fb692e1 main; c77d389-fb692e1; HEAD=main; sub:c77d389:split:_e216665 => 1d93b09-bf78eb9-fb692e1-7241fca main; c77d389-c2dc1b7-7241fca; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b title=doc-qa_with_a_subtree dx=250
 
 **[ANIMATION]** step: plan.state-2
 
@@ -137,7 +137,7 @@ $ git log --graph --format="%h %an: %s"
 ```
 <!-- /snippet -->
 
-**[ANIMATION]** graph: id=hist 1d93b09-bf78eb9 main; HEAD=main => 1d93b09-bf78eb9-fb692e1 main; c77d389-fb692e1; HEAD=main; sub:c77d389:split:_e216665 => 1d93b09-bf78eb9-fb692e1-7241fca main; c77d389-c2dc1b7-7241fca; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b => 1d93b09-bf78eb9-fb692e1-7241fca-e3827e6 main; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b => 1d93b09-bf78eb9-fb692e1-7241fca-e3827e6 main; ceaafe1-e216665-4980f0b-ee9c8f1 textsplit-export; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b; sub:ceaafe1:Asha_Rao; sub:e216665:Asha_Rao; sub:4980f0b:Asha_Rao; sub:ee9c8f1:Lab_User title=doc-qa_with_a_subtree
+**[ANIMATION]** graph: id=hist 1d93b09-bf78eb9 main; HEAD=main => 1d93b09-bf78eb9-fb692e1 main; c77d389-fb692e1; HEAD=main; sub:c77d389:split:_e216665 => 1d93b09-bf78eb9-fb692e1-7241fca main; c77d389-c2dc1b7-7241fca; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b => 1d93b09-bf78eb9-fb692e1-7241fca-e3827e6 main; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b => 1d93b09-bf78eb9-fb692e1-7241fca-e3827e6 main; ceaafe1-e216665-4980f0b-ee9c8f1 textsplit-export; HEAD=main; sub:c77d389:split:_e216665; sub:c2dc1b7:split:_4980f0b; sub:ceaafe1:Asha_Rao; sub:e216665:Asha_Rao; sub:4980f0b:Asha_Rao; sub:ee9c8f1:Lab_User title=doc-qa_with_a_subtree dx=250
 
 **[ANIMATION]** step: hist.state-2
 
@@ -373,6 +373,8 @@ A new branch in the library's repository, at `ee9c8f1`. 🟡 CAUTION: `git subtr
 | `git subtree split -b <branch>` | unchanged | unchanged | unchanged | unchanged | a new branch with synthetic commits | unchanged | unchanged |
 | `git subtree push` | unchanged | unchanged | unchanged | unchanged | new synthetic commits | a branch created or updated in the **library's** repository | as for any push |
 
+The state table of section 23.13, one row per command. Only `git subtree push` changes anything outside your own repository.
+
 **[ON SCREEN]** The decision table of section 23.14. Read it row by row with the audience.
 
 | Question | Submodule | Subtree | Package manager (pip, npm, Maven, Go modules) |
@@ -385,6 +387,8 @@ A new branch in the library's repository, at `ee9c8f1`. 🟡 CAUTION: `git subtr
 | Access control and licensing separation | Kept: the dependency keeps its own repository and permissions | Lost: whoever can read your repository reads the copy | Kept, through the registry |
 | Typical failure | The states of this chapter: uninitialized, stale, unpushed, detached | Lost trailers; mixed `--squash` usage; local edits that conflict on every update | Version conflicts; a registry that is unavailable; unpinned versions |
 | Fits | A dependency developed in step with the consumer by people who have access to both; large or access-restricted content | A small dependency that must be present in every clone and changes rarely | Anything that is published with versions, which is most libraries |
+
+And the decision table of section 23.14. Pause here and read it row by row.
 
 And for the teams that do choose submodules, the configuration from section 23.16 that removes most of the failures. It's local configuration, so each clone and each CI job needs it.
 

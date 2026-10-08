@@ -145,9 +145,9 @@ Extend the model to all four features of this video: each is an index printed fr
 
 On the left, no file. For each of the 94 commits on `main`, Git opens the commit object, opens its tree, and compares it with the parent's tree. Ninety-four comparisons to find the commits that changed one directory.
 
-**[ANIMATION]** step: 6
+**[ANIMATION]** say: The filters are read from one file
 
-On the right, one file. For each commit, Git consults a filter. "Definitely not": skip, no tree is opened. "Maybe": compare. The numbers at the bottom are the ones you will see Git report in a moment.
+On the right, one file. For each commit, Git consults a filter. "Definitely not": skip, no tree is opened. "Maybe": compare. How many of each, Git will report itself in a moment.
 
 ## LIVE TERMINAL DEMO
 
@@ -301,6 +301,8 @@ $ GIT_TRACE2_PERF=1 git -c core.commitGraph=false log --oneline -- services/rank
 A replacement object changes what the history is, so Git stops trusting the file: zero statistics lines. Delete the replacement, and the file is used again. The last command is the diagnostic to remember: `core.commitGraph=false` bypasses the file for one command.
 
 **[ON SCREEN]** State table: `git commit-graph write --reachable --changed-paths` leaves working tree, index, HEAD and the current branch ref unchanged; it writes `objects/info/commit-graph`, or a layer under `objects/info/commit-graphs/` with `--split`; remote and GitHub unchanged.
+
+The state table. `git commit-graph write --reachable --changed-paths` leaves the working tree, the index, HEAD and the current branch ref unchanged. It writes `objects/info/commit-graph`, or a layer under `objects/info/commit-graphs/` with `--split`. The remote and GitHub are unchanged.
 
 **[TERMINAL]**
 

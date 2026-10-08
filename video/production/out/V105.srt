@@ -1,1132 +1,1141 @@
 1
-00:00:04,500 --> 00:00:08,355
+00:00:04,500 --> 00:00:08,356
 The release script stamps
 every build with a commit ID.
 
 2
-00:00:08,395 --> 00:00:12,392
+00:00:08,396 --> 00:00:12,394
 It gets that ID by reading the
 file .git/refs/heads/main.
 
 3
-00:00:12,432 --> 00:00:18,128
+00:00:12,434 --> 00:00:18,133
 It has done so for years. On the new build
 image that file doesn't exist, and the
 
 4
-00:00:18,168 --> 00:00:19,119
+00:00:18,173 --> 00:00:19,125
 release stops.
 
 5
-00:00:19,459 --> 00:00:22,056
+00:00:19,465 --> 00:00:22,061
 Your CTO asks: is the repository damaged?
 
 6
-00:00:22,396 --> 00:00:28,654
+00:00:22,401 --> 00:00:27,580
 It isn't. The branch exists and Git resolves
 it. The ref is stored somewhere else,
 
 7
-00:00:28,694 --> 00:00:35,106
+00:00:27,620 --> 00:00:32,925
 and the script should have asked Git. A ref
 is a name that holds an object ID, and a
 
 8
-00:00:35,146 --> 00:00:41,404
+00:00:32,965 --> 00:00:38,144
 branch is one kind of ref. This video shows
 every place a ref can be stored in the
 
 9
-00:00:41,444 --> 00:00:45,859
+00:00:38,184 --> 00:00:41,835
 default format, and why no
 script should read any of them.
 
 10
-00:00:45,899 --> 00:00:49,392
+00:00:41,875 --> 00:00:44,762
 Keep that missing file
 in mind. It comes back.
 
 11
-00:00:51,232 --> 00:00:55,003
+00:00:46,602 --> 00:00:50,372
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 12
-00:00:55,043 --> 00:01:00,187
+00:00:50,412 --> 00:00:55,556
 You've used refs since the first part of
 this course: a branch is a ref, a tag is a
 
 13
-00:01:00,227 --> 00:01:03,623
+00:00:55,596 --> 00:00:58,991
 ref, HEAD is a ref. Now we
 look at how they are stored.
 
 14
-00:01:03,963 --> 00:01:09,638
+00:00:59,331 --> 00:01:05,006
 Three sections of Chapter 3. First, refs
 under refs/ as loose files and as lines of
 
 15
-00:01:09,678 --> 00:01:15,421
+00:01:05,046 --> 00:01:10,789
 packed-refs. Second, the refs that live
 outside refs/, called root refs, and the two
 
 16
-00:01:15,461 --> 00:01:21,067
+00:01:10,829 --> 00:01:16,435
 pseudorefs. Third, where reflogs are kept.
 A reflog is the journal of the values a
 
 17
-00:01:21,107 --> 00:01:21,893
+00:01:16,475 --> 00:01:17,261
 ref has had.
 
 18
-00:01:22,233 --> 00:01:30,064
+00:01:17,601 --> 00:01:25,433
 Three replays from labs/ch03: refs-storage.sh,
 root-refs.sh, and the replay of Lab
 
 19
-00:01:30,104 --> 00:01:32,560
+00:01:25,473 --> 00:01:27,928
 17.3 up to its checkpoint.
 
 20
-00:01:32,900 --> 00:01:36,084
+00:01:28,268 --> 00:01:31,458
 The labels, from the chapter's
 command safety table.
 
 21
-00:01:36,124 --> 00:01:41,168
+00:01:31,498 --> 00:01:36,552
 git for-each-ref and git show-ref are 🟢
 SAFE. git pack-refs --all is 🟢: it changes
 
 22
-00:01:41,208 --> 00:01:45,880
+00:01:36,592 --> 00:01:41,272
 the storage of refs, not their content.
 git update-ref with a new value is 🟡
 
 23
-00:01:45,920 --> 00:01:50,778
+00:01:41,312 --> 00:01:46,179
 CAUTION, and so is git symbolic-ref. git
 update-ref -d is 🔴 DANGEROUS, and I'll
 
 24
-00:01:50,818 --> 00:01:53,382
+00:01:46,219 --> 00:01:48,788
 answer the five questions when it appears.
 
 25
-00:01:55,222 --> 00:01:56,635
+00:01:50,628 --> 00:01:52,040
 After this video you can:
 
 26
-00:01:56,975 --> 00:02:04,552
+00:01:52,380 --> 00:01:56,743
 Explain why a branch may have no file
 under refs/heads/ and still exist.
 
 27
-00:02:04,892 --> 00:02:09,407
+00:01:57,083 --> 00:02:01,597
 Create, update, verify and delete refs
 with plumbing, with a reflog message.
 
 28
-00:02:09,747 --> 00:02:12,778
+00:02:01,937 --> 00:02:06,014
 Name the root refs and the pseudorefs
 and say which command writes each.
 
 29
-00:02:13,118 --> 00:02:16,198
+00:02:06,354 --> 00:02:09,435
 Say which of them protect
 objects from garbage collection.
 
 30
-00:02:16,538 --> 00:02:19,068
+00:02:09,775 --> 00:02:12,799
 Say where reflogs are stored
 and when a ref has none.
 
 31
-00:02:20,908 --> 00:02:26,555
+00:02:14,639 --> 00:02:20,286
 In one sentence: a ref is a name that holds
 an object ID or the name of another ref,
 
 32
-00:02:26,595 --> 00:02:31,701
+00:02:20,326 --> 00:02:25,432
 and in the default files format a ref
 is a small file under refs/, a line in
 
 33
-00:02:31,741 --> 00:02:33,122
+00:02:25,472 --> 00:02:26,853
 packed-refs, or both.
 
 34
-00:02:33,462 --> 00:02:38,135
+00:02:27,193 --> 00:02:32,214
 The glossary's definition: "a name that
 points to an object name or another ref (the
 
 35
-00:02:38,175 --> 00:02:42,791
+00:02:32,254 --> 00:02:37,214
 latter is called a symbolic ref)". Names
 either start with refs/ or sit in the root
 
 36
-00:02:42,831 --> 00:02:43,745
+00:02:37,254 --> 00:02:38,238
 of the hierarchy.
 
 37
-00:02:44,085 --> 00:02:49,146
+00:02:38,578 --> 00:02:43,497
 Under refs/: refs/heads/<name> is a local
 branch, moved by commit, merge, reset,
 
 38
-00:02:49,186 --> 00:02:54,312
+00:02:43,537 --> 00:02:48,518
 rebase and git branch -f. refs/tags/<name>
 is a tag, pointing at a commit or at a
 
 39
-00:02:54,352 --> 00:02:59,414
+00:02:48,558 --> 00:02:53,477
 tag object, meant to stay put.
 refs/remotes/<remote>/<name> is a remote-tracking
 
 40
-00:02:59,454 --> 00:03:04,771
+00:02:53,517 --> 00:02:58,684
 branch, the last known position of a branch
 in that remote, moved by fetch and push.
 
 41
-00:03:04,811 --> 00:03:10,064
+00:02:58,724 --> 00:03:03,829
 refs/stash is the newest stash entry, work
 you set aside, and older entries live in
 
 42
-00:03:10,104 --> 00:03:14,783
+00:03:03,869 --> 00:03:08,416
 its reflog. And tools own namespaces
 such as refs/bisect/, refs/notes/ and
 
 43
-00:03:14,823 --> 00:03:15,676
+00:03:08,456 --> 00:03:09,284
 refs/replace/.
 
 44
-00:03:16,016 --> 00:03:21,298
+00:03:09,624 --> 00:03:14,965
 How they're stored in the files format. A
 loose ref is a file holding the ID and a
 
 45
-00:03:21,338 --> 00:03:25,063
+00:03:15,005 --> 00:03:18,771
 newline. A symbolic ref is a
 file holding ref: and a name.
 
 46
-00:03:25,103 --> 00:03:28,373
+00:03:18,811 --> 00:03:22,118
 packed-refs is one sorted
 text file with many refs.
 
 47
-00:03:28,413 --> 00:03:33,695
+00:03:22,158 --> 00:03:27,499
 Why three forms? One file per ref wastes
 space and is slow with thousands of refs.
 
 48
-00:03:34,035 --> 00:03:39,352
+00:03:27,839 --> 00:03:32,905
 The lookup rule is the heart of this video.
 Lookup reads the loose file first and
 
 49
-00:03:39,392 --> 00:03:44,906
+00:03:32,945 --> 00:03:38,201
 packed-refs second. And, quoting the manual
 of git pack-refs: "subsequent updates to
 
 50
-00:03:44,946 --> 00:03:48,478
+00:03:38,241 --> 00:03:41,605
 branches always create new
 files under $GIT_DIR/refs".
 
 51
-00:03:48,518 --> 00:03:53,900
+00:03:41,645 --> 00:03:46,774
 So after packing, a branch that moves gets
 a loose file again, and the old line in
 
 52
-00:03:53,940 --> 00:03:56,942
+00:03:46,814 --> 00:03:49,674
 packed-refs stays, stale.
 The loose file wins.
 
 53
-00:03:57,282 --> 00:04:02,169
+00:03:50,014 --> 00:03:54,901
 The plumbing works the same in every
 format. git for-each-ref lists and formats.
 
 54
-00:04:02,209 --> 00:04:07,158
+00:03:54,941 --> 00:03:59,890
 git show-ref lists and verifies. git
 update-ref writes or deletes one ref with an
 
 55
-00:04:07,198 --> 00:04:12,146
+00:03:59,930 --> 00:04:04,878
 optional check of its old value. git
 symbolic-ref reads and writes symbolic refs.
 
 56
-00:04:12,186 --> 00:04:16,642
+00:04:04,918 --> 00:04:09,374
 git pack-refs moves loose refs into
 packed-refs without changing a value.
 
 57
-00:04:16,982 --> 00:04:22,164
+00:04:09,714 --> 00:04:14,897
 Second topic: root refs. In one sentence:
 a few refs live directly in the repository
 
 58
-00:04:22,204 --> 00:04:25,833
+00:04:14,937 --> 00:04:18,565
 directory, with names in capital
 letters that end in _HEAD.
 
 59
-00:04:25,873 --> 00:04:30,931
+00:04:18,605 --> 00:04:23,663
 Two of them, FETCH_HEAD and MERGE_HEAD,
 aren't refs at all in the strict sense and
 
 60
-00:04:30,971 --> 00:04:32,299
+00:04:23,703 --> 00:04:25,031
 are called pseudorefs.
 
 61
-00:04:32,639 --> 00:04:37,215
+00:04:25,371 --> 00:04:29,996
 The glossary says a pseudoref has "different
 semantics than normal refs", can be
 
 62
-00:04:37,255 --> 00:04:42,005
+00:04:30,036 --> 00:04:34,837
 read by normal Git commands, and cannot be
 written by commands like git update-ref.
 
 63
-00:04:42,045 --> 00:04:46,852
+00:04:34,877 --> 00:04:39,736
 It lists two. FETCH_HEAD "may refer to
 multiple object IDs", each annotated with its
 
 64
-00:04:46,892 --> 00:04:50,776
+00:04:39,776 --> 00:04:43,701
 source. MERGE_HEAD "contains all
 commit IDs which are being merged".
 
 65
-00:04:51,116 --> 00:04:54,479
+00:04:44,041 --> 00:04:47,498
 A version note you need when
 you read older material.
 
 66
-00:04:54,519 --> 00:04:59,486
+00:04:47,538 --> 00:04:52,644
 Before Git 2.46 the glossary called every
 special file under .git a pseudoref.
 
 67
-00:04:59,526 --> 00:05:03,659
+00:04:52,684 --> 00:04:56,932
 Since Git 2.46, "pseudoref" means
 FETCH_HEAD and MERGE_HEAD only.
 
 68
-00:05:03,699 --> 00:05:08,217
+00:04:56,972 --> 00:05:01,617
 The others are root refs, stored by
 the ref backend like any other ref.
 
 69
-00:05:08,257 --> 00:05:13,610
+00:05:01,657 --> 00:05:07,159
 Say "root ref" for ORIG_HEAD and its relatives,
 and notice that older tutorials, and
 
 70
-00:05:13,650 --> 00:05:19,003
+00:05:07,199 --> 00:05:12,701
 the description of --include-root-refs in
 the git for-each-ref manual, still use the
 
 71
-00:05:19,043 --> 00:05:19,773
+00:05:12,741 --> 00:05:13,492
 old wording.
 
 72
-00:05:20,113 --> 00:05:25,014
+00:05:13,832 --> 00:05:19,131
 HEAD is written by git init, git switch
 and git checkout, and is never gone.
 
 73
-00:05:25,054 --> 00:05:30,475
+00:05:19,171 --> 00:05:25,032
 ORIG_HEAD is written by merge, rebase, reset
 and git am, and on Git 2.55 also by git
 
 74
-00:05:30,515 --> 00:05:35,806
+00:05:25,072 --> 00:05:30,792
 stash push. It holds where HEAD was before,
 until the next such command overwrites
 
 75
-00:05:35,846 --> 00:05:36,001
+00:05:30,832 --> 00:05:31,003
 it.
 
 76
-00:05:36,341 --> 00:05:40,585
+00:05:31,343 --> 00:05:35,587
 FETCH_HEAD is written by fetch and pull.
 MERGE_HEAD is written by a merge that
 
 77
-00:05:40,625 --> 00:05:43,605
+00:05:35,627 --> 00:05:38,607
 stops, and goes when the merge
 is committed or aborted.
 
 78
-00:05:43,645 --> 00:05:48,109
+00:05:38,647 --> 00:05:43,111
 CHERRY_PICK_HEAD and REVERT_HEAD are written
 by a cherry-pick or revert that stops
 
 79
-00:05:48,149 --> 00:05:49,482
+00:05:43,151 --> 00:05:44,484
 or runs with --no-commit.
 
 80
-00:05:49,822 --> 00:05:55,845
+00:05:44,824 --> 00:05:50,847
 REBASE_HEAD is written by a rebase that
 stops. BISECT_HEAD is written by git bisect
 
 81
-00:05:55,885 --> 00:06:01,543
+00:05:50,887 --> 00:05:56,545
 --no-checkout. AUTO_MERGE is written by
 the ort merge machinery when it leaves
 
 82
-00:06:01,583 --> 00:06:05,707
+00:05:56,585 --> 00:06:00,709
 conflicts, and on Git 2.55
 also by a clean git stash pop.
 
 83
-00:06:05,747 --> 00:06:06,876
+00:06:00,749 --> 00:06:01,878
 It holds a tree.
 
 84
-00:06:07,216 --> 00:06:11,809
+00:06:02,218 --> 00:06:06,618
 The property that matters in an incident:
 these names, HEAD excepted, aren't
 
 85
-00:06:11,849 --> 00:06:16,929
+00:06:06,658 --> 00:06:11,525
 starting points for reachability. An object
 is reachable when a starting point leads
 
 86
-00:06:16,969 --> 00:06:20,525
+00:06:11,565 --> 00:06:14,972
 to it, and garbage collection
 deletes what nothing reaches.
 
 87
-00:06:20,565 --> 00:06:24,366
+00:06:15,012 --> 00:06:18,653
 The starting points are refs/,
 HEAD, the reflogs and the index.
 
 88
-00:06:24,406 --> 00:06:29,181
+00:06:18,693 --> 00:06:23,268
 So FETCH_HEAD, ORIG_HEAD and AUTO_MERGE
 protect nothing from garbage collection
 
 89
-00:06:29,221 --> 00:06:30,644
+00:06:23,308 --> 00:06:24,670
 beyond the grace period.
 
 90
-00:06:30,984 --> 00:06:36,369
+00:06:25,010 --> 00:06:30,395
 Third topic: reflogs. In one sentence: a
 reflog is an append-only record of the
 
 91
-00:06:36,409 --> 00:06:41,793
+00:06:30,435 --> 00:06:35,819
 values a ref has had, one file per ref
 under logs/ in the files format, written
 
 92
-00:06:41,833 --> 00:06:47,560
+00:06:35,859 --> 00:06:41,587
 whenever the ref moves. core.logAllRefUpdates
 is true in a repository with a working
 
 93
-00:06:47,600 --> 00:06:53,053
+00:06:41,627 --> 00:06:47,079
 tree, which creates logs for HEAD, branches,
 remote-tracking branches and notes.
 
 94
-00:06:53,393 --> 00:06:56,829
+00:06:47,419 --> 00:06:50,855
 The value always extends this
 to every ref under refs/.
 
 95
-00:06:56,869 --> 00:07:01,947
+00:06:50,895 --> 00:06:55,973
 A bare repository, one without a working
 tree, has it off and keeps no reflogs by
 
 96
-00:07:01,987 --> 00:07:07,255
+00:06:56,013 --> 00:07:01,281
 default. Tags get no reflog under the default
 setting, and deleting a branch deletes
 
 97
-00:07:07,295 --> 00:07:07,760
+00:07:01,321 --> 00:07:01,786
 its log.
 
 98
-00:07:08,100 --> 00:07:12,846
+00:07:02,126 --> 00:07:06,873
 When should you not use the plumbing? git
 update-ref on the checked-out branch and
 
 99
-00:07:12,886 --> 00:07:17,399
+00:07:06,913 --> 00:07:11,425
 git symbolic-ref HEAD move the branch
 and leave the index and the working tree
 
 100
-00:07:17,439 --> 00:07:21,777
+00:07:11,465 --> 00:07:15,803
 behind. Treat them as repairs. Use git
 switch and git reset for daily work.
 
 101
-00:07:23,617 --> 00:07:29,105
+00:07:17,643 --> 00:07:23,131
 The textbook's analogy is signposts. Each
 carries a name and points at one house, an
 
 102
-00:07:29,145 --> 00:07:33,383
+00:07:23,171 --> 00:07:27,409
 object. A few point at another
 signpost: those are symbolic refs.
 
 103
-00:07:33,423 --> 00:07:36,542
+00:07:27,449 --> 00:07:30,568
 Moving a signpost is cheap
 and changes no house.
 
 104
-00:07:36,882 --> 00:07:41,490
+00:07:30,908 --> 00:07:36,105
 The analogy breaks at demolition. In Git,
 a house that no signpost leads to is
 
 105
-00:07:41,530 --> 00:07:44,470
+00:07:36,145 --> 00:07:39,462
 eventually torn down. That
 was the previous video.
 
 106
-00:07:44,810 --> 00:07:50,419
+00:07:39,802 --> 00:07:44,408
 Add one thing to the picture for this video:
 the signposts are kept in more than one
 
 107
-00:07:50,459 --> 00:07:55,866
+00:07:44,448 --> 00:07:48,889
 cupboard. You don't open the cupboards
 yourself. You ask the keeper, which is the
 
 108
-00:07:55,906 --> 00:08:01,447
+00:07:48,929 --> 00:07:53,481
 plumbing, Git's low-level commands, and the
 keeper knows which cupboard is current.
 
 109
-00:08:03,287 --> 00:08:08,922
+00:07:55,321 --> 00:07:59,905
 Loose file first. If there is one, it's
 the answer, whatever packed-refs says.
 
 110
-00:08:08,962 --> 00:08:13,286
+00:07:59,945 --> 00:08:03,463
 Only if there is none does Git
 read the line in packed-refs.
 
 111
-00:08:13,326 --> 00:08:17,869
+00:08:03,503 --> 00:08:07,198
 A script that reads only the file
 fails when the ref is packed.
 
 112
-00:08:17,909 --> 00:08:23,544
+00:08:07,238 --> 00:08:11,823
 A script that reads only packed-refs gets
 a stale value when the ref has moved
 
 113
-00:08:23,584 --> 00:08:23,980
+00:08:11,863 --> 00:08:12,179
 since.
 
 114
-00:08:24,320 --> 00:08:28,851
+00:08:12,519 --> 00:08:17,049
 The old value, the new value, the
 committer's identity and time, a tab, and a
 
 115
-00:08:28,891 --> 00:08:30,453
+00:08:17,089 --> 00:08:18,652
 message naming the command.
 
 116
-00:08:32,293 --> 00:08:37,256
+00:08:20,492 --> 00:08:25,455
 The inference-service repository again,
 now with a remote, a stash entry and two
 
 117
-00:08:37,296 --> 00:08:37,569
+00:08:25,495 --> 00:08:25,768
 tags.
 
 118
-00:08:37,909 --> 00:08:43,579
+00:08:26,108 --> 00:08:31,778
 Seven files. Five hold an object ID.
 Two hold ref: and a name: those are the
 
 119
-00:08:43,619 --> 00:08:44,631
+00:08:31,818 --> 00:08:32,829
 symbolic refs.
 
 120
-00:08:44,971 --> 00:08:51,017
+00:08:33,169 --> 00:08:39,329
 for-each-ref prints ID, type and full
 name by default, and --format chooses any
 
 121
-00:08:51,057 --> 00:08:57,489
+00:08:39,369 --> 00:08:45,920
 field. show-ref --dereference adds a ^{}
 line with the commit an annotated tag peels
 
 122
-00:08:57,529 --> 00:09:02,420
+00:08:45,960 --> 00:08:50,942
 to. --verify takes a full name.
 --exists answers by exit status.
 
 123
-00:09:02,760 --> 00:09:07,767
+00:08:51,282 --> 00:08:56,290
 Try it now, thirty seconds, in a repository
 in the lab shell: run git for-each-ref
 
 124
-00:09:07,807 --> 00:09:09,675
+00:08:56,330 --> 00:08:58,198
 and count the lines. I'll wait.
 
 125
-00:09:14,515 --> 00:09:17,021
+00:09:03,038 --> 00:09:06,231
 Each line is one ref: an
 ID, a type and a full name.
 
 126
-00:09:17,061 --> 00:09:19,273
+00:09:06,271 --> 00:09:09,091
 Your branches are the
 lines under refs/heads/.
 
 127
-00:09:19,613 --> 00:09:25,021
+00:09:09,431 --> 00:09:13,302
 Now 🟡: git update-ref. It
 changes one ref and its reflog.
 
 128
-00:09:25,061 --> 00:09:31,617
+00:09:13,342 --> 00:09:18,036
 Preview with git rev-parse on the
 ref. Recover with the ref's reflog.
 
 129
-00:09:31,957 --> 00:09:36,629
+00:09:18,376 --> 00:09:23,048
 On the graph, that's a new name. The demo
 creates the ref experiment at the release
 
 130
-00:09:36,669 --> 00:09:37,197
+00:09:23,088 --> 00:09:23,615
 candidate.
 
 131
-00:09:37,537 --> 00:09:41,437
+00:09:23,955 --> 00:09:27,855
 Then it moves the name to the
 commit of main. No commit changes.
 
 132
-00:09:41,777 --> 00:09:45,418
+00:09:28,195 --> 00:09:31,837
 The third command has a third
 argument: an expected old value.
 
 133
-00:09:45,458 --> 00:09:50,169
+00:09:31,877 --> 00:09:36,587
 The branch is at the release candidate,
 and the command expects the root commit.
 
 134
-00:09:50,209 --> 00:09:52,603
+00:09:36,627 --> 00:09:39,022
 What happens? Say it out loud. I'll wait.
 
 135
-00:09:57,443 --> 00:10:01,343
+00:09:43,862 --> 00:09:47,769
 It's refused: "is at 4f2cc0c...
 but expected b602c1f...".
 
 136
-00:10:01,383 --> 00:10:05,214
+00:09:47,809 --> 00:09:51,648
 With a third argument, update-ref
 is a compare-and-swap.
 
 137
-00:10:05,254 --> 00:10:10,744
+00:09:51,688 --> 00:09:57,188
 The update happens only if the ref still
 has the expected old value, which keeps
 
 138
-00:10:10,784 --> 00:10:16,066
+00:09:57,228 --> 00:10:02,521
 concurrent writers from overwriting each
 other. It's the idea behind git push
 
 139
-00:10:16,106 --> 00:10:21,527
+00:10:02,561 --> 00:10:07,993
 --force-with-lease. Two more refusals
 follow: an ID that names no object, and a
 
 140
-00:10:21,567 --> 00:10:23,531
+00:10:08,033 --> 00:10:10,001
 non-commit under refs/heads/.
 
 141
-00:10:23,871 --> 00:10:28,294
+00:10:10,341 --> 00:10:14,764
 The last line is the 🔴 command, git
 update-ref -d. The five answers.
 
 142
-00:10:28,334 --> 00:10:31,904
+00:10:14,804 --> 00:10:18,374
 It deletes the ref and its
 reflog, with no merge check.
 
 143
-00:10:31,944 --> 00:10:37,417
+00:10:18,414 --> 00:10:23,887
 It destroys the safety net for that ref.
 Preview: git rev-parse on the ref, and note
 
 144
-00:10:37,457 --> 00:10:42,798
+00:10:23,927 --> 00:10:29,268
 the ID. Recover: git update-ref with that
 ID, which the reflog of HEAD or git fsck
 
 145
-00:10:42,838 --> 00:10:48,180
+00:10:29,308 --> 00:10:34,650
 find. Appropriate: for a ref you created
 with plumbing and have just inspected, as
 
 146
-00:10:48,220 --> 00:10:48,508
+00:10:34,690 --> 00:10:34,978
 here.
 
 147
-00:10:48,848 --> 00:10:52,372
+00:10:35,318 --> 00:10:38,843
 On the graph the name is gone,
 and every commit is where it was.
 
 148
-00:10:52,712 --> 00:10:57,401
+00:10:39,183 --> 00:10:44,375
 A symbolic ref is a name for a name. With
 HEAD detached, the file holds an object
 
 149
-00:10:57,441 --> 00:11:01,488
+00:10:44,415 --> 00:10:48,897
 ID, and git symbolic-ref HEAD fails:
 "ref HEAD is not a symbolic ref".
 
 150
-00:11:01,828 --> 00:11:02,939
+00:10:49,237 --> 00:10:50,348
 Reflog storage.
 
 151
-00:11:03,279 --> 00:11:08,794
+00:10:50,688 --> 00:10:56,203
 A quick quiz. After the branch is deleted,
 is its log file still there, or gone with
 
 152
-00:11:08,834 --> 00:11:09,852
+00:10:56,243 --> 00:10:57,261
 it? Your answer?
 
 153
-00:11:14,692 --> 00:11:19,056
+00:11:02,101 --> 00:11:05,498
 It's gone. A deleted branch
 loses its reflog with it.
 
 154
-00:11:19,096 --> 00:11:24,788
+00:11:05,538 --> 00:11:09,973
 Tags have none. refs/stash has a
 log, and that log is the stash list.
 
 155
-00:11:25,128 --> 00:11:30,376
+00:11:10,313 --> 00:11:12,132
 Now the hook, and that missing file.
 
 156
-00:11:30,716 --> 00:11:35,816
+00:11:12,472 --> 00:11:17,571
 After the commit: where is main stored,
 and what does the line in packed-refs say?
 
 157
-00:11:35,856 --> 00:11:37,821
+00:11:17,611 --> 00:11:19,577
 Make your prediction. I'll wait.
 
 158
-00:11:45,661 --> 00:11:50,141
+00:11:27,417 --> 00:11:32,073
 After packing, the only file left is the
 symbolic ref, which can't be packed.
 
 159
-00:11:50,181 --> 00:11:54,895
+00:11:32,113 --> 00:11:37,013
 The header lists the traits of the file.
 An annotated tag is followed by a ^ line
 
 160
-00:11:54,935 --> 00:11:59,826
+00:11:37,053 --> 00:11:42,136
 with the commit it points at. After the
 commit, the loose file is back and wins: git
 
 161
-00:11:59,866 --> 00:12:04,521
+00:11:42,176 --> 00:11:47,014
 rev-parse main prints the new ID, while
 the packed-refs line still shows the old
 
 162
-00:12:04,561 --> 00:12:04,756
+00:11:47,054 --> 00:11:47,258
 one.
 
 163
-00:12:05,096 --> 00:12:14,362
+00:11:47,598 --> 00:11:53,200
 In the picture, main has moved to a8eea18.
 The stale line still says 0c2cf43, and
 
 164
-00:12:14,402 --> 00:12:16,660
+00:11:53,240 --> 00:11:54,593
 the loose file wins.
 
 165
-00:12:27,000 --> 00:12:32,086
+00:11:54,933 --> 00:11:59,334
+Read the root-cause line of the box:
+the scripts read one of several storage
+
+166
+00:11:59,374 --> 00:12:01,204
+locations instead of asking Git.
+
+167
+00:12:04,044 --> 00:12:09,130
 One line per fetched branch: an ID, a marker
 for git pull, and where it came from.
 
-166
-00:12:32,126 --> 00:12:35,336
+168
+00:12:09,170 --> 00:12:12,381
 Used as a revision, FETCH_HEAD
 means its first line.
 
-167
-00:12:35,676 --> 00:12:39,075
+169
+00:12:12,721 --> 00:12:16,119
 MERGE_HEAD holds two lines,
 one per branch being merged.
 
-168
-00:12:39,115 --> 00:12:43,926
+170
+00:12:16,159 --> 00:12:20,971
 That is the "different semantics": a list
 of IDs where a ref holds exactly one.
 
-169
-00:12:47,266 --> 00:12:51,133
+171
+00:12:24,311 --> 00:12:28,178
 HEAD and ORIG_HEAD are listed.
 The two pseudorefs aren't.
 
-170
-00:12:51,173 --> 00:12:55,246
+172
+00:12:28,218 --> 00:12:32,291
 ORIG_HEAD accepts an update like
 any ref, and has no reflog.
 
-171
-00:12:55,286 --> 00:12:56,754
+173
+00:12:32,331 --> 00:12:33,799
 MERGE_HEAD is refused.
 
-172
-00:12:57,094 --> 00:13:03,519
+174
+00:12:34,139 --> 00:12:40,445
 Now the incident property. This step ends
 with git gc --prune=now, 🔴: it removes
 
-173
-00:13:03,559 --> 00:13:10,225
+175
+00:12:40,485 --> 00:12:47,030
 every unreachable object at once. Preview
 with git fsck --unreachable and git prune
 
-174
-00:13:10,265 --> 00:13:16,689
+176
+00:12:47,070 --> 00:12:53,376
 -n. Recover only from another clone or a
 backup. It's never routine maintenance.
 
-175
-00:13:17,029 --> 00:13:21,983
+177
+00:12:53,716 --> 00:12:58,670
 A quick quiz. A teammate's commit is
 named by FETCH_HEAD and by nothing else.
 
-176
-00:13:22,023 --> 00:13:25,549
+178
+00:12:58,710 --> 00:13:02,237
 Does it survive the collection:
 yes or no? Your answer?
 
-177
-00:13:30,389 --> 00:13:34,451
+179
+00:13:07,077 --> 00:13:12,134
 It doesn't. The name stays behind and
 names nothing: "bad object FETCH_HEAD".
 
-178
-00:13:34,491 --> 00:13:37,647
+180
+00:13:12,174 --> 00:13:16,107
 If you said yes, that's the
 trap: the name looks like a ref.
 
-179
-00:13:37,687 --> 00:13:41,002
+181
+00:13:16,147 --> 00:13:20,277
 Give such a commit a ref before
 you rely on it: git fetch <url>
 
-180
-00:13:41,042 --> 00:13:45,104
+182
+00:13:20,317 --> 00:13:25,375
 <branch>:refs/heads/review/<name>, or
 git switch -c review/<name> FETCH_HEAD.
 
-181
-00:13:55,944 --> 00:14:00,557
+183
+00:13:36,215 --> 00:13:41,323
 The lab visits every special name through
 a fetch, a reset, a merge, a cherry-pick,
 
-182
-00:14:00,597 --> 00:14:04,929
+184
+00:13:41,363 --> 00:13:46,160
 a revert, a rebase, a bisect and a stash.
 At the checkpoint no operation is in
 
-183
-00:14:04,969 --> 00:14:09,077
+185
+00:13:46,200 --> 00:13:50,750
 progress and three leftovers remain:
 FETCH_HEAD, ORIG_HEAD and AUTO_MERGE.
 
-184
-00:14:09,117 --> 00:14:13,506
+186
+00:13:50,790 --> 00:13:55,650
 None of them describes unfinished work.
 The failure and the recovery are yours.
 
-185
-00:14:15,346 --> 00:14:16,994
+187
+00:13:57,490 --> 00:13:59,138
 Five mistakes to watch for.
 
-186
-00:14:17,334 --> 00:14:23,227
+188
+00:13:59,478 --> 00:14:05,370
 Reading .git/refs/heads/<branch> in a
 script. Root cause: the ref may be a line in
 
-187
-00:14:23,267 --> 00:14:29,231
+189
+00:14:05,410 --> 00:14:11,375
 packed-refs, so the script reads one of
 several storage locations instead of asking
 
-188
-00:14:29,271 --> 00:14:29,521
+190
+00:14:11,415 --> 00:14:11,664
 Git.
 
-189
-00:14:29,861 --> 00:14:34,666
+191
+00:14:12,004 --> 00:14:16,990
 Grepping packed-refs for a branch. Root
 cause: a later update writes a loose file
 
-190
-00:14:34,706 --> 00:14:36,461
+192
+00:14:17,030 --> 00:14:18,851
 and leaves the old line stale.
 
-191
-00:14:36,801 --> 00:14:40,002
+193
+00:14:19,191 --> 00:14:22,393
 Relying on FETCH_HEAD or
 ORIG_HEAD to keep a commit.
 
-192
-00:14:40,042 --> 00:14:45,051
+194
+00:14:22,433 --> 00:14:27,441
 Root cause: apart from HEAD, root refs and
 pseudorefs are not starting points for
 
-193
-00:14:45,091 --> 00:14:45,861
+195
+00:14:27,481 --> 00:14:28,252
 reachability.
 
-194
-00:14:46,201 --> 00:14:49,846
+196
+00:14:28,592 --> 00:14:32,239
 Testing for a file to ask
 "is a merge in progress?".
 
-195
-00:14:49,886 --> 00:14:55,374
+197
+00:14:32,279 --> 00:14:37,770
 Root cause: root refs are not files in
 every format; resolve the name with git
 
-196
-00:14:55,414 --> 00:14:58,067
+198
+00:14:37,810 --> 00:14:40,465
 rev-parse --verify --quiet MERGE_HEAD.
 
-197
-00:14:58,407 --> 00:15:03,237
+199
+00:14:40,805 --> 00:14:46,558
 Expecting a deleted branch's reflog to
 remain. Root cause: deleting a branch deletes
 
-198
-00:15:03,277 --> 00:15:03,701
+200
+00:14:46,598 --> 00:14:47,110
 its log.
 
-199
-00:15:05,541 --> 00:15:13,199
+201
+00:14:48,950 --> 00:14:55,155
 Now, out of the lab. Picture a platform
 team that lists stale branches for a weekly
 
-200
-00:15:13,239 --> 00:15:20,898
+202
+00:14:55,195 --> 00:15:01,399
 clean-up report. Their first script walked
 .git/refs/heads and missed most branches
 
-201
-00:15:20,938 --> 00:15:28,225
+203
+00:15:01,439 --> 00:15:07,343
 on the build server, where refs are packed.
 The replacement is one command: git
 
-202
-00:15:28,265 --> 00:15:34,439
+204
+00:15:07,383 --> 00:15:12,384
 for-each-ref --sort=-committerdate
 --format='%(committerdate:short)
 
-203
-00:15:34,479 --> 00:15:41,766
+205
+00:15:12,424 --> 00:15:18,327
 %(refname:short)' refs/heads, which lists
 branches by age and needs no parsing.
 
-204
-00:15:41,806 --> 00:15:47,888
+206
+00:15:18,367 --> 00:15:23,293
 git branch --format and git tag
 --format accept the same language.
 
-205
-00:15:48,228 --> 00:15:53,342
+207
+00:15:23,633 --> 00:15:28,747
 Two more habits from the same team. Before
 a risky rewrite, git reflog show <branch>
 
-206
-00:15:53,382 --> 00:15:57,514
+208
+00:15:28,787 --> 00:15:32,919
 is the cheapest insurance, and
 deleting a branch cancels its policy.
 
-207
-00:15:57,554 --> 00:16:02,361
+209
+00:15:32,959 --> 00:15:37,766
 And the reflog is local: it isn't pushed,
 and a clone starts with an empty one.
 
-208
-00:16:04,201 --> 00:16:08,904
+210
+00:15:39,606 --> 00:15:44,309
 Your turn. Do Lab 17.3, "A tour of
 every special ref and file", in
 
-209
-00:16:08,944 --> 00:16:14,725
+211
+00:15:44,349 --> 00:15:50,130
 lab-manual/m17-index-refs-gitdir.md. Before
 each operation, predict which special
 
-210
-00:16:14,765 --> 00:16:19,900
+212
+00:15:50,170 --> 00:15:55,305
 name it will write, what the name will
 hold, and when it will disappear.
 
-211
-00:16:19,940 --> 00:16:24,643
+213
+00:15:55,345 --> 00:16:00,048
 Check with ls -A .git and with the
 plumbing, not with your memory.
 
-212
-00:16:24,983 --> 00:16:33,561
+214
+00:16:00,388 --> 00:16:06,076
 The challenge is Exercise 17.7,
 "A branch that Git ignores", in
 
-213
-00:16:33,601 --> 00:16:37,801
+215
+00:16:06,116 --> 00:16:08,894
 exercises/m16-m18-internals.md.
 
-214
-00:16:39,641 --> 00:16:42,209
+216
+00:16:10,734 --> 00:16:13,302
 Question 81 of the CTO question bank:
 
-215
-00:16:42,549 --> 00:16:47,272
+217
+00:16:13,642 --> 00:16:18,365
 A strong answer treats the two failures
 separately and names, for each, where the
 
-216
-00:16:47,312 --> 00:16:51,858
+218
+00:16:18,405 --> 00:16:22,952
 ref's value is and what the file the
 script reads contains or doesn't contain.
 
-217
-00:16:51,898 --> 00:16:56,680
+219
+00:16:22,992 --> 00:16:27,773
 Part of this answer needs the two storage
 formats of the video after next, so come
 
-218
-00:16:56,720 --> 00:17:01,443
+220
+00:16:27,813 --> 00:16:32,536
 back to it then. It closes with one rule,
 stated as a rule, and the commands that
 
-219
-00:17:01,483 --> 00:17:02,207
+221
+00:16:32,576 --> 00:16:33,301
 implement it.
 
-220
-00:17:04,047 --> 00:17:08,982
+222
+00:16:35,141 --> 00:16:40,075
 Let's land this. A ref is a name, where
 it's kept is Git's business, and you ask
 
-221
-00:17:09,022 --> 00:17:09,230
+223
+00:16:40,115 --> 00:16:40,324
 Git.
 
-222
-00:17:09,570 --> 00:17:28,286
+224
+00:16:40,664 --> 00:16:42,324
 You should now be able to say:
 
-223
-00:17:28,626 --> 00:17:33,795
+225
+00:16:42,664 --> 00:16:47,831
 A ref is a loose file, a line in packed-refs,
 or both; the loose file is read first.
 
-224
-00:17:34,135 --> 00:17:39,297
+226
+00:16:48,171 --> 00:16:53,332
 Plumbing reads and writes refs in every
 format: for-each-ref, show-ref, update-ref,
 
-225
-00:17:39,337 --> 00:17:40,111
+227
+00:16:53,372 --> 00:16:54,147
 symbolic-ref.
 
-226
-00:17:40,451 --> 00:17:46,142
+228
+00:16:54,486 --> 00:17:00,177
 Since Git 2.46, only FETCH_HEAD and
 MERGE_HEAD are pseudorefs; ORIG_HEAD and its
 
-227
-00:17:46,182 --> 00:17:47,861
+229
+00:17:00,217 --> 00:17:01,896
 relatives are root refs.
 
-228
-00:17:48,201 --> 00:17:51,226
+230
+00:17:02,236 --> 00:17:05,261
 Apart from HEAD, none of
 them keeps an object alive.
 
-229
-00:17:51,566 --> 00:17:57,547
+231
+00:17:05,601 --> 00:17:11,582
 Reflogs are files under logs/; tags have
 none by default, and a deleted branch loses
 
-230
-00:17:57,587 --> 00:17:58,120
+232
+00:17:11,622 --> 00:17:12,155
 its own.
 
-231
-00:17:59,960 --> 00:18:07,920
+233
+00:17:13,995 --> 00:17:21,955
 Read sections 3.9 to 3.11 of Chapter 3.
 Do Exercise 17.2, "Loose refs and packed
 
-232
-00:18:07,960 --> 00:18:15,920
+234
+00:17:21,995 --> 00:17:29,955
 refs", and Exercise 17.3, "Refs by plumbing",
 in exercises/m16-m18-internals.md.
 
-233
-00:18:16,260 --> 00:18:21,083
+235
+00:17:30,295 --> 00:17:35,118
 Today you found every place a ref can live,
 and you learned to ask Git instead of
 
-234
-00:18:21,123 --> 00:18:26,125
+236
+00:17:35,158 --> 00:17:40,161
 reading files. Do the lab before the next
 video: the index file as a data structure.
 
-235
-00:18:26,165 --> 00:18:29,247
+237
+00:17:40,201 --> 00:17:43,282
 Until then, look at the
 state first and type second.
 
-236
-00:18:29,287 --> 00:18:30,688
+238
+00:17:43,322 --> 00:17:44,723
 See you in the next one.

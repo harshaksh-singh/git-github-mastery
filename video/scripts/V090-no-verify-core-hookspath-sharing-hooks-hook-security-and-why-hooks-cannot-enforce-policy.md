@@ -85,6 +85,8 @@ Keep the tripwires from the last video. You place them in your own workshop. The
 
 Today add the door. Every delivery, from every workshop, passes one door: the server that receives the push, and the CI run that a merge requires. A check at the door doesn't care how the delivery was packed or whether its sender has tripwires.
 
+**[ANIMATION]** step: clone.3
+
 **[ANIMATION]** say: A clone brings the goods. An archive brings the whole workshop.
 
 For security, turn the picture around. When you clone, you receive the goods: objects and refs. When you unpack someone's archive that contains a `.git` directory, you move into their workshop, with their tripwires already set, and the wires are connected to programs of their choosing.
@@ -453,7 +455,7 @@ repos:
       - id: ruff-format
 ```
 
-A file `.pre-commit-config.yaml` in the repository lists hook repositories, each pinned with `rev` and each providing hooks by `id`. `pre-commit install` sets up the Git hook script. `pre-commit run --all-files` is the documented CI usage. A branch name as `rev` isn't supported: pin a tag or a commit ID.
+This segment is described from the framework's documentation, and nothing in it was run. A file `.pre-commit-config.yaml` in the repository lists hook repositories, each pinned with `rev` and each providing hooks by `id`. `pre-commit install` sets up the Git hook script. `pre-commit run --all-files` is the documented CI usage. A branch name as `rev` isn't supported: pin a tag or a commit ID.
 
 The configuration is versioned and the tools are pinned, so every engineer runs the same checks. That makes the framework better than hand-copied scripts. It doesn't make it a control. `pre-commit install` is still a step that each clone has to take. `git commit --no-verify` and the framework's `SKIP` variable skip it. And each `repo` entry is third-party code that runs on your machine and, in CI, next to your credentials. What enforces is the CI run, required by a ruleset.
 

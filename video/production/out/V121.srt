@@ -1,0 +1,1140 @@
+1
+00:00:04,500 --> 00:00:09,339
+Your CTO asks that question on an ordinary
+morning, and the room goes quiet, because
+
+2
+00:00:09,379 --> 00:00:10,094
+nobody knows.
+
+3
+00:00:10,434 --> 00:00:14,958
+There are two possible answers and both
+are bad. If the engineer's account was
+
+4
+00:00:14,998 --> 00:00:19,756
+removed from the organization, the job is
+already failing and somebody will notice
+
+5
+00:00:19,796 --> 00:00:24,378
+soon. If the account is still a member,
+the job works, with a former employee's
+
+6
+00:00:24,418 --> 00:00:27,830
+access, through a token that
+appears in nobody's inventory.
+
+7
+00:00:27,870 --> 00:00:30,580
+A token is a string that
+stands for an account.
+
+8
+00:00:30,920 --> 00:00:34,712
+The right answer would have been:
+"as an app that nobody can leave".
+
+9
+00:00:34,752 --> 00:00:39,334
+This video is about making identities
+deliberate: yours, when you have two of them
+
+10
+00:00:39,374 --> 00:00:44,011
+on one laptop, and a machine's, when the
+machine must outlive the people who set it
+
+11
+00:00:44,051 --> 00:00:47,562
+up. Hold on to the nightly sync.
+You'll redesign it at the end.
+
+12
+00:00:49,402 --> 00:00:53,502
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:53,542 --> 00:00:56,624
+Four sections of Chapter
+16 today, each short.
+
+14
+00:00:56,964 --> 00:01:02,466
+First, two GitHub identities on one
+machine, a personal and a work account,
+
+15
+00:01:02,506 --> 00:01:07,934
+configured so that the directory a
+repository lives in decides everything.
+
+16
+00:01:07,974 --> 00:01:14,068
+This is the demonstration of the video:
+labs/ch16/two-identities.sh, and the replay
+
+17
+00:01:14,108 --> 00:01:20,127
+of the optional Lab 20.4. The replays use
+a stand-in for ssh and reach no network.
+
+18
+00:01:20,467 --> 00:01:25,348
+Second, credentials for machines: deploy
+keys, GitHub Apps, OAuth apps, as the
+
+19
+00:01:25,388 --> 00:01:26,735
+section compares them.
+
+20
+00:01:27,075 --> 00:01:31,835
+Third, what SAML single sign-on and
+mandatory two-factor authentication add.
+
+21
+00:01:32,175 --> 00:01:37,509
+Fourth, the SSH changes of the fourteenth
+of October 2026 and the thirteenth of
+
+22
+00:01:37,549 --> 00:01:43,087
+January 2027. A note on that last part:
+these dates come after the baseline of the
+
+23
+00:01:43,127 --> 00:01:48,665
+textbook, which is the first of October
+2026. I quote them from section 16.16, and
+
+24
+00:01:48,705 --> 00:01:54,379
+the production notes require that they are
+re-verified against GitHub's changelog on
+
+25
+00:01:54,419 --> 00:01:55,808
+the day of recording.
+
+26
+00:01:56,148 --> 00:02:01,157
+There's no GitHub walkthrough in this
+video. The commands shown set global Git
+
+27
+00:02:01,197 --> 00:02:06,531
+configuration inside the sandbox. On your
+own machine, git config set --global is 🟡
+
+28
+00:02:06,571 --> 00:02:09,573
+CAUTION because it applies
+to every repository.
+
+29
+00:02:11,413 --> 00:02:12,826
+After this video you can:
+
+30
+00:02:13,166 --> 00:02:17,627
+Configure a personal and a work identity
+so that each repository uses the right key
+
+31
+00:02:17,667 --> 00:02:19,200
+and the right commit address.
+
+32
+00:02:19,540 --> 00:02:22,526
+Prove from a repository which
+identity a push will use.
+
+33
+00:02:22,866 --> 00:02:27,149
+Choose between a deploy key, a GitHub App
+and an OAuth app for a machine, as the
+
+34
+00:02:27,189 --> 00:02:28,338
+section compares them.
+
+35
+00:02:28,678 --> 00:02:33,398
+Say what single sign-on authorization and
+mandatory two-factor authentication add.
+
+36
+00:02:33,738 --> 00:02:38,267
+State what changes for SSH users on
+the two dates and who is affected.
+
+37
+00:02:40,107 --> 00:02:45,114
+Two identities. In one sentence: give each
+account its own key and its own ssh host
+
+38
+00:02:45,154 --> 00:02:50,100
+alias, and let the directory a repository
+lives in choose the alias and the commit
+
+39
+00:02:50,140 --> 00:02:50,465
+email.
+
+40
+00:02:50,805 --> 00:02:55,801
+Why is this needed at all? Recall the three
+independent identities from video 118:
+
+41
+00:02:55,841 --> 00:03:00,345
+the commit identity, the authentication
+identity and the signing identity.
+
+42
+00:03:00,385 --> 00:03:04,643
+With two accounts on one laptop, each
+of them can be wrong separately.
+
+43
+00:03:04,683 --> 00:03:09,003
+A commit can go to the employer's
+repository under your personal email.
+
+44
+00:03:09,043 --> 00:03:13,670
+A push to your personal repository can
+be authenticated as the work account.
+
+45
+00:03:14,010 --> 00:03:19,198
+GitHub's guide for several accounts gives
+two building blocks: Host aliases with
+
+46
+00:03:19,238 --> 00:03:23,707
+IdentityFile and IdentitiesOnly,
+which you saw in the last video, and
+
+47
+00:03:23,747 --> 00:03:27,432
+url.<alias>.insteadOf, which
+sends URLs through an alias.
+
+48
+00:03:27,472 --> 00:03:32,463
+Combined with includeIf, the conditional
+include you met in the configuration
+
+49
+00:03:32,503 --> 00:03:37,691
+videos, one file holds everything that
+makes a repository a work repository: the
+
+50
+00:03:37,731 --> 00:03:42,658
+email, and the URL rewrite. Both kinds
+of repository keep the canonical URL,
+
+51
+00:03:42,698 --> 00:03:47,951
+git@github.com:OWNER/REPO.git. Inside the
+work directory, the include applies and
+
+52
+00:03:47,991 --> 00:03:50,630
+the effective URL goes through the alias.
+
+53
+00:03:50,970 --> 00:03:55,177
+Over HTTPS the equivalent is
+one credential per account:
+
+54
+00:03:55,217 --> 00:04:00,788
+credential.https://github.com.username
+inside the include, or useHttpPath.
+
+55
+00:04:00,828 --> 00:04:07,158
+The GitHub CLI holds several accounts per
+host and gh auth switch changes the active
+
+56
+00:04:07,198 --> 00:04:13,224
+one. That switch is global, not per
+directory, which is the reason to prefer SSH
+
+57
+00:04:13,264 --> 00:04:17,547
+aliases when you work in both
+identities on the same day.
+
+58
+00:04:17,887 --> 00:04:22,831
+The failure mode of the design: a work
+repository cloned outside the work directory
+
+59
+00:04:22,871 --> 00:04:27,455
+escapes a rule keyed on the directory.
+Lab 20.4 breaks the setup that way and
+
+60
+00:04:27,495 --> 00:04:30,638
+repairs it with an includeIf
+keyed on the remote URL.
+
+61
+00:04:30,978 --> 00:04:35,601
+Now credentials for machines. A job that
+runs without you needs an identity that
+
+62
+00:04:35,641 --> 00:04:36,184
+isn't you.
+
+63
+00:04:36,524 --> 00:04:40,813
+A deploy key: an SSH key attached
+to one repository, not to a person.
+
+64
+00:04:40,853 --> 00:04:44,516
+Read-only unless "Allow write
+access" is chosen. No expiry.
+
+65
+00:04:44,556 --> 00:04:49,535
+It can't be reused for a second repository,
+usually has no passphrase, and keeps
+
+66
+00:04:49,575 --> 00:04:54,681
+working after the person who added it
+leaves. And from the chapter's edge cases: a
+
+67
+00:04:54,721 --> 00:04:59,513
+deploy key with write access can do what
+an admin collaborator can do in that
+
+68
+00:04:59,553 --> 00:05:04,721
+repository, according to GitHub's page.
+Treat it like a password to the repository.
+
+69
+00:05:05,061 --> 00:05:10,086
+A GitHub App installation token: scoped to
+the repositories and permissions of the
+
+70
+00:05:10,126 --> 00:05:13,916
+installation, one hour, not tied
+to a user, consuming no seat.
+
+71
+00:05:13,956 --> 00:05:18,857
+It's GitHub's stated preference for
+integrations. A GitHub App is an integration
+
+72
+00:05:18,897 --> 00:05:20,834
+that acts with its own identity.
+
+73
+00:05:21,174 --> 00:05:24,756
+A GitHub App user token: what
+both the app and the user may do.
+
+74
+00:05:24,796 --> 00:05:27,516
+Eight hours, with a refresh
+token of six months.
+
+75
+00:05:27,856 --> 00:05:32,893
+An OAuth app token: the scopes granted by
+the user, across everything that user can
+
+76
+00:05:32,933 --> 00:05:37,786
+reach. An OAuth app that only needs to
+read still asks for the broad repo scope.
+
+77
+00:05:38,126 --> 00:05:42,069
+A machine user with a token or key:
+a user account for automation.
+
+78
+00:05:42,109 --> 00:05:46,595
+It occupies a seat, and somebody has
+to own its password and second factor.
+
+79
+00:05:46,935 --> 00:05:50,211
+And GITHUB_TOKEN: the workflow's
+repository, for the job.
+
+80
+00:05:50,551 --> 00:05:55,321
+The choice, as the section puts it: a
+server that needs several repositories with
+
+81
+00:05:55,361 --> 00:06:00,309
+deploy keys needs one alias per repository.
+At that point an app is the better tool:
+
+82
+00:06:00,349 --> 00:06:05,000
+one installation, short-lived tokens, and
+a permission list that an auditor can
+
+83
+00:06:05,040 --> 00:06:05,297
+read.
+
+84
+00:06:05,637 --> 00:06:10,260
+Quick quiz. A nightly job needs to
+read one repository, and nothing else.
+
+85
+00:06:10,300 --> 00:06:15,625
+Which credential is the smallest that does
+it: a personal token, a deploy key, or an
+
+86
+00:06:15,665 --> 00:06:17,733
+OAuth app token? Say it out loud.
+
+87
+00:06:22,573 --> 00:06:27,169
+A deploy key: one repository, read-only
+unless you allow writes, and tied to no
+
+88
+00:06:27,209 --> 00:06:31,629
+person. If you said a personal token,
+that's the nightly sync from the hook.
+
+89
+00:06:31,969 --> 00:06:37,512
+Two-factor authentication. Since March 2023
+GitHub requires everyone who contributes
+
+90
+00:06:37,552 --> 00:06:42,697
+code on GitHub.com to enable it. Accounts
+are enrolled in groups with a 45-day
+
+91
+00:06:42,737 --> 00:06:47,948
+window. It protects the browser sign-in.
+Tokens and SSH keys are used without a
+
+92
+00:06:47,988 --> 00:06:53,399
+second factor, which is why they must be
+guarded and, where possible, short-lived.
+
+93
+00:06:53,739 --> 00:06:57,042
+SAML single sign-on is an
+Enterprise Cloud feature.
+
+94
+00:06:57,082 --> 00:07:01,829
+In an organization that uses it, a
+credential must be authorized for that
+
+95
+00:07:01,869 --> 00:07:06,812
+organization in addition to being valid.
+A classic token is authorized after
+
+96
+00:07:06,852 --> 00:07:11,139
+creation, per organization. A
+fine-grained token, during creation.
+
+97
+00:07:11,179 --> 00:07:13,041
+An SSH key, per organization.
+
+98
+00:07:13,381 --> 00:07:18,289
+Deploy keys, installation tokens and
+GITHUB_TOKEN need no authorization.
+
+99
+00:07:18,329 --> 00:07:23,786
+An owner can revoke the authorization,
+and a revoked SSH key can't be authorized
+
+100
+00:07:23,826 --> 00:07:29,559
+again: a new key is needed. Through the REST
+API, an unauthorized classic token gets
+
+101
+00:07:29,599 --> 00:07:35,194
+404 or 403, and a 403 carries an X-GitHub-SSO
+header with the URL to authorize it.
+
+102
+00:07:35,534 --> 00:07:40,589
+One caveat the textbook marks unverified:
+the text Git shows when an SSH key or
+
+103
+00:07:40,629 --> 00:07:45,878
+token is not authorized for single sign-on
+is not quoted in any documentation page
+
+104
+00:07:45,918 --> 00:07:50,457
+the course found. The documented,
+citable behaviour is the REST header.
+
+105
+00:07:50,797 --> 00:07:55,185
+The SSH changes, announced on the
+twenty-second of September 2026.
+
+106
+00:07:55,225 --> 00:08:00,820
+Every date in this list lies after the course
+baseline of the first of October 2026,
+
+107
+00:08:00,860 --> 00:08:05,046
+so this is what GitHub announced,
+not what the course observed.
+
+108
+00:08:05,086 --> 00:08:08,132
+Check the changelog on
+the day you watch this.
+
+109
+00:08:08,472 --> 00:08:14,071
+The fourteenth of October 2026, as announced:
+RSA keys uploaded after this date must
+
+110
+00:08:14,111 --> 00:08:19,509
+be at least 3072 bits, for authentication
+and for signing, and a post-quantum key
+
+111
+00:08:19,549 --> 00:08:23,872
+exchange is to be enabled. Affected:
+anyone adding a new RSA key.
+
+112
+00:08:24,212 --> 00:08:29,511
+The fourth of November and the ninth of
+December 2026, as announced: brownouts of
+
+113
+00:08:29,551 --> 00:08:34,388
+the two removals that follow. Affected:
+very old SSH clients, temporarily.
+
+114
+00:08:34,728 --> 00:08:40,463
+The thirteenth of January 2027, as announced:
+the ssh-rsa signature type, which is
+
+115
+00:08:40,503 --> 00:08:44,758
+RSA with SHA-1, and one older
+key exchange are to be removed.
+
+116
+00:08:44,798 --> 00:08:50,673
+Affected: clients that can't sign RSA with
+SHA-2, meaning OpenSSH older than 7.2 and
+
+117
+00:08:50,713 --> 00:08:52,292
+old embedded libraries.
+
+118
+00:08:52,632 --> 00:08:58,955
+Three points prevent wrong conclusions.
+The signature type ssh-rsa is not the key
+
+119
+00:08:58,995 --> 00:09:05,239
+type ssh-rsa: an existing RSA key keeps
+working as long as the client signs with
+
+120
+00:09:05,279 --> 00:09:10,973
+rsa-sha2-256 or rsa-sha2-512, which
+current clients choose by themselves.
+
+121
+00:09:11,013 --> 00:09:17,336
+Ed25519 and ECDSA keys aren't affected at
+all. And HTTPS remotes aren't affected.
+
+122
+00:09:17,676 --> 00:09:23,449
+What to check: ssh -V for the client version,
+and ssh-keygen -l -f on a public key
+
+123
+00:09:23,489 --> 00:09:29,049
+for its type and size. The machines to
+worry about aren't laptops but old build
+
+124
+00:09:29,089 --> 00:09:32,309
+agents, appliances and
+libraries inside tools.
+
+125
+00:09:32,649 --> 00:09:37,311
+And the caveat, unverified in the book:
+the announcement does not state a minimum
+
+126
+00:09:37,351 --> 00:09:42,129
+size for RSA keys that are already uploaded,
+and GitHub publishes no single list of
+
+127
+00:09:42,169 --> 00:09:43,290
+supported key types.
+
+128
+00:09:45,130 --> 00:09:49,811
+Think of two wallets, one personal and
+one from your employer, and a rule about
+
+129
+00:09:49,851 --> 00:09:54,055
+which wallet you carry: the one that
+belongs to the building you're in.
+
+130
+00:09:54,095 --> 00:09:58,895
+Each wallet holds a key card, which is the
+SSH key, and a business card, which is
+
+131
+00:09:58,935 --> 00:10:01,943
+the commit email. You never
+choose per transaction.
+
+132
+00:10:01,983 --> 00:10:03,198
+The building decides.
+
+133
+00:10:03,538 --> 00:10:08,122
+The model breaks exactly where the lab
+breaks it: a work meeting held in a café.
+
+134
+00:10:08,162 --> 00:10:12,977
+A repository cloned outside the work directory
+is in no building, and the rule keyed
+
+135
+00:10:13,017 --> 00:10:17,543
+on the directory picks the personal wallet.
+That's why the lab ends with a rule
+
+136
+00:10:17,583 --> 00:10:21,762
+keyed on the remote URL, on what the
+repository is, not on where it sits.
+
+137
+00:10:22,102 --> 00:10:26,558
+For machines the model is simpler: a
+machine should carry a card issued to the
+
+138
+00:10:26,598 --> 00:10:27,019
+machine.
+
+139
+00:10:28,859 --> 00:10:33,774
+Read the personal row: plain github.com,
+the personal key, the personal address, all
+
+140
+00:10:33,814 --> 00:10:38,199
+from the global configuration and the
+first block of the SSH configuration.
+
+141
+00:10:38,539 --> 00:10:43,741
+Read the work row: the alias github-work,
+which resolves to the same host with the
+
+142
+00:10:43,781 --> 00:10:48,792
+work key. Then the work address. And the
+last column says where both come from.
+
+143
+00:10:48,832 --> 00:10:52,373
+One included file sets the
+address and rewrites the URL.
+
+144
+00:10:52,413 --> 00:10:55,442
+The SSH configuration maps
+the alias to the key.
+
+145
+00:10:55,782 --> 00:11:00,538
+The two lines at the bottom are the trick.
+The stored URL is canonical in both.
+
+146
+00:11:00,578 --> 00:11:02,421
+Only the effective URL differs.
+
+147
+00:11:06,761 --> 00:11:12,428
+The global identity is the personal one.
+The include applies to repositories under
+
+148
+00:11:12,468 --> 00:11:18,275
+~/work/. The included file has two sections:
+a different email, and the URL rewrite.
+
+149
+00:11:18,615 --> 00:11:23,957
+The personal repository: the personal
+address, and the stored and the effective URL
+
+150
+00:11:23,997 --> 00:11:28,431
+are the same. The stand-in for ssh
+shows that Git would start ssh for
+
+151
+00:11:28,471 --> 00:11:29,404
+git@github.com.
+
+152
+00:11:29,744 --> 00:11:34,837
+In the work repository, git config get
+remote.origin.url and git remote get-url
+
+153
+00:11:34,877 --> 00:11:39,061
+origin are two different questions.
+Will they print the same URL?
+
+154
+00:11:39,101 --> 00:11:40,815
+Say it out loud. I'll wait.
+
+155
+00:11:45,655 --> 00:11:51,007
+They differ. The stored URL is unchanged.
+The effective URL goes through the alias.
+
+156
+00:11:51,047 --> 00:11:56,009
+And Git would start ssh for git@github-work.
+--show-origin names the file the
+
+157
+00:11:56,049 --> 00:12:01,336
+address came from: the included one. If
+you expected the same URL twice, you're in
+
+158
+00:12:01,376 --> 00:12:06,273
+good company: one command reads what is
+stored, the other what Git will use.
+
+159
+00:12:06,613 --> 00:12:10,673
+These four commands are the proof
+the second objective asks for.
+
+160
+00:12:10,713 --> 00:12:15,990
+From inside any repository: the address and
+its origin, the effective URL, and what
+
+161
+00:12:16,030 --> 00:12:17,656
+ssh would be asked to run.
+
+162
+00:12:17,996 --> 00:12:23,959
+The SSH side, with ssh -G as in the last
+video: the same host name for both, a
+
+163
+00:12:23,999 --> 00:12:28,347
+different identity file for
+each, and identitiesonly yes.
+
+164
+00:12:33,887 --> 00:12:37,441
+One commit in each repository,
+each with the right address.
+
+165
+00:12:37,481 --> 00:12:42,558
+Three things changed together: the commit
+email, the URL and, through the alias, the
+
+166
+00:12:42,598 --> 00:12:47,432
+key. They are still three independent
+identities. The include file is what keeps
+
+167
+00:12:47,472 --> 00:12:48,223
+them aligned.
+
+168
+00:12:51,063 --> 00:12:55,657
+The same proof in the lab's sandbox.
+After this step the lab clones a work
+
+169
+00:12:55,697 --> 00:13:00,541
+repository outside ~/work/ and asks you
+what address and what key it will use.
+
+170
+00:13:00,581 --> 00:13:04,861
+Predict it before you run it. The
+failure and the recovery are yours.
+
+171
+00:13:05,201 --> 00:13:09,273
+The first prints the client
+version: compare it with 7.2.
+
+172
+00:13:09,313 --> 00:13:15,332
+The second prints a key's size and type.
+For an RSA key you plan to upload after the
+
+173
+00:13:15,372 --> 00:13:20,237
+fourteenth of October 2026, the
+announced minimum size is 3072 bits.
+
+174
+00:13:20,577 --> 00:13:26,168
+Try it now, thirty seconds, in your
+normal shell. Run ssh -V and compare your
+
+175
+00:13:26,208 --> 00:13:28,215
+version with 7.2. I'll wait.
+
+176
+00:13:33,055 --> 00:13:37,937
+If yours is 7.2 or newer, your laptop
+isn't the machine to worry about.
+
+177
+00:13:37,977 --> 00:13:39,671
+The old build agents are.
+
+178
+00:13:41,511 --> 00:13:43,159
+Five mistakes to watch for.
+
+179
+00:13:43,499 --> 00:13:47,727
+Pushing to the employer's repository
+with the personal email in the commits.
+
+180
+00:13:47,767 --> 00:13:52,389
+Root cause: the commit identity is independent
+of authentication; nothing checks it
+
+181
+00:13:52,429 --> 00:13:54,523
+unless you configure it per directory.
+
+182
+00:13:54,863 --> 00:13:59,932
+Keying the work identity on the directory
+and cloning a work repository elsewhere.
+
+183
+00:13:59,972 --> 00:14:04,978
+Root cause: includeIf.gitdir matches the
+location; a rule keyed on the remote URL
+
+184
+00:14:05,018 --> 00:14:06,411
+matches the repository.
+
+185
+00:14:06,751 --> 00:14:11,672
+Running a nightly job with a personal token.
+Root cause: the job then authenticates
+
+186
+00:14:11,712 --> 00:14:16,693
+as a person, and its access follows that
+person's membership, not the job's purpose.
+
+187
+00:14:17,033 --> 00:14:21,001
+Concluding that RSA keys stop
+working on 13 January 2027.
+
+188
+00:14:21,041 --> 00:14:26,767
+Root cause: the announcement removes the
+signature type ssh-rsa, not the key type;
+
+189
+00:14:26,807 --> 00:14:29,017
+current clients sign with SHA-2.
+
+190
+00:14:29,357 --> 00:14:33,508
+Assuming a valid token works in an
+organization with single sign-on.
+
+191
+00:14:33,548 --> 00:14:38,007
+Root cause: the credential must also
+be authorized for that organization.
+
+192
+00:14:39,847 --> 00:14:42,993
+Now, out of the lab. The
+nightly sync from the hook.
+
+193
+00:14:43,033 --> 00:14:47,649
+The team finds the job's credential: a
+classic personal token created by the
+
+194
+00:14:47,689 --> 00:14:52,550
+engineer who left. The account is still
+a member of the organization, so the job
+
+195
+00:14:52,590 --> 00:14:55,675
+works, and the token appears
+in nobody's inventory.
+
+196
+00:14:55,715 --> 00:15:00,147
+So that's what the job authenticates
+as today: a person who left in June.
+
+197
+00:15:00,487 --> 00:15:04,838
+They replace it with a GitHub App
+installed on the two repositories the sync
+
+198
+00:15:04,878 --> 00:15:09,517
+touches, with the permissions the sync
+needs. The job now obtains an installation
+
+199
+00:15:09,557 --> 00:15:14,197
+token that lives one hour. Nobody's departure
+changes it, and an auditor can read
+
+200
+00:15:14,237 --> 00:15:18,876
+its permission list. For a job that needed
+one repository read-only, a deploy key
+
+201
+00:15:18,916 --> 00:15:21,187
+would have been the minimum improvement.
+
+202
+00:15:21,527 --> 00:15:26,510
+For the calendar, the same team lists
+machines, not people: every build agent,
+
+203
+00:15:26,550 --> 00:15:31,663
+appliance and tool with an embedded SSH
+library, with the output of ssh -V where
+
+204
+00:15:31,703 --> 00:15:34,110
+there is one. Laptops aren't the risk.
+
+205
+00:15:35,950 --> 00:15:40,577
+Your turn. Do Lab 20.4, "Two identities
+on one machine (optional)", in
+
+206
+00:15:40,617 --> 00:15:45,645
+lab-manual/m20-authentication-ssh.md.
+Before each proof command, predict the
+
+207
+00:15:45,685 --> 00:15:50,178
+address, the effective URL and the
+host that ssh would be asked for.
+
+208
+00:15:50,218 --> 00:15:54,846
+Before the failure scenario, predict
+which of the three will be wrong.
+
+209
+00:15:55,186 --> 00:16:01,858
+The challenge is Exercise 20.5, "The
+push works, the address is wrong", in
+
+210
+00:16:01,898 --> 00:16:04,399
+exercises/m19-m25-github.md.
+
+211
+00:16:06,238 --> 00:16:09,483
+Question 246 of the CTO question bank:
+
+212
+00:16:11,823 --> 00:16:16,844
+Answer out loud. A strong answer names what
+must differ between the two accounts and
+
+213
+00:16:16,884 --> 00:16:21,724
+keeps the three identities apart. It gives
+a design in which nothing is chosen by
+
+214
+00:16:21,764 --> 00:16:26,664
+hand per repository, states where each
+piece is configured, and names the case the
+
+215
+00:16:26,704 --> 00:16:31,604
+design misses. For the proof it gives
+commands that read configuration and resolve
+
+216
+00:16:31,644 --> 00:16:33,653
+the connection without making one.
+
+217
+00:16:35,493 --> 00:16:36,420
+Let's land this.
+
+218
+00:16:36,760 --> 00:16:38,420
+You should now be able to say:
+
+219
+00:16:38,760 --> 00:16:43,605
+Each account gets its own key and host
+alias; an included configuration file sets
+
+220
+00:16:43,645 --> 00:16:47,224
+the commit email and rewrites
+the URL for work repositories.
+
+221
+00:16:47,564 --> 00:16:53,817
+git config get --show-origin user.email,
+git remote get-url origin and ssh -G prove
+
+222
+00:16:53,857 --> 00:16:56,623
+which identity a repository will use.
+
+223
+00:16:56,963 --> 00:17:01,526
+A machine gets a machine credential: a
+deploy key for one repository, or an app
+
+224
+00:17:01,566 --> 00:17:03,507
+installation with one-hour tokens.
+
+225
+00:17:03,847 --> 00:17:08,730
+Two-factor authentication protects the
+browser sign-in; single sign-on requires each
+
+226
+00:17:08,770 --> 00:17:11,367
+credential to be authorized
+per organization.
+
+227
+00:17:11,707 --> 00:17:19,259
+GitHub announced that from 14 October 2026
+new RSA keys need 3072 bits and that on
+
+228
+00:17:19,299 --> 00:17:26,758
+13 January 2027 the SHA-1 RSA signature
+type is removed; Ed25519, ECDSA and HTTPS
+
+229
+00:17:26,798 --> 00:17:32,498
+are unaffected. Check the changelog
+on the day you watch this.
+
+230
+00:17:34,338 --> 00:17:44,301
+Read sections 16.13 to 16.16 of Chapter 16.
+Do Exercise 20.8, "The SSH calendar", in
+
+231
+00:17:44,341 --> 00:17:47,635
+exercises/m19-m25-github.md.
+
+232
+00:17:47,975 --> 00:17:52,966
+Today you made identities deliberate: two
+of your own, chosen by a directory, and a
+
+233
+00:17:53,006 --> 00:17:57,997
+machine's, issued to the machine. Run the
+proof commands in one repository of yours
+
+234
+00:17:58,037 --> 00:18:02,604
+before the next video. Next time:
+diagnosing authentication failures, with a
+
+235
+00:18:02,644 --> 00:18:06,665
+decision tree. Until then, look at
+the state first and type second.
+
+236
+00:18:06,705 --> 00:18:08,120
+See you in the next one.

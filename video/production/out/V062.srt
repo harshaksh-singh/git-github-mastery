@@ -1,1112 +1,1112 @@
 1
-00:00:04,500 --> 00:00:09,624
+00:00:04,500 --> 00:00:09,635
 A release script backports three fixes in
 one command: it cherry-picks them, copying
 
 2
-00:00:09,664 --> 00:00:14,235
+00:00:09,675 --> 00:00:14,255
 each fix onto the release branch as a
 new commit. It runs in CI, the team's
 
 3
-00:00:14,275 --> 00:00:17,923
+00:00:14,295 --> 00:00:17,951
 automation, at two in the morning.
 The second fix conflicts.
 
 4
-00:00:17,963 --> 00:00:22,227
+00:00:17,991 --> 00:00:22,263
 The script doesn't check the exit
 status. It goes on to tag and build.
 
 5
-00:00:22,567 --> 00:00:27,114
+00:00:22,603 --> 00:00:27,150
 In the morning the release branch has one
 of the three fixes on it, a conflict in
 
 6
-00:00:27,154 --> 00:00:31,305
+00:00:27,190 --> 00:00:31,341
 the index, Git's staging file, and a
 tag on a commit that nobody intended.
 
 7
-00:00:31,345 --> 00:00:35,722
+00:00:31,381 --> 00:00:35,759
 An engineer opens the workspace and has
 to answer one question before touching
 
 8
-00:00:35,762 --> 00:00:40,422
+00:00:35,799 --> 00:00:40,459
 anything: where exactly did this stop, and
 what has already happened to the branch?
 
 9
-00:00:40,762 --> 00:00:44,948
+00:00:40,799 --> 00:00:44,984
 The answer is different from the one you
 learned for a stopped rebase, and the
 
 10
-00:00:44,988 --> 00:00:49,498
+00:00:45,024 --> 00:00:49,535
 difference is what makes this state dangerous.
 Keep the engineer's question in mind.
 
 11
-00:00:49,538 --> 00:00:50,907
+00:00:49,575 --> 00:00:50,943
 You'll answer it yourself.
 
 12
-00:00:52,747 --> 00:00:56,503
+00:00:52,783 --> 00:00:56,540
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 13
-00:00:56,543 --> 00:01:00,051
+00:00:56,580 --> 00:01:00,087
 In the last video every
 cherry-pick finished in one step.
 
 14
-00:01:00,091 --> 00:01:01,047
+00:01:00,127 --> 00:01:01,083
 Today they stop.
 
 15
-00:01:01,387 --> 00:01:06,459
+00:01:01,423 --> 00:01:06,495
 A cherry-pick can stop for two reasons. A
 conflict, where Git can't decide a file's
 
 16
-00:01:06,499 --> 00:01:11,632
+00:01:06,535 --> 00:01:11,669
 content and waits for you. Or an empty
 result, because the change is already on your
 
 17
-00:01:11,672 --> 00:01:12,063
+00:01:11,709 --> 00:01:12,100
 branch.
 
 18
-00:01:12,403 --> 00:01:18,189
+00:01:12,440 --> 00:01:17,266
 You'll look at four things. The state of
 a stopped pick: one root ref, and for a
 
 19
-00:01:18,229 --> 00:01:24,087
+00:01:17,306 --> 00:01:22,193
 range, a sequencer directory. The four
 exits, and where the branch is after each.
 
 20
-00:01:24,127 --> 00:01:29,767
+00:01:22,233 --> 00:01:26,938
 A conflict in detail, including a base
 that shows lines your branch never had.
 
 21
-00:01:29,807 --> 00:01:31,442
+00:01:26,978 --> 00:01:28,337
 And the --empty option.
 
 22
-00:01:31,782 --> 00:01:35,199
+00:01:28,677 --> 00:01:32,095
 Throughout, keep the stopped
 rebase from video 53 in mind.
 
 23
-00:01:35,239 --> 00:01:39,968
+00:01:32,135 --> 00:01:36,864
 The comparison between the two is today's
 interview question, and one fact in it
 
 24
-00:01:40,008 --> 00:01:44,857
+00:01:36,904 --> 00:01:41,752
 surprises people: during a stopped range
 pick, HEAD, Git's name for where you are,
 
 25
-00:01:44,897 --> 00:01:47,897
+00:01:41,792 --> 00:01:44,792
 is on the branch, and the
 branch has already moved.
 
 26
-00:01:49,737 --> 00:01:51,315
+00:01:46,632 --> 00:01:48,210
 Here's what you'll walk away with.
 
 27
-00:01:51,655 --> 00:01:53,067
+00:01:48,550 --> 00:01:49,963
 After this video you can:
 
 28
-00:01:53,407 --> 00:01:57,098
+00:01:50,303 --> 00:01:53,993
 Read the state of a stopped
 cherry-pick from git status and .git.
 
 29
-00:01:57,438 --> 00:02:04,017
+00:01:54,333 --> 00:02:00,912
 Choose between --continue, --skip, --abort
 and --quit, and say where the branch is
 
 30
-00:02:04,057 --> 00:02:04,905
+00:02:00,952 --> 00:02:01,800
 after each.
 
 31
-00:02:05,245 --> 00:02:08,577
+00:02:02,140 --> 00:02:05,472
 Explain where stage 1 of a
 cherry-pick conflict comes from.
 
 32
-00:02:08,917 --> 00:02:11,750
+00:02:05,812 --> 00:02:08,645
 Handle a pick that became
 empty with --empty.
 
 33
-00:02:12,090 --> 00:02:14,780
+00:02:08,985 --> 00:02:11,675
 Compare a stopped range
 pick with a stopped rebase.
 
 34
-00:02:16,620 --> 00:02:21,679
+00:02:13,515 --> 00:02:18,686
 The state. In one sentence: a stopped
 cherry-pick is described by one root ref,
 
 35
-00:02:21,719 --> 00:02:26,714
+00:02:18,726 --> 00:02:23,831
 CHERRY_PICK_HEAD, and, when more than
 one commit was requested, by a directory
 
 36
-00:02:26,754 --> 00:02:31,878
+00:02:23,871 --> 00:02:29,108
 .git/sequencer/ that holds the rest of
 the plan. A root ref is a name in capital
 
 37
-00:02:31,918 --> 00:02:35,105
+00:02:29,148 --> 00:02:32,406
 letters that lives directly
 in the dot git folder.
 
 38
-00:02:35,445 --> 00:02:38,953
+00:02:32,746 --> 00:02:36,266
 CHERRY_PICK_HEAD is the commit
 that could not be applied.
 
 39
-00:02:38,993 --> 00:02:44,118
+00:02:36,306 --> 00:02:41,451
 On screen it sits on ebcee16, on main. In
 .git/sequencer/, the file todo holds that
 
 40
-00:02:44,158 --> 00:02:49,159
+00:02:41,491 --> 00:02:46,510
 commit and everything after it, and head
 is where HEAD was before the first pick.
 
 41
-00:02:49,199 --> 00:02:53,578
+00:02:46,550 --> 00:02:50,945
 A cherry-pick of a single commit
 creates no sequencer directory at all.
 
 42
-00:02:53,618 --> 00:02:57,437
+00:02:50,985 --> 00:02:54,817
 CHERRY_PICK_HEAD and the prepared
 message are its whole state.
 
 43
-00:02:57,777 --> 00:03:01,906
+00:02:55,157 --> 00:02:59,160
 Now the difference from a
 rebase. HEAD is not detached.
 
 44
-00:03:01,946 --> 00:03:06,151
+00:02:59,200 --> 00:03:03,276
 The picks that have already
 succeeded are on the branch.
 
 45
-00:03:06,191 --> 00:03:12,140
+00:03:03,316 --> 00:03:09,083
 The branch has moved. Look at release/1.4:
 one copy, e0c8403, is already on it.
 
 46
-00:03:12,480 --> 00:03:17,336
+00:03:09,423 --> 00:03:14,279
 Think about why. A rebase builds a replacement
 history off to the side and switches
 
 47
-00:03:17,376 --> 00:03:22,291
+00:03:14,319 --> 00:03:19,234
 the branch over at the end. A cherry-pick
 adds commits to the branch you are on, one
 
 48
-00:03:22,331 --> 00:03:24,415
+00:03:19,274 --> 00:03:21,358
 at a time. There is no "at the end".
 
 49
-00:03:24,755 --> 00:03:25,706
+00:03:21,698 --> 00:03:22,649
 The four exits.
 
 50
-00:03:26,046 --> 00:03:30,324
+00:03:22,989 --> 00:03:27,400
 The textbook labels --skip,
 --abort and --quit 🟡 CAUTION.
 
 51
-00:03:30,364 --> 00:03:36,688
+00:03:27,440 --> 00:03:33,958
 --abort goes back to sequencer/head, so
 picks that had succeeded are undone as well,
 
 52
-00:03:36,728 --> 00:03:38,809
+00:03:33,998 --> 00:03:36,144
 and resolution work is lost.
 
 53
-00:03:39,149 --> 00:03:43,223
+00:03:36,484 --> 00:03:40,558
 Conflicts. In one sentence: in a cherry-pick
 conflict, "ours" is your branch,
 
 54
-00:03:43,263 --> 00:03:47,711
+00:03:40,598 --> 00:03:45,047
 "theirs" is the picked commit, and the base
 is the picked commit's parent: a version
 
 55
-00:03:47,751 --> 00:03:50,596
+00:03:45,087 --> 00:03:47,932
 of the file that your branch
 may never have contained.
 
 56
-00:03:50,936 --> 00:03:56,660
+00:03:48,272 --> 00:03:53,794
 Two things in that sentence. First, the
 sides are not swapped here as they are in a
 
 57
-00:03:56,700 --> 00:04:02,286
+00:03:53,834 --> 00:03:59,223
 rebase: HEAD is your branch. Second, the
 base. It's not the merge base of the two
 
 58
-00:04:02,326 --> 00:04:08,050
+00:03:59,263 --> 00:04:04,786
 branches. It's the parent of the picked
 commit, and that parent may already contain
 
 59
-00:04:08,090 --> 00:04:11,661
+00:04:04,826 --> 00:04:08,271
 changes from its own branch
 that you have never had.
 
 60
-00:04:11,701 --> 00:04:17,425
+00:04:08,311 --> 00:04:13,833
 On screen the base is 08f4771. The merge
 base, the most recent commit both branches
 
 61
-00:04:17,465 --> 00:04:18,675
+00:04:13,873 --> 00:04:15,040
 share, is 93787ec.
 
 62
-00:04:19,015 --> 00:04:23,336
+00:04:15,380 --> 00:04:19,701
 With the base in view, a conflict reads as
 an instruction: the change to carry over
 
 63
-00:04:23,376 --> 00:04:27,593
+00:04:19,741 --> 00:04:23,958
 is the difference between base and theirs.
 Apply that difference to your version.
 
 64
-00:04:27,933 --> 00:04:32,700
+00:04:24,298 --> 00:04:29,065
 Empty picks. In one sentence: when the
 picked change is already present on your
 
 65
-00:04:32,740 --> 00:04:37,385
+00:04:29,105 --> 00:04:33,750
 branch, the merge result equals HEAD,
 there is nothing to commit, and --empty
 
 66
-00:04:37,425 --> 00:04:38,967
+00:04:33,790 --> 00:04:35,332
 decides what happens next.
 
 67
-00:04:39,307 --> 00:04:44,069
+00:04:35,672 --> 00:04:40,622
 The textbook's version note. Older
 behavior: the only control was
 
 68
-00:04:44,109 --> 00:04:48,427
+00:04:40,662 --> 00:04:45,152
 --keep-redundant-commits. Current
 behavior, since Git 2.45:
 
 69
-00:04:48,467 --> 00:04:54,484
+00:04:45,192 --> 00:04:51,447
 --empty=(drop|keep|stop). Recommended:
 --empty=drop in scripts that backport lists
 
 70
-00:04:54,524 --> 00:05:00,393
+00:04:51,487 --> 00:04:57,589
 of commits, so that a commit which is
 already present doesn't halt an unattended
 
 71
-00:05:00,433 --> 00:05:00,689
+00:04:57,629 --> 00:04:57,896
 job.
 
 72
-00:05:02,529 --> 00:05:05,015
+00:04:59,736 --> 00:05:02,223
 Picture two ways of laying
 a new stretch of track.
 
 73
-00:05:05,355 --> 00:05:10,763
+00:05:02,563 --> 00:05:07,971
 A rebase lays the whole new stretch next
 to the old line, and when the last sleeper
 
 74
-00:05:10,803 --> 00:05:15,687
+00:05:08,011 --> 00:05:12,894
 is down, it throws one switch. Until
 then trains still run on the old line.
 
 75
-00:05:15,727 --> 00:05:18,903
+00:05:12,934 --> 00:05:16,111
 If work stops halfway, the
 old line is untouched.
 
 76
-00:05:19,243 --> 00:05:24,468
+00:05:16,451 --> 00:05:21,675
 A cherry-pick of a range extends the line
 you are standing on, sleeper by sleeper.
 
 77
-00:05:24,508 --> 00:05:29,733
+00:05:21,715 --> 00:05:26,940
 If work stops halfway, the line is longer
 than it was, and a train can already run
 
 78
-00:05:29,773 --> 00:05:30,888
+00:05:26,980 --> 00:05:28,096
 onto the new part.
 
 79
-00:05:31,228 --> 00:05:36,012
+00:05:28,436 --> 00:05:33,220
 Where does the picture break? The half-built
 rebase track is hard to find, since
 
 80
-00:05:36,052 --> 00:05:40,776
+00:05:33,260 --> 00:05:37,983
 only a detached HEAD reaches it, while
 the half-extended cherry-pick line is in
 
 81
-00:05:40,816 --> 00:05:45,479
+00:05:38,023 --> 00:05:42,686
 plain sight on the branch. That makes
 the cherry-pick state easier to see, and
 
 82
-00:05:45,519 --> 00:05:50,122
+00:05:42,726 --> 00:05:47,329
 easier to ship by accident. A tag, a
 build or a push at that moment takes the
 
 83
-00:05:50,162 --> 00:05:53,137
+00:05:47,369 --> 00:05:50,344
 partial result. Twig looks
 worried, and fairly so.
 
 84
-00:05:54,977 --> 00:06:00,522
+00:05:52,184 --> 00:05:57,730
 Left: the stopped range pick. The branch
 label sits on the copy of the first commit,
 
 85
-00:06:00,562 --> 00:06:04,977
+00:05:57,770 --> 00:06:02,185
 and HEAD is on the branch. Right:
 the stopped rebase from video 53.
 
 86
-00:06:05,017 --> 00:06:09,366
+00:06:02,225 --> 00:06:06,574
 HEAD is detached on the copy, and
 the branch is still the old tip.
 
 87
-00:06:11,206 --> 00:06:13,150
+00:06:08,414 --> 00:06:10,358
 Part 1: a range that stops.
 
 88
-00:06:18,290 --> 00:06:23,014
+00:06:15,498 --> 00:06:20,221
 git cherry-pick 🟡 CAUTION. Which commits
 are in that range, and in which order will
 
 89
-00:06:23,054 --> 00:06:25,539
+00:06:20,261 --> 00:06:22,747
 they be applied? Say it
 out loud. I'll wait.
 
 90
-00:06:30,379 --> 00:06:35,178
+00:06:27,587 --> 00:06:32,386
 Three commits, oldest first. main~3, "Move
 to the v2 generate endpoint", is the
 
 91
-00:06:35,218 --> 00:06:38,425
+00:06:32,426 --> 00:06:35,632
 excluded boundary. The first
 of the three was copied.
 
 92
-00:06:38,465 --> 00:06:43,509
+00:06:35,672 --> 00:06:40,717
 The second conflicts, because it edits a
 line that the excluded commit had changed,
 
 93
-00:06:43,549 --> 00:06:46,572
+00:06:40,757 --> 00:06:43,779
 and the sequence stopped
 there with exit status 1.
 
 94
-00:06:46,912 --> 00:06:51,157
+00:06:44,119 --> 00:06:48,365
 Now the engineer's question from the
 opening. Quick quiz, two options.
 
 95
-00:06:51,197 --> 00:06:55,627
+00:06:48,405 --> 00:06:52,835
 Option one: HEAD is detached and the
 branch hasn't moved, as in a rebase.
 
 96
-00:06:55,667 --> 00:06:59,300
+00:06:52,875 --> 00:06:56,508
 Option two: HEAD is on the
 branch, and the branch has moved.
 
 97
-00:06:59,340 --> 00:07:00,280
+00:06:56,548 --> 00:06:57,488
 Say it out loud.
 
 98
-00:07:05,120 --> 00:07:10,815
+00:07:02,328 --> 00:07:07,830
 Option two. HEAD -> release/1.4, at
 e0c8403: the copy of the first commit.
 
 99
-00:07:10,855 --> 00:07:15,000
+00:07:07,870 --> 00:07:11,874
 HEAD is not detached and the
 branch has already moved.
 
 100
-00:07:15,040 --> 00:07:21,433
+00:07:11,914 --> 00:07:18,090
 CHERRY_PICK_HEAD is ebcee16. The sequencer's
 todo holds it and the commit after it,
 
 101
-00:07:21,473 --> 00:07:26,160
+00:07:18,130 --> 00:07:22,659
 and head holds 93787ec, where
 HEAD was before the first pick.
 
 102
-00:07:26,500 --> 00:07:30,551
+00:07:22,999 --> 00:07:27,039
 git status names the commit it is
 stuck on and lists three of the exits.
 
 103
-00:07:30,891 --> 00:07:34,594
+00:07:27,379 --> 00:07:31,081
 Part 2: the four exits. Each
 from the same stopped state.
 
 104
-00:07:34,634 --> 00:07:40,044
+00:07:31,121 --> 00:07:36,531
 Try it now, on paper. Thirty seconds: for
 abort, skip, quit and continue, write how
 
 105
-00:07:40,084 --> 00:07:43,131
+00:07:36,571 --> 00:07:39,616
 many of the three commits
 end up on the branch.
 
 106
-00:07:45,471 --> 00:07:51,423
+00:07:41,956 --> 00:07:47,746
 --abort: back at 93787ec. The pick
 that had succeeded is undone as well.
 
 107
-00:07:51,463 --> 00:07:52,921
+00:07:47,786 --> 00:07:49,203
 None of the three.
 
 108
-00:07:53,261 --> 00:07:57,106
+00:07:49,543 --> 00:07:53,389
 --skip: the conflicting commit is
 dropped and the rest is applied.
 
 109
-00:07:57,146 --> 00:08:01,698
+00:07:53,429 --> 00:07:57,981
 Two commits on the branch instead of
 three, and no trace of the one in between
 
 110
-00:08:01,738 --> 00:08:02,934
+00:07:58,021 --> 00:07:59,217
 unless someone looks.
 
 111
-00:08:03,274 --> 00:08:08,379
+00:07:59,557 --> 00:08:04,662
 --quit only deletes the bookkeeping. The
 completed copy stays on the branch, and the
 
 112
-00:08:08,419 --> 00:08:11,625
+00:08:04,702 --> 00:08:07,908
 conflict stays in the index
 and the working tree: UU.
 
 113
-00:08:11,665 --> 00:08:15,912
+00:08:07,948 --> 00:08:12,195
 And --continue afterwards says "no
 cherry-pick or revert in progress".
 
 114
-00:08:15,952 --> 00:08:20,996
+00:08:12,235 --> 00:08:17,279
 This is the state the two-in-the-morning
 script would leave if it had tried to tidy
 
 115
-00:08:21,036 --> 00:08:22,405
+00:08:17,319 --> 00:08:18,687
 up with the wrong exit.
 
 116
-00:08:22,745 --> 00:08:27,846
+00:08:19,027 --> 00:08:24,135
 --continue, after a real resolution: the
 stopped commit is committed with Asha as
 
 117
-00:08:27,886 --> 00:08:30,639
+00:08:24,175 --> 00:08:26,931
 author, and the last
 one follows. All three.
 
 118
-00:08:30,979 --> 00:08:35,360
+00:08:27,271 --> 00:08:31,683
 Part 3: a conflict in detail.
 labs/run ch10/pick-conflict.
 
 119
-00:08:35,400 --> 00:08:41,687
+00:08:31,723 --> 00:08:38,053
 One commit this time, with -x, and with the
 conflict style set to diff3 so that the
 
 120
-00:08:41,727 --> 00:08:43,974
+00:08:38,093 --> 00:08:40,356
 markers show the base as well.
 
 121
-00:08:50,814 --> 00:08:55,467
+00:08:47,196 --> 00:08:52,122
 Three versions of one line. Yours,
 under HEAD, calls /v1/generate.
 
 122
-00:08:55,507 --> 00:09:00,943
+00:08:52,162 --> 00:08:57,917
 The picked commit, at the bottom, calls
 /v2/generate with a retries argument.
 
 123
-00:09:00,983 --> 00:09:06,917
+00:08:57,957 --> 00:09:04,238
 The base in the middle, labelled "parent of
 ebcee16", calls /v2/generate without it.
 
 124
-00:09:07,257 --> 00:09:11,338
+00:09:04,578 --> 00:09:09,232
 Stop on the base. Your branch has
 never contained a line with /v2/.
 
 125
-00:09:11,378 --> 00:09:13,860
+00:09:09,272 --> 00:09:12,104
 Where does it come from? Say it out loud.
 
 126
-00:09:24,200 --> 00:09:27,377
+00:09:22,444 --> 00:09:25,617
 The merge base of the two
 branches has the v1 line.
 
 127
-00:09:27,417 --> 00:09:32,234
+00:09:25,657 --> 00:09:30,467
 But stage 1 is the parent of the picked
 commit, main~2, which already has v2.
 
 128
-00:09:32,274 --> 00:09:36,082
+00:09:30,507 --> 00:09:34,310
 That is the unusual base of a
 cherry-pick, visible in a file.
 
 129
-00:09:36,422 --> 00:09:40,316
+00:09:34,650 --> 00:09:38,800
 With the base in view, the
 conflict reads as an instruction.
 
 130
-00:09:40,356 --> 00:09:44,708
+00:09:38,840 --> 00:09:43,478
 The difference between base and
 theirs is: add retries=MAX_RETRIES.
 
 131
-00:09:44,748 --> 00:09:47,789
+00:09:43,518 --> 00:09:46,760
 Apply that to your line,
 which still says /v1/.
 
 132
-00:09:52,929 --> 00:09:57,855
+00:09:51,900 --> 00:09:56,825
 Author Asha Rao, committer Lab User, and
 the "cherry picked from commit" line in the
 
 133
-00:09:57,895 --> 00:10:02,761
+00:09:56,865 --> 00:10:01,731
 message. The diff of the copy changes one
 thing, the argument, as the original did.
 
 134
-00:10:02,801 --> 00:10:07,549
+00:10:01,771 --> 00:10:06,519
 Taking "theirs" whole would also have
 switched the release to the v2 endpoint: an
 
 135
-00:10:07,589 --> 00:10:11,687
+00:10:06,559 --> 00:10:10,657
 unrelated change from main, smuggled
 in through a conflict resolution.
 
 136
-00:10:11,727 --> 00:10:15,292
+00:10:10,697 --> 00:10:14,262
 That shortcut is tempting, and
 almost everyone tries it once.
 
 137
-00:10:15,632 --> 00:10:21,341
+00:10:14,602 --> 00:10:20,424
 Part 4: how to finish. labs/run
 ch10/pick-finish. Git has prepared the commit
 
 138
-00:10:21,381 --> 00:10:24,028
+00:10:20,464 --> 00:10:23,165
 message before you resolve anything.
 
 139
-00:10:24,368 --> 00:10:30,086
+00:10:23,505 --> 00:10:29,223
 .git/MERGE_MSG holds the subject, the -x
 line, and a comment block listing the
 
 140
-00:10:30,126 --> 00:10:35,327
+00:10:29,263 --> 00:10:34,464
 conflicts. Three ways to commit.
 Predict the message each one produces.
 
 141
-00:10:35,367 --> 00:10:36,066
+00:10:34,504 --> 00:10:35,202
 I'll wait.
 
 142
-00:10:40,906 --> 00:10:44,864
+00:10:40,042 --> 00:10:44,000
 --continue commits with that message
 and removes the comment lines.
 
 143
-00:10:45,204 --> 00:10:50,109
+00:10:44,340 --> 00:10:49,648
 git commit --no-edit skips the editor and
 with it the cleanup that strips comment
 
 144
-00:10:50,149 --> 00:10:53,223
+00:10:49,688 --> 00:10:53,015
 lines, so # Conflicts:
 becomes part of the message.
 
 145
-00:10:53,563 --> 00:10:58,049
+00:10:53,355 --> 00:10:57,840
 -m replaces the prepared message,
 and the line that -x wrote is gone.
 
 146
-00:10:58,089 --> 00:11:03,099
+00:10:57,880 --> 00:11:02,891
 The author is preserved in all three,
 because CHERRY_PICK_HEAD still existed.
 
 147
-00:11:03,139 --> 00:11:06,182
+00:11:02,931 --> 00:11:05,973
 The rule: finish a
 cherry-pick with --continue.
 
 148
-00:11:06,522 --> 00:11:11,799
+00:11:06,313 --> 00:11:11,662
 One disagreement between documentation
 and behavior, which the textbook records.
 
 149
-00:11:11,839 --> 00:11:17,182
+00:11:11,702 --> 00:11:17,118
 The local manual says of -x that the line
 is added "only for cherry picks without
 
 150
-00:11:17,222 --> 00:11:22,698
+00:11:17,158 --> 00:11:22,709
 conflicts". The transcripts show Git 2.55.0
 writing it into the prepared message of
 
 151
-00:11:22,738 --> 00:11:26,619
+00:11:22,749 --> 00:11:26,683
 a conflicted pick, and --continue
 keeping it. The run wins.
 
 152
-00:11:26,959 --> 00:11:34,140
+00:11:27,023 --> 00:11:34,323
 Part 5: empty picks. labs/run ch10/pick-empty.
 The fix is already on release/1.4.
 
 153
-00:11:34,180 --> 00:11:36,903
+00:11:34,363 --> 00:11:37,132
 Someone picks it a second time.
 
 154
-00:11:37,243 --> 00:11:40,764
+00:11:37,472 --> 00:11:40,993
 "The previous cherry-pick is
 now empty", exit status 1.
 
 155
-00:11:40,804 --> 00:11:44,907
+00:11:41,033 --> 00:11:45,136
 The default is to stop and ask.
 git cherry-pick --skip moves on.
 
 156
-00:11:44,947 --> 00:11:49,893
+00:11:45,176 --> 00:11:50,121
 The suggested git commit --allow-empty
 would record a commit without changes.
 
 157
-00:11:50,233 --> 00:11:52,077
+00:11:50,461 --> 00:11:52,306
 The decision can be made in advance.
 
 158
-00:11:52,417 --> 00:11:58,225
+00:11:52,646 --> 00:11:58,454
 --empty=drop: one line of notice, "patch
 contents already upstream", and no new
 
 159
-00:11:58,265 --> 00:11:58,743
+00:11:58,494 --> 00:11:58,972
 commit.
 
 160
-00:11:59,083 --> 00:12:02,830
+00:11:59,312 --> 00:12:03,059
 --empty=keep: a commit with no stat lines.
 
 161
-00:12:03,170 --> 00:12:06,279
+00:12:03,399 --> 00:12:06,508
 The old name still works
 and gives the same result.
 
 162
-00:12:06,319 --> 00:12:11,157
+00:12:06,548 --> 00:12:11,385
 --allow-empty, by the way, is a different
 option: it concerns commits that were
 
 163
-00:12:11,197 --> 00:12:12,391
+00:12:11,425 --> 00:12:12,620
 empty to begin with.
 
 164
-00:12:14,231 --> 00:12:15,879
+00:12:14,460 --> 00:12:16,108
 Five mistakes to watch for.
 
 165
-00:12:16,219 --> 00:12:19,701
+00:12:16,448 --> 00:12:19,930
 Assuming the branch is untouched
 while a range pick is stopped.
 
 166
-00:12:19,741 --> 00:12:23,949
+00:12:19,970 --> 00:12:24,178
 Root cause: unlike a rebase, a cherry-pick
 commits on the branch as it goes;
 
 167
-00:12:23,989 --> 00:12:26,967
+00:12:24,218 --> 00:12:27,196
 finished picks are already
 on it and HEAD is attached.
 
 168
-00:12:27,307 --> 00:12:32,060
+00:12:27,536 --> 00:12:32,289
 Using --quit to get out of a stopped
 pick. Root cause: it removes only the
 
 169
-00:12:32,100 --> 00:12:36,918
+00:12:32,329 --> 00:12:37,147
 bookkeeping; the completed copies stay
 and the conflict stays in the index.
 
 170
-00:12:37,258 --> 00:12:40,151
+00:12:37,487 --> 00:12:40,380
 Resolving a pick conflict
 by taking "theirs" whole.
 
 171
-00:12:40,191 --> 00:12:44,866
+00:12:40,420 --> 00:12:45,095
 Root cause: theirs is the full file from
 the other line, which may carry unrelated
 
 172
-00:12:44,906 --> 00:12:47,856
+00:12:45,135 --> 00:12:48,085
 changes that the picked
 commit's parent already had.
 
 173
-00:12:48,196 --> 00:12:53,827
+00:12:48,425 --> 00:12:54,056
 Finishing a pick with git commit -m. Root
 cause: -m replaces the prepared message,
 
 174
-00:12:53,867 --> 00:12:56,109
+00:12:54,096 --> 00:12:56,338
 including the line that -x wrote.
 
 175
-00:12:56,449 --> 00:13:00,855
+00:12:56,678 --> 00:13:01,084
 Scripts that cherry-pick lists of commits
 without checking the exit status.
 
 176
-00:13:00,895 --> 00:13:05,656
+00:13:01,124 --> 00:13:05,885
 Root cause: a conflict or an empty pick
 stops the sequence with a non-zero status
 
 177
-00:13:05,696 --> 00:13:07,375
+00:13:05,925 --> 00:13:07,604
 and a partly advanced branch.
 
 178
-00:13:09,215 --> 00:13:13,137
+00:13:09,444 --> 00:13:13,366
 Now, out of the lab, and back
 to the script from the opening.
 
 179
-00:13:13,177 --> 00:13:18,333
+00:13:13,406 --> 00:13:18,563
 The textbook's guidance is two sentences:
 a sequence that stops in a CI job or a
 
 180
-00:13:18,373 --> 00:13:21,906
+00:13:18,603 --> 00:13:22,135
 release script leaves a branch
 that is partly advanced.
 
 181
-00:13:21,946 --> 00:13:27,297
+00:13:22,175 --> 00:13:27,526
 A script that cherry-picks must check the
 exit status and decide: --abort to return
 
 182
-00:13:27,337 --> 00:13:29,765
+00:13:27,566 --> 00:13:29,995
 to a known state, never a blind retry.
 
 183
-00:13:30,105 --> 00:13:35,431
+00:13:30,335 --> 00:13:35,660
 For the release tooling of a model-serving
 team, that becomes three lines of policy.
 
 184
-00:13:35,471 --> 00:13:40,605
+00:13:35,700 --> 00:13:40,834
 One: every git cherry-pick in a script is
 followed by a check of its exit status.
 
 185
-00:13:40,645 --> 00:13:45,651
+00:13:40,874 --> 00:13:45,880
 Two: on failure the script runs git
 cherry-pick --abort and stops, and a person
 
 186
-00:13:45,691 --> 00:13:49,930
+00:13:45,920 --> 00:13:50,160
 takes over with git status, which
 names the commit it was stuck on.
 
 187
-00:13:49,970 --> 00:13:55,168
+00:13:50,200 --> 00:13:55,397
 Three: lists of backports are run with
 --empty=drop, so that a fix that is already
 
 188
-00:13:55,208 --> 00:13:57,723
+00:13:55,437 --> 00:13:57,952
 present does not halt an unattended job.
 
 189
-00:13:58,063 --> 00:14:02,734
+00:13:58,292 --> 00:14:02,963
 And for the person who takes over a
 half-finished backport by hand: read
 
 190
-00:14:02,774 --> 00:14:08,231
+00:14:03,003 --> 00:14:08,460
 CHERRY_PICK_HEAD, read .git/sequencer/todo
 and head, and write down where the branch
 
 191
-00:14:08,271 --> 00:14:11,960
+00:14:08,500 --> 00:14:12,190
 was before the first pick.
 Then choose an exit knowingly.
 
 192
-00:14:13,800 --> 00:14:18,109
+00:14:14,030 --> 00:14:18,338
 Your turn. Do Lab 10.2, "A
 cherry-pick conflict", in
 
 193
-00:14:18,149 --> 00:14:21,203
+00:14:18,378 --> 00:14:21,432
 lab-manual/m10-cherry-pick-ranges.md.
 
 194
-00:14:21,543 --> 00:14:24,781
+00:14:21,772 --> 00:14:25,017
 When the pick stops, before
 you edit the file, write down:
 
 195
-00:14:25,121 --> 00:14:30,662
+00:14:25,357 --> 00:14:30,898
 Stage 1, stage 2 and stage 3 of the
 conflicted line, and for each, the commit it
 
 196
-00:14:30,702 --> 00:14:34,708
+00:14:30,938 --> 00:14:34,944
 comes from. Is stage 1 the
 merge base of the two branches?
 
 197
-00:14:35,048 --> 00:14:38,449
+00:14:35,284 --> 00:14:38,685
 The difference between stage
 1 and stage 3 in one phrase.
 
 198
-00:14:38,489 --> 00:14:40,985
+00:14:38,725 --> 00:14:41,221
 That is the change you have to carry over.
 
 199
-00:14:41,325 --> 00:14:45,653
+00:14:41,561 --> 00:14:45,889
 What the file would contain if you took
 stage 3 whole, and what unrelated change
 
 200
-00:14:45,693 --> 00:14:46,581
+00:14:45,929 --> 00:14:46,817
 that would bring.
 
 201
-00:14:46,921 --> 00:14:49,348
+00:14:47,157 --> 00:14:49,584
 Then resolve, and finish
 with the right command.
 
 202
-00:14:49,688 --> 00:14:55,831
+00:14:49,924 --> 00:14:56,067
 The challenge is Exercise 10.9, Level 4,
 "a backport that stopped at its second
 
 203
-00:14:55,871 --> 00:14:59,352
+00:14:56,107 --> 00:14:59,588
 commit", in
 exercises/m06-m10-integration.md.
 
 204
-00:15:01,192 --> 00:15:06,111
+00:15:01,428 --> 00:15:06,347
 Q153: "Compare the state after a stopped
 cherry-pick of a range with the state after
 
 205
-00:15:06,151 --> 00:15:10,244
+00:15:06,387 --> 00:15:10,480
 a stopped rebase. Where is HEAD, and
 what has happened to the branch?"
 
 206
-00:15:12,584 --> 00:15:17,326
+00:15:12,820 --> 00:15:17,562
 Answer out loud first. A strong answer is
 a comparison in parallel: for each of the
 
 207
-00:15:17,366 --> 00:15:21,762
+00:15:17,602 --> 00:15:21,998
 two, where HEAD is, where the branch ref
 is, which ref names the commit being
 
 208
-00:15:21,802 --> 00:15:26,487
+00:15:22,038 --> 00:15:26,723
 applied, and where the rest of the plan is
 stored. It then explains the difference
 
 209
-00:15:26,527 --> 00:15:31,212
+00:15:26,763 --> 00:15:31,448
 from what each operation is building, so
 that it's a consequence and not a fact to
 
 210
-00:15:31,252 --> 00:15:31,730
+00:15:31,488 --> 00:15:31,966
 memorize.
 
 211
-00:15:32,070 --> 00:15:36,234
+00:15:32,306 --> 00:15:36,470
 It ends with what the difference means
 for the exits and for automation: what
 
 212
-00:15:36,274 --> 00:15:40,329
+00:15:36,510 --> 00:15:40,565
 "abort" has to undo in each case, and
 what a script risks if it carries on.
 
 213
-00:15:42,169 --> 00:15:46,296
+00:15:42,405 --> 00:15:46,532
 Let's land this. You should now be
 able to say, in your own words:
 
 214
-00:15:46,636 --> 00:15:51,365
+00:15:46,872 --> 00:15:51,808
 A stopped cherry-pick has CHERRY_PICK_HEAD
 for the commit being applied and, for a
 
 215
-00:15:51,405 --> 00:15:55,552
+00:15:51,848 --> 00:15:56,177
 range, .git/sequencer/ with the
 remaining picks and the starting commit.
 
 216
-00:15:55,592 --> 00:15:59,565
+00:15:56,217 --> 00:16:00,364
 HEAD stays on the branch, and picks
 that already succeeded are on it.
 
 217
-00:15:59,905 --> 00:16:06,121
+00:16:00,704 --> 00:16:06,919
 --continue commits and goes on, --skip leaves
 the commit out, --abort returns to the
 
 218
-00:16:06,161 --> 00:16:12,078
+00:16:06,959 --> 00:16:12,877
 state before the first pick, and --quit
 leaves a partly advanced branch with the
 
 219
-00:16:12,118 --> 00:16:13,418
+00:16:12,917 --> 00:16:14,217
 conflict in place.
 
 220
-00:16:13,758 --> 00:16:18,886
+00:16:14,557 --> 00:16:19,685
 In a conflict, ours is my branch, theirs
 is the picked commit, and the base is the
 
 221
-00:16:18,926 --> 00:16:22,982
+00:16:19,725 --> 00:16:23,781
 picked commit's parent, which may
 show lines my branch never had.
 
 222
-00:16:23,022 --> 00:16:28,275
+00:16:23,821 --> 00:16:29,074
 A pick whose change is already present
 becomes empty, and --empty decides whether to
 
 223
-00:16:28,315 --> 00:16:29,661
+00:16:29,114 --> 00:16:30,460
 stop, drop or keep it.
 
 224
-00:16:31,501 --> 00:16:35,043
+00:16:32,300 --> 00:16:35,842
 Read sections 10.6 to 10.8 of Chapter 10.
 
 225
-00:16:35,383 --> 00:16:41,690
+00:16:36,182 --> 00:16:42,489
 Do Exercise 10.7, Level 3, ""The
 previous cherry-pick is now empty"", in
 
 226
-00:16:41,730 --> 00:16:44,600
+00:16:42,529 --> 00:16:45,399
 exercises/m06-m10-integration.md.
 
 227
-00:16:44,940 --> 00:16:49,926
+00:16:45,739 --> 00:16:50,724
 Today you read a stopped cherry-pick from
 its files, and you know what each exit
 
 228
-00:16:49,966 --> 00:16:55,140
+00:16:50,764 --> 00:16:55,938
 leaves on the branch. Do Lab 10.2 before
 the next video, and write the three stages
 
 229
-00:16:55,180 --> 00:17:00,040
+00:16:55,978 --> 00:17:00,838
 down before you edit. Next time: the
 backport workflow, duplicate commits, and
 
 230
-00:17:00,080 --> 00:17:04,752
+00:17:00,878 --> 00:17:05,550
 revert as the inverse. Until then, look
 at the state first and type second.
 
 231
-00:17:04,792 --> 00:17:06,260
+00:17:05,590 --> 00:17:07,057
 See you in the next one.

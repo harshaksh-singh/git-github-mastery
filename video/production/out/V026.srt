@@ -9,1053 +9,1053 @@ in the team fail with cannot lock ref
 since this morning?"
 
 3
-00:00:12,474 --> 00:00:17,630
+00:00:12,474 --> 00:00:17,632
 Nobody changed a setting. Nobody upgraded
 Git. One person pushed one branch with a
 
 4
-00:00:17,670 --> 00:00:22,636
+00:00:17,672 --> 00:00:22,640
 perfectly reasonable name, and since then
 git fetch, the command that downloads
 
 5
-00:00:22,676 --> 00:00:27,326
+00:00:22,680 --> 00:00:27,331
 what's new from the server, fails on
 every clone. What's your first guess?
 
 6
-00:00:27,366 --> 00:00:28,340
+00:00:27,371 --> 00:00:28,345
 Say it out loud.
 
 7
-00:00:33,180 --> 00:00:38,254
+00:00:33,185 --> 00:00:38,260
 Somebody once created a branch named feature.
 And a ref, Git's word for a name that
 
 8
-00:00:38,294 --> 00:00:42,321
+00:00:38,300 --> 00:00:42,326
 points at a commit, can't be both
 a name and a directory of names.
 
 9
-00:00:42,361 --> 00:00:47,250
+00:00:42,366 --> 00:00:47,256
 That one rule about how refs are named
 explains the incident, and the fix is one
 
 10
-00:00:47,290 --> 00:00:51,933
+00:00:47,296 --> 00:00:51,938
 command. This video is about refs as
 names: tags that don't move, names that
 
 11
-00:00:51,973 --> 00:00:56,801
+00:00:51,978 --> 00:00:56,806
 collide, and names that nobody needs any
 more. Keep that error message in mind.
 
 12
-00:00:56,841 --> 00:00:59,204
+00:00:56,846 --> 00:00:59,209
 You'll produce it yourself in the demo.
 
 13
-00:01:01,044 --> 00:01:04,996
+00:01:01,049 --> 00:01:05,001
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 14
-00:01:05,036 --> 00:01:08,857
+00:01:05,041 --> 00:01:08,862
 This is the last video on refs,
 and it's the practical one.
 
 15
-00:01:08,897 --> 00:01:09,642
+00:01:08,902 --> 00:01:09,648
 Four topics.
 
 16
-00:01:09,982 --> 00:01:13,687
+00:01:09,988 --> 00:01:13,692
 Lightweight tags: a ref that
 doesn't move when you commit.
 
 17
-00:01:13,727 --> 00:01:18,722
+00:01:13,732 --> 00:01:18,728
 Naming: what Git allows, what teams agree
 on, and the feature versus feature/x
 
 18
-00:01:18,762 --> 00:01:23,952
+00:01:18,768 --> 00:01:23,957
 conflict. Stale branches: how to answer
 "which of our 340 branches can be deleted
 
 19
-00:01:23,992 --> 00:01:29,246
+00:01:23,997 --> 00:01:29,251
 without losing anything". And the wrong-branch
 commit from video 22, repaired with
 
 20
-00:01:29,286 --> 00:01:30,214
+00:01:29,291 --> 00:01:30,220
 two ref writes.
 
 21
-00:01:32,054 --> 00:01:33,632
+00:01:32,060 --> 00:01:33,638
 Here's what you'll walk away with.
 
 22
-00:01:33,972 --> 00:01:35,385
+00:01:33,978 --> 00:01:35,390
 After this video you can:
 
 23
-00:01:35,725 --> 00:01:39,485
+00:01:35,730 --> 00:01:39,495
 Show that a lightweight tag is a ref
 that does not move when you commit.
 
 24
-00:01:39,825 --> 00:01:44,625
+00:01:39,835 --> 00:01:44,634
 Explain why feature and feature/x cannot
 both exist, and what breaks for teammates.
 
 25
-00:01:44,965 --> 00:01:49,380
+00:01:44,974 --> 00:01:49,389
 Find branches that are merged, gone or
 old, and decide which may be deleted.
 
 26
-00:01:49,720 --> 00:01:53,976
+00:01:49,729 --> 00:01:53,985
 Recognize a commit made on the wrong branch
 as two ref writes, and plan the repair.
 
 27
-00:01:55,816 --> 00:02:01,555
+00:01:55,825 --> 00:02:01,591
 Lightweight tags. In one sentence: a
 lightweight tag is a ref under refs/tags/ that
 
 28
-00:02:01,595 --> 00:02:06,289
+00:02:01,631 --> 00:02:06,348
 names an object directly. It's a
 label that is not expected to move.
 
 29
-00:02:06,329 --> 00:02:11,928
+00:02:06,388 --> 00:02:12,014
 git tag <name> is 🟢 SAFE: it adds a ref.
 On screen, the tag v0.1.0 and the branch
 
 30
-00:02:11,968 --> 00:02:13,739
+00:02:12,054 --> 00:02:13,833
 main name the same commit.
 
 31
-00:02:14,079 --> 00:02:19,214
+00:02:14,173 --> 00:02:19,309
 An annotated tag, made with -a, is different:
 the ref names a tag object with its
 
 32
-00:02:19,254 --> 00:02:24,454
+00:02:19,349 --> 00:02:24,548
 own ID, tagger, date and message. The manual
 reserves annotated tags for releases,
 
 33
-00:02:24,494 --> 00:02:28,415
+00:02:24,588 --> 00:02:28,510
 and lightweight tags for "private
 or temporary object labels".
 
 34
-00:02:28,755 --> 00:02:34,491
+00:02:28,850 --> 00:02:34,585
 Tags have no reflog by default. A reflog
 is Git's local journal of where a name has
 
 35
-00:02:34,531 --> 00:02:40,057
+00:02:34,625 --> 00:02:40,152
 pointed, and core.logAllRefUpdates creates
 reflogs for branches, remote-tracking
 
 36
-00:02:40,097 --> 00:02:45,346
+00:02:40,192 --> 00:02:45,440
 branches, notes and HEAD, not for tags.
 So git tag -f and git tag -d, both 🟡
 
 37
-00:02:45,386 --> 00:02:49,521
+00:02:45,480 --> 00:02:49,615
 CAUTION, leave no trace except
 the "was" ID in their output.
 
 38
-00:02:49,561 --> 00:02:50,495
+00:02:49,655 --> 00:02:50,590
 Write it down.
 
 39
-00:02:50,835 --> 00:02:55,152
+00:02:50,930 --> 00:02:55,246
 A branch and a tag with the same
 short name are legal and confusing.
 
 40
-00:02:55,192 --> 00:03:00,150
+00:02:55,286 --> 00:03:00,244
 Git resolves a short name by trying
 refs/tags/<name> before refs/heads/<name>.
 
 41
-00:03:00,490 --> 00:03:06,409
+00:03:00,584 --> 00:03:06,504
 Naming: conventions and rules. A branch name
 is a path under refs/heads/, so slashes
 
 42
-00:03:06,449 --> 00:03:11,375
+00:03:06,544 --> 00:03:11,470
 group branches: feature/retry-backoff,
 fix/judge-timeout, release/0.2.
 
 43
-00:03:11,415 --> 00:03:16,271
+00:03:11,510 --> 00:03:16,365
 Lowercase names with hyphens avoid
 the case trap and need no quoting.
 
 44
-00:03:16,311 --> 00:03:17,832
+00:03:16,405 --> 00:03:17,926
 Those are conventions.
 
 45
-00:03:18,172 --> 00:03:23,427
+00:03:18,266 --> 00:03:23,728
 The rules are Git's. It rejects names with
 a space, two consecutive dots, a tilde, a
 
 46
-00:03:23,467 --> 00:03:28,659
+00:03:23,768 --> 00:03:29,163
 caret, a colon, a question mark, an asterisk,
 an opening bracket, a backslash, or a
 
 47
-00:03:28,699 --> 00:03:33,954
+00:03:29,203 --> 00:03:34,665
 control character. It rejects a component
 that starts with a dot or ends with .lock,
 
 48
-00:03:33,994 --> 00:03:39,060
+00:03:34,705 --> 00:03:39,969
 a trailing dot, the sequence @{, a leading
 or trailing slash, and a double slash.
 
 49
-00:03:39,100 --> 00:03:44,103
+00:03:40,009 --> 00:03:45,209
 And a branch name may not start with a
 hyphen. No need to memorize the list: git
 
 50
-00:03:44,143 --> 00:03:48,957
+00:03:45,249 --> 00:03:50,251
 check-ref-format --branch <name> tests
 a candidate without creating anything.
 
 51
-00:03:49,297 --> 00:03:54,438
+00:03:50,591 --> 00:03:55,733
 The conflict. One more rule follows from
 the path structure: a name can't be both a
 
 52
-00:03:54,478 --> 00:03:59,432
+00:03:55,773 --> 00:04:00,727
 ref and the prefix of other refs. With
 the files backend, where a ref is a small
 
 53
-00:03:59,472 --> 00:04:03,303
+00:04:00,767 --> 00:04:04,597
 file, the reason is visible:
 refs/heads/feature is a file, and
 
 54
-00:04:03,343 --> 00:04:07,360
+00:04:04,637 --> 00:04:08,655
 refs/heads/feature/login would
 need a directory of the same name.
 
 55
-00:04:07,400 --> 00:04:12,230
+00:04:08,695 --> 00:04:13,524
 But the rule is not a file-system accident.
 It holds for packed refs, and in a
 
 56
-00:04:12,270 --> 00:04:15,413
+00:04:13,564 --> 00:04:16,708
 reftable repository, where
 there are no such files.
 
 57
-00:04:15,453 --> 00:04:20,158
+00:04:16,748 --> 00:04:21,452
 Ref names form one hierarchy, and the
 rule keeps every ref name unambiguous.
 
 58
-00:04:20,498 --> 00:04:25,723
+00:04:21,792 --> 00:04:27,064
 The case trap. The default macOS volume
 format doesn't distinguish main from MAIN.
 
 59
-00:04:25,763 --> 00:04:30,988
+00:04:27,104 --> 00:04:32,377
 With the files backend a loose ref is a
 file, so a wrong-case name finds the right
 
 60
-00:04:31,028 --> 00:04:35,996
+00:04:32,417 --> 00:04:37,430
 file, and HEAD records the wrong name.
 The textbook notes that the reasons for
 
 61
-00:04:36,036 --> 00:04:40,811
+00:04:37,470 --> 00:04:42,289
 making reftable the default in Git 3.0
 include exactly this class of clash.
 
 62
-00:04:41,151 --> 00:04:46,510
+00:04:42,629 --> 00:04:47,998
 Stale branches. In one sentence: a stale
 branch is a ref that nobody needs any more,
 
 63
-00:04:46,550 --> 00:04:51,715
+00:04:48,038 --> 00:04:53,214
 and Git offers three tests for it, each
 with a blind spot: age, reachability from
 
 64
-00:04:51,755 --> 00:04:53,579
+00:04:53,254 --> 00:04:55,081
 main, and a deleted upstream.
 
 65
-00:04:53,919 --> 00:04:58,237
+00:04:55,421 --> 00:04:59,852
 Age says when the branch last
 changed, not whether its work landed.
 
 66
-00:04:58,277 --> 00:05:03,700
+00:04:59,892 --> 00:05:05,456
 Reachability, git branch --merged main,
 can't see a squash merge: main then contains
 
 67
-00:05:03,740 --> 00:05:07,927
+00:05:05,496 --> 00:05:09,793
 a new commit with the same tree
 and none of the branch's commits.
 
 68
-00:05:07,967 --> 00:05:12,935
+00:05:09,833 --> 00:05:14,931
 A deleted upstream shows as [gone] in
 git branch -vv after git fetch --prune.
 
 69
-00:05:12,975 --> 00:05:18,333
+00:05:14,971 --> 00:05:20,469
 The upstream is the server branch your
 branch follows, and that fetch is 🟡 CAUTION:
 
 70
-00:05:18,373 --> 00:05:22,885
+00:05:20,509 --> 00:05:25,139
 it removes remote-tracking refs for
 branches the server no longer has.
 
 71
-00:05:23,225 --> 00:05:27,914
+00:05:25,479 --> 00:05:30,168
 On a team that deletes branches on the
 server after merging, gone is the most
 
 72
-00:05:27,954 --> 00:05:33,012
+00:05:30,208 --> 00:05:35,266
 reliable signal. Its blind spot: a branch
 that was never pushed has no upstream and
 
 73
-00:05:33,052 --> 00:05:33,503
+00:05:35,306 --> 00:05:35,757
 no gone.
 
 74
-00:05:33,843 --> 00:05:37,720
+00:05:36,097 --> 00:05:40,035
 For a squash-merged branch there
 is a proof that it's finished.
 
 75
-00:05:37,760 --> 00:05:42,693
+00:05:40,075 --> 00:05:45,087
 git merge-tree --write-tree main <branch>
 prints the tree a merge would produce.
 
 76
-00:05:42,733 --> 00:05:47,665
+00:05:45,127 --> 00:05:50,139
 If it equals the tree of main, merging
 the branch would change nothing, so -D is
 
 77
-00:05:47,705 --> 00:05:47,976
+00:05:50,179 --> 00:05:50,454
 safe.
 
 78
-00:05:48,316 --> 00:05:51,791
+00:05:50,794 --> 00:05:54,438
 Git 2.56 adds git branch
 --delete-merged <pattern>.
 
 79
-00:05:51,831 --> 00:05:57,374
+00:05:54,478 --> 00:06:00,290
 It deletes local branches whose configured
 upstream matches the pattern, but only
 
 80
-00:05:57,414 --> 00:06:03,025
+00:06:00,330 --> 00:06:06,213
 when their tip is reachable from that
 upstream, with --dry-run to list them first.
 
 81
-00:06:03,065 --> 00:06:07,022
+00:06:06,253 --> 00:06:10,403
 It's not run here: Git 2.55
 reports the option as unknown.
 
 82
-00:06:07,062 --> 00:06:10,606
+00:06:10,443 --> 00:06:14,159
 The textbook quotes two
 limits from the 2.56 manual.
 
 83
-00:06:10,646 --> 00:06:16,257
+00:06:14,199 --> 00:06:20,083
 It skips a branch when its configured
 upstream ref no longer exists, so it doesn't
 
 84
-00:06:16,297 --> 00:06:21,151
+00:06:20,123 --> 00:06:25,212
 handle [gone] branches. And a
 squash-merged branch is silently skipped.
 
 85
-00:06:21,491 --> 00:06:26,423
+00:06:25,552 --> 00:06:30,484
 What deleting does and does not do. Deleting
 a local branch deletes a name in your
 
 86
-00:06:26,463 --> 00:06:31,334
+00:06:30,524 --> 00:06:35,395
 clone. It doesn't delete the commits, and
 it doesn't remove them from the server,
 
 87
-00:06:31,374 --> 00:06:36,367
+00:06:35,435 --> 00:06:40,428
 from colleagues' clones or from a pull
 request. A branch deletion is never a way to
 
 88
-00:06:36,407 --> 00:06:41,157
+00:06:40,468 --> 00:06:45,218
 withdraw content. And a detail that
 surprises people: a plain git branch -d can
 
 89
-00:06:41,197 --> 00:06:44,371
+00:06:45,258 --> 00:06:48,432
 delete main. There is nothing
 special about the name.
 
 90
-00:06:44,711 --> 00:06:49,420
+00:06:48,772 --> 00:06:53,481
 Commits on the wrong branch. Because
 branches are refs, the repair takes two ref
 
 91
-00:06:49,460 --> 00:06:54,229
+00:06:53,521 --> 00:06:58,290
 writes and copies nothing. Here, two commits
 sit on main that belong on a feature
 
 92
-00:06:54,269 --> 00:06:54,644
+00:06:58,330 --> 00:06:58,705
 branch.
 
 93
-00:06:54,984 --> 00:07:00,370
+00:06:59,045 --> 00:07:04,431
 First, git switch -c <feature> creates a
 branch at the current commit and attaches
 
 94
-00:07:00,410 --> 00:07:05,399
+00:07:04,471 --> 00:07:09,460
 HEAD to it. Then git branch -f main
 origin/main, 🟡 CAUTION, moves main back.
 
 95
-00:07:05,439 --> 00:07:09,170
+00:07:09,500 --> 00:07:13,231
 The second is allowed once
 main is no longer checked out.
 
 96
-00:07:11,010 --> 00:07:16,276
+00:07:15,071 --> 00:07:20,337
 A picture helps. Think of refs as files in
 folders, whatever the storage really is.
 
 97
-00:07:16,316 --> 00:07:21,582
+00:07:20,377 --> 00:07:25,643
 refs/heads/feature is a file.
 refs/heads/feature/login is a file in a folder called
 
 98
-00:07:21,622 --> 00:07:25,098
+00:07:25,683 --> 00:07:29,159
 feature. One name can't be a
 file and a folder at once.
 
 99
-00:07:25,438 --> 00:07:30,522
+00:07:29,499 --> 00:07:34,596
 That model explains the conflict. It also
 explains why a tag and a branch can share
 
 100
-00:07:30,562 --> 00:07:34,905
+00:07:34,636 --> 00:07:38,990
 a short name: they're in different
 folders, refs/tags/ and refs/heads/.
 
 101
-00:07:35,245 --> 00:07:39,983
+00:07:39,330 --> 00:07:44,136
 Where the model breaks is instructive. The
 storage is not always files: refs can be
 
 102
-00:07:40,023 --> 00:07:44,761
+00:07:44,176 --> 00:07:48,982
 packed, or kept in reftable. The rule about
 names holds anyway, because it's a rule
 
 103
-00:07:44,801 --> 00:07:49,194
+00:07:49,022 --> 00:07:53,477
 about the hierarchy of names. And on a
 case-insensitive file system the model
 
 104
-00:07:49,234 --> 00:07:53,972
+00:07:53,517 --> 00:07:58,322
 becomes too literal. There, the folder can't
 tell main from MAIN, and Git's idea of
 
 105
-00:07:54,012 --> 00:07:56,735
+00:07:58,362 --> 00:08:01,125
 the name and the file
 system's idea drift apart.
 
 106
-00:07:58,575 --> 00:08:02,521
+00:08:02,965 --> 00:08:06,911
 Read the "Git state" line twice.
 The conflict is not on the server.
 
 107
-00:08:02,561 --> 00:08:06,269
+00:08:06,951 --> 00:08:10,658
 The server is consistent: it has
 feature/login, and no feature.
 
 108
-00:08:06,309 --> 00:08:11,088
+00:08:10,698 --> 00:08:15,477
 The conflict is in each clone, between a
 stale remote-tracking ref and a new one.
 
 109
-00:08:12,928 --> 00:08:15,618
+00:08:17,317 --> 00:08:20,261
 git tag v0.1.0 🟢 SAFE.
 
 110
-00:08:15,958 --> 00:08:21,449
+00:08:20,601 --> 00:08:26,092
 The tag file holds the commit ID, and git
 cat-file -t on the tag name reaches the
 
 111
-00:08:21,489 --> 00:08:24,931
+00:08:26,132 --> 00:08:29,574
 commit: no object was
 created. Now one more commit.
 
 112
-00:08:24,971 --> 00:08:28,549
+00:08:29,614 --> 00:08:33,192
 Predict where the tag is
 afterwards. Say it out loud.
 
 113
-00:08:33,389 --> 00:08:35,538
+00:08:38,032 --> 00:08:40,181
 The branch moved, and the tag did not.
 
 114
-00:08:35,878 --> 00:08:41,647
+00:08:40,521 --> 00:08:46,700
 The contrast: an annotated tag is an
 object of type tag with its own ID, and
 
 115
-00:08:41,687 --> 00:08:44,628
+00:08:46,740 --> 00:08:49,892
 v0.2.0^{commit} peels it to the commit.
 
 116
-00:08:44,968 --> 00:08:48,967
+00:08:50,232 --> 00:08:54,231
 .git/logs/refs has a heads
 directory and no tags directory.
 
 117
-00:08:49,007 --> 00:08:54,512
+00:08:54,271 --> 00:08:59,776
 git tag -f 🟡 CAUTION and git tag -d 🟡
 CAUTION print the "was" ID, and that is all
 
 118
-00:08:54,552 --> 00:08:55,882
+00:08:59,816 --> 00:09:01,145
 the record there is.
 
 119
-00:08:56,222 --> 00:09:02,070
+00:09:01,485 --> 00:09:07,345
 Quick quiz. The next step creates a
 branch named like the tag, v0.2.0.
 
 120
-00:09:02,110 --> 00:09:07,285
+00:09:07,385 --> 00:09:12,570
 Which one does the short name
 mean? A, the branch. B, the tag.
 
 121
-00:09:07,325 --> 00:09:09,640
+00:09:12,610 --> 00:09:14,930
 C, Git refuses. Your answer?
 
 122
-00:09:14,480 --> 00:09:20,313
+00:09:19,770 --> 00:09:25,569
 B. A branch named like the tag: the short
 name means the tag, with a warning.
 
 123
-00:09:20,353 --> 00:09:26,644
+00:09:25,609 --> 00:09:31,863
 heads/v0.2.0 and tags/v0.2.0 are unambiguous.
 The script removes the branch with -D
 
 124
-00:09:26,684 --> 00:09:32,823
+00:09:31,903 --> 00:09:38,006
 🔴 DANGEROUS. The branch pointed at a commit
 that main reaches, so no commit loses
 
 125
-00:09:32,863 --> 00:09:33,891
+00:09:38,046 --> 00:09:39,067
 its last name.
 
 126
-00:09:34,231 --> 00:09:39,003
+00:09:39,407 --> 00:09:44,179
 A branch named feature exists. Predict
 what git branch feature/login does.
 
 127
-00:09:39,043 --> 00:09:40,043
+00:09:44,219 --> 00:09:45,220
 Say it out loud.
 
 128
-00:09:44,883 --> 00:09:50,150
+00:09:50,060 --> 00:09:55,326
 cannot lock ref: refs/heads/feature exists,
 so refs/heads/feature/login can't be
 
 129
-00:09:50,190 --> 00:09:54,925
+00:09:55,366 --> 00:10:00,102
 created. There it is: the message from
 the hook, made with two commands.
 
 130
-00:09:55,265 --> 00:10:00,249
+00:10:00,442 --> 00:10:05,426
 After git pack-refs --all there is no loose
 file in the way, and the branch is still
 
 131
-00:10:00,289 --> 00:10:04,555
+00:10:05,466 --> 00:10:09,732
 refused. And in a repository created
 with the reftable format, the same.
 
 132
-00:10:04,895 --> 00:10:09,499
+00:10:10,072 --> 00:10:14,675
 The fix is a rename, git branch -m 🟡
 CAUTION. And the rule holds in the other
 
 133
-00:10:09,539 --> 00:10:13,479
+00:10:14,715 --> 00:10:18,656
 direction: with feature/base in
 place, a plain feature is refused.
 
 134
-00:10:13,819 --> 00:10:19,557
+00:10:18,996 --> 00:10:24,734
 Try it now. Thirty seconds, on paper.
 Four candidate names: fix bug, fix..bug,
 
 135
-00:10:19,597 --> 00:10:24,001
+00:10:24,774 --> 00:10:29,178
 fix/judge.lock and fix/judge-timeout.
 Which does Git accept?
 
 136
-00:10:24,041 --> 00:10:25,853
+00:10:29,218 --> 00:10:31,030
 Say your answer out loud.
 
 137
-00:10:30,693 --> 00:10:35,776
+00:10:35,870 --> 00:10:40,952
 Only the last one passes. A space, two
 consecutive dots, and a component that ends
 
 138
-00:10:35,816 --> 00:10:37,712
+00:10:40,992 --> 00:10:42,889
 with .lock are all on the list.
 
 139
-00:10:38,052 --> 00:10:43,173
+00:10:43,229 --> 00:10:48,349
 Then a name that is legal and wrong. git
 branch refs/heads/fix/judge-timeout created
 
 140
-00:10:43,213 --> 00:10:48,210
+00:10:48,389 --> 00:10:53,387
 refs/heads/refs/heads/fix/judge-timeout,
 because git branch takes a short name and
 
 141
-00:10:48,250 --> 00:10:49,931
+00:10:53,427 --> 00:10:55,107
 prepends refs/heads/ itself.
 
 142
-00:10:52,771 --> 00:10:57,664
+00:10:57,947 --> 00:11:02,841
 git switch MAIN succeeded. HEAD says
 refs/heads/MAIN, and git branch lists main
 
 143
-00:10:57,704 --> 00:11:01,348
+00:11:02,881 --> 00:11:06,526
 without an asterisk. The current
 branch is not in the list.
 
 144
-00:11:01,688 --> 00:11:07,643
+00:11:06,866 --> 00:11:12,821
 A commit in this state moves the file that
 exists. git log --decorate prints (HEAD,
 
 145
-00:11:07,683 --> 00:11:10,026
+00:11:12,861 --> 00:11:15,204
 main) rather than (HEAD -> main).
 
 146
-00:11:10,366 --> 00:11:14,615
+00:11:15,544 --> 00:11:19,793
 Switching to the correctly spelled
 name repairs it, and nothing was lost.
 
 147
-00:11:14,955 --> 00:11:19,888
+00:11:20,133 --> 00:11:25,065
 Once the refs are packed, the file system
 is out of the picture, and Main is created
 
 148
-00:11:19,928 --> 00:11:23,145
+00:11:25,105 --> 00:11:28,321
 as a second ref. Two branches
 that differ only in case.
 
 149
-00:11:25,985 --> 00:11:30,115
+00:11:31,161 --> 00:11:35,292
 Test one, age: git for-each-ref
 --sort=committerdate.
 
 150
-00:11:30,455 --> 00:11:35,034
+00:11:35,632 --> 00:11:40,210
 Test two, reachability. --merged main
 lists fix/empty-gold, merged with a merge
 
 151
-00:11:35,074 --> 00:11:39,302
+00:11:40,250 --> 00:11:44,478
 commit. feature/rouge is missing,
 although its content is in main: it was
 
 152
-00:11:39,342 --> 00:11:40,120
+00:11:44,518 --> 00:11:45,297
 squash-merged.
 
 153
-00:11:40,460 --> 00:11:45,703
+00:11:45,637 --> 00:11:51,359
 Test three: git fetch --prune 🟡
 CAUTION, then [gone] in git branch -vv.
 
 154
-00:11:45,743 --> 00:11:50,911
+00:11:51,399 --> 00:11:57,039
 wip/prompt-tuning was never pushed,
 so it has no upstream and no gone.
 
 155
-00:11:51,251 --> 00:11:56,029
+00:11:57,379 --> 00:12:02,156
 Predict which of the two finished branches
 git branch -d 🟡 CAUTION will delete.
 
 156
-00:11:56,069 --> 00:11:57,675
+00:12:02,196 --> 00:12:03,803
 Say it out loud. I'll wait.
 
 157
-00:12:02,515 --> 00:12:06,619
+00:12:08,643 --> 00:12:12,747
 It deletes the merge-commit branch
 and refuses the squash-merged one.
 
 158
-00:12:06,659 --> 00:12:11,544
+00:12:12,787 --> 00:12:17,672
 Its upstream is gone, so Git falls back to
 HEAD, and finds commits that main can't
 
 159
-00:12:11,584 --> 00:12:16,349
+00:12:17,712 --> 00:12:22,477
 reach. The git merge-tree comparison proves
 that merging the branch would change
 
 160
-00:12:16,389 --> 00:12:16,830
+00:12:22,517 --> 00:12:22,957
 nothing.
 
 161
-00:12:17,170 --> 00:12:21,777
+00:12:23,297 --> 00:12:27,865
 And Git 2.55's answer to
 the 2.56 option: unknown.
 
 162
-00:12:24,617 --> 00:12:29,659
+00:12:30,705 --> 00:12:36,143
 Two commits on main that belong on a feature
 branch, and a third, uncommitted edit.
 
 163
-00:12:29,699 --> 00:12:33,822
+00:12:36,183 --> 00:12:40,630
 [ahead 2] says the commits are local
 only, so the repair is private.
 
 164
-00:12:33,862 --> 00:12:37,374
+00:12:40,670 --> 00:12:44,458
 Plan it before you see it:
 which two refs must be written?
 
 165
-00:12:37,414 --> 00:12:38,476
+00:12:44,498 --> 00:12:45,645
 Say them out loud.
 
 166
-00:12:43,316 --> 00:12:48,546
+00:12:50,485 --> 00:12:55,716
 git switch -c feature/judge-cache 🟢 SAFE:
 the index and working tree are untouched,
 
 167
-00:12:48,586 --> 00:12:53,817
+00:12:55,756 --> 00:13:00,987
 so the uncommitted edit comes along. git
 branch -f main origin/main 🟡 CAUTION moves
 
 168
-00:12:53,857 --> 00:12:57,246
+00:13:01,027 --> 00:13:04,416
 main back to the published
 commit. Nothing was copied.
 
 169
-00:12:57,586 --> 00:12:59,513
+00:13:04,756 --> 00:13:06,683
 The reflogs record both writes.
 
 170
-00:13:01,353 --> 00:13:03,001
+00:13:08,523 --> 00:13:10,171
 Five mistakes to watch for.
 
 171
-00:13:03,341 --> 00:13:08,804
+00:13:10,511 --> 00:13:15,974
 cannot lock ref 'refs/heads/feature/x'.
 Root cause: a branch named feature exists,
 
 172
-00:13:08,844 --> 00:13:12,025
+00:13:16,014 --> 00:13:19,195
 and a name cannot be a
 ref and a prefix of refs.
 
 173
-00:13:12,365 --> 00:13:17,155
+00:13:19,535 --> 00:13:24,480
 git fetch fails with "unable to update
 local ref". Root cause: a stale
 
 174
-00:13:17,195 --> 00:13:22,674
+00:13:24,520 --> 00:13:30,176
 origin/feature in the clone blocks the
 new origin/feature/...; git fetch --prune
 
 175
-00:13:22,714 --> 00:13:23,433
+00:13:30,216 --> 00:13:30,959
 removes it.
 
 176
-00:13:23,773 --> 00:13:27,188
+00:13:31,299 --> 00:13:34,715
 git branch -d refuses although
 the branch "was merged".
 
 177
-00:13:27,228 --> 00:13:32,151
+00:13:34,755 --> 00:13:39,677
 Root cause: a squash merge put the content,
 not the commits, into main, and the
 
 178
-00:13:32,191 --> 00:13:34,853
+00:13:39,717 --> 00:13:42,379
 upstream is gone, so
 -d tests against HEAD.
 
 179
-00:13:35,193 --> 00:13:40,387
+00:13:42,719 --> 00:13:47,913
 git branch shows no asterisk. Root cause:
 a wrong-case name was accepted on a
 
 180
-00:13:40,427 --> 00:13:45,689
+00:13:47,953 --> 00:13:53,215
 case-insensitive file system, and HEAD
 records that name; check cat .git/HEAD.
 
 181
-00:13:46,029 --> 00:13:50,682
+00:13:53,555 --> 00:13:58,208
 Deleting a branch to withdraw content.
 Root cause: deletion removes a name, not
 
 182
-00:13:50,722 --> 00:13:55,019
+00:13:58,248 --> 00:14:02,545
 commits, and nothing on the server,
 in other clones or in a pull request.
 
 183
-00:13:56,859 --> 00:14:02,426
+00:14:04,385 --> 00:14:09,953
 Now, out of the lab, to the CTO's 340
 branches. Deleting the branch on the server is
 
 184
-00:14:02,466 --> 00:14:07,834
+00:14:09,993 --> 00:14:15,360
 a push, and affects everyone's next prune.
 Before that, the textbook's procedure:
 
 185
-00:14:07,874 --> 00:14:13,374
+00:14:15,400 --> 00:14:20,900
 apply the three tests, and for each candidate
 run git log --oneline main..<branch>.
 
 186
-00:14:13,414 --> 00:14:18,715
+00:14:20,940 --> 00:14:26,241
 If that range is empty, or every commit
 in it is squash-merged, nothing is lost.
 
 187
-00:14:19,055 --> 00:14:24,218
+00:14:26,581 --> 00:14:31,959
 A team that deletes branches on the server
 in the same step as the merge keeps the
 
 188
-00:14:24,258 --> 00:14:27,709
+00:14:31,999 --> 00:14:35,593
 list short, and gets [gone]
 as a reliable local signal.
 
 189
-00:14:27,749 --> 00:14:33,039
+00:14:35,633 --> 00:14:41,143
 And the textbook's prevention for the
 morning's incident: fetch.prune=true on a team
 
 190
-00:14:33,079 --> 00:14:37,228
+00:14:41,183 --> 00:14:45,503
 that uses namespaces, and top-level
 names reserved for namespaces.
 
 191
-00:14:39,068 --> 00:14:44,480
+00:14:47,343 --> 00:14:52,995
 Your turn. Do Lab 4.3, "The feature
 versus feature/x conflict", in
 
 192
-00:14:44,520 --> 00:14:47,537
+00:14:53,035 --> 00:14:56,186
 lab-manual/m04-refs-branches-head.md.
 
 193
-00:14:47,877 --> 00:14:52,539
+00:14:56,526 --> 00:15:01,188
 The lab runs the incident from both sides.
 Before the fetch that fails, list the
 
 194
-00:14:52,579 --> 00:14:57,359
+00:15:01,228 --> 00:15:06,008
 refs in the clone and on the server, and
 predict the exact ref that the fetch will
 
 195
-00:14:57,399 --> 00:14:58,652
+00:15:06,048 --> 00:15:07,301
 not be able to create.
 
 196
-00:15:00,492 --> 00:15:06,019
+00:15:09,141 --> 00:15:14,668
 Q109: "Why does git fetch fail on every
 clone after someone pushes feature/login,
 
 197
-00:15:06,059 --> 00:15:08,286
+00:15:14,708 --> 00:15:16,935
 and what is the one-command fix?"
 
 198
-00:15:10,626 --> 00:15:15,491
+00:15:19,275 --> 00:15:24,139
 Answer out loud. A strong answer places the
 conflict in the right repository, names
 
 199
-00:15:15,531 --> 00:15:20,395
+00:15:24,179 --> 00:15:29,044
 the two refs involved and the rule they
 break, and says why the rule is not a quirk
 
 200
-00:15:20,435 --> 00:15:23,704
+00:15:29,084 --> 00:15:32,352
 of files on disk. Give the
 fix, and then the prevention.
 
 201
-00:15:25,544 --> 00:15:30,759
+00:15:34,192 --> 00:15:39,407
 Let's land this. You should now be able
 to say: a lightweight tag is a ref under
 
 202
-00:15:30,799 --> 00:15:35,160
+00:15:39,447 --> 00:15:43,808
 refs/tags/ that points at a commit
 and does not move when I commit.
 
 203
-00:15:35,200 --> 00:15:40,152
+00:15:43,848 --> 00:15:48,800
 Tags have no reflog by default. Ref
 names form one hierarchy, so feature and
 
 204
-00:15:40,192 --> 00:15:43,239
+00:15:48,840 --> 00:15:51,887
 feature/x can't both
 exist, in any ref storage.
 
 205
-00:15:43,579 --> 00:15:48,367
+00:15:52,227 --> 00:15:57,015
 A stale origin/feature breaks fetch until
 I prune. On a case-insensitive file
 
 206
-00:15:48,407 --> 00:15:52,756
+00:15:57,055 --> 00:16:01,405
 system, a wrong-case branch name can
 be accepted and recorded in HEAD.
 
 207
-00:15:52,796 --> 00:15:57,897
+00:16:01,445 --> 00:16:06,546
 Three tests find stale branches: age,
 reachability from main, and a gone upstream.
 
 208
-00:15:57,937 --> 00:16:02,976
+00:16:06,586 --> 00:16:11,625
 A squash merge defeats reachability. And
 a commit on the wrong branch is repaired
 
 209
-00:16:03,016 --> 00:16:04,230
+00:16:11,665 --> 00:16:12,879
 with two ref writes.
 
 210
-00:16:06,070 --> 00:16:13,343
+00:16:14,719 --> 00:16:21,991
 Read sections 7.11 to 7.16 of Chapter
 7, and do the Practice section 7.18.
 
 211
-00:16:13,683 --> 00:16:20,194
+00:16:22,331 --> 00:16:28,681
 Do Exercise 4.3, Level 1, "a lightweight
 tag is a ref that does not move", and
 
 212
-00:16:20,234 --> 00:16:26,410
+00:16:28,721 --> 00:16:34,743
 Exercise 4.8, Level 3, "the deploy
 script that picks the wrong commit", in
 
 213
-00:16:26,450 --> 00:16:29,181
+00:16:34,783 --> 00:16:37,446
 exercises/m01-m05-foundations.md.
 
 214
-00:16:29,521 --> 00:16:35,108
+00:16:37,786 --> 00:16:43,373
 Challenge: Exercise 4.9, Level 4, "three
 commits on the wrong branch", in the same
 
 215
-00:16:35,148 --> 00:16:35,451
+00:16:43,413 --> 00:16:43,716
 file.
 
 216
-00:16:35,791 --> 00:16:40,749
+00:16:44,056 --> 00:16:49,014
 You can now read an error about names as
 a statement about one hierarchy, and that
 
 217
-00:16:40,789 --> 00:16:45,809
+00:16:49,054 --> 00:16:54,073
 calms a whole team on a bad morning. Do the
 lab: making the failure yourself is the
 
 218
-00:16:45,849 --> 00:16:50,624
+00:16:54,113 --> 00:16:58,889
 quickest way to stop fearing it. Next
 time: configuration, with its scopes, its
 
 219
-00:16:50,664 --> 00:16:55,683
+00:16:58,929 --> 00:17:03,948
 precedence, and how to read and write
 settings. Until then, look at the state first
 
 220
-00:16:55,723 --> 00:16:58,182
+00:17:03,988 --> 00:17:06,447
 and type second. See you in the next one.

@@ -39,7 +39,7 @@ Everything about rewriting history from the rebase module applies here: new comm
 
 `info` reads history and reports sizes by file extension. It changes nothing. 🟢 SAFE.
 
-**[ANIMATION]** graph: id=mig c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 main; c66100a origin/main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3 => c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 HEAD@{1}; c66100a-b1b921b-53cb32a-654d53c-d1e8e7d main; c66100a origin/main; HEAD=main; reflog:f9e56b8,65c2188,1ddbfc0,8b13104; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3; sub:b1b921b:pointer; sub:53cb32a:pointer; sub:d1e8e7d:pointer; name:import title=migrate_import_with_the_default_scope
+**[ANIMATION]** graph: id=mig c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 main; c66100a origin/main; HEAD=main; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3 => c66100a-f9e56b8-65c2188-1ddbfc0-8b13104 HEAD@{1}; c66100a-b1b921b-53cb32a-654d53c-d1e8e7d main; c66100a origin/main; HEAD=main; reflog:f9e56b8,65c2188,1ddbfc0,8b13104; sub:f9e56b8:model_v1; sub:65c2188:model_v2; sub:8b13104:model_v3; sub:b1b921b:pointer; sub:53cb32a:pointer; sub:d1e8e7d:pointer; name:import title=migrate_import_with_the_default_scope dx=250
 
 **[ANIMATION]** step: mig.import
 
@@ -51,7 +51,7 @@ Everything about rewriting history from the rebase module applies here: new comm
 
 **Scope is the dangerous option.** By default all three modes look only at the current branch, and only at commits that are on no remote. That default is the safe one: nothing that anyone else has is rewritten. Name further branches as arguments to include their unpushed commits.
 
-**[ANIMATION]** graph: id=evr e6c7da2-8a8e13b-c96fc1c-106939f-ca28864 main; c96fc1c-f074e3b experiment/quantized; c66100a origin/main; HEAD=main; say:ahead_5,_behind_1:_no_commit_is_shared title=After_migrate_import_--everything
+**[ANIMATION]** graph: id=evr e6c7da2-8a8e13b-c96fc1c-106939f-ca28864 main; c96fc1c-f074e3b experiment/quantized; c66100a origin/main; HEAD=main; say:ahead_5,_behind_1:_no_commit_is_shared title=After_migrate_import_--everything dx=250
 
 `--everything` means every commit reachable from every local and remote ref, including commits that are already on the remote.
 
@@ -376,7 +376,7 @@ Read the graph from the bottom: the root commit is now `e6c7da2`, a rewritten co
 
 **[ANIMATION]** step: evr.state-1
 
-The local branches no longer share a commit with `origin/main`. That's the root-cause box on screen. Not pushed yet, so the fix is in the branch reflogs, and the lab walks through it.
+The local branches no longer share a commit with `origin/main`. The root cause, from the box: a history rewrite that included published commits. Not pushed yet, so the fix is in the branch reflogs, and the lab walks through it.
 
 **[TERMINAL]** The reverse rewrite. Replay `labs/run ch22/lfs-migrate-export-volatile`.
 
@@ -623,7 +623,7 @@ Prevention is a server-side or CI check, because the failing machine is by defin
 
 **[ON SCREEN]** "Volatile script." The log file name in one message contains the wall-clock time.
 
-Here the hook was skipped with `--no-verify`. The pointer is in the remote's Git history. The object exists only in the author's local store. A teammate with a correctly installed client pulls.
+A volatile script: the log file name in one message contains the wall-clock time. Here the hook was skipped with `--no-verify`. The pointer is in the remote's Git history. The object exists only in the author's local store. A teammate with a correctly installed client pulls.
 
 ```bash
 git lfs pull
@@ -724,7 +724,7 @@ No, and almost everyone expects a yes. The client skips objects of commits that 
 
 **[ON SCREEN]** Lower third: **GitHub**. Everything in this segment is platform behavior, quoted in the textbook from GitHub's documentation as read on 2 October 2026. None of it can be reproduced in the lab, and limits and prices change: the linked pages in section 22.11 are the reference.
 
-Without LFS, the section quotes four limits.
+This segment is GitHub's behavior, quoted from its documentation as read on 2 October 2026; limits and prices change. Without LFS, the section quotes four limits.
 
 **[ANIMATION]** walk: id=lim columns=limit,as_quoted rows=a_warning_from_Git:a_file_larger_than_50_MiB|GitHub_blocks:files_larger_than_100_MiB|added_through_the_browser:no_larger_than_25_MiB|a_repository:ideally_less_than_1_GB,_less_than_5_GB_strongly_recommended|a_single_push:2_GB|one_LFS_file,_Free_and_Pro:2_GB|one_LFS_file,_Team:4_GB|one_LFS_file,_Enterprise_Cloud:5_GB mono=off title=GitHub's_documentation,_as_read_on_2_October_2026
 
@@ -751,6 +751,8 @@ With LFS, the maximum size of one LFS file depends on the plan: 2 gigabytes on G
 The last row is the answer to the storage-bill question, the one you were holding on to.
 
 **[ON SCREEN]** "Unverified." Per-GiB prices for metered LFS usage are not stated on the billing page that was read, and the research report behind the course records a conflict between GitHub's pricing page and its billing documentation about data packs. The textbook gives no prices, and neither does this video.
+
+Unverified: per-gibibyte prices for metered LFS usage aren't stated on the billing page that was read, and the research report records a conflict between GitHub's pricing page and its billing documentation about data packs. The textbook gives no prices, and neither does this video.
 
 **[ON SCREEN]** The table of section 22.13: when LFS is the wrong tool.
 

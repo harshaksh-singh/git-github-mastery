@@ -391,6 +391,8 @@ $ wc -l < .git/info/sparse-checkout
 
 **[ON SCREEN]** The state table of section 24.4: `set` removes files outside the cone and writes those inside, keeps the same index entries and changes skip-worktree bits; HEAD and the branch ref are unchanged; `info/sparse-checkout`, `config.worktree` and `extensions.worktreeConfig` are written; remote and GitHub unchanged.
 
+The state table of section 24.4, one page per command. On every page, HEAD, the branch ref, the remote and GitHub are unchanged.
+
 ## COMMON MISTAKES
 
 Five mistakes to watch for.
@@ -420,8 +422,6 @@ Question 423 of the CTO question bank:
 > "Explain a cone-mode sparse checkout in terms of the index. What is on disk, in the index, in `HEAD`?"
 
 **[PAUSE]**
-
-**[ANIMATION]** step: cone.3
 
 Answer out loud. A strong answer takes the three places one at a time and gives a count or a rule for each. It names the bit that makes the difference and says what that bit tells Git to do and not to do. It adds what cone mode restricts and why that restriction exists, and it draws the consequence for commits.
 

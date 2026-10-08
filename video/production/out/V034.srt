@@ -1,1253 +1,1253 @@
 1
-00:00:04,500 --> 00:00:08,244
+00:00:04,500 --> 00:00:08,243
 An engineer on your team is in
 the middle of a conflicted merge.
 
 2
-00:00:08,284 --> 00:00:13,092
+00:00:08,283 --> 00:00:13,090
 It's going badly, so they run git merge
 --abort. The manual says that this returns
 
 3
-00:00:13,132 --> 00:00:16,994
+00:00:13,130 --> 00:00:16,991
 you to the state before the merge.
 The merge is gone, as promised.
 
 4
-00:00:17,034 --> 00:00:21,842
+00:00:17,031 --> 00:00:21,838
 So is an edit to a prompt file that they
 made an hour before the merge started and
 
 5
-00:00:21,882 --> 00:00:22,788
+00:00:21,878 --> 00:00:22,783
 never committed.
 
 6
-00:00:23,128 --> 00:00:32,379
+00:00:23,123 --> 00:00:28,122
 Nobody typed a wrong command. The safety
 net has a hole, and the hole has an exact
 
 7
-00:00:32,419 --> 00:00:41,557
+00:00:28,162 --> 00:00:33,100
 shape. By the end of this video you can
 say what that shape is, and you can leave
 
 8
-00:00:41,597 --> 00:00:49,601
+00:00:33,140 --> 00:00:37,463
 any stopped merge in a state you can
 name. Keep that lost edit in mind.
 
 9
-00:00:49,641 --> 00:00:51,187
+00:00:37,503 --> 00:00:38,324
 It comes back.
 
 10
-00:00:53,027 --> 00:00:56,786
+00:00:40,164 --> 00:00:44,038
 Welcome back to Git and GitHub
 Deep Mastery. Pull up a chair.
 
 11
-00:00:56,826 --> 00:01:01,894
+00:00:44,078 --> 00:00:49,300
 A merge joins another branch's history into
 yours, and a conflict is a place where
 
 12
-00:01:01,934 --> 00:01:07,001
+00:00:49,340 --> 00:00:54,563
 Git can't decide what a file should say.
 In the previous video you took a conflict
 
 13
-00:01:07,041 --> 00:01:11,485
+00:00:54,603 --> 00:00:59,183
 apart. The marker file in the working
 tree, which is your files on disk.
 
 14
-00:01:11,525 --> 00:01:15,969
+00:00:59,223 --> 00:01:03,804
 Stages 1, 2 and 3 in the index, which
 is Git's draft of the next commit.
 
 15
-00:01:16,009 --> 00:01:21,076
+00:01:03,844 --> 00:01:09,066
 And the MERGE_* files in the dot git folder.
 This video is about what you do next.
 
 16
-00:01:21,416 --> 00:01:26,339
+00:01:09,406 --> 00:01:14,495
 There are four parts. First, the checks
 Git makes before a merge is allowed to
 
 17
-00:01:26,379 --> 00:01:31,619
+00:01:14,535 --> 00:01:19,952
 start, because half of the questions people
 ask about merges are about a merge that
 
 18
-00:01:31,659 --> 00:01:36,072
+00:01:19,992 --> 00:01:24,555
 never began. Second, the five steps
 from "conflict" to "merge commit".
 
 19
-00:01:36,112 --> 00:01:41,353
+00:01:24,595 --> 00:01:30,012
 Third, the whole-file shortcuts, --ours and
 --theirs, and what they discard without
 
 20
-00:01:41,393 --> 00:01:46,633
+00:01:30,052 --> 00:01:35,470
 telling you. Fourth, the three exits:
 --continue, --abort and --quit, and what each
 
 21
-00:01:46,673 --> 00:01:47,778
+00:01:35,510 --> 00:01:36,653
 one leaves behind.
 
 22
-00:01:48,118 --> 00:01:52,409
+00:01:36,993 --> 00:01:41,311
 The project is still evalkit, the
 evaluation harness for LLM outputs.
 
 23
-00:01:52,449 --> 00:01:57,556
+00:01:41,351 --> 00:01:46,489
 You are on main. A branch, remember, is a
 name that points at one commit and moves
 
 24
-00:01:57,596 --> 00:02:01,635
+00:01:46,529 --> 00:01:50,594
 forward when you commit. Asha's
 branch is feature/creative-judge.
 
 25
-00:02:01,675 --> 00:02:05,778
+00:01:50,634 --> 00:01:54,762
 Everything on screen is Git. GitHub
 does not appear in this video.
 
 26
-00:02:07,618 --> 00:02:09,196
+00:01:56,602 --> 00:01:58,180
 Here's what you'll walk away with.
 
 27
-00:02:09,536 --> 00:02:10,948
+00:01:58,520 --> 00:01:59,932
 After this video you can:
 
 28
-00:02:11,288 --> 00:02:19,887
+00:02:00,272 --> 00:02:02,859
 Run the checks that tell
 whether a merge can start.
 
 29
-00:02:20,227 --> 00:02:23,690
+00:02:03,199 --> 00:02:06,662
 Resolve a conflict path by
 path and conclude the merge.
 
 30
-00:02:24,030 --> 00:02:27,534
+00:02:07,002 --> 00:02:10,506
 Take one side of a path and
 explain what else that discards.
 
 31
-00:02:27,874 --> 00:02:34,588
+00:02:10,846 --> 00:02:17,560
 Choose between --abort, --continue and
 --quit, and state what each leaves behind.
 
 32
-00:02:34,928 --> 00:02:38,391
+00:02:17,900 --> 00:02:21,363
 Bring back the conflicted state of
 a path that was resolved wrongly.
 
 33
-00:02:40,231 --> 00:02:45,029
+00:02:23,203 --> 00:02:28,001
 Start with why a workflow is needed at all.
 A stopped merge is not an error state.
 
 34
-00:02:45,069 --> 00:02:49,749
+00:02:28,041 --> 00:02:32,721
 It's a merge that Git has done as far as
 the three-way rule allows, and it's now
 
 35
-00:02:49,789 --> 00:02:52,758
+00:02:32,761 --> 00:02:35,730
 waiting for a decision that
 only a person can make.
 
 36
-00:02:52,798 --> 00:02:57,478
+00:02:35,770 --> 00:02:40,450
 Git has saved everything it knows: the
 three versions of each conflicted path as
 
 37
-00:02:57,518 --> 00:03:00,782
+00:02:40,490 --> 00:02:43,754
 index stages, and the commit
 being merged in MERGE_HEAD.
 
 38
-00:03:01,122 --> 00:03:05,159
+00:02:44,094 --> 00:02:48,131
 A commit, remember, is one saved
 snapshot of the whole project.
 
 39
-00:03:05,199 --> 00:03:10,272
+00:02:48,171 --> 00:02:53,243
 Your job is to turn each unmerged path
 into one stage 0 entry and then record a
 
 40
-00:03:10,312 --> 00:03:11,825
+00:02:53,283 --> 00:02:54,797
 commit with two parents.
 
 41
-00:03:12,165 --> 00:03:14,536
+00:02:55,137 --> 00:02:57,508
 The textbook gives that job five steps.
 
 42
-00:03:14,876 --> 00:03:19,845
+00:02:57,848 --> 00:03:02,817
 Step 1, see what is open. git
 status lists the unmerged paths.
 
 43
-00:03:19,885 --> 00:03:24,208
+00:03:02,857 --> 00:03:07,180
 git diff --name-only
 --diff-filter=U lists only those.
 
 44
-00:03:24,548 --> 00:03:29,796
+00:03:07,520 --> 00:03:12,768
 Step 2, learn both intents. The textbook's
 sentence is worth repeating: resolving a
 
 45
-00:03:29,836 --> 00:03:33,045
+00:03:12,808 --> 00:03:16,017
 conflict is an investigation,
 not an editing chore.
 
 46
-00:03:33,085 --> 00:03:36,740
+00:03:16,057 --> 00:03:19,712
 The stage diffs from the last
 video tell you what changed.
 
 47
-00:03:36,780 --> 00:03:41,900
+00:03:19,752 --> 00:03:24,872
 git log --merge tells you why, because it
 lists the commits from either side that
 
 48
-00:03:41,940 --> 00:03:46,487
+00:03:24,912 --> 00:03:29,459
 touch a conflicted path. If the intent
 is still unclear, ask the author.
 
 49
-00:03:46,827 --> 00:03:52,285
+00:03:29,799 --> 00:03:35,257
 Step 3, write the result. Edit the file
 until it says what the merged project should
 
 50
-00:03:52,325 --> 00:03:57,521
+00:03:35,297 --> 00:03:40,493
 say, and delete the marker lines. The
 answer may be one side, both sides, or new
 
 51
-00:03:57,561 --> 00:03:57,848
+00:03:40,533 --> 00:03:40,820
 text.
 
 52
-00:03:58,188 --> 00:04:03,675
+00:03:41,160 --> 00:03:46,647
 Step 4, mark it resolved. git add on an
 unmerged path replaces stages 1 to 3 with
 
 53
-00:04:03,715 --> 00:04:08,179
+00:03:46,687 --> 00:03:51,151
 one stage 0 entry. That's all it
 does. It doesn't check your work.
 
 54
-00:04:08,219 --> 00:04:11,728
+00:03:51,191 --> 00:03:54,700
 It stages whatever is in
 the file, markers included.
 
 55
-00:04:12,068 --> 00:04:17,724
+00:03:55,040 --> 00:04:00,696
 Step 5, conclude. git merge --continue
 checks that a merge is in progress and then
 
 56
-00:04:17,764 --> 00:04:21,336
+00:04:00,736 --> 00:04:04,308
 runs git commit. Plain git
 commit does the same job.
 
 57
-00:04:21,676 --> 00:04:30,338
+00:04:04,648 --> 00:04:09,842
 Try it now. Thirty seconds, on paper:
 write the five steps from memory, one verb
 
 58
-00:04:30,378 --> 00:04:33,493
+00:04:09,882 --> 00:04:11,739
 each. Then say them out loud.
 
 59
-00:04:38,333 --> 00:04:41,827
+00:04:16,579 --> 00:04:20,073
 Here they are: see, learn,
 write, mark, conclude.
 
 60
-00:04:42,167 --> 00:04:48,219
+00:04:20,413 --> 00:04:26,010
 Now the internals, because the exits
 only make sense from the inside.
 
 61
-00:04:48,259 --> 00:04:55,459
+00:04:26,050 --> 00:04:32,709
 Here are today's commits. main has 5397d5f,
 Asha's branch has 640bfe1 and 45a7a67,
 
 62
-00:04:55,499 --> 00:04:57,842
+00:04:32,749 --> 00:04:34,915
 and both grow from 6ae3c51.
 
 63
-00:04:58,182 --> 00:05:02,110
+00:04:35,255 --> 00:04:40,769
 While a merge is open, .git holds MERGE_HEAD,
 MERGE_MODE, MERGE_MSG and AUTO_MERGE.
 
 64
-00:05:02,150 --> 00:05:05,983
+00:04:40,809 --> 00:04:46,188
 MERGE_HEAD names the commit being merged,
 and it's the reason the commit you make
 
 65
-00:05:06,023 --> 00:05:09,998
+00:04:46,228 --> 00:04:51,809
 will have a second parent. Remove that file
 and the same files, staged the same way,
 
 66
-00:05:10,038 --> 00:05:12,819
+00:04:51,849 --> 00:04:55,756
 produce a commit with one parent.
 Hold on to that sentence.
 
 67
-00:05:12,859 --> 00:05:13,727
+00:04:55,796 --> 00:04:57,028
 It explains --quit.
 
 68
-00:05:14,067 --> 00:05:17,061
+00:04:57,368 --> 00:05:01,114
 When does the workflow not apply?
 When the merge never started.
 
 69
-00:05:17,101 --> 00:05:21,057
+00:05:01,154 --> 00:05:06,102
 Git protects uncommitted work by refusing
 to begin, and the manual gives two rules.
 
 70
-00:05:21,097 --> 00:05:25,005
+00:05:06,142 --> 00:05:11,029
 Git stops when local changes overlap with
 files that the merge may need to update.
 
 71
-00:05:25,045 --> 00:05:29,002
+00:05:11,069 --> 00:05:16,017
 And it aborts if there are any changes
 registered in the index relative to the HEAD
 
 72
-00:05:29,042 --> 00:05:33,046
+00:05:16,057 --> 00:05:21,065
 commit. HEAD is Git's name for where you
 are now. So under the second rule, a staged
 
 73
-00:05:33,086 --> 00:05:36,080
+00:05:21,105 --> 00:05:24,851
 change blocks the merge even in
 a file the merge doesn't touch.
 
 74
-00:05:36,420 --> 00:05:41,679
+00:05:25,191 --> 00:05:30,451
 And the failure mode this video is named
 for: git merge --abort is defined by the
 
 75
-00:05:41,719 --> 00:05:45,081
+00:05:30,491 --> 00:05:33,853
 manual as git reset --merge
 while MERGE_HEAD exists.
 
 76
-00:05:45,121 --> 00:05:50,577
+00:05:33,893 --> 00:05:39,349
 It resets every staged path. It can't tell
 a merge result from an edit of yours that
 
 77
-00:05:50,617 --> 00:05:54,176
+00:05:39,389 --> 00:05:42,948
 predates the merge and that
 you staged in the meantime.
 
 78
-00:05:56,016 --> 00:06:01,166
+00:05:44,788 --> 00:05:49,938
 A picture helps. Think of a stopped merge
 as a form that Git has filled in as far as
 
 79
-00:06:01,206 --> 00:06:06,357
+00:05:49,978 --> 00:05:55,128
 it could and handed back to you. The fields
 it couldn't fill are the unmerged paths.
 
 80
-00:06:06,397 --> 00:06:10,558
+00:05:55,168 --> 00:05:59,330
 git add is you signing one field.
 --continue is handing the form in.
 
 81
-00:06:10,598 --> 00:06:14,575
+00:05:59,370 --> 00:06:03,347
 --abort is tearing the form up and
 going back to where you stood.
 
 82
-00:06:14,615 --> 00:06:19,642
+00:06:03,387 --> 00:06:08,413
 --quit is throwing away the cover sheet
 that says "this is a merge", while leaving
 
 83
-00:06:19,682 --> 00:06:21,928
+00:06:08,453 --> 00:06:10,700
 every half-filled field on your desk.
 
 84
-00:06:22,268 --> 00:06:27,379
+00:06:11,040 --> 00:06:15,794
 Where the picture breaks: tearing up a paper
 form can't damage anything that was on
 
 85
-00:06:27,419 --> 00:06:32,406
+00:06:15,834 --> 00:06:20,473
 your desk before. --abort can. It resets
 the index and the working tree for every
 
 86
-00:06:32,446 --> 00:06:37,495
+00:06:20,513 --> 00:06:25,209
 staged path, and an older edit of yours
 that you staged during the merge looks, to
 
 87
-00:06:37,535 --> 00:06:39,853
+00:06:25,249 --> 00:06:27,404
 Git, exactly like a field of the form.
 
 88
-00:06:40,193 --> 00:06:45,484
+00:06:27,744 --> 00:06:33,035
 The second model is for the shortcuts.
 --ours and --theirs do not mean "our side of
 
 89
-00:06:45,524 --> 00:06:50,302
+00:06:33,075 --> 00:06:37,852
 the conflict". They mean "the whole of
 stage 2" and "the whole of stage 3".
 
 90
-00:06:50,342 --> 00:06:54,990
+00:06:37,892 --> 00:06:42,541
 A file is the unit, not a hunk, and a
 hunk is one block of changed lines.
 
 91
-00:06:56,830 --> 00:07:01,569
+00:06:44,381 --> 00:06:49,119
 Quick quiz, from the picture.
 Which exit moves the branch?
 
 92
-00:07:01,609 --> 00:07:05,194
+00:06:49,159 --> 00:06:52,744
 A, continue. B, abort.
 C, quit. Your answer?
 
 93
-00:07:10,034 --> 00:07:14,230
+00:06:57,584 --> 00:07:01,781
 Read the bottom row. It's A: only
 --continue moves the branch.
 
 94
-00:07:14,270 --> 00:07:19,901
+00:07:01,821 --> 00:07:07,452
 --abort and --quit both delete the merge
 state, and they differ in everything else.
 
 95
-00:07:19,941 --> 00:07:25,231
+00:07:07,492 --> 00:07:12,782
 One cleans the index and the files. The
 other leaves them exactly as they are.
 
 96
-00:07:27,071 --> 00:07:31,825
+00:07:14,622 --> 00:07:20,165
 Part 1: before the merge starts. Into
 the lab. You are on main in evalkit.
 
 97
-00:07:31,865 --> 00:07:35,906
+00:07:20,205 --> 00:07:24,919
 You append one comment line to
 evalkit/metrics.py and stage it.
 
 98
-00:07:35,946 --> 00:07:38,368
+00:07:24,959 --> 00:07:27,787
 Asha's branch doesn't touch that file.
 
 99
-00:07:38,708 --> 00:07:43,008
+00:07:28,127 --> 00:07:32,427
 Predict: the merge does not
 touch metrics.py. Does it start?
 
 100
-00:07:43,048 --> 00:07:44,961
+00:07:32,467 --> 00:07:34,380
 Say it out loud. I'll wait.
 
 101
-00:07:49,801 --> 00:07:52,938
+00:07:39,220 --> 00:07:44,221
 It does not. If you said yes, you're in
 good company: the message points the wrong
 
 102
-00:07:52,978 --> 00:07:54,953
+00:07:44,261 --> 00:07:47,418
 way. Look at the exit status,
 2, and at the message.
 
 103
-00:07:54,993 --> 00:07:58,169
+00:07:47,458 --> 00:07:52,521
 It names the file and says it would be
 overwritten, which is not true of this file.
 
 104
-00:07:58,209 --> 00:08:01,229
+00:07:52,561 --> 00:07:57,378
 The real reason is the manual's second
 rule: any change registered in the index
 
 105
-00:08:01,269 --> 00:08:03,593
+00:07:57,418 --> 00:08:01,128
 relative to HEAD stops the merge.
 The message doesn't say so.
 
 106
-00:08:03,933 --> 00:08:08,466
+00:08:01,468 --> 00:08:06,001
 An untracked file that the merge would
 create is protected in the same way.
 
 107
-00:08:08,506 --> 00:08:11,575
+00:08:06,041 --> 00:08:09,110
 Untracked means the file
 has no entry in the index.
 
 108
-00:08:11,615 --> 00:08:15,660
+00:08:09,150 --> 00:08:13,195
 The branch adds NOTES.md, and you
 have your own untracked NOTES.md.
 
 109
-00:08:16,000 --> 00:08:19,734
+00:08:13,535 --> 00:08:17,270
 One more refusal, which is not
 about your working tree at all.
 
 110
-00:08:19,774 --> 00:08:23,265
+00:08:17,310 --> 00:08:20,801
 The merge base is the best
 common ancestor of two commits.
 
 111
-00:08:23,305 --> 00:08:26,613
+00:08:20,841 --> 00:08:24,149
 Two commits with no common
 ancestor have no merge base.
 
 112
-00:08:26,953 --> 00:08:31,196
+00:08:24,489 --> 00:08:28,731
 git merge-base prints nothing and exits
 with 1, and the merge is refused.
 
 113
-00:08:31,536 --> 00:08:36,423
+00:08:29,071 --> 00:08:34,754
 Part 2: during the merge. Now a merge that
 does start and stops on the conflict in
 
 114
-00:08:36,463 --> 00:08:41,349
+00:08:34,794 --> 00:08:40,477
 config/eval.yaml. Suppose you edit nothing
 and run git add on the conflicted file.
 
 115
-00:08:41,389 --> 00:08:45,074
+00:08:40,517 --> 00:08:44,804
 Predict what git status --short
 shows for it. Say it out loud.
 
 116
-00:08:49,914 --> 00:08:55,338
+00:08:49,644 --> 00:08:55,108
 M, staged, as if resolved. git add 🟢 is
 labelled SAFE because it only collapses
 
 117
-00:08:55,378 --> 00:09:00,663
+00:08:55,148 --> 00:09:00,472
 stages into stage 0 and adds a blob,
 which is Git's stored copy of one file's
 
 118
-00:09:00,703 --> 00:09:06,472
+00:09:00,512 --> 00:09:06,324
 content. But it accepted a file full of
 markers. The last command is your guard: git
 
 119
-00:09:06,512 --> 00:09:12,143
+00:09:06,364 --> 00:09:12,037
 diff --cached --check reports the leftover
 conflict markers by line and exits with
 
 120
-00:09:12,183 --> 00:09:15,048
+00:09:12,077 --> 00:09:14,963
 2. Run it before you conclude, every time.
 
 121
-00:09:15,388 --> 00:09:19,199
+00:09:15,303 --> 00:09:19,114
 While a merge is open, a second merge
 and a partial commit are both refused.
 
 122
-00:09:19,539 --> 00:09:23,924
+00:09:19,454 --> 00:09:23,966
 Part 3: the whole-file shortcuts.
 labs/run ch08/restore-sides.
 
 123
-00:09:23,964 --> 00:09:29,206
+00:09:24,006 --> 00:09:29,398
 The merge is stopped again. Look at
 the first grep: the conflict is on the
 
 124
-00:09:29,246 --> 00:09:34,987
+00:09:29,438 --> 00:09:35,345
 temperature line, and line 11 says seed:
 1234. That seed is Asha's change, in the
 
 125
-00:09:35,027 --> 00:09:37,414
+00:09:35,385 --> 00:09:37,841
 same file, and it didn't conflict.
 
 126
-00:09:37,754 --> 00:09:44,823
+00:09:38,181 --> 00:09:43,201
 git restore --ours 🔴 is labelled
 DANGEROUS, so the five answers come first.
 
 127
-00:09:44,863 --> 00:09:52,785
+00:09:43,241 --> 00:09:48,869
 What it changes: the working tree file only.
 What it can destroy: your hand edits to
 
 128
-00:09:52,825 --> 00:09:58,378
+00:09:48,909 --> 00:09:52,850
 that file, which exist nowhere
 else until you git add them.
 
 129
-00:09:58,418 --> 00:10:03,402
+00:09:52,890 --> 00:09:56,427
 How to preview: git diff
 --ours or git diff --theirs.
 
 130
-00:10:03,442 --> 00:10:11,270
+00:09:56,467 --> 00:10:02,027
 How to recover: git restore --merge on the
 path brings back the starting point, not
 
 131
-00:10:11,310 --> 00:10:18,474
+00:10:02,067 --> 00:10:07,155
 your edits. When it is appropriate: when
 the whole file from one side is the
 
 132
-00:10:18,514 --> 00:10:22,739
+00:10:07,195 --> 00:10:10,192
 decision, or to restart
 a botched resolution.
 
 133
-00:10:23,079 --> 00:10:26,180
+00:10:10,532 --> 00:10:13,632
 Predict the seed after this
 command. Say it out loud.
 
 134
-00:10:31,020 --> 00:10:36,099
+00:10:18,472 --> 00:10:23,551
 The seed is 7 again. Asha's non-conflicting
 change is gone from the working tree,
 
 135
-00:10:36,139 --> 00:10:39,448
+00:10:23,591 --> 00:10:26,900
 and if you stage this file,
 it's gone from the merge.
 
 136
-00:10:39,488 --> 00:10:44,314
+00:10:26,940 --> 00:10:31,766
 Also look at the last status: the path
 is still UU, because the index was not
 
 137
-00:10:44,354 --> 00:10:44,819
+00:10:31,806 --> 00:10:32,272
 touched.
 
 138
-00:10:45,159 --> 00:10:46,204
+00:10:32,612 --> 00:10:34,659
 --theirs is the mirror image.
 
 139
-00:10:46,544 --> 00:10:50,650
+00:10:34,999 --> 00:10:39,664
 And git restore --merge 🔴 rebuilds
 the marker version from the stages.
 
 140
-00:10:50,690 --> 00:10:53,967
+00:10:39,704 --> 00:10:43,428
 It's the undo for both shortcuts
 and for a botched edit.
 
 141
-00:10:54,307 --> 00:10:58,044
+00:10:43,768 --> 00:10:48,052
 Notice the marker labels: ours and
 theirs, not HEAD and the branch name.
 
 142
-00:10:58,084 --> 00:11:01,348
+00:10:48,092 --> 00:10:51,836
 The file was rebuilt from the
 index, not by the original merge.
 
 143
-00:11:01,688 --> 00:11:05,176
+00:10:52,176 --> 00:10:55,664
 Older scripts use git checkout
 for the same three operations.
 
 144
-00:11:05,216 --> 00:11:08,184
+00:10:55,704 --> 00:10:58,671
 You will read this form.
 You don't need to write it.
 
 145
-00:11:08,524 --> 00:11:13,153
+00:10:59,011 --> 00:11:04,764
 --merge also works after git add. Take their
 whole file, stage it, then change your
 
 146
-00:11:13,193 --> 00:11:13,434
+00:11:04,804 --> 00:11:05,113
 mind.
 
 147
-00:11:13,774 --> 00:11:19,296
+00:11:05,453 --> 00:11:10,974
 After the git add there's one stage 0
 entry. After git restore --merge there are
 
 148
-00:11:19,336 --> 00:11:25,065
+00:11:11,014 --> 00:11:16,744
 three entries again, stages 1, 2 and 3. The
 index keeps a record of the stages that
 
 149
-00:11:25,105 --> 00:11:26,734
+00:11:16,784 --> 00:11:18,412
 the resolution replaced.
 
 150
-00:11:27,074 --> 00:11:31,882
+00:11:18,752 --> 00:11:24,152
 Part 4: the three exits. labs/run
 ch08/abort-continue-quit.
 
 151
-00:11:32,222 --> 00:11:37,455
+00:11:24,492 --> 00:11:29,725
 git merge --continue 🟡 CAUTION: it creates
 the merge commit and moves the branch.
 
 152
-00:11:37,495 --> 00:11:39,538
+00:11:29,765 --> 00:11:31,808
 Run it too early and it refuses.
 
 153
-00:11:39,878 --> 00:11:44,739
+00:11:32,148 --> 00:11:37,609
 git merge --abort 🔴 DANGEROUS. The five
 answers. It changes the index, the working
 
 154
-00:11:44,779 --> 00:11:49,221
+00:11:37,649 --> 00:11:42,640
 tree and the merge state. It destroys
 every resolution made so far, and any
 
 155
-00:11:49,261 --> 00:11:54,122
+00:11:42,680 --> 00:11:48,141
 uncommitted edit that was staged during
 the merge. Preview with git status and git
 
 156
-00:11:54,162 --> 00:11:59,142
+00:11:48,181 --> 00:11:53,776
 diff --cached --stat. Recovery: staged
 content survives as unreferenced objects that
 
 157
-00:11:59,182 --> 00:12:02,429
+00:11:53,816 --> 00:11:57,466
 git fsck lists, and unstaged
 resolution edits are gone.
 
 158
-00:12:02,469 --> 00:12:06,673
+00:11:57,506 --> 00:12:02,228
 Appropriate when the merge was a
 mistake or needs a different approach.
 
 159
-00:12:07,013 --> 00:12:10,439
+00:12:02,568 --> 00:12:05,995
 The reflog is Git's local list
 of the values HEAD has had.
 
 160
-00:12:10,479 --> 00:12:13,905
+00:12:06,035 --> 00:12:09,461
 Predict what it will say after
 the abort. Say it out loud.
 
 161
-00:12:18,745 --> 00:12:23,511
+00:12:14,301 --> 00:12:19,488
 reset: moving to HEAD. The abort is
 a reset, and the reflog says so.
 
 162
-00:12:23,551 --> 00:12:26,902
+00:12:19,528 --> 00:12:23,178
 The MERGE_* files are
 gone, and ORIG_HEAD stays.
 
 163
-00:12:27,242 --> 00:12:30,826
+00:12:23,518 --> 00:12:27,102
 Outside a merge, both commands tell
 you that MERGE_HEAD is missing.
 
 164
-00:12:31,166 --> 00:12:35,862
+00:12:27,442 --> 00:12:32,137
 Now the odd one. git merge --quit 🟡
 CAUTION deletes the merge state only.
 
 165
-00:12:36,202 --> 00:12:42,412
+00:12:32,477 --> 00:12:37,314
 No MERGE_* file is left, and git status
 no longer says "you are still merging".
 
 166
-00:12:42,452 --> 00:12:48,266
+00:12:37,354 --> 00:12:41,883
 But the unmerged path is still there
 and the staged change is still there.
 
 167
-00:12:48,306 --> 00:12:54,595
+00:12:41,923 --> 00:12:46,822
 Predict: you resolve, add and commit now.
 How many parents does the commit have?
 
 168
-00:12:54,635 --> 00:12:56,731
+00:12:46,862 --> 00:12:48,489
 Say it out loud. I'll wait.
 
 169
-00:13:01,571 --> 00:13:08,622
+00:12:53,329 --> 00:12:59,963
 One. No MERGE_HEAD, so no second parent.
 The graph shows cdacf6e on top of 5397d5f
 
 170
-00:13:08,662 --> 00:13:11,994
+00:13:00,003 --> 00:13:03,138
 and Asha's two commits off to the side.
 
 171
-00:13:12,334 --> 00:13:19,197
+00:13:03,478 --> 00:13:08,919
 Here it is as a picture. MERGE_HEAD is
 gone, and cdacf6e has one line into it.
 
 172
-00:13:19,237 --> 00:13:26,189
+00:13:08,959 --> 00:13:14,470
 No line joins Asha's commits to it. Her
 content is in main, her commits are not
 
 173
-00:13:26,229 --> 00:13:32,119
+00:13:14,510 --> 00:13:19,178
 ancestors of it, and git branch
 --no-merged still lists her branch.
 
 174
-00:13:32,159 --> 00:13:39,554
+00:13:19,218 --> 00:13:25,080
 The way back after --quit is git reset
 --merge, because --abort has nothing to find.
 
 175
-00:13:39,894 --> 00:13:45,197
+00:13:25,420 --> 00:13:30,724
 Part 5: uncommitted work and --autostash.
 Work in paths the merge does not touch is
 
 176
-00:13:45,237 --> 00:13:48,352
+00:13:30,764 --> 00:13:33,879
 allowed and survives both
 the merge and an abort.
 
 177
-00:13:48,692 --> 00:13:53,910
+00:13:34,219 --> 00:13:39,439
 An unstaged edit in a file the merge does
 touch stops the merge, unless you let Git
 
 178
-00:13:53,950 --> 00:13:58,914
+00:13:39,479 --> 00:13:44,446
 stash it. To stash is to park uncommitted
 work as a commit, to be applied again
 
 179
-00:13:58,954 --> 00:14:01,828
+00:13:44,486 --> 00:13:47,361
 later. merge.autoStash
 makes that the default.
 
 180
-00:14:05,168 --> 00:14:08,968
+00:13:50,701 --> 00:13:55,152
 Look at MERGE_AUTOSTASH in the
 listing, and at "Applied autostash."
 
 181
-00:14:09,008 --> 00:14:13,553
+00:13:55,192 --> 00:14:00,515
 after the abort. Then read the hint Git
 printed: "apply stashed changes with git
 
 182
-00:14:13,593 --> 00:14:17,049
+00:14:00,555 --> 00:14:04,604
 stash pop". labs/run
 ch08/autostash-continue tests that hint.
 
 183
-00:14:17,389 --> 00:14:21,220
+00:14:04,944 --> 00:14:08,775
 The stash list is empty, and
 git stash pop finds nothing.
 
 184
-00:14:21,260 --> 00:14:26,314
+00:14:08,815 --> 00:14:13,869
 The autostash is a stash-shaped commit
 that .git/MERGE_AUTOSTASH points to.
 
 185
-00:14:26,354 --> 00:14:28,759
+00:14:13,909 --> 00:14:16,314
 It's not an entry in the stash list.
 
 186
-00:14:29,099 --> 00:14:33,149
+00:14:16,654 --> 00:14:21,948
 git merge --continue applied it for you.
 According to the textbook, the autostash
 
 187
-00:14:33,189 --> 00:14:37,339
+00:14:21,988 --> 00:14:27,414
 reaches the stash list after git merge
 --quit or git reset --merge, per the manual,
 
 188
-00:14:37,379 --> 00:14:40,419
+00:14:27,454 --> 00:14:31,431
 or when applying it conflicts,
 which was seen in the sandbox.
 
 189
-00:14:40,459 --> 00:14:42,691
+00:14:31,471 --> 00:14:34,394
 Only then is git stash
 pop the right command.
 
 190
-00:14:44,531 --> 00:14:46,179
+00:14:36,234 --> 00:14:37,882
 Five mistakes to watch for.
 
 191
-00:14:46,519 --> 00:14:54,439
+00:14:38,222 --> 00:14:43,873
 Staging a file that still contains markers.
 Root cause: git add records whatever is
 
 192
-00:14:54,479 --> 00:15:01,535
+00:14:43,913 --> 00:14:48,947
 in the file and performs no check; git
 diff --cached --check is the check.
 
 193
-00:15:01,875 --> 00:15:05,756
+00:14:49,287 --> 00:14:53,168
 Taking --theirs to "accept
 their side of the conflict".
 
 194
-00:15:05,796 --> 00:15:11,672
+00:14:53,208 --> 00:14:59,084
 Root cause: --ours and --theirs write the
 whole of stage 2 or stage 3, so the other
 
 195
-00:15:11,712 --> 00:15:16,091
+00:14:59,124 --> 00:15:03,503
 side's non-conflicting changes
 in that file are discarded too.
 
 196
-00:15:16,431 --> 00:15:20,799
+00:15:03,843 --> 00:15:07,042
 Using --quit to get out of a
 merge and then committing.
 
 197
-00:15:20,839 --> 00:15:27,370
+00:15:07,082 --> 00:15:11,871
 Root cause: without MERGE_HEAD the commit
 has one parent, so the content is in but
 
 198
-00:15:27,410 --> 00:15:30,255
+00:15:11,911 --> 00:15:13,991
 the branch still counts as unmerged.
 
 199
-00:15:30,595 --> 00:15:35,524
+00:15:14,331 --> 00:15:20,455
 Running git add -A during a merge, then
 aborting. Root cause: --abort is git reset
 
 200
-00:15:35,564 --> 00:15:40,614
+00:15:20,495 --> 00:15:26,771
 --merge, which resets every staged path and
 cannot tell a merge result from your own
 
 201
-00:15:40,654 --> 00:15:41,280
+00:15:26,811 --> 00:15:27,598
 older edit.
 
 202
-00:15:41,620 --> 00:15:44,946
+00:15:27,938 --> 00:15:34,221
 Running git stash pop because the hint said
 so. Root cause: the autostash lives in
 
 203
-00:15:44,986 --> 00:15:48,312
+00:15:34,261 --> 00:15:40,545
 .git/MERGE_AUTOSTASH, not in the stash
 list, and --continue or --abort applies it.
 
 204
-00:15:50,152 --> 00:15:55,552
+00:15:42,385 --> 00:15:47,786
 Now, out of the lab. Your evaluation team
 has a release requirement: scores must be
 
 205
-00:15:55,592 --> 00:16:00,862
+00:15:47,826 --> 00:15:53,095
 reproducible. Asha's branch raises the
 judge temperature to 0.7 for diversity and
 
 206
-00:16:00,902 --> 00:16:05,647
+00:15:53,135 --> 00:15:57,880
 changes the seed. main set the temperature
 to 0.0. The merge stops on the
 
 207
-00:16:05,687 --> 00:16:06,761
+00:15:57,920 --> 00:15:58,994
 temperature line.
 
 208
-00:16:07,101 --> 00:16:12,384
+00:15:59,334 --> 00:16:04,618
 The engineer who resolves it reads git log
 --merge, and sees the two commits that
 
 209
-00:16:12,424 --> 00:16:17,904
+00:16:04,658 --> 00:16:10,138
 touched the line and their reasons. They
 keep 0.0. They keep Asha's new seed and her
 
 210
-00:16:17,944 --> 00:16:22,373
+00:16:10,178 --> 00:16:14,607
 extra prompt line. They run the
 tests and git diff --cached --check.
 
 211
-00:16:22,413 --> 00:16:27,828
+00:16:14,647 --> 00:16:20,061
 And they write two sentences in the merge
 message: temperature stays at 0.0 because
 
 212
-00:16:27,868 --> 00:16:33,217
+00:16:20,101 --> 00:16:25,450
 reproducible scores are a release requirement,
 and the seed and the rationale line
 
 213
-00:16:33,257 --> 00:16:34,662
+00:16:25,490 --> 00:16:26,896
 are taken as they are.
 
 214
-00:16:35,002 --> 00:16:39,433
+00:16:27,236 --> 00:16:31,666
 That message matters more than it looks.
 The textbook's point is that the merge
 
 215
-00:16:39,473 --> 00:16:43,450
+00:16:31,706 --> 00:16:35,684
 commit message is the only place where
 a resolution can explain itself.
 
 216
-00:16:43,490 --> 00:16:47,807
+00:16:35,724 --> 00:16:40,041
 One sentence there answers the question
 that somebody will ask in six months.
 
 217
-00:16:49,647 --> 00:16:55,533
+00:16:41,881 --> 00:16:47,971
 Your turn. Do Lab 6.7, "Abort and retry
 with zdiff3", in lab-manual/m06-merge.md.
 
 218
-00:16:55,573 --> 00:17:01,458
+00:16:48,011 --> 00:16:54,101
 Type it by hand in the lab shell. Your
 commit IDs will differ from the transcript
 
 219
-00:17:01,498 --> 00:17:03,945
+00:16:54,141 --> 00:16:56,675
 where you create commits yourself.
 
 220
-00:17:04,285 --> 00:17:06,808
+00:16:57,015 --> 00:16:59,537
 Before you start, write
 down three predictions:
 
 221
-00:17:07,148 --> 00:17:11,856
+00:16:59,877 --> 00:17:04,585
 After git merge --abort, which of your
 uncommitted edits are still there: the one
 
 222
-00:17:11,896 --> 00:17:16,779
+00:17:04,625 --> 00:17:09,509
 you never staged, the one you staged before
 the merge, the one you staged during it?
 
 223
-00:17:17,119 --> 00:17:20,264
+00:17:09,849 --> 00:17:12,994
 What will git reflog -1
 show after the abort?
 
 224
-00:17:20,604 --> 00:17:23,059
+00:17:13,334 --> 00:17:17,997
 If an edit is lost, where could a copy of
 it still exist, and which command would
 
 225
-00:17:23,099 --> 00:17:23,305
+00:17:18,037 --> 00:17:18,462
 list it?
 
 226
-00:17:23,645 --> 00:17:27,304
+00:17:18,802 --> 00:17:22,460
 The lab reproduces the loss from
 the hook and recovers the edit.
 
 227
-00:17:27,344 --> 00:17:30,540
+00:17:22,500 --> 00:17:25,697
 That's the lost prompt edit
 from the start, found again.
 
 228
-00:17:30,580 --> 00:17:33,257
+00:17:25,737 --> 00:17:28,413
 Don't open the answers
 before your own attempt.
 
 229
-00:17:33,597 --> 00:17:38,701
+00:17:28,753 --> 00:17:35,012
 When that is done, the challenge is Exercise
 6.9, "a merge that somebody else left
 
 230
-00:17:38,741 --> 00:17:41,712
+00:17:35,052 --> 00:17:38,700
 half done", in
 exercises/m06-m10-integration.md.
 
 231
-00:17:43,552 --> 00:17:48,621
+00:17:40,540 --> 00:17:45,609
 Q136: "git merge --abort is supposed to
 return you to the state before the merge.
 
 232
-00:17:48,661 --> 00:17:53,542
+00:17:45,649 --> 00:17:50,530
 An engineer ran it during a conflicted
 merge and lost an uncommitted edit that
 
 233
-00:17:53,582 --> 00:17:58,840
+00:17:50,570 --> 00:17:55,828
 predated the merge. How did the safety net
 fail, can the edit be recovered, and what
 
 234
-00:17:58,880 --> 00:18:00,228
+00:17:55,868 --> 00:17:57,216
 do you tell the team?"
 
 235
-00:18:02,568 --> 00:18:05,515
+00:17:59,556 --> 00:18:02,503
 Answer it out loud before
 you open the answers file.
 
 236
-00:18:05,555 --> 00:18:09,077
+00:18:02,543 --> 00:18:06,064
 A strong answer has three parts,
 in the order of the question.
 
 237
-00:18:09,117 --> 00:18:13,614
+00:18:06,104 --> 00:18:10,602
 It names the mechanism: what --abort is
 defined as, and what that command can't
 
 238
-00:18:13,654 --> 00:18:18,325
+00:18:10,642 --> 00:18:15,312
 distinguish. It gives a recovery path with
 the conditions under which it works and
 
 239
-00:18:18,365 --> 00:18:22,805
+00:18:15,352 --> 00:18:19,793
 the point at which it stops working,
 without promising more than the mechanism
 
 240
-00:18:22,845 --> 00:18:27,458
+00:18:19,833 --> 00:18:24,446
 gives. And it ends with a habit the team
 can adopt tomorrow, stated as a rule and
 
 241
-00:18:27,498 --> 00:18:28,434
+00:18:24,486 --> 00:18:25,422
 not as a warning.
 
 242
-00:18:30,274 --> 00:18:34,791
+00:18:27,262 --> 00:18:31,779
 Let's land this. You should now be able
 to say these sentences without notes.
 
 243
-00:18:35,131 --> 00:18:40,505
+00:18:32,119 --> 00:18:37,493
 A merge does not start if anything is
 staged, or if an unstaged or untracked file
 
 244
-00:18:40,545 --> 00:18:45,785
+00:18:37,533 --> 00:18:42,773
 overlaps with what the merge would write.
 Resolution is five steps: see what is
 
 245
-00:18:45,825 --> 00:18:50,197
+00:18:42,813 --> 00:18:47,185
 open, learn both intents, write
 the result, git add, and conclude.
 
 246
-00:18:50,237 --> 00:18:55,410
+00:18:47,225 --> 00:18:52,398
 --ours and --theirs take a whole file
 from stage 2 or stage 3, and git restore
 
 247
-00:18:55,450 --> 00:18:59,488
+00:18:52,438 --> 00:18:56,476
 --merge brings the conflicted
 state back, even after git add.
 
 248
-00:18:59,828 --> 00:19:03,065
+00:18:56,816 --> 00:19:02,798
 --continue records a two-parent commit,
 --abort is git reset --merge and returns to
 
 249
-00:19:03,105 --> 00:19:05,869
+00:19:02,838 --> 00:19:07,949
 HEAD, and --quit forgets the merge
 while leaving the half-merged files.
 
 250
-00:19:05,909 --> 00:19:08,436
+00:19:07,989 --> 00:19:12,665
 An abort can lose an older edit
 that was staged during the merge.
 
 251
-00:19:10,276 --> 00:19:13,140
+00:19:14,505 --> 00:19:17,369
 Read section 8.10 of Chapter 8.
 
 252
-00:19:13,480 --> 00:19:19,210
+00:19:17,709 --> 00:19:23,285
 Repeat Lab 6.2, "An edit-against-edit
 conflict, resolved by reading the stages", in
 
 253
-00:19:19,250 --> 00:19:24,980
+00:19:23,325 --> 00:19:28,901
 lab-manual/m06-merge.md. Then resolve the
 same conflict a second time by taking one
 
 254
-00:19:25,020 --> 00:19:29,429
+00:19:28,941 --> 00:19:33,231
 side of the file, and write a list
 of what you lost by doing so.
 
 255
-00:19:29,769 --> 00:19:34,761
+00:19:33,571 --> 00:19:38,563
 Today you walked a stopped merge to each
 of its three exits, and you can name the
 
 256
-00:19:34,801 --> 00:19:38,550
+00:19:38,603 --> 00:19:42,352
 state each one leaves behind.
 Do the lab while this is fresh.
 
 257
-00:19:38,590 --> 00:19:43,582
+00:19:42,392 --> 00:19:47,384
 Next time: conflict types beyond content.
 Until then, look at the state first and
 
 258
-00:19:43,622 --> 00:19:45,881
+00:19:47,424 --> 00:19:49,683
 type second. See you in the next one.

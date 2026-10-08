@@ -72,6 +72,8 @@ Why two dates? Git needs the committer date for its own work: the manual says th
 
 **[ON SCREEN]** Lower third: **GitHub**. The textbook quotes GitHub's documentation: "GitHub links a commit to a user by matching the email address in the commit header to an email address on a GitHub account". Nothing in that match proves that the owner of the address made the commit. And commits that GitHub creates for you carry a GitHub address as committer email. An author who differs from the committer is normal, and no sign of tampering.
 
+One note on the platform side. By GitHub's documentation, it links a commit to an account by matching the email address in the commit. That match doesn't prove who made the commit.
+
 **[ANIMATION]** graph: d4c9fab-bb904cd-191bbd1-ae6795c main; bb904cd-79ff6d7-59c914e feature/f1; 59c914e-ae6795c; HEAD=main
 
 **Parents.** In one sentence: the `parent` lines of a commit are the only links in the history graph: none for a root commit, one for an ordinary commit, two or more for a merge commit. In the picture, `d4c9fab` is the root and `ae6795c` is a merge.

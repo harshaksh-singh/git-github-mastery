@@ -62,11 +62,23 @@ PACE_LETTERS = vb.PACE_LETTERS   # letters per second of a beat (a digit counts 
                              #    fails if its words OR its letters per second are outside.
 PACE_MIN_WORDS = vb.PACE_MIN_WORDS   # beats with fewer spoken words are judged by the wide bounds below: one long or short word
                              #    moves their pace a lot
-PACE_FLOOR_WPS = vb.PACE_FLOOR_WPS   # no beat of any length may be faster than this (the builder's own "cut-off file" rule)
-PACE_SHORT_FACTOR = vb.PACE_SHORT_FACTOR   # a short beat may be this much slower or faster, in letters per second, than PACE_LETTERS (4 to 38).
+PACE_FLOOR_WPS = vb.PACE_FLOOR_WPS   # no beat of any length may be faster than this (the only bound for a short beat of a recorded narration)
+PACE_SHORT_FAST = vb.PACE_SHORT_FAST   # (words/s, letters/s) a short beat of the computer voice must not exceed, either of them: 5.4 and 19
+PACE_SHORT_SLOW = vb.PACE_SHORT_SLOW   # (words/s, letters/s): a short beat is too slow if it is under both: 1.3 and 6.  Tuned on 8 October 2026
+                             #    from "4 to 38 letters/s, under 10 words/s", which passed four marked clips that were cut short
+                             #    (22.9 to 35.2 letters/s; whole takes of the same texts: 12.4 to 16.9).  The 588 genuine short clips
+                             #    run from 1.04 to 4.89 words/s and 4.9 to 18.2 letters/s; twelve were spoken again to confirm.
+                             #    History of the lower bound:
                              #    Added after the first run: "You should now be able to say:" lasts 19 s in eighteen of the older
                              #    videos (2 s as a verified clip), and with no bound for short beats nothing reported it.  The 39
                              #    verified short clips run from 9.0 to 17.0 letters per second.
+PACE_WIDE = vb.PACE_WIDE     # a clip that came vb.SAME_TAKES times with one length, clean in sound, is accepted by the builder
+                             #    outside the bounds above, up to this factor (1.31 to 5.22 words/s, 6.96 to 21.85 letters/s): three
+                             #    equal takes are better evidence than a bound made from word and letter counts.  Its .ok mark says
+                             #    so (vb.MARK_THREE).  C1 and C2 do not fail such a beat; they list it as a warning with its pace,
+                             #    for a person to listen to.  Measured on 8 October 2026: the two sentences that repeat outside
+                             #    the bounds are 2 and 3 % outside (4.63 words/s; 19.6 letters/s), the fastest of 7,841 verified
+                             #    whole takes run at 4.51 words/s and 18.6 letters/s, clips known to be cut short begin 23 % outside.
 PACE_HUMAN_WPS = (1.2, 4.5)  # words per second for a recorded (human) narration
 CLIP_LEN_TOL = 0.06          # s: beat length in the video against the length rebuilt from the cached, verified clips
                              #    (beat starts are recorded to 0.01 s; two of them and rounding to frames give 0.05)
@@ -467,7 +479,14 @@ def check_narration(R, sb, build, dur, silences):
     # C1: words per second of every beat
     nominal = (rate or WPM) / 60.0
     lo, hi = (PACE_FACTOR[0] * nominal, PACE_FACTOR[1] * nominal) if ai else PACE_HUMAN_WPS
-    flagged, judged, vals, c1_beats = [], 0, [], set()
+    flagged, judged, vals, c1_beats, c1_three = [], 0, [], set(), []
+    clip_state = {}
+    def clip_fault(c):
+        """The builder's own judgement of one cached clip, with its .ok mark -> (fault, words/s, letters/s, pace fault the mark excuses, accepted by three identical takes)"""
+        if c not in clip_state:
+            cp = vb.tts_path(c, voice, rate)
+            clip_state[c] = vb.clip_fault(c, cp, rate) + (vb.clip_mark(cp)[1],)
+        return clip_state[c]
     for b, d in zip(beats, durs):
         if b["type"] != "narration": continue
         cs = chunks[b["i"]]
@@ -479,7 +498,12 @@ def check_narration(R, sb, build, dur, silences):
         if ai:                                               # the computer voice: exactly the rule the builder applies to every clip
             fault = vb.pace_fault(said, speech, rate or WPM)[0] if speech > 0.05 else "fast"
             if words >= PACE_MIN_WORDS: judged += 1; vals.append(wps)
-            if fault:
+            if fault and not vb.pace_wide_fault(said, speech, rate or WPM) and \
+                    any(clip_fault(c)[4] and not clip_fault(c)[0] for c in cs if isinstance(c, str) and vb.tts_path(c, voice, rate).exists()):
+                # outside the bounds, but made from a clip that came three times with this length (its .ok mark says so): a warning
+                c1_three.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): {'faster' if fault == 'fast' else 'slower'} than the bounds, accepted because three takes had this length; listen to it: "
+                                f"{wps:.2f} words/s, {lps:.1f} letters/s ({words} words in {speech:.2f} s): {norm_text(b['text'])[:110]!r}")
+            elif fault:
                 c1_beats.add(b["i"])
                 flagged.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): {'too fast (cut short?)' if fault == 'fast' else 'too slow (silence inside?)'}: "
                                f"{wps:.2f} words/s, {lps:.1f} letters/s ({words} words in {speech:.2f} s): {norm_text(b['text'])[:110]!r}")
@@ -489,15 +513,13 @@ def check_narration(R, sb, build, dur, silences):
             if not lo <= wps <= hi or (ai and not PACE_LETTERS[0] <= lps <= PACE_LETTERS[1]):
                 flagged.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): {'too fast (cut short?)' if wps > hi or lps > PACE_LETTERS[1] else 'too slow (silence inside?)'}: "
                                f"{wps:.2f} words/s, {lps:.1f} letters/s ({words} words in {speech:.2f} s): {norm_text(b['text'])[:110]!r}")
-        elif wps > PACE_FLOOR_WPS or (ai and lps > PACE_LETTERS[1] * PACE_SHORT_FACTOR):
+        elif wps > PACE_FLOOR_WPS:                           # (a recorded narration; the computer voice was judged above, by the builder's rule)
             flagged.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): too fast (cut short?): {words} word(s) in {speech:.2f} s: {norm_text(b['text'])[:110]!r}")
-        elif ai and lps < PACE_LETTERS[0] / PACE_SHORT_FACTOR:
-            flagged.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): too slow (sound or silence added?): {words} word(s) in {speech:.2f} s, {lps:.1f} letters/s: {norm_text(b['text'])[:110]!r}")
     vals.sort()
-    R.add("C1", "pace of every narration beat", not flagged,
-          measured={"beats_judged": judged, "beats_outside": len(flagged), "slowest_wps": round(vals[0], 2) if vals else None, "median_wps": round(vals[len(vals) // 2], 2) if vals else None,
+    R.add("C1", "pace of every narration beat", False if flagged else ("warn" if c1_three else True),
+          measured={"beats_judged": judged, "beats_outside": len(flagged), "beats_outside_accepted_by_three_identical_takes": len(c1_three), "slowest_wps": round(vals[0], 2) if vals else None, "median_wps": round(vals[len(vals) // 2], 2) if vals else None,
                     "fastest_wps": round(vals[-1], 2) if vals else None, "voice": voice, "rate_wpm": rate},
-          threshold=f"{lo:.2f} to {hi:.2f} words/s and {PACE_LETTERS[0]:g} to {PACE_LETTERS[1]:g} letters/s for beats of {PACE_MIN_WORDS} words or more; shorter beats: {PACE_LETTERS[0] / PACE_SHORT_FACTOR:g} to {PACE_LETTERS[1] * PACE_SHORT_FACTOR:g} letters/s and never above {PACE_FLOOR_WPS:g} words/s", listing=flagged)
+          threshold=f"{lo:.2f} to {hi:.2f} words/s and {PACE_LETTERS[0]:g} to {PACE_LETTERS[1]:g} letters/s for beats of {PACE_MIN_WORDS} words or more; shorter beats: " + (f"at most {PACE_SHORT_FAST[0]:g} words/s and {PACE_SHORT_FAST[1]:g} letters/s, and not under both {PACE_SHORT_SLOW[0]:g} words/s and {PACE_SHORT_SLOW[1]:g} letters/s" if ai else f"never above {PACE_FLOOR_WPS:g} words/s") + ". " + f"A beat outside whose clip came {vb.SAME_TAKES} times with one length (its .ok mark) and is within {PACE_WIDE:g} times these bounds is a warning: listen to it", listing=flagged + c1_three)
     # C2: the clips of the voice cache this video was made from
     tdir = vb.tts_path("", voice, rate).parent
     if not ai:
@@ -507,7 +529,7 @@ def check_narration(R, sb, build, dur, silences):
     else:
         built_at = build.get("_mtime", 0)
         n = gone = unmarked = late = 0
-        bad, differ, secs, pace = [], [], {}, []
+        bad, differ, secs, pace, three = [], [], {}, [], []
         for b, d in zip(beats, durs):
             if b["type"] != "narration": continue
             cs, want, known = chunks[b["i"]], vb.DRAFT_GAP, True
@@ -530,18 +552,22 @@ def check_narration(R, sb, build, dur, silences):
                 if secs[key] is None: known = False
                 else: want += secs[key]
                 if ok.exists():                              # the mark says "verified"; the pace bounds must agree, or it is not
-                    fault = vb.clip_pace_fault(c, p, rate)[0]
+                    fault, cw, cl, excused, is_three = clip_fault(c)
+                    if not fault and is_three:               # accepted by three identical takes (the clip itself, or a part it was joined from)
+                        three.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): accepted because three takes had this length, "
+                                     + (f"{'faster' if excused == 'fast' else 'slower'} than the pace bounds" if excused else "a part of it outside the pace bounds")
+                                     + f"; listen to it: {cw:.2f} words/s, {cl:.1f} letters/s: {c[:80]!r}")
                     if fault: pace.append(f"beat {b['i']} ({b['section']}): marked verified, but {'too short' if fault == 'fast' else 'too long' if fault == 'slow' else fault} for its words: {c[:80]!r}")
             if b["i"] in c1_beats:
                 pace.append(f"beat {b['i']} ({b['section']}): fails the pace check C1, so its clips cannot count as verified")
             if known and abs(want - d) > CLIP_LEN_TOL:
                 differ.append(f"beat {b['i']} at {vb.chapter_time(starts[b['i']])} ({b['section']}): {d:.2f} s in the video, {want:.2f} s from the clips now in the cache: {norm_text(b['text'])[:80]!r}")
-        res = False if (unmarked or late or differ or pace) else ("warn" if gone else True)
+        res = False if (unmarked or late or differ or pace) else ("warn" if gone or three else True)
         R.add("C2", "every voice clip is a verified one", res,
               measured={"clips": n, "verified_before_the_build": n - gone - unmarked - late, "without_mark": unmarked, "verified_after_the_build": late, "not_in_cache_any_more": gone,
-                        "beats_whose_length_differs_from_the_cached_clips": len(differ), "outside_the_pace_bounds": len(pace)},
-              threshold=f"every clip has its .ok mark, made before the build, and is inside the pace bounds of C1; no beat fails C1; every beat is as long as its cached clips (within {CLIP_LEN_TOL:g} s). A clip that left the cache is a warning",
-              listing=pace + differ + bad)
+                        "beats_whose_length_differs_from_the_cached_clips": len(differ), "outside_the_pace_bounds": len(pace), "accepted_by_three_identical_takes": len(three)},
+              threshold=f"every clip has its .ok mark, made before the build, and is inside the pace bounds of C1; no beat fails C1; every beat is as long as its cached clips (within {CLIP_LEN_TOL:g} s). A clip that left the cache is a warning, and so is a clip outside the pace bounds that its mark says came {vb.SAME_TAKES} times with one length (within {PACE_WIDE:g} times the bounds): listen to it",
+              listing=pace + differ + bad + three)
     # C4: the sound track is silent where the timeline has a hold: narration and picture share one clock
     if silences is None:
         R.add("C4", "the sound follows the beat timeline", None, detail="the audio analysis did not finish")
@@ -924,7 +950,8 @@ def selftest():
 
 def narration_selftest():
     """C1 and C2 on a made-up video whose one beat is a clip in a stand-in voice cache: a clip cut short fails both, even with
-    its .ok mark (V071 beat 39: 22 words in 3.94 s, marked verified); a whole clip passes both.  Nothing real is read or written."""
+    its .ok mark (V071 beat 39: 22 words in 3.94 s, marked verified); a whole clip passes both; a clip just outside the bounds
+    whose mark says "three identical takes" is a warning in both.  Nothing real is read or written."""
     import tempfile
     bad = []
     said = "Here are the candidates on the first-parent line again. HEAD now points at commit 0 7 4 d, and at no branch."
@@ -950,6 +977,42 @@ def narration_selftest():
             check_narration(R, sb, build, build["seconds"], None)
             c2 = next(i for i in R.items if i["id"] == "C2")
             if c2["result"] != "FAIL" or not c2.get("measured", {}).get("outside_the_pace_bounds"): bad.append(f"C2 accepted a marked clip outside the pace bounds: {c2}")
+            # a short beat (under PACE_MIN_WORDS words) by its own bounds: a marked clip that was cut short fails both (0.93 s, 34 letters/s:
+            # the old bounds passed it), a whole one passes, one just outside with the three-takes mark is a warning
+            six = "The two library commits have diverged."
+            sb6 = {"slides": [], "beats": [{"i": 0, "type": "narration", "slide": 1, "section": "DEMO", "text": six}]}
+            for seconds, mark, want in ((0.93, "0.972", ("FAIL", "FAIL")), (0.93, f"0.972 {vb.MARK_THREE}", ("FAIL", "FAIL")), (1.90, f"1.942 {vb.MARK_TWO}", ("PASS", "PASS")), (1.90, "1.942", ("PASS", "PASS")),
+                                        (1.60, f"1.642 {vb.MARK_THREE} (fast: 3.75 words/s, 20.0 letters/s)", ("WARN", "WARN")), (1.60, "1.642", ("FAIL", "FAIL")), (6.50, "6.542", ("FAIL", "FAIL"))):
+                p = vb.tts_path(six, "Tara", 165)
+                n = int(seconds * vb.SR) - 480 - 2400
+                vb.write_wav(p, vb.silence(0.2) + __import__("array").array("h", [5000 if (k // 50) % 2 else -5000 for k in range(n)]) + vb.silence(0.2))
+                p.with_suffix(".ok").write_text(mark + "\n")
+                beat = len(vb.trim_voice(vb.read_wav(p))) / vb.SR + vb.DRAFT_GAP
+                build = {"beat_starts": [vb.LEAD], "seconds": vb.LEAD + beat, "audio": {"mode": "draft", "voice": "Tara", "rate": 165}, "_mtime": time.time() + 60}
+                R = Report("V000")
+                check_narration(R, sb6, build, vb.LEAD + beat, None)
+                got = tuple(next(i["result"] for i in R.items if i["id"] == x) for x in ("C1", "C2"))
+                if got != want: bad.append(f"C1 and C2 for a short clip of {seconds} s, marked {mark!r}: {got}, expected {want}")
+            # the three-identical-takes rule: a clip outside the bounds whose mark says so is a warning in C1 and C2, with its pace;
+            # with a plain mark, or outside the wide bounds, or loud, it fails as before (V037: 9 words in 1.94 s, every time)
+            nine = "None of the three needs a bug in Git."
+            sb9 = {"slides": [], "beats": [{"i": 0, "type": "narration", "slide": 1, "section": "HOOK", "text": nine}]}
+            for seconds, level, mark, want in ((1.94, 5000, f"1.982 {vb.MARK_THREE} (fast: 4.63 words/s, 14.4 letters/s)", ("WARN", "WARN")), (1.94, 5000, "1.982", ("FAIL", "FAIL")),
+                                               (1.94, 5000, f"1.982 {vb.MARK_TWO} (4.63 words/s, 14.4 letters/s)", ("FAIL", "FAIL")),
+                                               (1.60, 5000, f"1.642 {vb.MARK_THREE}", ("FAIL", "FAIL")), (1.94, 22000, f"1.982 {vb.MARK_THREE}", ("FAIL", "FAIL")),
+                                               (2.50, 5000, f"2.542 {vb.MARK_TWO} (3.60 words/s, 11.2 letters/s)", ("PASS", "PASS"))):
+                p = vb.tts_path(nine, "Tara", 165)
+                n = int(seconds * vb.SR) - 480 - 2400
+                vb.write_wav(p, vb.silence(0.2) + __import__("array").array("h", [level if (k // 50) % 2 else -level for k in range(n)]) + vb.silence(0.2))
+                p.with_suffix(".ok").write_text(mark + "\n")
+                beat = len(vb.trim_voice(vb.read_wav(p))) / vb.SR + vb.DRAFT_GAP
+                build = {"beat_starts": [vb.LEAD], "seconds": vb.LEAD + beat, "audio": {"mode": "draft", "voice": "Tara", "rate": 165}, "_mtime": time.time() + 60}
+                R = Report("V000")
+                check_narration(R, sb9, build, vb.LEAD + beat, None)
+                c1, c2 = (next(i for i in R.items if i["id"] == x) for x in ("C1", "C2"))
+                if (c1["result"], c2["result"]) != want: bad.append(f"C1 and C2 for a clip of {seconds} s, level {level}, marked {mark!r}: {(c1['result'], c2['result'])}, expected {want}")
+                elif want == ("WARN", "WARN") and not all("words/s" in " ".join(c.get("list", [])) and "listen" in " ".join(c.get("list", [])) for c in (c1, c2)):
+                    bad.append(f"C1 and C2 do not list the beat accepted by three identical takes with its pace: {c1.get('list')} {c2.get('list')}")
         finally:
             vb.tts_path = real
     return bad

@@ -91,7 +91,7 @@ The analogy breaks at deletion. A full inventory is also the moment when unclaim
 
 ## DIAGRAM
 
-**[ANIMATION]** stores: boxes=after_run_2:new_loose_objects_become_a_pack|after_run_3:507_is_at_least_2_x_24|after_run_4:24_is_less_than_2_x_24 rows=1:A:pack_of_507|1:A:pack_of_24@hl|2:B:pack_of_507|2:B:pack_of_24|2:B:pack_of_24@hl|3:C:pack_of_507@ok|3:C:pack_of_104@hl arrows=3:B2>C2|3:B3>C2:merge title=Objects_per_pack,_run_by_run say_1=The_24_new_loose_objects_become_a_pack_of_their_own say_2=507_is_at_least_twice_24:_nothing_existing_is_merged say_3=The_two_small_packs_and_56_new_objects_merge._The_large_pack_was_never_rewritten id=geo
+**[ANIMATION]** stores: boxes=after_run_2:new_loose_objects_become_a_pack|after_run_3:507_is_at_least_2_x_24|after_run_4:the_same_rule,_pair_by_pair rows=1:A:pack_of_507|1:A:pack_of_24@hl|2:B:pack_of_507|2:B:pack_of_24|2:B:pack_of_24@hl|3:C:pack_of_507@ok|3:C:pack_of_104@hl arrows=3:B2>C2|3:B3>C2:merge title=Objects_per_pack,_run_by_run say_1=The_24_new_loose_objects_become_a_pack_of_their_own say_2=507_is_at_least_twice_24:_nothing_existing_is_merged say_3=The_two_small_packs_and_56_new_objects_merge._The_large_pack_was_never_rewritten id=geo
 
 **[ANIMATION]** step: 2
 
@@ -320,6 +320,8 @@ $ git maintenance is-needed --auto
 One pack with its index and reverse index, a multi-pack-index, a commit-graph stored as a chain, and every ref moved from its own file into `packed-refs`. No loose ref files remain. Remember that line for the next video.
 
 **[ON SCREEN]** The state table: for `git maintenance run`, working tree, index and HEAD unchanged; the current branch ref has the same value, now in `packed-refs`; loose objects are packed, the multi-pack-index and commit-graph chain are written, reflog entries past expiry are removed; remote and GitHub unchanged.
+
+The state table for `git maintenance run`. Working tree, index and HEAD are unchanged. The current branch ref has the same value, now in `packed-refs`. Loose objects are packed, the multi-pack-index and the commit-graph chain are written, and reflog entries past expiry are removed. The remote and GitHub are unchanged.
 
 Six commits later, the second run.
 

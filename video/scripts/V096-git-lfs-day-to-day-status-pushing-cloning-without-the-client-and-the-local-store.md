@@ -25,7 +25,7 @@ Welcome back to Git and GitHub Deep Mastery. Pull up a chair. A reminder: Git LF
 
 You'll watch a push put content into a remote's LFS store. Then a clone on a machine without the client, and the repair. Then downloads on demand and how to skip them. And last the local store, which grows with every version until you prune it, with one warning about what the reflog, Git's local journal of where your branches have been, doesn't protect.
 
-Say this on screen now, before the first replay: the push demonstration is a volatile script. Its transcript isn't compared byte for byte with a fresh run, for a reason you'll see.
+One thing to know before the first replay: the push demonstration is a volatile script. Its transcript isn't compared byte for byte with a fresh run, for a reason you'll see.
 
 ## LEARNING OBJECTIVES
 
@@ -376,6 +376,8 @@ Your branch is up to date with 'origin/main'.
 A pointer in the working tree, a minus in the listing, and a clean status: the clean filter recognises a pointer and passes it through unchanged, so the file matches the index. This is how a job that doesn't need the large files avoids downloading them.
 
 **[ON SCREEN]** Lower third: **GitHub Actions**. Not run for the book. The textbook states that `actions/checkout` downloads LFS files only when its `lfs` input is `true`, and that the default is `false`. A job with the default therefore sees pointers. A job with `lfs: true` downloads objects, which GitHub's billing page counts as bandwidth; the textbook quotes it: "If GitHub Actions downloads a 500 MB file that is tracked with Git LFS, it will use 500 MB of the repository owner's bandwidth".
+
+One note on GitHub Actions, which was not run for the book. The textbook states that `actions/checkout` downloads LFS files only when its `lfs` input is `true`, and that the default is `false`. A job with the default therefore sees pointers. A job with `lfs: true` downloads objects, and GitHub's billing page counts that as bandwidth.
 
 **[TERMINAL]** Replay `labs/run ch22/lfs-prune`. The local store.
 

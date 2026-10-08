@@ -314,7 +314,7 @@ $ git commit -m "Add acoustic model v1, tracked with Git LFS"
 ```
 <!-- /snippet -->
 
-Remember the first characters of the checksum: `0269885262`.
+Remember the start of the checksum: `0269885262`.
 
 Predict two numbers. The size of the blob that Git stored for `models/acoustic.onnx`. And the size of the file in the working tree. I'll wait.
 

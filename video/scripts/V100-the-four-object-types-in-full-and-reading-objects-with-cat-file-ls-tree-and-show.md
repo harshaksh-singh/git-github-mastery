@@ -59,7 +59,7 @@ Trees first. A tree entry has a mode, and Git uses five of them. `100644` is a r
 
 The modes look like Unix permissions, and they're not. The executable bit is the only permission Git records. Owner, group, the other bits and every timestamp aren't in the repository. A directory exists only as a tree with entries, which is why an empty directory can't be committed.
 
-**[ANIMATION]** graph: b602c1f-4f2cc0c-0c2cf43; b602c1f-62001eb; 62001eb-0c2cf43; HEAD=none; title:Every_commit_names_its_parents => + 4f2cc0c tag:v1.0.0-rc1; name:light; title:Two_kinds_of_tag; say:A_lightweight_tag_is_a_ref_that_holds_a_commit_ID => + 0c2cf43 atag:v1.0.0#0b624ed; name:annotated; say:An_annotated_tag_holds_the_ID_of_a_tag_object,_which_names_the_commit id=hist
+**[ANIMATION]** graph: b602c1f-4f2cc0c-0c2cf43; ^b602c1f-62001eb; 62001eb-0c2cf43; HEAD=none; title:Every_commit_names_its_parents => + 4f2cc0c tag:v1.0.0-rc1; name:light; title:Two_kinds_of_tag; say:A_lightweight_tag_is_a_ref_that_holds_a_commit_ID => + 0c2cf43 atag:v1.0.0#0b624ed; name:annotated; say:An_annotated_tag_holds_the_ID_of_a_tag_object,_which_names_the_commit id=hist
 
 **[ANIMATION]** step: state-1
 

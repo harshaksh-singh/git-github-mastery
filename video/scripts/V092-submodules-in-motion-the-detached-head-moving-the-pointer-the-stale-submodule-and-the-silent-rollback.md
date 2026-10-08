@@ -135,6 +135,8 @@ Correct fix       : git submodule update      (then git status is clean)
 Prevention        : git config set submodule.recurse true, or git pull --recurse-submodules.
 ```
 
+Read the root-cause line of the box: two repositories, two HEADs, and no default that ties the second to the first.
+
 ## LIVE TERMINAL DEMO
 
 **[TERMINAL]** From `labs/run ch23/submodule-clone`, the snippet you skipped last time. Ravi's submodule, right after `update`.
@@ -283,7 +285,7 @@ $ git submodule status
 
 The prefix went from a space to a plus.
 
-**[ANIMATION]** submodule: id=bump [your doc-qa] 907dbd3 main origin/main; HEAD=main; sub:907dbd3:records_e216665 || [vendor/textsplit] e216665 main origin/main; HEAD=main => || [vendor/textsplit] e216665-b3c86ce origin/main v0.2.0; e216665 main; HEAD=b3c86ce; name:remote; cmd:git_submodule_update_--remote; say:Checked_out:_b3c86ce._Recorded:_still_e216665.
+**[ANIMATION]** submodule: id=bump [your doc-qa] 907dbd3 main origin/main; HEAD=main; sub:907dbd3:records_e216665 || [vendor/textsplit] e216665 main origin/main; HEAD=main => || [vendor/textsplit] e216665-b3c86ce origin/main v0.2.0; e216665 main; HEAD=b3c86ce; name:remote; cmd:git_submodule_update_--remote; say:Checked_out:_b3c86ce._Recorded:_still_e216665. at_state_1=10 at_remote=32
 
 The submodule is at `b3c86ce`, tagged `v0.2.0`. The superproject still records `e216665`.
 

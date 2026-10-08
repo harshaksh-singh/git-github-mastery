@@ -65,7 +65,7 @@ A fourth, local piece connects them. `git submodule init` copies the URL from `.
 
 The point that the rest of the module depends on: the superproject's object database doesn't contain the commit that the gitlink names. A tree entry of mode `160000` is the only place in Git where an object ID names something that the repository isn't required to have. Git doesn't check that the ID exists anywhere when you commit it or when you push it. Everything that makes the entry useful, where to get the object, whether it has been fetched, whether it's checked out, is arranged outside the commit.
 
-**[ANIMATION]** stores: id=plain boxes=.git/config:local|.git/modules/:local|vendor/textsplit/:the_working_tree rows=1:C:empty@bad|2:A:the_URL,_from_.gitmodules@ok|3:B:a_clone_of_textsplit@ok|3:C:e216665_checked_out@ok title=A_plain_clone,_then_init,_then_update
+**[ANIMATION]** stores: id=plain boxes=.git/config:local|.git/modules/:local|vendor/textsplit/:the_working_tree rows=1:C:empty@bad|2:A:the_URL,_from_.gitmodules@ok|3:B:a_clone_of_textsplit@ok|3:C:e216665_checked_out@ok title=A_plain_clone,_then_init,_then_update at_3=35
 
 **[ANIMATION]** step: plain.1
 
@@ -90,6 +90,8 @@ The value `user` for `file` dates from the fix for CVE-2022-39253, shipped in Gi
 When not to use a recursive clone: on a repository you don't trust. A recursive clone is the one common Git operation in which a repository you haven't inspected decides what else gets cloned and where it is written.
 
 ## MENTAL MODEL
+
+**[ANIMATION]** step: three.3
 
 **[ANIMATION]** say: Your book cites one version of a recipe in another book
 
@@ -221,7 +223,7 @@ e216665 (HEAD -> main, origin/main, origin/HEAD) Add overlap between neighbourin
 
 Four blobs with mode `100644` and one entry with mode `160000`. That last one is the gitlink.
 
-**[ANIMATION]** submodule: id=sub [doc-qa] ...older main; HEAD=main || [vendor/textsplit] ceaafe1-e216665 main origin/main; ceaafe1 v0.1.0; HEAD=main; title:The_library's_own_history => [doc-qa] ...older-bf751ba main; HEAD=main; name:commit || => + link:bf751ba>e216665:records_e216665_(mode_160000); name:link; title:What_the_superproject_records ||
+**[ANIMATION]** submodule: id=sub [doc-qa] ...older main; HEAD=main || [vendor/textsplit] ceaafe1-e216665 main origin/main; ceaafe1 v0.1.0; HEAD=main; title:The_library's_own_history => [doc-qa] ...older-bf751ba main; HEAD=main; name:commit || => + link:bf751ba>e216665:records_e216665_(mode_160000); name:link; title:What_the_superproject_records || at_link=30
 
 **[ANIMATION]** step: sub.state-1
 
@@ -504,6 +506,8 @@ $ git -C asha-doc-qa submodule status
 
 **[ON SCREEN]** "Outdated advice": "Run `git config --global protocol.file.allow always` to fix submodule errors." That switches a security default off for every repository you will ever clone. Use `-c` for a single command on repositories you created yourself, and leave the setting alone otherwise.
 
+One piece of outdated advice, on screen: run `git config --global protocol.file.allow always` to fix submodule errors. That switches a security default off for every repository you will ever clone. Use `-c` for a single command on repositories you created yourself, and leave the setting alone otherwise.
+
 **[ON SCREEN]** The CVE table of section 23.4.
 
 | CVE | Fixed in | What a recursive clone of a hostile repository could do |
@@ -529,7 +533,7 @@ Now, out of the lab. A team keeps prompt templates, a tokenizer vocabulary and p
 
 **[ANIMATION]** replay: plain
 
-The price is the set of failures on the first slide. So the team's onboarding page has three lines for new engineers. Clone with `--recurse-submodules`. If a vendor directory is empty, run `git submodule update --init`. And read `git submodule status` before you ask why an import fails.
+The price is the set of failures from the opening. So the team's onboarding page has three lines for new engineers. Clone with `--recurse-submodules`. If a vendor directory is empty, run `git submodule update --init`. And read `git submodule status` before you ask why an import fails.
 
 ## PRACTICE EXERCISE
 

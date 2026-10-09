@@ -121,16 +121,34 @@ def split_contrast(h):
     return None
 
 
+# words that end in "s" and are not the things being counted: function words, and verbs after a numbered name ("Gate 3 comes after ...")
+_COUNT_NOT_NOUNS = set("as is was has does its this plus less thus us yes always perhaps across unless towards besides sometimes means times minutes "
+                       "seconds days weeks hours comes creates gives asks follows needs knows makes takes says goes gets becomes happens remains "
+                       "belongs depends differs contains exists appears applies keeps".split())
+_COUNT_NOT_FIRST = set("of for and or but she he it that which who to in on at by with the a an is are was were be if so then than when while part "
+                       "per from into as".split())
+_COUNT_LABELS = (r"(video|videos|section|sections|chapter|part|lab|exercise|step|status|line|rule|page|version|git|python|gate|workflow|level|incident|"
+                 r"module|question|phase|row|item|option|case|pattern|rung|stage|figure|table|number|no|q|v|\d\.)$")
+
+
 def find_count(text):
-    """'Four verbs: ...' -> (4, 'verbs') for a sentence that is about a number of things."""
-    m = re.search(r"\b(" + "|".join(NUM_WORDS) + r"|\d{1,3})\s+((?:[a-z-]+\s)?[a-z]+s)\b", text, flags=re.I)
-    if not m or m.start() > 60: return None
-    before = text[:m.start()].lower().rstrip()
-    if re.search(r"(video|section|sections|chapter|part|lab|exercise|step|status|line|rule|page|version|git|python|\d\.)$", before): return None
-    n = NUM_WORDS.get(m.group(1).lower()) or int(m.group(1))
-    unit = m.group(2).strip()
-    if n < 2 or n > 99 or re.match(r"(means|is|was|has|does|times|minutes|seconds|days|weeks|hours)\b", unit.split()[-1]): return None
-    return n, unit
+    """'Four verbs: ...' -> (4, 'verbs') for a sentence that is about a number of things.
+    Not for a piece of a larger number ("28,649,024 new secrets"), a numbered name ("Gate 3 comes ..."), a number inside a quoted title,
+    or a number followed by words that are not the things counted ("12 as ...", "2 of its ...")."""
+    for m in re.finditer(r"(?<![\w.,:/#$%+-])(" + "|".join(NUM_WORDS) + r"|\d{1,3})(?![\d.,:/%]\d)\s+((?:[a-z-]+\s)?[a-z]+s)\b", text, flags=re.I):
+        if m.start() > 60: return None
+        before = text[:m.start()].lower().rstrip()
+        if re.search(_COUNT_LABELS, before): continue
+        if text[:m.start()].count('"') % 2 == 1 or (text[:m.start()].count("“") > text[:m.start()].count("”")): continue      # inside a quotation
+        n = NUM_WORDS.get(m.group(1).lower()) or int(m.group(1))
+        words = m.group(2).strip().split()
+        if len(words) == 2 and words[0].lower() in _COUNT_NOT_FIRST: continue
+        if len(words) == 2 and (words[1].lower() in _COUNT_NOT_NOUNS or (words[0].lower().endswith("s") and not re.search(r"(ous|ss|us|is)$", words[0].lower()))):
+            words = words[:1]                              # "40 engineers runs", "3 commits as": the first word is the thing counted
+            if not words[0].lower().endswith("s"): continue
+        if n < 2 or n > 99 or words[-1].lower() in _COUNT_NOT_NOUNS: continue
+        return n, " ".join(words)
+    return None
 
 
 def keypoint_html(s, k, avoid=None):

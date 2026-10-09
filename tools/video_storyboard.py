@@ -61,13 +61,23 @@ def _stash_code(md):
     return CODE_RE.sub(put, _link_code(md)), keep
 
 
+def _hide_escapes(s):
+    """\\* and \\_ are literal characters: they are hidden while emphasis marks are read (libfix2: a refspec in a table cell)."""
+    return s.replace("\\*", "\x04").replace("\\_", "\x05") if ("\\*" in s or "\\_" in s) else s
+
+
+def _show_escapes(s):
+    return s.replace("\x04", "*").replace("\x05", "_")
+
+
 def _strip_marks(s):
+    s = _hide_escapes(s)
     s = re.sub(r"!\[([^\]]*)\]\([^)]*\)", r"\1", s)
     s = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", s)
     s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
     s = re.sub(r"(?<![\*\w])\*(?!\s)([^*]+?)(?<!\s)\*(?![\*\w])", r"\1", s)
     s = re.sub(r"(?<![\w_\x03])_(?!\s)([^_]+?)(?<!\s)_(?![\w_\x02])", r"\1", s)
-    return s.replace("\\|", "|").replace("\\*", "*").replace("\\_", "_").replace('\\"', '"')
+    return _show_escapes(s).replace("\\|", "|").replace("\\*", "*").replace("\\_", "_").replace('\\"', '"')
 
 
 def _link_code(md):
@@ -91,10 +101,10 @@ def inline_html(md):
     t, keep = _stash_code(md)
     t = re.sub(r"!\[([^\]]*)\]\([^)]*\)", r"\1", t)
     t = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", t)
-    t = html.escape(t, quote=False)
+    t = _hide_escapes(html.escape(t, quote=False))
     t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
     t = re.sub(r"(?<![\*\w])\*(?!\s)([^*]+?)(?<!\s)\*(?![\*\w])", r"<i>\1</i>", t)
-    t = t.replace("\\|", "|").replace("\\*", "*").replace("\\_", "_").replace('\\"', '"')
+    t = _show_escapes(t).replace("\\|", "|").replace("\\*", "*").replace("\\_", "_").replace('\\"', '"')
     t = re.sub(r"\x02(\d+)\x03", lambda m: "<code>" + html.escape(keep[int(m.group(1))], quote=False) + "</code>", t)
     return re.sub(r"[ \t\r\n]+", " ", t).strip().replace("\u2028", "<br>")
 
@@ -392,6 +402,13 @@ def resolve_textbook(direction, used):
                 else:                              # same score: prefer one this video has not shown yet
                     pick = next((c for c in top if (rel(path), c["block"]["line"]) not in used), top[0])
             b = pick["block"]
+            if pick["kind"] == "list":                 # "Questions 1 and 2 of section 20A.1": those items, not the whole list (libfix2)
+                qm = re.match(r"\s*(?:the\s+)?(?:questions?|items?|points?|rules?|steps?)\s+(\d{1,2}(?:\s*(?:,|and|to|-)\s*\d{1,2})*)\s+(?:of|from|in)\s+(?:the\s+list\s+(?:of|in)\s+)?section\b", dl)
+                if qm:
+                    ns = [int(x) for x in re.findall(r"\d+", qm.group(1))]
+                    if re.search(r"\bto\b|-", qm.group(1)) and len(ns) == 2: ns = list(range(ns[0], ns[1] + 1))
+                    if ns and all(1 <= k <= len(b["items"]) for k in ns) and len(ns) < len(b["items"]):
+                        b = dict(b, items=[b["items"][k - 1] for k in ns], ordered=False)
             src = {"file": rel(path), "line": b["line"], "section": sec, "kind": pick["kind"], "score": pick["score"],
                    "candidates": len(pool)}
             used.add((src["file"], src["line"]))
@@ -400,8 +417,50 @@ def resolve_textbook(direction, used):
     return None, reason
 
 
+_TT_OPEN_PUNCT = re.compile(r"[,;:(]$")
+_TT_OPEN = re.compile(r"([,;:(]|\b(and|or|the|a|an|of|to|in|with|on|is|that|for|by|from|than|vs|whose|which|plus|into|onto|its|their|your))$")
+_TT_OPEN_V1 = re.compile(r"([,;:(]|\b(and|or|the|a|an|of|to|in|with|on|is|that|for|by|from|than|vs))$")
+
+
+def _tt_join(x, y):
+    y = y.strip()
+    if not y: return x
+    cmd = re.match(r"(git|gh|\$|\+|--|labs/)", y) or re.match(r"(git|gh|labs/) ", x)
+    return (x + (" " if cmd and x else " ") + y).strip()
+
+
+def _tt_steps(header, body, starts):
+    """A drawing of numbered step columns ("1 CONTAIN   2 ASSESS ..."): every column is a list of its own, so the lines are not rows.
+    -> one row per step: [the column head, its items], or None."""
+    heads = [h.strip() for h in header]
+    if len(heads) < 3 or not all(re.match(rf"{k + 1}\b", h) for k, h in enumerate(heads)):
+        return None
+    rows = []
+    for k, h in enumerate(heads):
+        items, cur, was_cmd = [], "", False
+        for c in body:
+            raw = c[k][starts[0]:] if (k == 0 and len(c[k]) > starts[0]) else c[k]
+            y = raw.strip()
+            if not y:
+                if cur: items.append(cur); cur = ""
+                was_cmd = False; continue
+            is_cmd = bool(re.match(r"(git|gh|labs/)\s", y))
+            cont = raw[:1] == " " and bool(cur)                     # an indented line continues the line above it
+            if cur and not cont and (is_cmd or was_cmd):
+                cur += " " + y
+            else:
+                cur = (cur + " " + y).strip()
+            if not cont: was_cmd = is_cmd
+        if cur: items.append(cur)
+        rows.append([h, " ".join(items)])
+    return ["", ""], rows
+
+
 def text_table(text):
-    """A table drawn in monospace (header, a row of dashes per column, rows) -> (header, rows) or None."""
+    """A table drawn in monospace (header, a row of dashes per column, rows) -> (header, rows) or None.
+    A line continues the row above it when its first cell is empty, when its first cell is indented more than the first row's, when
+    the first cell of the line above ends openly (a comma, "and", an unclosed quotation), or when the line leaves a column empty and
+    continues a cell that ends openly.  A complete line under a complete line is a new row, whatever its cells end with."""
     lines = [l.expandtabs(8).rstrip() for l in text.split("\n")]
     while lines and not lines[0].strip(): lines.pop(0)
     while lines and not lines[-1].strip(): lines.pop()
@@ -421,26 +480,40 @@ def text_table(text):
         return cells
     header = cut(lines[0])
     if header is None: return None
-    rows, raw_first = [], [""]
+    body = []
     for ln in lines[2:]:
-        if not ln.strip(): continue
+        if not ln.strip():
+            body.append([""] * len(starts)); continue
         c = cut(ln)
         if c is None: return None
-        first = c[0][starts[0]:] if len(c[0]) > starts[0] else c[0]
-        open_end = bool(rows) and bool(c[0].strip()) and any(
-            re.search(r"([,;:(]|\b(and|or|the|a|an|of|to|in|with|on|is|that|for|by|from|than|vs))$", x) for x in raw_first)
-        if rows and (not c[0].strip() or first[:1] == " " or open_end):   # continuation line of the row above
-            def join(x, y):
-                y = y.strip()
-                if not y: return x
-                cmd = re.match(r"(git|gh|\$|\+|--|labs/)", y) or re.match(r"(git|gh|labs/) ", x)
-                return (x + ("\u2028" if cmd and x else " ") + y).strip()
-            rows[-1] = [join(x, y) for x, y in zip(rows[-1], c)]
-            raw_first = [x.strip() for x in c]
-        else:
-            rows.append([x.strip() for x in c]); raw_first = [x.strip() for x in c]
-    if not rows: return None
+        body.append(c)
     esc = lambda x: x.replace("|", "\\|").replace("*", "\\*").replace("_", "\\_").replace("`", "'")
+    steps = _tt_steps(header, body, starts)
+    if steps:
+        return steps[0], [[esc(x) for x in r] for r in steps[1]]
+    body = [c for c in body if any(x.strip() for x in c)]
+    rows, prev, base = [], None, None
+    for c in body:
+        first = c[0][starts[0]:] if len(c[0]) > starts[0] else c[0]
+        cur = [x.strip() for x in c]
+        indent = len(first) - len(first.lstrip(" ")) if cur[0] else 0
+        if base is None: base = indent
+        cont = False
+        if rows:
+            if not cur[0] or indent > base:
+                cont = True
+            elif _TT_OPEN.search(prev[0]) or rows[-1][0].count('"') % 2 == 1:
+                cont = True                                              # the first cell is not finished
+            elif any(not x for x in cur):                                # a column is left empty: the line may continue the cells it fills
+                cont = any(cur[k] and prev[k] and _TT_OPEN_V1.search(prev[k]) for k in range(1, len(cur)))
+            else:                                                        # a complete line: a new row unless a cell above stops at a comma or a bracket
+                cont = any(prev[k] and _TT_OPEN_PUNCT.search(prev[k]) for k in range(1, len(cur)))
+        if cont:
+            rows[-1] = [_tt_join(x, y) for x, y in zip(rows[-1], c)]
+        else:
+            rows.append(cur)
+        prev = cur
+    if not rows: return None
     return [esc(h.strip()) for h in header], [[esc(x) for x in r] for r in rows]
 
 
@@ -468,6 +541,42 @@ def block_visual(b, kind=None):
 
 
 # ---- stage directions ----------------------------------------------------------------------------
+LAYOUT_TAIL = re.compile(r"^[\s,;:.—-]*(?:shown |drawn |set )?(?:as|in|on) (?:a |an |the )?(?:callout|lower[- ]third|caption bar|card|overlay|title card|slide|screen)[\s.]*$", re.I)
+PROSE_PREFIX = re.compile(r"^(Callout|Lower[- ]third)\s*:\s*(\*\*[^*]{1,40}\*\*|[A-Z][\w' ,-]{0,38}?)\.\s+(?=\S)", re.I)
+QUOTE_LEAD_MAX = 12          # words before the first quotation mark: more than this and the direction is a description, not a quotation
+LABEL_ONLY = re.compile(r"^(Unverified|Outdated advice|Version note|Volatile snippet|Volatile script|Assembled, not authoritative)\.?$", re.I)
+
+
+def _quote_marks(direction):
+    t = direction.strip().replace("“", '"').replace("”", '"')
+    probe = CODE_RE.sub(lambda m: "\x01" * len(m.group(0)), t)     # ignore quotes inside code spans
+    return t, [i for i, c in enumerate(probe) if c == '"']
+
+
+def quoted_section_line(direction):
+    """'One question from section 20B.1: "..."' : a direction whose section reference only says where the quotation comes from.
+    The quotation is what is shown, not a table or a box of that section (libfix2)."""
+    t, idx = _quote_marks(direction)
+    if len(idx) < 2 or len(idx) % 2: return False
+    lead, tail = t[:idx[0]].strip(), t[idx[-1] + 1:].strip(" .—-")
+    if tail or not SECREF_RE.search(lead) or not lead.endswith((":", ".")): return False
+    if re.search(r"\b(table|tables|row|rows|column|columns|box|diagram|drawing|transcript|snippet)\b", lead, re.I): return False
+    return len(t[idx[0] + 1:idx[-1]].split()) >= 3
+
+
+def prose_callout(direction):
+    """'Callout: Unverified. <sentences with "quoted words" inside>' -> a callout that shows the label and the whole text (libfix2), or None
+    when the direction is a quotation (little besides the quoted words) or has no quotation marks (the older rules draw it)."""
+    t, idx = _quote_marks(direction)
+    m = PROSE_PREFIX.match(t)
+    if not m or len(idx) < 2: return None
+    body = t[m.end():].strip()
+    probe = CODE_RE.sub(lambda mm: "\x01" * len(mm.group(0)), body)
+    outside = re.sub(r'"[^"]*"', " ", probe)
+    if len(outside.split()) <= 8: return None
+    return {"kind": "callout", "label": plain(m.group(2)).strip(), "quotes": [body], "code": [], "quoted": False}
+
+
 def quote_callout(direction):
     """A direction that quotes text -> callout visual, else None."""
     d = direction.strip()
@@ -482,6 +591,12 @@ def quote_callout(direction):
             pieces = [inner]
         label = clean_label(t[:idx[0]].strip().rstrip(":").strip())
         tail = t[idx[-1] + 1:].strip(" .—-")
+        if len(plain(label).split()) > QUOTE_LEAD_MAX and tail and not LAYOUT_TAIL.match(t[idx[-1] + 1:]):
+            return None                       # a long description that happens to quote a word: not a quotation (libfix2)
+        if tail and len(idx) >= 4 and pieces == [inner] and len(t[idx[1] + 1:idx[2]].split()) > QUOTE_LEAD_MAX:
+            return None                       # sentences between two quoted phrases: prose, not one quotation (libfix2)
+        if SECREF_RE.search(label): label = label.rstrip(".")
+        if LAYOUT_TAIL.match(t[idx[-1] + 1:]): tail = ""       # '"Unverified", as a callout.': the last words describe the layout
         return {"kind": "callout", "label": label, "quotes": [p for p in pieces if p], "code": [], "quoted": True,
                 "tail": tail if len(tail.split()) <= 8 else ""}
     codes = [m.group(2).strip() for m in CODE_RE.finditer(d)]
@@ -499,6 +614,20 @@ def is_bold_lead(md):
     return m.group(1).strip().rstrip(".:"), m.group(2).strip()
 
 
+LAB_RUN_RE = re.compile(r"`(labs/run [^`]+)`")
+
+
+def lab_id(title):
+    """'labs/run ch08/restore-sides', 'labs/ch08/restore-sides.sh', a snippet name without its last part -> 'ch08/restore-sides'."""
+    t = re.sub(r"^labs/run\s+", "", (title or "").strip())
+    t = re.sub(r"^labs/", "", t)
+    return re.sub(r"\.sh$", "", t.split()[0]) if t else ""
+
+
+def lab_title(lab, like):
+    return f"labs/{lab}.sh" if like.startswith("labs/") and like.endswith(".sh") else f"labs/run {lab}"
+
+
 def section_events(sec, used, warnings, last_scene, hints=None):
     """First pass over one section: visuals, narration and pauses in reading order."""
     ev, blocks = [], sec["blocks"]
@@ -507,6 +636,26 @@ def section_events(sec, used, warnings, last_scene, hints=None):
     scene_open = [False]
     narr_since_visual = 0
     twig = [None]                                    # the pose a "twig:" tag asked for: it goes to the next paragraph
+    snip_lab = [""]                                  # the lab of the last transcript shown since the lab was last named (libfix2)
+
+    def command_title(i, text):
+        """The title of a card of commands: the lab these commands are run in.  That is the lab the card itself starts, else the lab of the
+        transcript that follows it, else the lab of the transcript before it, else the lab the [TERMINAL] direction named."""
+        if not term_title:
+            return term_title                        # no lab was named: the card keeps the plain title, as before
+        own = re.search(r"(?m)^\s*(labs/run \S+)", text)
+        if own:
+            return term_title if lab_id(term_title) == lab_id(own.group(1)) else own.group(1)
+        lab = ""
+        for nb in blocks[i + 1:]:
+            if nb["t"] == "fence" and nb["snippet"]:
+                lab = nb["snippet"].rsplit("/", 1)[0]; break
+            if (nb["t"] == "para" and LAB_RUN_RE.search(nb["text"])) or (nb["t"] == "fence" and re.search(r"(?m)^\s*labs/run \S+", nb["text"])):
+                break                                # another lab is named first
+        lab = lab or snip_lab[0]
+        if lab and lab_id(term_title) != lab:
+            return lab_title(lab, term_title)
+        return term_title
 
     def nxt(i, k=1):
         j = i + 1
@@ -620,7 +769,8 @@ def section_events(sec, used, warnings, last_scene, hints=None):
                     i += skip; continue
                 if kind == "TERMINAL":
                     cm = re.search(r"`((?:labs/|\$LAB)[^`]+)`", rest)
-                    if cm: term_title = cm.group(1)
+                    if cm and not (cm.group(1).startswith("labs/") and "/" not in cm.group(1)[5:] and not cm.group(1).startswith("labs/run ")):
+                        term_title = cm.group(1); snip_lab[0] = ""      # (labs/verify-all.sh and the like are not the lab being run)
                 n1 = blocks[i + 1] if i + 1 < len(blocks) else None
                 n2 = blocks[i + 2] if i + 2 < len(blocks) else None
                 concrete_next = n1 is not None and (n1["t"] in ("fence", "table", "list") or
@@ -628,9 +778,11 @@ def section_events(sec, used, warnings, last_scene, hints=None):
                 if concrete_next or not rest:
                     if n1 is not None and n1["t"] == "fence": n1["note"] = rest
                     i += 1; continue
-                vis, src = resolve_textbook(rest, used)
+                vis, src = (None, None) if quoted_section_line(rest) else resolve_textbook(rest, used)
                 if vis is None and src:
                     warnings.append(f"line {b['line']}: {src}")
+                if vis is None:
+                    vis = prose_callout(rest) if kind != "TERMINAL" else None
                 if vis is None:
                     vis = quote_callout(rest)
                     if vis is not None and kind == "TERMINAL" and not vis.get("quoted"): vis = None
@@ -652,6 +804,7 @@ def section_events(sec, used, warnings, last_scene, hints=None):
                     ev.append({"e": "visual", "v": vis, "line": b["line"]}); narr_since_visual = 0
                 else:
                     bm = re.match(r"(?:Lower[- ]third|Layer label|Label)\s*:\s*([^.]{1,40})", plain(rest), re.I)
+                    if not bm and kind == "ON SCREEN": bm = re.match(r"(.+?)\.?$", plain(rest)) if LABEL_ONLY.match(plain(rest)) else None
                     ev.append({"e": "keymode", "badge": bm.group(1).strip() if bm else "",
                                "line": b["line"], "direction": rest})
                     narr_since_visual = 0
@@ -681,8 +834,9 @@ def section_events(sec, used, warnings, last_scene, hints=None):
         elif t in ("fence", "table", "quote"):
             vis = block_visual(b)
             if vis["kind"] == "terminal":
-                if vis["mode"] == "cmd": vis["title"] = term_title
+                if vis["mode"] == "cmd": vis["title"] = command_title(i, vis["text"])
                 elif vis["mode"] == "out" and not vis["title"]: vis["title"] = term_title
+                elif vis["mode"] == "out" and b.get("snippet"): snip_lab[0] = b["snippet"].rsplit("/", 1)[0]
             if vis["kind"] == "diagram": last_diagram = dict(vis)
             if b.get("note"): vis["direction"] = b["note"]
             ev.append({"e": "visual", "v": vis, "line": b["line"]}); narr_since_visual = 0; scene_open[0] = False
@@ -802,6 +956,56 @@ def _tokens(md):
     return out or [1]
 
 
+# advance widths of Helvetica Neue in 1/1000 em (the slide's sans-serif on the build machine; regular and bold), measured once from the
+# system font: used only for the longest-word test of a table column (whole_words)
+_HN_CHARS = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~—–…’“”'
+_HN_REG = [278, 259, 426, 556, 556, 1000, 630, 278, 259, 259, 352, 600, 278, 389, 278, 333, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 600, 600, 600, 556, 800, 648, 685, 722, 704, 611, 574, 759, 722, 259, 519, 667, 556, 871, 722, 760, 648, 760, 685, 648, 574, 722, 611, 926, 611, 648, 611, 259, 333, 259, 600, 500, 222, 537, 593, 537, 593, 537, 296, 574, 556, 222, 222, 519, 222, 853, 556, 574, 593, 593, 333, 500, 315, 556, 500, 758, 518, 500, 480, 333, 222, 333, 600, 1000, 500, 1000, 278, 426, 426]
+_HN_BOLD = [278, 278, 463, 556, 556, 1000, 685, 278, 296, 296, 407, 600, 278, 407, 278, 371, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 600, 600, 600, 556, 800, 685, 704, 741, 741, 648, 593, 759, 741, 295, 556, 722, 593, 907, 741, 778, 667, 778, 722, 649, 611, 741, 630, 944, 667, 667, 648, 333, 371, 333, 600, 500, 259, 574, 611, 574, 611, 574, 333, 611, 593, 258, 278, 574, 258, 906, 593, 611, 611, 611, 389, 537, 352, 593, 520, 814, 537, 519, 519, 333, 223, 333, 600, 1000, 500, 1000, 278, 463, 463]
+_HN = ({c: w for c, w in zip(_HN_CHARS, _HN_REG)}, {c: w for c, w in zip(_HN_CHARS, _HN_BOLD)})
+
+
+def _text_em(t, bold=False, upper=False):
+    if upper: t = t.upper()
+    tab = _HN[1 if bold else 0]
+    return sum(tab.get(c, 700 if c.isupper() else 600) for c in t) / 1000.0
+
+
+def _cell_em(md, mono=False, bold=False, head=False):
+    """Width in em (of the table's font size) of the longest piece of a cell that the browser cannot break."""
+    t, keep = _stash_code(md)
+    best = 0.0
+    for wd in _strip_marks(t).replace(" ", " ").split():
+        m = re.fullmatch(r"(.*)\x02(\d+)\x03(.*)", wd)
+        if m or "\x02" in wd:
+            continue                                                 # code spans keep the estimate of the layout above
+        elif head:
+            e = max((_text_em(x, True, True) + 0.09 * len(x)) * 0.74 for x in re.findall(r"[^-/]+[-/]*", wd) or [wd])
+        elif mono:
+            e = len(wd) * MONO_ADV * 0.88
+        else:
+            e = max(_text_em(x, bold) for x in re.findall(r"[^-/]+[-/]*", wd) or [wd])   # a line may break after a hyphen or a slash
+        best = max(best, e)
+    return best
+
+
+def whole_words(header, rows, fs, cols, mono=False):
+    """Column widths (in %) in which no plain word is broken inside the word (libfix2).  A column narrower than its longest word, measured
+    in the slide's own type, takes the missing width from the columns that have room.  -> cols, changed only where a word would break;
+    unchanged when no column has room to give (the first column is never broken by the renderer; a monospace table keeps its widths)."""
+    ncol = len(cols)
+    if mono or ncol != len(header) or ncol < 2: return cols
+    em_total = CONTENT_W / fs
+    cur = [c / 100.0 * em_total for c in cols]
+    need = [0.0 if k == 0 else max([_cell_em(r[k]) + 1.2 for r in rows] + [_cell_em(header[k], False, False, True) + 0.89]) + 0.005 for k in range(ncol)]
+    short = [k for k in range(ncol) if cur[k] < need[k]]
+    if not short: return cols
+    deficit = sum(need[k] - cur[k] for k in short)
+    slack = [0.0 if k in short else max(0.0, cur[k] - max(need[k], 3.0)) for k in range(ncol)]
+    if sum(slack) < deficit: return cols
+    out = [need[k] if k in short else cur[k] - deficit * slack[k] / sum(slack) for k in range(ncol)]
+    return [round(100 * x / sum(out), 2) for x in out]
+
+
 def table_layout(header, rows, fs, mono=False):
     """Column widths (in characters) and row heights (px) for a table drawn at font size fs with fixed columns."""
     ncol = max(1, len(header))
@@ -868,7 +1072,7 @@ def paginate_table(header, rows, avail_h, mono=False):
             cur.append(k); used += h
         if cur: bal.append(cur)
         if len(bal) == len(pages): pages = bal
-    return fs, cols, pages, cramped
+    return fs, whole_words(header, rows, fs, cols, mono), pages, cramped
 
 
 CARD_FS = 34
@@ -1244,7 +1448,13 @@ def build(vid):
                 run_bullets(bd, mode[1], group)
             group = []
 
+        # libfix2: a badge belongs to the paragraphs read directly under its direction (it ends at the next picture, list, direction or
+        # new lead-in); a headline that a terminal has interrupted (the heading of a demo step) is not carried into the key points after a later direction
+        badge_read, topic_cut = False, False
         for ei, e in enumerate(events):
+            if e["e"] in ("visual", "bullets"):
+                badge = ""
+                if e["e"] == "visual" and e["v"]["kind"] == "terminal" and topic: topic_cut = True
             if e["e"] == "visual":
                 nx = events[ei + 1] if ei + 1 < len(events) else None
                 v = e["v"]
@@ -1257,14 +1467,17 @@ def build(vid):
             elif e["e"] == "bullets":
                 flush(); mode = ("bullets", e)
             elif e["e"] == "keymode":
-                flush(); mode = ("key", None); badge = e.get("badge", "")
+                flush(); mode = ("key", None); badge = e.get("badge", ""); badge_read = False
+                if topic_cut: topic, topic_cut = "", False
             elif e["e"] == "topic":
-                topic = e["headline"]
+                topic, topic_cut = e["headline"], False
+                if badge_read: badge = ""
                 if e["switch"] and mode[0] != "key":
                     flush(); mode = ("key", None)
             else:
                 if e["e"] == "narr":
                     e["topic"], e["badge"] = topic, badge
+                    if badge: badge_read = True
                 group.append(e)
         flush()
     # durations, progress

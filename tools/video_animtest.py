@@ -33,7 +33,8 @@ import gzip, hashlib, json, os, pathlib, re, shutil, subprocess, sys, time
 HERE = pathlib.Path(__file__).resolve().parent
 COMPAT_MODE = "--compat" in sys.argv
 LOOK_MODE = "--look" in sys.argv
-TEST = HERE.parent / "video" / "production" / ".cache" / ("compat" if COMPAT_MODE else "look" if LOOK_MODE else "selftest/anim")
+FIXES_MODE = "--fixes" in sys.argv          # the planner checks of the reported defects alone: nothing is rendered (python3 tools/video_animtest.py --fixes)
+TEST = HERE.parent / "video" / "production" / ".cache" / ("compat" if COMPAT_MODE else "look" if LOOK_MODE else "selftest/fixes" if FIXES_MODE else "selftest/anim")
 os.environ["VIDEO_WORK_DIR"] = str(TEST)
 os.environ["VIDEO_SCRIPTS_DIR"] = str(TEST / "scripts")
 os.environ["VIDEO_OUT_DIR"] = str(TEST / "out")
@@ -325,6 +326,7 @@ def main():
     cues8 = [c for b in b8 for c in b["anim"]["cues"]]
     check("point_<step> and twig_<step> give the cue of that step its pose", any(c.get("pose") == "pointing" for c in cues8) and any(c.get("says") for c in cues8))
     fixes_planner()
+    fixes2_planner()
     (TEST / "scripts" / "V000-animation-self-test.md").write_text(SCRIPT, encoding="utf-8")
     sb = video_storyboard.build("V000")
     STORYBOARDS.mkdir(parents=True, exist_ok=True)
@@ -541,6 +543,178 @@ def fixes_planner():
     check("trees: forms_<step>=", P("trees: forms=CRLF,LF,LF forms_add=LF,LF,LF").get("forms_steps") == {"add": ["LF", "LF", "LF"]} and AP.parse_tag("trees: forms_nope=a,b,c") is None)
     check("walk: an empty column head keeps its column", P("walk: columns=,base,ours rows=a.txt:v1:v2").get("columns") == ["", "base", "ours"] and P("walk: columns=,base,ours rows=a.txt:v1:v2").get("rows") == [["a.txt", "v1", "v2"]])
     check("todo: -C in the ID field belongs to the verb", P("todo: todo=pick:614c93b:Fix edit=fixup:-C_614c93b:Fix").get("edit") == [["fixup -C", "614c93b", "Fix"]])
+
+
+# ---- library fix round 2 (October 2026): defects the frame inspectors of all six batches could not fix from the scripts ----------
+SCRIPT4 = """# V996: Library fixes, round 2
+
+- **Part.** 5: GitHub
+- **Planned minutes.** 1
+
+## HOOK
+
+**[ON SCREEN]** One question from section 1.5: "Who approved what is running in production?"
+
+The question is read over its own words.
+
+## CONCEPT
+
+**[ON SCREEN]** "Unverified", as a callout.
+
+The caveat is read here.
+
+**Lead one.** The first topic starts.
+
+**[ON SCREEN]** Unverified.
+
+This statement carries the label.
+
+**Lead two.** The next topic does not.
+
+**[ON SCREEN]** Lower third: **GitHub**. The base branch is stored by GitHub. It is the one place where "created from" is recorded. And GitHub computes the changes from a merge base too.
+
+The note is read over the whole note.
+
+## LIVE TERMINAL DEMO
+
+**[TERMINAL]** Replay with `labs/run ch08/first-lab`, then the other script. This transcript is not reproduced by `labs/verify-all.sh`.
+
+**Step 1: the first lab.** A command is typed.
+
+<!-- snippet: ch08/first-lab/01-status -->
+```text
+$ git status --short
+ M app.py
+```
+<!-- /snippet -->
+
+The output is read.
+
+```bash
+git restore --ours config.yaml
+```
+
+Predict what this prints.
+
+<!-- snippet: ch08/second-lab/01-ours -->
+```text
+$ git restore --ours config.yaml
+$ git status --short
+UU config.yaml
+```
+<!-- /snippet -->
+
+The second lab answers.
+
+**[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
+
+Now the platform side, which is not step one.
+
+It stays the platform side.
+
+**Step 2: back.** The label has gone.
+"""
+
+TT_ADJACENT = """Command                          Effect
+-------------------------------  ---------------------------------------------
+git rebase --continue            Commit the staged resolution and go on
+git rebase --skip                Make no copy of this commit and go on
+git rebase --abort               Put everything back as it was before the
+                                 rebase
+binary                           our version,
+(as content)                     no markers"""
+TT_STEPS = """  step   you                         server
+  ----   -------------------------   ----------
+   1     squash locally              12cdd3d
+         origin still 12cdd3d
+   2                                 833bc8a
+   3     push --force-with-lease     833bc8a"""
+TT_COLUMNS = """  1 CONTAIN        2 ASSESS              3 PREVENT
+  -------------    ------------------    ----------------
+  at the           git log --all         ignore rule in
+  provider:          -- <path>           the template
+  revoke           git branch -r
+                                         stage by name
+  (no Git          was it used?
+   command)"""
+
+
+def fixes2_planner():
+    """Library fix round 2: quoted directions, counts on key points, tables read from text, terminal titles, badges and headlines."""
+    S, A = video_storyboard, video_animate
+    # 1. directions
+    check("a quoted direction that names a section shows its quotation, not a table or box of that section; a table direction still shows the table",
+          S.quoted_section_line('One question from section 20B.1: "Who approved what is running in production, and which commit is it?"')
+          and S.quoted_section_line('Two questions from section 20B.1. "The tests pass on my machine. Why is it red?" "Why did our bill triple?"')
+          and not S.quoted_section_line('The state table of section 2.6: five rows, with "unchanged" everywhere except one cell per row.')
+          and not S.quoted_section_line('The table "What is searched" from section 14A.23: the working tree by default.'))
+    q = S.quote_callout('"Unverified", as a callout.')
+    check("the words that describe the layout are not printed under a quotation", q["quotes"] == ["Unverified"] and q["tail"] == "" and S.quote_callout('"Which commits changed it?" — twenty seconds.')["tail"] == "twenty seconds")
+    pc = S.prose_callout('Lower third: **GitHub**. A pull request has a base branch. It is the one place where "created from" is recorded. And GitHub computes the changes from a merge base too.')
+    check("a callout whose sentences contain quotation marks keeps all of its text", bool(pc) and pc["label"] == "GitHub" and pc["quotes"][0].startswith("A pull request has") and pc["quotes"][0].endswith("merge base too.")
+          and not pc["quoted"] and S.prose_callout('Lower third: "One sentence that is the quotation."') is None and S.prose_callout("Callout: Unverified.") is None)
+    check("a long description that quotes a word is not drawn as a quotation; a quotation at the end of a long lead still is",
+          S.quote_callout('Replay the case of the last video, six of its snippets, and narrate it as a five-part answer: the pull says "Already up to date", and the push is rejected again after that.') is None
+          and S.quote_callout('The box. Observed: fail in CI "on the same commit". Git state: the runner HEAD is the test merge and the base gained a commit that changes behavior, which answers "is the result safe", and so on.') is None
+          and (S.quote_callout('A pull request: 1 file changed, 412 additions and 412 deletions on it. The comment of the author says: "I changed one line."') or {}).get("quotes") == ["I changed one line."])
+    # 2. counts
+    fc = A.find_count
+    check("a big number is drawn only for a count the sentence is about",
+          fc("In 2025, 28,649,024 new secrets were found.") is None and fc("The digest is 12 as a prefix.") is None and fc("Keep 2 of its parents.") is None
+          and fc("Gate 3 comes after Module 10.") is None and fc('Your turn. Do Lab 7.1, "A bare server and two clones", in the manual.') is None and fc("Version 2.56 adds things.") is None
+          and fc("Twenty-six symptoms are listed.") is None and fc("A company of forty engineers runs a gateway.") == (40, "engineers") and fc("Keep the three commits as a triangle.") == (3, "commits")
+          and fc("Four verbs: add, commit, push, pull.") == (4, "verbs") and fc("git add is two moves: store and record.") == (2, "moves") and fc("Three merge methods exist.") == (3, "merge methods"),
+          str([fc("A company of forty engineers runs a gateway."), fc("Keep the three commits as a triangle."), fc("git add is two moves: store and record.")]))
+    # 3. tables
+    t1, t2, t3 = S.text_table(TT_ADJACENT), S.text_table(TT_STEPS), S.text_table(TT_COLUMNS)
+    check("a table drawn in text: complete lines are rows of their own; an empty first cell, an open cell or an indented first cell continues the row above",
+          bool(t1) and [r[0] for r in t1[1]] == ["git rebase --continue", "git rebase --skip", "git rebase --abort", "binary (as content)"] and t1[1][2][1].endswith("before the rebase")
+          and t1[1][3][1] == "our version, no markers", str(t1 and [r[0] for r in t1[1]]))
+    check("step numbers centred under their column head are rows, not one merged row", bool(t2) and [r[0] for r in t2[1]] == ["1", "2", "3"] and t2[1][0][1] == "squash locally origin still 12cdd3d", str(t2 and t2[1])[:200])
+    check("a drawing of numbered step columns becomes one row per step, each with its own items",
+          bool(t3) and [r[0] for r in t3[1]] == ["1 CONTAIN", "2 ASSESS", "3 PREVENT"] and t3[1][0][1] == "at the provider: revoke (no Git command)"
+          and t3[1][1][1] == "git log --all -- <path> git branch -r was it used?" and t3[1][2][1] == "ignore rule in the template stage by name", str(t3 and t3[1])[:300])
+    check("an escaped asterisk in a table cell is an asterisk, not emphasis", S.inline_html(r"+refs/heads/\*:refs/remotes/origin/\*") == "+refs/heads/*:refs/remotes/origin/*"
+          and S.inline_html("a *b* and **c**") == "a <i>b</i> and <b>c</b>" and S.plain(r"REBASE\_HEAD \*") == "REBASE_HEAD *")
+    hdr, rows = ["Operation", "Working tree", "Index", "Remote"], [["git gc", "unchanged", "unchanged", "unchanged"]]
+    w = S.whole_words(hdr, rows, 28, [60.0, 20.0, 9.5, 10.5])
+    em = lambda c: c / 100 * S.CONTENT_W / 28
+    check("a column narrower than its longest word is widened from the columns that have room; a table with room everywhere is not touched",
+          em(w[2]) >= 5.002 + 1.2 and w[1] == 20.0 or (em(w[2]) >= 6.2 and abs(sum(w) - 100) < 0.05 and w[0] < 60.0), str(w))
+    check("... and nothing changes when no word would break", S.whole_words(hdr, rows, 28, [40.0, 20.0, 20.0, 20.0]) == [40.0, 20.0, 20.0, 20.0]
+          and S.whole_words(hdr, rows, 28, [60.0, 20.0, 9.5, 10.5], mono=True) == [60.0, 20.0, 9.5, 10.5])
+    # 1, 4, 5 in a storyboard
+    (TEST / "scripts").mkdir(parents=True, exist_ok=True)
+    (TEST / "scripts" / "V996-library-fixes-2.md").write_text(SCRIPT4, encoding="utf-8")
+    try: sb = S.build("V996")
+    except Exception as e: check("library fixes, round 2: the storyboard is built", False, f"{type(e).__name__}: {e}"); return
+    sl = {s["n"]: s for s in sb["slides"]}
+    of = lambda start: next((sl[b["slide"]] for b in sb["beats"] if b["type"] == "narration" and b["text"].startswith(start)), {})
+    hook = of("The question is read")
+    check("in a storyboard the quoted direction is a callout with its quotation", hook.get("kind") == "callout" and hook.get("quotes") == ["Who approved what is running in production?"] and "source" not in hook, str(hook)[:200])
+    check("the storyboard has no warning and no hint", not sb["warnings"] and not sb.get("hints"), str(sb["warnings"] + sb.get("hints", []))[:200])
+    a, b2, c = of("This statement carries"), of("Lead two."), of("The caveat is read")
+    check("a bare 'Unverified.' direction puts its label on the key point read under it, and the label ends at the next lead-in",
+          a.get("kind") == "keypoint" and a.get("badge") == "Unverified" and b2.get("kind") == "keypoint" and not b2.get("badge") and c.get("kind") == "callout" and not c.get("tail"), str([a.get("badge"), b2.get("badge")]))
+    note = of("The note is read")
+    check("the lower-third note is drawn in full", note.get("kind") == "callout" and note.get("label") == "GitHub" and "merge base too." in note.get("quotes", [""])[0])
+    card = of("Predict what this prints")
+    check("a card of commands is titled with the lab of the transcript that follows it, and labs/verify-all.sh is never a title",
+          card.get("kind") == "terminal" and card.get("title") == "labs/run ch08/second-lab" and not any(s.get("title") == "labs/verify-all.sh" for s in sb["slides"]), str(card.get("title")))
+    w1, w2, w3 = of("Now the platform side"), of("It stays the platform"), of("Step 2: back.")
+    check("after a terminal, the key points under a later direction do not carry the heading of the demo step; the badge covers the paragraphs under its direction only",
+          w1.get("kind") == "keypoint" and not w1.get("headline") and w1.get("badge") == "GitHub" and w2.get("badge") == "GitHub" and not w2.get("headline")
+          and w3.get("headline") == "Step 2: back" and not w3.get("badge"), str([(x.get("headline"), x.get("badge")) for x in (w1, w2, w3)]))
+
+
+def fixes_main():
+    t0 = time.time()
+    shutil.rmtree(TEST, ignore_errors=True)
+    (TEST / "scripts").mkdir(parents=True)
+    print("  reported defects, as far as the planner decides them (nothing is rendered)")
+    fixes_planner()
+    fixes2_planner()
+    return finish(t0)
 
 
 # ---- backward compatibility ------------------------------------------------------------------------------
@@ -831,4 +1005,4 @@ def finish(t0):
 
 
 if __name__ == "__main__":
-    sys.exit(compat_main(sys.argv[1:]) if COMPAT_MODE else look_main(sys.argv[1:]) if LOOK_MODE else main())
+    sys.exit(compat_main(sys.argv[1:]) if COMPAT_MODE else look_main(sys.argv[1:]) if LOOK_MODE else fixes_main() if FIXES_MODE else main())

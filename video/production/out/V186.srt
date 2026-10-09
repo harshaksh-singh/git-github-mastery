@@ -1,0 +1,1199 @@
+1
+00:00:04,500 --> 00:00:09,240
+Each report contains a diagnosis, and each
+diagnosis names a suspect: a command in
+
+2
+00:00:09,280 --> 00:00:14,079
+the first, the server in the second. A
+branch is a named line of commits, the saved
+
+3
+00:00:14,119 --> 00:00:18,451
+snapshots of a project. git pull fetches
+commits from the team's server and
+
+4
+00:00:18,491 --> 00:00:22,997
+integrates them, and a push sends yours
+there. People in this situation aren't
+
+5
+00:00:23,037 --> 00:00:27,603
+careless. They're describing what they
+believe happened, in the only words they
+
+6
+00:00:27,643 --> 00:00:27,894
+have.
+
+7
+00:00:28,234 --> 00:00:33,209
+Your job in the next twenty minutes is to
+treat both sentences as symptoms, find out
+
+8
+00:00:33,249 --> 00:00:37,985
+from the repositories what did happen,
+bring back everything that can be brought
+
+9
+00:00:38,025 --> 00:00:41,925
+back, and say plainly what can't.
+Keep those two suspects in mind.
+
+10
+00:00:41,965 --> 00:00:44,134
+Each gets a verdict before we finish.
+
+11
+00:00:44,474 --> 00:00:49,552
+A first question. Ravi blames git pull.
+Which record on his laptop could confirm
+
+12
+00:00:49,592 --> 00:00:51,792
+that, or clear it? Say it out loud.
+
+13
+00:00:56,632 --> 00:01:01,644
+The reflog: Git's local record of every
+value a ref has had, with the command behind
+
+14
+00:01:01,684 --> 00:01:06,215
+each change. A pull would have left a
+line there. We read it together later.
+
+15
+00:01:08,055 --> 00:01:12,238
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+16
+00:01:12,278 --> 00:01:16,391
+This is a debrief. It assumes
+you have generated Incident 1,
+
+17
+00:01:16,431 --> 00:01:21,722
+incidents/01-hard-reset, and Incident
+8, incidents/08-branch-disappeared, and
+
+18
+00:01:21,762 --> 00:01:26,360
+attempted both, with a command log
+and your four lines for the CTO.
+
+19
+00:01:26,400 --> 00:01:30,306
+Have you? If you haven't, stop
+the video now and do that.
+
+20
+00:01:32,646 --> 00:01:35,621
+The cause of each incident is
+named in the next section.
+
+21
+00:01:35,661 --> 00:01:38,312
+A drill whose cause you've
+seen can't be repeated.
+
+22
+00:01:38,652 --> 00:01:43,981
+Both incidents are rated SEV 4 on the scale
+of video 185: one person's local work.
+
+23
+00:01:44,021 --> 00:01:49,220
+They're the right place to start, because
+the stakes are low and the techniques,
+
+24
+00:01:49,260 --> 00:01:54,655
+from video 75 and video 43, are exactly the
+ones the bigger incidents need: reading
+
+25
+00:01:54,695 --> 00:02:00,025
+a reflog as a sequence of events, anchoring
+before acting, and choosing a recovery
+
+26
+00:02:00,065 --> 00:02:01,858
+that adds instead of moving.
+
+27
+00:02:02,198 --> 00:02:06,928
+For each incident we go through the loop:
+what the evidence said, which hypotheses
+
+28
+00:02:06,968 --> 00:02:11,814
+it separated, the root cause with its layer,
+the recovery, the verification, and the
+
+29
+00:02:11,854 --> 00:02:15,246
+message to the person. Compare
+each step with your own log.
+
+30
+00:02:17,086 --> 00:02:18,498
+After this video you can:
+
+31
+00:02:18,838 --> 00:02:23,431
+Establish what a hard reset destroyed and
+what the reflog and dangling blobs still
+
+32
+00:02:23,471 --> 00:02:23,713
+hold.
+
+33
+00:02:24,053 --> 00:02:27,734
+Recover the committed and the staged
+work and state honestly what is gone.
+
+34
+00:02:28,074 --> 00:02:32,744
+Classify a "disappeared" branch: deleted
+locally, pruned remote-tracking ref, never
+
+35
+00:02:32,784 --> 00:02:33,652
+pushed, renamed.
+
+36
+00:02:33,992 --> 00:02:36,284
+Find the tip, anchor it
+and restore the branch.
+
+37
+00:02:36,624 --> 00:02:38,848
+Write the summary and
+the prevention for both.
+
+38
+00:02:40,688 --> 00:02:44,196
+Incident 1: what a hard reset
+does to three kinds of work.
+
+39
+00:02:44,236 --> 00:02:49,090
+git reset --hard moves the branch, replaces
+the index and overwrites the working
+
+40
+00:02:49,130 --> 00:02:54,106
+tree. The index is the proposed next commit,
+and the working tree is the files you
+
+41
+00:02:54,146 --> 00:02:58,939
+edit. The work that was there before sits
+on three layers, and each layer has a
+
+42
+00:02:58,979 --> 00:02:59,979
+different answer.
+
+43
+00:03:00,319 --> 00:03:05,381
+Committed work is in the reflog. Staged
+work was written to the object database by
+
+44
+00:03:05,421 --> 00:03:10,607
+git add, so it survives as a blob, Git's
+object for one file's content, that nothing
+
+45
+00:03:10,647 --> 00:03:15,771
+references. A blob has no file name: the
+name was in the index entry that the reset
+
+46
+00:03:15,811 --> 00:03:20,811
+removed. Unstaged work was never given to
+Git, and Git can't return what it never
+
+47
+00:03:20,851 --> 00:03:21,247
+stored.
+
+48
+00:03:21,587 --> 00:03:26,716
+The root cause, as the textbook states it.
+Ravi wanted to discard one edit and used
+
+49
+00:03:26,756 --> 00:03:31,947
+a command that moves the branch, replaces
+the index and overwrites the working tree.
+
+50
+00:03:31,987 --> 00:03:36,493
+origin/main, his clone's record of the
+server's main, wasn't his branch's
+
+51
+00:03:36,533 --> 00:03:40,229
+counterpart. No counterpart
+existed. Layer: Git, one laptop.
+
+52
+00:03:40,269 --> 00:03:41,786
+git pull wasn't involved.
+
+53
+00:03:42,126 --> 00:03:46,574
+Why the tempting recovery is wrong. The
+tempting move is to put the branch back
+
+54
+00:03:46,614 --> 00:03:49,869
+where it was before the accident,
+with another hard reset.
+
+55
+00:03:49,909 --> 00:03:54,470
+But Ravi has committed once since the
+reset. Moving the branch back would discard
+
+56
+00:03:54,510 --> 00:03:55,152
+that commit.
+
+57
+00:03:55,492 --> 00:04:01,448
+So the three commits are added on top instead.
+This is the ladder of video 184: add,
+
+58
+00:04:01,488 --> 00:04:02,233
+don't move.
+
+59
+00:04:02,573 --> 00:04:06,045
+Incident 8: "disappeared" is a
+symptom with several mechanisms.
+
+60
+00:04:06,085 --> 00:04:10,449
+A branch can be missing because it was
+renamed. Because it was deleted locally.
+
+61
+00:04:10,489 --> 00:04:14,406
+Because the server's branch was deleted
+and a pruning fetch removed the
+
+62
+00:04:14,446 --> 00:04:17,472
+remote-tracking ref, the
+clone's record of that branch.
+
+63
+00:04:17,512 --> 00:04:22,155
+Or because it was never pushed. Usually more
+than one of these has happened, and the
+
+64
+00:04:22,195 --> 00:04:26,391
+question that matters isn't "where is
+the branch" but "which work is where".
+
+65
+00:04:26,731 --> 00:04:30,200
+The root cause here: four
+steps, each reasonable alone.
+
+66
+00:04:30,240 --> 00:04:35,559
+GitHub squash-merged the pull request, the
+proposal to merge her branch, and deleted
+
+67
+00:04:35,599 --> 00:04:40,663
+the head branch. A squash merge combines
+a branch's commits into one new commit.
+
+68
+00:04:40,703 --> 00:04:45,575
+fetch.prune removed the remote-tracking
+ref. Work had continued on the merged
+
+69
+00:04:45,615 --> 00:04:50,870
+branch. git branch -d refused, correctly,
+because squashed commits aren't ancestors
+
+70
+00:04:50,910 --> 00:04:56,229
+of main, and -D overrode the refusal. Layers:
+GitHub for the first step, Git for the
+
+71
+00:04:56,269 --> 00:04:56,548
+rest.
+
+72
+00:04:56,888 --> 00:05:01,782
+Two tools, one of which misleads. git cherry
+compares patch IDs, which are hashes of
+
+73
+00:05:01,822 --> 00:05:06,364
+each commit's change, and a squashed
+commit equals none of its parts, so every
+
+74
+00:05:06,404 --> 00:05:11,298
+original commit looks unmerged. Trees, the
+complete snapshots, are reliable: compare
+
+75
+00:05:11,338 --> 00:05:14,352
+the content of the old tip
+with the content of main.
+
+76
+00:05:14,692 --> 00:05:19,469
+GitHub, not Git. A closed pull request
+offers "Restore branch" for its head branch.
+
+77
+00:05:19,509 --> 00:05:24,344
+It restores what the server had. A commit
+that was never pushed isn't on the server,
+
+78
+00:05:24,384 --> 00:05:26,027
+and Support can't produce it.
+
+79
+00:05:26,367 --> 00:05:31,696
+Why the tempting recovery is wrong here
+too. Recreating and pushing the old branch
+
+80
+00:05:31,736 --> 00:05:36,868
+would publish three commits whose content
+is already in main: the reused-branch
+
+81
+00:05:36,908 --> 00:05:38,243
+problem of video 125.
+
+82
+00:05:38,583 --> 00:05:42,690
+The safe recovery is a new branch from
+the current main with the one commit that
+
+83
+00:05:42,730 --> 00:05:43,364
+isn't merged.
+
+84
+00:05:45,204 --> 00:05:49,906
+Think of the three layers of Incident 1
+as three kinds of paper on a desk that
+
+85
+00:05:49,946 --> 00:05:54,830
+somebody swept clean. Pages that were
+filed, the commits, are in the archive, and
+
+86
+00:05:54,870 --> 00:05:57,931
+the archive has an index
+card for each: the reflog.
+
+87
+00:05:57,971 --> 00:06:02,977
+Pages that were put in the out-tray, the
+staged file, were photocopied by the clerk
+
+88
+00:06:03,017 --> 00:06:06,625
+before the sweep. The copy
+exists, without its folder label.
+
+89
+00:06:06,665 --> 00:06:10,272
+Pages you were still writing on
+were never copied by anyone.
+
+90
+00:06:10,612 --> 00:06:14,448
+Where the picture breaks: the
+archive's index cards expire.
+
+91
+00:06:14,488 --> 00:06:19,966
+By default a reflog entry for a commit that's
+no longer reachable lasts 30 days, and
+
+92
+00:06:20,006 --> 00:06:25,418
+a dangling blob goes two weeks after it
+becomes unreachable, once maintenance runs.
+
+93
+00:06:25,458 --> 00:06:29,228
+The lab switches reflog expiry
+off. A real laptop doesn't.
+
+94
+00:06:29,568 --> 00:06:35,282
+Try it now. Thirty seconds, read-only. In
+the lab shell or any repository you have,
+
+95
+00:06:35,322 --> 00:06:39,234
+run git reflog -5, and read
+the lines from the bottom up.
+
+96
+00:06:41,574 --> 00:06:46,205
+Each line is one move of HEAD, Git's note
+of where you are: the commit it arrived
+
+97
+00:06:46,245 --> 00:06:49,549
+at, and the command behind it.
+Those are your index cards.
+
+98
+00:06:49,889 --> 00:06:55,235
+For Incident 8, hold the sentence from
+video 170: "merged" in Git means "reachable
+
+99
+00:06:55,275 --> 00:06:59,176
+from". A squash keeps the content
+and discards the ancestry.
+
+100
+00:06:59,216 --> 00:07:04,628
+So every tool that asks about ancestry or
+patch identity says "not merged", and the
+
+101
+00:07:04,668 --> 00:07:07,781
+tool that compares content
+says "already there".
+
+102
+00:07:09,621 --> 00:07:14,296
+Before the demo, here is everything we
+know so far from the people involved: two
+
+103
+00:07:14,336 --> 00:07:16,123
+reports, each naming a suspect.
+
+104
+00:07:16,463 --> 00:07:19,835
+Each incident gets a timeline,
+built from a reflog.
+
+105
+00:07:19,875 --> 00:07:23,648
+We draw both in the demo, once
+the reflogs are on screen.
+
+106
+00:07:25,488 --> 00:07:29,133
+Last call. From here on the
+screen shows the solutions.
+
+107
+00:07:29,173 --> 00:07:31,478
+Is your own command log beside you?
+
+108
+00:07:33,818 --> 00:07:35,130
+Then compare as we go.
+
+109
+00:07:35,470 --> 00:07:37,053
+Observe. 🟢 SAFE.
+
+110
+00:07:37,393 --> 00:07:42,122
+git status -sb prints the branch name with
+no upstream, that is, no server branch
+
+111
+00:07:42,162 --> 00:07:47,008
+that it follows. So there's no "this branch
+on the server", and "I reset to what is
+
+112
+00:07:47,048 --> 00:07:51,954
+on the server" can't mean what Ravi thinks.
+The graph shows four commits and none of
+
+113
+00:07:51,994 --> 00:07:52,484
+Friday's.
+
+114
+00:07:52,824 --> 00:07:57,565
+The reflog. Predict: will the
+HEAD reflog contain a pull line?
+
+115
+00:07:57,905 --> 00:08:03,487
+Three hypotheses, separated by this one
+output. A pull rewrote the branch: no pull
+
+116
+00:08:03,527 --> 00:08:08,903
+line exists, the count is 0. The commits
+were made elsewhere: no, three commit:
+
+117
+00:08:08,943 --> 00:08:14,388
+lines are in this branch's reflog. A reset
+moved the branch away from them: @{1}
+
+118
+00:08:14,428 --> 00:08:19,942
+says "reset: moving to origin/main". And
+@{0} is the commit Ravi made afterwards.
+
+119
+00:08:20,282 --> 00:08:25,525
+Here's that reflog as a timeline, oldest
+at the top: the last good tip at @{2}, the
+
+120
+00:08:25,565 --> 00:08:27,244
+destructive moment at @{1}.
+
+121
+00:08:27,584 --> 00:08:30,621
+Anchor. 🟢 SAFE: a branch
+at the last good tip.
+
+122
+00:08:30,961 --> 00:08:34,163
+The three commits have a name
+now, whatever happens next.
+
+123
+00:08:34,503 --> 00:08:41,225
+The staged file. git fsck --lost-found is
+the diagnostic command that isn't strictly
+
+124
+00:08:41,265 --> 00:08:45,250
+read-only: it writes files
+under .git/lost-found/.
+
+125
+00:08:45,590 --> 00:08:50,641
+One dangling blob, 959c205, and
+its content is the priority rules.
+
+126
+00:08:50,681 --> 00:08:56,582
+It has no file name. Ravi supplies the
+name from memory: rules/priority.yaml.
+
+127
+00:08:56,922 --> 00:09:01,593
+Recover. 🟡 CAUTION: git cherry-pick adds
+commits to the current branch: it copies
+
+128
+00:09:01,633 --> 00:09:06,420
+each commit's change as a new commit.
+Predict: why a cherry-pick of a range and not
+
+129
+00:09:06,460 --> 00:09:08,107
+a reset to the rescue branch?
+
+130
+00:09:08,447 --> 00:09:12,634
+The three commits are added on top of
+the commit made after the reset, and the
+
+131
+00:09:12,674 --> 00:09:14,964
+blob's content is written
+back to its path.
+
+132
+00:09:15,304 --> 00:09:15,955
+Verify.
+
+133
+00:09:16,295 --> 00:09:21,281
+git range-diff shows three pairs marked
+with an equals sign: each copy carries the
+
+134
+00:09:21,321 --> 00:09:26,123
+same change as its original. The first
+line, with the arrow, is the commit made
+
+135
+00:09:26,163 --> 00:09:29,862
+after the reset, which the
+tempting recovery would have lost.
+
+136
+00:09:29,902 --> 00:09:34,827
+Then the check script: every line ok, and
+PASS. Compare with the failing check of
+
+137
+00:09:34,867 --> 00:09:39,669
+video 185: the lines that failed there
+are the commit made after the reset, the
+
+138
+00:09:39,709 --> 00:09:41,998
+relation to main, and the staged file.
+
+139
+00:09:45,338 --> 00:09:49,972
+🔴 DANGEROUS: git branch -D. It deletes
+the branch reflog and the only name of
+
+140
+00:09:50,012 --> 00:09:54,767
+commits that aren't merged elsewhere. The
+recovery is the HEAD reflog, until it
+
+141
+00:09:54,807 --> 00:09:59,865
+expires. It's appropriate here because the
+range-diff has shown that every commit on
+
+142
+00:09:59,905 --> 00:10:04,963
+the rescue branch has its copy on the real
+branch. The rescue branch is deleted only
+
+143
+00:10:05,003 --> 00:10:08,908
+after the verification, and the
+deletion prints the ID once more.
+
+144
+00:10:09,248 --> 00:10:14,632
+The message to Ravi. What is back: three
+commits, and one file as untracked content.
+
+145
+00:10:14,672 --> 00:10:19,474
+What isn't: the unstaged edit to the
+routing rules, which Git never stored.
+
+146
+00:10:19,514 --> 00:10:23,606
+And: git pull wasn't involved.
+That's the first suspect cleared.
+
+147
+00:10:23,646 --> 00:10:25,414
+Nobody else needs a message.
+
+148
+00:10:25,754 --> 00:10:26,329
+Observe.
+
+149
+00:10:26,669 --> 00:10:31,680
+No ref of that name exists anywhere: not
+locally, not as a remote-tracking branch,
+
+150
+00:10:31,720 --> 00:10:32,789
+not on the server.
+
+151
+00:10:33,129 --> 00:10:37,914
+The reflogs. Quick quiz: which
+of the two reflogs still exists?
+
+152
+00:10:37,954 --> 00:10:41,819
+A, the reflog of the branch.
+B, the reflog of HEAD.
+
+153
+00:10:41,859 --> 00:10:42,738
+Your answer?
+
+154
+00:10:47,578 --> 00:10:52,859
+B. The branch reflog went with the branch.
+The HEAD reflog is still here, and it
+
+155
+00:10:52,899 --> 00:10:56,717
+holds the four commits and the
+moment she left the branch.
+
+156
+00:10:56,757 --> 00:10:59,245
+The last commit made on it is 70df7f7.
+
+157
+00:10:59,585 --> 00:11:00,488
+Why is it gone?
+
+158
+00:11:00,828 --> 00:11:05,293
+The newest commit on main has Asha as
+author and Ravi as committer, and a pull
+
+159
+00:11:05,333 --> 00:11:10,087
+request number in its subject: the shape
+of a squash merge, which keeps none of the
+
+160
+00:11:10,127 --> 00:11:14,766
+original messages. That's why none of her
+commit messages are in the log of main.
+
+161
+00:11:15,106 --> 00:11:16,897
+Classify: which work is where?
+
+162
+00:11:17,237 --> 00:11:20,859
+Predict what git cherry will say,
+and whether you should believe it.
+
+163
+00:11:20,899 --> 00:11:21,721
+Say it out loud.
+
+164
+00:11:26,561 --> 00:11:31,338
+git cherry reports all four commits as
+unmerged, which is misleading: a squashed
+
+165
+00:11:31,378 --> 00:11:34,470
+commit equals none of its
+parts. Trees are reliable.
+
+166
+00:11:34,510 --> 00:11:39,348
+The old tip differs from main by one file.
+The commit before it doesn't differ at
+
+167
+00:11:39,388 --> 00:11:44,346
+all. So three commits are in main as one,
+and the fourth, the validation, was never
+
+168
+00:11:44,386 --> 00:11:49,163
+pushed. "I am sure everything was pushed"
+was true of three commits out of four.
+
+169
+00:11:49,503 --> 00:11:54,778
+And here's the timeline of Incident 8, from
+the reflog of HEAD, because the branch's
+
+170
+00:11:54,818 --> 00:11:56,803
+own reflog went with the branch.
+
+171
+00:11:57,143 --> 00:12:00,599
+Anchor, then recover. 🟢 SAFE for
+the anchor and the new branch.
+
+172
+00:12:00,639 --> 00:12:03,873
+🟡 CAUTION for the cherry-pick
+and the push of a new branch.
+
+173
+00:12:08,213 --> 00:12:12,837
+A new branch from the current main, with
+the one commit that isn't merged, under a
+
+174
+00:12:12,877 --> 00:12:13,349
+new name.
+
+175
+00:12:13,689 --> 00:12:14,340
+Verify.
+
+176
+00:12:17,680 --> 00:12:21,626
+A pull request for the new branch
+would list one commit and one file.
+
+177
+00:12:21,666 --> 00:12:26,479
+The diff between the rescue branch and the
+new branch prints nothing: the new branch
+
+178
+00:12:26,519 --> 00:12:31,273
+has everything the lost one had. Then the
+rescue branch goes, and the check passes.
+
+179
+00:12:31,313 --> 00:12:34,797
+Read its last line: "the merged
+branch was not pushed again".
+
+180
+00:12:35,137 --> 00:12:38,456
+The message to Asha. Nothing
+was deleted by mistake.
+
+181
+00:12:38,496 --> 00:12:43,171
+Three commits are in main as one. The
+fourth survived only in her reflog.
+
+182
+00:12:43,211 --> 00:12:46,400
+So the server, the second
+suspect, is cleared too.
+
+183
+00:12:48,240 --> 00:12:49,889
+Five mistakes to watch for.
+
+184
+00:12:50,229 --> 00:12:55,063
+Accepting the suspect named in the report.
+Root cause: "pull ate my work" and "the
+
+185
+00:12:55,103 --> 00:12:59,878
+server lost my branch" are interpretations;
+the reflog had no pull entry, and the
+
+186
+00:12:59,918 --> 00:13:01,959
+server never had the fourth commit.
+
+187
+00:13:02,299 --> 00:13:05,357
+Recovering from a hard reset
+with another hard reset.
+
+188
+00:13:05,397 --> 00:13:10,151
+Root cause: the branch has moved on since
+the accident, so moving it back discards
+
+189
+00:13:10,191 --> 00:13:11,730
+the commit made afterwards.
+
+190
+00:13:12,070 --> 00:13:17,093
+Promising to recover everything. Root cause:
+unstaged work was never written to the
+
+191
+00:13:17,133 --> 00:13:20,510
+object database, so there is
+nothing to recover it from.
+
+192
+00:13:20,850 --> 00:13:25,798
+Trusting git cherry after a squash merge.
+Root cause: patch IDs compare individual
+
+193
+00:13:25,838 --> 00:13:29,204
+commits, and a squashed commit
+equals none of its parts.
+
+194
+00:13:29,544 --> 00:13:34,267
+Recreating and pushing the merged branch.
+Root cause: its commits are not ancestors
+
+195
+00:13:34,307 --> 00:13:38,398
+of main although their content is
+there, so a pull request from it shows
+
+196
+00:13:38,438 --> 00:13:39,890
+already-merged work again.
+
+197
+00:13:41,730 --> 00:13:46,303
+Now, out of the lab. A prompt-engineering
+team uses squash merges and automatic
+
+198
+00:13:46,343 --> 00:13:50,856
+deletion of head branches. An engineer
+comes back from two days off, finds her
+
+199
+00:13:50,896 --> 00:13:54,768
+branch gone everywhere, and can't
+find her commit messages on main.
+
+200
+00:13:54,808 --> 00:13:58,971
+She is certain that the server lost
+her work, and she is about to ask an
+
+201
+00:13:59,011 --> 00:14:02,766
+administrator to restore the branch
+from the closed pull request.
+
+202
+00:14:03,106 --> 00:14:07,876
+A colleague asks one question first: "Did
+you commit anything after your last push?"
+
+203
+00:14:07,916 --> 00:14:12,571
+Then he reads the reflog of HEAD with her.
+The answer is on the screen: one commit
+
+204
+00:14:12,611 --> 00:14:17,381
+after the last push. Restoring the server's
+branch would have brought back the three
+
+205
+00:14:17,421 --> 00:14:22,191
+commits that are already in main and not
+the one she needs, because the server never
+
+206
+00:14:22,231 --> 00:14:22,592
+had it.
+
+207
+00:14:22,932 --> 00:14:27,817
+They anchor the tip, compare trees, and
+move the one unmerged commit to a new
+
+208
+00:14:27,857 --> 00:14:32,359
+branch. The team's notes get two
+lines. A new branch after every merge.
+
+209
+00:14:32,399 --> 00:14:36,069
+And "pushed" is read from git
+status -sb, not from memory.
+
+210
+00:14:36,109 --> 00:14:41,186
+The colleague adds the line from the
+textbook's postmortem, because it's the one
+
+211
+00:14:41,226 --> 00:14:46,367
+that changes behavior: the only copy of a
+day's work was a reflog entry, which by
+
+212
+00:14:46,407 --> 00:14:50,269
+default expires 30 days after
+its commit becomes unreachable.
+
+213
+00:14:52,109 --> 00:14:58,141
+Your turn. Do Lab 36.1, "An accidental
+git reset --hard (incident 1)", in
+
+214
+00:14:58,181 --> 00:15:04,545
+lab-manual/m36-incident-drills-local.md,
+from a freshly generated sandbox and
+
+215
+00:15:04,585 --> 00:15:06,791
+without your earlier notes.
+
+216
+00:15:07,131 --> 00:15:11,743
+Before you run the first command, predict
+which of the three kinds of work you'll be
+
+217
+00:15:11,783 --> 00:15:16,173
+able to recover and from where. Before
+the lab's failure scenario, predict which
+
+218
+00:15:16,213 --> 00:15:19,385
+lines of the check script the
+tempting recovery will fail.
+
+219
+00:15:19,425 --> 00:15:23,870
+Type the recovery by hand. Your new commit
+IDs will differ from the book, because
+
+220
+00:15:23,910 --> 00:15:25,864
+commits you make use the real clock.
+
+221
+00:15:26,204 --> 00:15:31,434
+The challenge is Lab 36.2, "A branch appears
+to have disappeared (incident 8)", in
+
+222
+00:15:31,474 --> 00:15:32,334
+the same file.
+
+223
+00:15:36,174 --> 00:15:40,161
+Answer out loud. The question asks for
+an order and a reason per command.
+
+224
+00:15:40,201 --> 00:15:44,739
+A strong answer starts with the command
+whose first line can change everything that
+
+225
+00:15:44,779 --> 00:15:49,317
+follows, moves from the current state to
+the history of the refs to the server, and
+
+226
+00:15:49,357 --> 00:15:51,854
+says for each command
+what it rules in or out.
+
+227
+00:15:52,194 --> 00:15:56,821
+It distinguishes the reflog of a branch
+from the reflog of HEAD and says when only
+
+228
+00:15:56,861 --> 00:16:01,260
+one of them exists. It includes the
+command for work that was staged and never
+
+229
+00:16:01,300 --> 00:16:05,927
+committed, and notes that this one writes
+files. It ends with the first change you
+
+230
+00:16:05,967 --> 00:16:08,887
+would make, and why that
+change can't lose anything.
+
+231
+00:16:10,727 --> 00:16:11,654
+Let's land this.
+
+232
+00:16:11,994 --> 00:16:16,945
+After a hard reset, committed work is in
+the reflog, staged work is in dangling
+
+233
+00:16:16,985 --> 00:16:19,915
+blobs without names, and
+unstaged work is gone.
+
+234
+00:16:20,255 --> 00:16:24,678
+Recover by adding the lost commits on top
+of the current tip, not by moving the
+
+235
+00:16:24,718 --> 00:16:25,356
+branch back.
+
+236
+00:16:25,696 --> 00:16:30,909
+A branch's reflog is deleted with the branch;
+the reflog of HEAD survives and holds
+
+237
+00:16:30,949 --> 00:16:31,416
+the tip.
+
+238
+00:16:31,756 --> 00:16:36,401
+After a squash merge, compare trees, not
+patch IDs, to find which work is where.
+
+239
+00:16:36,741 --> 00:16:41,479
+Tell the person exactly what is back, what
+is not and why, and which command was not
+
+240
+00:16:41,519 --> 00:16:41,991
+involved.
+
+241
+00:16:43,831 --> 00:16:48,242
+Read sections 30.5 and 30.12.
+Compare your own attempt with
+
+242
+00:16:48,282 --> 00:16:54,504
+solutions/incident-01-hard-reset.md only
+now, line by line: where did your order of
+
+243
+00:16:54,544 --> 00:17:00,766
+commands differ, and did any of your commands
+change state before you had named the
+
+244
+00:17:00,806 --> 00:17:06,801
+cause? Then generate Incident 10 and
+Incident 9 and attempt both before the next
+
+245
+00:17:06,841 --> 00:17:07,254
+video.
+
+246
+00:17:07,594 --> 00:17:11,408
+Two reports named two suspects,
+and the evidence cleared both.
+
+247
+00:17:11,448 --> 00:17:14,702
+Practise the first recovery
+by hand before you go on.
+
+248
+00:17:14,742 --> 00:17:19,861
+Next time, two more reports: "It is pushed.
+GitHub must be caching", and "My fix is
+
+249
+00:17:19,901 --> 00:17:24,646
+in the log and not in the file". Until
+then, look at the state first and type
+
+250
+00:17:24,686 --> 00:17:26,635
+second. See you in the next one.

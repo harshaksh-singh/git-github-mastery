@@ -1,0 +1,1156 @@
+1
+00:00:04,500 --> 00:00:07,962
+Four questions, and your clone can
+answer about half of one of them.
+
+2
+00:00:08,302 --> 00:00:13,353
+Your clone is your own copy of the repository,
+and a commit is one saved snapshot in
+
+3
+00:00:13,393 --> 00:00:18,323
+it. Your clone knows two commit IDs, if it
+happened to fetch, that is, to download
+
+4
+00:00:18,363 --> 00:00:22,263
+the server's state, before and
+after. It doesn't know who pushed.
+
+5
+00:00:22,303 --> 00:00:26,323
+The author field of a commit doesn't
+say either: anyone can set it.
+
+6
+00:00:26,663 --> 00:00:31,522
+And there's a second problem. The person
+who noticed on Friday evening tried three
+
+7
+00:00:31,562 --> 00:00:36,541
+repairs before calling you. Each repair
+moved refs, the names that point at commits,
+
+8
+00:00:36,581 --> 00:00:41,500
+and pushed lines down in the reflog, Git's
+local record of where each ref has been.
+
+9
+00:00:41,540 --> 00:00:46,399
+One of the repairs ran a cleanup. The
+evidence you need is partly gone, and it was
+
+10
+00:00:46,439 --> 00:00:50,342
+destroyed by the investigation. So
+where do the four answers live?
+
+11
+00:00:50,382 --> 00:00:52,792
+By the end you'll have a source for each.
+
+12
+00:00:54,632 --> 00:00:58,177
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:58,217 --> 00:01:03,115
+This is the second phase of the method:
+preserve. In video 180 it was one command, a
+
+14
+00:01:03,155 --> 00:01:06,994
+rescue branch, which is a new name
+placed on an endangered commit.
+
+15
+00:01:07,034 --> 00:01:11,579
+Today you learn the four layers of
+preservation, what each holds and what each
+
+16
+00:01:11,619 --> 00:01:16,458
+misses, and you watch a repository being
+destroyed on purpose and brought back from
+
+17
+00:01:16,498 --> 00:01:20,867
+each layer. That demonstration is the
+argument: a backup made first turns a
+
+18
+00:01:20,907 --> 00:01:23,394
+destructive mistake
+into a recoverable one.
+
+19
+00:01:23,734 --> 00:01:27,182
+The second half is about evidence
+that isn't in any clone.
+
+20
+00:01:27,222 --> 00:01:32,114
+GitHub records what reached the server,
+who was authenticated when it arrived, and
+
+21
+00:01:32,154 --> 00:01:37,045
+which rules were evaluated. Nothing in that
+half is part of Git, and nothing in it
+
+22
+00:01:37,085 --> 00:01:42,037
+was run for this course. It's described
+from GitHub's documentation as the textbook
+
+23
+00:01:42,077 --> 00:01:44,262
+read it on the first of October 2026.
+
+24
+00:01:44,602 --> 00:01:48,279
+From video 79 you know backup
+refs and bundles as prevention.
+
+25
+00:01:48,319 --> 00:01:52,605
+A bundle is one file that holds commits
+and the refs that go with them.
+
+26
+00:01:52,645 --> 00:01:55,591
+Here they're steps of a
+procedure, with an order.
+
+27
+00:01:57,431 --> 00:01:59,009
+Here's what you'll walk away with.
+
+28
+00:01:59,349 --> 00:02:00,762
+After this video you can:
+
+29
+00:02:01,102 --> 00:02:05,836
+Preserve a repository's state with a backup
+ref, a copy and a bundle, and say what
+
+30
+00:02:05,876 --> 00:02:07,117
+each keeps and misses.
+
+31
+00:02:07,458 --> 00:02:11,889
+Show that a backup made first turns a
+destructive mistake into a recoverable one.
+
+32
+00:02:12,229 --> 00:02:15,660
+Name the diagnostic commands
+that are not strictly read-only.
+
+33
+00:02:16,000 --> 00:02:20,333
+List the GitHub-side sources of evidence
+the section names and what each records.
+
+34
+00:02:20,673 --> 00:02:23,746
+Say where the timeline of a
+server-side branch comes from.
+
+35
+00:02:25,586 --> 00:02:30,319
+In one sentence. Before the first
+state-changing command, put what you might need
+
+36
+00:02:30,359 --> 00:02:32,735
+later somewhere that the fix can't reach.
+
+37
+00:02:33,075 --> 00:02:37,882
+Precisely: four layers. Each holds more
+than the previous one and costs more.
+
+38
+00:02:38,222 --> 00:02:41,521
+A ref under refs/backup/
+isn't shown by git branch.
+
+39
+00:02:41,561 --> 00:02:46,692
+A branch under rescue/ is, which is better
+when a colleague continues the work.
+
+40
+00:02:46,732 --> 00:02:48,460
+Both keep the commit alive.
+
+41
+00:02:48,800 --> 00:02:53,742
+None of the four layers changes the working
+tree, the index, HEAD or any existing
+
+42
+00:02:53,782 --> 00:02:58,848
+ref. The working tree is the files you edit,
+the index is the proposed next commit,
+
+43
+00:02:58,888 --> 00:03:02,969
+and HEAD is Git's note of where you
+are. A backup ref adds one ref.
+
+44
+00:03:03,009 --> 00:03:06,599
+The copy and the bundle are
+written outside the repository.
+
+45
+00:03:06,939 --> 00:03:10,593
+Which layer when. A ref is about
+to move: a backup ref, always.
+
+46
+00:03:10,633 --> 00:03:15,108
+Uncommitted work or an operation in
+progress is involved: a copy of the whole
+
+47
+00:03:15,148 --> 00:03:19,800
+directory. The disk is suspect or the
+evidence must leave the machine: a bundle,
+
+48
+00:03:19,840 --> 00:03:24,198
+stored elsewhere. Someone else will ask
+what happened: the recorded output.
+
+49
+00:03:24,538 --> 00:03:29,201
+One warning about the copy. A copy of
+a repository contains everything the
+
+50
+00:03:29,241 --> 00:03:34,286
+repository contains, including credentials
+in .git/config URLs and any secret in
+
+51
+00:03:34,326 --> 00:03:39,370
+history. Treat it with the same care, and
+delete it when the incident is closed.
+
+52
+00:03:39,710 --> 00:03:43,677
+Diagnostic commands that
+are not strictly read-only.
+
+53
+00:03:43,717 --> 00:03:45,680
+Section 29.13 names three.
+
+54
+00:03:46,020 --> 00:03:52,095
+git fsck --lost-found writes
+files under .git/lost-found/.
+
+55
+00:03:52,435 --> 00:03:57,977
+git fetch moves remote-tracking refs, your
+clone's records of the server's branches.
+
+56
+00:03:58,017 --> 00:04:03,160
+With fetch.prune=true or --prune it
+deletes those whose server branch is gone,
+
+57
+00:04:03,200 --> 00:04:07,878
+together with their reflogs: the last
+local record of a deleted branch.
+
+58
+00:04:07,918 --> 00:04:11,333
+Use git ls-remote when you
+must not change anything.
+
+59
+00:04:11,673 --> 00:04:15,623
+git status may rewrite the index
+to refresh cached stat data.
+
+60
+00:04:15,663 --> 00:04:21,116
+In a repository you must not touch at all,
+use git --no-optional-locks status, which
+
+61
+00:04:21,156 --> 00:04:24,125
+the Git manual documents
+for background tools.
+
+62
+00:04:24,465 --> 00:04:29,046
+GitHub-side evidence, in one sentence. Your
+clone records what you did, and GitHub
+
+63
+00:04:29,086 --> 00:04:33,610
+records what reached the server, who was
+authenticated when it arrived, and which
+
+64
+00:04:33,650 --> 00:04:34,793
+rules were evaluated.
+
+65
+00:04:35,133 --> 00:04:38,574
+GitHub, not Git. Nothing in
+this part is part of Git.
+
+66
+00:04:38,614 --> 00:04:43,631
+Git's reflogs are local and aren't shared
+with remotes, and GitHub exposes no
+
+67
+00:04:43,671 --> 00:04:44,879
+server-side reflog.
+
+68
+00:04:48,219 --> 00:04:52,563
+So the timeline of a server-side
+branch doesn't come from Git at all.
+
+69
+00:04:52,603 --> 00:04:57,455
+It comes from these five sources. None
+of the commands was executed here, and
+
+70
+00:04:57,495 --> 00:04:59,298
+user-interface labels change.
+
+71
+00:04:59,638 --> 00:05:05,360
+The activity endpoint is documented with
+the activity types push, force_push,
+
+72
+00:05:05,400 --> 00:05:11,347
+branch_creation, branch_deletion, pr_merge
+and merge_queue_merge, and items that
+
+73
+00:05:11,387 --> 00:05:14,789
+carry before, after, ref,
+timestamp and actor.
+
+74
+00:05:15,129 --> 00:05:19,880
+How the two sides combine. Git evidence
+answers "what is the state and which local
+
+75
+00:05:19,920 --> 00:05:24,788
+command produced it". GitHub evidence answers
+"which authenticated account moved the
+
+76
+00:05:24,828 --> 00:05:29,054
+server's ref, when, from which commit
+to which, and did a rule allow it".
+
+77
+00:05:29,394 --> 00:05:33,759
+A "restore" action inside the Activity
+view: only filtering and "Compare changes"
+
+78
+00:05:33,799 --> 00:05:37,892
+are documented there. The access
+requirement and the retention period of the
+
+79
+00:05:37,932 --> 00:05:41,319
+Activity view aren't stated in
+the documentation that was read.
+
+80
+00:05:41,659 --> 00:05:46,895
+How long GitHub keeps commits that no ref
+reaches: no retention period is published.
+
+81
+00:05:46,935 --> 00:05:52,172
+The recovery recipe, find the old ID, then
+create a ref at it through the references
+
+82
+00:05:52,212 --> 00:05:57,134
+API, is an inference from documented
+endpoints, not a documented procedure, and
+
+83
+00:05:57,174 --> 00:05:59,395
+nothing guarantees that it succeeds.
+
+84
+00:05:59,735 --> 00:06:04,782
+And one consequence: GitHub-side evidence
+expires. Thirty days for events, seven
+
+85
+00:06:04,822 --> 00:06:08,533
+days for enterprise Git events.
+Export it on the first day.
+
+86
+00:06:10,373 --> 00:06:15,811
+A picture helps. The textbook's analogy:
+a database administrator takes a snapshot
+
+87
+00:06:15,851 --> 00:06:21,357
+before a migration. The analogy breaks only
+in cost: a backup ref takes one second,
+
+88
+00:06:21,397 --> 00:06:23,762
+so time never justifies skipping it.
+
+89
+00:06:24,102 --> 00:06:29,248
+For the four layers, think of what each
+would let you rebuild after the worst
+
+90
+00:06:29,288 --> 00:06:33,626
+afternoon. Try it now, on paper,
+before I say it. Thirty seconds.
+
+91
+00:06:33,666 --> 00:06:39,082
+Write four words: record, ref, bundle,
+copy. Beside each, write what it gives you
+
+92
+00:06:39,122 --> 00:06:39,418
+back.
+
+93
+00:06:41,758 --> 00:06:46,502
+The recorded output lets you tell the story.
+The backup ref lets you get the commits
+
+94
+00:06:46,542 --> 00:06:50,261
+back. The bundle lets you get the
+commits back on another machine.
+
+95
+00:06:50,301 --> 00:06:54,818
+The copy lets you get the afternoon back:
+the uncommitted edits, the reflog, the
+
+96
+00:06:54,858 --> 00:06:56,071
+operation in progress.
+
+97
+00:06:56,411 --> 00:06:59,301
+For the two kinds of evidence,
+think of a building.
+
+98
+00:06:59,341 --> 00:07:02,922
+Your clone is your own notebook
+of what you carried in and out.
+
+99
+00:07:02,962 --> 00:07:07,577
+GitHub is the log at the front desk: who
+badged in, at what time, which door, and
+
+100
+00:07:07,617 --> 00:07:11,197
+whether a guard waved them through.
+Neither replaces the other.
+
+101
+00:07:11,237 --> 00:07:13,956
+And the front desk doesn't
+keep its log forever.
+
+102
+00:07:15,796 --> 00:07:20,344
+Draw the order with an arrow under the
+boxes: anchor first, bundle second.
+
+103
+00:07:20,384 --> 00:07:24,312
+A bundle holds what refs and HEAD
+reach at the moment it's made.
+
+104
+00:07:24,352 --> 00:07:27,164
+A commit that only a
+reflog knows isn't in it.
+
+105
+00:07:29,004 --> 00:07:33,722
+Step 1: record. 🟢 SAFE: writes
+files outside the repository.
+
+106
+00:07:34,062 --> 00:07:39,654
+Two edits: README.md unstaged,
+config/service.yaml staged, meaning added to the
+
+107
+00:07:39,694 --> 00:07:45,571
+index. The output of the opening commands
+is in a file, and each edit is saved as a
+
+108
+00:07:45,611 --> 00:07:45,999
+patch.
+
+109
+00:07:46,339 --> 00:07:51,145
+Step 2: backup refs. 🟢 SAFE:
+each command adds one ref.
+
+110
+00:07:51,485 --> 00:07:57,350
+One anchor on the detached HEAD, 075407e,
+and one on the published branch tip,
+
+111
+00:07:57,390 --> 00:07:57,956
+4a03014.
+
+112
+00:07:58,296 --> 00:08:03,938
+Step 3: a copy. 🟢 SAFE. Predict: will the
+copy know that a rebase is in progress?
+
+113
+00:08:03,978 --> 00:08:08,919
+A rebase copies commits onto a new
+base, and this one stopped half-way.
+
+114
+00:08:08,959 --> 00:08:10,042
+Say it out loud.
+
+115
+00:08:14,882 --> 00:08:20,228
+It will. The copy is a complete repository:
+the same rebase in progress, the same
+
+116
+00:08:20,268 --> 00:08:25,681
+staged and unstaged files, the same reflog.
+The -p keeps modification times, which
+
+117
+00:08:25,721 --> 00:08:28,009
+spares Git a re-read of every file.
+
+118
+00:08:28,349 --> 00:08:30,531
+Step 4: a bundle. 🟢 SAFE.
+
+119
+00:08:30,871 --> 00:08:35,889
+Seven refs, among them the backup refs
+created a moment ago and the detached HEAD.
+
+120
+00:08:35,929 --> 00:08:37,925
+That's why the anchor came first.
+
+121
+00:08:38,265 --> 00:08:43,238
+Step 5: the worst afternoon. The script now
+does on purpose what a panicked sequence
+
+122
+00:08:43,278 --> 00:08:47,356
+of "fixes" does by accident. Don't
+run this on a repository you need.
+
+123
+00:08:47,696 --> 00:08:54,432
+🔴 DANGEROUS: git reflog expire --expire=now
+--all followed by git gc --prune=now.
+
+124
+00:08:54,472 --> 00:09:01,041
+The five answers. What it changes: it
+deletes the reflogs and every unreachable
+
+125
+00:09:01,081 --> 00:09:05,308
+object, meaning every object
+that no name leads to.
+
+126
+00:09:05,348 --> 00:09:12,084
+What it can destroy: the safety net itself.
+Preview: git fsck --unreachable lists
+
+127
+00:09:12,124 --> 00:09:13,255
+what would go.
+
+128
+00:09:13,595 --> 00:09:19,449
+Recovery: none. When appropriate: only for
+purging sensitive data from a clone after
+
+129
+00:09:19,489 --> 00:09:25,273
+the secret has been rotated. The other
+commands of the sequence: git rebase --abort
+
+130
+00:09:25,313 --> 00:09:31,167
+is 🟡 and resets the index and the working
+tree. And git branch -D and git update-ref
+
+131
+00:09:31,207 --> 00:09:32,711
+-d delete the anchors.
+
+132
+00:09:33,051 --> 00:09:36,067
+Predict the last two
+outputs. Say them out loud.
+
+133
+00:09:40,907 --> 00:09:46,016
+git rebase --abort printed nothing, and
+the last command shows that the staged and
+
+134
+00:09:46,056 --> 00:09:48,215
+the unstaged edit are gone with it.
+
+135
+00:09:48,555 --> 00:09:54,064
+With the anchors deleted, the reflogs emptied
+and the objects pruned, 075407e is no
+
+136
+00:09:54,104 --> 00:09:59,547
+longer an object in this repository. This
+is the point of no return of Chapter 13,
+
+137
+00:09:59,587 --> 00:10:01,218
+reached in five commands.
+
+138
+00:10:01,558 --> 00:10:03,688
+Step 6: back from the bundle.
+
+139
+00:10:04,028 --> 00:10:08,735
+The bundle returns the three commits. The
+new reflog has one line: the history of
+
+140
+00:10:08,775 --> 00:10:10,844
+how the ref moved isn't in a bundle.
+
+141
+00:10:11,184 --> 00:10:16,543
+Step 7: back from the copy. Predict what
+the copy still has that the bundle didn't.
+
+142
+00:10:16,883 --> 00:10:21,433
+The copy returns everything, including
+the two uncommitted edits and the rebase
+
+143
+00:10:21,473 --> 00:10:21,781
+state.
+
+144
+00:10:22,121 --> 00:10:22,911
+The handover.
+
+145
+00:10:23,251 --> 00:10:28,261
+A note from a colleague: a backport to a
+release branch, a conflict resolved by
+
+146
+00:10:28,301 --> 00:10:33,567
+hand, and "please finish". A backport copies
+a fix to a maintenance line, here with
+
+147
+00:10:33,607 --> 00:10:38,234
+git cherry-pick, which applies one
+commit's change to the current branch.
+
+148
+00:10:38,274 --> 00:10:43,284
+The note contains intent that no Git
+command can show: on this release line the
+
+149
+00:10:43,324 --> 00:10:46,608
+threshold must stay 0.50,
+and the limit becomes 128.
+
+150
+00:10:46,648 --> 00:10:51,019
+git status confirms a cherry-pick
+in progress with one unmerged path.
+
+151
+00:10:51,359 --> 00:10:52,326
+The diagnosis.
+
+152
+00:10:52,666 --> 00:10:58,200
+CHERRY_PICK_HEAD, a sequencer todo with two
+picks, three stages for guard.yaml, and
+
+153
+00:10:58,240 --> 00:11:03,842
+a combined diff that shows the colleague's
+hand-made resolution in the working tree.
+
+154
+00:11:03,882 --> 00:11:09,349
+That resolution exists in no object. Quick
+quiz: which layer of preservation would
+
+155
+00:11:09,389 --> 00:11:13,043
+keep it? A, the backup ref.
+B, the bundle. C, the copy.
+
+156
+00:11:13,083 --> 00:11:13,849
+Your answer?
+
+157
+00:11:21,689 --> 00:11:27,032
+C, the copy. A ref and a bundle keep commits,
+and this resolution is in no commit.
+
+158
+00:11:27,072 --> 00:11:29,067
+The copy keeps the file itself.
+
+159
+00:11:29,407 --> 00:11:30,235
+The preservation.
+
+160
+00:11:30,575 --> 00:11:34,687
+All four layers, in order: the record,
+the anchor, the copy, the bundle.
+
+161
+00:11:34,727 --> 00:11:37,801
+And one more copy with a
+different purpose: rehearsal.
+
+162
+00:11:37,841 --> 00:11:42,414
+That's the accident investigator's advantage
+from video 180: a repository can be
+
+163
+00:11:42,454 --> 00:11:45,989
+copied in seconds, so you can
+rehearse the repair on the copy.
+
+164
+00:11:46,329 --> 00:11:50,222
+Open your own practice repository
+in a browser, in the normal way.
+
+165
+00:11:50,262 --> 00:11:54,631
+The interface changes, the lab's text
+and the linked documentation are the
+
+166
+00:11:54,671 --> 00:11:57,670
+reference, and nothing was
+captured by the authors.
+
+167
+00:11:57,710 --> 00:12:02,556
+This is only to show where one instrument
+is. Find the repository's Activity view,
+
+168
+00:12:02,596 --> 00:12:04,999
+wherever the current interface places it.
+
+169
+00:12:05,339 --> 00:12:09,863
+In it, find by function: the filter for
+the branch, the filter for the activity
+
+170
+00:12:09,903 --> 00:12:14,485
+type, which the documentation lists as
+direct pushes, pull request merges, force
+
+171
+00:12:14,525 --> 00:12:19,107
+pushes, branch creations and branch
+deletions, and on one entry the control that
+
+172
+00:12:19,147 --> 00:12:23,961
+compares the before and after commit. That's
+all. The documentation doesn't describe
+
+173
+00:12:24,001 --> 00:12:27,312
+a restore action there, and
+this course doesn't claim one.
+
+174
+00:12:29,152 --> 00:12:30,800
+Five mistakes to watch for.
+
+175
+00:12:31,140 --> 00:12:36,201
+Skipping preservation because the fix is
+"quick". Root cause: the cost of a backup
+
+176
+00:12:36,241 --> 00:12:41,054
+ref is one second, and the cost of a
+wrong fix without one is work that exists
+
+177
+00:12:41,094 --> 00:12:41,863
+nowhere else.
+
+178
+00:12:42,203 --> 00:12:47,134
+Making a bundle before anchoring. Root
+cause: a bundle holds what refs and HEAD
+
+179
+00:12:47,174 --> 00:12:50,407
+reach; a commit known only
+to a reflog is not in it.
+
+180
+00:12:50,747 --> 00:12:54,147
+Relying on a backup ref when
+uncommitted work is involved.
+
+181
+00:12:54,187 --> 00:12:59,130
+Root cause: a ref preserves commits; the
+index, the working tree and operation state
+
+182
+00:12:59,170 --> 00:13:00,850
+are preserved only by a copy.
+
+183
+00:13:01,190 --> 00:13:04,588
+Running git gc or tidying
+branches during an incident.
+
+184
+00:13:04,628 --> 00:13:09,746
+Root cause: reflogs and unreachable objects
+are the evidence, and cleanup removes
+
+185
+00:13:09,786 --> 00:13:10,637
+exactly those.
+
+186
+00:13:10,977 --> 00:13:15,305
+Looking for "who pushed" in the commit.
+Root cause: author and committer are text
+
+187
+00:13:15,345 --> 00:13:19,510
+set by the client; the authenticated
+account is recorded only on the platform.
+
+188
+00:13:21,350 --> 00:13:26,080
+Now, out of the lab. main of a model-serving
+repository moved backwards on Friday
+
+189
+00:13:26,120 --> 00:13:30,260
+evening. The on-call engineer doesn't
+start by moving it forward again.
+
+190
+00:13:30,600 --> 00:13:35,244
+In her own clone, which fetched in the
+morning and again at night, git reflog show
+
+191
+00:13:35,284 --> 00:13:39,928
+origin/main gives the two IDs: where the
+remote-tracking branch was, and where the
+
+192
+00:13:39,968 --> 00:13:44,670
+forced update put it. She anchors the old
+ID with a backup ref before anything else
+
+193
+00:13:44,710 --> 00:13:49,011
+and records the output. That's the Git
+half: the state, and the two commits.
+
+194
+00:13:49,351 --> 00:13:54,230
+The GitHub half answers the rest. The
+Activity view filtered by force pushes names
+
+195
+00:13:54,270 --> 00:13:58,848
+the authenticated account and the time.
+Rule Insights says whether a ruleset,
+
+196
+00:13:58,888 --> 00:14:03,887
+GitHub's named list of rules for certain
+refs, evaluated that update and whether the
+
+197
+00:14:03,927 --> 00:14:08,686
+actor bypassed it. The audit log shows
+whether a rule was edited shortly before.
+
+198
+00:14:08,726 --> 00:14:13,424
+She exports what she finds the same
+evening, because the sources have different
+
+199
+00:14:13,464 --> 00:14:15,164
+lifetimes and some are short.
+
+200
+00:14:15,504 --> 00:14:19,967
+On Monday she can answer all four questions
+of the hook, each with its source.
+
+201
+00:14:20,007 --> 00:14:24,817
+There are your four answers. And the repair
+itself, restoring the ref, was done from
+
+202
+00:14:24,857 --> 00:14:29,320
+the anchored ID with a lease, a forced
+push that succeeds only if the server's
+
+203
+00:14:29,360 --> 00:14:31,456
+branch is still where she expects it.
+
+204
+00:14:33,296 --> 00:14:37,661
+Your turn. Do Lab 35.3, "Preserve
+evidence, then fix", in
+
+205
+00:14:37,701 --> 00:14:43,998
+lab-manual/m35-diagnosis-method.md. In this
+sitting, do it up to and including the
+
+206
+00:14:44,038 --> 00:14:45,002
+preservation.
+
+207
+00:14:45,342 --> 00:14:49,891
+Before you preserve, write down for this
+repository what each of the four layers
+
+208
+00:14:49,931 --> 00:14:54,710
+would hold and what it would miss, and in
+particular where the colleague's hand-made
+
+209
+00:14:54,750 --> 00:14:59,528
+resolution would survive. Then preserve,
+and check your prediction by looking inside
+
+210
+00:14:59,568 --> 00:15:04,118
+the copy and at the list of refs in the
+bundle. Leave the fix for after the next
+
+211
+00:15:04,158 --> 00:15:06,584
+video, or attempt it
+now and compare later.
+
+212
+00:15:06,924 --> 00:15:13,378
+The challenge is Exercise 12.9, Level
+4, "A branch that looks like main", in
+
+213
+00:15:13,418 --> 00:15:17,138
+exercises/m11-m15-investigation-recovery.md.
+
+214
+00:15:20,978 --> 00:15:26,144
+Answer out loud. A strong answer treats
+the three as layers with increasing reach
+
+215
+00:15:26,184 --> 00:15:31,028
+and cost, and for each gives both lists,
+kept and missed, in concrete terms:
+
+216
+00:15:31,068 --> 00:15:36,105
+commits, reflogs, the index, uncommitted
+files, operation state, configuration.
+
+217
+00:15:36,145 --> 00:15:41,246
+It says in which situation each is the
+right choice, and why the order of two of
+
+218
+00:15:41,286 --> 00:15:46,516
+them matters. It mentions what none of them
+holds, which is anything that only the
+
+219
+00:15:46,556 --> 00:15:51,336
+server has. A complete answer adds the
+care a copy needs, because of what a
+
+220
+00:15:51,376 --> 00:15:53,650
+repository can contain besides code.
+
+221
+00:15:55,490 --> 00:15:56,417
+Let's land this.
+
+222
+00:15:56,757 --> 00:16:01,284
+Before the first state-changing command,
+preserve: record the output, anchor with a
+
+223
+00:16:01,324 --> 00:16:05,575
+ref, and for uncommitted work or an open
+operation copy the whole directory; a
+
+224
+00:16:05,615 --> 00:16:08,216
+bundle when the evidence
+must leave the machine.
+
+225
+00:16:08,556 --> 00:16:13,739
+A backup ref keeps commits; a copy keeps
+everything local; a bundle keeps what refs
+
+226
+00:16:13,779 --> 00:16:15,627
+and HEAD reach and no reflogs.
+
+227
+00:16:15,967 --> 00:16:21,927
+git fsck --lost-found, git fetch, especially
+with pruning, and git status are not
+
+228
+00:16:21,967 --> 00:16:23,334
+strictly read-only.
+
+229
+00:16:23,674 --> 00:16:28,008
+Git records the state and the local commands;
+GitHub records which account moved a
+
+230
+00:16:28,048 --> 00:16:31,528
+server ref, when, from where to
+where, and what the rules decided.
+
+231
+00:16:31,868 --> 00:16:36,592
+GitHub-side evidence has limits and lifetimes,
+some facts about it are unverified,
+
+232
+00:16:36,632 --> 00:16:39,090
+and it should be exported
+on the first day.
+
+233
+00:16:40,930 --> 00:16:46,249
+Read sections 29.7 and 29.8. Then write,
+for your own team's main repository, one
+
+234
+00:16:46,289 --> 00:16:51,674
+line per GitHub-side source: can you read
+it, and how far back does it go for your
+
+235
+00:16:51,714 --> 00:16:55,445
+plan? Where you don't know,
+write how you would find out.
+
+236
+00:16:55,485 --> 00:17:00,672
+The next video ranks fixes by what they
+can destroy and defines what "verified"
+
+237
+00:17:00,712 --> 00:17:01,069
+means.
+
+238
+00:17:01,409 --> 00:17:05,815
+You can now put evidence out of a fix's
+reach in four layers, and say which
+
+239
+00:17:05,855 --> 00:17:10,616
+questions only GitHub can answer. Practise
+the preservation in the lab before you
+
+240
+00:17:10,656 --> 00:17:14,233
+move on. Until then, look at the
+state first and type second.
+
+241
+00:17:14,273 --> 00:17:15,655
+See you in the next one.

@@ -212,6 +212,8 @@ Try it now, thirty seconds, on paper. Draw a box for one job. On its left, write
   UNTRUSTED (anyone who can open a pull request or an issue, or who controls a dependency)
 ```
 
+First the job in the middle, with what it holds: the token with its permissions, the secrets named in the job, and an OIDC token if it has id-token.
+
 **[DIAGRAM]** Trust flows downward. Everything above the dashed line is controlled by people with write access. Everything below it can be controlled by anyone on the internet. Each arrow from below is one of the next four videos.
 
 **[ANIMATION]** step: trust.5
@@ -382,9 +384,11 @@ You now have a table with five rows and four columns, made in one minute. It tel
 
 **[ON SCREEN]** Lower third: GitHub. A short screen walkthrough.
 
-On your own practice repository. The interface changes. The documentation linked from section 21A.3 is the reference, and no GitHub output was captured by the authors. Lab 29.1 itself needs no GitHub access for its main part. This is one look that belongs to this video.
+**On your own practice repository.** The interface changes. The documentation linked from section 21A.3 is the reference, and no GitHub output was captured by the authors. Lab 29.1 itself needs no GitHub access for its main part. This is one look that belongs to this video.
 
 **[ANIMATION]** replay: three
+
+**[ANIMATION]** step: three.1
 
 Open the repository's settings for Actions and find the setting the documentation calls "Workflow permissions". Read which of the two options is selected: read and write for all permissions, or read for contents and packages. Don't change anything. Changing a setting is a decision, and this is an inspection. Then say aloud what a workflow without a `permissions` key would get in this repository, and why none of the course workflows depends on that answer.
 
@@ -392,7 +396,7 @@ Open the repository's settings for Actions and find the setting the documentatio
 
 Five mistakes to watch for.
 
-1. **Relying on the default token permissions.** Root cause: the default is a repository or organization setting, read-only only for repositories created since 2 February 2023; the file does not show it.
+1. **Relying on the default token permissions.** Root cause: the default is a repository or organization setting, read-only only for repositories created since the second of February 2023; the file does not show it.
 2. **Adding one permission and breaking another step.** Root cause: when any permission is specified, all unspecified ones are set to none.
 3. **`permissions: write-all` "to make it work".** Root cause: every job, and every action in every job, can then push, tag, release and edit issues.
 4. **Assuming an action cannot use the token because the workflow did not pass it.** Root cause: an action can read the token through the `github.token` context.

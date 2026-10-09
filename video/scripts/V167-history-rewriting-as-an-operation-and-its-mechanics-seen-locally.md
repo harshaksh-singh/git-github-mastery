@@ -483,7 +483,9 @@ Unreachable means that no ref leads to it any more. A bare repository of your ow
 | `git reflog expire --expire=now --all` then `git gc --prune=now` | unchanged | unchanged | unchanged | unchanged | all reflog entries and all unreachable objects deleted | unchanged | unchanged |
 | `git push --force --mirror origin` | unchanged | unchanged | unchanged | unchanged | unchanged | every ref set to the local value; refs missing locally are **deleted**; old objects stay as unreachable | branch and tag refs move; pull request refs are refused; cached views and old objects stay until Support acts |
 
-Read the last two columns of the first two rows: unchanged, unchanged. Nothing you did in the cleanup clone touched the remote until the push, and the push moved refs only.
+Read the last two columns of the first two rows: unchanged, unchanged.
+
+Nothing you did in the cleanup clone touched the remote until the push, and the push moved refs only.
 
 ## COMMON MISTAKES
 
@@ -524,6 +526,8 @@ When that is done, the challenge is Exercise 31.5, Level 4, "How far did it get?
 Answer it out loud before you open the answers file. A strong answer does four things. It starts with the layer where the damage happens, the issuer, and says what revocation achieves that no repository operation can. It gives the criterion for when a rewrite is warranted at all, with examples of data that can't be rotated. It names the costs concretely: what happens to clones, to recorded commit IDs, to signatures, to open pull requests, and what the rewrite can't recall. And it ends with a decision that is written down with its reason. An answer that describes only the filter command has answered a different question.
 
 ## RECAP
+
+**[ANIMATION]** step: rw.after
 
 **[ANIMATION]** say: Shared_up_to_987a49d,_replaced_from_0ac4257_on
 

@@ -178,6 +178,8 @@ Check your order. Evaluate, paste, write the file, start the shell. The outsider
 
 **[ON SCREEN]** The root-cause box of section 21A.6, one line at a time. Observed behavior: a step that only prints a pull request title runs commands nobody wrote. Git state: irrelevant; the title is GitHub data, a branch name or commit message is Git data. Mechanism: the expression is substituted into the script text before the shell starts. Root cause: attacker-controlled text was placed where the shell expects source code. Why Actions does this: expressions are a templating layer over the whole workflow file; the template engine does not know that the result will be parsed by a shell. Correct fix: pass the value through `env`, or as an action input with `with`, and use the quoted variable. Prevention: treat every expression inside `run` as a finding until proven constant; run CodeQL for workflows, zizmor or actionlint in CI.
 
+Read the root-cause line: attacker-controlled text was placed where the shell expects source code.
+
 ## LIVE TERMINAL DEMO
 
 **[TERMINAL]** Two replays. Plain Git and `grep` on files in the sandbox. Nothing is executed on GitHub, and the vulnerable files are never run.

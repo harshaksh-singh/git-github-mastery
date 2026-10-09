@@ -1,0 +1,1365 @@
+1
+00:00:04,500 --> 00:00:09,484
+The developer who made the mistake is
+relieved. They removed the file, added it to
+
+2
+00:00:09,524 --> 00:00:13,895
+.gitignore, the list of paths Git
+shouldn't track, committed and pushed.
+
+3
+00:00:13,935 --> 00:00:18,489
+They search the code: nothing. The
+repository on GitHub shows no .env file.
+
+4
+00:00:18,529 --> 00:00:22,533
+The message in the team channel
+says: "Removed, sorry about that."
+
+5
+00:00:22,873 --> 00:00:27,071
+The textbook's judgment on that answer
+is one sentence: deleting a file adds a
+
+6
+00:00:27,111 --> 00:00:28,538
+commit and removes nothing.
+
+7
+00:00:28,878 --> 00:00:33,652
+In this video you'll run the developer's
+exact repair in the sandbox, see the search
+
+8
+00:00:33,692 --> 00:00:38,409
+come back clean, and then print the key
+from a commit four steps back, and from the
+
+9
+00:00:38,449 --> 00:00:42,879
+server, through a release tag. And you'll
+learn the only question that decides
+
+10
+00:00:42,919 --> 00:00:47,693
+whether a leaked secret is dangerous, which
+isn't a question about the repository at
+
+11
+00:00:47,733 --> 00:00:49,011
+all. Hold that thought.
+
+12
+00:00:50,851 --> 00:00:54,437
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:54,477 --> 00:00:58,122
+This video has two halves that
+belong together in an incident.
+
+14
+00:00:58,462 --> 00:01:03,324
+The first half is about the credential,
+the token or key that proves to a service
+
+15
+00:01:03,364 --> 00:01:07,743
+who is asking. If one leaks, what can
+the holder reach, and for how long?
+
+16
+00:01:07,783 --> 00:01:12,524
+That depends on its type, and the textbook
+says most teams can't say which type
+
+17
+00:01:12,564 --> 00:01:13,856
+their automation uses.
+
+18
+00:01:14,196 --> 00:01:18,948
+The second half is about the repository:
+why deletion, a forced push, and making the
+
+19
+00:01:18,988 --> 00:01:23,740
+repository private don't remove a secret,
+and how you measure where it is with three
+
+20
+00:01:23,780 --> 00:01:24,766
+built-in commands.
+
+21
+00:01:25,106 --> 00:01:29,960
+The chapter insists on three layers, and
+you should hold them apart for the rest of
+
+22
+00:01:30,000 --> 00:01:33,144
+this part. Git on your machine:
+what history contains.
+
+23
+00:01:33,184 --> 00:01:36,504
+GitHub: what is displayed,
+scanned, blocked and retained.
+
+24
+00:01:36,544 --> 00:01:41,280
+And the issuer of the credential, the
+service that created it: whether the leaked
+
+25
+00:01:41,320 --> 00:01:46,115
+secret still works. The third layer is the
+one tutorials leave out, and it's where
+
+26
+00:01:46,155 --> 00:01:50,949
+incidents are decided. A secret is harmless
+from the moment its issuer revokes it,
+
+27
+00:01:50,989 --> 00:01:55,666
+meaning cancels it, and dangerous until
+then, whatever you do to the repository.
+
+28
+00:01:56,006 --> 00:01:58,312
+Every secret in the
+transcripts is a dummy.
+
+29
+00:02:00,152 --> 00:02:01,730
+Here's what you'll walk away with.
+
+30
+00:02:02,070 --> 00:02:03,482
+After this video you can:
+
+31
+00:02:03,822 --> 00:02:07,016
+rank credential types by what
+a thief can reach with each;
+
+32
+00:02:07,356 --> 00:02:11,654
+explain why a secret deleted in a later
+commit is still in the repository;
+
+33
+00:02:11,994 --> 00:02:14,871
+say where a force-pushed-away
+commit can still be found;
+
+34
+00:02:15,211 --> 00:02:18,864
+find a secret in every ref of a
+repository with built-in commands;
+
+35
+00:02:19,204 --> 00:02:21,722
+say which refs and tags
+contain the secret.
+
+36
+00:02:23,562 --> 00:02:27,940
+What a stolen credential can reach.
+Seven rows, from narrow to wide.
+
+37
+00:02:28,280 --> 00:02:33,122
+The Actions GITHUB_TOKEN: the workflow's
+repository, within the job's permissions.
+
+38
+00:02:33,162 --> 00:02:34,194
+Lifetime: the job.
+
+39
+00:02:34,534 --> 00:02:39,464
+A GitHub App installation token: the
+installation's repositories and permissions.
+
+40
+00:02:39,504 --> 00:02:40,630
+Lifetime: one hour.
+
+41
+00:02:40,970 --> 00:02:46,254
+A GitHub App private key: it mints installation
+tokens for every installation of the
+
+42
+00:02:46,294 --> 00:02:48,282
+app. Lifetime: it never expires.
+
+43
+00:02:48,622 --> 00:02:53,901
+A fine-grained personal access token: one
+owner, optionally selected repositories,
+
+44
+00:02:53,941 --> 00:02:56,430
+per-permission. Lifetime: configurable.
+
+45
+00:02:56,770 --> 00:03:00,501
+A deploy key: one repository,
+read or read-write. Long-lived.
+
+46
+00:03:00,841 --> 00:03:05,185
+A personal SSH key: everything
+the account can reach over SSH.
+
+47
+00:03:05,225 --> 00:03:05,963
+Long-lived.
+
+48
+00:03:06,303 --> 00:03:11,326
+A classic personal access token: every
+repository and organization its owner can
+
+49
+00:03:11,366 --> 00:03:13,098
+reach, by scope. Long-lived.
+
+50
+00:03:13,438 --> 00:03:16,560
+Two automatic protections
+exist, and both are narrow.
+
+51
+00:03:16,600 --> 00:03:21,392
+GitHub revokes its own tokens when they're
+pushed to a public repository or gist.
+
+52
+00:03:21,432 --> 00:03:23,778
+And it removes tokens unused for a year.
+
+53
+00:03:24,118 --> 00:03:29,397
+Quick quiz. Which leak is worse? A, an
+installation token that lives for one hour.
+
+54
+00:03:29,437 --> 00:03:33,548
+B, the App private key that mints
+such tokens and never expires.
+
+55
+00:03:33,588 --> 00:03:34,326
+Your answer?
+
+56
+00:03:39,166 --> 00:03:43,619
+B. The textbook calls the App private key
+the row people forget, and gives a figure
+
+57
+00:03:43,659 --> 00:03:44,485
+with its source.
+
+58
+00:03:44,825 --> 00:03:50,161
+Of 4,802 leaked GitHub App private keys
+tested in September 2026, 474 still
+
+59
+00:03:50,201 --> 00:03:56,111
+authenticated, 44 of them with organization
+admin access, according to GitGuardian.
+
+60
+00:03:56,151 --> 00:04:01,989
+The conclusion: short-lived installation
+tokens are only as safe as the long-lived
+
+61
+00:04:02,029 --> 00:04:03,423
+key that mints them.
+
+62
+00:04:03,763 --> 00:04:08,810
+A hierarchy for automation. The Phase 0
+report derives an order from those facts.
+
+63
+00:04:08,850 --> 00:04:12,139
+It is marked as an inference,
+not a GitHub statement.
+
+64
+00:04:12,179 --> 00:04:17,288
+First: OIDC-issued cloud tokens and the
+job-scoped GITHUB_TOKEN, wherever the work
+
+65
+00:04:17,328 --> 00:04:22,376
+happens inside a workflow. Second: GitHub
+App installation tokens, with the App's
+
+66
+00:04:22,416 --> 00:04:27,651
+private key in a secrets manager. Third:
+fine-grained personal access tokens with an
+
+67
+00:04:27,691 --> 00:04:32,801
+expiry and organization approval. Fourth:
+deploy keys, for read access to a single
+
+68
+00:04:32,841 --> 00:04:38,014
+repository. Fifth and last: classic tokens
+and shared machine users, with a written
+
+69
+00:04:38,054 --> 00:04:38,453
+reason.
+
+70
+00:04:38,793 --> 00:04:42,889
+Real compromises abuse tokens,
+sessions and laptops, not Git.
+
+71
+00:04:42,929 --> 00:04:48,178
+Three cases from the section. In April
+2022, stolen OAuth tokens issued to two
+
+72
+00:04:48,218 --> 00:04:53,534
+integrators were used to clone private
+repositories of dozens of organizations.
+
+73
+00:04:53,574 --> 00:04:58,822
+The lesson is that a third party's token
+store is part of your attack surface.
+
+74
+00:04:59,162 --> 00:05:04,373
+In December 2022, malware on an engineer's
+laptop at a CI provider stole an already
+
+75
+00:05:04,413 --> 00:05:08,105
+authenticated session, bypassing
+two-factor authentication.
+
+76
+00:05:08,145 --> 00:05:13,166
+The lesson is that two-factor authentication
+protects the login, not the session
+
+77
+00:05:13,206 --> 00:05:14,178
+that follows it.
+
+78
+00:05:14,518 --> 00:05:19,381
+And in May 2026, a poisoned third-party
+editor extension on an employee device led
+
+79
+00:05:19,421 --> 00:05:23,925
+to exfiltration of GitHub-internal
+repositories, and GitHub rotated critical
+
+80
+00:05:23,965 --> 00:05:28,888
+secrets. For that third case the textbook
+flags that attribution and details of the
+
+81
+00:05:28,928 --> 00:05:33,850
+extension come from vendor reports, and
+that one vendor gives the detection date as
+
+82
+00:05:33,890 --> 00:05:37,557
+the nineteenth of May where GitHub
+says the eighteenth of May.
+
+83
+00:05:37,897 --> 00:05:43,109
+Token forensics. After a suspected compromise
+the question is "what did this token
+
+84
+00:05:43,149 --> 00:05:48,234
+do?". GitHub's audit log, an organization's
+record of events, can be searched by
+
+85
+00:05:48,274 --> 00:05:53,486
+token without storing the token itself:
+you compute its SHA-256 and search for the
+
+86
+00:05:53,526 --> 00:05:53,806
+hash.
+
+87
+00:05:54,146 --> 00:05:59,244
+Two limits decide whether this works on
+the day. A search by token hash returns no
+
+88
+00:05:59,284 --> 00:06:04,445
+Git events: clones, fetches and pushes made
+with the token have to be identified in
+
+89
+00:06:04,485 --> 00:06:09,646
+an export of Git events data. And the
+retention differs: the organization audit log
+
+90
+00:06:09,686 --> 00:06:14,909
+covers 180 days, while Git events are an
+Enterprise Cloud feature that the audit log
+
+91
+00:06:14,949 --> 00:06:19,984
+retains for seven days. So to answer "was
+the repository cloned with this token?"
+
+92
+00:06:20,024 --> 00:06:24,308
+months later, streaming or export
+must be set up before the incident.
+
+93
+00:06:24,648 --> 00:06:30,879
+The scale, in three figures, each
+with its source in section 21B.9.
+
+94
+00:06:30,919 --> 00:06:38,648
+GitGuardian counted 28,649,024 new secrets
+on public GitHub in 2025, up 34 percent.
+
+95
+00:06:38,688 --> 00:06:44,170
+Of them, 1,275,105 were tied
+to AI services, up 81 percent.
+
+96
+00:06:44,210 --> 00:06:51,752
+64 percent of the secrets confirmed valid
+in 2022 were still valid when retested.
+
+97
+00:06:52,092 --> 00:06:56,734
+And internal repositories were about six
+times more likely than public ones to
+
+98
+00:06:56,774 --> 00:07:01,595
+contain a hardcoded secret. The textbook
+reads the last two for you: "still valid
+
+99
+00:07:01,635 --> 00:07:05,797
+years later" means that detection
+without revocation achieves nothing.
+
+100
+00:07:05,837 --> 00:07:10,718
+"Internal repositories are worse" means
+that privacy is being used as a substitute
+
+101
+00:07:10,758 --> 00:07:11,438
+for hygiene.
+
+102
+00:07:11,778 --> 00:07:17,321
+Why deletion is not removal. In one sentence:
+a commit is a permanent snapshot, so a
+
+103
+00:07:17,361 --> 00:07:22,904
+later commit that deletes a file leaves
+every earlier snapshot intact, and moving or
+
+104
+00:07:22,944 --> 00:07:28,221
+hiding refs changes who can easily find
+the old snapshot, not whether it exists.
+
+105
+00:07:28,261 --> 00:07:32,740
+A ref is a name, such as a branch
+or a tag, that points at a commit.
+
+106
+00:07:33,080 --> 00:07:35,882
+Three operations are commonly
+mistaken for removal.
+
+107
+00:07:36,222 --> 00:07:41,036
+Commit a deletion. What it changes: it adds
+a new commit whose tree lacks the file.
+
+108
+00:07:41,076 --> 00:07:45,714
+Where the secret still is: in every commit
+between the one that added it and the
+
+109
+00:07:45,754 --> 00:07:49,691
+deletion, reachable from the branch,
+from tags, from other branches.
+
+110
+00:07:50,031 --> 00:07:54,904
+Amend or reset, then force-push, which makes
+the server's branch point at different
+
+111
+00:07:54,944 --> 00:07:58,573
+commits. What it changes: it
+moves a ref to different commits.
+
+112
+00:07:58,613 --> 00:08:03,308
+Where the secret still is: in the old
+commits, which stay in the server's object
+
+113
+00:08:03,348 --> 00:08:08,162
+database, in every clone and fork that
+fetched them, and on GitHub in cached views
+
+114
+00:08:08,202 --> 00:08:10,884
+and through pull requests
+that reference them.
+
+115
+00:08:11,224 --> 00:08:16,369
+Make the repository private, or delete it.
+What it changes: who may read through the
+
+116
+00:08:16,409 --> 00:08:21,430
+normal interface. Where the secret still
+is: in every clone and fork made while it
+
+117
+00:08:21,470 --> 00:08:26,553
+was public, and in the fork network, a
+repository and all its forks, whose Git data
+
+118
+00:08:26,593 --> 00:08:27,725
+is stored together.
+
+119
+00:08:28,065 --> 00:08:33,487
+GitHub states the second and the third row
+itself, and researchers have shown both
+
+120
+00:08:33,527 --> 00:08:39,082
+to be exploitable at scale. In 2024, 40
+valid API keys in commits from deleted forks
+
+121
+00:08:39,122 --> 00:08:44,677
+of three commonly forked repositories. And
+in 2025, commits orphaned by force pushes
+
+122
+00:08:44,717 --> 00:08:49,806
+enumerated from public event archives
+and scanned, which yielded thousands of
+
+123
+00:08:49,846 --> 00:08:50,339
+secrets.
+
+124
+00:08:50,679 --> 00:08:55,568
+Finding it. You need three commands, and
+you need to know what each one can't see.
+
+125
+00:08:55,908 --> 00:09:00,434
+git log -S with a string, the pickaxe,
+lists commits in which the number of
+
+126
+00:09:00,474 --> 00:09:05,366
+occurrences of the string changed: the
+commits that added it and the commits that
+
+127
+00:09:05,406 --> 00:09:08,959
+removed it. Without --all it
+walks only the current branch.
+
+128
+00:09:09,299 --> 00:09:14,274
+git log -G with a regular expression
+lists commits whose diff has an added or
+
+129
+00:09:14,314 --> 00:09:19,551
+removed line that matches. Use it when you
+know the shape of a secret and not its
+
+130
+00:09:19,591 --> 00:09:22,221
+value, and with --all to cover every ref.
+
+131
+00:09:22,561 --> 00:09:27,019
+git grep with a pattern and the list of
+all commits searches the content of every
+
+132
+00:09:27,059 --> 00:09:31,127
+commit's tree, not the diffs. It answers
+"in which snapshots is the secret
+
+133
+00:09:31,167 --> 00:09:35,403
+present?", which is the exposure. The
+pickaxe answers "where did it enter and
+
+134
+00:09:35,443 --> 00:09:35,847
+leave?".
+
+135
+00:09:36,187 --> 00:09:42,955
+And to turn a commit into scope: git branch
+-a --contains and git tag --contains.
+
+136
+00:09:43,295 --> 00:09:45,867
+All of these are 🟢 SAFE:
+they change nothing.
+
+137
+00:09:47,707 --> 00:09:52,665
+Analogy, from the textbook. Publishing a
+correction in tomorrow's newspaper doesn't
+
+138
+00:09:52,705 --> 00:09:56,098
+recall yesterday's edition
+from the people who bought it.
+
+139
+00:09:56,138 --> 00:10:00,856
+Withdrawing yesterday's edition from your
+own archive, which is the force push,
+
+140
+00:10:00,896 --> 00:10:02,362
+doesn't recall it either.
+
+141
+00:10:02,702 --> 00:10:07,379
+The analogy breaks for unpushed commits: an
+edition that never left the building can
+
+142
+00:10:07,419 --> 00:10:09,232
+be pulped. That's the next video.
+
+143
+00:10:09,572 --> 00:10:14,086
+So the dividing line is the first push.
+Before it, the secret exists in one
+
+144
+00:10:14,126 --> 00:10:18,032
+repository, yours, and you can
+rewrite your own unpushed commits.
+
+145
+00:10:18,072 --> 00:10:23,072
+After it, the secret exists in every
+repository that fetched those commits, and you
+
+146
+00:10:23,112 --> 00:10:24,347
+control none of them.
+
+147
+00:10:24,687 --> 00:10:29,036
+Now put the two halves of this video
+together. After the first push you can't
+
+148
+00:10:29,076 --> 00:10:32,797
+un-publish. What you can do is make
+the published thing worthless.
+
+149
+00:10:32,837 --> 00:10:37,528
+That happens at the issuer, by revocation,
+and it works against every copy at once:
+
+150
+00:10:37,568 --> 00:10:42,316
+the one on the server, the one in a fork,
+the one in a colleague's clone, the one in
+
+151
+00:10:42,356 --> 00:10:46,875
+a log. Nothing you do in Git has that
+property. So there's the question from the
+
+152
+00:10:46,915 --> 00:10:50,523
+opening: not "is the file gone?",
+but "does the key still work?"
+
+153
+00:10:50,863 --> 00:10:55,055
+And how urgent it is depends on the
+first half: the type of credential.
+
+154
+00:10:55,095 --> 00:10:58,869
+A job token that died with its
+job an hour ago is one situation.
+
+155
+00:10:58,909 --> 00:11:01,790
+An App private key that
+never expires is another.
+
+156
+00:11:03,630 --> 00:11:08,362
+Try it now, thirty seconds, on paper.
+Write "leaked commit" in the middle of the
+
+157
+00:11:08,402 --> 00:11:12,657
+page. Around it, write every place
+where a copy of that commit may live.
+
+158
+00:11:12,697 --> 00:11:15,103
+How many can you name? Say them out loud.
+
+159
+00:11:19,943 --> 00:11:24,933
+Compare with the picture. A server branch,
+a server tag, an old pull request ref and
+
+160
+00:11:24,973 --> 00:11:28,945
+cached views, a fork or the fork
+network, and clones with a CI log.
+
+161
+00:11:28,985 --> 00:11:33,855
+A deletion commit, a forced push and going
+private each change one thing, and none
+
+162
+00:11:33,895 --> 00:11:38,885
+of them reaches every copy. Revoking at the
+issuer does: every copy becomes a string
+
+163
+00:11:38,925 --> 00:11:40,022
+that opens nothing.
+
+164
+00:11:40,362 --> 00:11:44,988
+Read the root-cause line: the secret was
+pushed, so it exists in every repository
+
+165
+00:11:45,028 --> 00:11:46,543
+that fetched those commits.
+
+166
+00:11:48,383 --> 00:11:49,839
+Step 1: the leak.
+
+167
+00:11:50,179 --> 00:11:56,244
+Into the lab. Eight commits and two tags.
+Four commits back, in 0805fd8, "Add
+
+168
+00:11:56,284 --> 00:12:01,555
+staging settings", a git add -A
+swept a local .env into the commit.
+
+169
+00:12:01,595 --> 00:12:07,104
+The file holds a dummy key. Notice
+the tag v0.2.0 one commit above it.
+
+170
+00:12:07,444 --> 00:12:09,792
+Step 2: the usual first reaction.
+
+171
+00:12:10,132 --> 00:12:15,423
+git rm --cached is 🟡 CAUTION: it removes
+the file from the index, and the working
+
+172
+00:12:15,463 --> 00:12:20,886
+tree copy stays. git commit is 🟢 SAFE. After
+this commit: what does git grep on the
+
+173
+00:12:20,926 --> 00:12:25,558
+tip say, and what does git show of
+the same path four commits back say?
+
+174
+00:12:25,598 --> 00:12:26,611
+Say it out loud.
+
+175
+00:12:31,451 --> 00:12:36,456
+The file list has no .env. git grep
+finds nothing and exits with status 1.
+
+176
+00:12:36,496 --> 00:12:40,137
+That's what the developer
+saw, and why they felt safe.
+
+177
+00:12:40,177 --> 00:12:44,091
+And git show HEAD~4:.env prints
+the key. The tip is clean.
+
+178
+00:12:44,131 --> 00:12:47,091
+The commit that added
+the file still has it.
+
+179
+00:12:47,431 --> 00:12:53,921
+Here's main as a picture, before the repair.
+Eight commits, with 0805fd8 four from
+
+180
+00:12:53,961 --> 00:12:57,346
+the top, and the tag
+v0.2.0 right above it.
+
+181
+00:12:57,686 --> 00:13:03,503
+The repair is one new commit on top,
+d42d1a1. Nothing below it changed.
+
+182
+00:13:03,543 --> 00:13:09,937
+0805fd8 still holds the file, and v0.2.0
+still points into the affected range.
+
+183
+00:13:10,277 --> 00:13:12,751
+Step 3: where did it enter and leave?
+
+184
+00:13:13,091 --> 00:13:16,757
+The pickaxe lists commits where
+the number of occurrences changed.
+
+185
+00:13:16,797 --> 00:13:19,565
+How many commits, and which?
+Make your prediction.
+
+186
+00:13:24,405 --> 00:13:28,858
+Two: 0805fd8, which introduced the
+key, and d42d1a1, which deleted it.
+
+187
+00:13:28,898 --> 00:13:33,864
+Everything between them contains it and
+isn't listed, because the count didn't
+
+188
+00:13:33,904 --> 00:13:39,191
+change there. Remember that when you read
+pickaxe output: it shows the edges of the
+
+189
+00:13:39,231 --> 00:13:40,924
+exposure, not the exposure.
+
+190
+00:13:41,264 --> 00:13:46,727
+With -p you see the lines, and with
+--diff-filter=A only commits that added a file,
+
+191
+00:13:46,767 --> 00:13:52,163
+which is the introduction. The textbook's
+remark: that one transcript answers four
+
+192
+00:13:52,203 --> 00:13:56,273
+assessment questions. Which
+commit, who, when, and which file.
+
+193
+00:13:56,613 --> 00:13:58,724
+Step 4: the shape, not the value.
+
+194
+00:13:59,064 --> 00:14:04,212
+A regular expression, a pattern that describes
+text by its shape, for the family of
+
+195
+00:14:04,252 --> 00:14:08,275
+dummy secrets, over all refs. Do
+you expect the same two commits?
+
+196
+00:14:08,315 --> 00:14:09,275
+Say it out loud.
+
+197
+00:14:14,115 --> 00:14:17,895
+Three. The third, 54093fe, is
+"Add rerank debugging notebook".
+
+198
+00:14:17,935 --> 00:14:22,762
+The second command shows where: a bearer
+token captured in the output cell of a
+
+199
+00:14:22,802 --> 00:14:26,151
+notebook, on a branch that
+was pushed and never merged.
+
+200
+00:14:26,191 --> 00:14:31,203
+Nobody had reported it. Notebook outputs
+leak secrets that the author never typed.
+
+201
+00:14:31,543 --> 00:14:34,340
+Step 5: in which snapshots is it present?
+
+202
+00:14:34,680 --> 00:14:39,846
+Five snapshots contain the key. The first
+column is the commit, shortened by cut.
+
+203
+00:14:39,886 --> 00:14:44,410
+Four are on main, and one, starting
+7fae871, is on a teammate's branch.
+
+204
+00:14:44,450 --> 00:14:48,267
+Then the summary: .env in five
+commits, the notebook in one.
+
+205
+00:14:48,307 --> 00:14:52,959
+On a large repository the argument
+list becomes too long for one command.
+
+206
+00:14:52,999 --> 00:14:55,851
+The textbook gives the
+piped form with xargs.
+
+207
+00:14:56,191 --> 00:14:57,812
+Step 6: which refs?
+
+208
+00:14:58,152 --> 00:15:04,006
+The local main, the remote-tracking main,
+a remote-tracking feature branch, and the
+
+209
+00:15:04,046 --> 00:15:04,787
+tag v0.2.0.
+
+210
+00:15:05,127 --> 00:15:09,080
+That list is the scope on the Git side:
+every ref from which the commit is
+
+211
+00:15:09,120 --> 00:15:09,620
+reachable.
+
+212
+00:15:09,960 --> 00:15:11,569
+Step 7: the server.
+
+213
+00:15:11,909 --> 00:15:16,825
+git push is 🟡 CAUTION. After the deletion
+commit is pushed: what does the server say
+
+214
+00:15:16,865 --> 00:15:20,837
+about the tip of main, and what
+about the tag? Make your prediction.
+
+215
+00:15:25,677 --> 00:15:31,658
+The tip of main: no match, exit status 1.
+The tag v0.2.0: line 1 of .env, with the
+
+216
+00:15:31,698 --> 00:15:37,605
+key. The server agrees on both counts. The
+tag points into the affected range and
+
+217
+00:15:37,645 --> 00:15:40,616
+serves the file to anyone who fetches it.
+
+218
+00:15:40,956 --> 00:15:45,893
+Even a search over all refs and reflogs
+doesn't see unreachable objects without
+
+219
+00:15:45,933 --> 00:15:48,476
+reflog entries, or other people's clones.
+
+220
+00:15:50,316 --> 00:15:51,964
+Five mistakes to watch for.
+
+221
+00:15:52,304 --> 00:15:57,346
+Saying "I removed it" after a deletion
+commit. Root cause: git rm changes the next
+
+222
+00:15:57,386 --> 00:16:02,553
+snapshot; every earlier snapshot is an
+immutable object and still contains the file.
+
+223
+00:16:02,893 --> 00:16:07,597
+Checking only the tip, or only the current
+branch. Root cause: git grep without
+
+224
+00:16:07,637 --> 00:16:12,402
+commits searches the working tree's tracked
+files, and the pickaxe without --all
+
+225
+00:16:12,442 --> 00:16:16,305
+walks one branch; tags and other
+branches still reach the commit.
+
+226
+00:16:16,645 --> 00:16:21,589
+Force-pushing and considering the commit
+gone. Root cause: a forced push moves a
+
+227
+00:16:21,629 --> 00:16:26,698
+ref; the old commits stay in the server's
+object database, in clones and forks, in
+
+228
+00:16:26,738 --> 00:16:29,066
+cached views and behind pull requests.
+
+229
+00:16:29,406 --> 00:16:34,362
+Making the repository private as a response.
+Root cause: that changes who may read
+
+230
+00:16:34,402 --> 00:16:39,115
+from now on, not what was fetched while
+it was public or what the fork network
+
+231
+00:16:39,155 --> 00:16:39,481
+holds.
+
+232
+00:16:39,821 --> 00:16:44,573
+Adding the file to .gitignore and stopping
+there. Root cause: ignoring a tracked
+
+233
+00:16:44,613 --> 00:16:49,425
+file changes nothing; and neither step
+touches whether the key still works at its
+
+234
+00:16:49,465 --> 00:16:49,845
+issuer.
+
+235
+00:16:51,685 --> 00:16:56,955
+Now, out of the lab. The textbook's
+description of how these leaks happen in your
+
+236
+00:16:56,995 --> 00:17:02,462
+field: an LLM key is created in a browser
+tab, pasted into a notebook or a .env, and
+
+237
+00:17:02,502 --> 00:17:07,248
+committed by git add -A or by an agent
+that stages everything it touched.
+
+238
+00:17:07,589 --> 00:17:12,416
+Take that as an incident on an AI team.
+Monday, an engineer commits a .env with a
+
+239
+00:17:12,456 --> 00:17:17,223
+provider key. Wednesday, they notice,
+delete the file in a new commit, and push.
+
+240
+00:17:17,263 --> 00:17:21,910
+Friday, a scanner run by someone outside
+the company reports the key as valid.
+
+241
+00:17:22,250 --> 00:17:26,321
+What the team should have asked on
+Wednesday isn't "is the file gone?"
+
+242
+00:17:26,361 --> 00:17:30,021
+but two other things. First, at
+the issuer: is the key revoked?
+
+243
+00:17:30,061 --> 00:17:34,837
+It wasn't. Nobody thought of the provider's
+console, because the repository looked
+
+244
+00:17:34,877 --> 00:17:39,770
+clean. Second, in Git: which commits, which
+refs? With the three commands the answer
+
+245
+00:17:39,810 --> 00:17:44,527
+takes two minutes, and in a case like the
+demonstration it includes a release tag
+
+246
+00:17:44,567 --> 00:17:45,996
+and a colleague's branch.
+
+247
+00:17:46,336 --> 00:17:53,547
+And one more question, from the first half:
+what type of credential was it, and what
+
+248
+00:17:53,587 --> 00:18:00,626
+can it reach? A provider key with no expiry
+and full account scope is the wide end
+
+249
+00:18:00,666 --> 00:18:01,748
+of the table.
+
+250
+00:18:03,588 --> 00:18:09,133
+Your turn. Do Lab 30.3, "Scan a full
+history for planted secrets", in
+
+251
+00:18:09,173 --> 00:18:13,423
+lab-manual/m30-repository-security.md,
+in labs/shell.
+
+252
+00:18:13,463 --> 00:18:15,932
+Your IDs differ from the video.
+
+253
+00:18:16,272 --> 00:18:21,068
+Before each of the five scans, predict
+what it can and can't see, from the table.
+
+254
+00:18:21,108 --> 00:18:25,904
+After the pickaxe, predict how many snapshots
+the all-commits search will report,
+
+255
+00:18:25,944 --> 00:18:29,308
+and then compare. Write down
+the scope as a list of refs.
+
+256
+00:18:29,648 --> 00:18:35,202
+The challenge is Exercise 30.5,
+"Six leaked credentials", in
+
+257
+00:18:35,242 --> 00:18:38,745
+exercises/m26-m31-actions-security.md.
+
+258
+00:18:40,585 --> 00:18:43,801
+Read the question on screen.
+Say your answer out loud.
+
+259
+00:18:48,641 --> 00:18:53,389
+A strong answer ranks by two things at once,
+reach and lifetime, and gives both for
+
+260
+00:18:53,429 --> 00:18:58,062
+each credential it places. It says where
+the ranking comes from and that it is an
+
+261
+00:18:58,102 --> 00:19:02,792
+inference from documented facts. It doesn't
+forget the credential that mints other
+
+262
+00:19:02,832 --> 00:19:07,465
+credentials. The follow-up says an
+installation token lives for one hour and asks
+
+263
+00:19:07,505 --> 00:19:10,926
+why "we use a GitHub App" isn't
+the end of the conversation.
+
+264
+00:19:10,966 --> 00:19:15,483
+Answer with the row people forget and the
+figures the chapter cites, with their
+
+265
+00:19:15,523 --> 00:19:15,887
+source.
+
+266
+00:19:17,727 --> 00:19:18,654
+Let's land this.
+
+267
+00:19:18,994 --> 00:19:20,654
+You should now be able to say:
+
+268
+00:19:20,994 --> 00:19:26,033
+A credential's danger is its reach and its
+lifetime: from a job token that dies with
+
+269
+00:19:26,073 --> 00:19:30,266
+the job to a classic token or an App
+private key that does not expire.
+
+270
+00:19:30,606 --> 00:19:35,710
+A deletion commit adds a snapshot without
+the file; every earlier snapshot still has
+
+271
+00:19:35,750 --> 00:19:35,894
+it.
+
+272
+00:19:36,234 --> 00:19:41,003
+A forced push moves a ref, and going
+private changes who may read from now on;
+
+273
+00:19:41,043 --> 00:19:45,998
+neither removes the commit from clones,
+forks, cached views or pull request refs.
+
+274
+00:19:46,338 --> 00:19:51,587
+The pickaxe shows where a secret entered
+and left, git grep over all commits shows
+
+275
+00:19:51,627 --> 00:19:56,683
+every snapshot that contains it, and
+--contains turns the commit into a list of
+
+276
+00:19:56,723 --> 00:19:57,005
+refs.
+
+277
+00:19:57,345 --> 00:20:02,324
+The exposure window starts at the first
+push, and the only step that works against
+
+278
+00:20:02,364 --> 00:20:04,710
+every copy is revocation at the issuer.
+
+279
+00:20:06,550 --> 00:20:15,399
+Read sections 21B.8 to 21B.11 of Chapter
+21B. Do Exercise 31.1, "Three things that
+
+280
+00:20:15,439 --> 00:20:21,795
+are not removal", in
+exercises/m26-m31-actions-security.md.
+
+281
+00:20:22,135 --> 00:20:26,938
+Today you ran the usual repair, saw the
+search come back clean, and still printed
+
+282
+00:20:26,978 --> 00:20:31,841
+the key from history and from the server.
+Run those three searches yourself in the
+
+283
+00:20:31,881 --> 00:20:36,505
+lab shell. Next time: secret scanning
+and push protection, and what they don't
+
+284
+00:20:36,545 --> 00:20:40,033
+cover. Until then, look at the
+state first and type second.
+
+285
+00:20:40,073 --> 00:20:41,468
+See you in the next one.

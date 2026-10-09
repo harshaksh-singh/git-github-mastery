@@ -123,7 +123,7 @@ The link back to Git is the image label. Record the commit in the image and tag 
 
 **Secrets in AI repositories.** AI repositories leak the same way as others, and through three extra paths: notebook outputs, agent and tool configuration files, and evaluation logs.
 
-The scale, from the report: GitGuardian counted 28,649,024 new secrets on public GitHub in 2025, of which 1,275,105 were tied to AI services, up 81 percent. It counted 24,008 unique secrets in MCP configuration files. And commits co-authored by Claude Code leaked secrets at roughly twice the baseline rate. These are one vendor's measurements of public repositories.
+The scale, as the report gives it: GitGuardian counted 28,649,024 new secrets on public GitHub in 2025, of which 1,275,105 were tied to AI services, up 81 percent. It counted 24,008 unique secrets in MCP configuration files. And commits co-authored by Claude Code leaked secrets at roughly twice the baseline rate. These are one vendor's measurements of public repositories.
 
 **[ON SCREEN]** The leak paths of section 28.14.
 
@@ -152,7 +152,7 @@ What the report establishes: by October 2026 agents are first-class actors on Gi
 | It holds credentials while it works | whatever it can read, an attacker who steers it can read | a dedicated low-privilege, spend-capped key; narrowly scoped tokens |
 | It does not know your conventions | inconsistent branch names, messages, generated files committed | conventions in a committed instruction file, and checks that enforce them anyway |
 
-Two incidents from the report show that the third and fourth rows aren't hypothetical. An automated account ran a campaign in February and March 2026 that combined `pull_request_target` abuse, injection through branch names and filenames, and prompt injection against an AI reviewer. And researchers reported in April 2026 that AI coding agents run as GitHub Actions could be steered by text in pull-request titles, issue bodies or comments into revealing CI secrets. Unverified: the April 2026 research was verified for the report only through one secondary article.
+The textbook presents this table as the report's inference. Two incidents from the report show that the third and fourth rows aren't hypothetical. An automated account ran a campaign in February and March 2026 that combined `pull_request_target` abuse, injection through branch names and filenames, and prompt injection against an AI reviewer. And researchers reported in April 2026 that AI coding agents run as GitHub Actions could be steered by text in pull-request titles, issue bodies or comments into revealing CI secrets. Unverified: the April 2026 research was verified for the report only through one secondary article.
 
 Attribution: decide how agent-written commits are marked, with a `Co-authored-by` trailer, a dedicated bot account, or a signature. Then "which changes did an agent write" is a `git log` query.
 

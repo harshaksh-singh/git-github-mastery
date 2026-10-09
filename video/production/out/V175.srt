@@ -1,0 +1,1308 @@
+1
+00:00:04,500 --> 00:00:09,353
+Both statements are true. The scanner's
+finding is real, and so is the engineer's
+
+2
+00:00:09,393 --> 00:00:14,426
+protest. The source code of the notebook
+reads the key from an environment variable,
+
+3
+00:00:14,466 --> 00:00:18,957
+which is the right way to handle a key.
+Nobody typed the key into any file.
+
+4
+00:00:19,297 --> 00:00:23,861
+The key was printed by a cell, and the
+notebook file stores what cells print.
+
+5
+00:00:23,901 --> 00:00:28,884
+That one fact also explains why a notebook
+that nobody edited shows as modified, and
+
+6
+00:00:28,924 --> 00:00:33,787
+why two people who reran the same notebook
+get a merge conflict that leaves a file
+
+7
+00:00:33,827 --> 00:00:37,674
+Jupyter can't open. Keep the
+notebook that nobody edited in mind.
+
+8
+00:00:37,714 --> 00:00:40,066
+You'll count its changed lines yourself.
+
+9
+00:00:41,906 --> 00:00:45,878
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+10
+00:00:45,918 --> 00:00:50,548
+This is the first of four videos on
+AI and ML repositories, Chapter 28.
+
+11
+00:00:50,588 --> 00:00:56,072
+Three words first. A commit is one saved
+snapshot of the project, and history is the
+
+12
+00:00:56,112 --> 00:00:57,454
+chain of all of them.
+
+13
+00:00:57,794 --> 00:01:02,639
+A notebook is a document that mixes cells
+of code with the results of running them.
+
+14
+00:01:02,679 --> 00:01:07,524
+And Jupyter is the program that runs it.
+The rule that organizes the chapter is one
+
+15
+00:01:07,564 --> 00:01:12,350
+sentence: keep code and pointers in Git,
+and keep data, weights and outputs out of
+
+16
+00:01:12,390 --> 00:01:12,527
+it.
+
+17
+00:01:12,867 --> 00:01:17,489
+An ML project differs from a backend service
+in that most of its bytes aren't source
+
+18
+00:01:17,529 --> 00:01:21,763
+code, and most of what determines a
+result isn't in a commit unless you put a
+
+19
+00:01:21,803 --> 00:01:22,984
+reference to it there.
+
+20
+00:01:23,324 --> 00:01:27,627
+Two limits of the chapter, stated
+once, as the textbook states them.
+
+21
+00:01:27,667 --> 00:01:32,863
+The tools of this field, nbstripout, nbdime,
+jupytext, DVC, pre-commit and others,
+
+22
+00:01:32,903 --> 00:01:38,099
+aren't installed in the lab. Their commands
+are given from their documentation, in
+
+23
+00:01:38,139 --> 00:01:43,271
+blocks without output, with the versions
+the course's research report recorded on
+
+24
+00:01:43,311 --> 00:01:48,635
+the first of October 2026. What's run here
+is the mechanism under each tool, written
+
+25
+00:01:48,675 --> 00:01:50,742
+with the Python standard library.
+
+26
+00:01:51,082 --> 00:01:55,495
+The filter you'll see in the terminal is
+a small stand-in written for the lab.
+
+27
+00:01:55,535 --> 00:01:57,321
+It isn't one of the named tools.
+
+28
+00:01:57,661 --> 00:02:02,573
+From video 88 you know what a clean filter
+is: a command that rewrites a file's
+
+29
+00:02:02,613 --> 00:02:07,587
+content on its way into the repository.
+.gitattributes names a driver for a path
+
+30
+00:02:07,627 --> 00:02:11,035
+pattern, and the Git configuration
+defines the command.
+
+31
+00:02:11,075 --> 00:02:14,795
+Today's video takes that in the
+directions an ML team needs.
+
+32
+00:02:15,135 --> 00:02:20,003
+The demos use docqa, a small project that
+classifies support tickets and answers
+
+33
+00:02:20,043 --> 00:02:21,476
+them from documentation.
+
+34
+00:02:23,316 --> 00:02:24,894
+Here's what you'll walk away with.
+
+35
+00:02:25,234 --> 00:02:26,646
+After this video you can:
+
+36
+00:02:26,986 --> 00:02:31,577
+Decide for a file in an ML project whether
+it belongs in Git, is referenced from
+
+37
+00:02:31,617 --> 00:02:32,677
+Git, or is ignored.
+
+38
+00:02:33,017 --> 00:02:37,609
+Explain what a notebook file stores and
+why a rerun changes it without any edit.
+
+39
+00:02:37,949 --> 00:02:41,527
+Show how a notebook leaks a secret
+or data through its outputs.
+
+40
+00:02:41,867 --> 00:02:46,898
+Install a clean filter that strips outputs,
+mark it required, and verify it in CI.
+
+41
+00:02:47,238 --> 00:02:52,534
+Say what nbdime, jupytext and ReviewNB add
+to the filter, as the section describes
+
+42
+00:02:52,574 --> 00:02:52,859
+them.
+
+43
+00:02:54,699 --> 00:02:59,431
+What belongs in Git. Git should hold what
+a human writes and reviews, plus small
+
+44
+00:02:59,471 --> 00:03:04,382
+references to everything else. It shouldn't
+hold what a program produces or what is
+
+45
+00:03:04,422 --> 00:03:04,740
+large.
+
+46
+00:03:05,080 --> 00:03:10,233
+Three properties of Git decide the question.
+Every clone carries the full history,
+
+47
+00:03:10,273 --> 00:03:15,552
+so a file committed once is downloaded by
+everyone, in every version, for as long as
+
+48
+00:03:15,592 --> 00:03:20,618
+the history exists. Objects can't be
+recalled: removing a file adds a commit and
+
+49
+00:03:20,658 --> 00:03:24,733
+removes nothing. And diff, merge
+and blame work on lines of text.
+
+50
+00:03:25,073 --> 00:03:30,264
+On top of that the platform sets limits:
+GitHub warns about files larger than 50
+
+51
+00:03:30,304 --> 00:03:35,755
+mebibytes, blocks files larger than 100
+mebibytes, recommends that repositories stay
+
+52
+00:03:35,795 --> 00:03:41,116
+ideally under 1 gigabyte and strongly under
+5 gigabytes, and states that Git isn't
+
+53
+00:03:41,156 --> 00:03:43,404
+designed to serve as a backup tool.
+
+54
+00:03:43,744 --> 00:03:47,937
+Read it as two columns: what Git
+holds, and what Git only references.
+
+55
+00:03:48,277 --> 00:03:53,988
+Quick quiz. Three files: a prompt for the
+model, a checkpoint of trained weights,
+
+56
+00:03:54,028 --> 00:03:58,178
+and a lock file. Which one stays
+out of Git? A, the prompt.
+
+57
+00:03:58,218 --> 00:04:01,658
+B, the checkpoint. C, the
+lock file. Your answer?
+
+58
+00:04:06,498 --> 00:04:11,648
+B, the checkpoint. It's large, a program
+produced it, and Git holds a pointer to it
+
+59
+00:04:11,688 --> 00:04:15,901
+instead. The prompt and the lock
+file were on the left of the table.
+
+60
+00:04:16,241 --> 00:04:21,059
+The textbook is careful about the status
+of this table: the split is the research
+
+61
+00:04:21,099 --> 00:04:24,717
+report's inference from the
+limits, not a published standard.
+
+62
+00:04:24,757 --> 00:04:29,635
+The less obvious rows are prompts and
+pointers. A prompt is source code for an LLM
+
+63
+00:04:29,675 --> 00:04:34,613
+application: a one-word change alters
+behavior, so it deserves a diff, a review and
+
+64
+00:04:34,653 --> 00:04:39,651
+a commit. A pointer is what makes the
+right-hand column reproducible: Git can't hold
+
+65
+00:04:39,691 --> 00:04:44,569
+the data, but it can hold forty or sixty-four
+hexadecimal characters that identify
+
+66
+00:04:44,609 --> 00:04:46,129
+exactly one version of it.
+
+67
+00:04:46,469 --> 00:04:51,501
+The same split is a security boundary. The
+left column is what you're prepared to
+
+68
+00:04:51,541 --> 00:04:55,258
+show every engineer, contractor
+and CI job with read access.
+
+69
+00:04:55,598 --> 00:05:00,863
+Notebooks. An .ipynb file is one JSON
+document in which each code cell carries its
+
+70
+00:05:00,903 --> 00:05:06,297
+source, the outputs of its last run and a
+counter, so running a notebook changes the
+
+71
+00:05:06,337 --> 00:05:08,302
+file even when no code changed.
+
+72
+00:05:08,642 --> 00:05:13,882
+JSON is a plain-text format of names and
+values. Precisely: the notebook format
+
+73
+00:05:13,922 --> 00:05:19,027
+defines a top-level object with metadata,
+nbformat, nbformat_minor and cells.
+
+74
+00:05:19,067 --> 00:05:23,572
+A code cell stores source, a list
+of outputs and an execution_count.
+
+75
+00:05:23,612 --> 00:05:28,985
+An output can be a stream, which is what
+was printed, a result, an error with its
+
+76
+00:05:29,025 --> 00:05:32,861
+traceback, or display data such
+as a base64-encoded image.
+
+77
+00:05:33,201 --> 00:05:38,060
+That one design decision causes three
+separate problems, and the demo shows each: a
+
+78
+00:05:38,100 --> 00:05:42,015
+rerun is a change. Outputs carry
+data and credentials into history.
+
+79
+00:05:42,055 --> 00:05:45,793
+And a line-based merge can produce
+a file that isn't a notebook.
+
+80
+00:05:46,133 --> 00:05:50,871
+A clean filter that strips outputs. A clean
+filter rewrites a notebook on its way
+
+81
+00:05:50,911 --> 00:05:55,767
+into the repository so that the blob has
+no outputs, while the file in your working
+
+82
+00:05:55,807 --> 00:06:00,309
+tree keeps them. The blob is Git's stored
+copy of the file's content, and the
+
+83
+00:06:00,349 --> 00:06:03,494
+working tree is the folder
+of ordinary files you edit.
+
+84
+00:06:03,834 --> 00:06:10,181
+The maintained implementation is
+nbstripout, version 0.9.1 of February 2026.
+
+85
+00:06:10,221 --> 00:06:13,290
+From its documentation, not run here:
+
+86
+00:06:13,630 --> 00:06:18,651
+Its README states the limitation that shapes
+everything else: there's no way to have
+
+87
+00:06:18,691 --> 00:06:23,652
+Git set up the filter automatically when
+someone clones a repository, by design, so
+
+88
+00:06:23,692 --> 00:06:26,243
+that a clone never
+executes arbitrary code.
+
+89
+00:06:26,583 --> 00:06:29,861
+What required changes. A
+filter is optional by default.
+
+90
+00:06:29,901 --> 00:06:34,807
+The manual says a missing driver definition,
+or a driver that exits with an error,
+
+91
+00:06:34,847 --> 00:06:38,185
+"is not an error but makes
+the filter a no-op passthru".
+
+92
+00:06:38,225 --> 00:06:43,192
+For a filter whose purpose is to keep outputs
+out of history, a silent pass-through
+
+93
+00:06:43,232 --> 00:06:45,002
+is the worst possible failure.
+
+94
+00:06:45,342 --> 00:06:49,312
+The complementary tools. They're
+complementary, not alternatives.
+
+95
+00:06:49,652 --> 00:06:54,648
+nbdime understands the notebook structure,
+so it can show a cell-level diff and can
+
+96
+00:06:54,688 --> 00:06:59,625
+merge two reruns by resolving generated
+values such as execution counters, instead
+
+97
+00:06:59,665 --> 00:07:04,540
+of writing conflict markers into JSON.
+Like every driver, its definitions live in
+
+98
+00:07:04,580 --> 00:07:09,577
+each clone's configuration: a colleague who
+hasn't run its setup command gets Git's
+
+99
+00:07:09,617 --> 00:07:11,822
+line-based behavior, with no warning.
+
+100
+00:07:12,162 --> 00:07:16,064
+jupytext takes the other road:
+don't review the .ipynb at all.
+
+101
+00:07:16,104 --> 00:07:21,406
+It pairs the notebook with a text file that
+contains only the cell inputs, so a pull
+
+102
+00:07:21,446 --> 00:07:26,747
+request shows an ordinary Python diff. The
+README's own recipe is to commit the text
+
+103
+00:07:26,787 --> 00:07:31,707
+file and, unless you want outputs versioned,
+to keep the .ipynb out of version
+
+104
+00:07:31,747 --> 00:07:32,215
+control.
+
+105
+00:07:32,555 --> 00:07:38,495
+The last row is the durable fix. A function
+in src/docqa/ has tests, a diff and a
+
+106
+00:07:38,535 --> 00:07:41,375
+blame history. A cell has none of them.
+
+107
+00:07:41,715 --> 00:07:45,506
+GitHub, not Git. GitHub renders
+.ipynb files as static HTML.
+
+108
+00:07:45,546 --> 00:07:50,805
+Its rich notebook diff is still the feature
+preview announced on the first of March
+
+109
+00:07:50,845 --> 00:07:56,105
+2023, in which you can't comment on lines.
+No general-availability announcement was
+
+110
+00:07:56,145 --> 00:08:01,469
+found. Unverified: whether the redesigned
+"Files changed" page renders notebook rich
+
+111
+00:08:01,509 --> 00:08:04,853
+diffs. The report didn't
+check a signed-in interface.
+
+112
+00:08:04,893 --> 00:08:08,620
+Treat it as a viewer, not as
+the basis of a review process.
+
+113
+00:08:10,460 --> 00:08:13,902
+Two analogies from the textbook,
+one per half of the video.
+
+114
+00:08:14,242 --> 00:08:17,403
+For what belongs in Git: a
+lab notebook and a freezer.
+
+115
+00:08:17,443 --> 00:08:22,027
+The notebook records the protocol, the
+settings and the label of every sample.
+
+116
+00:08:22,067 --> 00:08:27,006
+The samples live in the freezer. Nobody
+tapes a sample into the notebook, and nobody
+
+117
+00:08:27,046 --> 00:08:31,630
+runs a lab from the freezer alone. The
+analogy breaks in one useful way: a Git
+
+118
+00:08:31,670 --> 00:08:36,610
+"notebook" can verify the freezer, because
+the label it records can be a checksum of
+
+119
+00:08:36,650 --> 00:08:37,380
+the contents.
+
+120
+00:08:37,720 --> 00:08:42,727
+For the filter: a mail room that removes
+attachments from outgoing letters and files
+
+121
+00:08:42,767 --> 00:08:46,272
+the plain letter. Your desk
+copy still has the attachments.
+
+122
+00:08:46,312 --> 00:08:51,079
+Where it breaks: every desk has its own
+mail room, and a new employee's desk has
+
+123
+00:08:51,119 --> 00:08:52,942
+none until somebody sets it up.
+
+124
+00:08:53,282 --> 00:08:56,598
+That last sentence is the whole
+second half of the video.
+
+125
+00:08:56,638 --> 00:09:00,485
+The attribute travels with the
+repository. The mail room does not.
+
+126
+00:09:00,525 --> 00:09:04,371
+So the filter is a convenience,
+and the control is something else.
+
+127
+00:09:04,711 --> 00:09:09,862
+Try it now, on paper, for thirty seconds.
+Write down the three things a code cell
+
+128
+00:09:09,902 --> 00:09:13,259
+stores, and put a tick beside
+the one a human writes.
+
+129
+00:09:13,299 --> 00:09:13,900
+I'll wait.
+
+130
+00:09:20,240 --> 00:09:24,704
+One object, three kinds of content: a
+counter, the outputs and the source.
+
+131
+00:09:24,744 --> 00:09:28,112
+A human wrote one of them,
+the source. That's your tick.
+
+132
+00:09:28,452 --> 00:09:33,788
+And the root-cause box of section 28.3.
+Read the root cause line: one file mixes
+
+133
+00:09:33,828 --> 00:09:37,014
+what a human wrote with
+what a program produced.
+
+134
+00:09:38,854 --> 00:09:44,090
+Into the lab. It can't run Jupyter, so a
+script writes the file Jupyter would save
+
+135
+00:09:44,130 --> 00:09:47,950
+after each run. The key in it
+is a fake one, and it says so.
+
+136
+00:09:48,290 --> 00:09:50,641
+Step 1: the anatomy of one cell.
+
+137
+00:09:53,981 --> 00:09:58,856
+Source, output and counter sit in one object.
+Read the source: it takes the key from
+
+138
+00:09:58,896 --> 00:10:03,244
+the environment and prints it. Read the
+output: the printed line is stored.
+
+139
+00:10:03,584 --> 00:10:08,474
+Step 2: a rerun is a change. Run all
+cells again without editing anything.
+
+140
+00:10:08,514 --> 00:10:13,538
+Predict: how many lines will git diff
+report, and how many of them are code?
+
+141
+00:10:13,578 --> 00:10:14,604
+Say it out loud.
+
+142
+00:10:19,444 --> 00:10:24,150
+Six lines changed and none of them is
+code: three counters, one of them stored
+
+143
+00:10:24,190 --> 00:10:29,079
+twice, one printed line, one image. There's
+the notebook that nobody edited, from
+
+144
+00:10:29,119 --> 00:10:33,946
+the opening. A reviewer who opens this
+diff learns nothing, and after a few such
+
+145
+00:10:33,986 --> 00:10:36,563
+commits nobody opens
+notebook diffs at all.
+
+146
+00:10:36,903 --> 00:10:40,306
+Step 3: outputs carry
+credentials into history.
+
+147
+00:10:40,646 --> 00:10:45,968
+The value is in two commits. And 2,429 of
+3,558 bytes of this small notebook are
+
+148
+00:10:46,008 --> 00:10:49,655
+outputs. With real charts the
+proportion is far higher.
+
+149
+00:10:49,695 --> 00:10:55,218
+The same holds for a data frame preview
+that shows customer rows: no secret scanner
+
+150
+00:10:55,258 --> 00:10:58,703
+has a pattern for "a table
+that should not be here".
+
+151
+00:10:58,743 --> 00:11:04,333
+One caveat the textbook marks as unverified:
+how often secrets leak through notebook
+
+152
+00:11:04,373 --> 00:11:08,690
+outputs specifically. The research
+found mechanisms, not numbers.
+
+153
+00:11:09,030 --> 00:11:13,509
+Step 4: the merge. Two people rerun
+the same notebook on two branches.
+
+154
+00:11:13,549 --> 00:11:17,576
+🟡 CAUTION: git merge moves the
+current branch when it succeeds.
+
+155
+00:11:17,616 --> 00:11:21,062
+Predict: will the file be a
+valid notebook afterwards?
+
+156
+00:11:21,102 --> 00:11:21,707
+Yes or no?
+
+157
+00:11:26,547 --> 00:11:30,713
+Six conflict regions, written into
+the middle of a JSON document.
+
+158
+00:11:30,753 --> 00:11:35,954
+The file no longer parses. Jupyter can't
+open it to let you resolve the conflict.
+
+159
+00:11:35,994 --> 00:11:38,866
+The root-cause box from
+the diagram says why.
+
+160
+00:11:39,206 --> 00:11:41,638
+Step 5: how such a tool works.
+
+161
+00:11:41,978 --> 00:11:46,976
+Parse the JSON, empty outputs, set
+execution_count to null, drop the metadata that
+
+162
+00:11:47,016 --> 00:11:51,767
+execution adds, and write the document
+back in the layout Jupyter itself uses.
+
+163
+00:11:51,807 --> 00:11:56,927
+The last part matters: if the filter
+reformatted the file, every notebook would show
+
+164
+00:11:56,967 --> 00:12:01,903
+as changed the first time it passed through.
+Cleaning cleaned content must change
+
+165
+00:12:01,943 --> 00:12:02,395
+nothing.
+
+166
+00:12:05,735 --> 00:12:12,910
+Step 6: configure. 🟡 CAUTION: git config
+set changes .git/config, a file that keeps
+
+167
+00:12:12,950 --> 00:12:17,778
+no history. The subcommand
+form needs Git 2.46 or later.
+
+168
+00:12:18,118 --> 00:12:21,133
+The attribute is already
+committed in .gitattributes.
+
+169
+00:12:21,173 --> 00:12:24,418
+git check-attr confirms which
+driver applies to the path.
+
+170
+00:12:24,458 --> 00:12:27,819
+The driver itself is defined
+in this clone's configuration.
+
+171
+00:12:28,159 --> 00:12:33,667
+Step 7: add and commit. Predict: after the
+commit, how many outputs does the file on
+
+172
+00:12:33,707 --> 00:12:37,695
+disk have, and how many does the
+blob have? Say both numbers.
+
+173
+00:12:42,535 --> 00:12:46,844
+The file on disk has three
+outputs and 3,558 bytes.
+
+174
+00:12:46,884 --> 00:12:53,836
+The blob has none and 967 bytes. The checks:
+line is the project's pre-commit hook
+
+175
+00:12:53,876 --> 00:12:56,309
+reporting. That is video 177.
+
+176
+00:12:59,649 --> 00:13:04,888
+The first row: configuring the filter
+only adds the driver to .git/config.
+
+177
+00:13:05,228 --> 00:13:09,926
+The second row: git add leaves the outputs
+in the working tree, and the index entry
+
+178
+00:13:09,966 --> 00:13:12,210
+points at a blob of the cleaned content.
+
+179
+00:13:12,550 --> 00:13:16,780
+The third row is how you apply a new filter
+to notebooks that are already tracked.
+
+180
+00:13:17,120 --> 00:13:21,703
+The last row is the price: the outputs
+exist only in your working tree, and any
+
+181
+00:13:21,743 --> 00:13:25,507
+command that rewrites the file
+from the repository discards them.
+
+182
+00:13:25,847 --> 00:13:28,695
+Step 8: rerunning is no longer a change.
+
+183
+00:13:29,035 --> 00:13:33,349
+The file contains the second run's
+printed key, and git status is silent.
+
+184
+00:13:33,689 --> 00:13:38,679
+Why silent? Git compares the cleaned form
+of the file with the index, its list of
+
+185
+00:13:38,719 --> 00:13:43,708
+what the next commit will hold. Cleaned,
+the first run and the rerun are the same
+
+186
+00:13:43,748 --> 00:13:47,061
+bytes, and the same bytes
+always get the same blob ID.
+
+187
+00:13:47,401 --> 00:13:52,111
+A change to the code of a cell still shows,
+as a one-line diff a reviewer can read:
+
+188
+00:13:52,451 --> 00:13:57,392
+Step 9: what required changes. The driver
+is pointed at a program that doesn't
+
+189
+00:13:57,432 --> 00:14:02,437
+exist. Predict the exit status of git add
+with required set, and with it unset.
+
+190
+00:14:07,277 --> 00:14:12,346
+With required = true, git add fails
+with status 128 and nothing is staged.
+
+191
+00:14:12,386 --> 00:14:17,800
+With it unset, the same three error lines
+appear, the exit status is 0, and the
+
+192
+00:14:17,840 --> 00:14:20,699
+notebook is staged with its three outputs.
+
+193
+00:14:21,039 --> 00:14:24,287
+nbstripout declares its filter
+required for this reason.
+
+194
+00:14:24,627 --> 00:14:29,782
+Step 10: what a clone has. Predict: Asha
+clones. Which of the two halves does she
+
+195
+00:14:29,822 --> 00:14:31,899
+get, the attribute or the driver?
+
+196
+00:14:36,739 --> 00:14:40,667
+The attribute travelled, because
+.gitattributes is a tracked file.
+
+197
+00:14:41,007 --> 00:14:45,578
+The driver did not, because it lives
+in .git/config, and Git never copies
+
+198
+00:14:45,618 --> 00:14:50,631
+configuration from a clone source: if it
+did, cloning a repository would let its
+
+199
+00:14:50,671 --> 00:14:55,873
+author run commands on your machine. required
+= true didn't help either, since that
+
+200
+00:14:55,913 --> 00:15:00,863
+setting is part of the same missing
+configuration. Asha's notebook went in with
+
+201
+00:15:00,903 --> 00:15:04,273
+outputs and nothing warned
+her. She did nothing wrong.
+
+202
+00:15:04,313 --> 00:15:05,852
+Her clone was never told.
+
+203
+00:15:06,192 --> 00:15:08,618
+Step 11: the check that does travel.
+
+204
+00:15:08,958 --> 00:15:13,932
+--verify strips each committed notebook
+in memory and fails if the result differs
+
+205
+00:15:13,972 --> 00:15:18,946
+from the file. On a fresh checkout the
+files are the blobs, so this is a check of
+
+206
+00:15:18,986 --> 00:15:23,589
+what is in history. It fails on Asha's
+commit and passes on the one before.
+
+207
+00:15:23,929 --> 00:15:28,911
+Run as a required check in CI, the automation
+that tests every change on a server,
+
+208
+00:15:28,951 --> 00:15:33,995
+it's the control. The filter on each laptop
+is a convenience that keeps people from
+
+209
+00:15:34,035 --> 00:15:34,730
+tripping it.
+
+210
+00:15:36,570 --> 00:15:38,218
+Five mistakes to watch for.
+
+211
+00:15:38,558 --> 00:15:41,893
+Believing "we use nbstripout"
+describes the repository.
+
+212
+00:15:41,933 --> 00:15:46,863
+Root cause: the filter is configuration
+in each clone, and a clone that never ran
+
+213
+00:15:46,903 --> 00:15:48,458
+the install has no filter.
+
+214
+00:15:48,798 --> 00:15:53,737
+Leaving the filter optional. Root cause:
+by default a filter that cannot run is a
+
+215
+00:15:53,777 --> 00:15:58,409
+silent pass-through, so the unstripped
+content is staged with exit status 0.
+
+216
+00:15:58,749 --> 00:16:03,300
+Printing a secret "only to check it". Root
+cause: what a cell prints is stored in
+
+217
+00:16:03,340 --> 00:16:06,588
+the notebook file and enters
+history with the next commit.
+
+218
+00:16:06,928 --> 00:16:11,958
+A filter that reformats. Root cause: if
+cleaning already-clean content changes it,
+
+219
+00:16:11,998 --> 00:16:16,038
+every notebook shows as modified
+the first time it passes through.
+
+220
+00:16:16,378 --> 00:16:19,768
+Expecting local outputs to
+survive a restore or a switch.
+
+221
+00:16:19,808 --> 00:16:24,400
+Root cause: the blob holds the cleaned
+form, and the smudge side does not put
+
+222
+00:16:24,440 --> 00:16:25,182
+outputs back.
+
+223
+00:16:27,022 --> 00:16:31,416
+Now, out of the lab. A team that
+builds a retrieval pipeline keeps its
+
+224
+00:16:31,456 --> 00:16:36,421
+error-analysis notebooks in the repository.
+A scanner reports a provider key on
+
+225
+00:16:36,461 --> 00:16:40,411
+main. The response follows video
+166: the key is revoked first.
+
+226
+00:16:40,451 --> 00:16:45,669
+Then the lead asks the assessment question,
+how did it get there, and the answer is
+
+227
+00:16:45,709 --> 00:16:50,863
+not "somebody committed a key". A debugging
+cell printed the client configuration.
+
+228
+00:16:51,203 --> 00:16:56,146
+The team already "used nbstripout". The
+lead checks what that means: three of seven
+
+229
+00:16:56,186 --> 00:17:01,129
+clones had the filter installed. Two
+contractors had cloned later and never ran the
+
+230
+00:17:01,169 --> 00:17:04,370
+install. So the change isn't
+a reminder to install it.
+
+231
+00:17:04,410 --> 00:17:09,233
+The verify form of the tool becomes a
+required check on pull requests, on a fresh
+
+232
+00:17:09,273 --> 00:17:09,773
+checkout.
+
+233
+00:17:10,113 --> 00:17:14,717
+The filter stays on laptops as a convenience.
+And because stripping outputs is also
+
+234
+00:17:14,757 --> 00:17:19,361
+a data-protection control, the team decides
+what to do with the two notebooks whose
+
+235
+00:17:19,401 --> 00:17:23,949
+charts are the deliverable: the figures
+are exported to a tracked report file, and
+
+236
+00:17:23,989 --> 00:17:26,243
+the notebooks are stripped like the rest.
+
+237
+00:17:28,083 --> 00:17:35,489
+Your turn. Do Exercise 33.3, Level 2,
+"The notebook that nobody edited", in
+
+238
+00:17:35,529 --> 00:17:38,467
+exercises/m32-m34-practice.md.
+
+239
+00:17:38,807 --> 00:17:43,491
+Before you look at any diff in the exercise,
+predict which three kinds of line can
+
+240
+00:17:43,531 --> 00:17:48,330
+change in a notebook when no code changed.
+Before you check the clone, predict which
+
+241
+00:17:48,370 --> 00:17:53,112
+of git check-attr filter and git config get
+filter.<name>.clean will give an answer
+
+242
+00:17:53,152 --> 00:17:55,416
+there. Then do the exercise and compare.
+
+243
+00:17:55,756 --> 00:18:01,088
+The challenge is Exercise 33.1, Level 1,
+"In Git, or referenced from Git?", in the
+
+244
+00:18:01,128 --> 00:18:06,590
+same file. It is Level 1, and worth doing
+carefully: write the reason for each path,
+
+245
+00:18:06,630 --> 00:18:07,901
+not only the column.
+
+246
+00:18:11,741 --> 00:18:16,524
+Answer out loud. A strong answer separates
+the two halves of a filter, the part that
+
+247
+00:18:16,564 --> 00:18:21,118
+is a tracked file and the part that is
+configuration, and says which one a clone
+
+248
+00:18:21,158 --> 00:18:25,826
+receives and why Git is designed that way.
+It lists more than one path by which an
+
+249
+00:18:25,866 --> 00:18:28,066
+unstripped notebook reaches the server.
+
+250
+00:18:28,406 --> 00:18:32,780
+It explains what the required setting
+protects against and what it cannot.
+
+251
+00:18:32,820 --> 00:18:37,672
+And it names the control that doesn't depend
+on any laptop, and where that control
+
+252
+00:18:37,712 --> 00:18:42,504
+runs. If you add what you would do about
+the notebook that is already in history,
+
+253
+00:18:42,544 --> 00:18:46,262
+and in which order, you have
+connected this video to video 166.
+
+254
+00:18:48,102 --> 00:18:50,152
+Let's land this, in your own words.
+
+255
+00:18:50,492 --> 00:18:55,559
+Git holds what a human writes and reviews,
+plus pointers; data, weights, outputs and
+
+256
+00:18:55,599 --> 00:18:56,593
+secrets stay out.
+
+257
+00:18:56,933 --> 00:19:02,057
+A notebook file stores source, outputs and
+counters in one object, so a rerun is a
+
+258
+00:19:02,097 --> 00:19:06,655
+change, outputs enter history, and a
+line-based merge can break the JSON.
+
+259
+00:19:06,995 --> 00:19:11,543
+A clean filter stores the stripped form in
+the blob while the working tree keeps the
+
+260
+00:19:11,583 --> 00:19:11,980
+outputs.
+
+261
+00:19:12,320 --> 00:19:17,457
+required = true turns a filter that cannot
+run from a silent pass-through into an
+
+262
+00:19:17,497 --> 00:19:17,841
+error.
+
+263
+00:19:18,181 --> 00:19:23,271
+The attribute travels with the repository
+and the driver does not, so the control is
+
+264
+00:19:23,311 --> 00:19:25,714
+a required CI check on a fresh checkout.
+
+265
+00:19:27,554 --> 00:19:33,630
+Read sections 28.1 to 28.5. If your own
+team keeps notebooks in a repository, check
+
+266
+00:19:33,670 --> 00:19:38,936
+one clone with the two commands of
+step 10 and write down what you find.
+
+267
+00:19:39,276 --> 00:19:43,914
+Today you opened a notebook file, saw what
+it really stores, and built the control
+
+268
+00:19:43,954 --> 00:19:48,707
+that keeps outputs out of history. That's
+a real protection for your team's keys and
+
+269
+00:19:48,747 --> 00:19:53,157
+data. The next video is about the right-hand
+column of today's table: data and
+
+270
+00:19:53,197 --> 00:19:57,836
+models, versioned by reference, and what
+a commit ID doesn't tell you about a run.
+
+271
+00:19:57,876 --> 00:20:00,803
+Until then, look at the
+state first and type second.
+
+272
+00:20:00,843 --> 00:20:02,172
+See you in the next one.

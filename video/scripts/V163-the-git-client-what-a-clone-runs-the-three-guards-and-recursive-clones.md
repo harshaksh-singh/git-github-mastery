@@ -89,6 +89,8 @@ The check compares the owner of the repository directory with the user running G
 
 **[ON SCREEN]** Callout: Outdated advice. Answers from 2022 tell you to add a star to `safe.directory` in global configuration to make the message go away. That switches the protection off for every repository on the machine. List the one directory, or fix the ownership.
 
+Outdated advice: answers from 2022 add a star to `safe.directory` in global configuration. That switches the protection off for every repository on the machine. List the one directory, or fix the ownership.
+
 **`safe.bareRepository`. In one sentence:** with the value `explicit`, Git uses a bare repository only when you name it with `--git-dir` or `GIT_DIR`, never because you happened to be inside one.
 
 **[ANIMATION]** stores: boxes=your_clone_of_a_project:ordinary_tracked_files|a_subdirectory_of_it:an_embedded_bare_repository rows=1:B:HEAD|1:B:objects|1:B:refs|1:B:config@bad|2:A:a_clone_does_copy_it@hl|3:B:with_explicit:_used_only_when_named_with_--git-dir_or_GIT__DIR@ok title=safe.bareRepository id=bare say_2=Change_into_it,_run_any_Git_command:_Git_reads_its_config at_1=5 at_2=70

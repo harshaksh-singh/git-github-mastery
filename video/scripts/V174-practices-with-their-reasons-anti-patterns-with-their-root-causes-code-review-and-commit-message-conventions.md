@@ -56,7 +56,9 @@ After this video you can:
 | No history rewriting on shared branches | everyone who fetched the old commits now has a history that diverges from the server, and the next careless merge brings the removed commits back |
 | Inspect before you merge | a merge brings every commit reachable from the other side, not only the ones you had in mind |
 
-Three of these rows answer the hook. Small commits: because the commit is the unit of undo, of porting, of bisect and of review. Revert undoes one commit with a new commit, cherry-pick copies one commit to another branch, and bisect searches history for the commit that broke something. No force push on shared branches: you watched in video 168 what the next careless merge does. Required checks: a check that isn't required is advice.
+Three of these rows answer the hook. Small commits: because the commit is the unit of undo, of porting, of bisect and of review. Revert undoes one commit with a new commit, cherry-pick copies one commit to another branch, and bisect searches history for the commit that broke something. Required checks: a check that isn't required is advice.
+
+No force push on shared branches: you watched in video 168 what the next careless merge does.
 
 **Anti-patterns, each with its root cause.** An anti-pattern is rarely stupidity. Each one is the reasonable result of a wrong mental model, and the model is what you correct.
 
@@ -77,7 +79,9 @@ Three of these rows answer the hook. Small commits: because the commit is the un
 | Huge binaries in Git | "Git stores my project", without the fact that every clone carries every version of every file | pointers and external storage |
 | Treating GitHub as Git | "it is on GitHub, so it is backed up and it is the truth" | label the layer: which behavior is Git's, which is the platform's |
 
-The teaching point is in the middle column. When a colleague force-pushes blindly, the correction is not "do not do that". It's the missing fact: a rejection is information about the server's ref.
+The teaching point is in the middle column. When a colleague force-pushes blindly, the correction is not "do not do that".
+
+It's the missing fact: a rejection is information about the server's ref.
 
 **Code review as a practice.** Review is where a team's knowledge of its code is exchanged. Finding defects is the smaller part of its value, and a review that takes days costs more than it finds.
 

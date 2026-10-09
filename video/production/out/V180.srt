@@ -1,0 +1,1284 @@
+1
+00:00:04,500 --> 00:00:09,343
+A developer says this on a Thursday. A
+commit is a saved snapshot of the project, a
+
+2
+00:00:09,383 --> 00:00:14,168
+pull request is a proposal on GitHub to
+merge a branch of commits, and a push asks
+
+3
+00:00:14,208 --> 00:00:16,874
+the server to move its
+branch to your commits.
+
+4
+00:00:17,214 --> 00:00:21,621
+The obvious reactions are all changes:
+push with force, pull, rebase, or the
+
+5
+00:00:21,661 --> 00:00:26,302
+classic, delete the clone and start again.
+Any of them could destroy two days of
+
+6
+00:00:26,342 --> 00:00:29,755
+work, because nobody yet knows
+where those two commits are.
+
+7
+00:00:30,095 --> 00:00:34,576
+Chapter 29 opens with the fact that shapes
+this whole part of the course: most
+
+8
+00:00:34,616 --> 00:00:38,227
+damage is done after the incident,
+by the first repair attempt.
+
+9
+00:00:38,267 --> 00:00:41,879
+The original problem in a Git
+repository is rarely destructive.
+
+10
+00:00:41,919 --> 00:00:46,399
+The second command, typed before the
+state was understood, is what removes the
+
+11
+00:00:46,439 --> 00:00:49,413
+uncommitted change or rewrites
+the published branch.
+
+12
+00:00:49,453 --> 00:00:53,818
+So where are those two commits? Today
+we find them without changing a thing.
+
+13
+00:00:55,658 --> 00:00:59,292
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:00:59,332 --> 00:01:02,845
+This is Part 9, production
+debugging and incident response.
+
+15
+00:01:02,885 --> 00:01:07,844
+Every earlier part gave you mechanisms.
+This part gives you the method that selects
+
+16
+00:01:07,884 --> 00:01:11,638
+the right one when all you have
+is a sentence from a colleague.
+
+17
+00:01:11,978 --> 00:01:17,070
+You met the root-cause framework in video
+4 and the ten-command diagnosis in video
+
+18
+00:01:17,110 --> 00:01:22,326
+5, when you knew very little Git. Today you
+apply the same framework end to end with
+
+19
+00:01:22,366 --> 00:01:27,583
+everything you've learned since. The case
+turns on a mechanism from video 53: what a
+
+20
+00:01:27,623 --> 00:01:32,527
+rebase does internally, where HEAD is
+during it, and when the branch ref moves.
+
+21
+00:01:32,867 --> 00:01:36,170
+A rebase copies a branch's
+commits onto a new base.
+
+22
+00:01:36,210 --> 00:01:41,677
+HEAD is Git's note of where you are. And a
+ref is a name that points at a commit, as
+
+23
+00:01:41,717 --> 00:01:42,595
+a branch does.
+
+24
+00:01:42,935 --> 00:01:47,712
+A CTO doesn't ask "which command fixes
+this". The questions are: what happened, how
+
+25
+00:01:47,752 --> 00:01:52,472
+do you know, what will the fix change, and
+how do we stop it from happening again.
+
+26
+00:01:52,512 --> 00:01:54,852
+The method is built to answer those four.
+
+27
+00:01:55,192 --> 00:02:00,020
+One rule for this video. At a marked point
+I stop and ask you for three hypotheses.
+
+28
+00:02:00,060 --> 00:02:03,421
+Pause there and write them down
+before you watch the test.
+
+29
+00:02:05,261 --> 00:02:06,674
+After this video you can:
+
+30
+00:02:07,014 --> 00:02:11,708
+State the method: symptom, state,
+evidence, hypotheses, test, root cause,
+
+31
+00:02:11,748 --> 00:02:14,432
+lowest-risk fix, verification, prevention.
+
+32
+00:02:14,772 --> 00:02:18,281
+Restate a colleague's report as a
+symptom without interpretation.
+
+33
+00:02:18,621 --> 00:02:23,580
+Run the ten-command diagnosis on a repository
+in an unknown state and say what each
+
+34
+00:02:23,620 --> 00:02:24,603
+output rules out.
+
+35
+00:02:24,943 --> 00:02:28,607
+Write three hypotheses and the
+read-only command that separates them.
+
+36
+00:02:28,947 --> 00:02:33,632
+Explain why no state-changing command
+is run before the root cause is named.
+
+37
+00:02:35,472 --> 00:02:36,968
+Three facts shape the method.
+
+38
+00:02:37,308 --> 00:02:40,732
+One: most damage is done by
+the first repair attempt.
+
+39
+00:02:40,772 --> 00:02:45,177
+Git keeps unreachable commits, the
+ones no name leads to, for weeks.
+
+40
+00:02:45,217 --> 00:02:49,557
+So the original problem is usually
+recoverable until somebody acts.
+
+41
+00:02:49,897 --> 00:02:54,733
+Two: a symptom names no layer. "CI is red"
+says that the automated checks failed.
+
+42
+00:02:54,773 --> 00:02:59,609
+It may be a Git fact: the commit lacks a
+file. Or a GitHub fact: the check ran on
+
+43
+00:02:59,649 --> 00:03:03,643
+the merge ref, which names GitHub's
+test merge of the pull request.
+
+44
+00:03:03,683 --> 00:03:08,519
+Or a GitHub Actions fact: the image of the
+runner, the machine that runs the job,
+
+45
+00:03:08,559 --> 00:03:12,132
+changed. Evidence decides, not
+the wording of the complaint.
+
+46
+00:03:12,472 --> 00:03:17,945
+Three: experience doesn't protect you. The
+textbook cites a study of Git questions
+
+47
+00:03:17,985 --> 00:03:23,526
+on Stack Exchange: in 2020, 40.0 percent
+of the people asking Git-command questions
+
+48
+00:03:23,566 --> 00:03:28,973
+had been registered for more than five
+years, against 21.2 percent of all askers.
+
+49
+00:03:29,013 --> 00:03:32,066
+A fixed procedure is what
+replaces confidence.
+
+50
+00:03:32,406 --> 00:03:37,448
+The method, in one sentence. Diagnosis is
+a read-only search for the one fact about
+
+51
+00:03:37,488 --> 00:03:42,408
+the state that explains the symptom,
+followed by the smallest change that repairs
+
+52
+00:03:42,448 --> 00:03:43,020
+that fact.
+
+53
+00:03:43,360 --> 00:03:48,663
+Precisely. The eleven steps of the framework
+fall into three phases with different
+
+54
+00:03:48,703 --> 00:03:53,940
+permissions. Phase 1 is read-only: symptom,
+observe, collect evidence, understand
+
+55
+00:03:53,980 --> 00:03:58,176
+state, form hypotheses, test
+hypotheses, identify the root cause.
+
+56
+00:03:58,216 --> 00:04:03,323
+It uses only commands with the green
+label. Phase 2 preserves: it adds refs and
+
+57
+00:04:03,363 --> 00:04:08,470
+files and removes nothing. Phase 3 is the
+first moment a ref moves or a file is
+
+58
+00:04:08,510 --> 00:04:12,770
+overwritten: select the lowest-risk
+fix, execute, verify, prevent.
+
+59
+00:04:13,110 --> 00:04:18,004
+That ordering answers the fifth objective.
+No state-changing command is run before
+
+60
+00:04:18,044 --> 00:04:22,938
+the root cause is named, because until then
+you don't know which state is evidence
+
+61
+00:04:22,978 --> 00:04:26,067
+and which state is the only
+copy of somebody's work.
+
+62
+00:04:26,107 --> 00:04:30,459
+The one kind of change that's allowed
+earlier is the kind that only adds.
+
+63
+00:04:30,799 --> 00:04:35,607
+Understand state. It means being able to
+fill in this table for the repository in
+
+64
+00:04:35,647 --> 00:04:38,839
+front of you. Each cell has
+a command that answers it.
+
+65
+00:04:39,179 --> 00:04:43,784
+Three of those words, in plain terms.
+The working tree is the files you edit.
+
+66
+00:04:43,824 --> 00:04:48,669
+The index is the proposed next commit. A
+remote-tracking branch records where the
+
+67
+00:04:48,709 --> 00:04:51,021
+server's branch was at your last fetch.
+
+68
+00:04:51,361 --> 00:04:56,686
+Hypotheses. A hypothesis is a mechanism plus
+a prediction: "if the branch was reset,
+
+69
+00:04:56,726 --> 00:05:01,923
+the branch reflog has a reset: moving to
+entry". The reflog is Git's local list of
+
+70
+00:05:01,963 --> 00:05:06,840
+the values a ref has had. Write at least
+three hypotheses before testing any.
+
+71
+00:05:06,880 --> 00:05:12,077
+With one hypothesis you look for confirmation.
+With three you look for the command
+
+72
+00:05:12,117 --> 00:05:13,865
+whose output separates them.
+
+73
+00:05:14,205 --> 00:05:18,854
+Restating the report. The developer's
+sentence contains an interpretation: "I added
+
+74
+00:05:18,894 --> 00:05:23,486
+two commits to my pull request branch."
+The symptom without interpretation is: two
+
+75
+00:05:23,526 --> 00:05:27,893
+commits that the developer made aren't
+shown on the pull request, and git push
+
+76
+00:05:27,933 --> 00:05:32,299
+origin <branch> prints "Everything
+up-to-date". Whether they were added to the
+
+77
+00:05:32,339 --> 00:05:34,277
+branch is exactly what isn't known.
+
+78
+00:05:34,617 --> 00:05:39,335
+In production, ask the reporter for three
+things: the exact text on the screen, the
+
+79
+00:05:39,375 --> 00:05:43,406
+last three commands they remember,
+and whether anything was done since.
+
+80
+00:05:43,446 --> 00:05:46,616
+The scrollback often contains
+the commit ID you'll need.
+
+81
+00:05:48,456 --> 00:05:51,567
+The textbook's analogy is
+an accident investigator.
+
+82
+00:05:51,607 --> 00:05:56,570
+The investigator secures the site, records
+everything, reconstructs the sequence,
+
+83
+00:05:56,610 --> 00:06:01,758
+and only then states a cause. Nobody tows
+the vehicles away first to see whether the
+
+84
+00:06:01,798 --> 00:06:02,808
+road works again.
+
+85
+00:06:03,148 --> 00:06:08,020
+The analogy breaks in one useful way: a
+repository can be copied in seconds, so you
+
+86
+00:06:08,060 --> 00:06:11,927
+can rehearse the repair on the
+copy. No accident site offers that.
+
+87
+00:06:12,267 --> 00:06:15,235
+Carry one more picture for
+"Everything up-to-date".
+
+88
+00:06:15,275 --> 00:06:19,954
+It's a statement about one ref: the local
+branch and the server's branch of that
+
+89
+00:06:19,994 --> 00:06:23,965
+name point at the same commit. It
+isn't a statement about your work.
+
+90
+00:06:24,005 --> 00:06:28,801
+A push sends a ref. If the ref didn't move,
+there's nothing to send, wherever your
+
+91
+00:06:28,841 --> 00:06:29,509
+commits are.
+
+92
+00:06:31,349 --> 00:06:36,010
+The three phases on one sheet. The demo
+stays in the left column until the root
+
+93
+00:06:36,050 --> 00:06:37,021
+cause has a name.
+
+94
+00:06:37,361 --> 00:06:42,422
+The state diagram comes later, after the
+evidence has been collected, and so does
+
+95
+00:06:42,462 --> 00:06:47,586
+the root-cause box. Before the demo, only
+the first line of that box can be filled
+
+96
+00:06:47,626 --> 00:06:50,923
+in: the observed behavior.
+That's all we know so far.
+
+97
+00:06:52,763 --> 00:06:53,408
+The symptom.
+
+98
+00:06:53,748 --> 00:06:58,194
+"Everything up-to-date": the local and the
+server's feature/latency-budget name the
+
+99
+00:06:58,234 --> 00:07:01,706
+same commit. It says nothing about
+where the two new commits are.
+
+100
+00:07:02,046 --> 00:07:06,544
+Command 1: git status. Look at the
+first line before anything else.
+
+101
+00:07:06,584 --> 00:07:11,828
+It names the current branch, or says that
+HEAD is detached, meaning it holds a
+
+102
+00:07:11,868 --> 00:07:16,569
+commit ID instead of a branch name,
+or names an operation in progress.
+
+103
+00:07:16,609 --> 00:07:19,279
+Predict the first line. Say it out loud.
+
+104
+00:07:24,119 --> 00:07:29,392
+The first line isn't "On branch". A rebase
+of feature/latency-budget onto 4b30d7e
+
+105
+00:07:29,432 --> 00:07:33,590
+was started and never finished:
+one command done, two remaining.
+
+106
+00:07:33,630 --> 00:07:37,657
+The working tree is clean, so
+nothing uncommitted is at stake.
+
+107
+00:07:37,997 --> 00:07:42,723
+Command 2: git branch -vv. Look for the
+star, for the upstream in brackets, and for
+
+108
+00:07:42,763 --> 00:07:47,317
+ahead, behind and gone. The upstream is
+the server branch that a local branch is
+
+109
+00:07:47,357 --> 00:07:48,121
+compared with.
+
+110
+00:07:48,461 --> 00:07:54,789
+The star is on "no branch, rebasing". The
+branch feature/latency-budget still points
+
+111
+00:07:54,829 --> 00:08:01,157
+at 4a03014, with no ahead: it equals its
+upstream. HEAD is on 075407e, a commit that
+
+112
+00:08:01,197 --> 00:08:02,370
+no branch names.
+
+113
+00:08:02,710 --> 00:08:06,856
+Command 3: git remote -v. A remote
+is a name for another repository.
+
+114
+00:08:06,896 --> 00:08:11,227
+Look for more than one remote, and
+for fetch and push URLs that differ.
+
+115
+00:08:11,567 --> 00:08:16,102
+One remote, one URL. That rules
+out a push to another repository.
+
+116
+00:08:16,442 --> 00:08:21,479
+Command 4: the graph. Look for where each
+name sits, and for commits with no name
+
+117
+00:08:21,519 --> 00:08:22,231
+beside them.
+
+118
+00:08:22,571 --> 00:08:28,392
+Two lines of history leave 8bd6e7d. The
+lower one is the published branch, ending at
+
+119
+00:08:28,432 --> 00:08:28,950
+4a03014.
+
+120
+00:08:29,290 --> 00:08:34,654
+The upper one starts at 4b30d7e on main
+and holds a second "Add latency budget to
+
+121
+00:08:34,694 --> 00:08:39,058
+config", followed by the two commits
+the developer is looking for.
+
+122
+00:08:39,098 --> 00:08:40,592
+Only HEAD decorates it.
+
+123
+00:08:40,932 --> 00:08:46,010
+Command 5: git reflog. Read it from the
+bottom up: it's the sequence of events.
+
+124
+00:08:46,350 --> 00:08:52,069
+HEAD@{3} is "rebase (start): checkout main".
+There's no "rebase (finish)" line above
+
+125
+00:08:52,109 --> 00:08:57,828
+it. The three entries above the start are
+plain commit entries: one for the conflict
+
+126
+00:08:57,868 --> 00:08:59,817
+resolution, two for new work.
+
+127
+00:09:00,157 --> 00:09:05,494
+Command 6: git rev-parse. Turn names into
+exact IDs, and ask whether HEAD is a
+
+128
+00:09:05,534 --> 00:09:05,977
+branch.
+
+129
+00:09:06,317 --> 00:09:11,158
+The local branch and its remote-tracking
+branch are the same object, which is why
+
+130
+00:09:11,198 --> 00:09:16,100
+the push had nothing to send. git symbolic-ref
+HEAD fails: HEAD holds a commit ID,
+
+131
+00:09:16,140 --> 00:09:17,606
+not the name of a branch.
+
+132
+00:09:17,946 --> 00:09:23,185
+Command 7: git show --stat HEAD. Is
+this the commit the reporter means?
+
+133
+00:09:23,525 --> 00:09:28,804
+Commands 8 and 9: git diff and git diff
+--cached. Look for work that exists in no
+
+134
+00:09:28,844 --> 00:09:33,007
+commit. It's the work that a wrong
+fix destroys without a trace.
+
+135
+00:09:33,347 --> 00:09:38,513
+Both empty. Everything of value here is
+committed. Remember this output: one later
+
+136
+00:09:38,553 --> 00:09:40,736
+step is allowed only because of it.
+
+137
+00:09:41,076 --> 00:09:44,438
+Command 10: the configuration,
+with origin and scope.
+
+138
+00:09:44,478 --> 00:09:49,765
+Look for the branch.<name>.remote and
+branch.<name>.merge pairs, and for pull, push
+
+139
+00:09:49,805 --> 00:09:51,049
+and rebase settings.
+
+140
+00:09:51,389 --> 00:09:56,535
+The upstream of feature/latency-budget is
+the branch of the same name on origin.
+
+141
+00:09:56,575 --> 00:10:01,851
+No setting changes the behavior of push or
+rebase. The two gc.reflog lines are the
+
+142
+00:10:01,891 --> 00:10:03,018
+lab configuration.
+
+143
+00:10:03,358 --> 00:10:07,675
+And git ls-files. Are the files the
+reporter talks about tracked at the current
+
+144
+00:10:07,715 --> 00:10:08,061
+commit?
+
+145
+00:10:08,401 --> 00:10:14,984
+app/metrics.py and app/audit.py, the files
+of the two new commits, are in the index.
+
+146
+00:10:15,024 --> 00:10:16,246
+The work exists.
+
+147
+00:10:16,586 --> 00:10:21,725
+Here's that state as one picture. The
+lower line in the clone equals the server.
+
+148
+00:10:21,765 --> 00:10:25,868
+The upper line exists only in the
+clone, and only HEAD names it.
+
+149
+00:10:26,208 --> 00:10:29,639
+The state files. A rebase keeps
+its state in a directory.
+
+150
+00:10:32,979 --> 00:10:36,326
+head-name is the branch that will
+be moved when the rebase ends.
+
+151
+00:10:36,366 --> 00:10:40,031
+orig-head is where it was when the
+rebase began. onto is the new base.
+
+152
+00:10:40,071 --> 00:10:42,995
+done and git-rebase-todo are
+the two halves of the plan.
+
+153
+00:10:43,335 --> 00:10:47,543
+Stop the video here. You have the
+symptom and every piece of evidence.
+
+154
+00:10:47,583 --> 00:10:52,580
+Write three hypotheses, each as a mechanism
+plus a prediction, and for each the one
+
+155
+00:10:52,620 --> 00:10:56,100
+read-only command whose output
+would confirm or reject it.
+
+156
+00:10:56,140 --> 00:10:58,831
+Don't continue until you
+have three on paper.
+
+157
+00:11:03,671 --> 00:11:08,222
+The test. The textbook's four hypotheses.
+One: the commits were made on another
+
+158
+00:11:08,262 --> 00:11:12,696
+branch. Two: a rebase stopped and the
+commits were made on the detached HEAD.
+
+159
+00:11:12,736 --> 00:11:16,532
+Three: the commits were pushed and
+the pull request page is stale.
+
+160
+00:11:16,572 --> 00:11:18,972
+Four: the push went to another repository.
+
+161
+00:11:19,312 --> 00:11:24,044
+The first command lists what HEAD has
+that the branch doesn't: the two missing
+
+162
+00:11:24,084 --> 00:11:27,532
+commits, the conflict resolution,
+and the commit of main.
+
+163
+00:11:27,572 --> 00:11:31,753
+The server holds 4a03014 for the
+branch, so nothing newer was pushed.
+
+164
+00:11:31,793 --> 00:11:36,770
+And --contains HEAD lists only the detached
+HEAD: no other branch has the commits.
+
+165
+00:11:37,110 --> 00:11:40,109
+One hypothesis is confirmed
+and three are rejected.
+
+166
+00:11:40,449 --> 00:11:43,662
+That's the root-cause box,
+filled in. The layer is Git.
+
+167
+00:11:43,702 --> 00:11:48,395
+GitHub displayed the branch it was given.
+And there are the two commits from the
+
+168
+00:11:48,435 --> 00:11:51,708
+opening: on a detached HEAD,
+where no branch names them.
+
+169
+00:11:52,048 --> 00:11:55,974
+Preserve. Before any change,
+give the unnamed commits a name.
+
+170
+00:11:56,014 --> 00:11:59,680
+🟢 SAFE: git branch adds one
+ref and touches nothing else.
+
+171
+00:12:00,020 --> 00:12:01,634
+Select the lowest-risk fix.
+
+172
+00:12:01,974 --> 00:12:07,167
+Option C doesn't bring main into the
+branch. That's a separate decision, and
+
+173
+00:12:07,207 --> 00:12:11,023
+rescue/latency-wip keeps the
+conflict resolution for it.
+
+174
+00:12:11,363 --> 00:12:16,750
+Execute, one change at a time. 🟡 CAUTION:
+git rebase --abort resets the index and
+
+175
+00:12:16,790 --> 00:12:22,310
+the working tree to the original branch
+tip, so it's run only because outputs 8 and
+
+176
+00:12:22,350 --> 00:12:23,181
+9 were empty.
+
+177
+00:12:23,521 --> 00:12:27,952
+"On branch" again. 🟡 CAUTION: git cherry-pick
+adds commits to the current branch.
+
+178
+00:12:34,292 --> 00:12:40,693
+The picks created c54eb8c and 30e8fe4: the
+same changes as 96a7b55 and 075407e with
+
+179
+00:12:40,733 --> 00:12:44,419
+a different parent, and
+therefore different IDs.
+
+180
+00:12:44,759 --> 00:12:50,194
+Preview the push, then push. Quick quiz:
+what will the preview line look like for a
+
+181
+00:12:50,234 --> 00:12:53,953
+fast-forward, where the server's
+branch only moves ahead?
+
+182
+00:12:53,993 --> 00:12:57,845
+A, two dots between the IDs.
+B, a plus sign and three dots.
+
+183
+00:12:57,885 --> 00:12:58,637
+Your answer?
+
+184
+00:13:03,477 --> 00:13:08,368
+A. Two dots: a fast-forward. A forced update
+would print a plus sign and three dots.
+
+185
+00:13:08,708 --> 00:13:13,306
+Verify. Run the commands that showed the
+problem and check that each output changed
+
+186
+00:13:13,346 --> 00:13:14,703
+for the predicted reason.
+
+187
+00:13:15,043 --> 00:13:20,433
+The first line of git status is "On branch".
+HEAD, the remote-tracking branch and
+
+188
+00:13:20,473 --> 00:13:24,255
+the server agree on 30e8fe4.
+No rebase directory remains.
+
+189
+00:13:24,595 --> 00:13:29,093
+git cherry -v compares by patch, that
+is, by the change and not by the ID.
+
+190
+00:13:29,133 --> 00:13:34,183
+The minus sign marks the two rescued commits
+as present on the branch in equivalent
+
+191
+00:13:34,223 --> 00:13:39,150
+form. The plus sign marks the commit of
+main and the conflict resolution 9fbe4d7,
+
+192
+00:13:39,190 --> 00:13:41,174
+which were deliberately left out.
+
+193
+00:13:41,514 --> 00:13:45,779
+Prevent. Make a stopped operation
+visible where people look.
+
+194
+00:13:45,819 --> 00:13:51,806
+Git ships a prompt script, git-prompt.sh,
+whose __git_ps1 function prints the branch
+
+195
+00:13:51,846 --> 00:13:57,690
+and the operation in progress. The habit
+that needs no tool: the first line of git
+
+196
+00:13:57,730 --> 00:14:00,704
+status before every commit and every push.
+
+197
+00:14:01,044 --> 00:14:06,626
+Try it now. Thirty seconds. In the lab shell,
+or in any repository you have, run git
+
+198
+00:14:06,666 --> 00:14:10,508
+status, which only reads, and
+say its first line out loud.
+
+199
+00:14:15,348 --> 00:14:20,397
+That line named your branch, or said that
+HEAD is detached, or named an operation in
+
+200
+00:14:20,437 --> 00:14:24,698
+progress. Whichever it was, you knew
+it before you typed anything else.
+
+201
+00:14:24,738 --> 00:14:26,091
+That's the whole habit.
+
+202
+00:14:27,931 --> 00:14:29,580
+Five mistakes to watch for.
+
+203
+00:14:29,920 --> 00:14:34,304
+Acting on the reporter's interpretation.
+Root cause: "I added two commits to my
+
+204
+00:14:34,344 --> 00:14:39,008
+branch" is a belief about the state, and
+the state is what has not been established.
+
+205
+00:14:39,348 --> 00:14:42,873
+Reading "Everything up-to-date"
+as "my work is on the server".
+
+206
+00:14:42,913 --> 00:14:47,646
+Root cause: the message compares one local
+ref with one server ref and says nothing
+
+207
+00:14:47,686 --> 00:14:49,487
+about commits that no ref names.
+
+208
+00:14:49,827 --> 00:14:54,658
+Testing the first hypothesis that comes to
+mind. Root cause: with one hypothesis you
+
+209
+00:14:54,698 --> 00:14:59,298
+look for confirmation; only several
+hypotheses make you look for the output that
+
+210
+00:14:59,338 --> 00:15:00,168
+separates them.
+
+211
+00:15:00,508 --> 00:15:05,434
+Aborting the rebase first. Root cause: the
+abort returns HEAD to the original branch
+
+212
+00:15:05,474 --> 00:15:09,573
+tip, and the commits made on the
+detached HEAD lose their only anchor.
+
+213
+00:15:09,913 --> 00:15:14,518
+Finishing the rebase and force-pushing
+because it is the "natural" continuation.
+
+214
+00:15:14,558 --> 00:15:19,396
+Root cause: it rewrites a published branch
+with an open pull request when a fix that
+
+215
+00:15:19,436 --> 00:15:21,254
+only adds commits was available.
+
+216
+00:15:23,094 --> 00:15:27,548
+Now, out of the lab. An engineer on a
+ranking team asks for help on Friday
+
+217
+00:15:27,588 --> 00:15:32,406
+afternoon: the latency work she did this
+week isn't on her pull request, and the
+
+218
+00:15:32,446 --> 00:15:37,446
+release is cut on Monday. The colleague she
+asks doesn't touch her keyboard for the
+
+219
+00:15:37,486 --> 00:15:42,426
+first ten minutes. He asks for the exact
+message, the last commands she remembers,
+
+220
+00:15:42,466 --> 00:15:45,645
+and whether she has tried
+anything since. She hasn't.
+
+221
+00:15:45,985 --> 00:15:50,860
+He runs the ten commands and reads the
+first line of git status aloud: a rebase in
+
+222
+00:15:50,900 --> 00:15:54,217
+progress, started on Monday.
+She remembers the conflict.
+
+223
+00:15:54,257 --> 00:15:59,192
+She had fixed it, committed, and gone on
+working. He writes down four hypotheses in
+
+224
+00:15:59,232 --> 00:16:04,108
+the incident channel with the command for
+each, runs three commands, and names the
+
+225
+00:16:04,148 --> 00:16:07,285
+root cause with its layer:
+Git, an unfinished rebase.
+
+226
+00:16:07,325 --> 00:16:09,203
+GitHub showed what it was given.
+
+227
+00:16:09,543 --> 00:16:14,428
+Then one branch to anchor the work, the
+abort, two cherry-picks, a dry-run push, the
+
+228
+00:16:14,468 --> 00:16:19,352
+push, and the same commands again to verify.
+The pull request shows the two commits.
+
+229
+00:16:19,392 --> 00:16:24,101
+The message he posts afterwards has four
+lines: what happened, how he knows, what
+
+230
+00:16:24,141 --> 00:16:29,026
+the fix changed, and what the team adds:
+the shell prompt that shows an operation in
+
+231
+00:16:29,066 --> 00:16:29,554
+progress.
+
+232
+00:16:31,394 --> 00:16:37,764
+Your turn. Do Lab 35.1, "The ten-command
+diagnosis on three repositories", in
+
+233
+00:16:37,804 --> 00:16:43,425
+lab-manual/m35-diagnosis-method.md.
+Start with the first repository.
+
+234
+00:16:43,765 --> 00:16:48,276
+For each repository, write the symptom
+without interpretation before you run
+
+235
+00:16:48,316 --> 00:16:53,126
+anything. After the ten commands, and
+before any test, write three hypotheses and
+
+236
+00:16:53,166 --> 00:16:58,036
+the read-only command for each. Run no
+state-changing command until you have named
+
+237
+00:16:58,076 --> 00:17:02,946
+the root cause and its layer. The lab's
+questions are answered in a separate file.
+
+238
+00:17:02,986 --> 00:17:04,083
+Attempt them first.
+
+239
+00:17:04,423 --> 00:17:08,702
+The challenge is Incident 10,
+incidents/10-commit-local-not-remote.
+
+240
+00:17:08,742 --> 00:17:12,955
+Generate it, read only its symptoms,
+and don't read its generator.
+
+241
+00:17:16,795 --> 00:17:21,513
+Answer out loud. A strong answer gives the
+reason as a mechanism, not as caution in
+
+242
+00:17:21,553 --> 00:17:26,213
+general: say what a repository in an unknown
+state may contain that exists nowhere
+
+243
+00:17:26,253 --> 00:17:30,798
+else, and which ordinary commands would
+remove it. It supports the rule with the
+
+244
+00:17:30,838 --> 00:17:32,977
+observation about when damage is done.
+
+245
+00:17:33,317 --> 00:17:37,963
+For the second half, it names the kind of
+change by its property, what it adds and
+
+246
+00:17:38,003 --> 00:17:41,677
+what it can't remove, and gives
+examples at more than one weight.
+
+247
+00:17:41,717 --> 00:17:46,077
+If you can add one diagnostic command
+that's commonly used and isn't strictly
+
+248
+00:17:46,117 --> 00:17:50,535
+read-only, and say why it's still
+acceptable, you have shown that you know the
+
+249
+00:17:50,575 --> 00:17:51,221
+rule's edge.
+
+250
+00:17:53,061 --> 00:17:53,988
+Let's land this.
+
+251
+00:17:54,328 --> 00:17:59,100
+Diagnosis is a read-only search for the
+one fact about the state that explains the
+
+252
+00:17:59,140 --> 00:18:02,445
+symptom, followed by the
+smallest change that repairs it.
+
+253
+00:18:02,785 --> 00:18:07,269
+The method has three phases with different
+permissions: read-only, preserve, change.
+
+254
+00:18:07,609 --> 00:18:11,932
+A symptom is restated without the reporter's
+interpretation, and the layer is named
+
+255
+00:18:11,972 --> 00:18:12,983
+with the root cause.
+
+256
+00:18:13,323 --> 00:18:17,789
+At least three hypotheses are written
+before any is tested, each with the command
+
+257
+00:18:17,829 --> 00:18:19,680
+that separates it from the others.
+
+258
+00:18:20,020 --> 00:18:24,335
+"Everything up-to-date" is a statement
+about one ref; during a rebase HEAD is
+
+259
+00:18:24,375 --> 00:18:26,937
+detached and the branch
+moves only at the end.
+
+260
+00:18:28,777 --> 00:18:34,334
+Read sections 29.1 to 29.3. Then read
+playbooks/troubleshooting-playbook.md, the
+
+261
+00:18:34,374 --> 00:18:40,002
+field version of the method. In the next
+video the developer's own explanation is
+
+262
+00:18:40,042 --> 00:18:45,739
+plausible and wrong: a push that stays
+rejected after a pull that says "Already up
+
+263
+00:18:45,779 --> 00:18:46,369
+to date".
+
+264
+00:18:46,709 --> 00:18:51,398
+Today you took one sentence from a colleague
+to a named root cause, and changed
+
+265
+00:18:51,438 --> 00:18:55,709
+nothing until you understood the state.
+Practise that on the lab's three
+
+266
+00:18:55,749 --> 00:18:59,661
+repositories. Until then, look at
+the state first and type second.
+
+267
+00:18:59,701 --> 00:19:01,098
+See you in the next one.

@@ -57,6 +57,8 @@ After this video you can:
 
 **Step 1: contain.** Revoke or rotate the credential first. Was that your first move? The sources, GitHub and OWASP, add: that alone may be sufficient, and a history rewrite may not be warranted.
 
+After it come assess, eradicate, recover, communicate and prevent.
+
 **[ANIMATION]** walk: columns=step,what_it_is rows=1_CONTAIN:revoke_or_rotate_at_the_issuer|2_ASSESS:five_facts,_written_down|3_ERADICATE:remove_from_current_code;_rewrite_history_ONLY_where_warranted|4_RECOVER:new_credential_to_dependent_services;_re-clone_if_rewritten|5_COMMUNICATE:collaborators:_what_to_do_with_their_clones;_a_reachable_contact|6_PREVENT:push_protection,_scanning,_OIDC,_least_privilege,_named_files_and_git_diff_--cached marks=1.2:ok mono=off title=Six_steps,_in_this_order id=track say_1=The_key_stops_working_HERE:_against_every_clone,_fork,_cache_and_screenshot
 
 **[ANIMATION]** step: track.1

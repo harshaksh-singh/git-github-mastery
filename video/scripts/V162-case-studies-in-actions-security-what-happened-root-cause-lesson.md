@@ -45,13 +45,23 @@ After this video you can:
 
 ## CONCEPT
 
-**[ON SCREEN]** Lower third: GitHub Actions. The table of section 21A.18, one row at a time, with the source links visible.
+**[ON SCREEN]** Lower third: GitHub Actions.
+
+**[ANIMATION]** walk: columns=the_part,as_the_table_gives_it rows=What_happened:version_tags_were_repointed_to_a_malicious_commit_that_printed_secrets_from_runner_memory_into_workflow_logs;_more_than_23,000_repositories_used_the_action|Root_cause:a_stolen_bot_token;_the_chain_began_with_a_pull__request__target_flaw_in_an_upstream_project,_according_to_Unit_42|Lesson:tags_are_mutable;_only_commit-pinned_workflows_were_unaffected;_public_logs_are_world-readable mono=off title=tj-actions/changed-files,_March_2025 id=tj say_header=Sources:_the_CISA_alert_and_the_GitHub_advisory
+
+**[ANIMATION]** step: tj.header
 
 **tj-actions/changed-files, March 2025.** Sources: the CISA alert and the GitHub advisory.
 
+**[ANIMATION]** step: tj.1
+
 What happened: version tags were repointed to a malicious commit that printed secrets from runner memory into workflow logs. More than 23,000 repositories used the action.
 
+**[ANIMATION]** step: tj.2
+
 Root cause: a stolen bot token. The chain began with a `pull_request_target` flaw in an upstream project, according to the Unit 42 write-up.
+
+**[ANIMATION]** step: tj.3
 
 Lesson: tags are mutable. Only commit-pinned workflows were unaffected. And public logs are world-readable.
 
@@ -191,7 +201,7 @@ Flags: a conflict in the count of tags: 75 of 76 according to Wiz, 76 of 77 acco
 
 **[ANIMATION]** step: tan.header
 
-**TanStack, 11 May 2026.** Source: the project's post-mortem.
+**TanStack, the eleventh of May 2026.** Source: the project's post-mortem.
 
 **[ANIMATION]** step: tan.1
 
@@ -322,6 +332,8 @@ Where this model breaks: it suggests one cut is enough. For one chain, it is. Bu
   one technique across all three: reading the runner process's memory for secrets and OIDC tokens
   => masked logs are irrelevant once attacker code runs in a job
 ```
+
+Three columns, one per recurring pattern: each case under the pattern or patterns it shows, and under each column the control from this part that answers it.
 
 **[DIAGRAM]** Trivy appears in two columns, and that is the lesson of that case: the first incident was pattern two, and because the rotation afterwards was incomplete, the second was pattern one. The placement of Codecov and Ultralytics beside the patterns follows the lessons the table gives for them; the textbook's own sentence lists the six cases in the three patterns.
 
@@ -454,6 +466,6 @@ You should now be able to say:
 
 ## HOMEWORK
 
-Read section 21A.18 of [Chapter 21A](../../textbook/ch21a-actions-security.md) and follow two of its source links to the published post-mortems. Read [`guides/security-guide.md`](../../guides/security-guide.md).
+Read section 21A.18 of [Chapter 21A](../../textbook/ch21a-actions-security.md) and follow two of the source links to the published post-mortems. Read [`guides/security-guide.md`](../../guides/security-guide.md).
 
 Today you walked through eight incidents with their flags, and cut one chain link by link. Retell one case aloud, with its flag, before the next video. Next time: the Git client, what a clone runs, the three guards, and recursive clones. Until then, look at the state first and type second. See you in the next one.

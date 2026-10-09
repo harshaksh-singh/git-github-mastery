@@ -45,7 +45,7 @@ After this video you can:
 - say what the approval gate for first-time contributors does;
 - explain what `pull_request_target` and `workflow_run` change: whose workflow file, which token, which secrets;
 - name the step that turns a privileged trigger into a vulnerability;
-- state when `pull_request_target` is the right trigger and what changes on 2 November 2026, as the section gives it.
+- state when `pull_request_target` is the right trigger and what changes on the second of November 2026, as the section gives it.
 
 ## CONCEPT
 
@@ -101,7 +101,7 @@ And the sentence that locates the step. Quoting the reference: "The checkout ste
 
 **[ANIMATION]** say: The_token_is_read/write,_even_when_triggered_from_a_public_fork
 
-The token isn't read-only here. The workflow syntax reference: under `pull_request_target` the token "is granted read/write repository permission, even when it is triggered from a public fork".
+The token isn't read-only here. The workflow syntax reference: under `pull_request_target` the token is granted read and write repository permission, "even when it is triggered from a public fork".
 
 **[ANIMATION]** end
 
@@ -235,6 +235,8 @@ Try it now, thirty seconds, on paper. Draw two columns, `pull_request` and `pull
                                                                code checked out into the working
                                                                directory
 ```
+
+Two lanes, side by side: on the left `pull_request`, on the right `pull_request_target`.
 
 **[DIAGRAM]** Each lane is consistent on its own. The left lane gives the stranger's code no privilege. The right lane gives privilege and, by default, no stranger's code. The vulnerability is a workflow that takes the token and secrets from the right lane and the code from the left.
 
@@ -402,7 +404,7 @@ You should now be able to say:
 - The approval gate covers first-time contributors by default and does not apply to privileged triggers.
 - `pull_request_target` takes the workflow from the default branch and gives the job a read-write token and the repository's secrets.
 - The vulnerability is completed by the step that runs code checked out from the pull request, and "run" includes builds, installs, tests and tools that read configuration from the working directory.
-- The trigger is right for metadata-only work; GitHub announced that from 2 November 2026 a default rule blocks it in public repositories unless a maintainer allows it.
+- The trigger is right for metadata-only work; GitHub announced that from the second of November 2026 a default rule blocks it in public repositories unless a maintainer allows it.
 
 ## HOMEWORK
 

@@ -1,0 +1,1190 @@
+1
+00:00:04,500 --> 00:00:09,522
+An engineer repaired a release branch in
+her clone, her own copy of the repository,
+
+2
+00:00:09,562 --> 00:00:14,463
+at eleven at night. A release branch is
+the line of commits a release is cut from
+
+3
+00:00:14,503 --> 00:00:19,403
+and fixed on. git status is clean, the
+tests pass locally, and she wants to go to
+
+4
+00:00:19,443 --> 00:00:22,026
+bed. Four questions
+decide whether she may.
+
+5
+00:00:22,366 --> 00:00:27,203
+Did the thing the user wanted happen? Did
+the state that caused the problem change,
+
+6
+00:00:27,243 --> 00:00:31,846
+for the reason she expected? Is the fix
+on the server, and in the pull request,
+
+7
+00:00:31,886 --> 00:00:36,371
+GitHub's proposal to merge the branch,
+and in the pipeline run for that exact
+
+8
+00:00:36,411 --> 00:00:39,427
+commit? And did anything
+change that shouldn't have?
+
+9
+00:00:39,767 --> 00:00:44,684
+A fix in your clone isn't a fix on the
+server. The first check can pass while the
+
+10
+00:00:44,724 --> 00:00:49,151
+third one fails. Hold on to that
+sentence. Tonight it comes true for her.
+
+11
+00:00:50,991 --> 00:00:55,335
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:55,375 --> 00:00:59,144
+This video closes Module 35
+and the diagnosis method.
+
+13
+00:00:59,184 --> 00:01:04,391
+You have the read-only phase from video
+180 and video 181, the reading of
+
+14
+00:01:04,431 --> 00:01:09,926
+interrupted operations from video 182,
+and the preserve phase from video 183.
+
+15
+00:01:09,966 --> 00:01:15,460
+What remains is the third phase: select
+the lowest-risk fix, execute, verify,
+
+16
+00:01:15,500 --> 00:01:21,426
+prevent. From video 51 you have one table
+and one decision tree for undoing things.
+
+17
+00:01:21,466 --> 00:01:25,451
+Today's ladder is the same
+idea, generalized to any fix.
+
+18
+00:01:25,791 --> 00:01:30,143
+Then the symptom catalog: twenty-six
+symptoms, each with its likely causes in the
+
+19
+00:01:30,183 --> 00:01:33,180
+order worth testing and the
+commands that separate them.
+
+20
+00:01:33,220 --> 00:01:37,519
+You don't memorize it. You learn how to
+use it and what pattern runs through it.
+
+21
+00:01:37,859 --> 00:01:42,963
+The terminal segment finishes the handover
+of video 183: the half-done backport,
+
+22
+00:01:43,003 --> 00:01:48,300
+with every layer of evidence already in
+place. A backport copies a fix to a release
+
+23
+00:01:48,340 --> 00:01:53,509
+line, here with git cherry-pick, which
+applies one commit's change to the current
+
+24
+00:01:53,549 --> 00:01:54,988
+branch as a new commit.
+
+25
+00:01:56,828 --> 00:01:58,406
+Here's what you'll walk away with.
+
+26
+00:01:58,746 --> 00:02:00,158
+After this video you can:
+
+27
+00:02:00,498 --> 00:02:04,061
+Rank candidate fixes by what each
+can destroy and whom it affects.
+
+28
+00:02:04,401 --> 00:02:07,137
+State the four checks that
+make up a verification.
+
+29
+00:02:07,477 --> 00:02:11,106
+Give an example where the first
+check passes and a later one fails.
+
+30
+00:02:11,446 --> 00:02:15,702
+Use the symptom catalog to go from an
+error message to candidate causes.
+
+31
+00:02:16,042 --> 00:02:19,041
+Turn a finished case into a
+line of the team's checklist.
+
+32
+00:02:20,881 --> 00:02:25,649
+Choosing a fix, in one sentence. List every
+fix that would repair the root cause,
+
+33
+00:02:25,689 --> 00:02:30,397
+rank them by what each can destroy and
+how each is undone, and take the one that
+
+34
+00:02:30,437 --> 00:02:30,991
+only adds.
+
+35
+00:02:31,331 --> 00:02:34,677
+Precisely. Rank by five
+questions, in this order.
+
+36
+00:02:35,017 --> 00:02:40,038
+Does it destroy uncommitted work? That
+work has no object and no reflog.
+
+37
+00:02:40,078 --> 00:02:45,662
+Anything that can remove it, git reset
+--hard, git restore, git clean, git stash
+
+38
+00:02:45,702 --> 00:02:50,933
+drop, every --abort, ranks last unless
+the working tree is clean or copied.
+
+39
+00:02:51,273 --> 00:02:54,269
+Does it rewrite commits that
+another repository has?
+
+40
+00:02:54,309 --> 00:02:59,056
+Rewriting published history turns one
+person's problem into every clone's problem.
+
+41
+00:02:59,396 --> 00:03:03,215
+Does it change the server? A
+local change is undone locally.
+
+42
+00:03:03,255 --> 00:03:08,424
+A push, a deleted remote branch or a changed
+rule is seen by others and may start
+
+43
+00:03:08,464 --> 00:03:09,067
+workflows.
+
+44
+00:03:09,407 --> 00:03:14,417
+Is it undone by one command? A new commit
+is undone by a revert; a moved ref by
+
+45
+00:03:14,457 --> 00:03:17,166
+moving it back; a pruned
+object by nothing.
+
+46
+00:03:17,506 --> 00:03:22,973
+Can it be previewed? --dry-run, git merge-tree,
+git diff <target>, git log <range>,
+
+47
+00:03:23,013 --> 00:03:24,632
+or a rehearsal in a copy.
+
+48
+00:03:24,972 --> 00:03:29,234
+The result is a ladder of six
+rungs, which is today's diagram.
+
+49
+00:03:29,274 --> 00:03:34,784
+Prefer the lowest rung that repairs the
+cause. In the case of video 180 that was
+
+50
+00:03:34,824 --> 00:03:40,196
+rungs 1 and 2. In the case of video 181
+it was rung 3, on commits that existed
+
+51
+00:03:40,236 --> 00:03:42,416
+nowhere else, with rung 1 first.
+
+52
+00:03:42,756 --> 00:03:43,849
+Three rules of thumb.
+
+53
+00:03:44,189 --> 00:03:49,190
+On a shared branch, undo with git revert,
+not with git reset, which moves the branch
+
+54
+00:03:49,230 --> 00:03:54,231
+to another commit. A revert adds a commit.
+Everyone's next pull is a fast-forward, a
+
+55
+00:03:54,271 --> 00:03:55,252
+plain move ahead.
+
+56
+00:03:55,592 --> 00:04:01,272
+When a ref must move back, use git reset
+--keep. It refuses when a file with local
+
+57
+00:04:01,312 --> 00:04:05,249
+changes would be overwritten,
+where --hard overwrites it.
+
+58
+00:04:05,589 --> 00:04:10,855
+When a force push, which overwrites the
+server's branch, is the correct fix, state
+
+59
+00:04:10,895 --> 00:04:15,707
+the expected old value: git push
+--force-with-lease=<branch>:<expected-id>.
+
+60
+00:04:15,747 --> 00:04:20,172
+The bare form is defeated by anything
+that fetches in the background.
+
+61
+00:04:20,512 --> 00:04:25,643
+Verification, in one sentence. A fix is
+verified when the commands that showed the
+
+62
+00:04:25,683 --> 00:04:30,562
+problem now show its absence, for the
+reason you predicted, in every place the
+
+63
+00:04:30,602 --> 00:04:31,571
+problem existed.
+
+64
+00:04:31,911 --> 00:04:33,516
+Four checks, in this order.
+
+65
+00:04:33,856 --> 00:04:38,729
+The symptom. Repeat the command or page
+that showed it: the rejected push succeeds;
+
+66
+00:04:38,769 --> 00:04:41,333
+the pull request lists
+the expected commits.
+
+67
+00:04:41,673 --> 00:04:45,848
+The state. Repeat the diagnosis
+commands that exposed the cause.
+
+68
+00:04:45,888 --> 00:04:51,248
+The first line of git status changed; the
+brackets in git branch -vv changed; .git
+
+69
+00:04:51,288 --> 00:04:52,499
+has no state files.
+
+70
+00:04:52,839 --> 00:04:58,256
+Every copy. Compare IDs, not names: git
+rev-parse HEAD @{upstream} and git ls-remote
+
+71
+00:04:58,296 --> 00:05:03,193
+origin <branch> must print the same ID.
+Then the colleague's clone, the pull
+
+72
+00:05:03,233 --> 00:05:06,311
+request, the pipeline run
+for that exact commit.
+
+73
+00:05:06,651 --> 00:05:11,658
+Nothing else changed. git diff <backup> HEAD
+or git range-diff shows that the result
+
+74
+00:05:11,698 --> 00:05:14,843
+differs from the preserved
+state only where intended.
+
+75
+00:05:14,883 --> 00:05:18,328
+git fsck reports no damage.
+git status shows no leftovers.
+
+76
+00:05:18,668 --> 00:05:23,444
+Try it now. Thirty seconds, and it only
+reads. In the lab shell, or in any
+
+77
+00:05:23,484 --> 00:05:27,088
+repository you have, run git
+rev-parse HEAD @{upstream}.
+
+78
+00:05:27,128 --> 00:05:30,603
+The upstream is the server
+branch your branch follows.
+
+79
+00:05:30,643 --> 00:05:33,401
+Do you get two equal
+IDs? Say what you see.
+
+80
+00:05:35,741 --> 00:05:40,134
+Two equal IDs mean your branch agrees
+with your record of its upstream.
+
+81
+00:05:40,174 --> 00:05:45,255
+That record is the server at your last
+fetch, so only git ls-remote tells you what
+
+82
+00:05:45,295 --> 00:05:50,375
+the server holds now. And if Git answered
+that no upstream is configured, that's a
+
+83
+00:05:50,415 --> 00:05:51,124
+finding too.
+
+84
+00:05:51,464 --> 00:05:56,296
+Write the prediction before you run the
+check. Then, and only then, remove what the
+
+85
+00:05:56,336 --> 00:06:00,699
+investigation added: the rescue branch,
+the evidence directory, the bundle.
+
+86
+00:06:00,739 --> 00:06:04,162
+git branch -D prints the ID,
+which is one more safety line.
+
+87
+00:06:04,502 --> 00:06:09,243
+What a pull request needs after a fix is
+platform behavior: a push to the head
+
+88
+00:06:09,283 --> 00:06:13,963
+branch reruns workflows and can dismiss
+approvals. A forced push marks review
+
+89
+00:06:14,003 --> 00:06:18,866
+comments as outdated. Verification includes
+reading the pull request page again.
+
+90
+00:06:19,206 --> 00:06:22,877
+The symptom catalog. Twenty-six
+symptoms in five groups.
+
+91
+00:06:22,917 --> 00:06:27,581
+History and refs. Working tree and
+index. Remotes, access and identity.
+
+92
+00:06:27,621 --> 00:06:33,079
+Pull requests, checks and CI. And submodules,
+LFS and scale: a submodule is another
+
+93
+00:06:33,119 --> 00:06:38,645
+repository checked out in a subdirectory of
+yours, and Git LFS is a separate program
+
+94
+00:06:38,685 --> 00:06:44,210
+that keeps large files outside your commits.
+Each row gives the likely causes in the
+
+95
+00:06:44,250 --> 00:06:49,576
+order worth testing, the commands that
+distinguish them, and the chapter with the
+
+96
+00:06:49,616 --> 00:06:50,239
+mechanism.
+
+97
+00:06:50,579 --> 00:06:55,263
+How to use a row: the causes are your
+ready-made hypotheses, already more than
+
+98
+00:06:55,303 --> 00:06:58,655
+three, and each command is
+the test that separates them.
+
+99
+00:06:58,695 --> 00:07:03,742
+The catalog doesn't replace the opening
+ritual. It replaces the blank page after it.
+
+100
+00:07:04,082 --> 00:07:08,950
+The pattern across the catalog. The textbook
+calls it the content of the book in one
+
+101
+00:07:08,990 --> 00:07:13,682
+line: nearly every symptom is a difference
+between two of the places of the state
+
+102
+00:07:13,722 --> 00:07:17,829
+table that someone assumed were equal.
+The working tree and the commit.
+
+103
+00:07:17,869 --> 00:07:21,042
+The branch and HEAD. The local
+branch and its upstream.
+
+104
+00:07:21,082 --> 00:07:25,249
+The remote-tracking branch and the
+server. The branch and the merge ref.
+
+105
+00:07:25,289 --> 00:07:27,293
+The diagnosis is finding which two.
+
+106
+00:07:27,633 --> 00:07:32,221
+When not to use the full method. A message
+that names its own remedy, and whose
+
+107
+00:07:32,261 --> 00:07:36,849
+remedy is green, needs no hypothesis
+table: "The current branch has no upstream
+
+108
+00:07:36,889 --> 00:07:41,125
+branch", with the command printed
+beneath it, or a typo in a branch name.
+
+109
+00:07:41,165 --> 00:07:44,288
+Run git status, do what the
+message says, and move on.
+
+110
+00:07:44,328 --> 00:07:49,209
+The full method is for symptoms that contradict
+what the reporter believes about the
+
+111
+00:07:49,249 --> 00:07:53,427
+state. The opening ritual is never
+skipped: it takes less than a minute.
+
+112
+00:07:53,767 --> 00:07:58,651
+When to stop and escalate. If the evidence
+shows a credential in history, stop
+
+113
+00:07:58,691 --> 00:08:03,385
+diagnosing and start the secret response:
+revoke first, investigate second.
+
+114
+00:08:03,425 --> 00:08:08,625
+If the repository reports corrupt or missing
+objects, don't continue working in it:
+
+115
+00:08:08,665 --> 00:08:13,549
+copy it and follow the procedure of
+Chapter 13. If production is down, restore
+
+116
+00:08:13,589 --> 00:08:17,336
+service first and diagnose
+afterwards on preserved evidence.
+
+117
+00:08:17,676 --> 00:08:19,413
+How the method itself fails.
+
+118
+00:08:28,053 --> 00:08:32,421
+A picture helps. The ladder is a
+physical picture, and it works as one.
+
+119
+00:08:32,461 --> 00:08:37,575
+You climb only as high as the repair requires,
+and each rung up is further to fall.
+
+120
+00:08:37,615 --> 00:08:42,231
+On the first rung nothing can be lost.
+On the sixth, nothing can be undone.
+
+121
+00:08:42,571 --> 00:08:46,609
+Where the picture breaks: on a real
+ladder the rungs are equally spaced.
+
+122
+00:08:46,649 --> 00:08:51,309
+Here the gap between rung 3 and rung 4 is
+much larger than the others, because it's
+
+123
+00:08:51,349 --> 00:08:54,933
+the gap between "undone through
+the reflog" and "unrecoverable".
+
+124
+00:08:54,973 --> 00:08:58,331
+The reflog is Git's local record
+of where each ref has been.
+
+125
+00:08:58,371 --> 00:09:02,805
+And the gap between 4 and 5 is of a
+different kind: from your own loss to other
+
+126
+00:09:02,845 --> 00:09:03,315
+people's.
+
+127
+00:09:03,655 --> 00:09:06,947
+For verification, think of a
+doctor who ends a treatment.
+
+128
+00:09:06,987 --> 00:09:11,681
+The patient says the pain is gone: the
+symptom. The test that showed the cause is
+
+129
+00:09:11,721 --> 00:09:15,481
+repeated: the state. Both lungs
+are checked, not one: every copy.
+
+130
+00:09:15,521 --> 00:09:19,397
+And nothing else was harmed by the
+treatment: nothing else changed.
+
+131
+00:09:19,437 --> 00:09:24,015
+A doctor who stops at the first check has
+asked the patient, not examined them.
+
+132
+00:09:25,855 --> 00:09:30,723
+Then place the interview question's five
+fixes on it as a preview: each has a rung.
+
+133
+00:09:30,763 --> 00:09:33,029
+I won't say which. That's the question.
+
+134
+00:09:37,369 --> 00:09:41,134
+Choosing. Put the candidates on the
+ladder before running anything.
+
+135
+00:09:41,174 --> 00:09:45,790
+Continue the cherry-pick with the colleague's
+resolution: rung 2, it adds commits.
+
+136
+00:09:45,830 --> 00:09:50,560
+Abort and start again: an abort discards
+the uncommitted resolution, which exists in
+
+137
+00:09:50,600 --> 00:09:55,216
+no object. The note says the operation was
+intended and gives the intended result,
+
+138
+00:09:55,256 --> 00:09:59,589
+so the resolution can be checked against
+it. Continue is the lowest rung that
+
+139
+00:09:59,629 --> 00:10:00,611
+repairs the cause.
+
+140
+00:10:00,951 --> 00:10:05,974
+The fix. 🟡 CAUTION: git cherry-pick --continue
+adds commits to the current branch.
+
+141
+00:10:06,014 --> 00:10:09,370
+Preview: read the resolved
+file against the note first.
+
+142
+00:10:09,710 --> 00:10:15,377
+The file says 0.50 and 128, as the note
+requires. Staging it marks the conflict
+
+143
+00:10:15,417 --> 00:10:21,157
+resolved. The sequencer, Git's record of
+the picks that remain, then commits the
+
+144
+00:10:21,197 --> 00:10:25,492
+stopped pick and applies the
+remaining one: two new commits.
+
+145
+00:10:25,832 --> 00:10:31,687
+Verify. Predict before the output: in git
+cherry -v release/1.4 main, which commits
+
+146
+00:10:31,727 --> 00:10:36,162
+of main will carry a minus sign
+and which a plus sign, and why?
+
+147
+00:10:36,202 --> 00:10:37,299
+Say it out loud.
+
+148
+00:10:42,139 --> 00:10:46,412
+Go through the checks. State: "On
+branch", clean, and zero state files.
+
+149
+00:10:46,452 --> 00:10:50,846
+The intended result: the committed
+file has the two values from the note.
+
+150
+00:10:50,886 --> 00:10:55,766
+Then git cherry: two commits of main are
+marked with a minus sign, present on the
+
+151
+00:10:55,806 --> 00:10:59,836
+release branch in equivalent form.
+Two are marked with a plus sign.
+
+152
+00:10:59,876 --> 00:11:04,939
+One of them was deliberately not backported.
+The other, e0631de, was backported, and
+
+153
+00:11:04,979 --> 00:11:08,402
+is marked as missing. Why? Say
+your explanation out loud.
+
+154
+00:11:13,242 --> 00:11:17,136
+This is the limit of the patch-ID
+check that you met in video 172.
+
+155
+00:11:17,176 --> 00:11:22,145
+It compares commits by their change, not by
+their ID, and the port needed a conflict
+
+156
+00:11:22,185 --> 00:11:27,093
+resolution, so its diff differs from the
+original. A check that passes or fails has
+
+157
+00:11:27,133 --> 00:11:31,982
+to be read with its limits. Here the evidence
+that the port happened is the commit
+
+158
+00:11:32,022 --> 00:11:33,711
+itself and the handover note.
+
+159
+00:11:34,051 --> 00:11:38,727
+The failure scenario, in the rehearsal copy.
+What would the other choice have done?
+
+160
+00:11:38,767 --> 00:11:43,217
+🟡 CAUTION: git cherry-pick --abort resets
+the index and the working tree to the
+
+161
+00:11:43,257 --> 00:11:44,126
+starting commit.
+
+162
+00:11:44,466 --> 00:11:50,204
+Quick quiz. After the abort, where is the
+branch? A, on the first pick, the one that
+
+163
+00:11:50,244 --> 00:11:55,912
+had succeeded. B, back before the whole
+backport. And what does guard.yaml contain?
+
+164
+00:11:55,952 --> 00:11:56,738
+Your answer?
+
+165
+00:12:01,578 --> 00:12:06,841
+B. Clean, quiet, and wrong. The branch
+is back at 329817a, before the whole
+
+166
+00:12:06,881 --> 00:12:12,073
+backport, so even the pick that had
+already succeeded has left the branch.
+
+167
+00:12:12,113 --> 00:12:16,174
+And the file says 512: the
+colleague's resolution is gone.
+
+168
+00:12:16,214 --> 00:12:19,498
+It was never in an object,
+so no reflog has it.
+
+169
+00:12:19,838 --> 00:12:21,726
+The recovery, from what was preserved.
+
+170
+00:12:25,066 --> 00:12:29,092
+The rescue branch brings back the
+completed pick with a fast-forward.
+
+171
+00:12:29,132 --> 00:12:32,863
+The cherry-pick is started again
+and stops at the same conflict.
+
+172
+00:12:32,903 --> 00:12:37,636
+The resolved file comes from the copy of
+the repository, the one layer that holds
+
+173
+00:12:37,676 --> 00:12:39,580
+uncommitted files. Then continue.
+
+174
+00:12:39,920 --> 00:12:41,494
+Verification of the recovery.
+
+175
+00:12:41,834 --> 00:12:47,012
+The commit IDs differ from the first repair.
+The tree IDs, which name the complete
+
+176
+00:12:47,052 --> 00:12:51,212
+snapshots, are equal: both repositories
+end with the same content.
+
+177
+00:12:51,252 --> 00:12:55,094
+That's the fourth check done
+precisely: nothing else changed.
+
+178
+00:12:55,434 --> 00:12:59,769
+Say the lesson of the scenario in one
+sentence: the same mistake was made in the
+
+179
+00:12:59,809 --> 00:13:04,145
+rehearsal that a tired engineer makes at
+night, and it cost nothing, because two
+
+180
+00:13:04,185 --> 00:13:07,208
+layers of preservation each
+returned the part they hold.
+
+181
+00:13:09,048 --> 00:13:10,696
+Five mistakes to watch for.
+
+182
+00:13:11,036 --> 00:13:13,797
+Choosing the fix you know
+instead of the lowest rung.
+
+183
+00:13:13,837 --> 00:13:18,077
+Root cause: the candidates were never
+listed and ranked by what each can destroy.
+
+184
+00:13:18,417 --> 00:13:24,346
+Using git reset --hard where --keep would
+do. Root cause: --hard overwrites files
+
+185
+00:13:24,386 --> 00:13:29,430
+with local changes, and uncommitted
+work has no object and no reflog.
+
+186
+00:13:29,770 --> 00:13:34,659
+Stopping at "the symptom is gone". Root
+cause: a fix in one clone is not a fix on
+
+187
+00:13:34,699 --> 00:13:39,465
+the server, in the pull request or in the
+pipeline, so the first check can pass
+
+188
+00:13:39,505 --> 00:13:40,926
+while a later one fails.
+
+189
+00:13:41,266 --> 00:13:46,460
+Comparing names instead of IDs. Root cause:
+origin/<branch> is the server at the
+
+190
+00:13:46,500 --> 00:13:51,236
+last fetch; only an ID from git ls-remote
+says what the server holds now.
+
+191
+00:13:51,576 --> 00:13:56,389
+Reading a verification command without its
+limits. Root cause: a patch-ID comparison
+
+192
+00:13:56,429 --> 00:14:01,011
+reports a port that needed conflict
+resolution as missing, so the mark alone can
+
+193
+00:14:01,051 --> 00:14:01,474
+mislead.
+
+194
+00:14:03,314 --> 00:14:08,522
+Now, out of the lab. The engineer from the
+hook does the four checks before she goes
+
+195
+00:14:08,562 --> 00:14:12,146
+to bed. The symptom: the
+backported release branch builds.
+
+196
+00:14:12,186 --> 00:14:15,395
+The state: no cherry-pick
+in progress, clean status.
+
+197
+00:14:15,435 --> 00:14:20,518
+Every copy: git rev-parse HEAD @{upstream}
+prints two equal IDs, and git ls-remote
+
+198
+00:14:20,558 --> 00:14:24,517
+origin prints a different one for
+the branch. She hadn't pushed.
+
+199
+00:14:24,557 --> 00:14:28,328
+Check three failed, at eleven
+at night, with check one green.
+
+200
+00:14:28,368 --> 00:14:31,389
+There's the sentence from
+the opening, come true.
+
+201
+00:14:31,729 --> 00:14:36,225
+She previews the push, pushes, compares
+the three IDs again, and opens the pull
+
+202
+00:14:36,265 --> 00:14:40,761
+request for the release: the push has
+rerun the workflows, and one approval was
+
+203
+00:14:40,801 --> 00:14:45,584
+dismissed, which she notes for the morning.
+The fourth check: git range-diff against
+
+204
+00:14:45,624 --> 00:14:48,455
+her rescue branch shows
+only the intended commits.
+
+205
+00:14:48,795 --> 00:14:53,639
+The next day the case becomes one line in
+the team's checklist, written as a check
+
+206
+00:14:53,679 --> 00:14:58,643
+and not as advice: "A fix is closed when
+git ls-remote origin <branch> prints the ID
+
+207
+00:14:58,683 --> 00:15:02,515
+you verified locally, and the
+pipeline run for that ID is green."
+
+208
+00:15:04,355 --> 00:15:09,024
+Your turn. Finish Lab 35.3,
+"Preserve evidence, then fix", in
+
+209
+00:15:09,064 --> 00:15:15,431
+lab-manual/m35-diagnosis-method.md: the
+fix, the verification, the failure scenario
+
+210
+00:15:15,471 --> 00:15:18,519
+in the rehearsal copy, and the recovery.
+
+211
+00:15:18,859 --> 00:15:22,566
+Before the fix, list the candidate
+fixes and give each its rung.
+
+212
+00:15:22,606 --> 00:15:27,131
+Before each verification command, write
+the output you predict and the reason.
+
+213
+00:15:27,171 --> 00:15:31,872
+In the failure scenario, predict what the
+abort will discard and from which layer
+
+214
+00:15:31,912 --> 00:15:36,497
+each part can be returned. The lab's
+questions are answered in a separate file.
+
+215
+00:15:36,537 --> 00:15:37,609
+Attempt them first.
+
+216
+00:15:37,949 --> 00:15:42,827
+The challenge has no file: take three
+entries of the symptom catalog in section
+
+217
+00:15:42,867 --> 00:15:47,871
+29.11 at random and say, without the book,
+the first three read-only commands for
+
+218
+00:15:47,911 --> 00:15:48,929
+each. Then check.
+
+219
+00:15:52,769 --> 00:15:56,113
+Answer out loud. The
+justification is what is scored.
+
+220
+00:15:56,153 --> 00:16:01,221
+A strong answer doesn't rank by feeling.
+It applies stated criteria to each fix:
+
+221
+00:16:01,261 --> 00:16:06,328
+what can it destroy, whom does it affect,
+how is it undone, can it be previewed.
+
+222
+00:16:06,368 --> 00:16:11,500
+It places each of the five on the ladder
+and explains ties and near-ties, because
+
+223
+00:16:11,540 --> 00:16:13,607
+two of them sit on the same rung.
+
+224
+00:16:13,947 --> 00:16:18,704
+It names the one that combines two rungs
+and says which of its two halves does which
+
+225
+00:16:18,744 --> 00:16:23,501
+damage. And it adds the condition that
+changes the ranking: whether the working tree
+
+226
+00:16:23,541 --> 00:16:26,242
+is clean, and whether the
+commits are published.
+
+227
+00:16:28,082 --> 00:16:29,010
+Let's land this.
+
+228
+00:16:29,350 --> 00:16:34,028
+Candidate fixes are ranked by what they
+can destroy: uncommitted work, published
+
+229
+00:16:34,068 --> 00:16:36,918
+history, the server,
+undoability, previewability.
+
+230
+00:16:37,258 --> 00:16:41,542
+The ladder runs from adding a ref to removing
+the safety net; take the lowest rung
+
+231
+00:16:41,582 --> 00:16:42,755
+that repairs the cause.
+
+232
+00:16:43,095 --> 00:16:48,582
+On shared branches revert; move refs back
+with --keep; force only with an explicit
+
+233
+00:16:48,622 --> 00:16:49,593
+expected value.
+
+234
+00:16:49,933 --> 00:16:54,693
+Verification is four checks: the symptom,
+the state, every copy, nothing else
+
+235
+00:16:54,733 --> 00:16:57,560
+changed, each with a
+prediction written first.
+
+236
+00:16:57,900 --> 00:17:02,120
+Nearly every symptom in the catalog is a
+difference between two places that someone
+
+237
+00:17:02,160 --> 00:17:03,095
+assumed were equal.
+
+238
+00:17:04,935 --> 00:17:10,815
+Read sections 29.9 to 29.14 and do the
+Practice section, 29.16, including its drill
+
+239
+00:17:10,855 --> 00:17:16,735
+on the rescue branch of case 1. Keep the
+troubleshooting playbook within reach: the
+
+240
+00:17:16,775 --> 00:17:22,655
+next ten videos are incidents, and each one
+starts with you, a generated repository
+
+241
+00:17:22,695 --> 00:17:25,080
+and a symptom, before any debrief.
+
+242
+00:17:25,420 --> 00:17:30,603
+You now have the whole method: read, preserve,
+choose the lowest rung, and verify in
+
+243
+00:17:30,643 --> 00:17:35,764
+every place the problem existed. Practise
+it on the lab before the incidents begin.
+
+244
+00:17:35,804 --> 00:17:40,925
+Next time: what an incident is, the loop
+that handles one, severity, and how to run
+
+245
+00:17:40,965 --> 00:17:45,340
+the ten incidents. Until then, look
+at the state first and type second.
+
+246
+00:17:45,380 --> 00:17:46,833
+See you in the next one.

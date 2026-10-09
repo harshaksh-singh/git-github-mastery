@@ -1,0 +1,1217 @@
+1
+00:00:04,500 --> 00:00:11,160
+A customer upgrades from 1.4.1 to 1.5.0 and
+reports a bug that was fixed two months
+
+2
+00:00:11,200 --> 00:00:16,730
+ago. Support checks the release
+notes: the fix is listed under 1.4.1.
+
+3
+00:00:16,770 --> 00:00:21,816
+Engineering checks the code of
+1.5.0: the faulty line is there.
+
+4
+00:00:21,856 --> 00:00:25,529
+Nobody reverted anything.
+Nobody force-pushed.
+
+5
+00:00:25,869 --> 00:00:30,363
+The answer is precise, and you'll be able
+to produce it from the repository alone:
+
+6
+00:00:30,403 --> 00:00:34,896
+the fix was committed on the release branch
+and never reached main, and nobody ran
+
+7
+00:00:34,936 --> 00:00:39,264
+the one-line check that would have listed
+it. Keep that one-line check in mind.
+
+8
+00:00:39,304 --> 00:00:41,365
+You'll watch it print the missing fix.
+
+9
+00:00:43,205 --> 00:00:47,183
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+10
+00:00:47,223 --> 00:00:52,585
+In video 171 you saw the models as drawings.
+Today the same project is run through
+
+11
+00:00:52,625 --> 00:00:57,592
+one release and one hotfix twice, with
+real commits, and you compare the two
+
+12
+00:00:57,632 --> 00:01:02,928
+histories by asking the tags. A tag is a
+name fixed on one commit, and here every
+
+13
+00:01:02,968 --> 00:01:07,803
+release is a tag. A hotfix is an urgent
+fix to something already released.
+
+14
+00:01:08,143 --> 00:01:12,108
+The scenario is fixed.
+promptgate 1.3.0 is released.
+
+15
+00:01:12,148 --> 00:01:16,113
+Two pull requests are merged,
+and 1.4.0 is released.
+
+16
+00:01:16,153 --> 00:01:20,811
+A third pull request, a batch
+endpoint, is merged afterwards.
+
+17
+00:01:20,851 --> 00:01:27,049
+Then production reports that suspended
+tenants, whose limit is 0, aren't blocked,
+
+18
+00:01:27,089 --> 00:01:29,282
+and a fix must ship as 1.4.1.
+
+19
+00:01:29,622 --> 00:01:34,776
+The second half is about direction. Once
+there are two lines of development, a fix
+
+20
+00:01:34,816 --> 00:01:39,716
+has to exist on both, and there are two
+legitimate conventions for how it gets
+
+21
+00:01:39,756 --> 00:01:44,973
+there. They're opposites. Each gives you
+an invariant, a statement that must always
+
+22
+00:01:45,013 --> 00:01:50,229
+hold, and one command can test it. From
+video 63 you know cherry-pick, -x and patch
+
+23
+00:01:50,269 --> 00:01:52,700
+IDs, which carry the second convention.
+
+24
+00:01:53,040 --> 00:01:58,148
+A cherry-pick copies one commit's change
+onto another branch as a new commit with a
+
+25
+00:01:58,188 --> 00:02:02,491
+new ID. The -x option records the
+original's ID in the copy's message.
+
+26
+00:02:02,531 --> 00:02:07,391
+And a patch ID is a hash of the change
+itself, by which Git recognizes the same
+
+27
+00:02:07,431 --> 00:02:09,314
+change under another commit ID.
+
+28
+00:02:11,154 --> 00:02:12,733
+Here's what you'll walk away with.
+
+29
+00:02:13,073 --> 00:02:14,485
+After this video you can:
+
+30
+00:02:14,825 --> 00:02:19,478
+Run one release and one hotfix under GitHub
+Flow and under a release-branch strategy
+
+31
+00:02:19,518 --> 00:02:20,931
+and compare the histories.
+
+32
+00:02:21,271 --> 00:02:24,265
+Say what ships in each case
+and prove it from tags.
+
+33
+00:02:24,605 --> 00:02:29,217
+State the two conventions for the direction
+of a fix and the invariant each lets you
+
+34
+00:02:29,257 --> 00:02:29,494
+test.
+
+35
+00:02:29,834 --> 00:02:32,980
+Detect a fix that was forgotten
+on one line of development.
+
+36
+00:02:33,320 --> 00:02:37,504
+Explain what goes wrong when both
+directions are mixed in one repository.
+
+37
+00:02:39,344 --> 00:02:43,818
+Two strategies, one sentence. The same
+three features and the same one-line fix
+
+38
+00:02:43,858 --> 00:02:48,332
+produce two different answers to "what
+does the patch release contain", and the
+
+39
+00:02:48,372 --> 00:02:50,732
+difference is where the release tag lives.
+
+40
+00:02:51,072 --> 00:02:54,624
+Under strategy A, GitHub Flow,
+releases are tags on main.
+
+41
+00:02:54,664 --> 00:02:59,918
+A hotfix is the next deployment of main.
+Under strategy B there is a release branch.
+
+42
+00:02:59,958 --> 00:03:05,149
+The fix is made on main first and cherry-picked
+down, and the tag is on the release
+
+43
+00:03:05,189 --> 00:03:05,590
+branch.
+
+44
+00:03:05,930 --> 00:03:11,648
+Inside .git. Strategy A created two
+tag objects and moved refs/heads/main.
+
+45
+00:03:11,688 --> 00:03:18,107
+Strategy B created the same two tags, one
+extra ref refs/heads/release/1.4, and one
+
+46
+00:03:18,147 --> 00:03:24,644
+extra commit object. A "release" in both is
+refs/tags/v1.4.1 naming an annotated tag
+
+47
+00:03:24,684 --> 00:03:26,745
+object that names a commit.
+
+48
+00:03:27,085 --> 00:03:32,727
+One sentence from the textbook belongs on
+this table: strategy A can become strategy
+
+49
+00:03:32,767 --> 00:03:38,408
+B on the day it is needed. git switch -c
+release/1.4 v1.4.0 creates the missing line
+
+50
+00:03:38,448 --> 00:03:43,955
+at the tag, after the fact. That's an
+argument for starting with the simpler model
+
+51
+00:03:43,995 --> 00:03:48,216
+and adding release branches when
+a second live version appears.
+
+52
+00:03:48,556 --> 00:03:52,670
+GitHub, not Git. A GitHub release
+is an object layered on a Git tag.
+
+53
+00:03:52,710 --> 00:03:57,618
+Creating one in the web interface or with
+gh release create can create the tag on
+
+54
+00:03:57,658 --> 00:04:01,528
+the server, and your clone doesn't
+have it until you fetch tags.
+
+55
+00:04:01,568 --> 00:04:06,599
+With immutable releases enabled, the tag
+and its assets are locked and the tag name
+
+56
+00:04:06,639 --> 00:04:07,576
+can't be reused.
+
+57
+00:04:07,916 --> 00:04:11,989
+Which way does a fix travel? There are
+two legitimate conventions and they're
+
+58
+00:04:12,029 --> 00:04:16,315
+opposites: commit the fix on the oldest
+branch that needs it and merge upward, or
+
+59
+00:04:16,355 --> 00:04:18,878
+commit it on main first
+and cherry-pick it down.
+
+60
+00:04:19,218 --> 00:04:24,112
+Merge upward. The Git project's own workflow
+document states it: "Always commit your
+
+61
+00:04:24,152 --> 00:04:27,401
+fixes to the oldest supported
+branch that requires them.
+
+62
+00:04:27,441 --> 00:04:31,864
+Then (periodically) merge the integration
+branches upwards into each other."
+
+63
+00:04:31,904 --> 00:04:36,798
+The fix is one commit with one ID, and the
+merge commit is, in that document's word,
+
+64
+00:04:36,838 --> 00:04:41,438
+a "promise" that everything from the older
+branch is included in the newer one.
+
+65
+00:04:41,478 --> 00:04:45,373
+The invariant: each release branch
+is an ancestor of the next line.
+
+66
+00:04:45,413 --> 00:04:50,012
+Ancestor means that you reach it by
+following parents back from the newer line.
+
+67
+00:04:50,352 --> 00:04:55,068
+Fix on main first, cherry-pick down. The
+trunk-based development site, Google's
+
+68
+00:04:55,108 --> 00:05:00,065
+published practice, Microsoft's Release
+Flow and GitLab's rules all prescribe this.
+
+69
+00:05:00,105 --> 00:05:05,001
+The stated reason is the failure it prevents:
+a fix made on the release branch can
+
+70
+00:05:05,041 --> 00:05:08,794
+be forgotten on the trunk, and
+the next release then regresses.
+
+71
+00:05:08,834 --> 00:05:13,670
+The invariant can't be ancestry, because
+the release branch is never merged back.
+
+72
+00:05:13,710 --> 00:05:18,607
+It's a comparison of patches: every change
+on the release branch has an equivalent
+
+73
+00:05:18,647 --> 00:05:19,088
+on main.
+
+74
+00:05:19,428 --> 00:05:23,747
+Read the table row by row: the identity
+of the fix, the question you can ask, a
+
+75
+00:05:23,787 --> 00:05:26,451
+forgotten step, the baggage,
+and where each fits.
+
+76
+00:05:26,791 --> 00:05:30,545
+Quick quiz. Under pick down,
+somebody forgets the pick.
+
+77
+00:05:30,585 --> 00:05:34,269
+What happens? A, the next
+release ships the bug again.
+
+78
+00:05:34,309 --> 00:05:36,615
+B, nothing dangerous. Your answer?
+
+79
+00:05:41,455 --> 00:05:46,030
+B. That was the third row of the table:
+the old release lacks a fix it never had.
+
+80
+00:05:46,070 --> 00:05:50,588
+Under merge upward, the forgotten step is
+the merge, and the fix is then missing
+
+81
+00:05:50,628 --> 00:05:52,754
+from main until the next upward merge.
+
+82
+00:05:53,094 --> 00:05:57,937
+The limits of the checks. Two, and you
+need both for the interview question.
+
+83
+00:05:57,977 --> 00:06:02,820
+A cherry-pick that needed a conflict
+resolution has a different patch ID, so
+
+84
+00:06:02,860 --> 00:06:06,867
+--cherry-pick reports it as missing
+although a human ported it.
+
+85
+00:06:06,907 --> 00:06:12,007
+The -x line is then the evidence. And an
+upward merge resolved by discarding the
+
+86
+00:06:12,047 --> 00:06:16,762
+release branch's side satisfies the
+ancestry test while the fix is absent.
+
+87
+00:06:16,802 --> 00:06:20,296
+git log --remerge-diff shows
+what the resolver changed.
+
+88
+00:06:22,136 --> 00:06:26,571
+A picture helps. The textbook's analogy:
+a textbook in print in two editions.
+
+89
+00:06:26,611 --> 00:06:31,279
+You can correct the older edition and let
+the correction flow into the newer one.
+
+90
+00:06:31,319 --> 00:06:36,045
+Or you can correct the current manuscript
+and copy the correction by hand into the
+
+91
+00:06:36,085 --> 00:06:36,858
+older edition.
+
+92
+00:06:37,198 --> 00:06:42,249
+The first is merge upward: one correction,
+and the newer edition includes the older
+
+93
+00:06:42,289 --> 00:06:47,278
+one whole. The second is pick down: two
+corrections that say the same thing, and a
+
+94
+00:06:47,318 --> 00:06:50,958
+note in the margin of the copy
+that says where it came from.
+
+95
+00:06:50,998 --> 00:06:52,491
+That note is the -x line.
+
+96
+00:06:52,831 --> 00:06:57,435
+Where the analogy breaks: Git can do the
+first mechanically, with a merge, only
+
+97
+00:06:57,475 --> 00:07:01,255
+while the newer line still contains
+the older one as an ancestor.
+
+98
+00:07:01,295 --> 00:07:05,958
+Once a line has stopped being an ancestor,
+or once the two conventions have been
+
+99
+00:07:05,998 --> 00:07:08,779
+mixed, the merge is no
+longer a clean inclusion.
+
+100
+00:07:09,119 --> 00:07:14,171
+And one sentence to keep under all of it,
+from the root-cause box: nothing in Git
+
+101
+00:07:14,211 --> 00:07:18,258
+propagates a fix between branches.
+Branches are independent refs.
+
+102
+00:07:18,298 --> 00:07:23,476
+"This fix belongs everywhere" is knowledge
+held by the team, not by the repository.
+
+103
+00:07:25,316 --> 00:07:28,626
+Two release lines and main,
+first with upward merges.
+
+104
+00:07:28,666 --> 00:07:33,873
+The fix F is committed once, on the oldest
+line. Each merge carries it one line up.
+
+105
+00:07:34,213 --> 00:07:39,222
+Then with downward picks. F is committed
+on main. The two copies, F prime and F
+
+106
+00:07:39,262 --> 00:07:42,674
+double prime, are separate
+commits with their own IDs.
+
+107
+00:07:42,714 --> 00:07:48,042
+The marks aren't in the repository. They
+stand for "same change", which Git can only
+
+108
+00:07:48,082 --> 00:07:51,174
+infer from the patch ID
+or read from the -x line.
+
+109
+00:07:53,014 --> 00:07:56,709
+Into the lab, for four replays.
+Strategy A comes first.
+
+110
+00:07:57,049 --> 00:08:01,393
+Step 1: strategy A, the release.
+Two pull requests are merged.
+
+111
+00:08:01,433 --> 00:08:05,070
+main is deployable, so the
+release is a tag on main.
+
+112
+00:08:05,110 --> 00:08:08,818
+🟢 SAFE: an annotated tag
+adds a tag object and a ref.
+
+113
+00:08:09,158 --> 00:08:14,115
+Step 2: main moves on. Pull request
+43 lands after the release.
+
+114
+00:08:14,455 --> 00:08:17,841
+main is ahead of what customers
+run, by the batch endpoint.
+
+115
+00:08:18,181 --> 00:08:22,101
+Step 3: the hotfix. 🟡
+CAUTION: a merge moves main.
+
+116
+00:08:25,441 --> 00:08:30,895
+Look at the diff first. The bug is the or:
+a limit of 0 is falsy in Python, so the
+
+117
+00:08:30,935 --> 00:08:35,517
+suspended tenant silently got the
+default limit. The fix is one line.
+
+118
+00:08:35,857 --> 00:08:42,891
+Step 4: what ships. Predict before the
+output: what does a customer get when moving
+
+119
+00:08:42,931 --> 00:08:46,215
+from v1.4.0 to v1.4.1? Say it out loud.
+
+120
+00:08:51,055 --> 00:08:56,975
+Two commits and two files. Version 1.4.1
+contains the fix and the batch endpoint.
+
+121
+00:08:57,315 --> 00:09:02,275
+Under GitHub Flow that is by design: main
+is what you ship, and everything merged
+
+122
+00:09:02,315 --> 00:09:07,090
+since the last tag ships with the next
+one. For a hosted service with one live
+
+123
+00:09:07,130 --> 00:09:11,906
+version this is fine, and usually desirable.
+For a customer who pinned 1.4 and
+
+124
+00:09:11,946 --> 00:09:16,844
+expects a patch release to contain only
+fixes, it's a breach of what the version
+
+125
+00:09:16,884 --> 00:09:20,918
+number promised: Semantic Versioning
+reserves the third number for
+
+126
+00:09:20,958 --> 00:09:22,770
+backward-compatible bug fixes.
+
+127
+00:09:23,110 --> 00:09:27,471
+Step 5: strategy B. Replay
+labs/run ch27/release-branch.
+
+128
+00:09:27,511 --> 00:09:33,443
+The same two pull requests are merged.
+The release gets a branch of its own.
+
+129
+00:09:33,783 --> 00:09:38,516
+main moves on with the batch endpoint, as
+before. The fix is made and reviewed on
+
+130
+00:09:38,556 --> 00:09:39,164
+main first.
+
+131
+00:09:39,504 --> 00:09:44,637
+The fix on main is bc59804. Now it is
+copied down. 🟡 CAUTION: git cherry-pick -x
+
+132
+00:09:44,677 --> 00:09:49,940
+<commit> creates a new commit on the current
+branch with the same change and moves
+
+133
+00:09:49,980 --> 00:09:51,039
+the branch to it.
+
+134
+00:09:51,379 --> 00:09:55,514
+The last lines are the message
+of the new commit, 996796d.
+
+135
+00:09:55,554 --> 00:10:01,559
+The -x added "(cherry picked from commit
+...)". That line is the only durable record
+
+136
+00:10:01,599 --> 00:10:06,742
+that 996796d on the release branch
+and bc59804 on main are the same fix.
+
+137
+00:10:07,082 --> 00:10:09,785
+Step 6: what ships, and where the fix is.
+
+138
+00:10:10,125 --> 00:10:16,237
+One commit, one file. Version 1.4.1
+contains the fix and nothing else.
+
+139
+00:10:16,277 --> 00:10:19,577
+The batch endpoint will ship in 1.5.0.
+
+140
+00:10:19,917 --> 00:10:26,376
+git branch --contains gives a different
+answer for each ID: one says main, the other
+
+141
+00:10:26,416 --> 00:10:27,691
+says release/1.4.
+
+142
+00:10:28,031 --> 00:10:33,158
+The fix exists as two commits. Git can
+still pair them, because they introduce the
+
+143
+00:10:33,198 --> 00:10:36,561
+same change: the two lines
+marked with an equals sign.
+
+144
+00:10:36,901 --> 00:10:43,085
+Try it now, for thirty seconds. In any
+repository you have, type git log --oneline,
+
+145
+00:10:43,125 --> 00:10:47,359
+copy one ID, and type git
+branch --contains with that ID.
+
+146
+00:10:47,399 --> 00:10:49,983
+Both commands only read. I'll wait.
+
+147
+00:10:54,823 --> 00:10:58,587
+The answer lists the branches from
+which that commit can be reached.
+
+148
+00:10:58,627 --> 00:11:02,055
+It's the question "is the fix in
+this line?", asked of one ID.
+
+149
+00:11:02,395 --> 00:11:09,058
+Step 7: the two conventions side by side.
+Replay labs/run ch27/fix-direction.
+
+150
+00:11:09,098 --> 00:11:16,369
+The starting state is the same in all three
+parts: release/1.4 at the 1.4.0 tag, and
+
+151
+00:11:16,409 --> 00:11:20,808
+main one feature ahead.
+Convention A, merge upward.
+
+152
+00:11:29,148 --> 00:11:32,915
+One commit, 64610e3,
+contained in both branches.
+
+153
+00:11:33,254 --> 00:11:39,388
+git merge-base --is-ancestor release/1.4
+main exits with status 0, and an exit
+
+154
+00:11:39,428 --> 00:11:44,057
+status is something a CI job,
+an automated check, can test.
+
+155
+00:11:44,397 --> 00:11:49,746
+Convention B, pick down. Predict: what
+will the same ancestry test return here?
+
+156
+00:11:49,786 --> 00:11:50,838
+Say it out loud.
+
+157
+00:12:03,678 --> 00:12:09,312
+Two commits, d9474f7 and a2d7a91.
+The ancestry test fails by design.
+
+158
+00:12:09,652 --> 00:12:14,851
+What replaces it is git log --cherry-pick
+--right-only main...release/1.4, which
+
+159
+00:12:14,891 --> 00:12:20,024
+lists the commits on the release branch
+that have no equivalent change on main.
+
+160
+00:12:20,064 --> 00:12:25,460
+Empty means nothing is missing. The manual
+describes --cherry-pick as omitting "any
+
+161
+00:12:25,500 --> 00:12:30,830
+commit that introduces the same change as
+another commit on the 'other side'" of a
+
+162
+00:12:30,870 --> 00:12:35,283
+symmetric difference, and Git decides
+"the same change" by patch ID.
+
+163
+00:12:35,323 --> 00:12:40,522
+If the two checks blur together at first,
+that's normal: one tests ancestry, the
+
+164
+00:12:40,562 --> 00:12:42,028
+other compares patches.
+
+165
+00:12:42,368 --> 00:12:46,131
+Step 8: the failure both
+conventions exist to prevent.
+
+166
+00:12:46,171 --> 00:12:51,766
+A fix made only on the release branch.
+Weeks later release 1.5 is cut from main.
+
+167
+00:12:52,106 --> 00:12:57,271
+The two git show lines are the hook of
+this video: v1.5.0 has the or again.
+
+168
+00:12:57,311 --> 00:13:00,463
+Predict: what will each
+of the two checks say?
+
+169
+00:13:05,303 --> 00:13:11,225
+The ancestry test exits with 1. The patch
+comparison prints one line, and that line
+
+170
+00:13:11,265 --> 00:13:13,596
+names the forgotten fix: 70188ed.
+
+171
+00:13:13,936 --> 00:13:18,261
+There's the one-line check from the opening.
+Either check finds it before the tag.
+
+172
+00:13:18,601 --> 00:13:24,984
+The root-cause box has the "Correct fix"
+line: port the commit, release 1.5.1, and
+
+173
+00:13:25,024 --> 00:13:29,528
+don't move the v1.5.0 tag,
+because people already have it.
+
+174
+00:13:29,868 --> 00:13:34,882
+Step 9: mixing the directions. Replay
+labs/run ch27/mixed-directions.
+
+175
+00:13:34,922 --> 00:13:39,204
+The first fix went from main
+to release/1.4 by cherry-pick.
+
+176
+00:13:39,244 --> 00:13:45,284
+A second fix, on the neighbouring line of
+the same function, is made on the release
+
+177
+00:13:45,324 --> 00:13:45,797
+branch.
+
+178
+00:13:46,137 --> 00:13:50,334
+Then somebody carries it to main by
+merging the release branch upward.
+
+179
+00:13:50,374 --> 00:13:54,510
+Predict: main never touched the
+second line. Will the merge be clean?
+
+180
+00:13:59,350 --> 00:14:03,871
+A conflict. The upward merge brought the
+picked copy of the first fix with it.
+
+181
+00:14:03,911 --> 00:14:08,549
+Relative to the merge base, main changed
+one line and the release branch changed
+
+182
+00:14:08,589 --> 00:14:12,584
+that line identically plus its
+neighbour, so the two changes overlap.
+
+183
+00:14:12,624 --> 00:14:17,438
+Git dropped the identical line from the
+conflict and left the neighbouring line for
+
+184
+00:14:17,478 --> 00:14:19,777
+a human, although main never touched it.
+
+185
+00:14:20,117 --> 00:14:23,663
+git merge --abort returns to
+the state before the merge.
+
+186
+00:14:23,703 --> 00:14:28,786
+A repository that mixes the directions
+satisfies neither check of this video and
+
+187
+00:14:28,826 --> 00:14:31,284
+pays for it in conflicts like this one.
+
+188
+00:14:33,124 --> 00:14:34,772
+Five mistakes to watch for.
+
+189
+00:14:35,112 --> 00:14:38,305
+Promising a fix-only patch
+release under GitHub Flow.
+
+190
+00:14:38,345 --> 00:14:43,248
+Root cause: the release tag lives on main,
+so a patch release contains everything
+
+191
+00:14:43,288 --> 00:14:45,078
+merged since the previous tag.
+
+192
+00:14:45,418 --> 00:14:48,781
+Committing a fix on the release
+branch and stopping there.
+
+193
+00:14:48,821 --> 00:14:53,709
+Root cause: nothing in Git propagates a fix
+between branches; carrying it to main is
+
+194
+00:14:53,749 --> 00:14:54,472
+a human step.
+
+195
+00:14:54,812 --> 00:14:59,477
+Cherry-picking without -x. Root cause:
+the copy has a new ID, and without the
+
+196
+00:14:59,517 --> 00:15:04,489
+recorded line the link between the two
+commits exists only as a matching patch ID,
+
+197
+00:15:04,529 --> 00:15:06,750
+which a conflict resolution destroys.
+
+198
+00:15:07,090 --> 00:15:11,459
+Trusting the patch-ID check after a
+port that needed conflict resolution.
+
+199
+00:15:11,499 --> 00:15:16,231
+Root cause: the resolved diff differs
+from the original, so the check reports a
+
+200
+00:15:16,271 --> 00:15:17,559
+ported fix as missing.
+
+201
+00:15:17,899 --> 00:15:20,822
+Mixing merge-upward and
+pick-down in one repository.
+
+202
+00:15:20,862 --> 00:15:25,267
+Root cause: an upward merge brings the
+picked copies with it, so identical and
+
+203
+00:15:25,307 --> 00:15:28,515
+neighbouring changes overlap
+and neither invariant holds.
+
+204
+00:15:30,355 --> 00:15:36,423
+Now, out of the lab. A team ships an
+inference SDK with two supported versions and
+
+205
+00:15:36,463 --> 00:15:42,456
+uses the pick-down convention: fix on main,
+cherry-pick with -x to each supported
+
+206
+00:15:42,496 --> 00:15:48,564
+release branch. During an urgent customer
+escalation an engineer fixes a tokenizer
+
+207
+00:15:48,604 --> 00:15:52,587
+bug directly on release/2.3,
+tags 2.3.4 and goes home.
+
+208
+00:15:52,627 --> 00:15:55,492
+Six weeks later 2.4.0 is cut from main.
+
+209
+00:15:55,832 --> 00:16:01,806
+This time nothing regresses, because the
+team had made the check a release gate
+
+210
+00:16:01,846 --> 00:16:07,820
+after an earlier incident. The release
+job runs git log --oneline --cherry-pick
+
+211
+00:16:07,860 --> 00:16:13,606
+--right-only --no-merges main...release/2.3
+and fails if it prints anything.
+
+212
+00:16:13,646 --> 00:16:19,315
+It printed one line. The release manager
+ported the commit to main with git
+
+213
+00:16:19,355 --> 00:16:24,644
+cherry-pick -x, the job went green,
+and 2.4.0 was tagged an hour late.
+
+214
+00:16:24,984 --> 00:16:29,416
+The team also knows the gate's limit: when
+a port needed conflict resolution, the
+
+215
+00:16:29,456 --> 00:16:33,777
+job prints the commit although it was
+ported, and a person confirms from the -x
+
+216
+00:16:33,817 --> 00:16:34,053
+line.
+
+217
+00:16:35,893 --> 00:16:41,203
+Your turn. Do Lab 32.1, "One release and
+one hotfix under two strategies", in
+
+218
+00:16:41,243 --> 00:16:46,692
+lab-manual/m32-branching-release-strategy.md.
+Type it by hand in the lab shell.
+
+219
+00:16:46,732 --> 00:16:52,111
+Your commit IDs will differ from the book
+where you make the commits yourself.
+
+220
+00:16:52,451 --> 00:16:58,673
+Before each of the two git log --oneline
+--no-merges v1.4.0..v1.4.1 commands, write
+
+221
+00:16:58,713 --> 00:17:04,934
+down the commits you expect to see. Before
+the lab's failure scenario, predict what
+
+222
+00:17:04,974 --> 00:17:11,045
+each of the two checks will print. The
+lab's questions are answered in a separate
+
+223
+00:17:11,085 --> 00:17:12,931
+file. Attempt them first.
+
+224
+00:17:13,271 --> 00:17:19,558
+The challenge is Exercise 32.5,
+Level 4, "Which fix is missing?", in
+
+225
+00:17:19,598 --> 00:17:22,349
+exercises/m32-m34-practice.md.
+
+226
+00:17:26,189 --> 00:17:31,231
+Answer out loud. The question has a fixed
+shape: two conventions, and for each three
+
+227
+00:17:31,271 --> 00:17:36,312
+things. A strong answer names each convention
+with the commit it produces, one ID or
+
+228
+00:17:36,352 --> 00:17:40,910
+one per line. It gives each invariant
+as a command whose result a CI job can
+
+229
+00:17:40,950 --> 00:17:45,931
+evaluate. And for each test it names a case
+where the result is wrong in a specific
+
+230
+00:17:45,971 --> 00:17:50,891
+direction: one test can say "missing" for
+a fix that is present, the other can say
+
+231
+00:17:50,931 --> 00:17:53,069
+"included" for a fix that is absent.
+
+232
+00:17:53,409 --> 00:17:57,513
+Say which evidence you would then look
+at. Finish with the recommendation the
+
+233
+00:17:57,553 --> 00:18:01,172
+textbook gives for every team: pick
+one direction and write it down.
+
+234
+00:18:03,012 --> 00:18:05,062
+Let's land this, in your own words.
+
+235
+00:18:05,402 --> 00:18:10,082
+Under GitHub Flow a patch release is whatever
+main contains at the next tag; with a
+
+236
+00:18:10,122 --> 00:18:13,438
+release branch it is only what
+was picked onto that branch.
+
+237
+00:18:13,778 --> 00:18:24,969
+git log --no-merges v1.4.0..v1.4.1 and
+git diff --stat v1.4.0 v1.4.1 prove what
+
+238
+00:18:25,009 --> 00:18:26,107
+shipped.
+
+239
+00:18:26,447 --> 00:18:30,858
+Merge upward gives one commit and the
+invariant "the release branch is an ancestor
+
+240
+00:18:30,898 --> 00:18:35,255
+of main"; pick down gives one commit per
+line and the invariant "no change on the
+
+241
+00:18:35,295 --> 00:18:37,644
+release branch lacks an
+equivalent on main".
+
+242
+00:18:37,984 --> 00:18:42,916
+A forgotten fix is found before the tag by
+either check; afterwards you port it and
+
+243
+00:18:42,956 --> 00:18:45,132
+release again without moving the tag.
+
+244
+00:18:45,472 --> 00:18:50,288
+Mixing the two directions breaks both
+invariants and produces conflicts on lines
+
+245
+00:18:50,328 --> 00:18:51,563
+nobody changed twice.
+
+246
+00:18:53,403 --> 00:19:01,189
+Read sections 27.9 and 27.10. Do Exercise
+32.3, Level 2, "What does the patch
+
+247
+00:19:01,229 --> 00:19:09,319
+release contain?", and Exercise 32.4,
+Level 3, "Two directions, one repository",
+
+248
+00:19:09,359 --> 00:19:13,181
+both in exercises/m32-m34-practice.md.
+
+249
+00:19:13,521 --> 00:19:18,147
+Today you proved from tags what two
+strategies ship, and you can now catch a
+
+250
+00:19:18,187 --> 00:19:21,646
+forgotten fix with one command.
+Run the lab by hand once.
+
+251
+00:19:21,686 --> 00:19:26,680
+The next video adds feature flags, merge
+queues and stacked changes, and asks what
+
+252
+00:19:26,720 --> 00:19:31,591
+the evidence does and doesn't show. Until
+then, look at the state first and type
+
+253
+00:19:31,631 --> 00:19:33,555
+second. See you in the next one.

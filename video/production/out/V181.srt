@@ -1,0 +1,1141 @@
+1
+00:00:04,500 --> 00:00:09,080
+The developer has done exactly what the
+error message told them to do, twice.
+
+2
+00:00:09,120 --> 00:00:13,880
+A push asks the server to move its branch
+to your commits, your saved snapshots.
+
+3
+00:00:13,920 --> 00:00:18,021
+A pull fetches a branch from the
+server and integrates it into yours.
+
+4
+00:00:18,361 --> 00:00:23,410
+Their conclusion is reasonable: the server
+is broken, or somebody has locked the
+
+5
+00:00:23,450 --> 00:00:28,690
+branch, or Git is confused and needs --force,
+which overwrites the server's branch.
+
+6
+00:00:29,030 --> 00:00:32,426
+All three explanations are
+plausible. All three are wrong.
+
+7
+00:00:32,466 --> 00:00:36,869
+And the third one, acted upon, deletes
+a teammate's commit from the server.
+
+8
+00:00:36,909 --> 00:00:41,786
+The actual cause is one line of configuration
+that has been in the repository since
+
+9
+00:00:41,826 --> 00:00:46,585
+the branch was created, and Git has been
+reporting it in brackets the whole time.
+
+10
+00:00:46,625 --> 00:00:49,665
+Watch for those brackets.
+You'll read them yourself.
+
+11
+00:00:51,505 --> 00:00:55,348
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:55,388 --> 00:00:58,848
+This is the second worked
+case of the diagnosis method.
+
+13
+00:00:58,888 --> 00:01:04,131
+It's shorter on purpose: once the ritual
+of video 180 is a habit, you read the same
+
+14
+00:01:04,171 --> 00:01:09,286
+outputs faster. The mechanism behind the
+case is from video 40: a pull integrates
+
+15
+00:01:09,326 --> 00:01:14,632
+the configured upstream, and a push goes
+where push.default and the branch name say.
+
+16
+00:01:14,972 --> 00:01:19,401
+The upstream is the branch on the server
+that a local branch is compared with and
+
+17
+00:01:19,441 --> 00:01:23,981
+pulls from. Those are two separate pieces
+of configuration, and nothing forces them
+
+18
+00:01:24,021 --> 00:01:25,305
+to name the same branch.
+
+19
+00:01:25,645 --> 00:01:30,477
+The second subject is the extended toolbox.
+The ten commands are the fixed opening.
+
+20
+00:01:30,517 --> 00:01:35,231
+The toolbox holds the commands you reach
+for when you test a hypothesis: for each
+
+21
+00:01:35,271 --> 00:01:39,281
+kind of question, the command that
+answers it without changing state.
+
+22
+00:01:41,121 --> 00:01:42,700
+Here's what you'll walk away with.
+
+23
+00:01:43,040 --> 00:01:44,452
+After this video you can:
+
+24
+00:01:44,792 --> 00:01:48,251
+Diagnose a push that stays
+rejected after a successful pull.
+
+25
+00:01:48,591 --> 00:01:52,214
+Read upstream configuration as
+evidence and find the mismatch.
+
+26
+00:01:52,554 --> 00:01:57,844
+Use the extended toolbox: refs, graph,
+remote and object commands beyond the ten.
+
+27
+00:01:58,184 --> 00:02:01,239
+Fix the cause, not the symptom,
+and add the prevention.
+
+28
+00:02:01,579 --> 00:02:05,573
+Explain why the developer's own
+explanation was plausible and wrong.
+
+29
+00:02:07,413 --> 00:02:12,212
+Why this failure exists. A remote-tracking
+branch, such as origin/main, is your
+
+30
+00:02:12,252 --> 00:02:16,194
+clone's record of where a server's
+branch was at your last fetch.
+
+31
+00:02:16,234 --> 00:02:20,605
+When you create a branch from a
+remote-tracking branch, Git records that
+
+32
+00:02:20,645 --> 00:02:23,790
+remote-tracking branch as
+the new branch's upstream.
+
+33
+00:02:23,830 --> 00:02:28,874
+git switch -c <name> origin/main records
+origin/main, because the starting point is
+
+34
+00:02:28,914 --> 00:02:33,163
+a remote-tracking branch and
+branch.autoSetupMerge is true by default.
+
+35
+00:02:33,503 --> 00:02:38,540
+That behavior is right for a local copy
+of a remote branch, such as git switch -c
+
+36
+00:02:38,580 --> 00:02:43,806
+main origin/main. Git can't know that this
+time the starting point was meant only as
+
+37
+00:02:43,846 --> 00:02:44,245
+a base.
+
+38
+00:02:44,585 --> 00:02:48,296
+What follows. git pull without
+arguments integrates the upstream.
+
+39
+00:02:48,336 --> 00:02:51,528
+git push origin <name> targets
+the server branch <name>.
+
+40
+00:02:51,568 --> 00:02:56,260
+Pull and push address different branches.
+When the two differ, pulling can succeed
+
+41
+00:02:56,300 --> 00:03:00,704
+forever without making the push a
+fast-forward, a move of the server's branch
+
+42
+00:03:00,744 --> 00:03:02,493
+straight ahead to a descendant.
+
+43
+00:03:02,833 --> 00:03:07,297
+Reading the two rejections. The words in
+parentheses are evidence, and they differ.
+
+44
+00:03:07,637 --> 00:03:12,815
+The first rejection says (fetch first): the
+server's branch has an object this clone
+
+45
+00:03:12,855 --> 00:03:17,909
+has never seen. The second says
+(non-fast-forward): now the clone has the server's
+
+46
+00:03:17,949 --> 00:03:21,636
+commit and can see that the
+local branch doesn't contain it.
+
+47
+00:03:21,676 --> 00:03:26,543
+Between them, the pull printed a line
+beginning with * [new branch]: this clone
+
+48
+00:03:26,583 --> 00:03:31,575
+learned of the server's branch for the
+first time. So the pull fetched the commit
+
+49
+00:03:31,615 --> 00:03:33,066
+and didn't integrate it.
+
+50
+00:03:33,406 --> 00:03:40,051
+And both rejections read ! [rejected]. That
+line is written by the local Git before
+
+51
+00:03:40,091 --> 00:03:45,689
+any rule on the server is consulted.
+A rule on the server would read !
+
+52
+00:03:45,729 --> 00:03:48,749
+[remote rejected], with remote: lines.
+
+53
+00:03:49,089 --> 00:03:53,530
+Why the developer's explanation was
+plausible. Every message they saw was true.
+
+54
+00:03:53,570 --> 00:03:58,293
+"Use git pull before pushing again" is
+correct advice for a branch whose upstream is
+
+55
+00:03:58,333 --> 00:04:02,433
+the branch it's pushed to. "Already
+up to date" was true of the upstream.
+
+56
+00:04:02,473 --> 00:04:06,800
+Nothing on the screen said that the two
+commands were talking about different
+
+57
+00:04:06,840 --> 00:04:09,012
+branches, unless you read the brackets.
+
+58
+00:04:09,352 --> 00:04:14,628
+The extended toolbox. All of these are 🟢.
+Each row names the question it answers.
+
+59
+00:04:17,968 --> 00:04:23,398
+Organize it in your head by the kind of
+question: refs, graph, remote, objects,
+
+60
+00:04:23,438 --> 00:04:29,214
+index, configuration, and what Git is doing.
+The git config get subcommand needs Git
+
+61
+00:04:29,254 --> 00:04:30,184
+2.46 or later.
+
+62
+00:04:30,524 --> 00:04:35,454
+Local data or the server. git ls-remote
+and git remote show origin contact the
+
+63
+00:04:35,494 --> 00:04:40,424
+server. The other commands answer from
+local data, which is as old as the last
+
+64
+00:04:40,464 --> 00:04:40,806
+fetch.
+
+65
+00:04:41,146 --> 00:04:45,693
+Git, not GitHub: the status of git fetch.
+git fetch is the one command of the
+
+66
+00:04:45,733 --> 00:04:50,399
+opening that changes something: it moves
+remote-tracking refs and adds objects.
+
+67
+00:04:50,439 --> 00:04:55,402
+It never touches your branches, the index,
+which is the proposed next commit, or the
+
+68
+00:04:55,442 --> 00:04:57,368
+working tree, the files you edit.
+
+69
+00:04:57,708 --> 00:05:02,472
+And each remote-tracking ref has a
+reflog, a list of the values it has had.
+
+70
+00:05:02,512 --> 00:05:05,867
+So a fetch is treated as
+part of evidence collection.
+
+71
+00:05:05,907 --> 00:05:11,183
+Record git rev-parse origin/main first if
+the stale value is itself evidence, as it
+
+72
+00:05:11,223 --> 00:05:13,233
+is after a suspected force push.
+
+73
+00:05:15,073 --> 00:05:19,158
+A picture helps. Picture a branch
+with two addresses written on it.
+
+74
+00:05:19,198 --> 00:05:24,269
+One says where its deliveries come from:
+the upstream, used by git pull, git status
+
+75
+00:05:24,309 --> 00:05:29,257
+and a bare git rebase. The other says where
+its parcels go: the push destination.
+
+76
+00:05:29,297 --> 00:05:34,430
+For most branches the two addresses are the
+same, and you forget that there are two.
+
+77
+00:05:34,770 --> 00:05:39,065
+In this case the "from" address is main
+on the server and the "to" address is the
+
+78
+00:05:39,105 --> 00:05:43,347
+feature branch on the server. The developer
+keeps collecting deliveries from one
+
+79
+00:05:43,387 --> 00:05:47,629
+building and trying to hand parcels in at
+another, and the second building keeps
+
+80
+00:05:47,669 --> 00:05:50,359
+saying: you haven't picked
+up what is waiting here.
+
+81
+00:05:50,699 --> 00:05:55,153
+Where the picture breaks: a postal address
+is fixed by whoever wrote it, and here
+
+82
+00:05:55,193 --> 00:05:59,592
+nobody wrote it. Git filled in the "from"
+address on its own when the branch was
+
+83
+00:05:59,632 --> 00:06:01,423
+created, from the starting point.
+
+84
+00:06:01,763 --> 00:06:06,567
+The lesson for the method: configuration
+is state. The ten commands include the
+
+85
+00:06:06,607 --> 00:06:11,719
+configuration for this reason, and git branch
+-vv prints the upstream in brackets on
+
+86
+00:06:11,759 --> 00:06:12,393
+every line.
+
+87
+00:06:12,733 --> 00:06:18,279
+Try it now. Thirty seconds. In the lab shell,
+or in any repository you have, run git
+
+88
+00:06:18,319 --> 00:06:23,465
+branch -vv, which only reads. For each
+branch, say out loud what stands in the
+
+89
+00:06:23,505 --> 00:06:24,064
+brackets.
+
+90
+00:06:28,904 --> 00:06:33,054
+Each pair of brackets names that
+branch's upstream, its "from" address.
+
+91
+00:06:33,094 --> 00:06:37,717
+If one names a branch you don't push to,
+you've found today's cause in your own
+
+92
+00:06:37,757 --> 00:06:40,078
+repository, before it cost you anything.
+
+93
+00:06:41,918 --> 00:06:47,051
+Two lines of work leave ce76024: two local
+commits, and one commit by a teammate on
+
+94
+00:06:47,091 --> 00:06:51,787
+the server's branch of the same name.
+The pull looks at the top right label.
+
+95
+00:06:51,827 --> 00:06:53,968
+The push looks at the bottom arrow.
+
+96
+00:06:55,808 --> 00:06:56,454
+The symptom.
+
+97
+00:06:56,794 --> 00:07:01,879
+Read the three parts as in the concept
+section: (fetch first), then * [new branch]
+
+98
+00:07:01,919 --> 00:07:05,066
+with "Already up to date",
+then (non-fast-forward).
+
+99
+00:07:05,106 --> 00:07:09,129
+Three different statements, and
+the reporter heard one: rejected.
+
+100
+00:07:12,469 --> 00:07:17,467
+Evidence. 🟢 SAFE throughout. Predict:
+what will the second line of git status
+
+101
+00:07:17,507 --> 00:07:20,149
+compare the branch with? Say it out loud.
+
+102
+00:07:24,989 --> 00:07:28,238
+"Your branch is ahead of
+'origin/main' by 2 commits."
+
+103
+00:07:28,278 --> 00:07:33,449
+Not ahead of origin/feature/batch-size. The
+brackets in git branch -vv say the same.
+
+104
+00:07:33,489 --> 00:07:35,931
+There are the brackets from the opening.
+
+105
+00:07:36,271 --> 00:07:41,700
+The graph shows the teammate's commit 56bb8e4
+on the server's branch, beside the two
+
+106
+00:07:41,740 --> 00:07:42,612
+local commits.
+
+107
+00:07:42,952 --> 00:07:47,411
+The configuration holds the cause in
+one line. Find it before I read it.
+
+108
+00:07:52,251 --> 00:07:56,466
+It's the last branch line. The merge
+setting of feature/batch-size is
+
+109
+00:07:56,506 --> 00:08:01,522
+refs/heads/main. And the reflog shows how
+the branch began: a checkout moving from
+
+110
+00:08:01,562 --> 00:08:03,249
+main, right after the clone.
+
+111
+00:08:03,589 --> 00:08:08,790
+The toolbox, on this repository, before
+the fix. First question: which refs exist,
+
+112
+00:08:08,830 --> 00:08:10,324
+and what do they follow?
+
+113
+00:08:10,664 --> 00:08:15,392
+The for-each-ref line prints the whole
+ref table in a form that can be compared
+
+114
+00:08:15,432 --> 00:08:19,858
+across machines. The last command fails,
+and the failure is evidence: with
+
+115
+00:08:19,898 --> 00:08:24,686
+push.default=simple, a branch whose upstream
+has another name has no single push
+
+116
+00:08:24,726 --> 00:08:27,221
+destination, so @{push} can't be resolved.
+
+117
+00:08:27,561 --> 00:08:30,461
+Second question: how do
+the two branches relate?
+
+118
+00:08:30,801 --> 00:08:35,899
+Two and one: two commits only on the left
+side, HEAD, and one only on the right.
+
+119
+00:08:35,939 --> 00:08:39,174
+The angle brackets mark the
+sides commit by commit.
+
+120
+00:08:39,514 --> 00:08:43,755
+Third question: what does the server
+hold, and when did this clone learn it?
+
+121
+00:08:44,095 --> 00:08:48,930
+git remote show origin states the mismatch
+in words: the branch "merges with remote
+
+122
+00:08:48,970 --> 00:08:52,512
+main" and "pushes to feature/batch-size
+(local out of date)".
+
+123
+00:08:52,852 --> 00:08:56,387
+Fourth question: what are the
+objects, and is the store sound?
+
+124
+00:08:56,727 --> 00:09:02,201
+The server's tip is a commit by another
+author, with ce76024 as its parent: a
+
+125
+00:09:02,241 --> 00:09:07,858
+teammate's work, based on main. The index
+has three entries, all at stage 0: no
+
+126
+00:09:07,898 --> 00:09:13,659
+conflict is in progress. git fsck, which
+checks the object store, prints nothing.
+
+127
+00:09:13,999 --> 00:09:19,193
+Hypotheses and test. The textbook's four.
+One: the server's branch has a commit the
+
+128
+00:09:19,233 --> 00:09:23,166
+local branch lacks, and git pull
+integrates a different branch.
+
+129
+00:09:23,206 --> 00:09:28,147
+Two: a rule on the server rejects the
+push. Three: someone rewrote the server's
+
+130
+00:09:28,187 --> 00:09:30,039
+branch. Four: the pull failed.
+
+131
+00:09:30,379 --> 00:09:33,997
+The first hypothesis is confirmed
+by the first two commands.
+
+132
+00:09:34,037 --> 00:09:39,056
+A rewrite is rejected: the remote-tracking
+reflog has one entry, a first fetch, and
+
+133
+00:09:39,096 --> 00:09:43,933
+a forced update would have printed a plus
+sign. A server rule is rejected by the
+
+134
+00:09:43,973 --> 00:09:48,810
+wording of the rejection. And the last
+command is a test merge: it writes a tree
+
+135
+00:09:48,850 --> 00:09:52,346
+object and touches neither the
+index nor the working tree.
+
+136
+00:09:52,386 --> 00:09:56,979
+Exit status 0 with no file names means
+the two lines of work combine without
+
+137
+00:09:57,019 --> 00:09:57,527
+conflict.
+
+138
+00:09:57,867 --> 00:10:02,560
+And that's the root-cause box, filled in.
+Read its fourth line with me, the root
+
+139
+00:10:02,600 --> 00:10:06,819
+cause: the upstream of the local branch
+isn't the branch it's pushed to.
+
+140
+00:10:07,159 --> 00:10:08,773
+Select the lowest-risk fix.
+
+141
+00:10:09,113 --> 00:10:13,727
+Rebasing, which replaces commits with
+copies on a new base, is acceptable here
+
+142
+00:10:13,767 --> 00:10:17,905
+because the two commits are unpublished:
+no other repository has them.
+
+143
+00:10:18,245 --> 00:10:22,969
+Execute. A backup ref first, then the
+configuration change, then the rebase.
+
+144
+00:10:23,009 --> 00:10:27,985
+🟡 CAUTION: git rebase without arguments
+uses the upstream and replaces the local
+
+145
+00:10:28,025 --> 00:10:29,364
+commits with new ones.
+
+146
+00:10:29,704 --> 00:10:36,465
+Quick quiz. What will git status -sb print
+right after the upstream change, before
+
+147
+00:10:36,505 --> 00:10:41,690
+the rebase? A, ahead 2. B, ahead
+2 and behind 1. C, up to date.
+
+148
+00:10:41,730 --> 00:10:42,685
+Your answer?
+
+149
+00:10:47,525 --> 00:10:52,935
+B. After the upstream change, git status
+-sb already tells the truth: ahead 2,
+
+150
+00:10:52,975 --> 00:10:53,563
+behind 1.
+
+151
+00:10:53,903 --> 00:10:56,592
+No object moved. Only the comparison did.
+
+152
+00:10:56,932 --> 00:11:01,059
+Then the rebase puts the two
+commits on top of the teammate's.
+
+153
+00:11:01,099 --> 00:11:06,638
+The copies have new IDs, 097fe6f and aca1b2f,
+and the backup branch still names the
+
+154
+00:11:06,678 --> 00:11:07,310
+originals.
+
+155
+00:11:07,650 --> 00:11:11,034
+Two dots, no plus sign: a
+fast-forward of the server's branch.
+
+156
+00:11:11,374 --> 00:11:12,025
+Verify.
+
+157
+00:11:12,365 --> 00:11:16,748
+The brackets name the right branch. HEAD
+equals the upstream and the server.
+
+158
+00:11:16,788 --> 00:11:21,520
+git range-diff shows the two commits carried
+over unchanged, marked with an equals
+
+159
+00:11:21,560 --> 00:11:26,292
+sign, on top of one new commit. And git
+pull says "Already up to date" again, this
+
+160
+00:11:26,332 --> 00:11:28,271
+time about the branch you push to.
+
+161
+00:11:28,611 --> 00:11:29,194
+Prevent.
+
+162
+00:11:29,534 --> 00:11:33,335
+🔴 DANGEROUS: git branch -D,
+the label Chapter 30 gives it.
+
+163
+00:11:33,375 --> 00:11:37,044
+What it changes: it deletes
+a ref without a merge check.
+
+164
+00:11:37,084 --> 00:11:42,210
+What it can destroy: the branch reflog,
+and the only name of unmerged commits.
+
+165
+00:11:42,250 --> 00:11:46,582
+Preview: git log <target>..<branch>
+and a diff against the target.
+
+166
+00:11:46,622 --> 00:11:51,814
+Recovery: the HEAD reflog, until it
+expires. The command also prints the ID the
+
+167
+00:11:51,854 --> 00:11:57,245
+branch had. When appropriate: here, after
+the verification, because the backup has
+
+168
+00:11:57,285 --> 00:11:58,106
+done its job.
+
+169
+00:11:58,446 --> 00:12:03,900
+With --no-track the new branch has no
+upstream, and the first git push stops and
+
+170
+00:12:03,940 --> 00:12:09,187
+asks. push.autoSetupRemote=true makes
+that push create the upstream under the
+
+171
+00:12:09,227 --> 00:12:13,101
+branch's own name. The manual
+for Git 2.55 also documents
+
+172
+00:12:13,141 --> 00:12:18,594
+branch.autoSetupMerge=simple: automatic
+setup "only when the starting point is a
+
+173
+00:12:18,634 --> 00:12:24,225
+remote-tracking branch and the new branch
+has the same name as the remote branch".
+
+174
+00:12:26,065 --> 00:12:27,713
+Five mistakes to watch for.
+
+175
+00:12:28,053 --> 00:12:32,733
+Forcing the push because pulling "did not
+help". Root cause: the rejection is read
+
+176
+00:12:32,773 --> 00:12:37,569
+as an obstacle instead of as information
+that the server's branch holds a commit the
+
+177
+00:12:37,609 --> 00:12:38,663
+local branch lacks.
+
+178
+00:12:39,003 --> 00:12:43,559
+Assuming pull and push address the same
+branch. Root cause: the upstream and the
+
+179
+00:12:43,599 --> 00:12:47,695
+push destination are separate
+configuration, and a branch created from a
+
+180
+00:12:47,735 --> 00:12:50,970
+remote-tracking branch takes
+that branch as its upstream.
+
+181
+00:12:51,310 --> 00:12:56,555
+Skipping the configuration in the diagnosis.
+Root cause: configuration is treated as
+
+182
+00:12:56,595 --> 00:13:01,336
+background, when one branch.<name>.merge
+line is the state that explains the
+
+183
+00:13:01,376 --> 00:13:01,840
+symptom.
+
+184
+00:13:02,180 --> 00:13:06,675
+Fixing with a one-off git pull origin
+<branch>. Root cause: it repairs today's
+
+185
+00:13:06,715 --> 00:13:10,977
+divergence and leaves the wrong upstream
+in place, so the symptom returns.
+
+186
+00:13:11,317 --> 00:13:18,497
+Blaming a server rule. Root cause: !
+[rejected] is written by the local Git; a rule
+
+187
+00:13:18,537 --> 00:13:23,891
+on the server produces ! [remote
+rejected] with remote: lines.
+
+188
+00:13:25,731 --> 00:13:30,572
+Now, out of the lab. Two engineers on an
+embeddings team share a feature branch for
+
+189
+00:13:30,612 --> 00:13:35,454
+a week. One created it and pushed it first.
+The other created a local branch of the
+
+190
+00:13:35,494 --> 00:13:38,924
+same name from origin/main and
+has been committing happily.
+
+191
+00:13:38,964 --> 00:13:43,570
+On the day she first tries to push, the
+push is rejected, the pull says there's
+
+192
+00:13:43,610 --> 00:13:48,158
+nothing to do, and a senior colleague
+walking past says: "force it, it is your
+
+193
+00:13:48,198 --> 00:13:48,628
+branch."
+
+194
+00:13:48,968 --> 00:13:52,361
+She runs git branch -vv instead,
+and reads the brackets.
+
+195
+00:13:52,401 --> 00:13:57,266
+The upstream is origin/main. One toolbox
+command tells her how far apart the two
+
+196
+00:13:57,306 --> 00:14:00,883
+branches are, and another that
+they merge without conflict.
+
+197
+00:14:00,923 --> 00:14:05,911
+The fix takes three commands and no force:
+a backup ref, the upstream, a rebase of
+
+198
+00:14:05,951 --> 00:14:10,938
+two commits that exist nowhere else. Her
+teammate's commit is still on the server.
+
+199
+00:14:11,278 --> 00:14:15,933
+In the team's notes she records the
+cause and the prevention in two lines.
+
+200
+00:14:15,973 --> 00:14:20,310
+Feature branches are created with
+--no-track, or from the local main.
+
+201
+00:14:20,350 --> 00:14:25,639
+And push.autoSetupRemote is set in the team's
+recommended configuration, so that the
+
+202
+00:14:25,679 --> 00:14:29,446
+first push creates the upstream
+under the branch's own name.
+
+203
+00:14:31,286 --> 00:14:37,451
+Your turn. Do the second and third
+repository of Lab 35.1, "The ten-command
+
+204
+00:14:37,491 --> 00:14:43,408
+diagnosis on three repositories", in
+lab-manual/m35-diagnosis-method.md.
+
+205
+00:14:43,748 --> 00:14:49,216
+For each, after the ten commands, name the
+kind of question you still need answered,
+
+206
+00:14:49,256 --> 00:14:54,592
+refs, graph, remote, objects, index or
+configuration, and pick the toolbox command
+
+207
+00:14:54,632 --> 00:14:58,264
+for it before you look at the
+table. Predict its output.
+
+208
+00:14:58,304 --> 00:15:02,526
+Then run it. Name the root cause
+and its layer before any change.
+
+209
+00:15:02,866 --> 00:15:09,286
+The challenge is Exercise 7.10, Level 5,
+"the hotfix that was pushed and is not on
+
+210
+00:15:09,326 --> 00:15:13,146
+the server", in
+exercises/m06-m10-integration.md.
+
+211
+00:15:16,986 --> 00:15:21,781
+Answer out loud. A strong answer explains
+why both messages can be true at once,
+
+212
+00:15:21,821 --> 00:15:26,677
+which requires naming the two pieces of
+configuration that the two commands read.
+
+213
+00:15:26,717 --> 00:15:31,392
+It says how the mismatch typically arises
+and why Git's default is reasonable.
+
+214
+00:15:31,432 --> 00:15:36,349
+It names the evidence: where the mismatch
+is visible in ordinary output, and which
+
+215
+00:15:36,389 --> 00:15:38,404
+command prints the setting itself.
+
+216
+00:15:38,744 --> 00:15:43,595
+For the fix, it compares at least two options
+by what each can destroy, rejects the
+
+217
+00:15:43,635 --> 00:15:48,369
+forced push with a reason, and explains
+under which condition rewriting the local
+
+218
+00:15:48,409 --> 00:15:52,965
+commits is acceptable. It ends with a
+prevention that changes how branches are
+
+219
+00:15:53,005 --> 00:15:53,437
+created.
+
+220
+00:15:55,277 --> 00:15:56,204
+Let's land this.
+
+221
+00:15:56,544 --> 00:16:01,073
+git pull integrates the configured upstream;
+git push origin <name> targets the
+
+222
+00:16:01,113 --> 00:16:03,792
+server branch of that
+name; the two can differ.
+
+223
+00:16:04,132 --> 00:16:09,094
+A branch created from a remote-tracking
+branch takes it as its upstream unless
+
+224
+00:16:09,134 --> 00:16:10,377
+--no-track is given.
+
+225
+00:16:10,717 --> 00:16:17,592
+The words in a rejection are evidence:
+(fetch first), (non-fast-forward), and !
+
+226
+00:16:17,632 --> 00:16:21,006
+[rejected] against ! [remote rejected].
+
+227
+00:16:21,346 --> 00:16:25,869
+The extended toolbox answers one kind of
+question per command without changing
+
+228
+00:16:25,909 --> 00:16:30,724
+state; git ls-remote and git remote show
+ask the server, the rest answer from local
+
+229
+00:16:30,764 --> 00:16:31,016
+data.
+
+230
+00:16:31,356 --> 00:16:36,155
+Fix the cause: set the upstream, replay
+unpublished commits, push without force.
+
+231
+00:16:37,995 --> 00:16:42,829
+Read sections 29.4 and 29.5. Then, in
+a repository of your own, run the git
+
+232
+00:16:42,869 --> 00:16:47,899
+for-each-ref line of the toolbox and
+check that every local branch follows the
+
+233
+00:16:47,939 --> 00:16:53,294
+branch you believe it follows. The next
+video reads operations in progress from git
+
+234
+00:16:53,334 --> 00:16:55,568
+status and from the .git directory.
+
+235
+00:16:55,908 --> 00:17:00,226
+Today a message that sounded like a
+broken server turned into one line of
+
+236
+00:17:00,266 --> 00:17:05,061
+configuration, and you fixed it without
+force. Run the brackets check on your own
+
+237
+00:17:05,101 --> 00:17:10,076
+branches before the next video. Until then,
+look at the state first and type second.
+
+238
+00:17:10,116 --> 00:17:11,508
+See you in the next one.

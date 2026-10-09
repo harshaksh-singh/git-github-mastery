@@ -115,6 +115,8 @@ And partner notification doesn't guarantee revocation. GitHub revokes its own le
 
 **[ON SCREEN]** Callout: Unverified. Whether OpenAI disables API keys it finds on the public internet could not be confirmed from a primary page for the Phase 0 report. How Hugging Face and OpenAI handle partner notifications from GitHub is not documented in the pages read.
 
+Unverified: whether OpenAI disables API keys it finds on the public internet could not be confirmed from a primary page, and how Hugging Face and OpenAI handle partner notifications from GitHub isn't documented in the pages read.
+
 **Scanners.** As of the first of October 2026 the textbook lists five. TruffleHog, which verifies candidates against provider APIs and can enumerate deleted and hidden commits. gitleaks, which declares itself feature-complete with security patches only. Betterleaks, to which gitleaks' author moved, and whose governance and detection-quality claims come from one news article and are not independently verified. detect-secrets, whose last release is from May 2024. And git-secrets, which has no tagged releases. None is installed for the course, so none is demonstrated. The advice: run your choice in two places. As a pre-commit hook for fast feedback, and in CI over the full history, where it can't be skipped.
 
 **Dependabot** is three features that share a name.
@@ -504,7 +506,7 @@ A small check script: the version must be 2, and each entry needs an ecosystem, 
 
 **[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
 
-Part B of Lab 30.1, on your practice repository, in your normal shell. The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. Use only the dummy value the lab prescribes. Never a real credential, not even a revoked one.
+**Part B of Lab 30.1, on your practice repository, in your normal shell.** The interface changes. The lab text and the linked documentation are the reference, and no GitHub output was captured by the authors. Use only the dummy value the lab prescribes. Never a real credential, not even a revoked one.
 
 ```bash
 gh repo edit YOUR-ORG/practice-repo --enable-secret-scanning --enable-secret-scanning-push-protection

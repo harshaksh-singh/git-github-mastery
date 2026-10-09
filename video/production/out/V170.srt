@@ -1,0 +1,1347 @@
+1
+00:00:04,500 --> 00:00:09,384
+A team that depends on an open-source gateway
+finds a bug, fixes it in an afternoon
+
+2
+00:00:09,424 --> 00:00:13,239
+and opens a pull request. Three
+weeks later nothing has happened.
+
+3
+00:00:13,279 --> 00:00:18,104
+Meanwhile the project's main has moved,
+the pull request shows a conflict, and the
+
+4
+00:00:18,144 --> 00:00:21,722
+engineer's fork says it is "two
+commits ahead, forty behind".
+
+5
+00:00:21,762 --> 00:00:26,646
+Nobody on the team can say how the fork got
+ahead of a project they never had write
+
+6
+00:00:26,686 --> 00:00:27,239
+access to.
+
+7
+00:00:27,579 --> 00:00:31,416
+Both problems have causes you can
+name. One is in the commit graph.
+
+8
+00:00:31,456 --> 00:00:35,408
+The other is in how the pull request
+spends a maintainer's attention.
+
+9
+00:00:35,448 --> 00:00:40,037
+Keep that "two commits ahead" in mind.
+One number in a terminal will explain it.
+
+10
+00:00:41,877 --> 00:00:45,718
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:45,758 --> 00:00:50,298
+This is Part 8, professional practice.
+Parts 1 to 7 gave you mechanisms.
+
+12
+00:00:50,338 --> 00:00:55,451
+This part is about agreements between
+people, and the claim of Chapter 27 is that
+
+13
+00:00:55,491 --> 00:01:00,667
+every such agreement can be read off two
+facts you already have: a branch is a ref
+
+14
+00:01:00,707 --> 00:01:04,738
+that names a commit, and a release
+is a tag that names a commit.
+
+15
+00:01:04,778 --> 00:01:09,891
+A commit is one saved snapshot of the
+project, and a ref is a name that points at
+
+16
+00:01:09,931 --> 00:01:10,145
+one.
+
+17
+00:01:10,485 --> 00:01:14,432
+In video 127 you carried one
+change through the fork workflow.
+
+18
+00:01:14,472 --> 00:01:19,834
+A fork is your own copy of a project's
+repository on GitHub, and a pull request asks
+
+19
+00:01:19,874 --> 00:01:25,044
+the project to take your commits. Today
+the project doesn't stand still while you
+
+20
+00:01:25,084 --> 00:01:28,838
+wait. Upstream, the project's
+own repository, moves, twice.
+
+21
+00:01:29,178 --> 00:01:33,821
+You sync the fork's main, update your
+branch once by rebase and once by merge,
+
+22
+00:01:33,861 --> 00:01:38,504
+answer a review round, and see what a
+squash merge does to the question "is my
+
+23
+00:01:38,544 --> 00:01:43,307
+branch merged?". Then we change sides and
+look at the same pull request from the
+
+24
+00:01:43,347 --> 00:01:44,448
+maintainer's chair.
+
+25
+00:01:44,788 --> 00:01:49,578
+A note on layers, which the chapter makes
+at its start: branches, tags, merges and
+
+26
+00:01:49,618 --> 00:01:53,701
+rebases are Git. Forks, pull requests
+and the merge button are GitHub.
+
+27
+00:01:53,741 --> 00:01:56,292
+A workflow is a convention
+that people hold.
+
+28
+00:01:58,132 --> 00:01:59,710
+Here's what you'll walk away with.
+
+29
+00:02:00,050 --> 00:02:01,463
+After this video you can:
+
+30
+00:02:01,803 --> 00:02:06,602
+Set up the three repositories and two remotes
+of the fork workflow from the command
+
+31
+00:02:06,642 --> 00:02:06,894
+line.
+
+32
+00:02:07,234 --> 00:02:11,921
+Sync a fork's default branch in three ways
+and update a topic branch in two, and say
+
+33
+00:02:11,961 --> 00:02:13,384
+what each does to history.
+
+34
+00:02:13,724 --> 00:02:17,031
+Repair a fork whose main has stray
+commits without losing them.
+
+35
+00:02:17,371 --> 00:02:21,704
+Respond to a review round on a rebased
+branch so that the reviewer can see what
+
+36
+00:02:21,744 --> 00:02:22,147
+changed.
+
+37
+00:02:22,487 --> 00:02:27,041
+Apply the etiquette of section 27.4
+as contributor and as maintainer.
+
+38
+00:02:28,881 --> 00:02:33,501
+Why the fork workflow exists. A project
+can't give write access to everyone who
+
+39
+00:02:33,541 --> 00:02:37,276
+might send a fix. So you never
+push to the project's repository.
+
+40
+00:02:37,316 --> 00:02:42,054
+You push to a server-side copy that you
+own, and you ask the project to take your
+
+41
+00:02:42,094 --> 00:02:43,882
+commits through a pull request.
+
+42
+00:02:44,222 --> 00:02:48,379
+What it is, precisely. Three
+repositories, each with its own refs.
+
+43
+00:02:48,719 --> 00:02:53,127
+You fetch from upstream, you fetch and
+push to your fork, and you do the work in
+
+44
+00:02:53,167 --> 00:02:53,738
+your clone.
+
+45
+00:02:57,078 --> 00:03:02,547
+Inside .git. Nothing is new. refs/remotes/upstream/*
+and refs/remotes/origin/* are
+
+46
+00:03:02,587 --> 00:03:07,788
+two sets of remote-tracking refs, filled
+by two fetch refspecs in .git/config.
+
+47
+00:03:07,828 --> 00:03:13,163
+A remote-tracking ref records where a
+branch was on a server at your last fetch.
+
+48
+00:03:13,203 --> 00:03:16,992
+The pull request doesn't exist
+in your repository at all.
+
+49
+00:03:17,332 --> 00:03:22,174
+When upstream moves. There are two different
+things to keep current, and people mix
+
+50
+00:03:22,214 --> 00:03:22,645
+them up.
+
+51
+00:03:22,985 --> 00:03:27,973
+The first is the fork's default branch. It
+should be an exact copy of the project's
+
+52
+00:03:28,013 --> 00:03:32,881
+main. If you never commit on it, updating
+it is always a fast-forward: the branch
+
+53
+00:03:32,921 --> 00:03:37,970
+name moves ahead, and no new commit is made.
+That's the rule to remember from today:
+
+54
+00:03:38,010 --> 00:03:42,696
+never commit on the fork's main. It should
+only ever fast-forward to upstream.
+
+55
+00:03:43,036 --> 00:03:47,376
+The second is your feature branch. It
+contains your commits on top of an old
+
+56
+00:03:47,416 --> 00:03:51,986
+upstream commit. Updating it means either
+replaying your commits on the new tip,
+
+57
+00:03:52,026 --> 00:03:55,329
+which is a rebase, or merging
+the new tip into the branch.
+
+58
+00:03:55,669 --> 00:04:00,584
+GitHub documents three ways to do the first.
+Two run on the server and are described
+
+59
+00:04:00,624 --> 00:04:04,242
+from the documentation. The third
+is plain Git, and we run it.
+
+60
+00:04:04,582 --> 00:04:09,527
+One trap in the middle row: gh repo sync
+without an argument updates the local
+
+61
+00:04:09,567 --> 00:04:12,850
+repository instead. The
+destination is the argument.
+
+62
+00:04:13,190 --> 00:04:17,707
+Rebase or merge for the branch. Which to
+use is the project's decision: read its
+
+63
+00:04:17,747 --> 00:04:22,434
+contribution guide. Where it is silent, the
+textbook's rule is: rebase freely until
+
+64
+00:04:22,474 --> 00:04:27,104
+review starts and add commits afterwards,
+because a reviewer who has read a commit
+
+65
+00:04:27,144 --> 00:04:29,780
+should be able to trust
+that it hasn't changed.
+
+66
+00:04:30,120 --> 00:04:35,006
+Etiquette, in one sentence. A maintainer
+is a person who decides what the project
+
+67
+00:04:35,046 --> 00:04:39,689
+accepts. A maintainer's scarce resource
+is attention, and every convention of
+
+68
+00:04:39,729 --> 00:04:44,372
+open-source contribution is a way of
+spending less of it per accepted change.
+
+69
+00:04:44,712 --> 00:04:47,841
+Before you write code: read
+the contribution guide.
+
+70
+00:04:47,881 --> 00:04:52,875
+It tells you the branch to target, the
+merge method, the test command, the commit
+
+71
+00:04:52,915 --> 00:04:57,908
+message convention and whether a sign-off
+or a contributor agreement is required.
+
+72
+00:04:57,948 --> 00:05:02,942
+GitHub shows a repository's CONTRIBUTING
+file when someone opens an issue or pull
+
+73
+00:05:02,982 --> 00:05:07,727
+request, and since the seventh of August
+2025 in the repository's tab bar and
+
+74
+00:05:07,767 --> 00:05:08,224
+sidebar.
+
+75
+00:05:08,564 --> 00:05:13,290
+And open an issue first for anything large.
+A pull request nobody asked for forces
+
+76
+00:05:13,330 --> 00:05:17,939
+the maintainer to choose between reviewing
+work that doesn't fit the roadmap and
+
+77
+00:05:17,979 --> 00:05:22,531
+rejecting work somebody spent a week on.
+An issue costs both sides ten minutes.
+
+78
+00:05:22,871 --> 00:05:27,984
+When you open the pull request: one logical
+change, because a small, self-contained
+
+79
+00:05:28,024 --> 00:05:31,648
+change is one a stranger can
+evaluate. Say what you tested.
+
+80
+00:05:31,688 --> 00:05:35,808
+For an ML change, which evaluation
+set, which metric, which commit.
+
+81
+00:05:35,848 --> 00:05:39,347
+Leave "allow edits by maintainers"
+on for a fork you own.
+
+82
+00:05:39,387 --> 00:05:44,563
+And expect checks to behave differently:
+workflows on a pull request from a fork run
+
+83
+00:05:44,603 --> 00:05:49,344
+without the project's secrets, and in a
+public repository the default is that
+
+84
+00:05:49,384 --> 00:05:53,939
+first-time contributors need a maintainer's
+approval before workflows run.
+
+85
+00:05:54,279 --> 00:05:59,017
+A red check that needs a secret isn't your
+bug. Say so in the pull request instead
+
+86
+00:05:59,057 --> 00:06:00,124
+of pushing guesses.
+
+87
+00:06:00,464 --> 00:06:05,440
+While it is in review: answer every comment,
+and don't force-push over a review in
+
+88
+00:06:05,480 --> 00:06:10,395
+progress unless the project asks for it.
+Don't open a second pull request because
+
+89
+00:06:10,435 --> 00:06:15,227
+the first is quiet. Ask once, after a
+reasonable wait, in the place the project
+
+90
+00:06:15,267 --> 00:06:15,594
+names.
+
+91
+00:06:15,934 --> 00:06:19,131
+The maintainer's side. The
+same economics in reverse.
+
+92
+00:06:19,471 --> 00:06:24,410
+Read it as need and tool: rules told once,
+review routed, main kept releasable.
+
+93
+00:06:26,250 --> 00:06:30,230
+A picture helps. The textbook's
+analogy is a journal submission.
+
+94
+00:06:30,270 --> 00:06:35,317
+You don't edit the journal. You send a
+manuscript, reviewers ask for changes, you
+
+95
+00:06:35,357 --> 00:06:37,767
+send a revision, and an editor decides.
+
+96
+00:06:38,107 --> 00:06:43,106
+The analogy carries the etiquette well. A
+manuscript on a topic the journal didn't
+
+97
+00:06:43,146 --> 00:06:47,654
+ask for, three times the usual length,
+with no statement of method, waits.
+
+98
+00:06:47,694 --> 00:06:49,067
+So does a pull request.
+
+99
+00:06:49,407 --> 00:06:54,687
+It breaks at storage. On GitHub your copy
+and the journal's share one object store,
+
+100
+00:06:54,727 --> 00:06:59,686
+a fork network, so what you push to your
+fork can be reached from the upstream
+
+101
+00:06:59,726 --> 00:07:03,788
+repository by commit ID. A manuscript
+in your drawer is private.
+
+102
+00:07:03,828 --> 00:07:06,095
+A commit on your public fork is not.
+
+103
+00:07:06,435 --> 00:07:11,603
+For the Git side, hold this picture, with
+its three labels: your local main is only
+
+104
+00:07:11,643 --> 00:07:16,560
+a relay. First, it fast-forwards to
+upstream/main. Then a push carries the same
+
+105
+00:07:16,600 --> 00:07:20,764
+commit on to origin/main. It never
+contributes a commit of its own.
+
+106
+00:07:20,804 --> 00:07:26,035
+The moment it has one, the relay is broken,
+and every later pull request branch that
+
+107
+00:07:26,075 --> 00:07:28,607
+starts from it carries that commit along.
+
+108
+00:07:30,447 --> 00:07:35,858
+Follow the numbers. One, the fork. Two,
+the clone. Three, a fetch from upstream.
+
+109
+00:07:35,898 --> 00:07:41,376
+Four, a push to your fork. Five, the pull
+request. Six and seven, the review asks
+
+110
+00:07:41,416 --> 00:07:45,396
+for changes and you push again.
+Eight, a maintainer merges.
+
+111
+00:07:45,736 --> 00:07:50,390
+Notice what is missing: no arrow goes
+from your clone up into the left box.
+
+112
+00:07:50,430 --> 00:07:54,771
+You fetch from upstream. You never
+push to it. The pull request's ref,
+
+113
+00:07:54,811 --> 00:07:59,841
+refs/pull/57/head, lives in the upstream
+repository, although the commits arrived
+
+114
+00:07:59,881 --> 00:08:00,968
+through your fork.
+
+115
+00:08:02,808 --> 00:08:06,982
+Into the lab, where two local repositories
+play the project and your fork.
+
+116
+00:08:07,322 --> 00:08:12,976
+Step 1: clone the fork, name the upstream.
+🟢 SAFE: adding a remote and fetching add
+
+117
+00:08:13,016 --> 00:08:14,142
+refs and objects.
+
+118
+00:08:14,482 --> 00:08:19,713
+Four refs name one commit, 4ebb785.
+origin/main is your clone's record of the fork
+
+119
+00:08:19,753 --> 00:08:24,020
+and upstream/main its record of the
+project. They will drift apart.
+
+120
+00:08:24,360 --> 00:08:29,422
+Try it now, for thirty seconds. In any
+clone you have, type git remote -v.
+
+121
+00:08:29,462 --> 00:08:32,318
+It only reads. Count the names. I'll wait.
+
+122
+00:08:37,158 --> 00:08:42,909
+One name, usually origin, is an ordinary
+clone. Two names, origin and upstream, is
+
+123
+00:08:42,949 --> 00:08:44,181
+the fork workflow.
+
+124
+00:08:44,521 --> 00:08:48,078
+Step 2: branch from upstream,
+commit, publish on the fork.
+
+125
+00:08:48,118 --> 00:08:53,102
+🟢 SAFE for the new branch and the commit.
+🟡 CAUTION for the push, which creates a
+
+126
+00:08:53,142 --> 00:08:54,838
+new branch on your own fork.
+
+127
+00:08:55,178 --> 00:08:59,001
+Predict: after these three commands,
+what is the upstream branch of
+
+128
+00:08:59,041 --> 00:09:03,844
+fix/suspended-tenant? Careful: the upstream
+branch of a branch is the one git status
+
+129
+00:09:03,884 --> 00:09:07,476
+compares it with, not the upstream
+repository. Say it out loud.
+
+130
+00:09:12,316 --> 00:09:17,535
+Read the two "set up to track" lines. The
+switch made upstream/main the upstream of
+
+131
+00:09:17,575 --> 00:09:21,021
+the new branch, which is the
+right base for comparison.
+
+132
+00:09:21,061 --> 00:09:26,090
+The push with -u then replaced it with
+origin/fix/suspended-tenant, which is the
+
+133
+00:09:26,130 --> 00:09:31,223
+right destination for pushes. After this,
+git status compares you with your fork,
+
+134
+00:09:31,263 --> 00:09:36,102
+not with the project. To compare with
+the project you ask explicitly: git log
+
+135
+00:09:36,142 --> 00:09:38,003
+--oneline upstream/main..HEAD.
+
+136
+00:09:38,343 --> 00:09:40,370
+Step 3: upstream moves.
+
+137
+00:09:40,710 --> 00:09:45,369
+One and zero. One commit on the left
+side, upstream/main, that the right side,
+
+138
+00:09:45,409 --> 00:09:50,370
+origin/main, lacks, and none the other way.
+That second zero is what makes the sync
+
+139
+00:09:50,410 --> 00:09:55,190
+safe. If it were a two, you would be
+looking at the fork from the hook: somebody
+
+140
+00:09:55,230 --> 00:09:58,443
+committed on the fork's main.
+That's how it got ahead.
+
+141
+00:09:58,783 --> 00:10:01,598
+Step 4: sync the fork's
+main with plain Git.
+
+142
+00:10:01,938 --> 00:10:06,823
+--ff-only is the guard. If you had committed
+on main by mistake, the merge would
+
+143
+00:10:06,863 --> 00:10:11,994
+stop instead of creating a merge commit that
+exists only in your fork and that every
+
+144
+00:10:12,034 --> 00:10:16,242
+later pull request would carry. Zero
+and zero: the relay is in order.
+
+145
+00:10:16,582 --> 00:10:22,376
+Step 5: update the branch, way 1, by rebase.
+🟡 CAUTION for git rebase: it rewrites
+
+146
+00:10:22,416 --> 00:10:26,786
+local commits. Predict: will a
+plain git push work afterwards?
+
+147
+00:10:26,826 --> 00:10:27,498
+Yes or no?
+
+148
+00:10:32,338 --> 00:10:36,151
+🔴 DANGEROUS: git push
+--force-with-lease --force-if-includes.
+
+149
+00:10:36,191 --> 00:10:41,077
+The five answers before it runs. What it
+changes: the branch on the fork, to a
+
+150
+00:10:41,117 --> 00:10:46,257
+commit that doesn't descend from the old
+one. What it can destroy: commits on that
+
+151
+00:10:46,297 --> 00:10:51,373
+server branch that aren't in your clone,
+for example a fix a maintainer pushed to
+
+152
+00:10:51,413 --> 00:10:52,952
+your pull request branch.
+
+153
+00:10:53,292 --> 00:10:58,686
+Preview: git fetch origin, then git log
+HEAD..origin/fix/suspended-tenant lists what
+
+154
+00:10:58,726 --> 00:11:04,056
+would be dropped. Recovery: push the old
+tip back from any clone that still has it.
+
+155
+00:11:04,096 --> 00:11:09,361
+Your own old tip is in the branch reflog.
+When it is appropriate: on a branch that
+
+156
+00:11:09,401 --> 00:11:11,496
+only you push to, after a rebase.
+
+157
+00:11:11,835 --> 00:11:17,674
+The rebase replaced commit a83a713 with
+3560caf: same change, new parent, new ID.
+
+158
+00:11:17,714 --> 00:11:22,753
+The fork still had the old commit,
+so the plain push was rejected as a
+
+159
+00:11:22,793 --> 00:11:23,987
+non-fast-forward.
+
+160
+00:11:24,327 --> 00:11:29,426
+As a graph, with labels. First, the rebase
+copies your commit onto the new tip, and
+
+161
+00:11:29,466 --> 00:11:33,636
+the fork's copy stays on the old
+one. Then the forced push moves it.
+
+162
+00:11:33,676 --> 00:11:38,527
+The lease makes the forced push succeed
+only if the fork's branch is where your
+
+163
+00:11:38,567 --> 00:11:43,727
+clone last saw it, and --force-if-includes
+only if you have integrated what you last
+
+164
+00:11:43,767 --> 00:11:43,975
+saw.
+
+165
+00:11:44,315 --> 00:11:48,565
+Step 6: upstream moves
+again. Way 2, by merge.
+
+166
+00:11:48,905 --> 00:11:52,942
+No commit changed its ID, so the
+push is an ordinary fast-forward.
+
+167
+00:11:53,282 --> 00:11:56,946
+The price is the merge commit 44d750c
+in the middle of your branch.
+
+168
+00:11:57,286 --> 00:12:01,743
+Stay on the fourth row. If the project
+asks you to rebase during review, the
+
+169
+00:12:01,783 --> 00:12:06,358
+reviewer can't see from the forced push
+what changed between the two versions.
+
+170
+00:12:06,398 --> 00:12:11,328
+git range-diff, from video 58, is the tool
+that compares the old series with the new
+
+171
+00:12:11,368 --> 00:12:16,002
+one. Say in the pull request that you
+rebased and what changed, so the reviewer
+
+172
+00:12:16,042 --> 00:12:18,251
+doesn't have to read everything again.
+
+173
+00:12:18,591 --> 00:12:24,117
+Quick quiz. Review has started, the project's
+guide is silent, and upstream moves
+
+174
+00:12:24,157 --> 00:12:28,928
+again. A, rebase and force-push, or
+B, merge upstream into the branch?
+
+175
+00:12:28,968 --> 00:12:29,753
+Your answer?
+
+176
+00:12:34,593 --> 00:12:39,261
+B, by the textbook's rule: rebase freely
+until review starts, and add commits
+
+177
+00:12:39,301 --> 00:12:43,847
+afterwards. A merge changes no commit
+ID, so review comments stay attached.
+
+178
+00:12:44,187 --> 00:12:47,821
+Step 7: the review round. The
+reviewer asks for a test.
+
+179
+00:12:47,861 --> 00:12:51,762
+After review has started, changes
+are added, not rewritten.
+
+180
+00:12:52,102 --> 00:12:56,219
+A plain push, and the pull request
+updates because it follows the branch.
+
+181
+00:12:56,559 --> 00:13:01,533
+Step 8: the maintainer squash-merges. The
+lab imitates the merge button with git
+
+182
+00:13:01,573 --> 00:13:06,798
+merge --squash in Asha's clone. GitHub
+documents the result as one new commit on the
+
+183
+00:13:06,838 --> 00:13:11,373
+base branch. A squash folds the commits
+of a branch into that one commit.
+
+184
+00:13:11,413 --> 00:13:14,883
+Predict: is your branch tip
+an ancestor of the new main?
+
+185
+00:13:14,923 --> 00:13:15,886
+Say it out loud.
+
+186
+00:13:20,726 --> 00:13:26,306
+Exit status 1: not an ancestor. git branch
+--merged tests the same reachability and
+
+187
+00:13:26,346 --> 00:13:31,791
+wouldn't list the branch. The empty git
+diff --stat is the content test: main has
+
+188
+00:13:31,831 --> 00:13:33,552
+everything the branch has.
+
+189
+00:13:33,892 --> 00:13:39,081
+One line contradicts a rule you may have
+read: git branch -d deleted a branch that
+
+190
+00:13:39,121 --> 00:13:44,182
+wasn't merged into main, with a warning.
+The manual explains it: -d requires the
+
+191
+00:13:44,222 --> 00:13:49,283
+branch to be "fully merged in its upstream
+branch, or in HEAD if no upstream was
+
+192
+00:13:49,323 --> 00:13:54,320
+set". The upstream here is
+origin/fix/suspended-tenant, which has every commit.
+
+193
+00:13:54,660 --> 00:14:00,051
+Now the reason, as a graph. The squash
+commit 16e9e75 has one parent and no link to
+
+194
+00:14:00,091 --> 00:14:04,304
+your commits, so your branch tip
+147ed67 isn't an ancestor of it.
+
+195
+00:14:04,344 --> 00:14:09,735
+"Merged" in Git means "reachable from", and
+the merge method discarded the ancestry
+
+196
+00:14:09,775 --> 00:14:11,109
+and kept the content.
+
+197
+00:14:11,449 --> 00:14:17,480
+This is the root-cause box of section
+27.3. Read its fix line: test content, not
+
+198
+00:14:17,520 --> 00:14:18,163
+ancestry.
+
+199
+00:14:18,503 --> 00:14:23,426
+Now the same cycle in your own practice
+repository, following Lab 21.1, Part B.
+
+200
+00:14:23,466 --> 00:14:28,514
+The GitHub interface changes. The lab's
+text and the linked documentation are the
+
+201
+00:14:28,554 --> 00:14:32,345
+reference, and no GitHub output
+was captured for this course.
+
+202
+00:14:32,385 --> 00:14:37,496
+Run it in your normal shell, not in
+labs/shell, because the lab shell switches off
+
+203
+00:14:37,536 --> 00:14:41,202
+the system configuration where
+the credential helper lives.
+
+204
+00:14:41,542 --> 00:14:46,611
+As the contributor: fork the practice
+repository and clone the fork, and check with
+
+205
+00:14:46,651 --> 00:14:51,719
+git remote -v that two remotes exist. Create
+the branch from upstream/main, commit,
+
+206
+00:14:51,759 --> 00:14:56,273
+push to origin, and open the pull
+request against the upstream repository.
+
+207
+00:14:56,613 --> 00:15:00,393
+On the pull request page, find
+three things by their function.
+
+208
+00:15:00,433 --> 00:15:03,966
+First, the base and the head,
+which name two repositories.
+
+209
+00:15:04,006 --> 00:15:07,231
+Second, the control that
+allows edits by maintainers.
+
+210
+00:15:07,271 --> 00:15:08,833
+Third, the list of checks.
+
+211
+00:15:09,173 --> 00:15:12,170
+Then exchange the roles, so
+that you're the maintainer.
+
+212
+00:15:12,210 --> 00:15:15,207
+Open the pull request as the
+owner of the organization.
+
+213
+00:15:15,547 --> 00:15:20,774
+Read it the way section 27.4 says a maintainer
+does: is it one logical change, does
+
+214
+00:15:20,814 --> 00:15:25,852
+it say what was tested, does it target
+the branch your contribution guide names?
+
+215
+00:15:25,892 --> 00:15:30,675
+Merge it, and before you confirm a
+squash, read the proposed commit message.
+
+216
+00:15:31,015 --> 00:15:35,546
+Then go back to the contributor's clone,
+sync main with the fast-forward relay, and
+
+217
+00:15:35,586 --> 00:15:37,363
+delete the branch in both places.
+
+218
+00:15:39,203 --> 00:15:40,851
+Five mistakes to watch for.
+
+219
+00:15:41,191 --> 00:15:45,996
+Committing on the fork's main. Root cause:
+the fork's default branch is treated as a
+
+220
+00:15:46,036 --> 00:15:50,206
+working branch, so it stops being a
+copy of upstream and can no longer be
+
+221
+00:15:50,246 --> 00:15:51,071
+fast-forwarded.
+
+222
+00:15:51,411 --> 00:15:55,822
+Starting the topic branch from the
+fork's main instead of upstream/main.
+
+223
+00:15:55,862 --> 00:16:00,891
+Root cause: nothing updates the fork for
+you, so its main is an old commit and the
+
+224
+00:16:00,931 --> 00:16:02,560
+pull request starts behind.
+
+225
+00:16:02,900 --> 00:16:06,791
+Asking "is it merged?" with an
+ancestry test after a squash merge.
+
+226
+00:16:06,831 --> 00:16:11,139
+Root cause: the merge method discarded
+the ancestry and kept the content.
+
+227
+00:16:11,479 --> 00:16:15,999
+Force-pushing over a review in progress.
+Root cause: the reviewer's comments are
+
+228
+00:16:16,039 --> 00:16:20,387
+anchored to commits that the rebase
+replaced, so their work has to be redone.
+
+229
+00:16:20,727 --> 00:16:23,955
+Pushing guesses at a red
+check on a fork pull request.
+
+230
+00:16:23,995 --> 00:16:28,857
+Root cause: workflows from forks run without
+the project's secrets, so a job that
+
+231
+00:16:28,897 --> 00:16:31,217
+needs one fails whatever the code does.
+
+232
+00:16:33,057 --> 00:16:38,073
+Now, out of the lab. A model-evaluation
+team uses an open-source tokenizer library
+
+233
+00:16:38,113 --> 00:16:42,945
+and finds that it miscounts a class of
+inputs. The engineer reads the project's
+
+234
+00:16:42,985 --> 00:16:44,487
+contribution guide first.
+
+235
+00:16:44,827 --> 00:16:49,714
+It asks for an issue before a pull request,
+for a rebase onto main before review and
+
+236
+00:16:49,754 --> 00:16:54,114
+added commits after, and for a sign-off.
+She opens an issue with a ten-line
+
+237
+00:16:54,154 --> 00:16:58,865
+reproduction. A maintainer answers the
+next day and names the function to change.
+
+238
+00:16:59,205 --> 00:17:03,637
+Her pull request is one commit and one
+test, and its description says which
+
+239
+00:17:03,677 --> 00:17:07,513
+evaluation set, which metric and
+which commit she tested against.
+
+240
+00:17:07,553 --> 00:17:12,343
+The check that publishes benchmark results
+is red, because it needs a secret that
+
+241
+00:17:12,383 --> 00:17:15,443
+fork runs don't get. She
+says so in the description.
+
+242
+00:17:15,783 --> 00:17:20,735
+When upstream moves, she rebases, pushes
+with the lease, and writes one line saying
+
+243
+00:17:20,775 --> 00:17:25,245
+that nothing but the base changed. The
+pull request is merged in four days.
+
+244
+00:17:25,285 --> 00:17:30,116
+The team's earlier attempt, a single large
+pull request with a refactoring nobody
+
+245
+00:17:30,156 --> 00:17:31,860
+had asked for, is still open.
+
+246
+00:17:33,700 --> 00:17:41,265
+Your turn. Do Exercise 21.5, Level 3,
+"The fork that cannot be synced", in
+
+247
+00:17:41,305 --> 00:17:44,143
+exercises/m19-m25-github.md.
+
+248
+00:17:44,483 --> 00:17:49,791
+Before you run any command in it, predict
+what git rev-list --left-right --count
+
+249
+00:17:49,831 --> 00:17:55,339
+upstream/main...origin/main will print for
+a fork whose main has stray commits, and
+
+250
+00:17:55,379 --> 00:17:59,417
+what git merge --ff-only
+upstream/main will do in that state.
+
+251
+00:17:59,457 --> 00:18:04,565
+Write down how you would keep the stray
+commits before you repair the branch.
+
+252
+00:18:04,605 --> 00:18:08,375
+Then do the exercise. Its
+solution is in a separate file.
+
+253
+00:18:08,415 --> 00:18:10,180
+Open it after your attempt.
+
+254
+00:18:10,520 --> 00:18:17,827
+The challenge is Exercise 34.6, Level 5,
+"The contributor who was never answered",
+
+255
+00:18:17,867 --> 00:18:20,784
+in exercises/m32-m34-practice.md.
+
+256
+00:18:24,624 --> 00:18:29,404
+Answer out loud first. A strong answer
+explains both numbers from the graph: what
+
+257
+00:18:29,444 --> 00:18:34,224
+"ahead" means for a branch that should
+only relay, and why "behind" is the normal
+
+258
+00:18:34,264 --> 00:18:38,985
+state of a fork nobody synced. It names
+the read-only command that shows the two
+
+259
+00:18:39,025 --> 00:18:43,984
+counts. It then repairs in an order that
+can't lose work: the two commits get a name
+
+260
+00:18:44,024 --> 00:18:48,923
+before main is moved. And it says what would
+have stopped the mistake at the moment
+
+261
+00:18:48,963 --> 00:18:52,613
+it was made, which is one option
+on one command you saw today.
+
+262
+00:18:54,453 --> 00:18:56,276
+Let's land this in your own words.
+
+263
+00:18:56,616 --> 00:19:01,440
+The fork workflow has three repositories
+and two remotes; you fetch from upstream
+
+264
+00:19:01,480 --> 00:19:02,581
+and push to origin.
+
+265
+00:19:02,921 --> 00:19:08,032
+The fork's main is a relay that only
+fast-forwards; git merge --ff-only
+
+266
+00:19:08,072 --> 00:19:11,296
+upstream/main is both
+the sync and the guard.
+
+267
+00:19:11,636 --> 00:19:16,631
+A topic branch is updated by rebase, which
+needs a forced push with a lease, or by
+
+268
+00:19:16,671 --> 00:19:20,192
+merge, which needs a plain push
+and leaves a merge commit.
+
+269
+00:19:20,532 --> 00:19:25,484
+After a squash merge the branch is not merged
+by ancestry; test content, then delete
+
+270
+00:19:25,524 --> 00:19:27,267
+the branch and never reuse it.
+
+271
+00:19:27,607 --> 00:19:32,844
+A maintainer's scarce resource is attention:
+contribution guide first, issue first,
+
+272
+00:19:32,884 --> 00:19:35,388
+one logical change, say what you tested.
+
+273
+00:19:37,228 --> 00:19:42,695
+Read sections 27.1 to 27.4. Then read the
+CONTRIBUTING file of one project you use
+
+274
+00:19:42,735 --> 00:19:48,001
+and note what it asks before a first pull
+request: the target branch, the merge
+
+275
+00:19:48,041 --> 00:19:52,972
+method, the test command, the message
+convention, a sign-off or agreement.
+
+276
+00:19:53,312 --> 00:19:58,301
+Today you kept a fork in step with a moving
+project, and you sat in the maintainer's
+
+277
+00:19:58,341 --> 00:20:03,271
+chair. Practise the relay once in the lab.
+In the next video, branch names turn out
+
+278
+00:20:03,311 --> 00:20:07,163
+to be conventions, and four branching
+models are drawn as graphs.
+
+279
+00:20:07,203 --> 00:20:10,277
+Until then, look at the
+state first and type second.
+
+280
+00:20:10,317 --> 00:20:11,714
+See you in the next one.

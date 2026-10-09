@@ -435,7 +435,13 @@ The file on disk has three outputs and 3,558 bytes. The blob has none and 967 by
 | `git add --renormalize .` | unchanged | every tracked file re-cleaned; entries change where the cleaned form differs | unchanged | unchanged | new blobs | unchanged | unchanged |
 | `git restore <notebook>`, or `git switch` to a commit where the notebook differs | file rewritten from the **cleaned** blob (smudge is `cat`): local outputs are gone | updated | as usual | as usual | as usual | unchanged | unchanged |
 
-The last row is the price: the outputs exist only in your working tree, and any command that rewrites the file from the repository discards them. The third row is how you apply a new filter to notebooks that are already tracked.
+The first row: configuring the filter only adds the driver to .git/config.
+
+The second row: git add leaves the outputs in the working tree, and the index entry points at a blob of the cleaned content.
+
+The third row is how you apply a new filter to notebooks that are already tracked.
+
+The last row is the price: the outputs exist only in your working tree, and any command that rewrites the file from the repository discards them.
 
 **Step 8: rerunning is no longer a change.**
 

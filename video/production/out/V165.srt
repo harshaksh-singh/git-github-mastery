@@ -1,0 +1,1590 @@
+1
+00:00:04,500 --> 00:00:09,263
+A developer's push is blocked. A push sends
+your commits to the server, and this one
+
+2
+00:00:09,303 --> 00:00:13,781
+was refused. Good: the protection worked.
+The developer does the natural thing.
+
+3
+00:00:13,821 --> 00:00:17,097
+They delete the file, commit
+the deletion, and push again.
+
+4
+00:00:17,437 --> 00:00:21,161
+Blocked again, with the same
+message, naming the same commit.
+
+5
+00:00:21,501 --> 00:00:25,369
+Now they're confused and a little
+annoyed, because the file is gone.
+
+6
+00:00:25,409 --> 00:00:30,197
+Some developers at this point reach for the
+bypass, choose a reason from a list, and
+
+7
+00:00:30,237 --> 00:00:32,496
+the secret goes to the server after all.
+
+8
+00:00:32,836 --> 00:00:37,060
+You know from the last video why the
+second push was blocked: a deletion adds a
+
+9
+00:00:37,100 --> 00:00:41,270
+commit and removes nothing, and the push
+would still deliver the first commit.
+
+10
+00:00:41,310 --> 00:00:45,804
+What this developer didn't know is that they
+were standing at the one moment where a
+
+11
+00:00:45,844 --> 00:00:50,122
+full repair is cheap. In this video you
+make that repair, and you learn what the
+
+12
+00:00:50,162 --> 00:00:54,278
+block covers and what it doesn't. Keep
+those words in mind: the cheap moment.
+
+13
+00:00:56,118 --> 00:00:59,701
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:00:59,741 --> 00:01:04,453
+The last video ended on a hard fact: after
+the first push, you can't un-publish.
+
+15
+00:01:04,493 --> 00:01:08,551
+So the valuable controls are the
+ones that act before the first push.
+
+16
+00:01:08,591 --> 00:01:12,887
+This video is about those, and about
+the rest of a repository's baseline.
+
+17
+00:01:13,227 --> 00:01:18,285
+Two words first. A secret here is a
+credential, such as an API key or a token:
+
+18
+00:01:18,325 --> 00:01:23,775
+something that proves to a service who is
+asking. And a commit is one saved snapshot
+
+19
+00:01:23,815 --> 00:01:27,893
+of the project, so a push delivers
+snapshots, not single files.
+
+20
+00:01:28,233 --> 00:01:33,772
+Two sections. Section 21B.12: secret
+scanning and push protection on GitHub, what
+
+21
+00:01:33,812 --> 00:01:39,558
+they cover, what they don't, and a local
+analogue of a push-time check in plain Git.
+
+22
+00:01:39,598 --> 00:01:44,793
+Section 21B.13: Dependabot, code scanning,
+and a way for outsiders to report
+
+23
+00:01:44,833 --> 00:01:46,378
+vulnerabilities to you.
+
+24
+00:01:46,718 --> 00:01:51,498
+Keep the layers apart with care in this
+video. Everything about secret scanning and
+
+25
+00:01:51,538 --> 00:01:55,621
+push protection is platform behavior,
+described from the documentation.
+
+26
+00:01:55,661 --> 00:02:00,325
+Nothing was run against GitHub. The
+demonstration is a pre-receive hook on a bare
+
+27
+00:02:00,365 --> 00:02:05,145
+repository that you control. A hook is a
+file that Git runs at a defined point of a
+
+28
+00:02:05,185 --> 00:02:09,791
+command. It reproduces the behavior of a
+push-time check so that you can see it.
+
+29
+00:02:09,831 --> 00:02:12,579
+It is not how GitHub
+implements push protection.
+
+30
+00:02:14,419 --> 00:02:15,997
+Here's what you'll walk away with.
+
+31
+00:02:16,337 --> 00:02:17,749
+After this video you can:
+
+32
+00:02:18,089 --> 00:02:23,292
+say what secret scanning and push protection
+do and name kinds of leak they do not
+
+33
+00:02:23,332 --> 00:02:23,611
+stop;
+
+34
+00:02:23,951 --> 00:02:28,788
+model a push-time check locally and show
+why deleting the file does not unblock the
+
+35
+00:02:28,828 --> 00:02:29,081
+push;
+
+36
+00:02:29,421 --> 00:02:33,322
+remove a secret from unpushed commits
+so that the push is accepted;
+
+37
+00:02:33,662 --> 00:02:37,726
+write a Dependabot configuration for
+a Python project, Docker and Actions;
+
+38
+00:02:38,066 --> 00:02:41,322
+say what code scanning and private
+vulnerability reporting add.
+
+39
+00:02:43,162 --> 00:02:48,193
+Secret scanning scans the entire Git
+history on all branches, plus issues, pull
+
+40
+00:02:48,233 --> 00:02:52,879
+requests, discussions and wikis. It
+runs for free on public repositories.
+
+41
+00:02:52,919 --> 00:02:58,206
+Organization-owned private and internal
+repositories need GitHub Secret Protection,
+
+42
+00:02:58,246 --> 00:03:03,148
+which costs 19 dollars per active committer
+per month and is sold on Team and
+
+43
+00:03:03,188 --> 00:03:04,239
+Enterprise plans.
+
+44
+00:03:04,579 --> 00:03:09,411
+Push protection blocks a push that contains
+a recognized secret before it reaches
+
+45
+00:03:09,451 --> 00:03:11,696
+the repository. It comes in two forms.
+
+46
+00:03:12,036 --> 00:03:17,621
+Push protection for users: on by default
+since the twenty-ninth of February 2024.
+
+47
+00:03:17,661 --> 00:03:22,760
+It requires nothing, on GitHub.com
+only. It protects your pushes to public
+
+48
+00:03:22,800 --> 00:03:28,593
+repositories. And a bypass leaves no alert,
+unless repository protection is also on.
+
+49
+00:03:28,933 --> 00:03:33,712
+Push protection for repositories: off
+by default. It requires GitHub Secret
+
+50
+00:03:33,752 --> 00:03:38,852
+Protection, which is free on public
+repositories. It protects every push to that
+
+51
+00:03:38,892 --> 00:03:42,193
+repository, by anyone. And
+a bypass leaves an alert.
+
+52
+00:03:42,533 --> 00:03:48,078
+It covers command-line pushes, commits made
+in the web interface, file uploads, REST
+
+53
+00:03:48,118 --> 00:03:53,264
+API requests, and, on public repositories,
+interactions through the GitHub MCP
+
+54
+00:03:53,304 --> 00:03:53,729
+server.
+
+55
+00:03:54,069 --> 00:03:58,563
+By default anyone with write access can
+bypass a block by choosing a reason.
+
+56
+00:03:58,603 --> 00:04:02,799
+"It's used in tests" and "It's a false
+positive" create a closed alert.
+
+57
+00:04:02,839 --> 00:04:07,750
+"I'll fix it later" creates an open one.
+The bypass is written to the audit log and
+
+58
+00:04:07,790 --> 00:04:12,165
+emailed to administrators. Delegated
+bypass, part of Secret Protection for
+
+59
+00:04:12,205 --> 00:04:16,460
+organization-owned repositories,
+restricts who may bypass and puts other
+
+60
+00:04:16,500 --> 00:04:20,636
+contributors' requests through a
+review that expires after seven days.
+
+61
+00:04:20,976 --> 00:04:25,816
+What it does not cover. The textbook says
+GitHub's default protection is narrower
+
+62
+00:04:25,856 --> 00:04:28,226
+than most engineers assume. Four points.
+
+63
+00:04:28,566 --> 00:04:33,164
+Quick quiz first. Push protection
+for users is on by default.
+
+64
+00:04:33,204 --> 00:04:37,422
+Does it check your push to a
+private repository? A, yes.
+
+65
+00:04:37,462 --> 00:04:38,866
+B, no. Your answer?
+
+66
+00:04:43,706 --> 00:04:44,102
+B.
+
+67
+00:04:44,442 --> 00:04:48,343
+User push protection guards only
+pushes to public repositories.
+
+68
+00:04:48,383 --> 00:04:53,160
+A private repository without Secret
+Protection has no push-time check at all.
+
+69
+00:04:53,200 --> 00:04:55,286
+Almost everyone assumes otherwise.
+
+70
+00:04:55,626 --> 00:05:00,139
+It blocks high-confidence provider
+patterns, the known shapes of particular
+
+71
+00:05:00,179 --> 00:05:04,994
+providers' keys. Generic secrets such as
+passwords and connection strings aren't
+
+72
+00:05:05,034 --> 00:05:09,850
+blocked, and AI-detected passwords are
+explicitly excluded from push protection.
+
+73
+00:05:10,190 --> 00:05:14,774
+A block is a prompt, not a wall,
+unless delegated bypass is configured.
+
+74
+00:05:15,114 --> 00:05:19,934
+And coverage differs by provider, in three
+independent columns: whether the provider
+
+75
+00:05:19,974 --> 00:05:24,389
+is notified for public leaks, whether
+push protection blocks the pattern, and
+
+76
+00:05:24,429 --> 00:05:26,357
+whether there is a validity check.
+
+77
+00:05:26,697 --> 00:05:30,142
+For an AI and ML engineer
+this table is worth a minute.
+
+78
+00:05:30,182 --> 00:05:35,402
+Keys of OpenAI, Anthropic, Hugging Face
+user access tokens, and several other model
+
+79
+00:05:35,442 --> 00:05:40,598
+providers: yes in all three columns. A
+Google API key: provider notified, validity
+
+80
+00:05:40,638 --> 00:05:43,386
+checked, and not blocked
+by push protection.
+
+81
+00:05:43,726 --> 00:05:48,696
+A Google Gemini API key: not notified,
+not blocked, a user alert only.
+
+82
+00:05:48,736 --> 00:05:54,064
+Mistral, Cohere, DeepSeek, Pinecone:
+not notified, but blocked and checked.
+
+83
+00:05:54,104 --> 00:05:59,933
+Perplexity, LangSmith, Weights and Biases
+keys: not notified, blocked, no validity
+
+84
+00:05:59,973 --> 00:06:05,516
+check. PyPI tokens, npm tokens and GitHub
+personal access tokens: notified and
+
+85
+00:06:05,556 --> 00:06:06,089
+blocked.
+
+86
+00:06:06,429 --> 00:06:09,735
+The list changes. Re-read it
+for the providers you use.
+
+87
+00:06:10,075 --> 00:06:13,569
+And partner notification
+doesn't guarantee revocation.
+
+88
+00:06:13,609 --> 00:06:19,000
+GitHub revokes its own leaked tokens.
+Anthropic documents automatic deactivation of
+
+89
+00:06:19,040 --> 00:06:24,170
+keys found in public GitHub repositories.
+Hugging Face lets anyone invalidate a
+
+90
+00:06:24,210 --> 00:06:29,602
+leaked token through a revocation endpoint.
+But an xAI key flagged on the second of
+
+91
+00:06:29,642 --> 00:06:33,398
+March 2025 stayed valid until
+the thirtieth of April 2025.
+
+92
+00:06:33,738 --> 00:06:38,600
+Unverified: whether OpenAI disables API
+keys it finds on the public internet could
+
+93
+00:06:38,640 --> 00:06:43,622
+not be confirmed from a primary page, and
+how Hugging Face and OpenAI handle partner
+
+94
+00:06:43,662 --> 00:06:47,268
+notifications from GitHub isn't
+documented in the pages read.
+
+95
+00:06:47,608 --> 00:06:51,765
+Scanners. As of the first of October
+2026 the textbook lists five.
+
+96
+00:06:51,805 --> 00:06:56,660
+TruffleHog, which verifies candidates
+against provider APIs and can enumerate
+
+97
+00:06:56,700 --> 00:07:01,810
+deleted and hidden commits. gitleaks, which
+declares itself feature-complete with
+
+98
+00:07:01,850 --> 00:07:06,769
+security patches only. Betterleaks, to
+which gitleaks' author moved, and whose
+
+99
+00:07:06,809 --> 00:07:11,728
+governance and detection-quality claims
+come from one news article and are not
+
+100
+00:07:11,768 --> 00:07:16,560
+independently verified. detect-secrets,
+whose last release is from May 2024.
+
+101
+00:07:16,600 --> 00:07:19,485
+And git-secrets, which
+has no tagged releases.
+
+102
+00:07:19,825 --> 00:07:23,253
+None is installed for the
+course, so none is demonstrated.
+
+103
+00:07:23,293 --> 00:07:28,158
+The advice: run your choice in two places.
+As a pre-commit hook for fast feedback,
+
+104
+00:07:28,198 --> 00:07:31,686
+and in CI over the full history,
+where it can't be skipped.
+
+105
+00:07:32,026 --> 00:07:34,624
+Dependabot is three
+features that share a name.
+
+106
+00:07:34,964 --> 00:07:40,044
+Alerts tell you that a dependency on the
+default branch has a known vulnerability.
+
+107
+00:07:40,084 --> 00:07:44,914
+A dependency is a package your project
+uses. Alerts need the dependency graph.
+
+108
+00:07:44,954 --> 00:07:49,722
+Only advisories reviewed by GitHub raise
+alerts. Archived repositories aren't
+
+109
+00:07:49,762 --> 00:07:54,593
+scanned. And for Actions, alerts exist
+only for actions referenced by semantic
+
+110
+00:07:54,633 --> 00:07:56,216
+version, not by commit ID.
+
+111
+00:07:56,556 --> 00:08:00,993
+Security updates open a pull request that
+raises a vulnerable dependency to the
+
+112
+00:08:01,033 --> 00:08:03,374
+minimum patched version. They need alerts.
+
+113
+00:08:03,714 --> 00:08:09,478
+Version updates open pull requests to keep
+dependencies current, vulnerable or not.
+
+114
+00:08:09,518 --> 00:08:13,814
+They are enabled by committing
+a file, .github/dependabot.yml.
+
+115
+00:08:13,854 --> 00:08:19,479
+Since the fourteenth of July 2026 a default
+cooldown of 3 days applies to version
+
+116
+00:08:19,519 --> 00:08:21,997
+updates and not to security updates.
+
+117
+00:08:22,337 --> 00:08:27,983
+All three are free on every plan. And note
+the trade-off with the advice of video
+
+118
+00:08:28,023 --> 00:08:33,881
+159: pinned actions get no Dependabot alerts,
+so version updates must move the pins.
+
+119
+00:08:34,221 --> 00:08:39,419
+Two things older configurations get wrong.
+The reviewers option was removed on the
+
+120
+00:08:39,459 --> 00:08:44,786
+eighth of August 2025 in favor of CODEOWNERS,
+the file that maps paths to reviewers.
+
+121
+00:08:44,826 --> 00:08:50,025
+And the comment commands, such as asking
+Dependabot to merge in a comment, stopped
+
+122
+00:08:50,065 --> 00:08:55,136
+working on the twenty-seventh of January
+2026. Without explicit configuration at
+
+123
+00:08:55,176 --> 00:08:58,777
+most five version-update pull
+requests stay open at once.
+
+124
+00:08:58,817 --> 00:09:01,780
+Security updates don't
+count toward that limit.
+
+125
+00:09:02,120 --> 00:09:06,953
+Code scanning analyzes code for vulnerabilities
+and coding errors with CodeQL, or
+
+126
+00:09:06,993 --> 00:09:11,887
+with third-party tools that upload results.
+It runs on GitHub Actions and consumes
+
+127
+00:09:11,927 --> 00:09:16,700
+minutes. It is free on public repositories
+and needs GitHub Code Security, at 30
+
+128
+00:09:16,740 --> 00:09:20,069
+dollars per active committer
+per month, on private ones.
+
+129
+00:09:20,409 --> 00:09:25,207
+GitHub recommends default setup. One
+documented surprise: if a repository with
+
+130
+00:09:25,247 --> 00:09:29,921
+default setup sees no pushes and no pull
+requests for six months, the weekly
+
+131
+00:09:29,961 --> 00:09:34,945
+scheduled scan is disabled. And a boundary:
+code scanning doesn't find secrets or
+
+132
+00:09:34,985 --> 00:09:38,294
+vulnerable dependencies.
+Those are the features above.
+
+133
+00:09:38,634 --> 00:09:41,888
+A security policy and private
+vulnerability reporting.
+
+134
+00:09:41,928 --> 00:09:46,829
+A SECURITY.md file states which versions
+you support and how to report a problem.
+
+135
+00:09:46,869 --> 00:09:51,038
+An organization can provide a default
+through its .github repository.
+
+136
+00:09:51,078 --> 00:09:56,101
+Private vulnerability reporting is a separate
+feature that administrators of public
+
+137
+00:09:56,141 --> 00:09:57,566
+repositories can enable.
+
+138
+00:09:57,906 --> 00:10:02,529
+It adds a "Report a vulnerability" button
+on the Advisories page, and the report
+
+139
+00:10:02,569 --> 00:10:07,250
+lands in a private draft advisory. The
+reason to do both is a case you'll hear in
+
+140
+00:10:07,290 --> 00:10:11,971
+the next video: a researcher who found a
+contractor's leaked credentials couldn't
+
+141
+00:10:12,011 --> 00:10:14,769
+find a way to report them
+and went to the press.
+
+142
+00:10:16,609 --> 00:10:20,745
+A picture helps. Think of the commits you
+haven't pushed as editions that haven't
+
+143
+00:10:20,785 --> 00:10:21,673
+left the building.
+
+144
+00:10:22,013 --> 00:10:26,751
+From the last video: publishing a correction
+doesn't recall yesterday's edition, and
+
+145
+00:10:26,791 --> 00:10:29,709
+withdrawing it from your
+own archive doesn't either.
+
+146
+00:10:29,749 --> 00:10:34,316
+The textbook said that analogy breaks for
+unpushed commits: an edition that never
+
+147
+00:10:34,356 --> 00:10:36,136
+left the building can be pulped.
+
+148
+00:10:36,476 --> 00:10:41,311
+A push-time check is the person at the
+loading dock who looks into every box before
+
+149
+00:10:41,351 --> 00:10:46,011
+it leaves. If one box contains the wrong
+edition, the whole shipment is refused.
+
+150
+00:10:46,051 --> 00:10:50,827
+Putting a correction slip on top of the
+shipment doesn't help: the box is still in
+
+151
+00:10:50,867 --> 00:10:55,761
+it. You have to take the box out. And because
+the shipment is still in the building,
+
+152
+00:10:55,801 --> 00:10:56,231
+you can.
+
+153
+00:10:56,571 --> 00:11:01,457
+The textbook's sentence: before the first
+push is the one moment at which rewriting
+
+154
+00:11:01,497 --> 00:11:05,907
+history fully removes a secret. A
+push-time block exists to keep you there.
+
+155
+00:11:06,247 --> 00:11:10,932
+Then two things the picture needs. The
+checker has a list of what the wrong editions
+
+156
+00:11:10,972 --> 00:11:15,431
+look like. Anything not on the list goes
+through. And there are two checkers who
+
+157
+00:11:15,471 --> 00:11:20,043
+look alike: the one at your own desk, the
+client-side hook, whom you can walk past
+
+158
+00:11:20,083 --> 00:11:24,093
+with one option, and the one at the
+dock, on the server, whom you can't.
+
+159
+00:11:24,133 --> 00:11:27,411
+Local hooks are advice. A
+server-side check is enforcement.
+
+160
+00:11:29,251 --> 00:11:33,502
+Try it now, thirty seconds, on
+paper. Write X for the server's tip.
+
+161
+00:11:33,542 --> 00:11:38,753
+To its right, draw commit A, which adds
+the key, then B, other work, then C, which
+
+162
+00:11:38,793 --> 00:11:42,595
+deletes the file. Now list the
+commits a push would deliver.
+
+163
+00:11:42,635 --> 00:11:44,708
+Is A among them? Say it out loud.
+
+164
+00:11:49,548 --> 00:11:53,177
+Yes. A is still delivered, so
+the push is declined again.
+
+165
+00:11:53,217 --> 00:11:58,390
+Row 2 is what people try. Row 3 is the
+repair. The check doesn't look at the tip.
+
+166
+00:11:58,430 --> 00:12:01,608
+It looks at every commit
+the push would introduce.
+
+167
+00:12:03,448 --> 00:12:05,669
+Step 1: the server-side guard.
+
+168
+00:12:06,009 --> 00:12:10,744
+Read the hook. A pre-receive hook runs
+on the receiving side before any ref is
+
+169
+00:12:10,784 --> 00:12:14,172
+updated, and rejects the whole
+push by exiting non-zero.
+
+170
+00:12:14,212 --> 00:12:19,131
+For every ref in the push it lists the
+commits the push would introduce, with git
+
+171
+00:12:19,171 --> 00:12:23,355
+rev-list of the new tip, excluding
+everything the server already has.
+
+172
+00:12:23,395 --> 00:12:26,844
+For each of those commits it
+runs git grep for a pattern.
+
+173
+00:12:26,884 --> 00:12:30,089
+One match, and it prints the
+commit and exits with 1.
+
+174
+00:12:30,429 --> 00:12:32,466
+Step 2: a push with a secret.
+
+175
+00:12:32,806 --> 00:12:35,565
+git commit is 🟢 SAFE, and
+git push is 🟡 CAUTION.
+
+176
+00:12:35,905 --> 00:12:40,897
+"Push declined", naming commit 49384d9,
+and "remote rejected, pre-receive hook
+
+177
+00:12:40,937 --> 00:12:43,348
+declined". Nothing reached the server.
+
+178
+00:12:43,688 --> 00:12:45,930
+Step 3: the natural reaction.
+
+179
+00:12:46,270 --> 00:12:51,867
+git rm is 🟡: it deletes the file on disk
+and removes its index entry, its line in
+
+180
+00:12:51,907 --> 00:12:57,296
+the staging area. Two unpushed commits
+now: one adds the file, one removes it.
+
+181
+00:12:57,336 --> 00:13:01,194
+The tip is clean. Is the push
+accepted? Say it out loud.
+
+182
+00:13:06,034 --> 00:13:09,318
+Declined again, and it names
+the same commit, 49384d9.
+
+183
+00:13:09,358 --> 00:13:14,182
+The push would deliver that commit, whose
+snapshot contains the key, whatever a
+
+184
+00:13:14,222 --> 00:13:19,293
+later commit does. The textbook adds:
+GitHub's push protection behaves the same way
+
+185
+00:13:19,333 --> 00:13:23,849
+and for the same reason. The secret
+has to be removed from the commit that
+
+186
+00:13:23,889 --> 00:13:24,711
+introduced it.
+
+187
+00:13:25,051 --> 00:13:27,567
+Step 4: replace the unpushed commits.
+
+188
+00:13:27,907 --> 00:13:32,819
+git reset --soft to the upstream tip is
+🟡 CAUTION: it moves the branch to the
+
+189
+00:13:32,859 --> 00:13:36,871
+upstream tip, and the index and
+working tree keep your changes.
+
+190
+00:13:36,911 --> 00:13:40,794
+The preview is git log for the
+unpushed range, which you saw.
+
+191
+00:13:40,834 --> 00:13:43,559
+The recovery is git
+reset --soft ORIG_HEAD.
+
+192
+00:13:43,899 --> 00:13:48,512
+Here the index after the reset holds the
+net effect of the two commits, which is
+
+193
+00:13:48,552 --> 00:13:53,223
+nothing: the file was added and removed.
+So the status is empty, and the only new
+
+194
+00:13:53,263 --> 00:13:54,736
+commit is the ignore rule.
+
+195
+00:13:55,076 --> 00:13:59,977
+Accepted. The server's main has two commits:
+the original one and "Ignore .env".
+
+196
+00:14:00,017 --> 00:14:02,941
+There's the cheap moment
+from the opening, used.
+
+197
+00:14:03,281 --> 00:14:09,166
+Here's the repair as a picture. Before it,
+main was two commits ahead of the server:
+
+198
+00:14:09,206 --> 00:14:13,468
+49384d9, which added the file,
+and 8546eb9, which removed it.
+
+199
+00:14:13,808 --> 00:14:19,242
+After the soft reset and one new commit,
+main and the server agree on 5584d4f.
+
+200
+00:14:19,282 --> 00:14:24,856
+Commit 49384d9 exists only in your local
+object database and reflog, Git's local
+
+201
+00:14:24,896 --> 00:14:29,628
+record of where your branches have
+been. It never left the building.
+
+202
+00:14:29,968 --> 00:14:32,036
+Step 5: the client-side hook.
+
+203
+00:14:32,376 --> 00:14:37,239
+A pre-commit hook that looks at the staged
+additions with git diff --cached and
+
+204
+00:14:37,279 --> 00:14:40,529
+refuses a commit whose added
+lines match the pattern.
+
+205
+00:14:40,569 --> 00:14:45,370
+It catches the mistake one step earlier:
+the commit is refused, exit status 1.
+
+206
+00:14:45,710 --> 00:14:50,342
+git commit --no-verify is 🟡 CAUTION:
+as git commit, without two hooks.
+
+207
+00:14:50,382 --> 00:14:54,079
+The developer skips the hook.
+What stops the secret now?
+
+208
+00:14:54,119 --> 00:14:55,481
+Make your prediction.
+
+209
+00:15:00,321 --> 00:15:04,617
+The commit succeeds, 4be6dc6. And
+the push is declined by the server.
+
+210
+00:15:04,657 --> 00:15:09,897
+The comment in the transcript is the rule:
+the client hook is advice, and the server
+
+211
+00:15:09,937 --> 00:15:11,153
+hook is enforcement.
+
+212
+00:15:11,493 --> 00:15:15,931
+On GitHub the corresponding enforcement
+points are push protection, push rulesets
+
+213
+00:15:15,971 --> 00:15:17,037
+and required checks.
+
+214
+00:15:17,377 --> 00:15:21,373
+Step 6: when the secret is in
+an earlier unpushed commit.
+
+215
+00:15:21,413 --> 00:15:27,250
+Replay labs/run ch21b/lab-30-1-push-check.
+Here there are two unpushed commits, and
+
+216
+00:15:27,290 --> 00:15:32,206
+the secret is in the first. The second
+is real work that must be kept.
+
+217
+00:15:32,246 --> 00:15:38,012
+A soft reset would mix them. The tool is
+an interactive rebase, which replays your
+
+218
+00:15:38,052 --> 00:15:40,278
+commits and stops where you ask.
+
+219
+00:15:40,618 --> 00:15:46,051
+git rebase -i is 🟡: it replaces commits with
+new ones, and the reflog keeps the old.
+
+220
+00:15:46,091 --> 00:15:51,197
+The todo list is changed in one word:
+pick becomes edit for the commit with the
+
+221
+00:15:51,237 --> 00:15:56,474
+secret. Git stops there. The file is taken
+out of the index with git rm --cached,
+
+222
+00:15:56,514 --> 00:16:01,100
+which is 🟡 CAUTION, an ignore rule
+is added, and the commit is amended.
+
+223
+00:16:01,140 --> 00:16:06,377
+git commit --amend is 🟡 CAUTION. Then the
+rebase continues and replays the second
+
+224
+00:16:06,417 --> 00:16:06,833
+commit.
+
+225
+00:16:10,173 --> 00:16:13,947
+Two commits again, with new
+IDs, 1668a86 and dc90cbc.
+
+226
+00:16:13,987 --> 00:16:19,992
+Before pushing, the transcript checks the
+same thing the server will check: does any
+
+227
+00:16:20,032 --> 00:16:24,957
+commit to be pushed contain the key?
+None does. The push is accepted.
+
+228
+00:16:25,297 --> 00:16:27,532
+Step 7: what the check cannot see.
+
+229
+00:16:27,872 --> 00:16:32,074
+A file with a database password, an
+ordinary phrase, in a YAML file.
+
+230
+00:16:32,114 --> 00:16:35,817
+The pattern list knows the dummy
+keys. Is the push accepted?
+
+231
+00:16:35,857 --> 00:16:36,815
+Say it out loud.
+
+232
+00:16:41,655 --> 00:16:46,332
+Accepted, exit status 0. A secret whose
+shape isn't in the pattern list goes
+
+233
+00:16:46,372 --> 00:16:51,545
+straight through. That's the second point
+of "what it does not cover", made visible.
+
+234
+00:16:51,885 --> 00:17:00,391
+Step 8: a Dependabot configuration. Replay
+labs/run ch21b/lab-30-2-dependabot.
+
+235
+00:17:03,731 --> 00:17:08,354
+Three entries. The uv ecosystem for the
+Python project, weekly, with a group that
+
+236
+00:17:08,394 --> 00:17:11,521
+collects minor and patch
+updates into one pull request.
+
+237
+00:17:11,561 --> 00:17:16,300
+docker, weekly. And github-actions, weekly,
+with a cooldown of seven days, which is
+
+238
+00:17:16,340 --> 00:17:20,734
+longer than the default of three. The
+file was assembled from the keys in the
+
+239
+00:17:20,774 --> 00:17:24,419
+options reference, parse-checked
+locally, and not run on GitHub.
+
+240
+00:17:24,759 --> 00:17:29,618
+A small check script: the version must be
+2, and each entry needs an ecosystem, a
+
+241
+00:17:29,658 --> 00:17:32,944
+directory and a schedule.
+Three lines, nothing missing.
+
+242
+00:17:32,984 --> 00:17:37,904
+It proves that the file is well formed,
+and nothing about what GitHub will do with
+
+243
+00:17:37,944 --> 00:17:38,085
+it.
+
+244
+00:17:38,425 --> 00:17:42,853
+Part B of Lab 30.1, on your practice
+repository, in your normal shell.
+
+245
+00:17:42,893 --> 00:17:48,149
+The interface changes. The lab text and the
+linked documentation are the reference,
+
+246
+00:17:48,189 --> 00:17:53,383
+and no GitHub output was captured by the
+authors. Use only the dummy value the lab
+
+247
+00:17:53,423 --> 00:17:57,212
+prescribes. Never a real
+credential, not even a revoked one.
+
+248
+00:17:57,552 --> 00:18:02,701
+gh repo edit is 🟡 CAUTION: it changes
+settings. The preview is gh repo view with
+
+249
+00:18:02,741 --> 00:18:06,528
+JSON fields, and the recovery
+is to set the previous value.
+
+250
+00:18:06,568 --> 00:18:11,458
+The second command reads the setting
+back. The lab notes that it needs admin
+
+251
+00:18:11,498 --> 00:18:13,339
+permission on the repository.
+
+252
+00:18:13,679 --> 00:18:16,641
+Then the lab has you push
+the dummy file on a branch.
+
+253
+00:18:16,681 --> 00:18:19,587
+Before you push, predict:
+will this push be blocked?
+
+254
+00:18:19,627 --> 00:18:24,346
+Think about what the chapter said about the
+dummy values: they're spelled so that no
+
+255
+00:18:24,386 --> 00:18:28,765
+scanner pattern matches. Then watch what
+happens, and find in the repository's
+
+256
+00:18:28,805 --> 00:18:32,051
+security settings where the
+two features show their state.
+
+257
+00:18:32,091 --> 00:18:34,657
+Delete the branch
+afterwards, as the lab says.
+
+258
+00:18:36,497 --> 00:18:38,145
+Five mistakes to watch for.
+
+259
+00:18:38,485 --> 00:18:42,942
+Deleting the file in a new commit after a
+block. Root cause: the push would still
+
+260
+00:18:42,982 --> 00:18:47,385
+deliver the commit that introduced the
+secret; the secret has to be removed from
+
+261
+00:18:47,425 --> 00:18:48,051
+that commit.
+
+262
+00:18:48,391 --> 00:18:53,268
+Bypassing the block with "I'll fix it later".
+Root cause: after the push the secret
+
+263
+00:18:53,308 --> 00:18:57,355
+is in every repository that fetches
+it, and the cheap moment is over.
+
+264
+00:18:57,695 --> 00:19:00,918
+Assuming push protection
+covers a private repository.
+
+265
+00:19:00,958 --> 00:19:05,659
+Root cause: user push protection guards
+only pushes to public repositories; a
+
+266
+00:19:05,699 --> 00:19:10,277
+private repository without Secret
+Protection has no push-time check at all.
+
+267
+00:19:10,617 --> 00:19:15,225
+Assuming every kind of secret is blocked.
+Root cause: push protection blocks
+
+268
+00:19:15,265 --> 00:19:20,301
+high-confidence provider patterns; generic
+passwords and connection strings are not
+
+269
+00:19:20,341 --> 00:19:22,869
+blocked, and coverage differs by provider.
+
+270
+00:19:23,209 --> 00:19:27,805
+Treating a pre-commit hook as the
+control. Root cause: it is skipped with
+
+271
+00:19:27,845 --> 00:19:32,315
+--no-verify and is not cloned; only
+a server-side check is enforcement.
+
+272
+00:19:34,155 --> 00:19:38,969
+Now, out of the lab. An AI team starts a
+new private repository for a retrieval
+
+273
+00:19:39,009 --> 00:19:44,069
+service. On day one the tech lead writes
+down the baseline, and for each layer what
+
+274
+00:19:44,109 --> 00:19:44,684
+it misses.
+
+275
+00:19:45,024 --> 00:19:49,449
+Push protection for the repository, with
+Secret Protection, because user push
+
+276
+00:19:49,489 --> 00:19:52,580
+protection wouldn't cover a
+private repository at all.
+
+277
+00:19:52,620 --> 00:19:56,871
+What it misses: generic passwords, and
+providers outside the pattern list.
+
+278
+00:19:56,911 --> 00:20:01,452
+The team checks the supported-pattern
+table for the three providers it uses and
+
+279
+00:20:01,492 --> 00:20:03,597
+finds that one of them isn't blocked.
+
+280
+00:20:03,937 --> 00:20:08,677
+A scanner as a pre-commit hook and
+again in CI over the full history.
+
+281
+00:20:08,717 --> 00:20:12,695
+What it misses at the desk:
+anyone who passes --no-verify.
+
+282
+00:20:12,735 --> 00:20:14,774
+That's why it also runs in CI.
+
+283
+00:20:15,114 --> 00:20:20,154
+A Dependabot file with three ecosystems,
+and CODEOWNERS for review, since the old
+
+284
+00:20:20,194 --> 00:20:25,234
+reviewers option is gone. What it misses:
+alerts for actions pinned by commit ID,
+
+285
+00:20:25,274 --> 00:20:28,810
+which is why the Actions entry
+is there to move the pins.
+
+286
+00:20:29,150 --> 00:20:33,234
+Code scanning with default setup. What
+it misses: secrets and vulnerable
+
+287
+00:20:33,274 --> 00:20:35,869
+dependencies, which are
+the other layers' job.
+
+288
+00:20:36,209 --> 00:20:40,520
+And a SECURITY.md with a contact.
+What it misses: nothing technical.
+
+289
+00:20:40,560 --> 00:20:45,767
+It exists so that the person who finds the
+team's mistake can tell the team first.
+
+290
+00:20:47,607 --> 00:20:53,944
+Your turn. Do Lab 30.1, "Push protection,
+and what a push-time check catches", in
+
+291
+00:20:53,984 --> 00:21:00,556
+lab-manual/m30-repository-security.md. Part
+A runs in labs/shell, and Part B in your
+
+292
+00:21:00,596 --> 00:21:01,580
+normal shell.
+
+293
+00:21:01,920 --> 00:21:06,833
+In Part A, before each push, predict whether
+the server will accept it and, if not,
+
+294
+00:21:06,873 --> 00:21:11,727
+which commit it will name. Before the
+repair, decide which tool fits: a soft reset
+
+295
+00:21:11,767 --> 00:21:16,621
+or an interactive rebase, and why. In Part
+B, predict whether the dummy value will
+
+296
+00:21:16,661 --> 00:21:17,277
+be blocked.
+
+297
+00:21:17,617 --> 00:21:24,220
+The challenge is Exercise 30.6, "A
+baseline for a new ML repository", in
+
+298
+00:21:24,260 --> 00:21:27,726
+exercises/m26-m31-actions-security.md.
+
+299
+00:21:29,566 --> 00:21:32,782
+Read the question on screen.
+Say your answer out loud.
+
+300
+00:21:37,622 --> 00:21:42,225
+A strong answer starts by saying exactly
+what "for users" means: whose pushes, to
+
+301
+00:21:42,265 --> 00:21:46,984
+which repositories. Then it gives three
+leaks that are different in kind, each tied
+
+302
+00:21:47,024 --> 00:21:51,513
+to a documented limit: one about where
+the push goes, one about what the secret
+
+303
+00:21:51,553 --> 00:21:54,781
+looks like, one about what a
+person can do at the prompt.
+
+304
+00:21:55,121 --> 00:21:59,212
+It may add a fourth about secrets that
+never pass through a push at all.
+
+305
+00:21:59,252 --> 00:22:03,975
+The follow-up is the hook of this video: a
+developer hits a block, deletes the file
+
+306
+00:22:04,015 --> 00:22:08,394
+in a new commit and pushes again. Say
+what happens, why, and what the correct
+
+307
+00:22:08,434 --> 00:22:11,320
+recovery is, with the two
+tools and when each fits.
+
+308
+00:22:13,160 --> 00:22:14,088
+Let's land this.
+
+309
+00:22:14,428 --> 00:22:16,087
+You should now be able to say:
+
+310
+00:22:16,427 --> 00:22:21,455
+Secret scanning reads the whole history and
+more; push protection blocks recognized
+
+311
+00:22:21,495 --> 00:22:26,462
+patterns at push time, by default only for
+a user's pushes to public repositories.
+
+312
+00:22:26,802 --> 00:22:31,773
+It does not block generic secrets, coverage
+differs by provider, and a block is a
+
+313
+00:22:31,813 --> 00:22:34,557
+prompt unless delegated
+bypass is configured.
+
+314
+00:22:34,897 --> 00:22:39,543
+A deletion commit does not unblock a
+push, because the push still delivers the
+
+315
+00:22:39,583 --> 00:22:44,110
+commit with the secret; replace the
+unpushed commits with a soft reset or an
+
+316
+00:22:44,150 --> 00:22:45,251
+interactive rebase.
+
+317
+00:22:45,591 --> 00:22:49,207
+A client-side hook is advice; a
+server-side check is enforcement.
+
+318
+00:22:49,547 --> 00:22:54,371
+Dependabot is alerts, security updates
+and version updates; code scanning finds
+
+319
+00:22:54,411 --> 00:22:59,542
+neither secrets nor vulnerable dependencies;
+a security policy gives reporters a way
+
+320
+00:22:59,582 --> 00:23:00,342
+to reach you.
+
+321
+00:23:02,182 --> 00:23:09,140
+Read sections 21B.12 and 21B.13 of
+Chapter 21B. Do Lab 30.2, "A Dependabot
+
+322
+00:23:09,180 --> 00:23:14,531
+configuration", in
+lab-manual/m30-repository-security.md.
+
+323
+00:23:14,571 --> 00:23:22,003
+Then do Exercise 30.3, "Blocked or not?",
+and Exercise 30.4, "The baseline of a
+
+324
+00:23:22,043 --> 00:23:27,772
+public repository", in
+exercises/m26-m31-actions-security.md.
+
+325
+00:23:28,112 --> 00:23:33,143
+Today you unblocked a push the right way,
+twice, and you can say what a push-time
+
+326
+00:23:33,183 --> 00:23:37,088
+check never sees. Do the repair
+once yourself in the lab shell.
+
+327
+00:23:37,128 --> 00:23:41,283
+Next time: responding to a leaked
+secret, six steps, in this order.
+
+328
+00:23:41,323 --> 00:23:44,539
+Until then, look at the
+state first and type second.
+
+329
+00:23:44,579 --> 00:23:46,042
+See you in the next one.

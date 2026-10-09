@@ -116,6 +116,8 @@ Fourth, a nuance. Immutable releases, generally available since the twenty-eight
 
 **[ON SCREEN]** Callout: Unverified. "Immutable actions", meaning actions published as packages, had no general-availability announcement that the research could find by 1 October 2026, and the secure-use page still calls commit pinning "currently the only way". GitHub's 2026 roadmap describes workflow-level dependency locking as future work; it has not shipped.
 
+Unverified: immutable actions, actions published as packages, had no general-availability announcement the research could find by the first of October 2026.
+
 **Organization policies. In one sentence:** policies move three of this chapter's rules from "every author must remember" to "the platform refuses".
 
 **[ON SCREEN]** The table of section 21A.8. The labels are quoted from the documentation; the interface changes, so trust the linked page over the table.
@@ -138,7 +140,7 @@ And "Allow GitHub Actions to create and approve pull requests": off by default f
 
 **[ANIMATION]** step: nov.level-3
 
-**The change dated 2 November 2026.** With execution protections, GitHub introduced a default event rule. For public repositories that don't already have an applicable event policy, a default rule disables `pull_request_target`. It initially runs in evaluate mode, and GitHub announced that on the second of November 2026 it is enforced automatically for affected repositories.
+**The change dated the second of November 2026.** With execution protections, GitHub introduced a default event rule. For public repositories that don't already have an applicable event policy, a default rule disables `pull_request_target`. It initially runs in evaluate mode, and GitHub announced that on the second of November 2026 it is enforced automatically for affected repositories.
 
 **[ANIMATION]** step: nov.level-4
 
@@ -194,6 +196,8 @@ Try it now, thirty seconds, on paper. Write one workflow line that ends in `@v1`
                                                                              yesterday, today,
                                                                              and on every later run
 ```
+
+Here's the picture: one workflow line, a tag, and two commits.
 
 **[DIAGRAM]** The top line did not change, and what it runs did. The bottom line cannot change what it runs without a commit to your own repository.
 
@@ -291,6 +295,10 @@ The commit that was reviewed still exists, and its ID still names exactly that c
 
 **[ON SCREEN]** The state table of section 21A.7 for the two commands. For `git tag -f -a v1`: working tree, index, HEAD and the current branch unchanged; `refs/tags/v1` points at a new tag object; remote unchanged; GitHub unchanged. For `git push --force origin v1`: everything local unchanged; on the remote, `refs/tags/v1` is replaced; and on GitHub, every `@v1` reference resolves to the new commit on its next run.
 
+Locally, `git tag -f` changes only `refs/tags/v1`.
+
+The push replaces it on the remote, and every `@v1` follows on its next run.
+
 **[ON SCREEN]** `workflows/12-secure.yml`, then `workflows/ACTION_PINS.md`.
 
 Now how the course records pins. In workflow 12, find the checkout step. The comment above it says: full commit SHA, version as a comment, the format Dependabot maintains. The line itself is the action, an at sign, forty characters, and the version after a hash sign. Every `uses` line in the file has that form: checkout, the uv setup action, the dependency review action, and the cloud credentials action.
@@ -316,8 +324,6 @@ Now, out of the lab. An ML platform organization with sixty repositories decides
 **[ANIMATION]** step: rollout.3
 
 So the organization does three things. It adds the `github-actions` ecosystem to the Dependabot configuration of every repository, so that pins have a source of updates before the rule bites. It converts the existing references, reading each ID from the action's own repository. Then it switches on the policy that requires actions to be pinned to a full-length commit SHA. From that day a workflow with an unpinned action fails.
-
-**[ANIMATION]** say: The_policy_covers_GitHub's_own_actions;_reusable_workflows_can_still_use_a_tag
 
 Two details from the table decide whether the rollout goes smoothly. The policy applies to GitHub's own actions as well, so `actions/checkout` by tag fails too. And reusable workflows can still be referenced by tag, so the central deploy workflow that forty repositories call needs its own discipline: a pinned ref by convention, and code-owner review on the callers.
 

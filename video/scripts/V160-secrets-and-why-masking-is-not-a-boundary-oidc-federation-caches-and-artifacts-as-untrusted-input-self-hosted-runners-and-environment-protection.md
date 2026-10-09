@@ -98,7 +98,7 @@ Two facts are routinely misunderstood.
 
 Redaction matches known strings in log output. It does nothing about a process that sends the value elsewhere, and nothing about code that reads the runner's memory, which the Phase 0 report finds recurring across the incidents. The textbook's conclusion is the sentence to remember: the boundary is which code runs in the job and which secrets the job holds.
 
-**[ANIMATION]** flow: actors=the_job,GitHub's_OIDC_provider,*the_cloud_provider subs=id-token:_write,-,- msgs=1>2:1._asks_for_a_token|2>1:signed_token_with_claims|1>3:2._presents_it_to_the_cloud_provider|3>3:trust_policy,_conditions_on_aud_and_sub|3>1:3._short-lived_credential,_this_job_only:ok title=The_OIDC_exchange say_2=sub_=_repo:ORG/REPO:environment:NAME say_4=THE_ACCESS_DECISION_IS_MADE_HERE id=oidc
+**[ANIMATION]** flow: actors=the_job,GitHub's_OIDC_provider,*the_cloud_provider subs=id-token:_write,-,- msgs=1>2:1._asks_for_a_token|2>1:signed_token_with_claims|1>3:2._presents_it_to_the_cloud_provider|3>3:trust_policy,_conditions_on_aud_and_sub|3>1:3._short-lived_credential,_this_job_only:ok title=The_OIDC_exchange say_2=sub_=_repo:ORG/REPO:environment:NAME say_4=The_access_decision_is_made_at_the_cloud_provider id=oidc
 
 **[ANIMATION]** step: oidc.1
 

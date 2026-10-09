@@ -1,0 +1,1512 @@
+1
+00:00:04,500 --> 00:00:09,739
+An open-source LLM project evaluates every
+prompt change against a model provider.
+
+2
+00:00:09,779 --> 00:00:14,052
+The job needs an API key. For pull
+requests from the team it works.
+
+3
+00:00:14,092 --> 00:00:19,459
+For pull requests from outside contributors,
+which are exactly the contributions the
+
+4
+00:00:19,499 --> 00:00:24,738
+project most wants to evaluate, it fails.
+Somebody finds a trigger under which the
+
+5
+00:00:24,778 --> 00:00:28,665
+job does receive the secrets,
+and proposes a two-line change.
+
+6
+00:00:29,005 --> 00:00:33,231
+That change runs a stranger's code
+with your API keys and your token.
+
+7
+00:00:33,271 --> 00:00:38,176
+The course's research identifies the
+pattern behind several compromises, some of
+
+8
+00:00:38,216 --> 00:00:42,936
+them in ML projects. Today you learn to
+describe the collision, to refuse the
+
+9
+00:00:42,976 --> 00:00:46,707
+workaround with reasons, and to
+offer designs you can defend.
+
+10
+00:00:46,747 --> 00:00:51,158
+Hold on to one question for the whole
+video: whose code runs, with whose
+
+11
+00:00:51,198 --> 00:00:54,002
+credentials? It sorts
+every design we look at.
+
+12
+00:00:55,842 --> 00:00:59,715
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:59,755 --> 00:01:04,783
+Four words first. CI is the automation
+that runs checks on every change, and on
+
+14
+00:01:04,823 --> 00:01:10,108
+GitHub it is called GitHub Actions. A
+workflow is the file that says which jobs run
+
+15
+00:01:10,148 --> 00:01:15,498
+when an event happens. A fork is an outside
+contributor's own copy of the repository
+
+16
+00:01:15,538 --> 00:01:20,887
+on GitHub. And a secret is a value, such as
+an API key, that GitHub stores and hands
+
+17
+00:01:20,927 --> 00:01:21,464
+to a job.
+
+18
+00:01:21,804 --> 00:01:26,820
+This is the last content video of
+Chapter 28. It has no new Git commands.
+
+19
+00:01:26,860 --> 00:01:32,429
+It takes what you learned in Part 6 and
+Part 7, about fork pull requests in video
+
+20
+00:01:32,469 --> 00:01:38,038
+157 and about secrets and self-hosted
+runners in video 160, and applies it to the
+
+21
+00:01:38,078 --> 00:01:43,579
+three things an ML repository needs from
+CI that an ordinary service does not: a
+
+22
+00:01:43,619 --> 00:01:49,257
+GPU, a multi-gigabyte model, and a paid
+API key. Each of the three collides with a
+
+23
+00:01:49,297 --> 00:01:51,058
+default of GitHub Actions.
+
+24
+00:01:51,398 --> 00:01:56,457
+Then three shorter subjects: what a
+model-serving repository records about the model
+
+25
+00:01:56,497 --> 00:02:01,556
+it serves, the leak paths that are specific
+to AI repositories, and AI coding agents
+
+26
+00:02:01,596 --> 00:02:02,527
+as contributors.
+
+27
+00:02:02,867 --> 00:02:06,513
+Layer label for most of this
+video: GitHub Actions and GitHub.
+
+28
+00:02:06,553 --> 00:02:11,389
+The facts about them come from the course's
+research report, as the textbook gives
+
+29
+00:02:11,429 --> 00:02:13,589
+them. Nothing here was run on GitHub.
+
+30
+00:02:15,429 --> 00:02:17,008
+Here's what you'll walk away with.
+
+31
+00:02:17,348 --> 00:02:18,760
+After this video you can:
+
+32
+00:02:19,100 --> 00:02:22,920
+Design CI for a Python ML project
+with a matrix and caches.
+
+33
+00:02:23,260 --> 00:02:28,318
+Explain why LLM evaluations on fork pull
+requests collide with the fork security
+
+34
+00:02:28,358 --> 00:02:30,294
+model and name the safe design.
+
+35
+00:02:30,634 --> 00:02:33,785
+Make the case for and against
+self-hosted GPU runners.
+
+36
+00:02:34,125 --> 00:02:37,880
+Say what a model-serving repository
+records about the model it serves.
+
+37
+00:02:38,220 --> 00:02:43,049
+State which controls still hold when an
+AI coding agent opens pull requests.
+
+38
+00:02:44,889 --> 00:02:50,608
+CI for ML, in one sentence. The CI of an
+ML repository is ordinary until it needs a
+
+39
+00:02:50,648 --> 00:02:56,436
+GPU, a multi-gigabyte model or a paid API
+key, and each of those three collides with
+
+40
+00:02:56,476 --> 00:02:58,378
+a default of GitHub Actions.
+
+41
+00:02:58,718 --> 00:03:04,736
+The ordinary part. A Python version matrix,
+installs driven by the lock file, and a
+
+42
+00:03:04,776 --> 00:03:10,283
+dependency cache. A matrix runs the same
+job once for each version you list.
+
+43
+00:03:10,323 --> 00:03:16,049
+uv's guide pins its setup action to a
+full commit SHA and installs with uv sync
+
+44
+00:03:16,089 --> 00:03:20,502
+--locked. The course's workflow
+4, Python tests, is that job.
+
+45
+00:03:20,542 --> 00:03:26,633
+Video 147 went through it line by line. For
+docqa, one more step runs sh ci/check.sh
+
+46
+00:03:26,673 --> 00:03:32,764
+with the base of the pull request, and the
+checkout needs fetch-depth: 0 so that the
+
+47
+00:03:32,804 --> 00:03:33,712
+range exists.
+
+48
+00:03:34,052 --> 00:03:37,649
+GPU capacity. A runner is the
+machine that runs one job.
+
+49
+00:03:37,689 --> 00:03:42,780
+GitHub-hosted GPU runners come in one
+shape: a 4-vCPU machine with a single T4.
+
+50
+00:03:42,820 --> 00:03:47,780
+Larger runners, GPU included, are available
+only to organizations on Team and
+
+51
+00:03:47,820 --> 00:03:53,105
+Enterprise Cloud plans and are always billed
+per minute, with no included minutes.
+
+52
+00:03:53,145 --> 00:03:57,392
+That's enough for a smoke test of
+a small model, not for training.
+
+53
+00:03:57,432 --> 00:04:02,197
+Teams that need more run self-hosted
+GPU runners, on machines they operate
+
+54
+00:04:02,237 --> 00:04:07,003
+themselves, which is a security decision
+before it is a capacity decision.
+
+55
+00:04:07,343 --> 00:04:11,627
+Caches. A cache is a stored directory
+that a later run can restore.
+
+56
+00:04:11,667 --> 00:04:16,856
+Caches are free up to 10 gigabytes per
+repository, and anyone who can open a pull
+
+57
+00:04:16,896 --> 00:04:21,438
+request can read them, so a cache
+isn't a place for anything sensitive.
+
+58
+00:04:21,478 --> 00:04:26,537
+They suit package caches and small test
+models, not multi-gigabyte checkpoints.
+
+59
+00:04:26,577 --> 00:04:31,895
+Fetch large models by pinned reference from
+the model store inside the job, or bake
+
+60
+00:04:31,935 --> 00:04:33,508
+them into a runner image.
+
+61
+00:04:33,848 --> 00:04:38,745
+LLM evaluations. An evaluation scores a
+model's answers on a set of examples.
+
+62
+00:04:38,785 --> 00:04:42,913
+An evaluation that calls a model
+provider needs an API key in CI.
+
+63
+00:04:42,953 --> 00:04:47,594
+The textbook names the maintained
+tools: promptfoo's GitHub Action runs a
+
+64
+00:04:47,634 --> 00:04:51,633
+before-and-after evaluation of
+edited prompts on pull requests.
+
+65
+00:04:51,673 --> 00:04:56,698
+DeepEval integrates with pytest and fails
+the build when a metric falls below a
+
+66
+00:04:56,738 --> 00:04:57,340
+threshold.
+
+67
+00:04:57,680 --> 00:05:01,820
+Inspect AI, Ragas and the
+LangSmith SDK are also maintained.
+
+68
+00:05:01,860 --> 00:05:07,533
+CML, once the usual way to post model
+metrics on pull requests, has had no release
+
+69
+00:05:07,573 --> 00:05:13,246
+since October 2024. The report infers from
+repository activity that it is dormant,
+
+70
+00:05:13,286 --> 00:05:15,615
+and no official statement says so.
+
+71
+00:05:15,955 --> 00:05:20,974
+Such evaluations differ from unit tests
+in three ways: they're non-deterministic,
+
+72
+00:05:21,014 --> 00:05:23,910
+they cost money per run,
+and they need secrets.
+
+73
+00:05:24,250 --> 00:05:29,023
+The collision. If this is new to you, slow
+down here, because it's the center of the
+
+74
+00:05:29,063 --> 00:05:29,366
+video.
+
+75
+00:05:29,706 --> 00:05:34,031
+Secrets aren't passed to workflows
+triggered by pull_request from a fork.
+
+76
+00:05:34,071 --> 00:05:38,994
+So the evaluation job fails on exactly the
+contributions an open-source LLM project
+
+77
+00:05:39,034 --> 00:05:44,017
+most wants to evaluate. The tempting repair
+is to switch the trigger, the event that
+
+78
+00:05:44,057 --> 00:05:48,920
+starts the workflow, to pull_request_target,
+which runs with the base repository's
+
+79
+00:05:48,960 --> 00:05:51,970
+secrets, and then check out
+the contributor's code.
+
+80
+00:05:52,310 --> 00:05:57,133
+That combination executes untrusted
+code with your API keys and your token.
+
+81
+00:05:57,173 --> 00:06:02,515
+The report identifies it as the pattern
+behind several compromises, some of them in
+
+82
+00:06:02,555 --> 00:06:06,730
+ML projects: PyTorch's self-hosted
+runners, Ultralytics, LiteLLM.
+
+83
+00:06:06,770 --> 00:06:08,481
+Chapter 21A takes it apart.
+
+84
+00:06:08,821 --> 00:06:11,819
+Defensible designs, from
+least to most machinery.
+
+85
+00:06:12,159 --> 00:06:15,765
+One: don't evaluate fork
+pull requests automatically.
+
+86
+00:06:15,805 --> 00:06:21,062
+Run cheap, secret-free checks on
+pull_request: lint, unit tests, ci/check.sh,
+
+87
+00:06:21,102 --> 00:06:24,776
+evaluation against a local
+stub or recorded responses.
+
+88
+00:06:24,816 --> 00:06:29,248
+A maintainer triggers the paid
+evaluation after reading the diff.
+
+89
+00:06:29,588 --> 00:06:34,420
+Two: evaluate after merge. Run the
+evaluation on main and alert or revert on
+
+90
+00:06:34,460 --> 00:06:35,125
+regression.
+
+91
+00:06:35,465 --> 00:06:40,921
+Three: separate data from code. If the change
+is only to prompts or configuration, a
+
+92
+00:06:40,961 --> 00:06:46,090
+trusted workflow can read those files as
+data and run the base repository's own
+
+93
+00:06:46,130 --> 00:06:51,194
+evaluation code on them. This is safe
+only if nothing from the pull request is
+
+94
+00:06:51,234 --> 00:06:56,429
+executed, which includes test files,
+conftest.py, package scripts and anything a
+
+95
+00:06:56,469 --> 00:06:59,308
+prompt template can make
+the harness import.
+
+96
+00:06:59,648 --> 00:07:04,883
+Self-hosted GPU runners. They concentrate
+risk because they're expensive, long-lived
+
+97
+00:07:04,923 --> 00:07:09,908
+and hold cached models and cloud credentials.
+The configuration the report calls
+
+98
+00:07:09,948 --> 00:07:14,555
+defensible: private repositories or
+approval for all outside contributors.
+
+99
+00:07:14,595 --> 00:07:19,768
+Ephemeral runners that perform one job.
+Runner groups scoped to named repositories.
+
+100
+00:07:20,108 --> 00:07:25,302
+And OIDC, where a job asks for a short-lived
+credential, instead of long-lived keys
+
+101
+00:07:25,342 --> 00:07:30,472
+on the host. GitHub's own guidance is that
+self-hosted runners should almost never
+
+102
+00:07:30,512 --> 00:07:34,067
+be used for public repositories.
+That's the case against.
+
+103
+00:07:34,107 --> 00:07:38,859
+The case for is the first pressure point:
+a single T4 doesn't train a model.
+
+104
+00:07:39,199 --> 00:07:44,111
+And one production rule for the key itself:
+give the evaluation job its own provider
+
+105
+00:07:44,151 --> 00:07:49,005
+key with a spend cap, separate from
+production's. When that key leaks through a log
+
+106
+00:07:49,045 --> 00:07:53,485
+or a compromised action, the damage is
+a bill with a ceiling, not production
+
+107
+00:07:53,525 --> 00:07:53,957
+traffic.
+
+108
+00:07:54,297 --> 00:07:58,584
+Model-serving repositories. The
+report found no authoritative layout.
+
+109
+00:07:58,624 --> 00:08:01,030
+It found three sourced building blocks.
+
+110
+00:08:01,370 --> 00:08:06,090
+Secrets never enter the image through
+build arguments or environment variables.
+
+111
+00:08:06,130 --> 00:08:10,910
+Docker's documentation says both persist
+in the final image, and provides secret
+
+112
+00:08:10,950 --> 00:08:12,296
+mounts for the purpose.
+
+113
+00:08:12,636 --> 00:08:15,820
+Weights are fetched by pinned
+reference, never committed.
+
+114
+00:08:15,860 --> 00:08:20,516
+At build or start time the image downloads
+the revision or checksum recorded in the
+
+115
+00:08:20,556 --> 00:08:21,138
+repository.
+
+116
+00:08:21,478 --> 00:08:27,102
+The base image is pinned by digest, and
+.dockerignore keeps .git, .env, data and run
+
+117
+00:08:27,142 --> 00:08:32,765
+outputs out of the build context. It's the
+Docker analogue of .gitignore and matters
+
+118
+00:08:32,805 --> 00:08:38,362
+for the same reason: a COPY . . with a
+credential file in the context bakes it into
+
+119
+00:08:38,402 --> 00:08:38,901
+a layer.
+
+120
+00:08:39,241 --> 00:08:44,129
+The link back to Git is the image label.
+Record the commit in the image and tag
+
+121
+00:08:44,169 --> 00:08:49,307
+images by commit ID or release tag, so that
+"which code is serving" has one answer.
+
+122
+00:08:49,347 --> 00:08:54,485
+One caveat: the textbook names the OCI
+annotation org.opencontainers.image.revision
+
+123
+00:08:54,525 --> 00:08:59,726
+for this and marks the name as unverified.
+It's given from the author's knowledge of
+
+124
+00:08:59,766 --> 00:09:03,718
+the specification and isn't in
+the research report or its notes.
+
+125
+00:09:03,758 --> 00:09:07,212
+Confirm it in the specification
+before you depend on it.
+
+126
+00:09:07,552 --> 00:09:11,633
+The Java and backend side. An ML
+platform is rarely Python alone.
+
+127
+00:09:11,673 --> 00:09:16,960
+Three facts. GitHub's ignore templates treat
+the two build wrappers differently: the
+
+128
+00:09:17,000 --> 00:09:21,842
+Maven wrapper JAR is ignored, while the
+Gradle template explicitly un-ignores
+
+129
+00:09:21,882 --> 00:09:27,042
+gradle-wrapper.jar, which Gradle's
+documentation says is expected to be committed.
+
+130
+00:09:27,382 --> 00:09:32,440
+The committed JAR is a review blind spot:
+the one place in a typical Java repository
+
+131
+00:09:32,480 --> 00:09:37,234
+where a pull request can change executable
+code that a reviewer can't read in a
+
+132
+00:09:37,274 --> 00:09:42,088
+diff, which is why wrapper validation
+exists. And Dependabot needs one entry per
+
+133
+00:09:42,128 --> 00:09:42,695
+ecosystem.
+
+134
+00:09:43,035 --> 00:09:48,366
+uv has had version updates since the
+thirteenth of March 2025 and security updates
+
+135
+00:09:48,406 --> 00:09:53,540
+since the sixteenth of December 2025, and
+docker and pre-commit receive version
+
+136
+00:09:53,580 --> 00:09:58,975
+updates only. One more unverified note from
+the textbook: Maven's own documentation
+
+137
+00:09:59,015 --> 00:10:03,887
+on distributing the wrapper wasn't
+fetched. The statement rests on GitHub's
+
+138
+00:10:03,927 --> 00:10:04,477
+template.
+
+139
+00:10:04,817 --> 00:10:10,180
+Secrets in AI repositories. AI repositories
+leak the same way as others, and through
+
+140
+00:10:10,220 --> 00:10:15,070
+three extra paths: notebook outputs,
+agent and tool configuration files, and
+
+141
+00:10:15,110 --> 00:10:16,099
+evaluation logs.
+
+142
+00:10:16,439 --> 00:10:23,163
+The scale, as the report gives it:
+GitGuardian counted 28,649,024 new secrets on
+
+143
+00:10:23,203 --> 00:10:30,095
+public GitHub in 2025, of which 1,275,105
+were tied to AI services, up 81 percent.
+
+144
+00:10:30,135 --> 00:10:35,168
+It counted 24,008 unique secrets
+in MCP configuration files.
+
+145
+00:10:35,208 --> 00:10:42,185
+And commits co-authored by Claude Code
+leaked secrets at roughly twice the baseline
+
+146
+00:10:42,225 --> 00:10:47,681
+rate. These are one vendor's
+measurements of public repositories.
+
+147
+00:10:48,021 --> 00:10:53,313
+The rule that doesn't change: revoke or
+rotate first, then find out what the key
+
+148
+00:10:53,353 --> 00:10:58,445
+could reach, then clean up. git rm
+--cached .env followed by a commit isn't a
+
+149
+00:10:58,485 --> 00:10:59,711
+response to a leak.
+
+150
+00:11:00,051 --> 00:11:04,831
+AI coding agents. An agent that writes
+commits is a contributor with a different Git
+
+151
+00:11:04,871 --> 00:11:09,651
+client, unusual speed and no memory of your
+conventions, so the controls that matter
+
+152
+00:11:09,691 --> 00:11:12,520
+are the ones that don't
+depend on the contributor.
+
+153
+00:11:12,860 --> 00:11:17,992
+What the report establishes: by October
+2026 agents are first-class actors on
+
+154
+00:11:18,032 --> 00:11:23,297
+GitHub. Copilot can review pull requests
+and, in preview, approve them, and the
+
+155
+00:11:23,337 --> 00:11:27,461
+Copilot cloud agent opens pull
+requests and signs its commits.
+
+156
+00:11:27,501 --> 00:11:32,767
+DORA's 2025 research describes AI as an
+amplifier of an organization's existing
+
+157
+00:11:32,807 --> 00:11:38,207
+strengths and weaknesses, and recommends
+small, frequent commits for AI-generated
+
+158
+00:11:38,247 --> 00:11:38,543
+code.
+
+159
+00:11:38,883 --> 00:11:42,472
+The textbook presents this table
+as the report's inference.
+
+160
+00:11:42,512 --> 00:11:46,901
+Two incidents from the report show
+that the third and fourth rows aren't
+
+161
+00:11:46,941 --> 00:11:51,884
+hypothetical. An automated account ran a
+campaign in February and March 2026 that
+
+162
+00:11:51,924 --> 00:11:56,867
+combined pull_request_target abuse, injection
+through branch names and filenames,
+
+163
+00:11:56,907 --> 00:11:59,573
+and prompt injection
+against an AI reviewer.
+
+164
+00:11:59,913 --> 00:12:05,119
+And researchers reported in April 2026 that
+AI coding agents run as GitHub Actions
+
+165
+00:12:05,159 --> 00:12:10,109
+could be steered by text in pull-request
+titles, issue bodies or comments into
+
+166
+00:12:10,149 --> 00:12:15,099
+revealing CI secrets. Unverified: the
+April 2026 research was verified for the
+
+167
+00:12:15,139 --> 00:12:17,786
+report only through one secondary article.
+
+168
+00:12:18,126 --> 00:12:22,758
+Attribution: decide how agent-written
+commits are marked, with a Co-authored-by
+
+169
+00:12:22,798 --> 00:12:27,606
+trailer, a dedicated bot account, or a
+signature. Then "which changes did an agent
+
+170
+00:12:27,646 --> 00:12:29,144
+write" is a git log query.
+
+171
+00:12:29,484 --> 00:12:33,931
+The practical conclusion, in the textbook's
+words: nothing in this chapter becomes
+
+172
+00:12:33,971 --> 00:12:38,090
+less important when an agent writes the
+commits, and most of it becomes more
+
+173
+00:12:38,130 --> 00:12:42,577
+important, because the volume goes up and
+the author can't be asked what it meant.
+
+174
+00:12:44,417 --> 00:12:48,883
+Hold one question in front of every design
+in this video: whose code runs, with
+
+175
+00:12:48,923 --> 00:12:49,910
+whose credentials?
+
+176
+00:12:50,250 --> 00:12:55,302
+Quick quiz, before I answer it myself. A
+pull_request_target job checks out the
+
+177
+00:12:55,342 --> 00:12:58,718
+fork's code. Whose code runs,
+with whose credentials?
+
+178
+00:12:58,758 --> 00:13:03,617
+A, the team's code with the team's
+credentials. B, a stranger's code with no
+
+179
+00:13:03,657 --> 00:13:07,614
+credentials. C, a stranger's code
+with the team's credentials.
+
+180
+00:13:07,654 --> 00:13:08,387
+Your answer?
+
+181
+00:13:13,227 --> 00:13:15,914
+C. Now the whole list, one case at a time.
+
+182
+00:13:16,254 --> 00:13:21,119
+An ordinary CI job on a team pull
+request: the team's code, with the team's
+
+183
+00:13:21,159 --> 00:13:26,155
+credentials. Fine. A pull_request job
+from a fork: a stranger's code, with no
+
+184
+00:13:26,195 --> 00:13:29,490
+credentials. Safe, and
+unable to call the provider.
+
+185
+00:13:29,530 --> 00:13:34,657
+A pull_request_target job that checks out
+the fork: a stranger's code, with the
+
+186
+00:13:34,697 --> 00:13:37,339
+team's credentials. That's the collision.
+
+187
+00:13:37,679 --> 00:13:42,628
+A self-hosted GPU runner on a public
+repository: a stranger's code, on a machine
+
+188
+00:13:42,668 --> 00:13:46,556
+that keeps state and holds cached
+models and cloud credentials.
+
+189
+00:13:46,596 --> 00:13:51,608
+An agent triggered by an issue comment:
+instructions from a stranger, executed by
+
+190
+00:13:51,648 --> 00:13:53,416
+something that holds a token.
+
+191
+00:13:53,756 --> 00:13:56,863
+Each defensible design changes
+one of the two halves.
+
+192
+00:13:56,903 --> 00:14:01,731
+Either the stranger's code doesn't run in
+the privileged job, or the job that runs
+
+193
+00:14:01,771 --> 00:14:03,512
+it holds nothing worth taking.
+
+194
+00:14:03,852 --> 00:14:07,453
+Where this model is too coarse:
+"code" has to be read widely.
+
+195
+00:14:07,493 --> 00:14:12,406
+A test file, a conftest.py, a package script
+and a prompt template that the harness
+
+196
+00:14:12,446 --> 00:14:16,584
+imports are all code for this purpose,
+and for an agent, text is code.
+
+197
+00:14:16,924 --> 00:14:21,980
+Try it now, on paper, for thirty seconds.
+Think of one automated job you know, at
+
+198
+00:14:22,020 --> 00:14:26,762
+work or in a project you follow. Write
+one line: whose code runs, with whose
+
+199
+00:14:26,802 --> 00:14:28,209
+credentials? I'll wait.
+
+200
+00:14:33,049 --> 00:14:37,542
+If your line says "anyone's code" and "our
+credentials" together, you have found
+
+201
+00:14:37,582 --> 00:14:42,189
+something worth raising with your team. If
+you couldn't tell, that's worth knowing
+
+202
+00:14:42,229 --> 00:14:42,416
+too.
+
+203
+00:14:44,256 --> 00:14:49,125
+Start with the left box, and stop at its
+last line: the evaluation can't call the
+
+204
+00:14:49,165 --> 00:14:54,216
+provider. That's the contributor's complaint.
+Then the right box, and its last line,
+
+205
+00:14:54,256 --> 00:14:58,944
+slowly. The evaluation works. So does a
+changed test file that prints the key.
+
+206
+00:14:58,984 --> 00:15:03,792
+That's the two-line change from the opening,
+and our question has answered it: a
+
+207
+00:15:03,832 --> 00:15:06,156
+stranger's code, with your credentials.
+
+208
+00:15:07,996 --> 00:15:13,191
+Into the lab, for four snippets. Nothing
+here touches GitHub: it's the local
+
+209
+00:15:13,231 --> 00:15:14,844
+repository of video 177.
+
+210
+00:15:15,184 --> 00:15:19,469
+Step 1: the checks, the hook and
+the CI entry point arrive together.
+
+211
+00:15:19,809 --> 00:15:25,704
+One script, a hook that calls it, and
+ci/check.sh. The checks: line at the commit is
+
+212
+00:15:25,744 --> 00:15:31,499
+the hook. In a workflow, the same script
+runs as a step, with the base of the pull
+
+213
+00:15:31,539 --> 00:15:37,364
+request as its argument. This is the
+secret-free part of CI: it needs no key, so it
+
+214
+00:15:37,404 --> 00:15:40,402
+runs on every pull
+request, forks included.
+
+215
+00:15:40,742 --> 00:15:43,331
+Step 2: the evaluation writes a record.
+
+216
+00:15:43,671 --> 00:15:48,463
+The evaluation here is local and
+deterministic. An LLM evaluation is neither.
+
+217
+00:15:48,503 --> 00:15:53,546
+Predict: which of the three properties,
+non-deterministic, paid, needing secrets,
+
+218
+00:15:53,586 --> 00:15:56,621
+would change this step,
+and how? Say it out loud.
+
+219
+00:16:01,461 --> 00:16:06,208
+The answer is the table of the concept
+section. Compare against a threshold with a
+
+220
+00:16:06,248 --> 00:16:09,827
+tolerance, not for equality.
+Trigger on the paths that matter.
+
+221
+00:16:09,867 --> 00:16:11,637
+And decide where the key lives.
+
+222
+00:16:11,977 --> 00:16:15,206
+Step 3: the serving definition
+and the model pointer.
+
+223
+00:16:15,546 --> 00:16:19,406
+The weights aren't committed. The
+pointer is: a checksum and a size.
+
+224
+00:16:19,446 --> 00:16:24,053
+The Dockerfile and the .dockerignore arrive
+in the same commit, and the commit is
+
+225
+00:16:24,093 --> 00:16:28,814
+tagged. A serving repository pins the model
+by an immutable identifier, and the tag
+
+226
+00:16:28,854 --> 00:16:29,674
+names the code.
+
+227
+00:16:30,014 --> 00:16:31,433
+Step 4: the result.
+
+228
+00:16:31,773 --> 00:16:37,726
+Seven commits, three ignored paths, and
+ci/check.sh over the whole history from the
+
+229
+00:16:37,766 --> 00:16:43,792
+root commit: no problems, tests ok. That
+last command is what a required check would
+
+230
+00:16:43,832 --> 00:16:44,081
+run.
+
+231
+00:16:44,421 --> 00:16:48,498
+Read its header first. It says four
+things. It's teaching material.
+
+232
+00:16:48,538 --> 00:16:53,292
+Don't use this workflow in a real
+repository. It contains deliberately planted
+
+233
+00:16:53,332 --> 00:16:57,901
+security weaknesses. And it was
+parse-checked and never executed on GitHub.
+
+234
+00:16:57,941 --> 00:17:03,002
+It describes itself: in a public repository,
+it runs the model evaluation for every
+
+235
+00:17:03,042 --> 00:17:07,857
+pull request on the team's own GPU machine,
+which is registered as a persistent
+
+236
+00:17:07,897 --> 00:17:09,025
+self-hosted runner.
+
+237
+00:17:09,365 --> 00:17:13,846
+Then read it top to bottom: the trigger,
+the permissions block, the runs-on line,
+
+238
+00:17:13,886 --> 00:17:18,368
+the checkout with its pinned commit, a
+step named "Debug", and the step that runs
+
+239
+00:17:18,408 --> 00:17:21,773
+the evaluation. Stop the video
+here and read it once, slowly.
+
+240
+00:17:24,113 --> 00:17:28,922
+The weaknesses are the subject of an
+exercise, and this video doesn't name them.
+
+241
+00:17:28,962 --> 00:17:33,892
+Take the review checklist of section 21A.19,
+the one from the Gate 8 briefing, and
+
+242
+00:17:33,932 --> 00:17:37,468
+go down its eleven headings
+with this file in front of you.
+
+243
+00:17:37,508 --> 00:17:42,438
+For each heading, write "fine", "not
+applicable" or a finding with one sentence of
+
+244
+00:17:42,478 --> 00:17:47,045
+blast radius. Use the question of this
+video: whose code runs here, on which
+
+245
+00:17:47,085 --> 00:17:52,075
+machine, with what in reach? Then compare
+with the exercise's solution, not before.
+
+246
+00:17:53,915 --> 00:17:58,699
+Five mistakes to watch for. Each one
+usually starts as a wish to be helpful.
+
+247
+00:17:59,039 --> 00:18:03,095
+Switching to pull_request_target so
+that fork pull requests get the key.
+
+248
+00:18:03,135 --> 00:18:07,703
+Root cause: the trigger supplies the base
+repository's secrets and token, and the
+
+249
+00:18:07,743 --> 00:18:10,889
+checkout then executes the
+contributor's code with them.
+
+250
+00:18:11,229 --> 00:18:16,384
+Treating "we only read the prompts" as
+safe. Root cause: test files, conftest.py,
+
+251
+00:18:16,424 --> 00:18:21,579
+package scripts and templates that the
+harness imports are executed, so data from
+
+252
+00:18:21,619 --> 00:18:23,503
+the pull request becomes code.
+
+253
+00:18:23,843 --> 00:18:27,237
+Putting models or anything
+sensitive in the Actions cache.
+
+254
+00:18:27,277 --> 00:18:32,093
+Root cause: anyone who can open a pull
+request can read caches, and the size limit
+
+255
+00:18:32,133 --> 00:18:33,337
+suits package caches.
+
+256
+00:18:33,677 --> 00:18:38,747
+Using the production provider key for
+evaluation. Root cause: one key then carries
+
+257
+00:18:38,787 --> 00:18:43,546
+both the evaluation's exposure and
+production's reach, with no spend ceiling.
+
+258
+00:18:43,886 --> 00:18:47,623
+Exempting an agent's pull
+requests from review or checks.
+
+259
+00:18:47,663 --> 00:18:52,991
+Root cause: local hooks never ran for it,
+so required checks and a human approval
+
+260
+00:18:53,031 --> 00:18:54,780
+are the only controls left.
+
+261
+00:18:56,620 --> 00:19:01,754
+Now, out of the lab. An open-source project
+that maintains an LLM evaluation harness
+
+262
+00:19:01,794 --> 00:19:05,880
+receives most of its prompt
+improvements from outside contributors.
+
+263
+00:19:05,920 --> 00:19:10,930
+Its evaluation job fails on every one of
+them. A contributor proposes the two-line
+
+264
+00:19:10,970 --> 00:19:12,408
+change from the opening.
+
+265
+00:19:12,748 --> 00:19:16,807
+The maintainer answers with the two boxes
+of the diagram and then with a design.
+
+266
+00:19:17,147 --> 00:19:21,900
+On pull_request, every contribution gets
+the secret-free checks: lint, unit tests,
+
+267
+00:19:21,940 --> 00:19:26,635
+the repository's own check script, and the
+evaluation against recorded responses.
+
+268
+00:19:26,675 --> 00:19:31,312
+The paid evaluation runs in a separate
+workflow that a maintainer triggers after
+
+269
+00:19:31,352 --> 00:19:36,222
+reading the diff, with a provider key that
+belongs to the evaluation alone and has a
+
+270
+00:19:36,262 --> 00:19:39,320
+spend cap. The full suite
+runs on main on a schedule.
+
+271
+00:19:39,360 --> 00:19:44,172
+The project's GPU machine isn't registered
+as a runner for the public repository at
+
+272
+00:19:44,212 --> 00:19:44,406
+all.
+
+273
+00:19:44,746 --> 00:19:49,910
+The same maintainers later add an AI coding
+agent. They apply the table: the agent's
+
+274
+00:19:49,950 --> 00:19:54,743
+pull requests are small by instruction
+and by a size check, they pass the same
+
+275
+00:19:54,783 --> 00:19:59,762
+required checks, a human approval is
+required by ruleset, the agent's token can't
+
+276
+00:19:59,802 --> 00:20:04,904
+write to workflows, and its commits carry
+a Co-authored-by trailer so that they can
+
+277
+00:20:04,944 --> 00:20:06,949
+be listed with one git log query.
+
+278
+00:20:08,789 --> 00:20:15,860
+Your turn. Do Exercise 33.6, Level
+3, "Evaluate prompts in CI", in
+
+279
+00:20:15,900 --> 00:20:19,092
+exercises/m32-m34-practice.md.
+
+280
+00:20:19,432 --> 00:20:24,141
+Before you design anything, predict: for
+a pull request from a fork, which of your
+
+281
+00:20:24,181 --> 00:20:28,833
+jobs will have secrets and which will not,
+and what each job is therefore able to
+
+282
+00:20:28,873 --> 00:20:33,582
+do. Write the answer to "whose code runs,
+with whose credentials" for every job in
+
+283
+00:20:33,622 --> 00:20:36,131
+your design. Then compare
+with the solution.
+
+284
+00:20:36,471 --> 00:20:44,231
+The challenge is Exercise 29.7, Level 3,
+"Benchmark scores on fork pull requests",
+
+285
+00:20:44,271 --> 00:20:48,131
+in exercises/m26-m31-actions-security.md.
+
+286
+00:20:51,971 --> 00:20:55,178
+Answer out loud. The question
+gives you its own outline.
+
+287
+00:20:55,218 --> 00:20:59,815
+For the collision, name the two defaults
+that meet: what an evaluation needs and
+
+288
+00:20:59,855 --> 00:21:04,279
+what a fork run is given. For the
+workaround, name the trigger and the second
+
+289
+00:21:04,319 --> 00:21:09,090
+ingredient that makes it dangerous, and say
+in one sentence what an attacker's pull
+
+290
+00:21:09,130 --> 00:21:10,366
+request would contain.
+
+291
+00:21:10,706 --> 00:21:15,256
+For the designs, give two that differ in
+kind, and for each say what it costs the
+
+292
+00:21:15,296 --> 00:21:19,903
+contributor or the maintainer, because a
+design without a cost hasn't been thought
+
+293
+00:21:19,943 --> 00:21:24,380
+through. If you add what you would do to
+the key itself, you have covered blast
+
+294
+00:21:24,420 --> 00:21:26,023
+radius as well as prevention.
+
+295
+00:21:27,863 --> 00:21:29,912
+Let's land this, in your own words.
+
+296
+00:21:30,252 --> 00:21:35,304
+ML CI is ordinary until it needs a GPU,
+a large model or a paid key, and each
+
+297
+00:21:35,344 --> 00:21:38,081
+collides with a default of GitHub Actions.
+
+298
+00:21:38,421 --> 00:21:43,480
+Fork pull requests get no secrets;
+pull_request_target plus a checkout of the fork's
+
+299
+00:21:43,520 --> 00:21:46,697
+code runs untrusted code
+with your secrets and token.
+
+300
+00:21:47,037 --> 00:21:51,866
+Defensible designs: secret-free checks
+for everyone and a maintainer-triggered
+
+301
+00:21:51,906 --> 00:21:56,174
+evaluation; evaluation after merge;
+or prompts read strictly as data.
+
+302
+00:21:56,514 --> 00:22:01,139
+A serving repository records the model
+by a pinned reference, the base image by
+
+303
+00:22:01,179 --> 00:22:05,746
+digest, and the commit in the image;
+secrets enter a build only through secret
+
+304
+00:22:05,786 --> 00:22:06,159
+mounts.
+
+305
+00:22:06,499 --> 00:22:11,571
+An agent is a contributor whose local hooks
+never run, so required checks, a human
+
+306
+00:22:11,611 --> 00:22:15,997
+approval by ruleset and narrow tokens
+are the controls that still hold.
+
+307
+00:22:17,837 --> 00:22:26,873
+Read sections 28.11 and 28.13 to 28.18,
+and do the Practice section, 28.20.
+
+308
+00:22:27,213 --> 00:22:30,656
+That completes the four videos
+on AI and ML repositories.
+
+309
+00:22:30,696 --> 00:22:35,117
+You can now look at any automated job
+and ask whose code runs, with whose
+
+310
+00:22:35,157 --> 00:22:38,783
+credentials, and that one question
+will serve you for years.
+
+311
+00:22:38,823 --> 00:22:43,672
+The next video is the briefing for the
+design review that closes Level 8: you'll
+
+312
+00:22:43,712 --> 00:22:48,438
+design the branching model, governance,
+CI and security policy for a described
+
+313
+00:22:48,478 --> 00:22:53,082
+company, and defend it. Until then, look
+at the state first and type second.
+
+314
+00:22:53,122 --> 00:22:54,548
+See you in the next one.

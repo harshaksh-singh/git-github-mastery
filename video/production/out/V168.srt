@@ -1,0 +1,1293 @@
+1
+00:00:04,500 --> 00:00:09,647
+The cleanup was done properly. A fresh
+mirror clone, every ref rewritten, the scan
+
+2
+00:00:09,687 --> 00:00:11,924
+clean, a forced push after a freeze.
+
+3
+00:00:12,264 --> 00:00:16,301
+The next morning the scanner reports
+the same secret on main again.
+
+4
+00:00:16,341 --> 00:00:20,744
+The branch rule that forbids force
+pushes was back on and it didn't fire.
+
+5
+00:00:20,784 --> 00:00:25,673
+Nobody did anything unusual. One colleague
+ran git pull and git push, as on every
+
+6
+00:00:25,713 --> 00:00:26,525
+other morning.
+
+7
+00:00:26,865 --> 00:00:31,460
+Today you reconstruct from the commit graph
+how that happens, you learn the exact
+
+8
+00:00:31,500 --> 00:00:35,922
+instruction to give colleagues about
+their clones, and you see what remains on
+
+9
+00:00:35,962 --> 00:00:40,385
+GitHub that no Git command of yours can
+reach. Hold on to one detail: the rule
+
+10
+00:00:40,425 --> 00:00:44,733
+against force pushes didn't fire. One
+line of push output will show you why.
+
+11
+00:00:46,573 --> 00:00:50,409
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:50,449 --> 00:00:55,238
+Three words first. A commit is one saved
+snapshot of the project, with an ID
+
+13
+00:00:55,278 --> 00:01:00,066
+computed from its content. A clone is
+a copy of a repository on one machine.
+
+14
+00:01:00,106 --> 00:01:05,022
+And a stale clone is a clone that still
+has the history from before a rewrite.
+
+15
+00:01:05,362 --> 00:01:09,414
+In video 167 the rewrite ended with
+the server holding clean refs.
+
+16
+00:01:09,454 --> 00:01:13,631
+A ref is a name, such as a branch
+or a tag, that points at a commit.
+
+17
+00:01:13,671 --> 00:01:17,475
+That's the end of the command
+and the middle of the operation.
+
+18
+00:01:17,515 --> 00:01:22,683
+Two things remain. Other people's clones
+still contain the complete old history, and
+
+19
+00:01:22,723 --> 00:01:27,705
+Git sees nothing wrong with that history.
+And on GitHub there are copies that you
+
+20
+00:01:27,745 --> 00:01:29,069
+can't remove with Git.
+
+21
+00:01:29,409 --> 00:01:34,454
+From video 59 you know what a rebased shared
+branch does to the people who use it:
+
+22
+00:01:34,494 --> 00:01:39,602
+their copy still descends from the old
+commits. A whole-history rewrite is the same
+
+23
+00:01:39,642 --> 00:01:42,827
+situation for every branch
+and every person at once.
+
+24
+00:01:43,167 --> 00:01:46,431
+The plan: first the failure,
+replayed in a terminal.
+
+25
+00:01:46,471 --> 00:01:51,706
+Then the three ways a stale clone can meet
+the new history, and the one instruction
+
+26
+00:01:51,746 --> 00:01:56,790
+that is safe to hand out. Then the rest
+of the tabletop lab, from eradication to
+
+27
+00:01:56,830 --> 00:02:00,412
+prevention, including the
+failure repeated and recovered.
+
+28
+00:02:00,452 --> 00:02:05,432
+Then the GitHub side, described from
+GitHub's documentation, and the governance
+
+29
+00:02:05,472 --> 00:02:07,148
+controls of section 21B.20.
+
+30
+00:02:08,988 --> 00:02:10,566
+Here's what you'll walk away with.
+
+31
+00:02:10,906 --> 00:02:12,318
+After this video you can:
+
+32
+00:02:12,658 --> 00:02:17,386
+Reconstruct from the commit graph how a
+secret returns after a rewrite without any
+
+33
+00:02:17,426 --> 00:02:18,084
+forced push.
+
+34
+00:02:18,424 --> 00:02:21,330
+Tell collaborators exactly
+what to do with their clones.
+
+35
+00:02:21,670 --> 00:02:27,164
+Explain what happens to a stale clone
+under git pull --rebase and under a plain
+
+36
+00:02:27,204 --> 00:02:27,514
+pull.
+
+37
+00:02:27,854 --> 00:02:32,667
+Say what remains on GitHub after the forced
+push and what a Support request covers,
+
+38
+00:02:32,707 --> 00:02:34,071
+as the section gives it.
+
+39
+00:02:34,411 --> 00:02:38,769
+Name the governance controls that limit
+how far a leaked credential reaches.
+
+40
+00:02:40,609 --> 00:02:45,340
+Why this failure exists. A rewrite produces
+a second history that shares only its
+
+41
+00:02:45,380 --> 00:02:50,170
+oldest commits with the first. To Git, the
+old history and the new history are two
+
+42
+00:02:50,210 --> 00:02:53,232
+lines of work that happen
+to have a common ancestor.
+
+43
+00:02:53,272 --> 00:02:57,886
+Git has no concept of "the withdrawn
+version". If someone merges the two lines,
+
+44
+00:02:57,926 --> 00:03:01,537
+joining them in one new commit,
+that's a merge like any other.
+
+45
+00:03:01,877 --> 00:03:06,737
+What happens. A clone that still has the
+old history merges or rebases it back and
+
+46
+00:03:06,777 --> 00:03:11,695
+pushes it as ordinary new commits. The merge
+commit has two parents: the clean tip,
+
+47
+00:03:11,735 --> 00:03:15,878
+and a commit whose ancestors include
+the commit that added the secret.
+
+48
+00:03:16,218 --> 00:03:20,814
+The push from the clean tip to that merge
+commit is a fast-forward: the server's
+
+49
+00:03:20,854 --> 00:03:25,393
+current commit is an ancestor of the new
+one, so the branch only moves forward.
+
+50
+00:03:25,433 --> 00:03:30,088
+The server accepts it without force, and
+no branch rule that forbids force pushes
+
+51
+00:03:30,128 --> 00:03:30,552
+objects.
+
+52
+00:03:30,892 --> 00:03:36,018
+How a clone is recovered. The filter-repo
+manual says the easiest way to clean other
+
+53
+00:03:36,058 --> 00:03:40,939
+clones is to delete and re-clone them.
+Where that is impossible, it prescribes a
+
+54
+00:03:40,979 --> 00:03:42,108
+sequence per clone.
+
+55
+00:03:42,448 --> 00:03:47,194
+Six lines, and each has a reason. Tags
+aren't updated by an ordinary fetch, so
+
+56
+00:03:47,234 --> 00:03:52,287
+they're deleted and fetched again. A rebase
+replays commits as new copies on top of
+
+57
+00:03:52,327 --> 00:03:56,583
+another commit, and with --onto it
+carries over only your own commits.
+
+58
+00:03:56,623 --> 00:04:00,510
+The expiry and the prune remove
+the old objects from this clone.
+
+59
+00:04:00,550 --> 00:04:05,542
+The last line is the verification: asking
+for the type of the first changed commit
+
+60
+00:04:05,582 --> 00:04:06,156
+must fail.
+
+61
+00:04:06,496 --> 00:04:11,316
+The manual adds two warnings. Colleagues
+must not run the same filter command
+
+62
+00:04:11,356 --> 00:04:16,239
+themselves, because identical commands
+can still produce different commit IDs.
+
+63
+00:04:16,279 --> 00:04:21,415
+And the expiry step drops their reflogs
+and stash entries, so they save their work
+
+64
+00:04:21,455 --> 00:04:21,794
+first.
+
+65
+00:04:22,134 --> 00:04:27,067
+GitHub's page lists "high risk of recontamination"
+first among the side effects of a
+
+66
+00:04:27,107 --> 00:04:31,923
+rewrite and gives the rule: collaborators
+must rebase, not merge, branches created
+
+67
+00:04:31,963 --> 00:04:36,719
+from the old history, because one merge
+commit can reintroduce some or all of it.
+
+68
+00:04:37,059 --> 00:04:41,661
+Can the server refuse the old commits?
+Few hosting services can ban a specific
+
+69
+00:04:41,701 --> 00:04:46,423
+commit from being pushed again. The
+filter-repo manual says so, and the research
+
+70
+00:04:46,463 --> 00:04:51,244
+notes of this course found no documented
+built-in control of that kind on GitHub.
+
+71
+00:04:51,284 --> 00:04:56,006
+Push protection, when the secret matches
+a supported pattern, and a push ruleset
+
+72
+00:04:56,046 --> 00:04:59,756
+that blocks the file path are the
+nearest platform equivalents.
+
+73
+00:04:59,796 --> 00:05:04,339
+The local analogue is a pre-receive hook,
+a program the server runs before it
+
+74
+00:05:04,379 --> 00:05:07,256
+accepts a push, which the
+lab installs and tests.
+
+75
+00:05:07,596 --> 00:05:12,880
+The GitHub side. This part is GitHub, not
+Git, and it's described from GitHub's page
+
+76
+00:05:12,920 --> 00:05:18,205
+on removing sensitive data. Nothing here
+was run. After your force push, four copies
+
+77
+00:05:18,245 --> 00:05:23,022
+remain that you can't reach with Git.
+A pull request is a GitHub object that
+
+78
+00:05:23,062 --> 00:05:28,219
+proposes a merge, and a fork is a second
+repository on GitHub made from the first.
+
+79
+00:05:28,559 --> 00:05:33,135
+The Support request must contain the
+repository owner and name, the number of
+
+80
+00:05:33,175 --> 00:05:37,210
+affected pull requests, and the
+first changed commit or commits from
+
+81
+00:05:37,250 --> 00:05:41,825
+git-filter-repo's output. If the output
+contained the line about orphaned LFS
+
+82
+00:05:41,865 --> 00:05:46,800
+objects, mention it and attach the named
+file. Support removes only sensitive data,
+
+83
+00:05:46,840 --> 00:05:51,715
+and only in cases where it determines that
+rotating the affected credentials can't
+
+84
+00:05:51,755 --> 00:05:52,794
+mitigate the risk.
+
+85
+00:05:53,134 --> 00:05:57,482
+GitHub publishes neither how long it
+retains unreachable commits without a
+
+86
+00:05:57,522 --> 00:06:01,752
+Support-initiated garbage collection,
+nor a turnaround time for Support.
+
+87
+00:06:01,792 --> 00:06:06,437
+Researchers who mined force-pushed commits
+observed that they appear to be kept
+
+88
+00:06:06,477 --> 00:06:10,173
+indefinitely. That's their
+observation, not a GitHub statement.
+
+89
+00:06:10,213 --> 00:06:14,977
+The same retention is what made the recovery
+of a force-pushed branch possible in
+
+90
+00:06:15,017 --> 00:06:17,349
+Chapter 13: a force push doesn't delete.
+
+91
+00:06:17,689 --> 00:06:22,412
+The controls. Prevention fails sometimes,
+so you design for the day it does.
+
+92
+00:06:22,452 --> 00:06:27,613
+Section 21B.20 lists the GitHub features
+that decide how much one leaked credential
+
+93
+00:06:27,653 --> 00:06:30,809
+can do and whether you can
+reconstruct what it did.
+
+94
+00:06:31,149 --> 00:06:36,576
+These controls reduce blast radius, which
+is how far one leaked credential reaches.
+
+95
+00:06:36,616 --> 00:06:41,779
+They don't prevent leaks. The textbook's
+observation across the case studies of
+
+96
+00:06:41,819 --> 00:06:46,652
+video 166 is sobering: the worst outcomes
+involved single credentials with
+
+97
+00:06:46,692 --> 00:06:51,921
+estate-wide read access, and detection
+came from outsiders in nearly every case.
+
+98
+00:06:53,761 --> 00:06:59,008
+Keep the analogy of video 167: the recalled
+book. One reader who lends an old copy
+
+99
+00:06:59,048 --> 00:07:02,554
+to the library puts the removed
+page back on the shelf.
+
+100
+00:07:02,594 --> 00:07:07,776
+The librarian doesn't object, because a
+book was returned and that's what readers
+
+101
+00:07:07,816 --> 00:07:07,969
+do.
+
+102
+00:07:08,309 --> 00:07:12,004
+In Git terms: the server checks
+whether a push is a fast-forward.
+
+103
+00:07:12,044 --> 00:07:16,427
+It doesn't check where the new commits
+came from. A merge commit that has the
+
+104
+00:07:16,467 --> 00:07:20,966
+current tip as one of its parents is a
+fast-forward by definition, whatever its
+
+105
+00:07:21,006 --> 00:07:22,230
+other parent drags in.
+
+106
+00:07:22,570 --> 00:07:27,661
+Where the analogy breaks: the reader's
+copy is one object, and a stale clone is a
+
+107
+00:07:27,701 --> 00:07:32,665
+graph. The clone can keep its own new
+work and drop the old pages, if the owner
+
+108
+00:07:32,705 --> 00:07:35,958
+replays only their own
+commits onto the new history.
+
+109
+00:07:35,998 --> 00:07:37,542
+That's the --onto rebase.
+
+110
+00:07:37,882 --> 00:07:41,951
+The second model is for the question
+"where can this data still be?"
+
+111
+00:07:41,991 --> 00:07:46,482
+Count repositories, not commands. The
+server, with its unreachable objects.
+
+112
+00:07:46,522 --> 00:07:51,498
+The pull request refs. Each fork. Each
+clone. Each of them has its own refs and its
+
+113
+00:07:51,538 --> 00:07:54,156
+own objects, and each
+has a different owner.
+
+114
+00:07:55,996 --> 00:08:00,648
+Quick quiz. From main, is the
+commit that added .env reachable?
+
+115
+00:08:00,688 --> 00:08:05,265
+A, no, because the history was
+rewritten. B, yes. Your answer?
+
+116
+00:08:10,105 --> 00:08:15,527
+B, yes. Follow the upper parent of the
+merge, back along the old history, to
+
+117
+00:08:15,567 --> 00:08:19,120
+0805fd8. That's the whole
+incident in one picture.
+
+118
+00:08:19,460 --> 00:08:23,801
+Here is the same incident as the
+root-cause box of section 21B.18.
+
+119
+00:08:23,841 --> 00:08:29,376
+Read the mechanism line: a pull in a stale
+clone merged old and new history, and the
+
+120
+00:08:29,416 --> 00:08:30,970
+push was a fast-forward.
+
+121
+00:08:32,810 --> 00:08:37,324
+Into the lab. Asha cloned before the
+incident and has one local commit.
+
+122
+00:08:37,364 --> 00:08:40,659
+She wasn't told to stop, or
+didn't read the message.
+
+123
+00:08:40,699 --> 00:08:42,391
+That happens on every team.
+
+124
+00:08:42,731 --> 00:08:47,513
+Step 1: an ordinary morning. 🟡 CAUTION:
+git pull is a fetch, a download from the
+
+125
+00:08:47,553 --> 00:08:51,130
+server, followed by one integration
+into the current branch.
+
+126
+00:08:51,170 --> 00:08:54,989
+It moves the current branch, and
+here it creates a merge commit.
+
+127
+00:08:55,329 --> 00:09:00,468
+Predict two things. What will the fetch
+part of the pull report about origin/main?
+
+128
+00:09:00,508 --> 00:09:03,500
+And will the push need
+force? Say both out loud.
+
+129
+00:09:08,340 --> 00:09:12,892
+Look at the two lines with a plus
+sign and the words "forced update".
+
+130
+00:09:12,932 --> 00:09:18,483
+That was the warning, and it scrolled past.
+Then "Merge made by the 'ort' strategy".
+
+131
+00:09:18,523 --> 00:09:24,007
+The graph shows the merge commit f7ed5a9
+with the clean tip c8ce738 on one side and
+
+132
+00:09:24,047 --> 00:09:29,464
+her commit 95f98b0 on the other. Then the
+last line: the push went from c8ce738 to
+
+133
+00:09:29,504 --> 00:09:33,324
+f7ed5a9 with two dots, not
+three, and without a plus sign.
+
+134
+00:09:33,364 --> 00:09:38,849
+A fast-forward. There's the detail from the
+opening: the rule forbids force pushes,
+
+135
+00:09:38,889 --> 00:09:40,712
+and nothing here was forced.
+
+136
+00:09:41,052 --> 00:09:42,587
+Step 2: the server.
+
+137
+00:09:42,927 --> 00:09:48,307
+Six snapshots with the key are reachable
+from the server's refs again, and the
+
+138
+00:09:48,347 --> 00:09:54,144
+pickaxe, a log search for one string, names
+the original commit, 0805fd8, as part of
+
+139
+00:09:54,184 --> 00:09:54,491
+main.
+
+140
+00:09:54,831 --> 00:09:59,104
+Step 3: three ways a stale
+clone meets the new history.
+
+141
+00:09:59,144 --> 00:10:05,611
+Replay labs/run ch21b/stale-clone-rebase.
+It builds the same situation three times.
+
+142
+00:10:05,651 --> 00:10:11,962
+First: git pull --rebase as the clone's
+first contact with the rewritten history.
+
+143
+00:10:12,302 --> 00:10:17,378
+When run for the chapter, this replayed
+only the local commit, because the pull
+
+144
+00:10:17,418 --> 00:10:22,623
+still knew the previous value of origin/main.
+Her commit is now 30cf503 on top of
+
+145
+00:10:22,663 --> 00:10:26,443
+c8ce738, and the count is zero.
+That looks like the answer.
+
+146
+00:10:26,483 --> 00:10:31,300
+It isn't an instruction you can hand
+out, and the second variant shows why.
+
+147
+00:10:31,640 --> 00:10:36,194
+Second: the clone has already fetched,
+and then rebases onto origin/main.
+
+148
+00:10:36,234 --> 00:10:40,159
+Predict: which commits will Git
+treat as hers? Say it out loud.
+
+149
+00:10:44,999 --> 00:10:49,459
+Read the error: "could not apply
+0805fd8... Add staging settings".
+
+150
+00:10:49,499 --> 00:10:53,073
+Git tried to replay the
+commit that added the secret.
+
+151
+00:10:53,413 --> 00:10:58,686
+After a plain fetch, the knowledge of the
+previous origin/main is no longer used, so
+
+152
+00:10:58,726 --> 00:11:03,935
+git rebase origin/main treats every old
+commit that is missing from the new history
+
+153
+00:11:03,975 --> 00:11:09,248
+as hers. The rebase stops in a conflict with
+a detached HEAD, and git rebase --abort
+
+154
+00:11:09,288 --> 00:11:10,576
+returns to the start.
+
+155
+00:11:10,916 --> 00:11:12,486
+Third: the explicit form.
+
+156
+00:11:12,826 --> 00:11:17,966
+The old upstream tip is read from the
+reflog of main, the clone's own list of the
+
+157
+00:11:18,006 --> 00:11:22,763
+positions main has had. Its oldest entry
+is d4b8762, the commit she cloned.
+
+158
+00:11:23,103 --> 00:11:27,450
+--onto origin/main with that old base
+replays only what came after it.
+
+159
+00:11:27,490 --> 00:11:32,714
+One commit, on the clean history. This is
+the form to send to colleagues, because it
+
+160
+00:11:32,754 --> 00:11:34,970
+works whatever the clone did before.
+
+161
+00:11:35,310 --> 00:11:41,364
+Try it now, for thirty seconds. In the lab
+shell, or in any clone you have, type git
+
+162
+00:11:41,404 --> 00:11:45,789
+reflog show main, with your own
+branch name if it's not main.
+
+163
+00:11:45,829 --> 00:11:49,199
+It only reads. Find the
+bottom line. I'll wait.
+
+164
+00:11:54,039 --> 00:11:58,039
+That bottom line is the oldest
+position your clone remembers.
+
+165
+00:11:58,079 --> 00:12:01,020
+In Asha's clone it was
+d4b8762, the old base.
+
+166
+00:12:01,360 --> 00:12:06,755
+Step 4: the tabletop, from eradication
+to the end. Replay labs/run
+
+167
+00:12:06,795 --> 00:12:13,261
+ch21b/lab-31-1-tabletop. The first three
+snippets, confirm, contain and assess,
+
+168
+00:12:13,301 --> 00:12:19,602
+belong to video 166. We start at the
+fourth. First the tip is cleaned with an
+
+169
+00:12:19,642 --> 00:12:20,919
+ordinary commit.
+
+170
+00:12:21,259 --> 00:12:26,341
+The tip is clean and the tag still has
+the key. In the tabletop, the decision to
+
+171
+00:12:26,381 --> 00:12:31,526
+rewrite has been taken and recorded. The
+rewrite, its verification and the forced
+
+172
+00:12:31,566 --> 00:12:36,775
+push are the mechanics of video 167. So
+snippets 05-rewrite, 06-verify-rewrite and
+
+173
+00:12:36,815 --> 00:12:41,448
+07-force-push pass on screen without
+stopping, and we stop at the server.
+
+174
+00:12:41,788 --> 00:12:46,222
+On your own server you can prune, and
+after the prune the object is gone.
+
+175
+00:12:46,262 --> 00:12:48,305
+On GitHub only GitHub Support can.
+
+176
+00:12:48,645 --> 00:12:54,020
+Step 5: prevention, and its test. The lab
+installs a pre-receive hook on the server
+
+177
+00:12:54,060 --> 00:12:58,195
+and tests it with Ravi's clone,
+which still has the old history.
+
+178
+00:12:58,535 --> 00:13:01,618
+Ravi does exactly what Asha
+did: pull, merge, push.
+
+179
+00:13:01,658 --> 00:13:06,639
+Read the remote's answer: "push declined",
+the commit named, and "pre-receive hook
+
+180
+00:13:06,679 --> 00:13:10,925
+declined". The same morning routine,
+and this time the server refuses.
+
+181
+00:13:11,265 --> 00:13:16,441
+Step 6: the failure scenario and the
+recovery. The lab then removes the guard, to
+
+182
+00:13:16,481 --> 00:13:21,784
+show the state of a team that stopped before
+prevention, and Asha pushes the secret
+
+183
+00:13:21,824 --> 00:13:26,484
+back. Snippet 12-failure, shown briefly,
+is the incident of step 1 again.
+
+184
+00:13:26,524 --> 00:13:31,700
+The recovery has two halves. The server:
+the cleanup clone force-pushes the clean
+
+185
+00:13:31,740 --> 00:13:35,176
+refs again, the guard goes
+back, the server is pruned.
+
+186
+00:13:35,216 --> 00:13:36,142
+Then the clone.
+
+187
+00:13:36,482 --> 00:13:41,667
+🔴 DANGEROUS: git reset --hard. It discards
+uncommitted changes in the working tree
+
+188
+00:13:41,707 --> 00:13:46,765
+and the index. Preview with git status.
+The commits it leaves behind stay in the
+
+189
+00:13:46,805 --> 00:13:51,991
+reflog. Here it is appropriate because the
+reflog has shown exactly which entry is
+
+190
+00:13:52,031 --> 00:13:54,030
+her own commit before the merge.
+
+191
+00:13:54,370 --> 00:13:58,898
+Read the reflog of main from the
+bottom: clone, her commit, the merge.
+
+192
+00:13:58,938 --> 00:14:01,508
+main@{1} is her commit before the merge.
+
+193
+00:14:01,848 --> 00:14:07,410
+Reset to it, then replay only that commit
+onto the clean history with --onto.
+
+194
+00:14:07,450 --> 00:14:11,993
+The result is one new commit,
+01e4fd0, on top of the clean tip.
+
+195
+00:14:12,333 --> 00:14:14,407
+Step 7: verification.
+
+196
+00:14:14,747 --> 00:14:19,678
+Five checks, in the order that matters.
+The provider says the key is revoked.
+
+197
+00:14:19,718 --> 00:14:23,229
+The server's main is the clean
+history plus her commit.
+
+198
+00:14:23,269 --> 00:14:28,329
+The scan over all refs prints zero. git
+fsck --unreachable on the server prints
+
+199
+00:14:28,369 --> 00:14:33,751
+nothing. And in each of the three clones,
+asking for the first changed commit fails.
+
+200
+00:14:38,591 --> 00:14:40,239
+Five mistakes to watch for.
+
+201
+00:14:40,579 --> 00:14:45,502
+Telling colleagues to "pull". Root cause:
+a pull in a stale clone merges old and new
+
+202
+00:14:45,542 --> 00:14:50,169
+history, and the resulting push is a
+fast-forward that no force-push rule sees.
+
+203
+00:14:50,509 --> 00:14:55,374
+Telling colleagues to run git rebase
+origin/main. Root cause: in a clone that has
+
+204
+00:14:55,414 --> 00:15:00,461
+already fetched, every old commit missing
+from the new history counts as local work,
+
+205
+00:15:00,501 --> 00:15:03,004
+the commit that added the secret included.
+
+206
+00:15:03,344 --> 00:15:08,372
+Forgetting the tags in the clones. Root
+cause: tags are not updated by an ordinary
+
+207
+00:15:08,412 --> 00:15:13,193
+fetch, so a clone keeps the old tag and
+with it the old history until tags are
+
+208
+00:15:13,233 --> 00:15:14,553
+deleted and refetched.
+
+209
+00:15:14,893 --> 00:15:19,670
+Having each colleague run the same filter
+command. Root cause: identical commands
+
+210
+00:15:19,710 --> 00:15:24,250
+can still produce different commit IDs,
+so the clones would no longer share a
+
+211
+00:15:24,290 --> 00:15:25,677
+history with the server.
+
+212
+00:15:26,017 --> 00:15:30,649
+Treating the force push as the end on GitHub.
+Root cause: pull request refs, cached
+
+213
+00:15:30,689 --> 00:15:35,321
+views, forks and unreachable objects are
+outside the reach of your Git commands and
+
+214
+00:15:35,361 --> 00:15:36,334
+have other owners.
+
+215
+00:15:38,174 --> 00:15:42,904
+Now, out of the lab. Picture this: an LLM
+application team rewrote the history of
+
+216
+00:15:42,944 --> 00:15:47,557
+its retrieval service to remove a customer
+export. The rewrite was verified and
+
+217
+00:15:47,597 --> 00:15:50,855
+pushed on a Friday evening.
+On Monday the file was back.
+
+218
+00:15:50,895 --> 00:15:55,801
+The lead didn't ask who had force-pushed,
+because the branch rule would have blocked
+
+219
+00:15:55,841 --> 00:15:55,978
+it.
+
+220
+00:15:56,318 --> 00:16:00,895
+She ran git log --merges -1 on main and
+looked at the parents of the newest merge
+
+221
+00:16:00,935 --> 00:16:05,228
+commit: one was the rewritten tip, the
+other descended from the old history.
+
+222
+00:16:05,268 --> 00:16:08,648
+The author of the merge had been
+on leave during the freeze.
+
+223
+00:16:08,988 --> 00:16:14,002
+The fix followed the root-cause box. The
+clean refs were force-pushed again from the
+
+224
+00:16:14,042 --> 00:16:17,431
+cleanup clone, which had been
+kept for exactly this case.
+
+225
+00:16:17,471 --> 00:16:22,063
+The colleague's clone was repaired with
+the --onto form, so that only his two
+
+226
+00:16:22,103 --> 00:16:26,996
+commits were replayed. And two controls
+were added: a push ruleset that blocks the
+
+227
+00:16:27,036 --> 00:16:31,929
+file path, and a line in the freeze
+announcement that names the per-clone sequence
+
+228
+00:16:31,969 --> 00:16:33,554
+instead of the word "pull".
+
+229
+00:16:33,894 --> 00:16:38,130
+The Support request for the pull request
+refs and the cached views, which had been
+
+230
+00:16:38,170 --> 00:16:42,198
+filed on Friday with the count of affected
+pull requests and the first changed
+
+231
+00:16:42,238 --> 00:16:43,450
+commit, wasn't affected.
+
+232
+00:16:45,290 --> 00:16:50,522
+Your turn. Do Lab 31.1 complete, as
+a tabletop with its dummy secret:
+
+233
+00:16:50,562 --> 00:16:56,711
+lab-manual/m31-secret-leak-response.md.
+The textbook asks you to do it twice, the
+
+234
+00:16:56,751 --> 00:16:59,385
+second time from the symptom alone.
+
+235
+00:16:59,725 --> 00:17:04,653
+Before the step in which Ravi pulls and
+pushes against the guarded server, predict:
+
+236
+00:17:04,693 --> 00:17:09,681
+what kind of commit will his pull create,
+will his push be a fast-forward, and which
+
+237
+00:17:09,721 --> 00:17:14,709
+program will refuse it? Before the recovery
+of Asha's clone, write down which reflog
+
+238
+00:17:14,749 --> 00:17:19,257
+entry you'll reset to and which commit
+you'll pass as the old base, and why.
+
+239
+00:17:19,597 --> 00:17:23,589
+The challenge is Incident 3,
+incidents/03-committed-secret.
+
+240
+00:17:23,629 --> 00:17:28,441
+Generate it and attempt it from the
+symptoms. Don't read its generator.
+
+241
+00:17:32,281 --> 00:17:37,304
+Answer out loud first. A strong answer starts
+from evidence: which command shows the
+
+242
+00:17:37,344 --> 00:17:40,921
+newest merge on main and what
+you read from its two parents.
+
+243
+00:17:40,961 --> 00:17:45,261
+It then explains why the push needed
+no force, in terms of fast-forward.
+
+244
+00:17:45,301 --> 00:17:50,204
+It gives two fixes and keeps them apart:
+one for the server's refs and one for the
+
+245
+00:17:50,244 --> 00:17:55,207
+clone, and for the clone it says how only
+the person's own commits are carried over
+
+246
+00:17:55,247 --> 00:17:57,859
+and why the simpler-looking
+rebase is wrong.
+
+247
+00:17:58,199 --> 00:18:02,523
+It ends with prevention at three levels:
+the people, the clones and the server.
+
+248
+00:18:02,563 --> 00:18:06,113
+Mention what Git can't do here,
+and what on GitHub comes nearest.
+
+249
+00:18:07,953 --> 00:18:11,142
+Let's land this. Say each
+of these in your own words.
+
+250
+00:18:11,482 --> 00:18:16,037
+After a rewrite, every clone that still
+has the old history can return it with an
+
+251
+00:18:16,077 --> 00:18:20,292
+ordinary pull and push, because the
+merge is a fast-forward for the server.
+
+252
+00:18:20,632 --> 00:18:25,747
+The safe instruction is: re-clone; or
+delete and refetch tags, rebase with --onto
+
+253
+00:18:25,787 --> 00:18:31,029
+from the old upstream tip, then expire and
+prune, and verify that the first changed
+
+254
+00:18:31,069 --> 00:18:31,984
+commit is gone.
+
+255
+00:18:32,324 --> 00:18:37,950
+git pull --rebase works only as the first
+contact; after a fetch, a plain rebase
+
+256
+00:18:37,990 --> 00:18:41,421
+onto origin/main tries to
+replay the old history.
+
+257
+00:18:41,761 --> 00:18:46,460
+On GitHub, unreachable commits, pull
+request refs, forks and clones survive the
+
+258
+00:18:46,500 --> 00:18:51,019
+force push; Support can act on the first
+two, and only where rotation cannot
+
+259
+00:18:51,059 --> 00:18:52,099
+mitigate the risk.
+
+260
+00:18:52,439 --> 00:18:56,522
+Governance controls do not prevent leaks;
+they limit what a leaked credential
+
+261
+00:18:56,562 --> 00:18:58,611
+reaches and let you answer what it did.
+
+262
+00:19:00,451 --> 00:19:07,976
+Read sections 21B.18 to 21B.23 and
+do the Practice section, 21B.25.
+
+263
+00:19:08,016 --> 00:19:14,524
+Then do Exercise 31.6, Level
+3, "The secret came back", in
+
+264
+00:19:14,564 --> 00:19:18,815
+exercises/m26-m31-actions-security.md.
+
+265
+00:19:19,155 --> 00:19:23,907
+Today you traced a returned secret back
+through one merge commit, and you can now
+
+266
+00:19:23,947 --> 00:19:28,227
+write the instruction that prevents
+it. Do the lab once before you go on.
+
+267
+00:19:28,267 --> 00:19:33,078
+Next time: the gate briefing for security.
+Until then, look at the state first and
+
+268
+00:19:33,118 --> 00:19:35,268
+type second. See you in the next one.

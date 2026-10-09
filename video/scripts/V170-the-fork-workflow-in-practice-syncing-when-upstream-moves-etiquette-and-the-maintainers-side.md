@@ -407,9 +407,15 @@ The price is the merge commit `44d750c` in the middle of your branch.
 
 Stay on the fourth row. If the project asks you to rebase during review, the reviewer can't see from the forced push what changed between the two versions. `git range-diff`, from video 58, is the tool that compares the old series with the new one. Say in the pull request that you rebased and what changed, so the reviewer doesn't have to read everything again.
 
+**[ANIMATION]** cards: question=Review_has_started,_the_guide_is_silent,_upstream_moves_again cards=A:rebase_and_force-push|B:merge_upstream_into_the_branch marks=1:bad,2:ok id=quiz2
+
+**[ANIMATION]** step: quiz2.2
+
 Quick quiz. Review has started, the project's guide is silent, and upstream moves again. A, rebase and force-push, or B, merge upstream into the branch? Your answer?
 
 **[PAUSE]**
+
+**[ANIMATION]** step: quiz2.marks
 
 B, by the textbook's rule: rebase freely until review starts, and add commits afterwards. A merge changes no commit ID, so review comments stay attached.
 
@@ -504,7 +510,7 @@ This is the root-cause box of section 27.3. Read its fix line: test content, not
 
 **[ON SCREEN]** GitHub walkthrough. Layer label: GitHub.
 
-Now the same cycle in your own practice repository, following Lab 21.1, Part B. The GitHub interface changes. The lab's text and the linked documentation are the reference, and no GitHub output was captured for this course. Run it in your normal shell, not in `labs/shell`, because the lab shell switches off the system configuration where the credential helper lives.
+**Now the same cycle in your own practice repository, following Lab 21.1, Part B.** The GitHub interface changes. The lab's text and the linked documentation are the reference, and no GitHub output was captured for this course. Run it in your normal shell, not in `labs/shell`, because the lab shell switches off the system configuration where the credential helper lives.
 
 As the contributor: fork the practice repository and clone the fork, and check with `git remote -v` that two remotes exist. Create the branch from `upstream/main`, commit, push to `origin`, and open the pull request against the upstream repository.
 

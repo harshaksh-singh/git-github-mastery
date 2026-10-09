@@ -1,0 +1,1061 @@
+1
+00:00:04,500 --> 00:00:07,852
+A required check on main
+has been red for five days.
+
+2
+00:00:07,892 --> 00:00:13,006
+A required check is a test result that
+must pass before a change may be merged.
+
+3
+00:00:13,046 --> 00:00:18,486
+One step fails on the runner, the machine
+that runs the job, with exit code 128, the
+
+4
+00:00:18,526 --> 00:00:23,704
+program's way of reporting a failure. The
+script behind that step works on every
+
+5
+00:00:23,744 --> 00:00:29,119
+laptop in the team. Re-runs fail identically.
+A developer with a harmless change is
+
+6
+00:00:29,159 --> 00:00:33,033
+blocked, has a plausible culprit,
+and asks for the shortcut.
+
+7
+00:00:33,373 --> 00:00:36,987
+"Flaky" is a diagnosis, and it
+has a property you can test.
+
+8
+00:00:37,027 --> 00:00:42,127
+A flaky failure comes and goes: it doesn't
+repeat identically, and it doesn't start
+
+9
+00:00:42,167 --> 00:00:47,266
+on one day and then fail on every run. This
+failure repeats identically, and it has
+
+10
+00:00:47,306 --> 00:00:52,468
+failed on every run for five days. Today
+you refuse the word until the investigation
+
+11
+00:00:52,508 --> 00:00:57,484
+order has been followed, and you rebuild
+the runner's view of the repository with
+
+12
+00:00:57,524 --> 00:01:02,129
+Git alone. And hold on to one question:
+the laptops pass, the runner fails.
+
+13
+00:01:02,169 --> 00:01:03,243
+Can both be right?
+
+14
+00:01:05,083 --> 00:01:09,036
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+15
+00:01:09,076 --> 00:01:13,225
+This is a debrief of Incident 7,
+incidents/07-ci-passes-locally.
+
+16
+00:01:13,265 --> 00:01:18,265
+You need to have generated it, read its
+evidence directory, and attempted it.
+
+17
+00:01:18,305 --> 00:01:23,698
+If you haven't, please stop the video here.
+The cause is named in the next section.
+
+18
+00:01:26,038 --> 00:01:31,003
+A word about the evidence. Incident 7 comes
+with a workflow file and a description
+
+19
+00:01:31,043 --> 00:01:36,068
+of a failed run. A workflow file tells
+GitHub Actions, GitHub's automation service,
+
+20
+00:01:36,108 --> 00:01:40,341
+which jobs to run on an event. Both
+were constructed for the exercise.
+
+21
+00:01:40,381 --> 00:01:45,284
+Nothing was captured from GitHub, by the
+authors of the course or for this video,
+
+22
+00:01:45,324 --> 00:01:47,665
+and no GitHub output appears on screen.
+
+23
+00:01:48,005 --> 00:01:52,642
+The evidence that can be reproduced is on
+the Git side, and that's the point of the
+
+24
+00:01:52,682 --> 00:01:56,924
+drill. For a large class of "passes
+locally, fails on Actions" problems, the
+
+25
+00:01:56,964 --> 00:01:59,403
+difference is the
+repository the runner had.
+
+26
+00:01:59,743 --> 00:02:03,883
+From video 153 you have the
+documented causes of that class.
+
+27
+00:02:03,923 --> 00:02:09,665
+From video 154, the debugging instruments.
+This incident is also the third scenario
+
+28
+00:02:09,705 --> 00:02:13,566
+of the senior standard: "GitHub
+Actions suddenly fails".
+
+29
+00:02:15,406 --> 00:02:16,984
+Here's what you'll walk away with.
+
+30
+00:02:17,324 --> 00:02:18,736
+After this video you can:
+
+31
+00:02:19,076 --> 00:02:23,611
+Refuse "flaky runner" as a diagnosis
+until the investigation order has been
+
+32
+00:02:23,651 --> 00:02:24,160
+followed.
+
+33
+00:02:24,500 --> 00:02:28,833
+Establish which commit the run tested and
+what the runner's repository contained.
+
+34
+00:02:29,173 --> 00:02:31,833
+Reproduce the runner's view
+locally with Git alone.
+
+35
+00:02:32,173 --> 00:02:35,048
+Fix the cause and predict
+what the next run will test.
+
+36
+00:02:35,388 --> 00:02:40,096
+Handle "nothing changed and CI fails" by
+listing what can change without a commit.
+
+37
+00:02:41,936 --> 00:02:47,269
+"Suddenly" is a claim to test first. Either
+something in the repository changed: a
+
+38
+00:02:47,309 --> 00:02:52,774
+commit to the workflow, the lock file or
+the code. A commit is one saved snapshot of
+
+39
+00:02:52,814 --> 00:02:58,212
+the project. Or something outside it did:
+a runner image, an action behind a moving
+
+40
+00:02:58,252 --> 00:03:03,323
+tag, a secret, a cache. git log --oneline
+-- .github/workflows and the list of
+
+41
+00:03:03,363 --> 00:03:06,010
+recent runs separate the two in a minute.
+
+42
+00:03:06,350 --> 00:03:10,621
+The first answers "where does green turn
+red". The second answers "which commit did
+
+43
+00:03:10,661 --> 00:03:12,179
+the run test, on which event".
+
+44
+00:03:12,519 --> 00:03:17,278
+Then a fixed order. The investigation goes
+from "did the right thing start" to "what
+
+45
+00:03:17,318 --> 00:03:21,449
+did it say". An answer early in the
+list makes the later ones irrelevant.
+
+46
+00:03:24,789 --> 00:03:30,382
+Applied to Incident 7. Areas 1 to 8 are
+answered from the workflow file and the run
+
+47
+00:03:30,422 --> 00:03:31,807
+report without a log.
+
+48
+00:03:32,147 --> 00:03:37,506
+One event, a read-only token, a fixed runner
+label, no environment, no secrets, both
+
+49
+00:03:37,546 --> 00:03:42,905
+actions pinned by commit SHA. Area 9 gives
+one line, and it's a Git message: "fatal:
+
+50
+00:03:42,945 --> 00:03:48,240
+No names found, cannot describe anything."
+That points at the repository the runner
+
+51
+00:03:48,280 --> 00:03:50,554
+had, and Git can build the same one.
+
+52
+00:03:50,894 --> 00:03:54,943
+Before I name the cause, name
+it yourself. Say it out loud.
+
+53
+00:03:59,783 --> 00:04:05,162
+The root cause. actions/checkout fetches
+one commit and no tags by default, and git
+
+54
+00:04:05,202 --> 00:04:10,386
+describe needs history and tags.
+actions/checkout is the action that fetches the
+
+55
+00:04:10,426 --> 00:04:15,675
+repository onto the runner. A tag is a
+fixed name for one commit, here a release,
+
+56
+00:04:15,715 --> 00:04:19,593
+and git describe derives a
+version from the newest such tag.
+
+57
+00:04:19,933 --> 00:04:25,304
+The README of the checkout action, version
+7.0.1, says it fetches a single commit by
+
+58
+00:04:25,344 --> 00:04:30,522
+default, with fetch-tags off, and that
+fetch-depth: 0 fetches all history for all
+
+59
+00:04:30,562 --> 00:04:35,805
+branches and tags. The step was added
+without changing the checkout it depends on.
+
+60
+00:04:35,845 --> 00:04:38,639
+Layer: GitHub Actions,
+a documented default.
+
+61
+00:04:38,979 --> 00:04:43,985
+Why both can be right. "It passes on my
+machine" and "it fails on the runner" are
+
+62
+00:04:44,025 --> 00:04:48,470
+both true, at the same commit, because
+the commit isn't the whole input.
+
+63
+00:04:48,510 --> 00:04:53,205
+A full clone, a complete copy of the
+repository, has five commits and a tag.
+
+64
+00:04:53,545 --> 00:04:58,259
+The runner's clone has one commit and no
+tag. Same commit ID, different repository
+
+65
+00:04:58,299 --> 00:05:01,621
+around it. That's the question
+from the opening, answered.
+
+66
+00:05:01,961 --> 00:05:03,642
+Two habits complete the standard.
+
+67
+00:05:03,982 --> 00:05:08,013
+Look behind the first failure.
+The job never reached its tests.
+
+68
+00:05:08,053 --> 00:05:13,376
+A second defect waits behind the first: a
+template tracked under one spelling while
+
+69
+00:05:13,416 --> 00:05:16,994
+the code opens it under another,
+differing only in case.
+
+70
+00:05:17,034 --> 00:05:22,357
+That works only on a filesystem that ignores
+case. A Mac's default filesystem does.
+
+71
+00:05:22,397 --> 00:05:23,714
+The runner's doesn't.
+
+72
+00:05:24,054 --> 00:05:28,991
+And refuse the shortcut. A red required
+check isn't overridden by an administrator
+
+73
+00:05:29,031 --> 00:05:33,846
+because the change "is only a docstring".
+The answer to "merge it anyway" is no,
+
+74
+00:05:33,886 --> 00:05:34,817
+with the reason.
+
+75
+00:05:35,157 --> 00:05:39,874
+What "fixed" means here. The honest status
+after the fix is pushed: "cause removed
+
+76
+00:05:39,914 --> 00:05:43,644
+in the files; confirmed when the
+run on the fix branch is green."
+
+77
+00:05:43,684 --> 00:05:47,937
+The files alone prove that the cause
+was removed, not that the job passes.
+
+78
+00:05:47,977 --> 00:05:51,765
+Verification is a green run on the
+fix branch, observed on GitHub.
+
+79
+00:05:52,105 --> 00:05:58,113
+Quick quiz. The fix is pushed. To see it
+tested, do you A, re-run the failed run, or
+
+80
+00:05:58,153 --> 00:06:01,929
+B, wait for a new run on the
+fix branch? Your answer?
+
+81
+00:06:06,769 --> 00:06:12,572
+Re-running. The answer is B. A re-run
+reuses the original commit and ref, so it
+
+82
+00:06:12,612 --> 00:06:18,637
+can't test a fix. Re-run with gh run rerun
+<run-id> --failed --debug only when the
+
+83
+00:06:18,677 --> 00:06:19,969
+log is not enough.
+
+84
+00:06:20,309 --> 00:06:25,829
+Severity. SEV 3: a team is blocked. The
+line for the postmortem, the written record
+
+85
+00:06:25,869 --> 00:06:31,255
+of the incident, is the uncomfortable one:
+five days of red on main hid a second,
+
+86
+00:06:31,295 --> 00:06:32,059
+real defect.
+
+87
+00:06:33,899 --> 00:06:38,543
+A picture helps. Think of the runner as
+a colleague who joined this morning, was
+
+88
+00:06:38,583 --> 00:06:43,403
+handed a single printed page of the project,
+the latest one, and was asked to state
+
+89
+00:06:43,443 --> 00:06:48,204
+the version number of the book. They can't.
+The version is derived from a bookmark
+
+90
+00:06:48,244 --> 00:06:52,771
+that sits many pages back, and they
+weren't given those pages or the bookmark.
+
+91
+00:06:53,111 --> 00:06:57,036
+The colleague isn't flaky. They'll
+give the same answer every time.
+
+92
+00:06:57,076 --> 00:07:01,890
+The mistake was in what they were handed,
+and it was a deliberate default: handing
+
+93
+00:07:01,930 --> 00:07:03,192
+over one page is fast.
+
+94
+00:07:03,532 --> 00:07:08,383
+Where the picture breaks: a new colleague
+would ask for the rest of the book.
+
+95
+00:07:08,423 --> 00:07:12,703
+A runner does what the workflow file
+says and reports exit code 128.
+
+96
+00:07:13,043 --> 00:07:17,717
+For "suddenly fails", sort every candidate
+cause into two columns: changes you can
+
+97
+00:07:17,757 --> 00:07:22,546
+see with git log, and changes you can't.
+The first column is short and is checked in
+
+98
+00:07:22,586 --> 00:07:27,260
+a minute. If it's empty for the day the
+failure began, the cause is in the second.
+
+99
+00:07:27,600 --> 00:07:32,931
+Try it now, on paper. Thirty seconds. Draw
+those two columns and sort four causes: a
+
+100
+00:07:32,971 --> 00:07:37,918
+commit to the lock file, a moved runner
+image, a rotated secret, a commit to a
+
+101
+00:07:37,958 --> 00:07:41,179
+script that a step runs.
+Say your answers out loud.
+
+102
+00:07:47,519 --> 00:07:52,325
+Check your paper. The two commits are on
+the left. The runner image and the secret
+
+103
+00:07:52,365 --> 00:07:57,170
+are on the right. In Incident 7 the first
+red run coincides with a commit: the one
+
+104
+00:07:57,210 --> 00:08:01,898
+that added the version step. So the cause
+is reachable from the left column, and
+
+105
+00:08:01,938 --> 00:08:06,862
+"flaky" is excluded before the log is read.
+The last line of the right column is the
+
+106
+00:08:06,902 --> 00:08:11,766
+bridge between the two: the commit is the
+same everywhere, and what surrounds it on
+
+107
+00:08:11,806 --> 00:08:12,830
+the runner is not.
+
+108
+00:08:14,670 --> 00:08:18,187
+Into the lab. From here on the
+screen shows the solution.
+
+109
+00:08:20,527 --> 00:08:21,707
+It does pass locally.
+
+110
+00:08:22,047 --> 00:08:28,973
+The script runs git describe --tags --match
+"v*" and prints a version built from the
+
+111
+00:08:29,013 --> 00:08:35,607
+tag v1.4.0, three commits back. Exit status
+0. The reporter is right about their
+
+112
+00:08:35,647 --> 00:08:36,271
+machine.
+
+113
+00:08:36,611 --> 00:08:38,357
+The workflow, and when it changed.
+
+114
+00:08:38,697 --> 00:08:42,373
+The checkout step has no options:
+the line after it is empty.
+
+115
+00:08:42,413 --> 00:08:47,431
+And the history of the two files: the
+workflow was added in one commit, the version
+
+116
+00:08:47,471 --> 00:08:52,183
+step in a later one, 261eb76. That's the
+left column of the diagram, answered.
+
+117
+00:08:52,223 --> 00:08:55,230
+The first red run and this
+commit belong together.
+
+118
+00:08:55,570 --> 00:09:00,725
+The runner's clone, made with Git. Predict
+three things: how many commits, how many
+
+119
+00:09:00,765 --> 00:09:03,854
+tags, and what the script
+prints. Say it out loud.
+
+120
+00:09:08,694 --> 00:09:13,929
+A shallow repository: a clone that holds
+only the newest commits and treats the
+
+121
+00:09:13,969 --> 00:09:19,538
+history as ending there. One commit. No
+tags. And the script prints the same line as
+
+122
+00:09:19,578 --> 00:09:25,013
+the run report, with exit status 128. The
+failure is reproduced on a Mac, with Git
+
+123
+00:09:25,053 --> 00:09:28,418
+alone, with no runner
+involved. It's deterministic.
+
+124
+00:09:28,758 --> 00:09:32,080
+Proof of the remedy. What
+does fetch-depth: 0 change?
+
+125
+00:09:32,120 --> 00:09:35,505
+The same clone, with all
+history and the tags fetched.
+
+126
+00:09:35,845 --> 00:09:39,139
+Five commits, one tag, and the
+script prints the version.
+
+127
+00:09:39,179 --> 00:09:42,181
+The remedy is proven before
+the workflow is touched.
+
+128
+00:09:42,521 --> 00:09:47,572
+Look behind the first failure. Would the
+tests pass on Linux once the version step
+
+129
+00:09:47,612 --> 00:09:50,242
+is fixed? Look at names
+as Git stores them.
+
+130
+00:09:50,582 --> 00:09:56,184
+Git tracks summary.md.tmpl with a lower-case
+s. The code opens a name with a capital
+
+131
+00:09:56,224 --> 00:10:01,692
+S. The pickaxe, a search for commits that
+changed how often a string occurs, names
+
+132
+00:10:01,732 --> 00:10:07,200
+the commit that introduced the spelling:
+367b8fb, made while main was already red.
+
+133
+00:10:07,240 --> 00:10:12,775
+On a filesystem that ignores case this
+works. On the runner it would have failed as
+
+134
+00:10:12,815 --> 00:10:14,723
+soon as the job got that far.
+
+135
+00:10:15,063 --> 00:10:19,528
+The fix: one branch, one pull request.
+🟡 CAUTION: a commit and a push of a new
+
+136
+00:10:19,568 --> 00:10:23,975
+branch. A pull request is GitHub's
+proposal to merge one branch into another.
+
+137
+00:10:24,315 --> 00:10:28,374
+Two changes in the diff. The
+checkout step gains fetch-depth: 0.
+
+138
+00:10:28,414 --> 00:10:33,753
+The template name is spelled as it's tracked.
+Note what didn't change: the action is
+
+139
+00:10:33,793 --> 00:10:35,930
+still pinned to a full commit SHA.
+
+140
+00:10:39,270 --> 00:10:43,857
+The check passes. Read what it checks:
+the files. It can't observe a run.
+
+141
+00:10:44,197 --> 00:10:48,133
+So predict what the next run will
+test, which is objective four.
+
+142
+00:10:48,173 --> 00:10:53,165
+A pull_request run for this branch checks
+out the merge ref, the head merged into
+
+143
+00:10:53,205 --> 00:10:57,949
+the current base, with full history and
+tags. The version step finds the tag.
+
+144
+00:10:57,989 --> 00:11:01,117
+The tests open the template
+under its tracked name.
+
+145
+00:11:01,157 --> 00:11:02,360
+That's a prediction.
+
+146
+00:11:02,700 --> 00:11:05,735
+The status to report is:
+cause removed in the files.
+
+147
+00:11:05,775 --> 00:11:08,691
+Confirmed when the run on
+the fix branch is green.
+
+148
+00:11:09,031 --> 00:11:12,063
+The answer to the reporter.
+No administrative merge.
+
+149
+00:11:12,103 --> 00:11:16,434
+The failure isn't flaky: it repeats,
+it began with a commit, and it can be
+
+150
+00:11:16,474 --> 00:11:20,510
+reproduced on a laptop in six commands.
+The fix is in a pull request.
+
+151
+00:11:20,550 --> 00:11:23,641
+And the docstring change
+isn't held up by the runner.
+
+152
+00:11:23,681 --> 00:11:28,603
+It's held up by a red default branch that
+should have been treated as an incident on
+
+153
+00:11:28,643 --> 00:11:29,430
+its first day.
+
+154
+00:11:31,270 --> 00:11:32,918
+Five mistakes to watch for.
+
+155
+00:11:33,258 --> 00:11:38,149
+Diagnosing "flaky" from "it passes locally".
+Root cause: the local clone has full
+
+156
+00:11:38,189 --> 00:11:43,141
+history and tags and the runner's checkout
+has one commit and no tags, so the same
+
+157
+00:11:43,181 --> 00:11:45,454
+commit runs in different repositories.
+
+158
+00:11:45,794 --> 00:11:50,866
+Re-running to test a theory. Root cause:
+a re-run reuses the original commit and
+
+159
+00:11:50,906 --> 00:11:53,103
+ref, so it repeats the same inputs.
+
+160
+00:11:53,443 --> 00:11:58,729
+Stopping at the first failure. Root cause:
+the job never reached its tests, so every
+
+161
+00:11:58,769 --> 00:12:01,773
+defect behind the failing
+step stayed invisible.
+
+162
+00:12:02,113 --> 00:12:05,344
+Overriding a red required
+check for a "harmless" change.
+
+163
+00:12:05,384 --> 00:12:09,959
+Root cause: the check is the control for
+the branch, and bypassing it makes red
+
+164
+00:12:09,999 --> 00:12:12,120
+normal and hides real failures in it.
+
+165
+00:12:12,460 --> 00:12:17,173
+Reporting "fixed" from the files. Root
+cause: the files show that the cause was
+
+166
+00:12:17,213 --> 00:12:21,385
+removed; only a green run on the fix
+branch shows that the job passes.
+
+167
+00:12:23,225 --> 00:12:28,238
+Now, out of the lab. An evaluation-reporting
+service derives its version from the
+
+168
+00:12:28,278 --> 00:12:33,166
+newest release tag and stamps it on every
+report. A week after that feature was
+
+169
+00:12:33,206 --> 00:12:38,406
+added, a developer asks an administrator to
+bypass the red check for a documentation
+
+170
+00:12:38,446 --> 00:12:41,712
+change, "because the runner
+has been flaky all week".
+
+171
+00:12:42,052 --> 00:12:47,375
+The administrator opens the list of runs
+first. Green turns red at one commit, and
+
+172
+00:12:47,415 --> 00:12:52,477
+stays red. He reads the workflow file
+from the top: event, permissions, runner
+
+173
+00:12:52,517 --> 00:12:57,578
+label, action versions. Nothing moves
+there. Then the one line the failed step
+
+174
+00:12:57,618 --> 00:13:03,072
+printed, a message from Git. A depth-one
+clone without tags on his own machine gives
+
+175
+00:13:03,112 --> 00:13:03,988
+the same line.
+
+176
+00:13:04,328 --> 00:13:09,282
+He doesn't bypass. He opens a pull request
+with the checkout option, and because the
+
+177
+00:13:09,322 --> 00:13:13,979
+job hasn't reached its tests for a week,
+he also asks what else changed in that
+
+178
+00:13:14,019 --> 00:13:18,854
+week. One commit moved a template path into
+a constant, with a capital letter that
+
+179
+00:13:18,894 --> 00:13:20,638
+the tracked file doesn't have.
+
+180
+00:13:20,978 --> 00:13:25,823
+Both fixes go in together. In the retrospective
+the team writes down the two rules
+
+181
+00:13:25,863 --> 00:13:30,649
+from the textbook. A workflow change that
+adds a tool is reviewed with the inputs
+
+182
+00:13:30,689 --> 00:13:34,998
+the tool reads. And a red default
+branch is an incident on its first day.
+
+183
+00:13:36,838 --> 00:13:43,964
+Your turn. Do Lab 37.4, "CI works locally
+but fails on GitHub Actions (incident 7)",
+
+184
+00:13:44,004 --> 00:13:50,789
+in lab-manual/m37-incident-drills-platform.md,
+from a freshly generated sandbox.
+
+185
+00:13:51,129 --> 00:13:55,864
+Before you open the evidence, write the
+twelve areas of the investigation order down
+
+186
+00:13:55,904 --> 00:14:00,582
+the side of a page. Answer each from the
+workflow file and the run description, and
+
+187
+00:14:00,622 --> 00:14:05,016
+mark where the first informative answer
+appears. Before you build the runner's
+
+188
+00:14:05,056 --> 00:14:08,767
+clone, predict its commit count,
+its tags and the script's output.
+
+189
+00:14:08,807 --> 00:14:13,315
+After the fix, write the status sentence
+you would send, with what is proven and
+
+190
+00:14:13,355 --> 00:14:14,224
+what is not yet.
+
+191
+00:14:14,564 --> 00:14:21,424
+The challenge is Lab 38.5, "Senior standard
+3: GitHub Actions suddenly fails", in
+
+192
+00:14:21,464 --> 00:14:25,171
+lab-manual/m38-communication-postmortems.md.
+
+193
+00:14:27,011 --> 00:14:29,065
+Read the question, then answer out loud.
+
+194
+00:14:33,905 --> 00:14:38,682
+A strong answer starts with the second
+half, because it frames the first: say what
+
+195
+00:14:38,722 --> 00:14:43,617
+else, besides the commit, is an input to a
+run, with at least two examples about Git
+
+196
+00:14:43,657 --> 00:14:48,258
+and one that isn't. Then say what you
+check first and why: which commit the run
+
+197
+00:14:48,298 --> 00:14:52,077
+tested, on which event, and what
+the runner's checkout contained.
+
+198
+00:14:52,117 --> 00:14:55,719
+Name the read-only way to reproduce
+the runner's view locally.
+
+199
+00:14:55,759 --> 00:15:00,654
+Finish with what you wouldn't accept as a
+diagnosis without evidence, and the status
+
+200
+00:15:00,694 --> 00:15:02,593
+you'd report after pushing a fix.
+
+201
+00:15:04,433 --> 00:15:07,622
+Let's land this. Say each
+line in your own words.
+
+202
+00:15:07,962 --> 00:15:12,569
+"Suddenly fails" is tested first: either
+a commit changed something, or something
+
+203
+00:15:12,609 --> 00:15:17,216
+outside the repository did; the list of
+runs and git log on the workflow separate
+
+204
+00:15:17,256 --> 00:15:17,675
+the two.
+
+205
+00:15:18,015 --> 00:15:22,866
+The investigation follows a fixed order of
+twelve areas; an early answer makes later
+
+206
+00:15:22,906 --> 00:15:23,798
+ones irrelevant.
+
+207
+00:15:24,138 --> 00:15:28,771
+The default checkout is one commit without
+tags, so anything that needs history or
+
+208
+00:15:28,811 --> 00:15:30,993
+tags behaves differently on the runner.
+
+209
+00:15:31,333 --> 00:15:35,782
+The runner's view can be rebuilt with a
+depth-one clone without tags, and the remedy
+
+210
+00:15:35,822 --> 00:15:37,759
+proven before the workflow is edited.
+
+211
+00:15:38,099 --> 00:15:42,970
+Look behind the first failure, refuse the
+administrative merge, and report "cause
+
+212
+00:15:43,010 --> 00:15:46,304
+removed in the files; confirmed
+when the run is green".
+
+213
+00:15:48,144 --> 00:15:52,287
+Read sections 30.11 and 30.18.
+Then generate Incident 3,
+
+214
+00:15:52,327 --> 00:15:57,366
+incidents/03-committed-secret, and
+attempt it before the next video.
+
+215
+00:15:57,406 --> 00:16:03,565
+You met it as a challenge after video 168.
+This time run it against the clock, with
+
+216
+00:16:03,605 --> 00:16:09,391
+a command log, and write the message to
+the team before you watch the debrief.
+
+217
+00:16:09,731 --> 00:16:14,617
+Today you rebuilt a runner's view on your
+own machine, and made "flaky" a claim you
+
+218
+00:16:14,657 --> 00:16:18,534
+can test. Next time: a secret is
+committed, and senior standard 2.
+
+219
+00:16:18,574 --> 00:16:21,620
+Until then, look at the
+state first and type second.
+
+220
+00:16:21,660 --> 00:16:23,045
+See you in the next one.

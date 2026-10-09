@@ -176,7 +176,9 @@ And the stack of three pull requests: each one names the one below as its base.
 | Regulated environment (segregation of duties, audit trail, change approval) | protected branches with required review by someone other than the author, signed tags for releases, release branches where a release is an audited event | the audit asks who approved what and what exactly shipped | make bypasses visible: rulesets and Rule Insights; compliance comes from enforced, logged rules, not from the name of the model |
 | Model or prompt releases that must be reproducible | tags on the exact commit, plus the data and model versions recorded with it | "which code produced this model" must have one answer | Chapter 28, section 28.7 |
 
-And the decision table of section 27.14. Each row is a context, what it pushes you toward, why, and what to watch.
+And the decision table of section 27.14.
+
+Each row is a context, what it pushes you toward, why, and what to watch.
 
 ## LIVE TERMINAL DEMO
 
@@ -279,7 +281,7 @@ Not "release branches are cleaner", but: under this model the patch release chan
 
 **[ON SCREEN]** The decision table, with one team placed in it live.
 
-Take this description: a company of forty engineers runs a hosted LLM gateway, deployed continuously, and from next quarter also ships an on-premises edition to two customers who stay one version behind. It's subject to an audit that asks who approved each production change. Before we go down the table, predict: which rows apply to this team? Say them out loud.
+Take this description: a company of forty engineers that runs a hosted LLM gateway, deployed continuously, and from next quarter also ships an on-premises edition to two customers who stay one version behind. It's subject to an audit that asks who approved each production change. Before we go down the table, predict: which rows apply to this team? Say them out loud.
 
 **[PAUSE]**
 

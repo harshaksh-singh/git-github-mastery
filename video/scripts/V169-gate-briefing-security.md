@@ -172,6 +172,8 @@ v0.2.0
 
 Look at the tag, the last line of the output.
 
+**[PAUSE]**
+
 **[ANIMATION]** graph: ...older-0805fd8-64b9b89-b509fe3-d4b8762-d42d1a1 main; b509fe3-7fae871 origin/feature/streaming; d4b8762 origin/main; HEAD=main; note:0805fd8:the_first_commit; name:branches; cmd:git_branch_-a_--contains_0805fd8 => + 64b9b89 tag:v0.2.0; cmd:git_tag_--contains_0805fd8; say:A_branch_listing_alone_would_have_missed_the_tag; name:tag title=Which_refs_contain_the_first_commit? at_branches=4 at_tag=12
 
 A branch listing alone would have missed it. In a paper case the same evidence is printed for you, and you're asked what it means. The warm-up is to say, for each line of such output, what it rules in and what it rules out.

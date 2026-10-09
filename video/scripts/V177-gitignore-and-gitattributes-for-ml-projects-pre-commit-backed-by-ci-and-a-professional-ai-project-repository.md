@@ -36,7 +36,7 @@ After this video you can:
 1. Write the ignore and attribute rules of an ML project and find which rule decides a path.
 2. Fix a checkpoint that is tracked although its pattern is ignored, and say what the fix leaves in history.
 3. Explain what a local pre-commit hook guarantees and three ways a commit bypasses it.
-4. Back every hook with a CI check.
+4. Back every hook with a check in CI.
 5. Build the professional AI project repository of section 28.12 from an empty folder.
 
 ## CONCEPT

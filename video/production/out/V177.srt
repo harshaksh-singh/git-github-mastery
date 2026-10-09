@@ -1,0 +1,1276 @@
+1
+00:00:04,500 --> 00:00:09,131
+The first answer: a checkpoint was committed
+two years ago and "deleted", and every
+
+2
+00:00:09,171 --> 00:00:13,690
+clone still carries it. The ignore rule
+that was added afterwards changed nothing
+
+3
+00:00:13,730 --> 00:00:14,309
+about that.
+
+4
+00:00:14,649 --> 00:00:19,433
+The second answer is five words long: a
+hook that isn't installed doesn't run.
+
+5
+00:00:19,473 --> 00:00:22,896
+The engineer who pushed the
+dump never skipped anything.
+
+6
+00:00:22,936 --> 00:00:24,256
+Her clone had no hook.
+
+7
+00:00:24,596 --> 00:00:29,326
+Both failures have the same shape. A
+safeguard existed, and it wasn't in force at
+
+8
+00:00:29,366 --> 00:00:32,565
+the moment and in the place
+where the mistake was made.
+
+9
+00:00:32,605 --> 00:00:36,804
+Hold on to both answers. You'll watch
+each of them happen in a terminal.
+
+10
+00:00:38,644 --> 00:00:42,344
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+11
+00:00:42,384 --> 00:00:47,310
+This video is about putting safeguards in
+force: ignore rules, attributes, hooks,
+
+12
+00:00:47,350 --> 00:00:50,927
+and the layout of the repository
+itself. Three words first.
+
+13
+00:00:50,967 --> 00:00:55,832
+An ignore rule is a pattern that tells
+Git which untracked files to leave alone.
+
+14
+00:00:55,872 --> 00:01:00,736
+A hook is a script that Git runs at a
+fixed moment, for example before a commit.
+
+15
+00:01:01,076 --> 00:01:06,379
+And a checkpoint is a saved copy of a
+model's weights, usually a large file.
+
+16
+00:01:06,419 --> 00:01:12,285
+You have the mechanisms already. From video
+12: ignore rules and the already-tracked
+
+17
+00:01:12,325 --> 00:01:17,698
+trap. From video 90: --no-verify,
+core.hooksPath, and why hooks can't enforce
+
+18
+00:01:17,738 --> 00:01:23,463
+policy. Today those mechanisms meet model
+weights, data sets and evaluation dumps.
+
+19
+00:01:23,803 --> 00:01:28,667
+Three demos. An ignore file for an ML
+project, and the checkpoint that was tracked
+
+20
+00:01:28,707 --> 00:01:33,632
+before the rule existed. A hook and a CI
+script that run the same checks, and three
+
+21
+00:01:33,672 --> 00:01:38,597
+commits, of which the hook stops one. And
+the finished repository of docqa, read in
+
+22
+00:01:38,637 --> 00:01:42,545
+the order of its history, because
+the order is part of the design.
+
+23
+00:01:42,885 --> 00:01:47,480
+The tools named today, pre-commit and the
+scanners, aren't installed in the lab.
+
+24
+00:01:47,520 --> 00:01:51,305
+Their configuration is shown from
+their documentation and not run.
+
+25
+00:01:51,345 --> 00:01:54,724
+The checks you see running are
+a standard-library stand-in.
+
+26
+00:01:56,564 --> 00:01:58,142
+Here's what you'll walk away with.
+
+27
+00:01:58,482 --> 00:01:59,894
+After this video you can:
+
+28
+00:02:00,234 --> 00:02:05,042
+Write the ignore and attribute rules of an
+ML project and find which rule decides a
+
+29
+00:02:05,082 --> 00:02:05,334
+path.
+
+30
+00:02:05,674 --> 00:02:10,005
+Fix a checkpoint that is tracked although
+its pattern is ignored, and say what the
+
+31
+00:02:10,045 --> 00:02:11,178
+fix leaves in history.
+
+32
+00:02:11,518 --> 00:02:16,125
+Explain what a local pre-commit hook guarantees
+and three ways a commit bypasses it.
+
+33
+00:02:16,465 --> 00:02:18,393
+Back every hook with a check in CI.
+
+34
+00:02:18,733 --> 00:02:24,798
+Build the professional AI project repository
+of section 28.12 from an empty folder.
+
+35
+00:02:26,638 --> 00:02:31,832
+Ignore rules and attributes, in one sentence.
+Ignore rules keep generated and large
+
+36
+00:02:31,872 --> 00:02:37,002
+files from being added by accident, attributes
+say how tracked files are converted
+
+37
+00:02:37,042 --> 00:02:39,902
+and merged, and neither
+is a security control.
+
+38
+00:02:40,242 --> 00:02:45,206
+The course's research found no authoritative,
+maintained .gitignore template for ML
+
+39
+00:02:45,246 --> 00:02:50,090
+projects. GitHub's Python template covers
+interpreter, packaging, environment and
+
+40
+00:02:50,130 --> 00:02:55,094
+tool caches and contains nothing ML-specific.
+The file you'll see is assembled from
+
+41
+00:02:55,134 --> 00:02:59,616
+that template and from each tool's
+documentation of where it writes output.
+
+42
+00:02:59,656 --> 00:03:03,414
+Read it as a starting point and
+adjust it to the tools you run.
+
+43
+00:03:03,454 --> 00:03:06,911
+The same holds for the attributes
+file and for the layout.
+
+44
+00:03:07,251 --> 00:03:12,276
+Why each group in the ignore file exists.
+The data directory, because data is
+
+45
+00:03:12,316 --> 00:03:16,683
+versioned by reference. Weight
+formats, because one stray git add .
+
+46
+00:03:16,723 --> 00:03:20,037
+after training would otherwise
+commit a checkpoint.
+
+47
+00:03:20,077 --> 00:03:24,971
+wandb/, mlruns/ and mlflow.db, because
+the trackers write there by default.
+
+48
+00:03:25,011 --> 00:03:29,312
+outputs/ and multirun/, because
+Hydra creates a directory per run.
+
+49
+00:03:29,352 --> 00:03:34,706
+.env, because that's where local credentials
+go. Editor and operating-system files
+
+50
+00:03:34,746 --> 00:03:39,705
+are deliberately absent: they belong in
+each developer's global ignore file,
+
+51
+00:03:39,745 --> 00:03:42,336
+core.excludesFile, not in every project.
+
+52
+00:03:42,676 --> 00:03:43,369
+Three rules.
+
+53
+00:03:43,709 --> 00:03:47,862
+Rule 1: ignore patterns never affect
+files that are already tracked.
+
+54
+00:03:47,902 --> 00:03:52,671
+The manual defines ignore files as
+specifying "intentionally untracked files".
+
+55
+00:03:52,711 --> 00:03:57,726
+The index decides what is tracked, not
+.gitignore. The index is Git's list of what
+
+56
+00:03:57,766 --> 00:03:59,514
+the next commit will contain.
+
+57
+00:03:59,854 --> 00:04:04,794
+Rule 2: drivers are named in .gitattributes
+and defined in configuration.
+
+58
+00:04:04,834 --> 00:04:10,457
+A committed attribute that names a driver
+nobody configured is a silent no-op, or a
+
+59
+00:04:10,497 --> 00:04:15,710
+hard failure when the filter is required.
+That was video 175 in one sentence.
+
+60
+00:04:16,050 --> 00:04:21,740
+Rule 3: an ignore file isn't a security
+control. It prevents accidents by people who
+
+61
+00:04:21,780 --> 00:04:27,061
+use git add without -f. It does nothing
+about a file committed before the rule
+
+62
+00:04:27,101 --> 00:04:32,177
+existed, a file added with --force, or
+a secret pasted into a tracked file.
+
+63
+00:04:32,517 --> 00:04:36,777
+Hooks, in one sentence. A hook gives
+the author feedback in seconds.
+
+64
+00:04:36,817 --> 00:04:41,014
+Only a check that runs where the
+author can't skip it is a control.
+
+65
+00:04:41,054 --> 00:04:46,011
+Usually that place is CI, the automation
+that runs checks on a server for every
+
+66
+00:04:46,051 --> 00:04:46,896
+pushed change.
+
+67
+00:04:47,236 --> 00:04:53,196
+The framework. pre-commit, version 4.6.2 of
+August 2026, manages hooks declared in a
+
+68
+00:04:53,236 --> 00:04:59,125
+committed file. pre-commit install installs
+the Git hook into the clone, pre-commit
+
+69
+00:04:59,165 --> 00:05:04,768
+run --all-files is the documented CI
+usage, and rev must be an immutable tag or
+
+70
+00:05:04,808 --> 00:05:05,268
+commit.
+
+71
+00:05:12,608 --> 00:05:17,906
+Add one secret scanner. The report notes
+that the gitleaks README now describes the
+
+72
+00:05:17,946 --> 00:05:23,115
+project as feature complete, with future
+releases limited to security patches, so
+
+73
+00:05:23,155 --> 00:05:28,196
+check the state of whichever scanner you
+choose. prek, version 0.5.4, is a Rust
+
+74
+00:05:28,236 --> 00:05:31,475
+reimplementation that reads
+the same configuration.
+
+75
+00:05:31,515 --> 00:05:34,176
+The report collected no benchmarks for it.
+
+76
+00:05:34,516 --> 00:05:39,293
+Why "once per clone" is the whole problem.
+The report lists the ways a local hook
+
+77
+00:05:39,333 --> 00:05:43,872
+fails open: hooks aren't installed by
+cloning. They're skipped with one flag.
+
+78
+00:05:43,912 --> 00:05:48,510
+And they're bypassed by commits made
+through the web interface, the API, or an
+
+79
+00:05:48,550 --> 00:05:49,878
+agent's own Git client.
+
+80
+00:05:50,218 --> 00:05:55,563
+GitHub, not Git. A CI check catches a secret
+after it has been pushed: the commit is
+
+81
+00:05:55,603 --> 00:05:59,281
+already on the server, and the
+credential must be rotated.
+
+82
+00:05:59,321 --> 00:06:04,281
+Only a server-side control at push time,
+push protection, a push ruleset, or a
+
+83
+00:06:04,321 --> 00:06:08,833
+pre-receive hook on a server you run,
+prevents the bytes from arriving.
+
+84
+00:06:08,873 --> 00:06:13,833
+Push protection is GitHub's feature that
+blocks a push containing a recognized
+
+85
+00:06:13,873 --> 00:06:18,385
+secret. Use CI for policy, and push-time
+controls for secrets and size.
+
+86
+00:06:18,725 --> 00:06:23,489
+The layout, in one sentence. A good layout
+makes the rules of this chapter the path
+
+87
+00:06:23,529 --> 00:06:28,350
+of least resistance: there's an obvious
+place for everything that belongs in Git and
+
+88
+00:06:28,390 --> 00:06:31,013
+an ignored place for
+everything that does not.
+
+89
+00:06:31,353 --> 00:06:36,386
+No single authoritative layout exists.
+Two reference points are well documented:
+
+90
+00:06:36,426 --> 00:06:41,523
+Cookiecutter Data Science v2, and the
+Python Packaging Authority's description of
+
+91
+00:06:41,563 --> 00:06:46,722
+the trade-off between the flat and src/
+layouts, without a blanket recommendation.
+
+92
+00:06:46,762 --> 00:06:51,225
+The tree in this video is the course's
+assembly for an LLM application.
+
+93
+00:06:53,065 --> 00:06:57,574
+A picture helps. Think of three fences
+at increasing distance from the author.
+
+94
+00:06:57,914 --> 00:07:01,707
+The first fence is at the desk: the
+ignore file, the filter, the hook.
+
+95
+00:07:01,747 --> 00:07:06,142
+It's close, fast and friendly, and the
+author can step over it, or may never have
+
+96
+00:07:06,182 --> 00:07:06,854
+had it built.
+
+97
+00:07:07,194 --> 00:07:11,081
+The second fence is at the gate of
+the branch: a required check in CI.
+
+98
+00:07:11,121 --> 00:07:15,737
+The author can't step over it. But by the
+time it is reached, the commit is already
+
+99
+00:07:15,777 --> 00:07:16,522
+on the server.
+
+100
+00:07:16,862 --> 00:07:21,359
+The third fence is at the door of the
+server: push protection and push rulesets.
+
+101
+00:07:21,399 --> 00:07:24,138
+It's the only one that
+keeps bytes from arriving.
+
+102
+00:07:24,478 --> 00:07:29,752
+Quick quiz. Which fence can the author
+not step over, and still acts before the
+
+103
+00:07:29,792 --> 00:07:35,066
+bytes are stored on the server? A, the
+local hook. B, the required check in CI.
+
+104
+00:07:35,106 --> 00:07:37,219
+C, push protection. Your answer?
+
+105
+00:07:42,059 --> 00:07:45,455
+C. The author can step over
+A, and B runs after the push.
+
+106
+00:07:45,495 --> 00:07:47,204
+Only the third fence is both.
+
+107
+00:07:47,544 --> 00:07:51,624
+Where the picture breaks: fences are
+independent, and these shouldn't be.
+
+108
+00:07:51,664 --> 00:07:56,140
+The first and second fence should run the
+same code, so that they can't disagree
+
+109
+00:07:56,180 --> 00:08:00,825
+about the rules. You'll see that in the
+demo: one script, called by the hook and by
+
+110
+00:08:00,865 --> 00:08:00,994
+CI.
+
+111
+00:08:01,334 --> 00:08:05,004
+And one sentence for the layout:
+rules first, files second.
+
+112
+00:08:05,044 --> 00:08:10,287
+Each safeguard precedes the thing it guards,
+so there's no window in which a mistake
+
+113
+00:08:10,327 --> 00:08:11,418
+can enter history.
+
+114
+00:08:13,258 --> 00:08:19,104
+The lab doesn't create everything. A real
+repository on GitHub should also have
+
+115
+00:08:19,144 --> 00:08:25,287
+these. .github/workflows/ for CI.
+.github/CODEOWNERS, so that changes to workflows,
+
+116
+00:08:25,327 --> 00:08:29,757
+lock files, prompts and the
+Dockerfile get a named reviewer.
+
+117
+00:08:29,797 --> 00:08:35,493
+.github/dependabot.yml. SECURITY.md. A
+licence. And .env.example, listing the
+
+118
+00:08:35,533 --> 00:08:39,367
+variable names a developer
+must set, with no values.
+
+119
+00:08:41,207 --> 00:08:44,772
+Into the lab, for three
+replays. First the ignore file.
+
+120
+00:08:45,112 --> 00:08:50,799
+Step 1: which rule matched? git check-ignore
+-v answers with the file, the line and
+
+121
+00:08:50,839 --> 00:08:52,179
+the pattern. 🟢 SAFE.
+
+122
+00:08:52,519 --> 00:08:58,881
+Predict: the pointer file is under data/,
+and /data/** ignores everything below
+
+123
+00:08:58,921 --> 00:09:02,689
+data/. Is the pointer
+ignored? Say it out loud.
+
+124
+00:09:07,529 --> 00:09:13,954
+The data rules use a pattern worth
+understanding. /data/** ignores everything below
+
+125
+00:09:13,994 --> 00:09:19,951
+data/. !/data/**/ re-includes the
+directories, which is necessary because Git
+
+126
+00:09:19,991 --> 00:09:26,338
+doesn't look inside an ignored directory,
+so no later rule could re-include a file
+
+127
+00:09:26,378 --> 00:09:30,855
+in it. !/data/**/*.ref then
+re-includes the pointer files.
+
+128
+00:09:30,895 --> 00:09:37,242
+Note the last command: with -v, check-ignore
+prints the matching pattern even when
+
+129
+00:09:37,282 --> 00:09:43,629
+it's a negation, and exits 0. A line whose
+pattern starts with an exclamation mark
+
+130
+00:09:43,669 --> 00:09:45,186
+means "not ignored".
+
+131
+00:09:45,526 --> 00:09:51,504
+git status --short --ignored shows what is
+on disk and ignored, with two exclamation
+
+132
+00:09:51,544 --> 00:09:51,933
+marks.
+
+133
+00:09:52,273 --> 00:09:57,385
+Try it now, for thirty seconds. In any
+repository of yours, pick one file you
+
+134
+00:09:57,425 --> 00:10:02,068
+believe is ignored, and type git
+check-ignore -v followed by its path.
+
+135
+00:10:02,108 --> 00:10:03,741
+It only reads. I'll wait.
+
+136
+00:10:08,581 --> 00:10:13,067
+If Git answered with a file, a line number
+and a pattern, that's the rule that
+
+137
+00:10:13,107 --> 00:10:17,768
+decides. If it printed nothing, the path
+isn't ignored, or it is tracked already.
+
+138
+00:10:17,808 --> 00:10:19,915
+The next step shows that second case.
+
+139
+00:10:20,255 --> 00:10:24,148
+Step 2: the checkpoint that
+was tracked before the rule.
+
+140
+00:10:24,188 --> 00:10:29,696
+🟢 SAFE: two commits. Predict: after *.ckpt
+is in the ignore file, what does git
+
+141
+00:10:29,736 --> 00:10:32,786
+status say when the
+checkpoint is retrained?
+
+142
+00:10:37,626 --> 00:10:41,026
+The pattern matches the
+path. --no-index shows that.
+
+143
+00:10:41,066 --> 00:10:45,854
+And Git goes on tracking the file.
+Retraining shows up as a modification.
+
+144
+00:10:46,194 --> 00:10:51,296
+Step 3: untrack it. 🟡 CAUTION: git rm
+--cached <path> removes the path from the
+
+145
+00:10:51,336 --> 00:10:56,242
+index and leaves the file on disk. The
+next commit records a deletion, and a
+
+146
+00:10:56,282 --> 00:11:01,254
+colleague who pulls that commit has the
+file deleted from their working tree.
+
+147
+00:11:01,294 --> 00:11:06,070
+Preview with git status. Undo before
+committing with git restore --staged.
+
+148
+00:11:06,410 --> 00:11:10,185
+Predict the last line: is the
+blob still in the repository?
+
+149
+00:11:10,225 --> 00:11:14,518
+A blob is Git's stored copy of one
+file's content. Say it out loud.
+
+150
+00:11:19,358 --> 00:11:25,600
+Untracked from now on, and the history is
+untouched: the 262,144-byte blob is still
+
+151
+00:11:25,640 --> 00:11:31,730
+reachable, so every clone still downloads
+it. That's the eleven-minute clone from
+
+152
+00:11:31,770 --> 00:11:38,087
+the opening. Removing it from history is a
+rewrite, with everything that implies for
+
+153
+00:11:38,127 --> 00:11:44,217
+a shared repository: video 167 and video
+168. For a secret, rotation comes first.
+
+154
+00:11:44,557 --> 00:11:46,177
+Step 4: the hook blocks.
+
+155
+00:11:46,517 --> 00:11:51,506
+The hook did its job: the commit was
+refused before the key reached any history.
+
+156
+00:11:51,546 --> 00:11:53,455
+The key is a fake that says so.
+
+157
+00:11:53,795 --> 00:11:59,625
+Step 5: one flag. 🟡 CAUTION: git commit
+--no-verify commits without the pre-commit
+
+158
+00:11:59,665 --> 00:12:01,128
+and commit-msg hooks.
+
+159
+00:12:01,468 --> 00:12:06,339
+--no-verify isn't a loophole. It's a
+documented option, and there are honest uses
+
+160
+00:12:06,379 --> 00:12:10,947
+for it. A control that the controlled
+person can switch off isn't a control.
+
+161
+00:12:11,287 --> 00:12:16,702
+Step 6: a clone has no hook. Predict what
+git config get core.hooksPath prints in
+
+162
+00:12:16,742 --> 00:12:17,982
+Asha's fresh clone.
+
+163
+00:12:22,822 --> 00:12:27,967
+Asha never skipped anything. Her clone has
+no core.hooksPath, because configuration
+
+164
+00:12:28,007 --> 00:12:33,090
+doesn't travel, so no hook ran. This is
+the answer to the second question from the
+
+165
+00:12:33,130 --> 00:12:33,590
+opening.
+
+166
+00:12:33,930 --> 00:12:37,328
+Step 7: the same checks,
+where they cannot be skipped.
+
+167
+00:12:40,668 --> 00:12:41,705
+Two design points.
+
+168
+00:12:42,045 --> 00:12:47,479
+The hook and CI run the same code,
+tools/checks.py, so they can't disagree about the
+
+169
+00:12:47,519 --> 00:12:52,952
+rules. And the CI script checks two things:
+every file version the branch adds, with
+
+170
+00:12:52,992 --> 00:12:58,426
+--range, which catches a file that was
+committed and removed again within the branch
+
+171
+00:12:58,466 --> 00:13:03,052
+and is therefore still in history.
+And the final snapshot, with --tree.
+
+172
+00:13:03,092 --> 00:13:08,461
+Both read blobs from Git, never the working
+tree, so they judge what is in history.
+
+173
+00:13:08,801 --> 00:13:13,914
+On Asha's branch the script names the dump.
+On the other branch it names the key.
+
+174
+00:13:13,954 --> 00:13:15,059
+On main it passes.
+
+175
+00:13:15,399 --> 00:13:18,485
+Step 8: what Git tracks,
+and what it does not.
+
+176
+00:13:26,825 --> 00:13:31,783
+Twenty-four tracked paths, and three ignored
+ones on disk: the data, the weights and
+
+177
+00:13:31,823 --> 00:13:34,580
+the run outputs. Compare
+with the tree diagram.
+
+178
+00:13:34,920 --> 00:13:37,675
+Step 9: the history, read from the bottom.
+
+179
+00:13:38,015 --> 00:13:42,727
+Read it from the bottom. The ignore rules
+and attributes are the first commit,
+
+180
+00:13:42,767 --> 00:13:46,626
+426268a, before any content exists
+that they should have caught.
+
+181
+00:13:46,966 --> 00:13:50,938
+Here's the same history as a graph,
+growing in the order it was made.
+
+182
+00:13:50,978 --> 00:13:54,252
+The checks and the hook arrive
+before the first notebook.
+
+183
+00:13:54,292 --> 00:13:58,263
+The notebook filter arrives in the
+same commit as the first notebook.
+
+184
+00:13:58,303 --> 00:14:03,030
+The pointer tool arrives with the first
+data. Each safeguard precedes the thing it
+
+185
+00:14:03,070 --> 00:14:07,914
+guards. A repository that adds .gitignore
+in commit forty has thirty-nine commits to
+
+186
+00:14:07,954 --> 00:14:08,263
+audit.
+
+187
+00:14:08,603 --> 00:14:10,824
+Step 10: pointers and attributes.
+
+188
+00:14:17,964 --> 00:14:23,637
+Three decisions are in the attributes file.
+* text=auto normalizes line endings in
+
+189
+00:14:23,677 --> 00:14:29,142
+the repository for every contributor.
+*.ipynb filter=nbstrip names the notebook
+
+190
+00:14:29,182 --> 00:14:34,786
+filter. And merge=binary on pointer files
+tells Git never to combine two pointers
+
+191
+00:14:34,826 --> 00:14:40,499
+line by line: a pointer whose hash came
+from one side and whose size came from the
+
+192
+00:14:40,539 --> 00:14:45,934
+other names nothing. git check-attr -a
+shows which attributes apply to a path.
+
+193
+00:14:52,274 --> 00:14:57,149
+Step 11: what a clone must do. Predict
+three things a fresh clone lacks.
+
+194
+00:14:57,189 --> 00:14:58,378
+Say them out loud.
+
+195
+00:15:03,218 --> 00:15:08,160
+No filter, no hook path, no data. This is
+why the README of docqa opens with the
+
+196
+00:15:08,200 --> 00:15:12,021
+commands a new clone runs once,
+and why CI repeats the checks.
+
+197
+00:15:12,061 --> 00:15:15,758
+A bootstrap script that runs
+those commands is worth having.
+
+198
+00:15:15,798 --> 00:15:18,436
+It's a convenience and
+still not a control.
+
+199
+00:15:20,276 --> 00:15:23,801
+Five mistakes to watch for.
+Every one of them is common.
+
+200
+00:15:24,141 --> 00:15:27,511
+Adding an ignore rule for a
+file that is already tracked.
+
+201
+00:15:27,551 --> 00:15:31,878
+Root cause: the index decides what is
+tracked; ignore files only describe
+
+202
+00:15:31,918 --> 00:15:33,672
+intentionally untracked files.
+
+203
+00:15:34,012 --> 00:15:39,424
+Believing git rm --cached shrinks the
+repository. Root cause: it changes the index
+
+204
+00:15:39,464 --> 00:15:44,610
+and the next commit; the blob stays
+reachable in history and every clone still
+
+205
+00:15:44,650 --> 00:15:45,474
+downloads it.
+
+206
+00:15:45,814 --> 00:15:50,399
+Treating the pre-commit hook as enforcement.
+Root cause: the hook is per-clone
+
+207
+00:15:50,439 --> 00:15:55,202
+configuration that is not installed by
+cloning, is skipped by one flag, and never
+
+208
+00:15:55,242 --> 00:15:57,870
+runs for commits made
+through another client.
+
+209
+00:15:58,210 --> 00:16:03,089
+Different rules in the hook and in CI. Root
+cause: two implementations of the same
+
+210
+00:16:03,129 --> 00:16:06,868
+policy drift apart, so a commit
+passes one and fails the other.
+
+211
+00:16:07,208 --> 00:16:12,412
+Relying on CI to keep secrets out. Root
+cause: CI runs after the push, so the bytes
+
+212
+00:16:12,452 --> 00:16:16,392
+are already on the server and the
+credential has to be rotated.
+
+213
+00:16:18,232 --> 00:16:22,749
+Now, out of the lab. A team starts a
+new retrieval project by copying an old
+
+214
+00:16:22,789 --> 00:16:27,606
+repository and deleting what it doesn't
+need. Within a month the old problems are
+
+215
+00:16:27,646 --> 00:16:32,223
+back: a checkpoint in history, a .env
+that was committed once, notebooks with
+
+216
+00:16:32,263 --> 00:16:32,703
+outputs.
+
+217
+00:16:33,043 --> 00:16:37,888
+For the next project the lead builds the
+repository in the order of the history you
+
+218
+00:16:37,928 --> 00:16:42,361
+saw. The first commit contains only the
+ignore file and the attributes file.
+
+219
+00:16:42,401 --> 00:16:45,833
+The second contains the package
+skeleton and the lock file.
+
+220
+00:16:45,873 --> 00:16:50,777
+The third adds one script of checks, a hook
+that calls it, and a CI entry point that
+
+221
+00:16:50,817 --> 00:16:55,191
+calls the same script over the range a
+branch adds and over the final tree.
+
+222
+00:16:55,531 --> 00:17:00,432
+The CI job is made a required check, and
+push protection is switched on for secrets,
+
+223
+00:17:00,472 --> 00:17:05,373
+because CI comes too late for those. The
+README begins with the setup commands for a
+
+224
+00:17:05,413 --> 00:17:10,197
+new clone, and the first thing the onboarding
+buddy asks a new colleague to run is
+
+225
+00:17:10,237 --> 00:17:15,020
+the pair of git config get commands that
+show whether the filter and the hook path
+
+226
+00:17:15,060 --> 00:17:15,491
+are set.
+
+227
+00:17:15,831 --> 00:17:20,608
+Six months later the repository has had
+outputs stripped by the filter many times
+
+228
+00:17:20,648 --> 00:17:25,486
+and has had the CI check fail three times,
+each time for a clone that had not been
+
+229
+00:17:25,526 --> 00:17:25,902
+set up.
+
+230
+00:17:27,742 --> 00:17:34,979
+Your turn. Do Lab 33.1, "Build a professional
+AI project repository from an empty
+
+231
+00:17:35,019 --> 00:17:39,112
+folder", in
+lab-manual/m33-ai-ml-workflows.md.
+
+232
+00:17:39,452 --> 00:17:44,170
+Before you make each commit in the lab,
+say which later mistake this commit guards
+
+233
+00:17:44,210 --> 00:17:47,652
+against and why it has to come
+before the content it guards.
+
+234
+00:17:47,692 --> 00:17:52,467
+Before the lab's failure scenario, predict
+which of the three fences will catch the
+
+235
+00:17:52,507 --> 00:17:57,109
+problem and which will not. The lab's
+questions have answers in a separate file.
+
+236
+00:17:57,149 --> 00:17:58,212
+Attempt them first.
+
+237
+00:17:58,552 --> 00:18:04,826
+The challenge is Exercise 33.2, Level 2,
+"Eight paths and one ignore file", in
+
+238
+00:18:04,866 --> 00:18:11,060
+exercises/m32-m34-practice.md. Decide
+each path on paper, then check with git
+
+239
+00:18:11,100 --> 00:18:12,355
+check-ignore -v.
+
+240
+00:18:16,195 --> 00:18:20,640
+Answer out loud. Start with the first
+half, because it's often skipped: say
+
+241
+00:18:20,680 --> 00:18:25,483
+precisely what the hook does guarantee and
+for whom, which is less than "nothing"
+
+242
+00:18:25,523 --> 00:18:30,386
+and less than "policy". Then give three
+distinct paths, not three versions of one.
+
+243
+00:18:30,426 --> 00:18:34,931
+The textbook groups them as not installed,
+switched off, and another client.
+
+244
+00:18:35,271 --> 00:18:40,003
+For each path, name a control and the layer
+it runs on, and say whether that control
+
+245
+00:18:40,043 --> 00:18:44,434
+acts before or after the bytes reach the
+server. A strong answer ends with the
+
+246
+00:18:44,474 --> 00:18:47,616
+design principle that keeps
+the layers from disagreeing.
+
+247
+00:18:49,456 --> 00:18:51,505
+Let's land this, in your own words.
+
+248
+00:18:51,845 --> 00:18:56,472
+Ignore rules prevent accidents with
+untracked files; they never affect a tracked
+
+249
+00:18:56,512 --> 00:18:58,864
+file and they are not a security control.
+
+250
+00:18:59,204 --> 00:19:04,849
+git rm --cached stops tracking; the
+blob stays in history until a rewrite.
+
+251
+00:19:05,189 --> 00:19:10,131
+A hook is fast feedback for a clone that
+has it; three paths go around it: not
+
+252
+00:19:10,171 --> 00:19:12,622
+installed, --no-verify, another client.
+
+253
+00:19:12,962 --> 00:19:18,186
+The control for a branch is a required CI
+check that runs the same code as the hook;
+
+254
+00:19:18,226 --> 00:19:21,257
+the control for secrets
+and size is at push time.
+
+255
+00:19:21,597 --> 00:19:26,351
+In a well-built repository each safeguard
+is committed before the thing it guards,
+
+256
+00:19:26,391 --> 00:19:28,632
+and a new clone still has to be set up.
+
+257
+00:19:30,472 --> 00:19:36,632
+Read sections 28.9, 28.10 and 28.12.
+In one repository you work in, run git
+
+258
+00:19:36,672 --> 00:19:43,411
+check-ignore -v on three paths you believe
+are ignored, and the rev-list --objects
+
+259
+00:19:43,451 --> 00:19:48,372
+pipeline of step 3 to list the
+largest blobs in its history.
+
+260
+00:19:48,712 --> 00:19:53,771
+Today you put three fences in the right
+places, and you can build a repository in
+
+261
+00:19:53,811 --> 00:19:57,296
+which each safeguard arrives
+before the thing it guards.
+
+262
+00:19:57,336 --> 00:20:02,396
+Build it once from an empty folder. The
+next video covers CI for ML projects, LLM
+
+263
+00:20:02,436 --> 00:20:07,558
+evaluations and the fork model, model-serving
+repositories, secrets, and AI coding
+
+264
+00:20:07,598 --> 00:20:11,335
+agents. Until then, look at the
+state first and type second.
+
+265
+00:20:11,375 --> 00:20:12,846
+See you in the next one.

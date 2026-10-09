@@ -60,7 +60,7 @@ Git then versions the pointer. `git log`, `git diff`, branches, tags and pull re
 
 **The central weakness.** The pointer and the file can disagree, and Git won't tell you. Git doesn't watch an ignored file. You'll see that in the terminal.
 
-**The real tools.** The table is from the course's research report, with its dates and flags.
+**The real tools.**
 
 **[ON SCREEN]** The table of section 28.6.
 
@@ -73,9 +73,13 @@ Git then versions the pointer. `git log`, `git diff`, branches, tags and pull re
 | Hugging Face Hub | all repositories migrated from Git LFS storage to Xet by October 2025; the LFS pointer format is kept for compatibility | Git repositories whose large files are routed through `.gitattributes`; byte-level deduplication | pin what you download |
 | Model registries | MLflow 3.16.1; W&B SDK 0.30.0 | versioned models with lineage to the producing run; mutable aliases | record the Git commit beside the model version |
 
+The table is from the course's research report, with its dates and flags.
+
+Two flags are carried from the report.
+
 **[ON SCREEN]** Unverified.
 
-Two flags are carried from the report. The Hugging Face "all repositories migrated" claim dates from October 2025 and wasn't independently verified for 2026. And no statement of DVC's roadmap was found.
+The Hugging Face "all repositories migrated" claim dates from October 2025 and wasn't independently verified for 2026. And no statement of DVC's roadmap was found.
 
 **[ANIMATION]** stores: boxes=Git_repository:cloned_by_everyone|*data_store:a_bucket;_access-controlled|working_tree rows=1:A:data/raw/tickets.csv.ref|1:A:{_"sha256":_"2226b23c45...",_"size":_432_}@hl|2:B:sha256/22/26b23c45..._(432_bytes)|2:B:sha256/4e/fbc43184..._(606_bytes)|2:B:one_object_per_version,_named_by_hash@dim|3:C:data/raw/tickets.csv|3:C:present,_ignored,_checked_against_the_pointer@dim|4:A:.gitignore:_/data/**_!*.ref arrows=2:A2>B1:names mono=on id=ptr
 

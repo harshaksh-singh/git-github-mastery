@@ -1,0 +1,1321 @@
+1
+00:00:04,500 --> 00:00:09,778
+On the eleventh of May 2026, 84 malicious
+versions of 42 packages were published
+
+2
+00:00:09,818 --> 00:00:13,169
+through a project's own
+trusted-publisher identity.
+
+3
+00:00:13,209 --> 00:00:18,288
+No registry token was stolen. The project
+had read-only workflow permissions.
+
+4
+00:00:18,328 --> 00:00:23,872
+It published through OIDC. By the standards
+of most checklists, it had followed best
+
+5
+00:00:23,912 --> 00:00:24,471
+practice.
+
+6
+00:00:24,811 --> 00:00:29,025
+You now know every mechanism that
+was involved. A privileged trigger.
+
+7
+00:00:29,065 --> 00:00:33,280
+A build of fork code. A shared cache.
+A release job that restored it.
+
+8
+00:00:33,320 --> 00:00:36,425
+An identity that any code
+in the job could ask for.
+
+9
+00:00:36,465 --> 00:00:41,419
+In this video you put the links in order,
+for this case and seven others, and for
+
+10
+00:00:41,459 --> 00:00:45,057
+each you name the control that
+would have broken the chain.
+
+11
+00:00:45,097 --> 00:00:49,681
+Hold on to the question on screen.
+You'll answer it yourself, link by link.
+
+12
+00:00:51,521 --> 00:00:55,384
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+13
+00:00:55,424 --> 00:01:00,183
+This video is a walk through one table:
+the case studies of section 21A.18.
+
+14
+00:01:00,223 --> 00:01:05,173
+Each case is given in the same three
+parts: what happened, root cause, lesson.
+
+15
+00:01:05,213 --> 00:01:10,420
+The cases come from the Phase 0 report and
+its sources, and every row has a source
+
+16
+00:01:10,460 --> 00:01:13,427
+link, which is on screen
+while I talk about it.
+
+17
+00:01:13,767 --> 00:01:18,768
+A reminder of five words from this part.
+A workflow is a file that tells GitHub
+
+18
+00:01:18,808 --> 00:01:24,001
+Actions which jobs to run. A tag is a
+movable name for a commit, and pinning means
+
+19
+00:01:24,041 --> 00:01:29,234
+naming the commit ID instead. A privileged
+trigger is an event whose run holds the
+
+20
+00:01:29,274 --> 00:01:34,467
+repository's token and secrets. A cache is
+a stored directory that a later run can
+
+21
+00:01:34,507 --> 00:01:39,572
+restore. And OIDC gives a job a short-lived
+credential in place of a stored key.
+
+22
+00:01:39,912 --> 00:01:43,072
+Three rules for this video, and
+they're the textbook's rules.
+
+23
+00:01:43,412 --> 00:01:47,093
+No attack detail beyond the
+published summaries is reproduced.
+
+24
+00:01:47,133 --> 00:01:48,714
+This is a defensive course.
+
+25
+00:01:49,054 --> 00:01:53,161
+Dates and figures are quoted only
+as the cited sources give them.
+
+26
+00:01:53,201 --> 00:01:58,202
+Where the sources disagree, I say so. The
+table has a column called "Flags" for
+
+27
+00:01:58,242 --> 00:02:01,647
+exactly that, and I read the
+flag aloud for every row.
+
+28
+00:02:01,987 --> 00:02:08,404
+And no embellishment. You'll use these
+cases to argue for controls in design
+
+29
+00:02:08,444 --> 00:02:14,945
+reviews. An argument that rests on an
+exaggerated number fails the first time
+
+30
+00:02:14,985 --> 00:02:16,474
+someone checks it.
+
+31
+00:02:18,314 --> 00:02:19,892
+Here's what you'll walk away with.
+
+32
+00:02:20,232 --> 00:02:21,644
+After this video you can:
+
+33
+00:02:21,984 --> 00:02:26,243
+retell each case of the section as what
+happened, root cause and lesson, with its
+
+34
+00:02:26,283 --> 00:02:26,561
+flags;
+
+35
+00:02:26,901 --> 00:02:29,645
+assign each case to one of
+the recurring patterns;
+
+36
+00:02:29,985 --> 00:02:33,682
+name the control from this part
+that would have broken each chain;
+
+37
+00:02:34,022 --> 00:02:38,989
+trace how a fork pull request led to a
+publish without any stored credential being
+
+38
+00:02:39,029 --> 00:02:39,417
+stolen;
+
+39
+00:02:39,757 --> 00:02:43,567
+quote dates and figures only as
+the cited sources give them.
+
+40
+00:02:45,407 --> 00:02:51,892
+tj-actions/changed-files, March 2025.
+Sources: the CISA alert and the GitHub
+
+41
+00:02:51,932 --> 00:02:52,665
+advisory.
+
+42
+00:02:53,005 --> 00:02:57,839
+What happened: version tags were repointed
+to a malicious commit that printed
+
+43
+00:02:57,879 --> 00:03:02,966
+secrets from runner memory into workflow
+logs. More than 23,000 repositories used
+
+44
+00:03:03,006 --> 00:03:03,662
+the action.
+
+45
+00:03:04,002 --> 00:03:09,438
+Root cause: a stolen bot token. The chain
+began with a pull_request_target flaw in
+
+46
+00:03:09,478 --> 00:03:13,111
+an upstream project, according
+to the Unit 42 write-up.
+
+47
+00:03:13,451 --> 00:03:17,681
+Lesson: tags are mutable. Only
+commit-pinned workflows were unaffected.
+
+48
+00:03:17,721 --> 00:03:19,786
+And public logs are world-readable.
+
+49
+00:03:20,126 --> 00:03:23,864
+Quick quiz. You retell this
+case in a design review.
+
+50
+00:03:23,904 --> 00:03:29,531
+Which sentence do the sources support?
+A, more than 23,000 repositories leaked
+
+51
+00:03:29,571 --> 00:03:33,745
+secrets. B, more than 23,000
+repositories used the action.
+
+52
+00:03:33,785 --> 00:03:34,617
+Your answer?
+
+53
+00:03:39,457 --> 00:03:41,318
+B, and the flags explain it.
+
+54
+00:03:41,658 --> 00:03:47,638
+Flags: there is a conflict about the time
+window. CISA gives it as the twelfth of
+
+55
+00:03:47,678 --> 00:03:52,543
+March at midnight UTC to the
+fifteenth of March at noon UTC, 2025.
+
+56
+00:03:52,583 --> 00:03:56,928
+The advisory says the fourteenth
+to the fifteenth of March.
+
+57
+00:03:56,968 --> 00:04:02,428
+Unit 42 places the mass tag override
+on the fourteenth of March at sixteen
+
+58
+00:04:02,468 --> 00:04:07,928
+fifty-seven UTC. The textbook's
+instruction: use CISA's window for audits.
+
+59
+00:04:08,268 --> 00:04:13,584
+And how many repositories leaked
+secrets is not stated by either source.
+
+60
+00:04:13,624 --> 00:04:17,974
+A figure of "218 repositories"
+is secondary and unverified.
+
+61
+00:04:18,014 --> 00:04:23,925
+So when you tell this case, say "more than
+23,000 repositories used the action".
+
+62
+00:04:23,965 --> 00:04:26,082
+Don't say that number leaked.
+
+63
+00:04:26,422 --> 00:04:33,036
+Nx, "s1ngularity", August 2025.
+Source: the project's post-mortem.
+
+64
+00:04:33,376 --> 00:04:37,745
+What happened: malicious versions of eight
+packages were live for about four hours
+
+65
+00:04:37,785 --> 00:04:39,681
+and harvested developer credentials.
+
+66
+00:04:40,021 --> 00:04:44,486
+Root cause, in three parts. A
+pull_request_target workflow that echoed an
+
+67
+00:04:44,526 --> 00:04:48,559
+unsanitised pull request title. A
+legacy read-write default token.
+
+68
+00:04:48,599 --> 00:04:51,521
+And a publish workflow
+that could be dispatched.
+
+69
+00:04:51,861 --> 00:04:56,122
+Lesson: one injectable line plus a write
+token reaches a publish credential.
+
+70
+00:04:56,462 --> 00:04:57,587
+Flags: none.
+
+71
+00:04:57,927 --> 00:05:02,963
+Map the three causes to three videos.
+The echoed title is video 158.
+
+72
+00:05:03,003 --> 00:05:08,784
+The legacy default token is video 156:
+a repository created before the default
+
+73
+00:05:08,824 --> 00:05:14,830
+changed. And the dispatch is the documented
+exception from video 156: events from
+
+74
+00:05:14,870 --> 00:05:20,652
+the job token start no runs, except
+workflow_dispatch and repository_dispatch.
+
+75
+00:05:20,992 --> 00:05:25,520
+GhostAction, September
+2025. Source: GitGuardian.
+
+76
+00:05:25,860 --> 00:05:31,427
+What happened: compromised maintainer
+accounts pushed a workflow that sent secrets
+
+77
+00:05:31,467 --> 00:05:35,598
+to an attacker's server: 3,325
+secrets from 817 repositories.
+
+78
+00:05:35,938 --> 00:05:39,020
+Root cause: write access
+equals secret access.
+
+79
+00:05:39,360 --> 00:05:44,571
+Lesson: protect workflow files with code-owner
+review, and prefer environment-scoped
+
+80
+00:05:44,611 --> 00:05:45,634
+secrets and OIDC.
+
+81
+00:05:45,974 --> 00:05:47,757
+Flag: this is a vendor report.
+
+82
+00:05:48,097 --> 00:05:51,842
+Shai-Hulud and its sequel,
+September and November 2025.
+
+83
+00:05:51,882 --> 00:05:54,113
+Sources: the GitHub Blog and Wiz.
+
+84
+00:05:54,453 --> 00:05:59,323
+What happened: a self-replicating npm
+worm stole tokens, pushed secret-dumping
+
+85
+00:05:59,363 --> 00:06:04,170
+workflows, and in its second wave
+registered infected machines as self-hosted
+
+86
+00:06:04,210 --> 00:06:04,673
+runners.
+
+87
+00:06:05,013 --> 00:06:08,171
+Root cause: stolen
+developer and CI tokens.
+
+88
+00:06:08,511 --> 00:06:13,329
+Lesson: a token with workflow write access
+is equivalent to every secret it can
+
+89
+00:06:13,369 --> 00:06:16,958
+reach. Monitor for new workflows,
+runners and repositories.
+
+90
+00:06:17,298 --> 00:06:22,535
+Flag: the size of the second wave is
+approximate. The notes cite the same Wiz post
+
+91
+00:06:22,575 --> 00:06:26,139
+for about 700 malicious versions
+and about 800 packages.
+
+92
+00:06:26,479 --> 00:06:31,976
+PyTorch runners, disclosed January
+2024, and Ultralytics, December 2024.
+
+93
+00:06:32,016 --> 00:06:35,745
+Sources: a researcher
+write-up and the PyPI blog.
+
+94
+00:06:36,085 --> 00:06:40,813
+What happened: persistent self-hosted runners,
+machines the project operated itself,
+
+95
+00:06:40,853 --> 00:06:44,275
+on a public ML repository could
+be reached by a pull request.
+
+96
+00:06:44,315 --> 00:06:48,816
+And, in the second case, a poisoned Actions
+cache led to malicious PyPI releases
+
+97
+00:06:48,856 --> 00:06:51,200
+published through the legitimate workflow.
+
+98
+00:06:51,540 --> 00:06:56,171
+Root cause: self-hosted runners with weak
+approval settings, and an insecure trigger
+
+99
+00:06:56,211 --> 00:06:57,117
+plus cache trust.
+
+100
+00:06:57,457 --> 00:07:02,685
+Lesson: ML projects are prime targets.
+Use ephemeral runners and treat caches as
+
+101
+00:07:02,725 --> 00:07:03,344
+untrusted.
+
+102
+00:07:03,684 --> 00:07:07,655
+Flag: PyTorch is a researcher
+disclosure, not an observed attack.
+
+103
+00:07:07,695 --> 00:07:10,308
+Say "could be reached",
+not "was attacked".
+
+104
+00:07:10,648 --> 00:07:16,601
+Trivy and LiteLLM, February to March
+2026. Sources: the advisory, the vendor's
+
+105
+00:07:16,641 --> 00:07:18,137
+notice, and Datadog.
+
+106
+00:07:18,477 --> 00:07:21,807
+What happened: a pull_request_target
+flaw leaked a token.
+
+107
+00:07:21,847 --> 00:07:26,536
+Weeks later a malicious scanner release
+was published and almost all action tags
+
+108
+00:07:26,576 --> 00:07:31,325
+were force-pushed to malicious commits. A
+downstream LLM gateway library that ran
+
+109
+00:07:31,365 --> 00:07:35,818
+the scanner unpinned had its publishing
+credential stolen, and two malicious
+
+110
+00:07:35,858 --> 00:07:38,419
+versions were on PyPI
+for about three hours.
+
+111
+00:07:38,759 --> 00:07:43,634
+Root cause: incomplete, non-atomic credential
+rotation after the first incident,
+
+112
+00:07:43,674 --> 00:07:46,889
+meaning the credentials
+weren't all replaced at once.
+
+113
+00:07:46,929 --> 00:07:48,855
+And tag-pinned security tooling.
+
+114
+00:07:49,195 --> 00:07:54,685
+Lesson: rotate everything at once. Security
+tools in CI are high-value targets.
+
+115
+00:07:54,725 --> 00:07:55,666
+Pin by commit.
+
+116
+00:07:56,006 --> 00:08:01,189
+Flags: a conflict in the count of tags:
+75 of 76 according to Wiz, 76 of 77
+
+117
+00:08:01,229 --> 00:08:06,552
+according to Datadog. And write-ups name
+the account behind the first exploit
+
+118
+00:08:06,592 --> 00:08:11,427
+differently. Use the advisory and
+the vendor notice for exact figures.
+
+119
+00:08:11,467 --> 00:08:13,586
+That's why I said "almost all".
+
+120
+00:08:13,926 --> 00:08:19,072
+TanStack, the eleventh of May 2026.
+Source: the project's post-mortem.
+
+121
+00:08:19,412 --> 00:08:24,352
+What happened: 84 malicious versions of
+42 packages were published through the
+
+122
+00:08:24,392 --> 00:08:28,566
+project's own trusted-publisher
+identity. No npm token was stolen.
+
+123
+00:08:28,906 --> 00:08:33,502
+Root cause, as a chain. A pull_request_target
+workflow built fork code.
+
+124
+00:08:33,542 --> 00:08:37,681
+The fork poisoned the shared cache.
+The release job restored it.
+
+125
+00:08:37,721 --> 00:08:41,141
+Malware read the job's OIDC
+token from runner memory.
+
+126
+00:08:41,481 --> 00:08:45,192
+Lesson: read-only permissions
+didn't block cache writes.
+
+127
+00:08:45,232 --> 00:08:50,751
+OIDC isn't safe if untrusted code runs in
+the job. And pull_request_target bypassed
+
+128
+00:08:50,791 --> 00:08:52,894
+the first-time-contributor gate.
+
+129
+00:08:53,234 --> 00:08:57,951
+Flags: whether the versions carried valid
+provenance attestations, and the name
+
+130
+00:08:57,991 --> 00:09:02,769
+"Mini Shai-Hulud", come from secondary
+reports. The post-mortem does not say so.
+
+131
+00:09:02,809 --> 00:09:05,479
+And no GitHub-authored
+post-mortem was found.
+
+132
+00:09:05,819 --> 00:09:10,232
+Codecov, 2021. Source:
+Codecov's security update.
+
+133
+00:09:10,572 --> 00:09:15,357
+What happened: a modified uploader script
+exported CI environment variables for two
+
+134
+00:09:15,397 --> 00:09:15,764
+months.
+
+135
+00:09:16,104 --> 00:09:19,636
+Root cause: a mutable script
+fetched and executed in CI.
+
+136
+00:09:19,976 --> 00:09:23,952
+Lesson: remote scripts are the
+same risk class as mutable tags.
+
+137
+00:09:24,292 --> 00:09:26,073
+Flag: history only.
+
+138
+00:09:26,413 --> 00:09:29,546
+And one sentence of
+completeness from the textbook.
+
+139
+00:09:29,586 --> 00:09:34,400
+A further tag hijack, of the actions-cool
+actions in May 2026, is known to the
+
+140
+00:09:34,440 --> 00:09:39,191
+course only through secondary reporting.
+It is mentioned for completeness and
+
+141
+00:09:39,231 --> 00:09:40,622
+nothing is built on it.
+
+142
+00:09:40,962 --> 00:09:42,250
+Three recurring patterns.
+
+143
+00:09:42,590 --> 00:09:47,420
+One: mutable references were repointed
+after a maintainer credential was stolen.
+
+144
+00:09:47,460 --> 00:09:48,698
+tj-actions and Trivy.
+
+145
+00:09:49,038 --> 00:09:53,329
+Two: a privileged trigger ran
+or interpolated outsider input.
+
+146
+00:09:53,369 --> 00:09:57,022
+The upstream of tj-actions,
+Nx, Trivy, and TanStack.
+
+147
+00:09:57,362 --> 00:10:02,140
+Three: stolen tokens were used to push
+workflows. GhostAction and Shai-Hulud.
+
+148
+00:10:02,480 --> 00:10:07,913
+And one technique recurs across them: reading
+the runner process's memory to collect
+
+149
+00:10:07,953 --> 00:10:09,477
+secrets and OIDC tokens.
+
+150
+00:10:09,817 --> 00:10:13,866
+The report's conclusion is the sentence
+to carry into a design review.
+
+151
+00:10:13,906 --> 00:10:17,371
+Masked logs are irrelevant once
+attacker code runs in a job.
+
+152
+00:10:17,411 --> 00:10:22,220
+Then the quotation: "the robust controls
+are preventing untrusted code from running
+
+153
+00:10:22,260 --> 00:10:25,667
+in privileged jobs and limiting
+which secrets a job holds."
+
+154
+00:10:27,507 --> 00:10:32,595
+A picture helps. Think of each incident as
+a chain, and of each control as a pair of
+
+155
+00:10:32,635 --> 00:10:33,083
+cutters.
+
+156
+00:10:33,423 --> 00:10:38,717
+A chain needs every link. The TanStack chain,
+as the post-mortem gives it, has four.
+
+157
+00:10:38,757 --> 00:10:43,670
+A privileged workflow builds fork code.
+The fork writes into the shared cache.
+
+158
+00:10:43,710 --> 00:10:48,813
+The release job restores that cache. Code
+in the release job reads the job's OIDC
+
+159
+00:10:48,853 --> 00:10:52,179
+token. There's the answer
+to "No password was stolen.
+
+160
+00:10:52,219 --> 00:10:55,735
+How?" Four links, and none of
+them is a stolen password.
+
+161
+00:10:56,075 --> 00:11:01,131
+Try it now, thirty seconds, on paper.
+Write the four links as a chain, top to
+
+162
+00:11:01,171 --> 00:11:06,359
+bottom. Then take the controls from this
+part and write each beside the link it
+
+163
+00:11:06,399 --> 00:11:07,948
+cuts. Say them out loud.
+
+164
+00:11:12,788 --> 00:11:18,592
+Not using pull_request_target for a build,
+or not running the fork's code under it:
+
+165
+00:11:18,632 --> 00:11:24,365
+cuts link one. That's video 157, and the
+checkout action's refusal since version 7
+
+166
+00:11:24,405 --> 00:11:25,985
+leans on the same link.
+
+167
+00:11:26,325 --> 00:11:30,776
+A read-only default-branch cache for
+low-trust triggers: cuts link two.
+
+168
+00:11:30,816 --> 00:11:34,572
+That's the platform change of
+the twenty-sixth of June 2026.
+
+169
+00:11:34,912 --> 00:11:39,653
+cache-mode: none on the job that
+holds an identity: cuts link three.
+
+170
+00:11:39,693 --> 00:11:41,973
+That's video 160 and workflow 12.
+
+171
+00:11:42,313 --> 00:11:46,797
+Binding the identity to an environment
+with protection rules, and letting no
+
+172
+00:11:46,837 --> 00:11:50,308
+untrusted code or cache into
+that job: addresses link four.
+
+173
+00:11:50,348 --> 00:11:54,951
+Note the word. Once attacker code is
+running inside a job that may request the
+
+174
+00:11:54,991 --> 00:11:59,951
+token, nothing in the job stops the request.
+Link four is cut by cutting the earlier
+
+175
+00:11:59,991 --> 00:12:00,248
+ones.
+
+176
+00:12:00,588 --> 00:12:04,083
+Where this model breaks: it
+suggests one cut is enough.
+
+177
+00:12:04,123 --> 00:12:09,354
+For one chain, it is. But you don't know
+in advance which chain will be tried, and
+
+178
+00:12:09,394 --> 00:12:14,110
+several of these projects were hit
+through a combination nobody had drawn.
+
+179
+00:12:14,150 --> 00:12:19,509
+That's why the controls are layered, and
+why section 21A.21 says to review workflows
+
+180
+00:12:19,549 --> 00:12:20,087
+as a set.
+
+181
+00:12:21,927 --> 00:12:26,544
+Three columns, one per recurring pattern:
+each case under the pattern or patterns it
+
+182
+00:12:26,584 --> 00:12:30,536
+shows, and under each column the
+control from this part that answers it.
+
+183
+00:12:30,876 --> 00:12:35,322
+Read the columns. Trivy appears in two of
+them, and that's the lesson of that case:
+
+184
+00:12:35,362 --> 00:12:39,376
+the first incident was pattern two, and
+because the rotation afterwards was
+
+185
+00:12:39,416 --> 00:12:41,485
+incomplete, the second was pattern one.
+
+186
+00:12:43,325 --> 00:12:44,596
+Step 1: the move.
+
+187
+00:12:44,936 --> 00:12:50,466
+git tag -f is 🟡 CAUTION: it moves a local
+tag. git push --force of a tag is 🔴
+
+188
+00:12:50,506 --> 00:12:54,590
+DANGEROUS. The five answers,
+as section 21A.7 gives them.
+
+189
+00:12:54,630 --> 00:13:00,377
+What it changes: the remote tag ref. What
+it can destroy: it can silently change
+
+190
+00:13:00,417 --> 00:13:06,453
+what every consumer of the tag runs. How to
+preview: git ls-remote --tags origin v1.
+
+191
+00:13:06,493 --> 00:13:11,300
+How to recover: push the old tag
+object back, if you still have it.
+
+192
+00:13:11,340 --> 00:13:16,798
+When it is appropriate: only for a
+deliberate "moving major tag" policy that
+
+193
+00:13:16,838 --> 00:13:18,317
+consumers know about.
+
+194
+00:13:18,657 --> 00:13:23,238
+In the first pattern, who is at this
+keyboard? Read the root-cause column of the
+
+195
+00:13:23,278 --> 00:13:26,473
+tj-actions row again before
+you answer. Say it out loud.
+
+196
+00:13:31,313 --> 00:13:36,572
+A forced update of v1, from 71c87ce to
+0ca190d. The person at the keyboard holds a
+
+197
+00:13:36,612 --> 00:13:39,933
+credential that can push to
+the action's repository.
+
+198
+00:13:39,973 --> 00:13:45,361
+In the incident rows it was a stolen bot
+token in one case, and credentials that had
+
+199
+00:13:45,401 --> 00:13:50,725
+not been fully rotated in the other. From
+Git's side, a legitimate maintainer and a
+
+200
+00:13:50,765 --> 00:13:53,762
+thief with the maintainer's
+token are the same.
+
+201
+00:13:54,102 --> 00:13:56,638
+Step 2: what consumers get afterwards.
+
+202
+00:13:56,978 --> 00:14:01,905
+The same name, a different commit:
+5de1e2d. No consumer workflow changed.
+
+203
+00:14:01,945 --> 00:14:07,620
+And the commit that was reviewed still exists
+under its own ID, with exactly its old
+
+204
+00:14:07,660 --> 00:14:08,164
+content.
+
+205
+00:14:08,504 --> 00:14:12,658
+Now read the lesson column of the
+tj-actions row with this on screen: "only
+
+206
+00:14:12,698 --> 00:14:16,404
+commit-pinned workflows were
+unaffected". You saw why a moment ago.
+
+207
+00:14:16,744 --> 00:14:20,544
+A workflow that named the tag ran
+the new commit on its next run.
+
+208
+00:14:20,584 --> 00:14:24,147
+A workflow that named the old
+commit's ID ran the old commit.
+
+209
+00:14:24,487 --> 00:14:29,679
+And you can audit your own exposure with
+the same reading command, which is 🟢 SAFE:
+
+210
+00:14:29,719 --> 00:14:34,785
+git ls-remote --tags against an action's
+repository shows what each tag points at
+
+211
+00:14:34,825 --> 00:14:39,764
+today. Whether it pointed there last month
+is something only your pins, or your
+
+212
+00:14:39,804 --> 00:14:40,962
+logs, can tell you.
+
+213
+00:14:42,802 --> 00:14:44,450
+Five mistakes to watch for.
+
+214
+00:14:44,790 --> 00:14:49,626
+Quoting a figure that the sources do not
+support. Root cause: several rows carry
+
+215
+00:14:49,666 --> 00:14:54,380
+conflicts or secondary figures; for
+tj-actions the number of repositories that
+
+216
+00:14:54,420 --> 00:14:57,549
+leaked secrets is not stated
+by the primary sources.
+
+217
+00:14:57,889 --> 00:15:02,877
+Telling a researcher disclosure as an
+attack. Root cause: the PyTorch case is a
+
+218
+00:15:02,917 --> 00:15:06,250
+disclosure, not an observed
+attack; the flag says so.
+
+219
+00:15:06,590 --> 00:15:09,864
+Concluding that OIDC or
+read-only permissions "failed".
+
+220
+00:15:09,904 --> 00:15:14,744
+Root cause: each did what it is defined
+to do; the chain went through a cache and
+
+221
+00:15:14,784 --> 00:15:19,021
+through untrusted code inside the
+job, which neither control addresses.
+
+222
+00:15:19,361 --> 00:15:23,837
+Rotating one credential after an
+incident. Root cause: in the Trivy case,
+
+223
+00:15:23,877 --> 00:15:28,537
+incomplete, non-atomic rotation after
+the first incident enabled the second.
+
+224
+00:15:28,877 --> 00:15:33,663
+Arguing for one control per incident. Root
+cause: the chains differ, and the edge
+
+225
+00:15:33,703 --> 00:15:37,417
+case behind most of them is two
+workflows that share something.
+
+226
+00:15:39,257 --> 00:15:44,305
+Now, out of the lab. A staff engineer
+proposes three changes to an ML platform's
+
+227
+00:15:44,345 --> 00:15:49,521
+repositories: require commit pins by policy,
+forbid pull_request_target except for
+
+228
+00:15:49,561 --> 00:15:54,100
+metadata-only jobs, and move publishing
+credentials behind environments.
+
+229
+00:15:54,140 --> 00:15:59,315
+A director asks why this is worth a week
+of work, given that "we have never had an
+
+230
+00:15:59,355 --> 00:15:59,952
+incident".
+
+231
+00:16:00,292 --> 00:16:05,058
+The engineer answers with three rows, one
+per pattern, and for each row the three
+
+232
+00:16:05,098 --> 00:16:09,389
+parts and the flag. For pins: the
+tj-actions row, with the sentence "only
+
+233
+00:16:09,429 --> 00:16:13,661
+commit-pinned workflows were unaffected",
+the figure of more than 23,000
+
+234
+00:16:13,701 --> 00:16:18,645
+repositories that used the action, and the
+statement that the number of repositories
+
+235
+00:16:18,685 --> 00:16:21,968
+that leaked secrets is not
+given by the primary sources.
+
+236
+00:16:22,308 --> 00:16:27,544
+For the trigger: the Nx row, whose flags
+column says "none", with its three causes.
+
+237
+00:16:27,584 --> 00:16:32,757
+For credentials: the GhostAction row, marked
+as a vendor report, with its one-line
+
+238
+00:16:32,797 --> 00:16:33,456
+root cause.
+
+239
+00:16:33,796 --> 00:16:37,012
+The director checks one of
+the links during the meeting.
+
+240
+00:16:37,052 --> 00:16:41,374
+The numbers match. The proposal is
+approved. That's what the flags are for.
+
+241
+00:16:43,214 --> 00:16:48,704
+Your turn. Do Exercise 29.2,
+"The comment workflow", in
+
+242
+00:16:48,744 --> 00:16:52,525
+exercises/m26-m31-actions-security.md.
+
+243
+00:16:52,865 --> 00:16:57,413
+Before you start, predict which of the
+three recurring patterns the exercise's
+
+244
+00:16:57,453 --> 00:17:01,354
+workflow belongs to, and which case
+of the table it most resembles.
+
+245
+00:17:01,394 --> 00:17:06,001
+Afterwards, write the chain for it link
+by link, and the control that cuts each
+
+246
+00:17:06,041 --> 00:17:06,295
+link.
+
+247
+00:17:06,635 --> 00:17:11,932
+The challenge is Exercise 29.8, "A
+workflow nobody wrote", in the same file.
+
+248
+00:17:13,772 --> 00:17:16,987
+Read the question on screen.
+Say your answer out loud.
+
+249
+00:17:21,827 --> 00:17:26,567
+A strong answer gives the chain as numbered
+links, in the post-mortem's order, and
+
+250
+00:17:26,607 --> 00:17:30,996
+for each link one control with the
+video's worth of reasoning behind it in a
+
+251
+00:17:31,036 --> 00:17:35,776
+sentence. It is careful about what is
+sourced: it uses the post-mortem's facts and
+
+252
+00:17:35,816 --> 00:17:40,380
+marks what comes from secondary reports.
+The follow-up quotes the team: "We had
+
+253
+00:17:40,420 --> 00:17:45,101
+read-only permissions and we publish through
+OIDC, so we followed best practice."
+
+254
+00:17:45,141 --> 00:17:49,181
+Name the two assumptions in that
+sentence that the incident disproved.
+
+255
+00:17:49,221 --> 00:17:51,571
+Both are in the lesson column of the row.
+
+256
+00:17:53,411 --> 00:17:54,338
+Let's land this.
+
+257
+00:17:54,678 --> 00:17:56,338
+You should now be able to say:
+
+258
+00:17:56,678 --> 00:18:01,166
+Each case has three parts, what happened,
+root cause and lesson, and a flag that
+
+259
+00:18:01,206 --> 00:18:03,430
+says how far its figures can be trusted.
+
+260
+00:18:03,770 --> 00:18:08,594
+Three patterns recur: mutable references
+repointed after a credential theft; a
+
+261
+00:18:08,634 --> 00:18:13,645
+privileged trigger that ran or interpolated
+outsider input; stolen tokens used to
+
+262
+00:18:13,685 --> 00:18:14,581
+push workflows.
+
+263
+00:18:14,921 --> 00:18:19,707
+One technique recurs across them: reading
+runner memory, which makes masked logs
+
+264
+00:18:19,747 --> 00:18:22,361
+irrelevant once attacker
+code runs in a job.
+
+265
+00:18:22,701 --> 00:18:27,762
+In the TanStack chain no stored credential
+was stolen: fork code under a privileged
+
+266
+00:18:27,802 --> 00:18:32,862
+trigger, a poisoned shared cache, a release
+job that restored it, and an OIDC token
+
+267
+00:18:32,902 --> 00:18:33,907
+read from memory.
+
+268
+00:18:34,247 --> 00:18:38,988
+The robust controls are preventing untrusted
+code from running in privileged jobs
+
+269
+00:18:39,028 --> 00:18:41,289
+and limiting which secrets a job holds.
+
+270
+00:18:43,129 --> 00:18:49,093
+Read section 21A.18 of Chapter 21A and
+follow two of the source links to the
+
+271
+00:18:49,133 --> 00:18:53,359
+published post-mortems. Read
+guides/security-guide.md.
+
+272
+00:18:53,699 --> 00:18:58,751
+Today you walked through eight incidents
+with their flags, and cut one chain link by
+
+273
+00:18:58,791 --> 00:19:02,752
+link. Retell one case aloud, with
+its flag, before the next video.
+
+274
+00:19:02,792 --> 00:19:07,419
+Next time: the Git client, what a clone
+runs, the three guards, and recursive
+
+275
+00:19:07,459 --> 00:19:11,056
+clones. Until then, look at the
+state first and type second.
+
+276
+00:19:11,096 --> 00:19:12,511
+See you in the next one.

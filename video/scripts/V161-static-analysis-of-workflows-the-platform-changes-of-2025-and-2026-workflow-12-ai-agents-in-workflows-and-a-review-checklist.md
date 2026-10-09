@@ -93,6 +93,8 @@ The twenty-eighth of July 2026: runs "identified as potentially malicious" are h
 
 **[ON SCREEN]** Callout: Unverified. The heuristics behind the holds on suspicious runs are not documented. Do not count on them as a control.
 
+Unverified: the heuristics behind the holds on suspicious runs aren't documented. Don't count on them as a control.
+
 You've met every row but one in the last five videos. Seen as one list, it says something about direction: the platform is moving defaults toward what this module teaches. And about a limit: each row has a "does not cover", and none of them reads your file for you.
 
 **[ANIMATION]** cards: cards=test|pr-metadata:reads_the_pull_request_title|dependency-review|deploy-staging:a_staging_deployment_through_OIDC marks=4:lock title=Workflow_12:_the_controls_in_one_place id=jobs
@@ -171,7 +173,7 @@ Eleven, process. Was the change reviewed by a code owner of the workflows direct
 
 ## MENTAL MODEL
 
-A picture helps. Hold workflow 12 as a reference shape, and review other workflows as differences from it.
+A picture helps. Hold workflow 12 in mind as a reference shape, and review other workflows as differences from it.
 
 **[ANIMATION]** stores: boxes=open_zone:outsiders'_code_and_text_are_allowed_in|*closed_zone:an_identity_lives_here rows=1:A:the_test_job|1:A:the_title_job|1:A:the_dependency_review|1:A:token_read-only_or_absent@ok|1:A:no_secrets@ok|1:A:untrusted_text_is_only_ever_data@ok|2:B:the_deployment_job@hl|2:B:only_a_push_to_main@ok|2:B:behind_an_environment@ok|2:B:with_no_cache@ok title=Workflow_12_as_a_reference_shape id=zones at_1=8 at_2=58
 
@@ -512,7 +514,7 @@ With three dots you see the branch against its merge base, the most recent commi
 
 **[ON SCREEN]** Lower third: GitHub. Screen walkthrough.
 
-Lab 29.3 is done in the lab shell, and its product is a file, `review.md`. If you then want to practise the form on GitHub, open any pull request on your own practice repository that changes a workflow, for example the one from Lab 29.2. The interface changes, so name what you see by function. Find where a comment is attached to a single line of the diff, and where the overall verdict is chosen: approve, comment, or request changes. `gh pr checkout` gives you the branch locally. The textbook labels it 🟢 SAFE, since it changes local files and refs only. And remember from the checklist that the same command is a finding when it appears inside a privileged workflow.
+**Lab 29.3 is done in the lab shell; its product is a file, `review.md`.** If you then want to practise the form on GitHub, open any pull request on your own practice repository that changes a workflow, for example the one from Lab 29.2. The interface changes, so name what you see by function. Find where a comment is attached to a single line of the diff, and where the overall verdict is chosen: approve, comment, or request changes. `gh pr checkout` gives you the branch locally. The textbook labels it 🟢 SAFE, since it changes local files and refs only. And remember from the checklist that the same command is a finding when it appears inside a privileged workflow.
 
 ## COMMON MISTAKES
 

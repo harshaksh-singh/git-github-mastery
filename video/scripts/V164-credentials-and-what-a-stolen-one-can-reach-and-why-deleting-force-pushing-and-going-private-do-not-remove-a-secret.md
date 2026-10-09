@@ -89,9 +89,19 @@ Of 4,802 leaked GitHub App private keys tested in September 2026, 474 still auth
 
 **A hierarchy for automation.** The Phase 0 report derives an order from those facts. It is marked as an inference, not a GitHub statement. First: OIDC-issued cloud tokens and the job-scoped `GITHUB_TOKEN`, wherever the work happens inside a workflow. Second: GitHub App installation tokens, with the App's private key in a secrets manager. Third: fine-grained personal access tokens with an expiry and organization approval. Fourth: deploy keys, for read access to a single repository. Fifth and last: classic tokens and shared machine users, with a written reason.
 
-**[ANIMATION]** walk: columns=when,what_was_abused,the_lesson rows=April_2022:stolen_OAuth_tokens_issued_to_two_integrators:a_third_party's_token_store_is_part_of_your_attack_surface|December_2022:an_already_authenticated_session,_stolen_by_malware_on_a_laptop:two-factor_authentication_protects_the_login,_not_the_session|May_2026:a_poisoned_third-party_editor_extension_on_an_employee_device:flag:_attribution_and_extension_details_come_from_vendor_reports mono=off title=Tokens,_sessions_and_laptops,_not_Git id=real
+**[ANIMATION]** walk: columns=when,what_was_abused,the_lesson rows=April_2022:stolen_OAuth_tokens_issued_to_two_integrators:a_third_party's_token_store_is_part_of_your_attack_surface|December_2022:an_already_authenticated_session,_stolen_by_malware_on_a_laptop:two-factor_authentication_protects_the_login,_not_the_session|May_2026:a_poisoned_third-party_editor_extension_on_an_employee_device:flag:_attribution_and_extension_details_come_from_vendor_reports mono=off title=Tokens,_sessions_and_laptops,_not_Git id=real at_1=30
 
-**Real compromises abuse tokens, sessions and laptops, not Git.** Three cases from the section. In April 2022, stolen OAuth tokens issued to two integrators were used to clone private repositories of dozens of organizations. The lesson is that a third party's token store is part of your attack surface. In December 2022, malware on an engineer's laptop at a CI provider stole an already authenticated session, bypassing two-factor authentication. The lesson is that two-factor authentication protects the login, not the session that follows it. And in May 2026, a poisoned third-party editor extension on an employee device led to exfiltration of GitHub-internal repositories, and GitHub rotated critical secrets. For that third case the textbook flags that attribution and details of the extension come from vendor reports, and that one vendor gives the detection date as the nineteenth of May where GitHub says the eighteenth of May.
+**[ANIMATION]** step: real.1
+
+**Real compromises abuse tokens, sessions and laptops, not Git.** Three cases from the section. In April 2022, stolen OAuth tokens issued to two integrators were used to clone private repositories of dozens of organizations. The lesson is that a third party's token store is part of your attack surface.
+
+**[ANIMATION]** step: real.2
+
+In December 2022, malware on an engineer's laptop at a CI provider stole an already authenticated session, bypassing two-factor authentication. The lesson is that two-factor authentication protects the login, not the session that follows it.
+
+**[ANIMATION]** step: real.3
+
+And in May 2026, a poisoned third-party editor extension on an employee device led to exfiltration of GitHub-internal repositories, and GitHub rotated critical secrets. For that third case the textbook flags that attribution and details of the extension come from vendor reports, and that one vendor gives the detection date as the nineteenth of May where GitHub says the eighteenth of May.
 
 **[ANIMATION]** end
 
@@ -209,6 +219,8 @@ Try it now, thirty seconds, on paper. Write "leaked commit" in the middle of the
 Compare with the picture. A server branch, a server tag, an old pull request ref and cached views, a fork or the fork network, and clones with a CI log. A deletion commit, a forced push and going private each change one thing, and none of them reaches every copy. Revoking at the issuer does: every copy becomes a string that opens nothing.
 
 **[ON SCREEN]** The root-cause box of section 21B.10, one line at a time. Observed behavior: the key is gone from the files, and a scanner still reports it. Git state: the tip tree has no `.env`; commits `0805fd8` to `d4b8762` have trees that contain blob `e523d04`. Mechanism: `git rm` changes the next snapshot; earlier snapshots are immutable objects. Root cause: the secret was pushed, so it exists in every repository that fetched those commits. Why Git does this: history that could be edited in place could not be verified by its hash. Correct fix: revoke the key at its issuer; then decide whether a history rewrite is warranted. Prevention: keep secrets out of the working tree's tracked paths; block them at commit and at push.
+
+Read the root-cause line: the secret was pushed, so it exists in every repository that fetched those commits.
 
 ## LIVE TERMINAL DEMO
 
@@ -446,6 +458,8 @@ v0.2.0:.env:1:LLM_API_KEY=DUMMY-KEY-not-a-real-secret-12345
 The tip of `main`: no match, exit status 1. The tag `v0.2.0`: line 1 of `.env`, with the key. The server agrees on both counts. The tag points into the affected range and serves the file to anyone who fetches it.
 
 **[ON SCREEN]** The table at the end of section 21B.11: what each command finds and does not see. `git grep` on the working tree: nothing in history. The pickaxe: not other branches without `--all`, and not a secret that was moved within a file. `git log --all -G`: not commits that no ref reaches. `git grep` over all commits: not commits no ref reaches, and not binary and compressed files. The same with `--all --reflog`: also commits reachable only from reflogs, but not unreachable objects without reflog entries, and not other people's clones.
+
+Even a search over all refs and reflogs doesn't see unreachable objects without reflog entries, or other people's clones.
 
 ## COMMON MISTAKES
 

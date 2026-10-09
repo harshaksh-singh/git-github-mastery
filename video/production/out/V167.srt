@@ -1,0 +1,1477 @@
+1
+00:00:04,500 --> 00:00:08,669
+A team finds a file in the repository
+that should never have been there.
+
+2
+00:00:08,709 --> 00:00:13,579
+Somebody searches, finds a command that
+removes a file from every commit, runs it in
+
+3
+00:00:13,619 --> 00:00:18,255
+the clone on their laptop, force-pushes
+main, and reports that the file is gone.
+
+4
+00:00:18,595 --> 00:00:23,472
+Three things are wrong with that report.
+The release tag still points at the old
+
+5
+00:00:23,512 --> 00:00:28,573
+commits. The server still holds every old
+object. And every colleague's clone still
+
+6
+00:00:28,613 --> 00:00:33,674
+holds the complete old history, and can
+push it back with an ordinary push tomorrow
+
+7
+00:00:33,714 --> 00:00:34,165
+morning.
+
+8
+00:00:34,505 --> 00:00:39,465
+Today you see a whole-history rewrite the
+way an operator has to see it: as a change
+
+9
+00:00:39,505 --> 00:00:44,405
+to every ref and to every commit ID after
+the first affected commit, with a list of
+
+10
+00:00:44,445 --> 00:00:48,572
+owners, an order and a verification.
+The command is the smallest part.
+
+11
+00:00:48,612 --> 00:00:53,333
+Keep one question in mind. After that
+force-push, can the server still print the
+
+12
+00:00:53,373 --> 00:00:55,178
+file? The terminal will answer.
+
+13
+00:00:57,018 --> 00:01:00,849
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:01:00,889 --> 00:01:05,291
+Four words first. A commit is one
+saved snapshot of the whole project.
+
+15
+00:01:05,331 --> 00:01:10,621
+A repository is the store that holds the
+commits, and a clone is a copy of it on one
+
+16
+00:01:10,661 --> 00:01:15,824
+machine. A ref is a name that holds the ID
+of a commit: every branch and every tag
+
+17
+00:01:15,864 --> 00:01:16,395
+is a ref.
+
+18
+00:01:16,735 --> 00:01:22,156
+In video 166 you learned the six steps of
+a leak response, and why containment comes
+
+19
+00:01:22,196 --> 00:01:27,551
+first: the credential is revoked at its
+issuer, the service that accepts it, before
+
+20
+00:01:27,591 --> 00:01:33,011
+anything is done to the repository. The
+third step, eradicate, said "rewrite history
+
+21
+00:01:33,051 --> 00:01:36,586
+only where warranted". This
+video is about that clause.
+
+22
+00:01:36,926 --> 00:01:40,739
+You already have the two facts that
+explain everything you're about to see.
+
+23
+00:01:41,079 --> 00:01:46,139
+From video 52: a commit's ID is the hash of
+its content, a fingerprint computed from
+
+24
+00:01:46,179 --> 00:01:51,117
+its bytes, and that content includes the
+ID of its parent, the commit it was built
+
+25
+00:01:51,157 --> 00:01:54,699
+on. So a commit whose parent
+changes is a different commit.
+
+26
+00:01:55,039 --> 00:02:00,339
+From video 79: a forced push moves refs on
+the remote, here the server, and deletes
+
+27
+00:02:00,379 --> 00:02:05,680
+no objects. An object is one stored unit
+in Git, such as a commit or the content of
+
+28
+00:02:05,720 --> 00:02:06,130
+a file.
+
+29
+00:02:06,470 --> 00:02:11,559
+Three things today. First, what the recommended
+tool, git-filter-repo, requires and
+
+30
+00:02:11,599 --> 00:02:16,256
+records, as section 21B.16 gives it from
+the tool's manual and from GitHub's
+
+31
+00:02:16,296 --> 00:02:21,261
+procedure. Second, the mechanics, replayed
+locally with a command that ships with
+
+32
+00:02:21,301 --> 00:02:24,475
+Git, so that you can watch
+the refs and the objects.
+
+33
+00:02:24,515 --> 00:02:29,480
+Third, what the rewrite costs, because the
+costs decide whether you do it at all.
+
+34
+00:02:29,820 --> 00:02:35,316
+One layer note before we start. Everything
+in the terminal today is Git, on a local
+
+35
+00:02:35,356 --> 00:02:40,919
+bare repository that plays the server. A
+bare repository holds history only, with no
+
+36
+00:02:40,959 --> 00:02:46,388
+files to edit, as a server does. What GitHub
+does with a rewrite is the subject of
+
+37
+00:02:46,428 --> 00:02:47,055
+video 168.
+
+38
+00:02:48,895 --> 00:02:50,473
+Here's what you'll walk away with.
+
+39
+00:02:50,813 --> 00:02:52,225
+After this video you can:
+
+40
+00:02:52,565 --> 00:02:57,037
+Say what a whole-history rewrite replaces
+and why the command is the smallest part
+
+41
+00:02:57,077 --> 00:02:57,698
+of the work.
+
+42
+00:02:58,038 --> 00:03:04,189
+State what git-filter-repo requires and
+records, as section 21B.16 gives it from the
+
+43
+00:03:04,229 --> 00:03:05,221
+tool's manual.
+
+44
+00:03:05,561 --> 00:03:10,695
+Follow the mechanics locally: fresh mirror
+clone, all refs, new IDs, old objects
+
+45
+00:03:10,735 --> 00:03:13,153
+that remain, pruning, the forced push.
+
+46
+00:03:13,493 --> 00:03:16,997
+Explain what happens to signatures
+and to open pull requests.
+
+47
+00:03:17,337 --> 00:03:19,733
+List the costs that
+decide against a rewrite.
+
+48
+00:03:21,573 --> 00:03:26,668
+Why it exists. Some data stays harmful after
+its credential is rotated, or can't be
+
+49
+00:03:26,708 --> 00:03:31,431
+rotated at all: personal data, customer
+records, proprietary model weights, a
+
+50
+00:03:31,471 --> 00:03:36,566
+private key whose public half is pinned in
+devices, a secret whose revocation takes
+
+51
+00:03:36,606 --> 00:03:41,639
+weeks. For that data, and only for that
+data, you want the repository's history to
+
+52
+00:03:41,679 --> 00:03:42,814
+stop containing it.
+
+53
+00:03:43,154 --> 00:03:47,748
+What it is, in one sentence. A whole-history
+rewrite replaces the first affected
+
+54
+00:03:47,788 --> 00:03:52,498
+commit and every descendant with new commits
+that have new IDs, and the command is
+
+55
+00:03:52,538 --> 00:03:57,016
+the smallest part of the work. Descendants
+are the commits built on top of it.
+
+56
+00:03:57,356 --> 00:04:01,748
+How: the recommended tool. The
+recommended tool is git-filter-repo.
+
+57
+00:04:01,788 --> 00:04:07,305
+It's a separate program and it isn't part
+of Git. It isn't installed in the lab, and
+
+58
+00:04:07,345 --> 00:04:12,531
+this course installs nothing. Section
+21B.16 gives five facts about it from its
+
+59
+00:04:12,571 --> 00:04:16,302
+manual and from GitHub's page
+on removing sensitive data.
+
+60
+00:04:16,642 --> 00:04:21,909
+One. It refuses to run outside a fresh
+clone unless forced, because the rewrite is
+
+61
+00:04:21,949 --> 00:04:26,893
+irreversible: by default it ends with
+an immediate pruning of reflogs and old
+
+62
+00:04:26,933 --> 00:04:32,200
+objects. A reflog is a clone's own list of
+where each ref has pointed, and pruning
+
+63
+00:04:32,240 --> 00:04:33,171
+means deleting.
+
+64
+00:04:33,511 --> 00:04:38,319
+Two. The option --sensitive-data-removal
+exists since version 2.47.
+
+65
+00:04:38,359 --> 00:04:44,396
+It fetches all refs first and gathers the
+extra information needed to clean up other
+
+66
+00:04:44,436 --> 00:04:44,903
+copies.
+
+67
+00:04:45,243 --> 00:04:50,838
+Three. It records its work in .git/filter-repo/:
+a file commit-map with the old and
+
+68
+00:04:50,878 --> 00:04:55,115
+new ID of every commit, and the
+files ref-map, changed-refs and
+
+69
+00:04:55,155 --> 00:04:56,608
+first-changed-commits.
+
+70
+00:04:56,948 --> 00:05:02,394
+Four. Commits get new IDs, so signatures
+on commits and tags can't remain valid and
+
+71
+00:05:02,434 --> 00:05:07,946
+are removed. A signature is a cryptographic
+seal over the bytes of one commit or one
+
+72
+00:05:07,986 --> 00:05:11,185
+annotated tag. Signed tags
+become annotated tags.
+
+73
+00:05:11,525 --> 00:05:16,647
+Five. By default a full rewrite removes
+the origin remote, as a forcing function
+
+74
+00:05:16,687 --> 00:05:21,744
+against pushing by reflex. origin is the
+name under which a clone remembers the
+
+75
+00:05:21,784 --> 00:05:23,293
+repository it came from.
+
+76
+00:05:23,633 --> 00:05:30,531
+Read the slide as five steps: install, fresh
+clone, filter by path or by text, count
+
+77
+00:05:30,571 --> 00:05:37,056
+the affected pull requests, force-push
+every ref. Before the push, the manual's
+
+78
+00:05:37,096 --> 00:05:43,995
+verification is git log --all --name-status
+-- <file> and git log -S"<string>" --all
+
+79
+00:05:44,035 --> 00:05:46,555
+-p --. Both must print nothing.
+
+80
+00:05:46,895 --> 00:05:51,514
+One statement here is marked unverified
+in the textbook, and I say it as the
+
+81
+00:05:51,554 --> 00:05:55,620
+textbook does. Whether git-filter-repo
+keeps the origin remote when
+
+82
+00:05:55,660 --> 00:06:00,401
+--sensitive-data-removal is used wasn't
+tested for the research report of this
+
+83
+00:06:00,441 --> 00:06:05,182
+course. GitHub's instructions push to
+origin afterwards, and the manual says a
+
+84
+00:06:05,222 --> 00:06:09,840
+default full rewrite removes it. If the
+push fails for a missing remote, the
+
+85
+00:06:09,880 --> 00:06:12,721
+manual's remedy is git
+remote add origin <url>.
+
+86
+00:06:13,061 --> 00:06:17,860
+What makes it an operation. Around those
+five commands stand six facts, each with a
+
+87
+00:06:17,900 --> 00:06:18,560
+consequence.
+
+88
+00:06:18,900 --> 00:06:23,767
+Stay on the third and fourth rows, because
+they answer two of today's objectives.
+
+89
+00:06:23,807 --> 00:06:28,614
+A pull request is a GitHub object that
+proposes merging one branch into another.
+
+90
+00:06:28,654 --> 00:06:33,400
+Its review comments are attached to commit
+IDs and lines, and the IDs no longer
+
+91
+00:06:33,440 --> 00:06:38,368
+exist on the branch. So the comments detach,
+and the diffs of closed pull requests
+
+92
+00:06:38,408 --> 00:06:38,732
+break.
+
+93
+00:06:39,072 --> 00:06:44,019
+A signature covers the commit object, the
+object is replaced, so the signature can't
+
+94
+00:06:44,059 --> 00:06:49,006
+be carried over. The textbook's row says
+signatures are removed also on commits that
+
+95
+00:06:49,046 --> 00:06:53,934
+predate the removed data. A rule that
+requires signed commits therefore rejects the
+
+96
+00:06:53,974 --> 00:06:56,309
+rewritten history unless it is bypassed.
+
+97
+00:06:56,649 --> 00:07:01,789
+When not. Section 21B.22 lists five cases.
+Don't rewrite for a credential that is
+
+98
+00:07:01,829 --> 00:07:06,521
+revoked and whose provider logs show
+no use: record the decision and stop.
+
+99
+00:07:06,561 --> 00:07:11,510
+Don't rewrite a public repository in the
+belief that it un-publishes anything.
+
+100
+00:07:11,550 --> 00:07:16,754
+Don't rewrite before containment. Don't
+rewrite in your working clone, because the
+
+101
+00:07:16,794 --> 00:07:21,550
+tool prunes reflogs and stashes, the
+work you set aside without committing.
+
+102
+00:07:21,590 --> 00:07:26,794
+And don't have each colleague run the same
+command: identical commands can produce
+
+103
+00:07:26,834 --> 00:07:27,690
+different IDs.
+
+104
+00:07:28,030 --> 00:07:31,473
+Older guides use git filter-branch
+or the BFG Repo-Cleaner.
+
+105
+00:07:31,513 --> 00:07:36,197
+Git's own manual says of git filter-branch
+that its "use is not recommended" and
+
+106
+00:07:36,237 --> 00:07:40,920
+points to git-filter-repo. GitHub's current
+page documents git-filter-repo only.
+
+107
+00:07:40,960 --> 00:07:45,348
+Keep that in mind for the demonstration,
+because the demonstration uses git
+
+108
+00:07:45,388 --> 00:07:50,308
+filter-branch, for one reason only: it ships
+with Git, and the lab installs nothing.
+
+109
+00:07:50,648 --> 00:07:55,601
+It isn't the recommended tool. It's enough
+to show four mechanics that are the same
+
+110
+00:07:55,641 --> 00:08:00,474
+whichever tool rewrites: descendants get
+new IDs, tags must be rewritten too, old
+
+111
+00:08:00,514 --> 00:08:04,685
+objects remain until pruned, and the
+server keeps them after the push.
+
+112
+00:08:06,525 --> 00:08:11,545
+A picture helps. The textbook's analogy
+is the recall of a printed book to remove
+
+113
+00:08:11,585 --> 00:08:14,981
+one page. You can reprint
+every copy in your warehouse.
+
+114
+00:08:15,021 --> 00:08:19,104
+Each reader's copy stays as it was
+until that reader exchanges it.
+
+115
+00:08:19,144 --> 00:08:22,290
+The page numbers after the
+removed page all change.
+
+116
+00:08:22,330 --> 00:08:26,038
+Every citation by page number
+now points at the wrong place.
+
+117
+00:08:26,078 --> 00:08:31,285
+And one reader who lends an old copy to the
+library puts the page back on the shelf.
+
+118
+00:08:31,625 --> 00:08:35,321
+Map it. The warehouse is the
+cleanup clone and the server.
+
+119
+00:08:35,361 --> 00:08:40,088
+The readers' copies are clones and
+forks. The page numbers are commit IDs.
+
+120
+00:08:40,128 --> 00:08:45,113
+The citations are everything that stored
+an ID: issue comments, release notes,
+
+121
+00:08:45,153 --> 00:08:50,396
+experiment records, deployment manifests.
+The reader who lends the old copy is the
+
+122
+00:08:50,436 --> 00:08:52,328
+stale clone of the next video.
+
+123
+00:08:52,668 --> 00:08:57,483
+Where the analogy breaks: a reprinted book
+has no memory of the old edition, and a
+
+124
+00:08:57,523 --> 00:09:02,100
+Git repository does. After the rewrite
+the old objects are still in the object
+
+125
+00:09:02,140 --> 00:09:05,120
+database, unreachable, until
+something prunes them.
+
+126
+00:09:05,160 --> 00:09:08,435
+The warehouse still has the
+old copies in the back room.
+
+127
+00:09:08,775 --> 00:09:13,802
+So the model to carry is this. A rewrite
+does three separate things, and only the
+
+128
+00:09:13,842 --> 00:09:17,242
+first one is done by the
+filter: it writes new commits.
+
+129
+00:09:17,282 --> 00:09:22,183
+Then refs are moved to them. Then,
+separately and deliberately, old objects are
+
+130
+00:09:22,223 --> 00:09:27,375
+deleted. Each of the three happens per
+repository. Nothing you do in one repository
+
+131
+00:09:27,415 --> 00:09:29,126
+deletes anything in another.
+
+132
+00:09:30,966 --> 00:09:34,033
+Watch the "before" line
+turn into the "after" line.
+
+133
+00:09:34,073 --> 00:09:38,357
+Eight commits on main, the fifth is
+where .env was added, two tags, and
+
+134
+00:09:38,397 --> 00:09:39,454
+feature/streaming.
+
+135
+00:09:39,794 --> 00:09:45,045
+In the "after" line, the first four commits
+are the same objects: same IDs, drawn in
+
+136
+00:09:45,085 --> 00:09:45,990
+the same place.
+
+137
+00:09:46,330 --> 00:09:49,322
+From the fifth commit on,
+every ID is different.
+
+138
+00:09:49,662 --> 00:09:54,694
+Quick quiz. The sixth, seventh and eighth
+commits got new IDs as well, although
+
+139
+00:09:54,734 --> 00:10:00,087
+nobody edited the changes they make. Which
+field of a commit makes that unavoidable:
+
+140
+00:10:00,127 --> 00:10:04,003
+A, the message, B, the parent,
+or C, the author? Your answer?
+
+141
+00:10:08,843 --> 00:10:13,415
+B, the parent. Each commit records its
+parent's ID, and the parent was replaced.
+
+142
+00:10:13,455 --> 00:10:18,084
+The words on the picture are the sentence
+to remember: shared and unchanged up to
+
+143
+00:10:18,124 --> 00:10:22,119
+the commit before the leak, replaced
+from the first changed commit on.
+
+144
+00:10:22,459 --> 00:10:29,470
+v0.1.0 stays where it was. v0.2.0 has
+to move, and so does feature/streaming.
+
+145
+00:10:31,310 --> 00:10:36,458
+Into the lab. The secret in this repository
+is a dummy string, and it says so in its
+
+146
+00:10:36,498 --> 00:10:37,013
+own text.
+
+147
+00:10:37,353 --> 00:10:42,132
+Step 1: a fresh mirror clone. 🟢 SAFE:
+a clone creates a new repository.
+
+148
+00:10:42,172 --> 00:10:47,697
+A mirror clone has every ref of the server
+as a local ref, which is what a rewrite
+
+149
+00:10:47,737 --> 00:10:48,104
+needs.
+
+150
+00:10:48,444 --> 00:10:53,529
+Make your prediction. How many refs will
+the listing show, and of which kinds?
+
+151
+00:10:53,569 --> 00:10:54,580
+Say it out loud.
+
+152
+00:10:59,420 --> 00:11:05,011
+Four refs: two branches and two tags. The
+tags are of type tag, so they're annotated
+
+153
+00:11:05,051 --> 00:11:10,575
+tags, stored as objects of their own. Now
+the last line: the commit that added .env
+
+154
+00:11:10,615 --> 00:11:15,871
+is 0805fd8, "Add staging settings".
+Everything from that commit on is affected.
+
+155
+00:11:15,911 --> 00:11:18,150
+The four commits below it are not.
+
+156
+00:11:18,490 --> 00:11:23,771
+Try it now, for thirty seconds. In the
+lab shell, or in any repository you have,
+
+157
+00:11:23,811 --> 00:11:29,290
+type git for-each-ref. It only reads. Each
+line is one ref and the object it points
+
+158
+00:11:29,330 --> 00:11:31,286
+at. Count the tags. I'll wait.
+
+159
+00:11:36,126 --> 00:11:41,347
+Each line you saw is a ref, and any ref
+that still points into old history keeps it
+
+160
+00:11:41,387 --> 00:11:44,961
+alive. So a rewrite has to
+cover them all, tags included.
+
+161
+00:11:45,001 --> 00:11:48,194
+Now watch what happens when
+the tags are forgotten.
+
+162
+00:11:48,534 --> 00:11:52,879
+Step 2: the mistake first. Rewrite
+the branches and forget the tags.
+
+163
+00:11:52,919 --> 00:11:56,940
+🔴 DANGEROUS. Before running a
+history filter, the five answers.
+
+164
+00:11:56,980 --> 00:12:01,970
+What it changes: every affected commit
+and all descendants, on every ref it is
+
+165
+00:12:02,010 --> 00:12:07,192
+given. What it can destroy: signatures,
+and with a wrong path argument, files you
+
+166
+00:12:07,232 --> 00:12:08,095
+meant to keep.
+
+167
+00:12:08,435 --> 00:12:13,157
+How to preview: git-filter-repo has
+--dry-run. And you run in a fresh clone.
+
+168
+00:12:13,197 --> 00:12:17,543
+How to recover: the untouched server
+and other clones, until you push.
+
+169
+00:12:17,583 --> 00:12:21,741
+When it is appropriate: for data
+that stays harmful after rotation.
+
+170
+00:12:21,781 --> 00:12:26,315
+For an unpushed mistake on a private
+branch a rebase is the smaller tool.
+
+171
+00:12:26,655 --> 00:12:32,149
+Predict. After the branches are rewritten,
+does a scan over all refs still find the
+
+172
+00:12:32,189 --> 00:12:33,815
+key? Yes or no, out loud.
+
+173
+00:12:38,655 --> 00:12:44,860
+Hold on the two counts. Over the branches:
+zero. Over all refs: five snapshots that
+
+174
+00:12:44,900 --> 00:12:50,954
+contain the key. So the answer was yes.
+The last command says why: the tag v0.2.0
+
+175
+00:12:50,994 --> 00:12:53,587
+contains the first affected commit.
+
+176
+00:12:53,927 --> 00:12:59,577
+The tag points at the old commit 64b9b89,
+and a tag keeps its commit and all of that
+
+177
+00:12:59,617 --> 00:13:04,454
+commit's ancestors alive. Anyone who
+fetches the tag fetches the secret.
+
+178
+00:13:04,494 --> 00:13:09,533
+One more detail from the textbook: --all
+also includes the backup refs that
+
+179
+00:13:09,573 --> 00:13:12,310
+filter-branch wrote under refs/original/.
+
+180
+00:13:12,650 --> 00:13:16,129
+Step 3: all refs, with tags
+following their commits.
+
+181
+00:13:16,469 --> 00:13:22,591
+Read three things. The branches are
+reported "unchanged" because the first run
+
+182
+00:13:22,631 --> 00:13:28,595
+already rewrote them. v0.1.0 is unchanged
+because it points before the leak.
+
+183
+00:13:28,635 --> 00:13:32,308
+v0.2.0 was rewritten and
+now points at 66a99cc.
+
+184
+00:13:32,648 --> 00:13:35,280
+Step 4: the map of old and new IDs.
+
+185
+00:13:35,620 --> 00:13:40,055
+Predict again. Of the eight commits
+on main, how many have a new ID?
+
+186
+00:13:40,095 --> 00:13:41,107
+Say it out loud.
+
+187
+00:13:45,947 --> 00:13:50,216
+Four. The four commits below the leak
+are byte for byte the same objects.
+
+188
+00:13:50,256 --> 00:13:53,522
+This table is what git-filter-repo
+writes to commit-map.
+
+189
+00:13:53,562 --> 00:13:58,244
+In an incident, that file belongs in the
+incident record, so that old IDs can be
+
+190
+00:13:58,284 --> 00:13:58,893
+translated.
+
+191
+00:13:59,233 --> 00:14:04,994
+Now the reasons. 0805fd8 became
+0ac4257 because its tree changed.
+
+192
+00:14:05,334 --> 00:14:10,486
+The three above it changed for two reasons.
+Every one of their snapshots held .env
+
+193
+00:14:10,526 --> 00:14:15,362
+too, so their trees changed. And each
+records its parent's ID, and the parent
+
+194
+00:14:15,402 --> 00:14:18,401
+changed. That second reason
+is enough by itself.
+
+195
+00:14:18,741 --> 00:14:24,555
+Step 5: the old objects are still there. A
+rewrite adds new objects and moves refs.
+
+196
+00:14:24,595 --> 00:14:26,600
+It deletes nothing by itself.
+
+197
+00:14:26,940 --> 00:14:32,119
+git cat-file -t answers commit: the object
+exists. git show prints the file with the
+
+198
+00:14:32,159 --> 00:14:35,598
+key from it. In this clone,
+after a rewrite of all refs.
+
+199
+00:14:35,938 --> 00:14:42,226
+Step 6: pruning. 🔴 DANGEROUS. The five
+answers for git reflog expire --expire=now
+
+200
+00:14:42,266 --> 00:14:48,553
+--all followed by git gc --prune=now. What
+it changes: all reflog entries and all
+
+201
+00:14:48,593 --> 00:14:55,115
+unreachable objects are deleted. What it
+can destroy: every commit, stash and staged
+
+202
+00:14:55,155 --> 00:14:59,490
+blob that only a reflog, or
+nothing at all, was keeping.
+
+203
+00:14:59,530 --> 00:15:04,568
+Preview: git fsck --unreachable
+--no-reflogs lists what would go.
+
+204
+00:15:04,608 --> 00:15:10,973
+Recovery: none locally. When appropriate:
+in a cleanup clone, and in a stale clone
+
+205
+00:15:11,013 --> 00:15:17,379
+after its owner has saved their work. In
+your working clone it also discards every
+
+206
+00:15:17,419 --> 00:15:17,848
+stash.
+
+207
+00:15:18,188 --> 00:15:23,263
+Three deliberate steps: delete the
+backup refs, expire the reflogs, prune.
+
+208
+00:15:23,303 --> 00:15:29,000
+Now git cat-file -t fails with "Not a valid
+object name", the scan prints zero, and
+
+209
+00:15:29,040 --> 00:15:30,659
+git fsck prints nothing.
+
+210
+00:15:30,999 --> 00:15:35,709
+git-filter-repo performs this pruning for
+you at the end of its run, which is why it
+
+211
+00:15:35,749 --> 00:15:37,122
+insists on a fresh clone.
+
+212
+00:15:37,462 --> 00:15:42,784
+Step 7: the forced push. 🔴 DANGEROUS. The
+five answers before the command is run.
+
+213
+00:15:42,824 --> 00:15:48,344
+What it changes: git push --force --mirror
+sets every ref on the remote to the local
+
+214
+00:15:48,384 --> 00:15:53,905
+value and deletes those the clone lacks.
+What it can destroy: branches and tags that
+
+215
+00:15:53,945 --> 00:15:59,068
+exist only on the remote. A branch that
+a colleague pushed after you cloned is
+
+216
+00:15:59,108 --> 00:16:00,458
+removed by your push.
+
+217
+00:16:00,798 --> 00:16:06,243
+That's the mechanical reason for the
+freeze. Preview: git push --dry-run --force
+
+218
+00:16:06,283 --> 00:16:10,974
+--mirror origin. Recovery: another
+clone that still has the old refs.
+
+219
+00:16:11,014 --> 00:16:16,733
+On GitHub, the instruments of Chapter 13.
+When appropriate: once, after a freeze, at
+
+220
+00:16:16,773 --> 00:16:22,081
+the end of a verified rewrite. Every
+other force push uses --force-with-lease.
+
+221
+00:16:22,421 --> 00:16:28,981
+Three forced updates, each with a plus
+sign: two branches and the tag v0.2.0.
+
+222
+00:16:29,021 --> 00:16:32,924
+v0.1.0 isn't listed,
+because it didn't change.
+
+223
+00:16:33,264 --> 00:16:37,843
+Step 8: what the server holds now.
+Here's the question from the opening.
+
+224
+00:16:37,883 --> 00:16:42,718
+Predict before running: after this push,
+can the server still print the key?
+
+225
+00:16:42,758 --> 00:16:44,001
+Yes or no, out loud.
+
+226
+00:16:48,841 --> 00:16:53,811
+This is the output the whole video was
+built for, and it closes the question from
+
+227
+00:16:53,851 --> 00:16:57,089
+the opening. No ref on the
+server reaches the secret.
+
+228
+00:16:57,129 --> 00:17:02,099
+The scan over all refs is clean. And git
+show on the server still prints the key,
+
+229
+00:17:02,139 --> 00:17:06,243
+from a commit that git fsck lists
+as unreachable, with four others.
+
+230
+00:17:06,583 --> 00:17:10,625
+Unreachable means that no
+ref leads to it any more.
+
+231
+00:17:10,665 --> 00:17:16,068
+A bare repository of your own can
+be pruned with git gc --prune=now.
+
+232
+00:17:16,108 --> 00:17:20,310
+On GitHub you can't run that.
+Video 168 says who can.
+
+233
+00:17:20,650 --> 00:17:24,422
+Read the last two columns of the
+first two rows: unchanged, unchanged.
+
+234
+00:17:24,762 --> 00:17:29,649
+Nothing you did in the cleanup clone touched
+the remote until the push, and the push
+
+235
+00:17:29,689 --> 00:17:30,588
+moved refs only.
+
+236
+00:17:32,428 --> 00:17:34,076
+Five mistakes to watch for.
+
+237
+00:17:34,416 --> 00:17:39,353
+Rewriting the branches and forgetting the
+tags. Root cause: a tag is a ref, and any
+
+238
+00:17:39,393 --> 00:17:44,029
+ref that still points into the old history
+keeps the old commits and all their
+
+239
+00:17:44,069 --> 00:17:46,068
+ancestors reachable and fetchable.
+
+240
+00:17:46,408 --> 00:17:51,416
+Declaring the secret removed after the
+force push. Root cause: a force push moves
+
+241
+00:17:51,456 --> 00:17:56,589
+refs; the old objects stay on the server
+as unreachable objects, and in every other
+
+242
+00:17:56,629 --> 00:17:58,770
+clone and fork as ordinary history.
+
+243
+00:17:59,110 --> 00:18:03,992
+Rewriting in the working clone. Root cause:
+the tool finishes by expiring reflogs
+
+244
+00:18:04,032 --> 00:18:08,063
+and pruning, which destroys the
+local safety net, stashes included.
+
+245
+00:18:08,403 --> 00:18:13,757
+Taking the mirror clone before the freeze.
+Root cause: git push --force --mirror
+
+246
+00:18:13,797 --> 00:18:19,421
+deletes every remote ref that the cleanup
+clone does not have, so a branch pushed in
+
+247
+00:18:19,461 --> 00:18:20,702
+between is removed.
+
+248
+00:18:21,042 --> 00:18:26,065
+Rewriting before revoking. Root cause: the
+damage happens at the issuer, where the
+
+249
+00:18:26,105 --> 00:18:31,066
+key is accepted, and no change to any
+repository makes a copied key stop working.
+
+250
+00:18:32,906 --> 00:18:37,937
+Now, out of the lab. An ML platform team
+finds that a file with customer support
+
+251
+00:18:37,977 --> 00:18:42,438
+transcripts was committed to the
+evaluation repository four months ago.
+
+252
+00:18:42,478 --> 00:18:47,700
+This isn't a credential. Nothing can be
+rotated, so the data stays harmful, and the
+
+253
+00:18:47,740 --> 00:18:50,363
+textbook's criterion for a rewrite is met.
+
+254
+00:18:50,703 --> 00:18:55,364
+The lead writes the plan before anyone types
+a command: a freeze from a stated time,
+
+255
+00:18:55,404 --> 00:19:00,009
+the rules that block force pushes and tag
+updates switched off for the duration and
+
+256
+00:19:00,049 --> 00:19:04,654
+an owner for switching them back on, a fresh
+clone on one machine, the verification
+
+257
+00:19:04,694 --> 00:19:09,019
+commands, the count of affected pull
+requests for the Support request, and the
+
+258
+00:19:09,059 --> 00:19:11,537
+instruction to colleagues
+about their clones.
+
+259
+00:19:11,877 --> 00:19:14,984
+Then comes the cost that
+is specific to an ML team.
+
+260
+00:19:15,024 --> 00:19:20,105
+Every experiment record, model card and
+deployment manifest that stored a commit ID
+
+261
+00:19:20,145 --> 00:19:24,856
+from the last four months now points at
+a commit that no longer exists on the
+
+262
+00:19:24,896 --> 00:19:28,434
+remote. The team doesn't try
+to edit all of those records.
+
+263
+00:19:28,774 --> 00:19:33,763
+It stores git-filter-repo's commit-map file
+in the incident record, so that anyone
+
+264
+00:19:33,803 --> 00:19:38,669
+who holds an old ID can translate it. And
+because the repository required signed
+
+265
+00:19:38,709 --> 00:19:43,697
+commits, the lead plans the bypass for the
+rewritten history in advance, since the
+
+266
+00:19:43,737 --> 00:19:44,924
+signatures are gone.
+
+267
+00:19:46,764 --> 00:19:52,096
+Your turn. Do Lab 31.1, "The tabletop:
+a committed secret, from report to
+
+268
+00:19:52,136 --> 00:19:56,144
+prevention", in
+lab-manual/m31-secret-leak-response.md.
+
+269
+00:19:56,184 --> 00:20:01,884
+It runs entirely in the lab shell, with
+a bare repository as the server, three
+
+270
+00:20:01,924 --> 00:20:03,798
+clones and a dummy secret.
+
+271
+00:20:04,138 --> 00:20:08,947
+Before you run the rewrite in the lab, write
+down three predictions: which refs will
+
+272
+00:20:08,987 --> 00:20:13,565
+be reported as rewritten and which as
+unchanged, how many of the commits on main
+
+273
+00:20:13,605 --> 00:20:18,356
+will have new IDs, and what git show of the
+first affected commit will print on the
+
+274
+00:20:18,396 --> 00:20:21,473
+server after the forced push.
+Then run it and compare.
+
+275
+00:20:21,513 --> 00:20:24,475
+The lab's questions have no
+answers in the lab file.
+
+276
+00:20:24,515 --> 00:20:26,842
+Attempt them before you open the answers.
+
+277
+00:20:27,182 --> 00:20:34,527
+When that is done, the challenge is Exercise
+31.5, Level 4, "How far did it get?",
+
+278
+00:20:34,567 --> 00:20:38,219
+in exercises/m26-m31-actions-security.md.
+
+279
+00:20:42,059 --> 00:20:45,069
+Answer it out loud before
+you open the answers file.
+
+280
+00:20:45,109 --> 00:20:49,994
+A strong answer does four things. It starts
+with the layer where the damage happens,
+
+281
+00:20:50,034 --> 00:20:54,627
+the issuer, and says what revocation
+achieves that no repository operation can.
+
+282
+00:20:54,667 --> 00:20:59,553
+It gives the criterion for when a rewrite
+is warranted at all, with examples of data
+
+283
+00:20:59,593 --> 00:21:00,843
+that can't be rotated.
+
+284
+00:21:01,183 --> 00:21:06,012
+It names the costs concretely: what happens
+to clones, to recorded commit IDs, to
+
+285
+00:21:06,052 --> 00:21:10,160
+signatures, to open pull requests,
+and what the rewrite can't recall.
+
+286
+00:21:10,200 --> 00:21:14,067
+And it ends with a decision that
+is written down with its reason.
+
+287
+00:21:14,107 --> 00:21:19,057
+An answer that describes only the filter
+command has answered a different question.
+
+288
+00:21:20,897 --> 00:21:26,064
+Let's land this. You should now be able to
+say these sentences, in your own words.
+
+289
+00:21:26,404 --> 00:21:30,979
+A whole-history rewrite replaces the first
+affected commit and every descendant with
+
+290
+00:21:31,019 --> 00:21:35,210
+new commits that have new IDs; the
+ancestors of the first affected commit are
+
+291
+00:21:35,250 --> 00:21:35,759
+untouched.
+
+292
+00:21:36,099 --> 00:21:41,189
+git-filter-repo is a separate program; it
+wants a fresh clone, records a commit map,
+
+293
+00:21:41,229 --> 00:21:43,754
+removes signatures, and prunes at the end.
+
+294
+00:21:44,094 --> 00:21:49,115
+All refs have to be rewritten and force-pushed,
+tags included, because any ref into
+
+295
+00:21:49,155 --> 00:21:51,005
+the old history keeps it alive.
+
+296
+00:21:51,345 --> 00:21:56,269
+A rewrite adds objects and moves refs; old
+objects remain until they are pruned, in
+
+297
+00:21:56,309 --> 00:22:00,456
+every repository separately, and the
+server keeps them after the push.
+
+298
+00:22:00,796 --> 00:22:05,456
+A rewrite is for data that stays harmful
+after rotation; for a key that was revoked
+
+299
+00:22:05,496 --> 00:22:07,892
+within the hour it costs
+more than it buys.
+
+300
+00:22:09,732 --> 00:22:18,169
+Read sections 21B.16 and 21B.17 of the
+textbook. Then do Exercise 31.4, Level 3,
+
+301
+00:22:18,209 --> 00:22:24,950
+"Review this runbook", in
+exercises/m26-m31-actions-security.md.
+
+302
+00:22:25,290 --> 00:22:30,143
+Today you followed a rewrite from the fresh
+clone to the forced push, and you saw
+
+303
+00:22:30,183 --> 00:22:33,586
+what it leaves behind. Run the
+lab once before you go on.
+
+304
+00:22:33,626 --> 00:22:38,660
+Next time, a colleague who never read the
+freeze message pulls and pushes: the stale
+
+305
+00:22:38,700 --> 00:22:43,553
+clone that pushes the secret back, the
+GitHub side of a rewrite, and the controls
+
+306
+00:22:43,593 --> 00:22:48,204
+that limit blast radius. Until then,
+look at the state first and type second.
+
+307
+00:22:48,244 --> 00:22:49,654
+See you in the next one.

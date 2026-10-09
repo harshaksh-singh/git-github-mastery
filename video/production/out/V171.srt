@@ -1,0 +1,1288 @@
+1
+00:00:04,500 --> 00:00:08,387
+Your team deploys its hosted service
+several times a day from main.
+
+2
+00:00:08,427 --> 00:00:13,194
+The new manager's last company used develop,
+release branches and hotfix branches,
+
+3
+00:00:13,234 --> 00:00:16,945
+and the proposal arrives as a
+slide with the well-known diagram.
+
+4
+00:00:16,985 --> 00:00:21,458
+You have to answer in a meeting, and "I
+prefer trunk-based development" is an
+
+5
+00:00:21,498 --> 00:00:22,806
+opinion, not an answer.
+
+6
+00:00:23,146 --> 00:00:27,900
+By the end of this video you can say what
+Git Flow prescribes, commit by commit,
+
+7
+00:00:27,940 --> 00:00:32,514
+what its own author wrote about it in
+2020, and what each of the other models
+
+8
+00:00:32,554 --> 00:00:36,588
+assumes about how software is
+delivered. None of them is a standard.
+
+9
+00:00:36,628 --> 00:00:41,382
+Each is an answer to a delivery situation.
+Keep the words "industry standard" in
+
+10
+00:00:41,422 --> 00:00:44,677
+mind. The author of that
+diagram has a comment on them.
+
+11
+00:00:46,517 --> 00:00:50,406
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+12
+00:00:50,446 --> 00:00:54,592
+Three words first. A commit is one
+saved snapshot of the project.
+
+13
+00:00:54,632 --> 00:00:59,423
+A branch is a name that points at a
+commit and moves forward as you commit.
+
+14
+00:00:59,463 --> 00:01:02,257
+A tag is a name that
+isn't expected to move.
+
+15
+00:01:02,597 --> 00:01:07,889
+In video 170 the workflow involved two
+servers. Today everything is inside one
+
+16
+00:01:07,929 --> 00:01:13,494
+repository, and the subject is which branches
+exist and how commits travel between
+
+17
+00:01:13,534 --> 00:01:13,836
+them.
+
+18
+00:01:14,176 --> 00:01:19,647
+Chapter 27 reduces the subject to one
+sentence: a branching strategy is nothing but
+
+19
+00:01:19,687 --> 00:01:24,826
+an agreement about which refs exist, who
+may move them, and in which direction
+
+20
+00:01:24,866 --> 00:01:30,005
+commits travel between them. You know
+from video 36 what --no-ff does and what
+
+21
+00:01:30,045 --> 00:01:35,516
+first-parent history is: --no-ff makes a
+merge commit even where a fast-forward was
+
+22
+00:01:35,556 --> 00:01:40,762
+possible, and first-parent history follows
+only the first parent of each merge.
+
+23
+00:01:40,802 --> 00:01:46,273
+You know from video 82 that a release is a
+tag and that git describe and tag ranges
+
+24
+00:01:46,313 --> 00:01:47,999
+answer "what did we ship".
+
+25
+00:01:48,339 --> 00:01:53,440
+We go through five things: branch names,
+GitHub Flow, Git Flow with a replayed
+
+26
+00:01:53,480 --> 00:01:58,581
+history, the 2020 note, and then GitLab
+Flow, trunk-based development, release
+
+27
+00:01:58,621 --> 00:02:02,206
+branches and Microsoft's
+Release Flow, each as a graph.
+
+28
+00:02:04,046 --> 00:02:05,624
+Here's what you'll walk away with.
+
+29
+00:02:05,964 --> 00:02:07,376
+After this video you can:
+
+30
+00:02:07,716 --> 00:02:12,853
+Explain why main, develop, feature/*,
+hotfix/* and release/* are conventions and
+
+31
+00:02:12,893 --> 00:02:14,407
+what gives a name force.
+
+32
+00:02:14,747 --> 00:02:17,808
+Describe GitHub Flow and what
+it assumes about deployment.
+
+33
+00:02:18,148 --> 00:02:22,216
+Describe Git Flow and state what
+its author wrote about it in 2020.
+
+34
+00:02:22,556 --> 00:02:25,606
+Describe trunk-based development
+and release branches.
+
+35
+00:02:25,946 --> 00:02:29,665
+Draw the graph each model produces
+for one release and one hotfix.
+
+36
+00:02:31,505 --> 00:02:37,226
+Branch names are conventions, not laws.
+main, develop, feature/*, bugfix/*, hotfix/*
+
+37
+00:02:37,266 --> 00:02:42,712
+and release/* are names that people agreed
+on. Git gives none of them a meaning.
+
+38
+00:02:43,052 --> 00:02:49,091
+To Git, refs/heads/release/1.4 is a ref
+whose name happens to contain a slash.
+
+39
+00:02:49,131 --> 00:02:55,482
+The slash matters in exactly two technical
+ways. It lets patterns select groups of
+
+40
+00:02:55,522 --> 00:03:01,640
+branches: git branch --list 'release/*',
+a ruleset target such as release/**, a
+
+41
+00:03:01,680 --> 00:03:08,109
+workflow filter such as branches: ['release/**'].
+And in the files backend it makes
+
+42
+00:03:08,149 --> 00:03:14,578
+release a directory, so a branch named
+release and a branch named release/1.4 can't
+
+43
+00:03:14,618 --> 00:03:15,435
+both exist.
+
+44
+00:03:15,775 --> 00:03:21,129
+Read the right-hand column. Force comes
+from three places: a platform setting, a
+
+45
+00:03:21,169 --> 00:03:26,725
+rule with a pattern, which GitHub calls a
+ruleset, or automation that triggers on a
+
+46
+00:03:26,765 --> 00:03:30,837
+pattern. Everything else is
+habit. The lab configuration sets
+
+47
+00:03:30,877 --> 00:03:35,422
+init.defaultBranch=main. Unconfigured
+Git 2.55 still creates master.
+
+48
+00:03:35,462 --> 00:03:38,523
+Neither name does anything
+the other does not.
+
+49
+00:03:38,863 --> 00:03:43,653
+Quick quiz. What gives the name
+develop its force? A, Git itself.
+
+50
+00:03:43,693 --> 00:03:47,518
+B, a platform setting. C,
+only the team's agreement.
+
+51
+00:03:47,558 --> 00:03:48,409
+Your answer?
+
+52
+00:03:53,249 --> 00:03:57,390
+C, only the team's agreement. That
+was the second row of the table.
+
+53
+00:03:57,730 --> 00:04:01,586
+The convention earns its keep
+when rules are attached to it.
+
+54
+00:04:01,626 --> 00:04:06,846
+"Nobody pushes to release/** except through
+a pull request with two approvals" is
+
+55
+00:04:06,886 --> 00:04:12,041
+one ruleset with one pattern, and it works
+only if every release branch is named
+
+56
+00:04:12,081 --> 00:04:17,236
+that way. A name that carries the author,
+such as asha/rerun, says the branch is
+
+57
+00:04:17,276 --> 00:04:18,990
+private and may be rebased.
+
+58
+00:04:19,330 --> 00:04:25,180
+Try it now, for thirty seconds. In any
+repository you have, type git branch --list
+
+59
+00:04:25,220 --> 00:04:30,927
+'release/*'. It only reads. It lists the
+branches whose names match the pattern.
+
+60
+00:04:30,967 --> 00:04:31,645
+I'll wait.
+
+61
+00:04:36,485 --> 00:04:40,960
+If it printed nothing, no branch of yours
+matches. That's the point of a naming
+
+62
+00:04:41,000 --> 00:04:44,274
+pattern: a branch outside the
+pattern is outside the rule.
+
+63
+00:04:44,614 --> 00:04:49,755
+GitHub Flow. One long-lived branch that is
+always deployable, short branches off it,
+
+64
+00:04:49,795 --> 00:04:53,578
+a pull request for each, and
+deployment right after the merge.
+
+65
+00:04:53,618 --> 00:04:58,512
+Deployable means that it can go into
+service for users at any moment, and a pull
+
+66
+00:04:58,552 --> 00:05:02,397
+request is GitHub's object for
+proposing and reviewing a merge.
+
+67
+00:05:02,737 --> 00:05:07,810
+GitHub's documentation describes six steps:
+create a branch, make changes, create a
+
+68
+00:05:07,850 --> 00:05:11,753
+pull request, address review
+comments, merge, delete the branch.
+
+69
+00:05:11,793 --> 00:05:16,743
+Scott Chacon's 2011 essay, where the name
+comes from, adds the rules that give it
+
+70
+00:05:16,783 --> 00:05:21,918
+its character: anything on the main branch
+is deployable, and you deploy immediately
+
+71
+00:05:21,958 --> 00:05:22,780
+after merging.
+
+72
+00:05:23,120 --> 00:05:28,194
+He also gives the reason GitHub didn't use
+Git Flow: GitHub deployed many times a
+
+73
+00:05:28,234 --> 00:05:33,308
+day, while Git Flow is organised around
+releases. Martin Fowler's reading is that
+
+74
+00:05:33,348 --> 00:05:38,170
+the model assumes a single production
+version, so release branches and hotfix
+
+75
+00:05:38,210 --> 00:05:41,579
+branches disappear: a hotfix
+is one more short branch.
+
+76
+00:05:41,919 --> 00:05:46,794
+What it assumes: that there is one live
+version, that main can be deployed at any
+
+77
+00:05:46,834 --> 00:05:51,890
+commit, and that a broken deployment is
+repaired by rolling forward or back quickly.
+
+78
+00:05:51,930 --> 00:05:56,684
+Microsoft's description of its own practice
+records where the strict form stops
+
+79
+00:05:56,724 --> 00:06:01,599
+scaling: when a repository completes more
+than 200 pull requests a day, deploying
+
+80
+00:06:01,639 --> 00:06:06,635
+each one before or after merge turns into
+a queue, so Microsoft batches deployments
+
+81
+00:06:06,675 --> 00:06:08,394
+into sprint releases instead.
+
+82
+00:06:08,734 --> 00:06:13,108
+What it doesn't say: how long a feature
+branch may live, or what to do when a
+
+83
+00:06:13,148 --> 00:06:17,923
+customer can't take the newest version. The
+next video shows that consequence with a
+
+84
+00:06:17,963 --> 00:06:18,669
+real history.
+
+85
+00:06:19,009 --> 00:06:23,513
+Git Flow. Two long-lived branches,
+main for released code and develop for
+
+86
+00:06:23,553 --> 00:06:28,493
+integration, plus three kinds of supporting
+branch: feature, release and hotfix.
+
+87
+00:06:28,833 --> 00:06:33,731
+Vincent Driessen published "A successful
+Git branching model" on the fifth of
+
+88
+00:06:33,771 --> 00:06:38,926
+January 2010. Feature branches start from
+and merge into develop, with --no-ff so
+
+89
+00:06:38,966 --> 00:06:44,056
+that each feature stays visible as a unit.
+A release branch is cut from develop,
+
+90
+00:06:44,096 --> 00:06:49,315
+receives only stabilization commits, and
+is merged into main, and tagged, and back
+
+91
+00:06:49,355 --> 00:06:54,702
+into develop. A hotfix branch is cut from
+main, and is merged into main, and tagged,
+
+92
+00:06:54,742 --> 00:06:55,792
+and into develop.
+
+93
+00:06:56,132 --> 00:07:01,338
+The 2020 note. On the fifth of March 2020
+the author added a "note of reflection" at
+
+94
+00:07:01,378 --> 00:07:06,583
+the top of the article. I give it as the
+course's research report summarizes it, not
+
+95
+00:07:06,623 --> 00:07:11,454
+as a quotation, in three points. First,
+the model was conceived for explicitly
+
+96
+00:07:11,494 --> 00:07:15,951
+versioned software that may need
+several versions supported in the wild.
+
+97
+00:07:16,291 --> 00:07:21,249
+Second, a team doing continuous delivery of
+a web application should adopt a simpler
+
+98
+00:07:21,289 --> 00:07:26,247
+workflow such as GitHub Flow. Third, readers
+should weigh their own context, because
+
+99
+00:07:26,287 --> 00:07:30,828
+no model is a cure-all. Fowler adds that
+Git Flow says nothing about how long
+
+100
+00:07:30,868 --> 00:07:35,291
+feature branches live, and Atlassian's
+tutorial now labels Gitflow a legacy
+
+101
+00:07:35,331 --> 00:07:35,826
+workflow.
+
+102
+00:07:36,166 --> 00:07:40,899
+"Use Git Flow" as a default for every
+project. The author of the model restricts it
+
+103
+00:07:40,939 --> 00:07:44,637
+to explicitly versioned software
+with several supported versions.
+
+104
+00:07:44,677 --> 00:07:49,122
+For a continuously deployed service it
+adds a second long-lived branch and two
+
+105
+00:07:49,162 --> 00:07:52,917
+merges per release, and the tags
+already record what was released.
+
+106
+00:07:52,957 --> 00:07:57,058
+That's the author's comment on "the
+industry standard" from the opening.
+
+107
+00:07:57,398 --> 00:08:02,297
+When it still fits. Installed software,
+firmware, SDKs and libraries with several
+
+108
+00:08:02,337 --> 00:08:07,054
+maintained versions, and organizations
+where a release is a scheduled, audited
+
+109
+00:08:07,094 --> 00:08:12,115
+event. Even there, the part that does the
+work is the release branch, which you can
+
+110
+00:08:12,155 --> 00:08:13,396
+have without develop.
+
+111
+00:08:13,736 --> 00:08:18,536
+GitLab Flow. GitLab defines it as a
+simplified strategy that works directly with
+
+112
+00:08:18,576 --> 00:08:23,255
+main and adds, where needed, a production
+branch, environment branches such as
+
+113
+00:08:23,295 --> 00:08:27,914
+staging and production, or release
+branches for software shipped in versions.
+
+114
+00:08:27,954 --> 00:08:32,754
+Three of its eleven published rules: fix
+bugs in main first and release branches
+
+115
+00:08:32,794 --> 00:08:36,565
+second, base releases on tags,
+and never rebase pushed commits.
+
+116
+00:08:36,905 --> 00:08:41,222
+GitLab's original 2014 "GitLab Flow"
+document is no longer reachable on
+
+117
+00:08:41,262 --> 00:08:46,132
+docs.gitlab.com. The phrase "upstream
+first" for its fix direction was read only
+
+118
+00:08:46,172 --> 00:08:50,121
+through a mirror, according to the
+research notes of this course.
+
+119
+00:08:50,161 --> 00:08:54,539
+The two current pages the textbook
+links are the source for what I said.
+
+120
+00:08:54,879 --> 00:08:59,744
+Trunk-based development. Developers integrate
+into one branch, the trunk, and avoid
+
+121
+00:08:59,784 --> 00:09:04,589
+other long-lived development branches. Very
+small teams may commit straight to the
+
+122
+00:09:04,629 --> 00:09:09,553
+trunk. Larger teams use short-lived feature
+branches, which should last no more than
+
+123
+00:09:09,593 --> 00:09:14,516
+a couple of days, belong to one developer
+or a pair, and be deleted after the merge.
+
+124
+00:09:14,856 --> 00:09:19,767
+Long-running changes are handled with feature
+flags and a technique called branch by
+
+125
+00:09:19,807 --> 00:09:24,482
+abstraction, instead of long branches. A
+feature flag is a condition in the code
+
+126
+00:09:24,522 --> 00:09:29,373
+that keeps unfinished behavior switched
+off. Fowler treats it as close to a synonym
+
+127
+00:09:29,413 --> 00:09:30,965
+for continuous integration.
+
+128
+00:09:31,305 --> 00:09:35,040
+The difference from GitHub Flow
+is one of degree, not of kind.
+
+129
+00:09:35,080 --> 00:09:39,850
+Both have one long-lived branch. Trunk-based
+development adds a limit on branch
+
+130
+00:09:39,890 --> 00:09:44,052
+lifetime and, in its strictest form,
+drops the pre-merge review gate.
+
+131
+00:09:44,392 --> 00:09:49,140
+Release branches. A release branch is cut
+from the trunk shortly before a release,
+
+132
+00:09:49,180 --> 00:09:53,636
+receives only fixes, and is the place
+the release and its patches are tagged.
+
+133
+00:09:53,676 --> 00:09:57,139
+The trunk-based development site
+states the rules: cut late.
+
+134
+00:09:57,179 --> 00:10:00,818
+The branch may start from a commit
+older than the trunk's head.
+
+135
+00:10:01,158 --> 00:10:05,527
+It's never merged back. It's deleted
+when the version is no longer supported.
+
+136
+00:10:05,567 --> 00:10:09,937
+And bugs are reproduced and fixed on the
+trunk first and cherry-picked to the
+
+137
+00:10:09,977 --> 00:10:14,575
+release branch. A cherry-pick copies one
+commit's change onto another branch as a
+
+138
+00:10:14,615 --> 00:10:16,007
+new commit with a new ID.
+
+139
+00:10:16,347 --> 00:10:21,788
+Microsoft's Release Flow. Short-lived topic
+branches are merged to main through pull
+
+140
+00:10:21,828 --> 00:10:27,270
+requests with branch policies. At the end
+of each three-week sprint a release branch
+
+141
+00:10:27,310 --> 00:10:32,099
+is created, named for the sprint. The
+document's example is releases/M129.
+
+142
+00:10:32,139 --> 00:10:37,581
+It's deployed in rings. A hotfix is made in
+main first and then cherry-picked to the
+
+143
+00:10:37,621 --> 00:10:40,452
+release branch through
+its own pull request.
+
+144
+00:10:40,792 --> 00:10:45,612
+Release branches never merge back to main,
+and the old one is abandoned after the
+
+145
+00:10:45,652 --> 00:10:50,652
+next sprint ships. Release Flow is trunk-based
+development plus a release branch per
+
+146
+00:10:50,692 --> 00:10:55,631
+sprint plus the "fix on main first" rule.
+The names differ more than the graphs do.
+
+147
+00:10:57,471 --> 00:11:02,113
+Now one question that sorts them all.
+All of these models keep one integration
+
+148
+00:11:02,153 --> 00:11:06,734
+branch. They differ in what, if anything,
+sits downstream of it, and in which
+
+149
+00:11:06,774 --> 00:11:08,174
+direction a fix travels.
+
+150
+00:11:08,514 --> 00:11:12,419
+Use this as the sorting question:
+how many versions are alive at once?
+
+151
+00:11:12,459 --> 00:11:16,816
+If the answer is one, there's nothing
+downstream of main, and you're somewhere
+
+152
+00:11:16,856 --> 00:11:21,325
+between GitHub Flow and trunk-based
+development. If the answer is more than one,
+
+153
+00:11:21,365 --> 00:11:26,004
+something has to name each live version,
+and that something is a release branch or,
+
+154
+00:11:26,044 --> 00:11:28,371
+in Git Flow, the pair of main and develop.
+
+155
+00:11:28,711 --> 00:11:33,426
+A way to picture it: a river and its canals.
+The integration branch is the river.
+
+156
+00:11:33,466 --> 00:11:38,122
+A release branch is a canal cut from the
+river at one point, with its own slower
+
+157
+00:11:38,162 --> 00:11:42,878
+water. The models differ in whether canals
+exist and whether water is ever pumped
+
+158
+00:11:42,918 --> 00:11:44,815
+from a canal back into the river.
+
+159
+00:11:45,155 --> 00:11:48,534
+Where the picture breaks: water
+mixes, and commits do not.
+
+160
+00:11:48,574 --> 00:11:53,308
+A fix that is cherry-picked into a canal
+is a second commit with a second ID, and
+
+161
+00:11:53,348 --> 00:11:57,199
+Git records no link between the
+two. The next video is about that.
+
+162
+00:11:59,039 --> 00:12:03,180
+A question for you: what is
+between the two tags on main?
+
+163
+00:12:03,220 --> 00:12:08,095
+The hotfix, and also the merge M3.
+Hold that thought for video 172.
+
+164
+00:12:08,435 --> 00:12:13,880
+Now the four diagrams of section 27.8 again.
+GitLab Flow with a production branch:
+
+165
+00:12:13,920 --> 00:12:18,964
+every merge deploys to staging, and a
+merge from main deploys to production.
+
+166
+00:12:19,304 --> 00:12:22,488
+Trunk-based development: branches
+that live hours to two days.
+
+167
+00:12:22,828 --> 00:12:26,987
+A release branch, with the fix made on
+main first, and its cherry-pick on the
+
+168
+00:12:27,027 --> 00:12:27,369
+branch.
+
+169
+00:12:27,709 --> 00:12:32,748
+Microsoft's Release Flow: the
+hotfix is cherry-picked to M129.
+
+170
+00:12:33,088 --> 00:12:38,061
+Put the last two side by side: it's the same
+graph, with a branch per version in one
+
+171
+00:12:38,101 --> 00:12:40,268
+and a branch per sprint in the other.
+
+172
+00:12:42,108 --> 00:12:47,431
+Into the lab. The project is the gateway
+promptgate, arranged as Git Flow
+
+173
+00:12:47,471 --> 00:12:52,132
+prescribes: features are merged
+into develop, each with --no-ff.
+
+174
+00:12:52,472 --> 00:12:57,820
+Step 1: the release branch. 🟡 CAUTION:
+git merge moves the current branch.
+
+175
+00:12:57,860 --> 00:13:00,587
+--no-ff always creates a merge commit.
+
+176
+00:13:00,927 --> 00:13:05,732
+Predict: how many merge commits does one
+release create, and on which branches?
+
+177
+00:13:05,772 --> 00:13:06,714
+Say it out loud.
+
+178
+00:13:11,554 --> 00:13:17,439
+Two: one on main, which is tagged, and
+one on develop, so that develop has the
+
+179
+00:13:17,479 --> 00:13:21,465
+version bump too. The release
+branch is then deleted.
+
+180
+00:13:21,505 --> 00:13:25,416
+Its tip 7237206 stays
+reachable through both merges.
+
+181
+00:13:28,756 --> 00:13:34,247
+Step 2: the hotfix. It starts from main,
+which is what production runs, not from
+
+182
+00:13:34,287 --> 00:13:34,801
+develop.
+
+183
+00:13:35,141 --> 00:13:39,674
+Again two merges. The fix
+itself is one commit, 1607dca.
+
+184
+00:13:40,014 --> 00:13:45,420
+Step 3: the graph. 🟢 SAFE. Predict before
+it prints: where will you find the hotfix
+
+185
+00:13:45,460 --> 00:13:48,241
+commit, and how many
+children will it have?
+
+186
+00:13:53,081 --> 00:13:58,313
+Take your time. This graph is hard to
+read, and that's part of the lesson.
+
+187
+00:13:58,353 --> 00:14:01,733
+Find 1607dca, and count
+its children. I'll wait.
+
+188
+00:14:06,573 --> 00:14:12,406
+It has two children: the merge a3de55c on
+main, tagged v1.4.1, and the merge 24124ab
+
+189
+00:14:12,446 --> 00:14:18,070
+on develop. That double merge is the model's
+answer to "how does a fix reach both
+
+190
+00:14:18,110 --> 00:14:23,314
+lines". It's a merge-upward answer: one
+commit, one ID, reachable from both
+
+191
+00:14:23,354 --> 00:14:23,944
+branches.
+
+192
+00:14:27,284 --> 00:14:28,930
+Step 4: what shipped.
+
+193
+00:14:29,270 --> 00:14:34,706
+Four readings. The patch release contains
+the fix and nothing else, because main
+
+194
+00:14:34,746 --> 00:14:40,319
+receives only releases and hotfixes. git
+log --first-parent main is a release log,
+
+195
+00:14:40,359 --> 00:14:45,727
+one line per release. The history between
+v1.3.0 and develop contains six merge
+
+196
+00:14:45,767 --> 00:14:49,493
+commits for three features,
+one release and one hotfix.
+
+197
+00:14:49,533 --> 00:14:54,901
+And the second parent of the hotfix merge,
+the fix itself, is contained in both
+
+198
+00:14:54,941 --> 00:14:56,064
+develop and main.
+
+199
+00:14:56,404 --> 00:15:01,190
+So the model delivers what it promises: a
+clean patch release and a readable release
+
+200
+00:15:01,230 --> 00:15:03,258
+log. The price is on the third line.
+
+201
+00:15:05,098 --> 00:15:06,746
+Five mistakes to watch for.
+
+202
+00:15:07,086 --> 00:15:11,919
+Treating a branch name as a control. Root
+cause: Git gives no meaning to a name;
+
+203
+00:15:11,959 --> 00:15:16,609
+only a platform setting, a ruleset pattern
+or automation that triggers on the
+
+204
+00:15:16,649 --> 00:15:18,009
+pattern gives it force.
+
+205
+00:15:18,349 --> 00:15:21,435
+Adopting Git Flow for a
+continuously deployed service.
+
+206
+00:15:21,475 --> 00:15:26,180
+Root cause: the model was conceived for
+explicitly versioned software with several
+
+207
+00:15:26,220 --> 00:15:30,983
+supported versions, and a service with one
+live version has nothing for develop and
+
+208
+00:15:31,023 --> 00:15:32,662
+release branches to separate.
+
+209
+00:15:33,002 --> 00:15:36,357
+Calling GitHub Flow and
+trunk-based development opposites.
+
+210
+00:15:36,397 --> 00:15:41,041
+Root cause: both have one long-lived
+branch; the difference is a limit on branch
+
+211
+00:15:41,081 --> 00:15:44,729
+lifetime and, in the strictest
+form, the pre-merge review gate.
+
+212
+00:15:45,069 --> 00:15:50,142
+Forgetting the merge back in Git Flow. Root
+cause: a release or hotfix lives on two
+
+213
+00:15:50,182 --> 00:15:55,008
+long-lived branches, and the model needs
+a second merge to carry it to develop;
+
+214
+00:15:55,048 --> 00:15:56,671
+nothing in Git reminds you.
+
+215
+00:15:57,011 --> 00:16:01,801
+Naming a release branch inconsistently.
+Root cause: rules and deployment workflows
+
+216
+00:16:01,841 --> 00:16:06,514
+select branches by pattern, so a branch
+outside the pattern is outside the rule.
+
+217
+00:16:08,354 --> 00:16:13,444
+Now, out of the lab. A company runs an LLM
+gateway as a hosted service and deploys
+
+218
+00:16:13,484 --> 00:16:18,136
+from main after every merge. It uses
+GitHub Flow and has never needed more.
+
+219
+00:16:18,176 --> 00:16:22,891
+Then two enterprise customers sign
+contracts to run the gateway on their own
+
+220
+00:16:22,931 --> 00:16:28,084
+hardware and to stay one version behind.
+This is the first question of the chapter:
+
+221
+00:16:28,124 --> 00:16:30,462
+does the branching model survive that?
+
+222
+00:16:30,802 --> 00:16:35,798
+The staff engineer doesn't propose Git
+Flow. She applies the sorting question.
+
+223
+00:16:35,838 --> 00:16:40,060
+Until now one version was alive.
+Next quarter there will be three.
+
+224
+00:16:40,100 --> 00:16:45,226
+Something has to name the two older ones,
+so the team adds release branches, cut
+
+225
+00:16:45,266 --> 00:16:50,456
+from main late, named by one pattern,
+release/<version>, with one ruleset on that
+
+226
+00:16:50,496 --> 00:16:50,973
+pattern.
+
+227
+00:16:51,313 --> 00:16:56,124
+main stays the only integration branch,
+and no develop is introduced, because the
+
+228
+00:16:56,164 --> 00:17:00,616
+hosted service still deploys from main
+and the tags already record what was
+
+229
+00:17:00,656 --> 00:17:05,587
+released. She writes the scheme into
+CONTRIBUTING.md, including the direction a fix
+
+230
+00:17:05,627 --> 00:17:08,462
+travels, which is the
+subject of the next video.
+
+231
+00:17:10,302 --> 00:17:17,490
+Your turn. Do Exercise 32.1, Level 1,
+"Names and what gives them force", in
+
+232
+00:17:17,530 --> 00:17:20,382
+exercises/m32-m34-practice.md.
+
+233
+00:17:20,722 --> 00:17:25,723
+Before you answer each item, predict in one
+line what Git itself does with the name
+
+234
+00:17:25,763 --> 00:17:30,705
+in question, and then what, if anything,
+on the platform or in automation gives it
+
+235
+00:17:30,745 --> 00:17:35,503
+force. Check your answers against the
+table of section 27.5 only after you have
+
+236
+00:17:35,543 --> 00:17:36,536
+written them all.
+
+237
+00:17:36,876 --> 00:17:42,637
+The challenge is Exercise 32.2, Level 2,
+"Six teams, which model?", in the same
+
+238
+00:17:42,677 --> 00:17:43,004
+file.
+
+239
+00:17:46,844 --> 00:17:51,796
+Answer out loud. The question has three
+parts, and a strong answer gives each its
+
+240
+00:17:51,836 --> 00:17:56,910
+own paragraph. The first is a precise
+description: which long-lived branches, which
+
+241
+00:17:56,950 --> 00:18:01,347
+supporting branches, which merges in
+which direction, where the tags go.
+
+242
+00:18:01,387 --> 00:18:06,462
+The second reports the author's 2020 note
+accurately, as a restriction on where the
+
+243
+00:18:06,502 --> 00:18:08,434
+model fits, not as a retraction.
+
+244
+00:18:08,774 --> 00:18:13,522
+The third is a proposal that starts from
+the team's delivery situation, says what
+
+245
+00:18:13,562 --> 00:18:17,543
+the proposal assumes, and says on
+which day it would have to change.
+
+246
+00:18:17,583 --> 00:18:22,509
+Do it without contempt for the proposal.
+The manager's last company may have shipped
+
+247
+00:18:22,549 --> 00:18:23,632
+versioned software.
+
+248
+00:18:25,472 --> 00:18:27,521
+Let's land this, in your own words.
+
+249
+00:18:27,861 --> 00:18:32,588
+A branch name means nothing to Git; a
+default-branch setting, a ruleset pattern or a
+
+250
+00:18:32,628 --> 00:18:34,348
+workflow filter gives it force.
+
+251
+00:18:34,688 --> 00:18:39,624
+GitHub Flow is one always-deployable branch
+with short branches and deployment after
+
+252
+00:18:39,664 --> 00:18:41,934
+merge, and it assumes one live version.
+
+253
+00:18:42,274 --> 00:18:47,483
+Git Flow is main plus develop plus feature,
+release and hotfix branches with merges
+
+254
+00:18:47,523 --> 00:18:52,796
+in two directions; its author restricted it
+in 2020 to explicitly versioned software
+
+255
+00:18:52,836 --> 00:18:54,820
+with several supported versions.
+
+256
+00:18:55,160 --> 00:19:00,212
+Trunk-based development limits branch lifetime
+to a couple of days; release branches
+
+257
+00:19:00,252 --> 00:19:04,699
+are cut late from the trunk, receive
+only fixes and are never merged back.
+
+258
+00:19:05,039 --> 00:19:09,189
+The question that sorts the models is
+how many versions are alive at once.
+
+259
+00:19:11,029 --> 00:19:16,437
+Read sections 27.5 to 27.8. Then read git
+help workflows, the Git project's own
+
+260
+00:19:16,477 --> 00:19:22,023
+workflow document, which the chapter cites.
+Note what it says about the branch on
+
+261
+00:19:22,063 --> 00:19:27,540
+which a fix is committed. You'll need that
+sentence in the next video, where one
+
+262
+00:19:27,580 --> 00:19:31,126
+release and one hotfix are
+run under two strategies.
+
+263
+00:19:31,466 --> 00:19:36,119
+Today you turned five well-known names
+into five graphs, and you can answer that
+
+264
+00:19:36,159 --> 00:19:40,753
+meeting with reasons instead of a preference.
+Draw each graph once from memory.
+
+265
+00:19:40,793 --> 00:19:45,387
+Next time: one release and one hotfix
+under two strategies, and which way a fix
+
+266
+00:19:45,427 --> 00:19:48,965
+travels. Until then, look at the
+state first and type second.
+
+267
+00:19:49,005 --> 00:19:50,373
+See you in the next one.

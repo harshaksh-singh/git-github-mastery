@@ -1,0 +1,1384 @@
+1
+00:00:04,500 --> 00:00:09,583
+In both cases a shared branch on the server
+now points at a history that isn't the
+
+2
+00:00:09,623 --> 00:00:14,581
+one everybody had. A branch is a named
+line of commits, the saved snapshots of a
+
+3
+00:00:14,621 --> 00:00:19,642
+project. A force push overwrites the
+server's branch, so commits can drop off it.
+
+4
+00:00:19,682 --> 00:00:24,390
+And "not an ancestor" means that the
+branch's history no longer contains the
+
+5
+00:00:24,430 --> 00:00:29,638
+deployed commit. In both cases the obvious
+repair is another forced push, to put the
+
+6
+00:00:29,678 --> 00:00:30,700
+old history back.
+
+7
+00:00:31,040 --> 00:00:33,948
+That repair is itself a
+rewrite of a shared branch.
+
+8
+00:00:33,988 --> 00:00:38,456
+Done without two checks, it becomes the
+second incident: it removes whatever a
+
+9
+00:00:38,496 --> 00:00:41,693
+colleague has legitimately
+pushed or built on top since.
+
+10
+00:00:41,733 --> 00:00:46,490
+Today you learn the two checks, and what
+the restoring command looks like when it's
+
+11
+00:00:46,530 --> 00:00:48,224
+done properly. Guess them now.
+
+12
+00:00:48,564 --> 00:00:54,134
+A first question, before any cause is named.
+By default, Git on the server keeps no
+
+13
+00:00:54,174 --> 00:00:59,609
+record of where a branch used to point.
+So who, or what, could still know the old
+
+14
+00:00:59,649 --> 00:01:02,178
+position? Name two. Say them out loud.
+
+15
+00:01:07,018 --> 00:01:11,777
+A teammate's clone that hasn't fetched
+since. And a clone that has fetched: its
+
+16
+00:01:11,817 --> 00:01:16,455
+reflog, Git's local record of where a
+ref has been, keeps the previous value.
+
+17
+00:01:16,495 --> 00:01:19,615
+A clone is each person's
+own copy of the repository.
+
+18
+00:01:21,455 --> 00:01:25,379
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+19
+00:01:25,419 --> 00:01:30,774
+This is a debrief of Incident 2,
+incidents/02-force-push-wrong-branch, and Incident
+
+20
+00:01:30,814 --> 00:01:36,169
+4, incidents/04-production-history-rewritten.
+You must have generated and attempted
+
+21
+00:01:36,209 --> 00:01:39,873
+both, with a command log and
+a severity rating. Have you?
+
+22
+00:01:39,913 --> 00:01:42,213
+If you haven't, stop the video here.
+
+23
+00:01:44,553 --> 00:01:46,756
+The causes are named in the next section.
+
+24
+00:01:47,096 --> 00:01:51,659
+These are the first drills in which
+the damaged state is on the server.
+
+25
+00:01:51,699 --> 00:01:56,715
+That changes where the evidence is. From
+video 185: a bare repository keeps no
+
+26
+00:01:56,755 --> 00:02:01,966
+reflog, so the history of a server-side
+branch exists only as the sum of what the
+
+27
+00:02:02,006 --> 00:02:05,338
+clones remember, plus whatever
+the platform records.
+
+28
+00:02:05,378 --> 00:02:10,200
+From video 42 you know what a forced
+push destroys and what a lease checks.
+
+29
+00:02:10,240 --> 00:02:14,738
+From video 131 you know the rule that
+would have refused these pushes.
+
+30
+00:02:15,078 --> 00:02:20,421
+Both incidents are SEV 2 on the scale
+of video 185, and the second one is the
+
+31
+00:02:20,461 --> 00:02:24,824
+textbook's example of rating by
+the window: it shipped nothing.
+
+32
+00:02:26,664 --> 00:02:28,077
+After this video you can:
+
+33
+00:02:28,417 --> 00:02:32,328
+Find out what a forced push replaced
+and who still has the old commits.
+
+34
+00:02:32,668 --> 00:02:37,076
+Check two things before restoring: what
+has been built on the new tip, and who has
+
+35
+00:02:37,116 --> 00:02:37,673
+fetched it.
+
+36
+00:02:38,013 --> 00:02:41,898
+Restore the branch without losing a
+legitimate commit made after the rewrite.
+
+37
+00:02:42,238 --> 00:02:43,935
+Realign teammates' clones.
+
+38
+00:02:44,275 --> 00:02:47,364
+Walk from the root cause to
+controls on several layers.
+
+39
+00:02:49,204 --> 00:02:54,153
+Witnesses. When a server branch has been
+replaced, the old value is known to three
+
+40
+00:02:54,193 --> 00:02:59,264
+kinds of witness. A clone that hasn't fetched
+since: its remote-tracking branch, the
+
+41
+00:02:59,304 --> 00:03:03,219
+clone's record of the server's
+branch, still holds the old value.
+
+42
+00:03:03,259 --> 00:03:07,844
+A clone that has fetched: the reflog of
+its remote-tracking branch holds the
+
+43
+00:03:07,884 --> 00:03:11,068
+previous value as the entry
+before the forced update.
+
+44
+00:03:11,108 --> 00:03:15,997
+And anything that recorded the commit by
+ID: a tag, which is a fixed name for one
+
+45
+00:03:16,037 --> 00:03:17,883
+commit, or a deployment record.
+
+46
+00:03:18,223 --> 00:03:23,314
+git status isn't a witness of the present.
+It reports on origin/main, your clone's
+
+47
+00:03:23,354 --> 00:03:26,130
+memory. git ls-remote
+origin asks the server.
+
+48
+00:03:26,470 --> 00:03:31,831
+Incident 2: the root cause. The feature
+branch was created from origin/main and so
+
+49
+00:03:31,871 --> 00:03:35,915
+has origin/main as its upstream,
+the server branch it follows.
+
+50
+00:03:35,955 --> 00:03:41,448
+With push.default=upstream, a bare git push
+updates the upstream branch whatever its
+
+51
+00:03:41,488 --> 00:03:46,981
+name. --force removed the fast-forward check,
+the rule that a push may only add to a
+
+52
+00:03:47,021 --> 00:03:50,406
+branch. The server accepted
+a forced update of main.
+
+53
+00:03:50,446 --> 00:03:55,940
+The default, simple, would have refused.
+Layers: Git configuration in one clone, and
+
+54
+00:03:55,980 --> 00:03:57,389
+a missing GitHub rule.
+
+55
+00:03:57,729 --> 00:04:03,163
+You met the first half of this in video 181:
+a branch created from a remote-tracking
+
+56
+00:04:03,203 --> 00:04:08,572
+branch follows it. There it made a pull
+useless. Here, with one configuration value
+
+57
+00:04:08,612 --> 00:04:12,287
+and one flag, it sent a feature
+branch's commits to main.
+
+58
+00:04:12,627 --> 00:04:18,003
+Try it now. Thirty seconds, read-only. In
+the lab shell, or in a repository of your
+
+59
+00:04:18,043 --> 00:04:21,592
+own with a recent Git, run
+git config get push.default.
+
+60
+00:04:21,632 --> 00:04:22,832
+Say what it prints.
+
+61
+00:04:25,172 --> 00:04:29,572
+If it prints nothing, the setting is
+unset and Git uses the default, simple.
+
+62
+00:04:29,612 --> 00:04:34,012
+If it prints upstream, you've found the
+first half of Incident 2 on your own
+
+63
+00:04:34,052 --> 00:04:34,480
+machine.
+
+64
+00:04:34,820 --> 00:04:39,859
+Incident 4: the root cause. A branch that
+deployment records refer to by commit ID
+
+65
+00:04:39,899 --> 00:04:45,001
+accepted a forced update. An interactive
+rebase, which rewrites a series of commits
+
+66
+00:04:45,041 --> 00:04:48,160
+from an editable list, was
+meant to "tidy" history.
+
+67
+00:04:48,200 --> 00:04:52,558
+It created new commits and lost one.
+--force replaced the server's ref.
+
+68
+00:04:52,598 --> 00:04:57,638
+Then "reset to the server", given as advice
+to a confused colleague, made a second
+
+69
+00:04:57,678 --> 00:05:01,850
+clone adopt the rewrite, and a
+legitimate commit was shipped on top.
+
+70
+00:05:01,890 --> 00:05:04,266
+Layers: Git, and a missing GitHub rule.
+
+71
+00:05:04,606 --> 00:05:09,400
+"Same code, fewer commits" is a claim about
+trees. A tree is the complete snapshot
+
+72
+00:05:09,440 --> 00:05:14,292
+of files that a commit records. So the claim
+can be tested: compare the tree of the
+
+73
+00:05:14,332 --> 00:05:16,473
+old tip with the tree of the new one.
+
+74
+00:05:16,813 --> 00:05:21,017
+Who did it. In rewritten history, read
+the committer and the reflogs, not the
+
+75
+00:05:21,057 --> 00:05:25,151
+author. The author wrote the change,
+and the committer created this commit.
+
+76
+00:05:25,191 --> 00:05:29,561
+A folded commit keeps its original author
+and names the person who rewrote it as
+
+77
+00:05:29,601 --> 00:05:30,112
+committer.
+
+78
+00:05:30,452 --> 00:05:35,043
+The two checks before restoring. Here are
+the two checks promised at the start.
+
+79
+00:05:35,083 --> 00:05:39,967
+First: what has been built on the new tip?
+If a legitimate commit sits on top of the
+
+80
+00:05:40,007 --> 00:05:43,016
+rewritten history, the
+restore has to carry it over.
+
+81
+00:05:43,056 --> 00:05:47,764
+Second: who has fetched the new tip? Every
+clone that adopted it will be diverged
+
+82
+00:05:47,804 --> 00:05:52,572
+after the restore and has to be realigned,
+with a proof that nothing of its own is
+
+83
+00:05:52,612 --> 00:05:52,865
+lost.
+
+84
+00:05:53,205 --> 00:05:57,768
+And one check on your own evidence: is
+your copy of the old value the newest good
+
+85
+00:05:57,808 --> 00:06:01,348
+one? Another clone's unfetched
+value must be an ancestor of it.
+
+86
+00:06:01,688 --> 00:06:06,729
+The restoring command. A forced push with
+an explicit lease, the value you expect
+
+87
+00:06:06,769 --> 00:06:11,685
+the server's branch to have. It names the
+server's current, bad value: git push
+
+88
+00:06:11,725 --> 00:06:15,951
+--force-with-lease=<branch>:<current-bad-id>
+origin <good>:<branch>.
+
+89
+00:06:15,991 --> 00:06:21,157
+If anyone pushed meanwhile, it's refused.
+Before it, an anchor for the state that's
+
+90
+00:06:21,197 --> 00:06:26,301
+about to be replaced, and, where the removed
+commits are somebody's work, a branch
+
+91
+00:06:26,341 --> 00:06:28,371
+of their own on the server first.
+
+92
+00:06:28,711 --> 00:06:33,385
+When a forced restore is the wrong fix.
+Had someone already built on the bad tip,
+
+93
+00:06:33,425 --> 00:06:37,982
+the right move in Incident 2 would be git
+revert of the bad commits, which adds
+
+94
+00:06:38,022 --> 00:06:42,114
+commits that undo them. In Incident
+4 the textbook compares two routes.
+
+95
+00:06:42,454 --> 00:06:47,326
+One: keep the rewritten history and re-add
+the fix, with no further force, but then
+
+96
+00:06:47,366 --> 00:06:52,297
+the deployed tag is never an ancestor again
+and every recorded ID points off-branch.
+
+97
+00:06:52,337 --> 00:06:56,144
+Two: restore the old history and
+carry the one newer commit over.
+
+98
+00:06:56,184 --> 00:06:59,399
+For a branch whose IDs are
+recorded elsewhere, restore.
+
+99
+00:06:59,739 --> 00:07:04,789
+GitHub, not Git: the rule and the instruments.
+A ruleset is GitHub's named list of
+
+100
+00:07:04,829 --> 00:07:09,878
+rules for chosen branches. "Block force
+pushes" in a ruleset on the default branch
+
+101
+00:07:09,918 --> 00:07:13,602
+rejects this push. It's enabled
+by default in a new ruleset.
+
+102
+00:07:13,642 --> 00:07:18,381
+For a production branch the textbook's
+control is a ruleset that blocks force
+
+103
+00:07:18,421 --> 00:07:23,533
+pushes, restricts deletions, requires a
+pull request, and has an empty bypass list.
+
+104
+00:07:23,873 --> 00:07:28,237
+When no clone has the old value,
+GitHub offers instruments of its own.
+
+105
+00:07:28,277 --> 00:07:33,333
+The repository's Activity view lists force
+pushes with the user and a comparison.
+
+106
+00:07:33,373 --> 00:07:38,555
+A PushEvent in the Events API carries the
+before ID, within the last 300 events and
+
+107
+00:07:38,595 --> 00:07:42,518
+30 days. And the references API
+can create a branch at that ID.
+
+108
+00:07:45,358 --> 00:07:50,031
+GitHub documents each instrument and not
+this combined procedure, publishes no
+
+109
+00:07:50,071 --> 00:07:55,046
+retention period for commits that no ref
+reaches, and documents no "restore" action
+
+110
+00:07:55,086 --> 00:07:59,577
+inside the Activity view. GitHub's own
+advice is the plain Git route: ask a
+
+111
+00:07:59,617 --> 00:08:02,538
+collaborator who still has
+the commit to push it.
+
+112
+00:08:04,378 --> 00:08:09,254
+Think of the server's branch as a signpost
+at a junction, and of every clone as a
+
+113
+00:08:09,294 --> 00:08:13,260
+traveller who photographed the
+signpost the last time they passed.
+
+114
+00:08:13,300 --> 00:08:18,358
+Somebody turned the signpost. There's no
+camera at the junction: the server keeps no
+
+115
+00:08:18,398 --> 00:08:23,214
+record of where the sign used to point.
+But every traveller's last photograph is
+
+116
+00:08:23,254 --> 00:08:27,219
+dated, and some travellers have
+two photographs, before and after.
+
+117
+00:08:27,559 --> 00:08:30,402
+So the investigation is a
+collection of photographs.
+
+118
+00:08:30,442 --> 00:08:34,893
+And the repair, turning the sign back, has
+to consider the travellers who already
+
+119
+00:08:34,933 --> 00:08:39,550
+followed the new direction: one of them has
+built something at the end of that road.
+
+120
+00:08:39,890 --> 00:08:44,383
+Where the picture breaks: on GitHub there's
+a camera after all, the Activity view
+
+121
+00:08:44,423 --> 00:08:48,749
+and the events, with limits and lifetimes
+of its own, and with the caveats you
+
+122
+00:08:48,789 --> 00:08:51,491
+heard. In the lab's bare
+repository there's none.
+
+123
+00:08:51,831 --> 00:08:56,323
+The model for the restoring push: say out
+loud what you believe the server holds,
+
+124
+00:08:56,363 --> 00:09:00,239
+and let the server refuse if you're
+wrong. That sentence is the lease.
+
+125
+00:09:02,079 --> 00:09:06,947
+Before the demo, what we know so far is
+two reports: main was force-pushed, and a
+
+126
+00:09:06,987 --> 00:09:12,037
+release job refuses to deploy. The picture
+of the server's branch, before and after,
+
+127
+00:09:12,077 --> 00:09:14,522
+with its witnesses, is drawn in the demo.
+
+128
+00:09:16,362 --> 00:09:21,391
+From here on the screen shows the solutions.
+Is your own command log beside you?
+
+129
+00:09:23,731 --> 00:09:25,043
+Then compare as we go.
+
+130
+00:09:25,383 --> 00:09:26,967
+Observe. 🟢 SAFE.
+
+131
+00:09:27,307 --> 00:09:30,705
+Our status says up to date,
+with ca03e42 as the tip.
+
+132
+00:09:30,745 --> 00:09:34,673
+The server says b4554be, a commit
+this clone has never seen.
+
+133
+00:09:34,713 --> 00:09:38,971
+The status is a statement about
+the last contact with the server.
+
+134
+00:09:39,311 --> 00:09:44,548
+Fetch. A fetch moves remote-tracking refs.
+Here the old value is evidence, and it's
+
+135
+00:09:44,588 --> 00:09:49,698
+safe: this clone's own main still holds
+it, and the fetch records it in a reflog.
+
+136
+00:09:50,038 --> 00:09:55,126
+A plus sign and "forced update". Ahead
+2, behind 2, without having committed
+
+137
+00:09:55,166 --> 00:10:00,254
+anything. And the reflog of origin/main:
+the entry before the forced update,
+
+138
+00:10:00,294 --> 00:10:03,426
+origin/main@{1}, is the
+value before the event.
+
+139
+00:10:03,766 --> 00:10:06,354
+What changed, and is my
+old value the newest?
+
+140
+00:10:06,694 --> 00:10:11,335
+The server lost two reviewed commits
+and gained two commits marked WIP.
+
+141
+00:10:11,375 --> 00:10:16,873
+Then the check on our own evidence: Ravi
+hasn't fetched, his origin/main is 27215c8,
+
+142
+00:10:16,913 --> 00:10:21,620
+and that's an ancestor of our old
+value. So ours is the newest good one.
+
+143
+00:10:21,960 --> 00:10:27,913
+The cause. Look at the clone that pushed.
+Quick quiz: what will the brackets of her
+
+144
+00:10:27,953 --> 00:10:32,318
+feature branch say? A,
+origin/feature/dedupe. B, origin/main.
+
+145
+00:10:32,358 --> 00:10:34,557
+C, nothing at all. Your answer?
+
+146
+00:10:39,397 --> 00:10:44,528
+B. feature/dedupe follows origin/main.
+push.default is upstream, set in this clone.
+
+147
+00:10:44,568 --> 00:10:49,575
+And her remote-tracking reflog records the
+push. She pushed "only my branch", and
+
+148
+00:10:49,615 --> 00:10:53,189
+with this configuration her
+branch's destination was main.
+
+149
+00:10:53,529 --> 00:10:58,577
+Preserve. 🟢 SAFE for the anchor. The second
+command is additive: a new branch on the
+
+150
+00:10:58,617 --> 00:10:59,001
+server.
+
+151
+00:11:03,541 --> 00:11:07,395
+Asha's two commits existed on the
+server only as the tip of main.
+
+152
+00:11:07,435 --> 00:11:12,308
+Now they have their own branch, so restoring
+main removes nothing from the server.
+
+153
+00:11:12,648 --> 00:11:16,656
+Restore. 🔴 DANGEROUS: a forced
+update of main. The five answers.
+
+154
+00:11:16,696 --> 00:11:20,199
+What it changes: the server's
+main, back to the old tip.
+
+155
+00:11:20,239 --> 00:11:24,247
+What it can destroy: anything
+pushed to main since the bad push.
+
+156
+00:11:24,287 --> 00:11:28,168
+Preview: git ls-remote origin
+once more, and the lease itself.
+
+157
+00:11:28,208 --> 00:11:32,280
+Recovery: the commits being removed
+now live on their own branch.
+
+158
+00:11:32,320 --> 00:11:37,150
+When appropriate: here, because the
+commits being removed are unreviewed, are
+
+159
+00:11:37,190 --> 00:11:39,427
+preserved, and nobody built on them.
+
+160
+00:11:43,967 --> 00:11:48,207
+The lease says: I believe the
+server's main is b4554be.
+
+161
+00:11:48,247 --> 00:11:49,530
+Refuse otherwise.
+
+162
+00:11:49,870 --> 00:11:51,488
+Fix the cause, in her clone.
+
+163
+00:11:51,828 --> 00:11:56,131
+The upstream of her feature branch now
+is the branch of the same name, and
+
+164
+00:11:56,171 --> 00:11:58,243
+push.default is back to the default.
+
+165
+00:11:58,583 --> 00:11:59,234
+Verify.
+
+166
+00:11:59,574 --> 00:12:03,776
+The server holds main at ca03e42
+and feature/dedupe at b4554be.
+
+167
+00:12:03,816 --> 00:12:08,960
+The check passes: every reviewed commit
+on main, no WIP commit, and the cause
+
+168
+00:12:09,000 --> 00:12:10,913
+removed in the pushing clone.
+
+169
+00:12:14,253 --> 00:12:17,569
+The messages. At once:
+nobody pulls or pushes main.
+
+170
+00:12:17,609 --> 00:12:22,900
+After the restore: git fetch, then git
+status -sb. A clone whose main shows ahead
+
+171
+00:12:22,940 --> 00:12:28,296
+stops and asks. To the CTO: main pointed
+at unreviewed work for a stated number of
+
+172
+00:12:28,336 --> 00:12:31,587
+minutes, nothing was lost,
+the rule goes on today.
+
+173
+00:12:31,927 --> 00:12:32,502
+Observe.
+
+174
+00:12:40,042 --> 00:12:44,096
+Our untouched production is ahead
+4, behind 2. We made no commits.
+
+175
+00:12:44,136 --> 00:12:48,687
+"Diverged, and I made no commits" means
+the server's history was replaced.
+
+176
+00:12:49,027 --> 00:12:52,223
+Witnesses. Three independent
+records of the old tip.
+
+177
+00:12:52,563 --> 00:12:58,721
+Three times 3277739. The ancestry test
+exits 1: that's the release job's refusal.
+
+178
+00:12:58,761 --> 00:13:04,919
+And the last line shows who did what: the
+folded commit keeps its original author
+
+179
+00:13:04,959 --> 00:13:07,061
+and names Ravi as committer.
+
+180
+00:13:07,401 --> 00:13:11,992
+Three records name the same old tip: our
+untouched branch, the entry before the
+
+181
+00:13:12,032 --> 00:13:14,219
+forced update, and the deployment tag.
+
+182
+00:13:14,559 --> 00:13:19,372
+git range-diff finds no pairs: four old
+commits on one side, two new ones on the
+
+183
+00:13:19,412 --> 00:13:19,736
+other.
+
+184
+00:13:20,076 --> 00:13:25,137
+Test the claim. "Same code, fewer commits."
+Predict the output of a tree comparison
+
+185
+00:13:25,177 --> 00:13:27,596
+if the claim were true. Say it out loud.
+
+186
+00:13:32,436 --> 00:13:35,856
+Were the claim true, only
+Asha's new file would differ.
+
+187
+00:13:35,896 --> 00:13:41,077
+Two files differ. One is Asha's new commit.
+The other is billing/tax.py, which lost
+
+188
+00:13:41,117 --> 00:13:46,299
+its rounding. The interactive rebase dropped
+the commit "Round tax to two decimals"
+
+189
+00:13:46,339 --> 00:13:51,521
+when a line of the todo list was deleted.
+That's the finance ticket about unrounded
+
+190
+00:13:51,561 --> 00:13:52,276
+tax amounts.
+
+191
+00:13:52,616 --> 00:13:52,976
+How.
+
+192
+00:13:53,304 --> 00:13:58,675
+Ravi's reflogs: a rebase started four
+commits back, two fixups, a finish, and an
+
+193
+00:13:58,715 --> 00:13:59,081
+amend.
+
+194
+00:13:59,421 --> 00:14:03,776
+Restore. First the anchor, then the
+legitimate commit, then the push.
+
+195
+00:14:03,816 --> 00:14:08,937
+🟢 for the anchor. 🟡 for the cherry-pick,
+which copies the commit onto the current
+
+196
+00:14:08,977 --> 00:14:14,160
+branch. 🔴 for the forced push, conditional
+on the server's current value, 4fae70f.
+
+197
+00:14:14,200 --> 00:14:19,384
+It's appropriate because this branch's IDs
+are recorded elsewhere, the state being
+
+198
+00:14:19,424 --> 00:14:24,098
+replaced is anchored, and the one
+legitimate commit has been carried over.
+
+199
+00:14:32,438 --> 00:14:37,318
+Asha's commit is now a323df1, on top of
+the real history, and the rounding commit
+
+200
+00:14:37,358 --> 00:14:42,237
+1d8b2fc is in the list again. One commit
+on the rewritten line wasn't part of the
+
+201
+00:14:42,277 --> 00:14:44,302
+mistake, and the restore keeps it.
+
+202
+00:14:44,642 --> 00:14:50,086
+Realign. Each clone that adopted the rewrite
+proves that nothing of its own is lost
+
+203
+00:14:50,126 --> 00:14:53,059
+before it moves. 🟡
+CAUTION: git reset --keep.
+
+204
+00:14:53,399 --> 00:14:58,565
+In Asha's clone, git cherry -v marks her
+own commit with a minus sign: the server
+
+205
+00:14:58,605 --> 00:15:03,771
+has an equivalent change. The only plus
+sign is the folded commit, which is being
+
+206
+00:15:03,811 --> 00:15:07,756
+retired on purpose. In Ravi's
+clone the same single plus sign.
+
+207
+00:15:07,796 --> 00:15:09,556
+Then each moves with --keep.
+
+208
+00:15:09,896 --> 00:15:10,547
+Verify.
+
+209
+00:15:13,887 --> 00:15:17,405
+The release job's own test exits
+0. The tax function rounds.
+
+210
+00:15:17,445 --> 00:15:22,386
+The difference between the rewritten state
+and the restored one is exactly one file,
+
+211
+00:15:22,426 --> 00:15:27,189
+the one that was wrong. The check passes
+for the server and for all three clones.
+
+212
+00:15:27,529 --> 00:15:33,027
+The messages. To the team: the new tip,
+and the two commands, git cherry -v, then
+
+213
+00:15:33,067 --> 00:15:38,155
+git reset --keep, with the rule for any
+unexpected plus sign: stop and ask.
+
+214
+00:15:38,195 --> 00:15:43,831
+To the CTO: nothing bad was deployed because
+the release job refused, a dropped fix
+
+215
+00:15:43,871 --> 00:15:47,044
+was caught, and the missing
+rule goes on today.
+
+216
+00:15:47,384 --> 00:15:52,870
+From root cause to controls on several
+layers. A client default: push.default left
+
+217
+00:15:52,910 --> 00:15:56,845
+at simple. A habit: --force-with-lease,
+never bare --force.
+
+218
+00:15:56,885 --> 00:16:00,753
+A platform rule: block force
+pushes on the default branch.
+
+219
+00:16:00,793 --> 00:16:06,414
+For production, also restrict deletions,
+require a pull request, and keep the bypass
+
+220
+00:16:06,454 --> 00:16:11,804
+list empty. A pipeline check: the ancestry
+test in the release job, which is the
+
+221
+00:16:11,844 --> 00:16:17,330
+control that worked. And a line in the
+handbook: "diverged, and I made no commits"
+
+222
+00:16:17,370 --> 00:16:20,968
+means the server's history
+was replaced. Stop and ask.
+
+223
+00:16:22,808 --> 00:16:24,456
+Five mistakes to watch for.
+
+224
+00:16:24,796 --> 00:16:28,614
+Trusting git status about the server.
+Root cause: it compares with the
+
+225
+00:16:28,654 --> 00:16:32,581
+remote-tracking branch, which is the
+clone's memory of the last contact.
+
+226
+00:16:32,921 --> 00:16:37,685
+Restoring with a bare --force. Root cause:
+nothing then checks whether somebody
+
+227
+00:16:37,725 --> 00:16:42,792
+pushed to the branch in the meantime, so
+the recovery can remove a colleague's work.
+
+228
+00:16:43,132 --> 00:16:46,328
+Restoring without looking at
+what was built on the new tip.
+
+229
+00:16:46,368 --> 00:16:50,825
+Root cause: a legitimate commit made after
+the rewrite sits on the history that is
+
+230
+00:16:50,865 --> 00:16:51,977
+about to be replaced.
+
+231
+00:16:52,317 --> 00:16:55,987
+Advising "reset to the server"
+to someone who sees "diverged".
+
+232
+00:16:56,027 --> 00:17:00,534
+Root cause: with no local commits,
+divergence means the server's history was
+
+233
+00:17:00,574 --> 00:17:04,304
+replaced, and the reset makes a
+second clone adopt the rewrite.
+
+234
+00:17:04,644 --> 00:17:08,478
+Accepting "same code, fewer
+commits" without a tree comparison.
+
+235
+00:17:08,518 --> 00:17:13,396
+Root cause: an interactive rebase can drop
+a commit with one deleted line of the
+
+236
+00:17:13,436 --> 00:17:15,733
+todo list, and only the trees show it.
+
+237
+00:17:17,573 --> 00:17:22,072
+Now, out of the lab. A billing team
+deploys from a branch named production.
+
+238
+00:17:22,112 --> 00:17:26,731
+Its release job has one safety check
+that nobody remembers adding: the commit
+
+239
+00:17:26,771 --> 00:17:30,786
+currently running must be an ancestor
+of the commit to be deployed.
+
+240
+00:17:30,826 --> 00:17:32,481
+One morning the job refuses.
+
+241
+00:17:32,821 --> 00:17:37,596
+The engineer on call writes one sentence
+in the channel, asks two colleagues not to
+
+242
+00:17:37,636 --> 00:17:42,121
+fetch or reset, and collects three
+witnesses of the old tip: her own untouched
+
+243
+00:17:42,161 --> 00:17:46,357
+branch, the reflog of her remote-tracking
+branch, and the deployment tag.
+
+244
+00:17:46,397 --> 00:17:51,056
+They agree. She compares trees, finds that
+a tax-rounding fix is missing from the
+
+245
+00:17:51,096 --> 00:17:55,466
+rewritten history, and connects it to
+a finance ticket filed the day before.
+
+246
+00:17:55,806 --> 00:18:00,512
+She finds one legitimate commit on top of
+the rewrite, anchors the rewritten state,
+
+247
+00:18:00,552 --> 00:18:05,259
+carries that commit over, and restores with
+a lease that names the server's current
+
+248
+00:18:05,299 --> 00:18:05,602
+value.
+
+249
+00:18:05,942 --> 00:18:10,794
+Her summary rates the incident SEV 2 although
+nothing was deployed, because the only
+
+250
+00:18:10,834 --> 00:18:14,813
+thing between the rewritten branch
+and production was that one check.
+
+251
+00:18:14,853 --> 00:18:19,531
+The postmortem has three lines the team
+remembers. The control that worked was an
+
+252
+00:18:19,571 --> 00:18:23,725
+automated ancestry check. The control
+that was missing was one checkbox.
+
+253
+00:18:23,765 --> 00:18:27,918
+And the advice "reset to the server"
+turned one affected clone into two.
+
+254
+00:18:29,758 --> 00:18:35,911
+Your turn. Do Lab 37.1, "A force push
+to the wrong branch (incident 2)", in
+
+255
+00:18:35,951 --> 00:18:42,270
+lab-manual/m37-incident-drills-platform.md,
+from a freshly generated sandbox.
+
+256
+00:18:42,610 --> 00:18:46,001
+Before you fetch, write down what
+you'll record first and why.
+
+257
+00:18:46,041 --> 00:18:50,538
+Before the restore, write the two checks
+and their results, the ID your lease will
+
+258
+00:18:50,578 --> 00:18:54,854
+name, and what you'll do if the lease is
+refused. After the restore, write the
+
+259
+00:18:54,894 --> 00:18:58,229
+message to the team with the
+exact commands for their clones.
+
+260
+00:18:58,269 --> 00:18:59,668
+Type the recovery by hand.
+
+261
+00:19:00,008 --> 00:19:05,826
+The challenge is Lab 37.2, "Production branch
+history is rewritten (incident 4)", in
+
+262
+00:19:05,866 --> 00:19:06,803
+the same file.
+
+263
+00:19:10,643 --> 00:19:15,455
+Answer out loud. A strong answer first says
+where the old value comes from, naming
+
+264
+00:19:15,495 --> 00:19:20,070
+at least two kinds of witness, and how
+you make sure it's the newest good one.
+
+265
+00:19:20,110 --> 00:19:24,982
+It then gives the two checks as questions
+about other people's work: one about what
+
+266
+00:19:25,022 --> 00:19:28,355
+sits on top of the new tip,
+one about who has adopted it.
+
+267
+00:19:28,695 --> 00:19:33,185
+It describes the restoring command by its
+parts: what is pushed, to which ref, with
+
+268
+00:19:33,225 --> 00:19:37,770
+which condition, and what is anchored
+beforehand. And it names the case in which you
+
+269
+00:19:37,810 --> 00:19:40,664
+wouldn't force at all, and
+what you would do instead.
+
+270
+00:19:40,704 --> 00:19:44,375
+Mention the platform rule that would
+have refused the original push.
+
+271
+00:19:46,215 --> 00:19:47,143
+Let's land this.
+
+272
+00:19:47,483 --> 00:19:52,520
+A server keeps no reflog; the old value of
+a replaced branch comes from clones that
+
+273
+00:19:52,560 --> 00:19:57,658
+have not fetched, from remote-tracking
+reflogs, and from tags or deployment records.
+
+274
+00:19:57,998 --> 00:20:01,844
+Before restoring, check what was built
+on the new tip and who has fetched it.
+
+275
+00:20:02,184 --> 00:20:06,859
+The restoring push carries an explicit
+lease naming the server's current value,
+
+276
+00:20:06,899 --> 00:20:11,217
+after the state being replaced has
+been anchored or given its own branch.
+
+277
+00:20:11,557 --> 00:20:16,601
+Clones that adopted the rewrite prove with
+git cherry -v that nothing of their own
+
+278
+00:20:16,641 --> 00:20:19,329
+is missing, then move
+with git reset --keep.
+
+279
+00:20:19,669 --> 00:20:24,383
+Controls sit on several layers: a client
+default, a habit, a ruleset, and an
+
+280
+00:20:24,423 --> 00:20:26,322
+ancestry check in the pipeline.
+
+281
+00:20:28,162 --> 00:20:35,648
+Read sections 30.6 and 30.8. Then generate
+Incident 6, incidents/06-pr-500-changes,
+
+282
+00:20:35,688 --> 00:20:39,003
+and attempt it before the next video.
+
+283
+00:20:39,343 --> 00:20:44,300
+You can now put a replaced branch back
+without losing what a colleague built since,
+
+284
+00:20:44,340 --> 00:20:49,357
+and say which control was missing on which
+layer. Practise the first restore by hand
+
+285
+00:20:49,397 --> 00:20:54,414
+before you go on. Next time, a new report:
+"I pushed one commit and the pull request
+
+286
+00:20:54,454 --> 00:20:58,628
+shows 500 files". Until then, look
+at the state first and type second.
+
+287
+00:20:58,668 --> 00:21:00,072
+See you in the next one.

@@ -69,6 +69,10 @@ Two limits are by design for now: no merges in the affected history, and no oper
 
 Read the "Remote" cell of the first row: branches that were pushed now diverge. That is the sentence that decides when not to use the command.
 
+The second row, `fixup`: the staged change is consumed, and the rest is as above.
+
+The third, `--dry-run`: new objects only, and everything else unchanged.
+
 **When to use it, and when not.** The default of moving every descendant branch is right for a stack of local branches and wrong the moment one of them is published. Because no hooks run, a message convention enforced by a `commit-msg` hook is not checked. So: use it for local cleanup before the first push, read `--dry-run` first, and keep `git rebase -i` for everything with merges or conflicts.
 
 One observation from the lab, which the textbook marks as unverified because the manual does not state it: on Git 2.55.0, `git history reword` gives the rewritten commit a new committer date, although the manual says that all other details stay as they were.

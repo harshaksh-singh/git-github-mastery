@@ -165,7 +165,7 @@ Prevention      A ruleset on "production" (no force pushes, no deletions, pull r
                 Owner: platform team. Active since <time> today.
 ```
 
-Point at four things. The subject line carries status, severity and impact. The root cause names both layers: "Git allows this; our GitHub rules did not block it". The third part has the words "Not yet verified". And there is no name anywhere.
+Look for four things. The subject line carries status, severity and impact. The root cause names both layers: "Git allows this; our GitHub rules did not block it". The third part has the words "Not yet verified". And there is no name anywhere.
 
 **[DIAGRAM]** The postmortem template of section 30.19, as a second slide.
 

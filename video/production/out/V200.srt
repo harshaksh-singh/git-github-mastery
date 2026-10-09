@@ -1,0 +1,1334 @@
+1
+00:00:04,500 --> 00:00:09,136
+A colleague has read that there's a new
+command that rewords an old commit in one
+
+2
+00:00:09,176 --> 00:00:12,080
+line, with no todo list and
+no editor full of pick.
+
+3
+00:00:12,120 --> 00:00:16,640
+A commit is one saved snapshot with a
+message, and the todo list is the list of
+
+4
+00:00:16,680 --> 00:00:20,103
+instructions an interactive
+rebase works through. It's true.
+
+5
+00:00:20,143 --> 00:00:24,606
+The command exists in the Git on your
+machine, and it does what the post says.
+
+6
+00:00:24,946 --> 00:00:29,344
+It also moves every local branch that
+contains the commit, without asking.
+
+7
+00:00:29,384 --> 00:00:33,603
+It runs no hooks, the scripts Git can
+run at fixed points of a command.
+
+8
+00:00:33,643 --> 00:00:38,461
+It refuses any history with a merge in it,
+and any operation that would conflict.
+
+9
+00:00:38,501 --> 00:00:43,019
+And the first line of its manual page
+is one word in capitals: EXPERIMENTAL.
+
+10
+00:00:43,059 --> 00:00:46,138
+A guideline is a promise
+about what works next year.
+
+11
+00:00:46,178 --> 00:00:49,616
+This is not yet that. Hold on
+to the colleague's question.
+
+12
+00:00:49,656 --> 00:00:52,855
+By the end, a team lead
+answers it in three sentences.
+
+13
+00:00:54,695 --> 00:00:58,359
+Welcome back to Git and GitHub
+Deep Mastery. Pull up a chair.
+
+14
+00:00:58,399 --> 00:01:03,460
+This video covers four new commands. Two of
+them rewrite or replay commits without a
+
+15
+00:01:03,500 --> 00:01:07,953
+working tree, the directory of files
+you edit: git history and git replay.
+
+16
+00:01:07,993 --> 00:01:11,900
+Two of them inspect a repository:
+git last-modified and git repo.
+
+17
+00:01:11,940 --> 00:01:14,936
+All four are marked
+experimental in their manuals.
+
+18
+00:01:15,276 --> 00:01:19,600
+In video 55 you learned interactive
+rebase: reword, fixup, squash, edit.
+
+19
+00:01:19,640 --> 00:01:24,630
+You know what it does to the working tree,
+to HEAD and to the state directory while
+
+20
+00:01:24,670 --> 00:01:29,599
+it runs. That knowledge is the measuring
+stick for today, because the question for
+
+21
+00:01:29,639 --> 00:01:34,690
+each new command is the same: what does it
+do differently, and what follows from the
+
+22
+00:01:34,730 --> 00:01:35,356
+difference?
+
+23
+00:01:35,696 --> 00:01:42,342
+Versions matter here, so listen for them.
+Every "added in Git 2.56" in this video
+
+24
+00:01:42,382 --> 00:01:45,973
+means: not run here.
+The lab has Git 2.55.0.
+
+25
+00:01:47,813 --> 00:01:49,391
+Here's what you'll walk away with.
+
+26
+00:01:49,731 --> 00:01:51,144
+After this video you can:
+
+27
+00:01:51,484 --> 00:01:56,013
+Reword, fix up and split a commit with
+git history and say which branches move.
+
+28
+00:01:56,353 --> 00:02:01,901
+Compare git history reword with an interactive
+rebase: working tree, hooks, merges,
+
+29
+00:02:01,941 --> 00:02:02,574
+conflicts.
+
+30
+00:02:02,914 --> 00:02:08,528
+Explain why a server needs git replay
+and what --ref-action=print gives it.
+
+31
+00:02:08,868 --> 00:02:14,400
+Use git last-modified, git repo info and
+git repo structure to inspect a repository.
+
+32
+00:02:14,740 --> 00:02:19,880
+State which of these commands are
+experimental and which part is a Git 2.56
+
+33
+00:02:19,920 --> 00:02:20,501
+addition.
+
+34
+00:02:22,341 --> 00:02:27,029
+git history, in one sentence. git history
+rewrites one commit, its message, its
+
+35
+00:02:27,069 --> 00:02:32,057
+content, or its division into two, and
+replays every descendant on top, updating all
+
+36
+00:02:32,097 --> 00:02:37,024
+local branches that contain the commit,
+without touching a working tree and without
+
+37
+00:02:37,064 --> 00:02:39,179
+a todo list. Its label is 🟡 CAUTION.
+
+38
+00:02:39,519 --> 00:02:44,801
+Precisely. The command arrived in
+Git 2.54 with reword and split.
+
+39
+00:02:44,841 --> 00:02:50,206
+Git 2.55 added fixup. drop is new
+in Git 2.56 and is not run here.
+
+40
+00:02:50,246 --> 00:02:54,054
+The first line of its
+manual says EXPERIMENTAL.
+
+41
+00:02:54,394 --> 00:02:58,774
+Compared with git rebase -i, the
+manual names three differences.
+
+42
+00:02:58,814 --> 00:03:04,021
+Most subcommands need neither index nor
+working tree, so they work in a bare
+
+43
+00:03:04,061 --> 00:03:08,233
+repository, one with no working
+tree, such as a server holds.
+
+44
+00:03:08,273 --> 00:03:13,619
+No hooks are run. And by default every
+branch that descends from the commit is
+
+45
+00:03:13,659 --> 00:03:18,453
+updated, where a rebase moves one
+branch unless you add --update-refs.
+
+46
+00:03:18,793 --> 00:03:23,152
+Two limits are by design for now: no
+merges in the affected history, and no
+
+47
+00:03:23,192 --> 00:03:24,911
+operation that would conflict.
+
+48
+00:03:25,251 --> 00:03:29,787
+Inside .git. New commit objects for
+the target and all its descendants.
+
+49
+00:03:29,827 --> 00:03:34,815
+Every affected branch ref moves, each
+with a reflog entry of the form "reword:
+
+50
+00:03:34,855 --> 00:03:39,133
+updating" followed by what you
+typed. HEAD's reflog gets one entry.
+
+51
+00:03:39,473 --> 00:03:43,725
+Read the "Remote" cell of the first row:
+branches that were pushed now diverge.
+
+52
+00:03:43,765 --> 00:03:47,093
+That is the sentence that decides
+when not to use the command.
+
+53
+00:03:47,433 --> 00:03:52,713
+The second row, fixup: the staged change
+is consumed, and the rest is as above.
+
+54
+00:03:53,053 --> 00:03:58,296
+The third, --dry-run: new objects
+only, and everything else unchanged.
+
+55
+00:03:58,636 --> 00:04:04,017
+When to use it, and when not. The default
+of moving every descendant branch is right
+
+56
+00:04:04,057 --> 00:04:08,921
+for a stack of local branches and wrong
+the moment one of them is published.
+
+57
+00:04:08,961 --> 00:04:14,020
+Because no hooks run, a message convention
+enforced by a commit-msg hook is not
+
+58
+00:04:14,060 --> 00:04:19,312
+checked. So: use it for local cleanup before
+the first push, read --dry-run first,
+
+59
+00:04:19,352 --> 00:04:23,377
+and keep git rebase -i for
+everything with merges or conflicts.
+
+60
+00:04:23,717 --> 00:04:28,920
+One observation from the lab, which the
+textbook marks as unverified because the
+
+61
+00:04:28,960 --> 00:04:34,098
+manual does not state it: on Git 2.55.0,
+git history reword gives the rewritten
+
+62
+00:04:34,138 --> 00:04:39,603
+commit a new committer date, although the
+manual says that all other details stay as
+
+63
+00:04:39,643 --> 00:04:40,258
+they were.
+
+64
+00:04:40,598 --> 00:04:46,238
+git replay. From section 9.20: git replay
+replays a range onto a new base without
+
+65
+00:04:46,278 --> 00:04:51,708
+touching the working tree or the index,
+so it also works in a bare repository.
+
+66
+00:04:51,748 --> 00:04:57,459
+The command exists for servers. A hosting
+service that rebases or cherry-picks for
+
+67
+00:04:57,499 --> 00:05:03,279
+you has no working tree to do it in. It was
+introduced in Git 2.44 as a server-side
+
+68
+00:05:03,319 --> 00:05:03,630
+tool.
+
+69
+00:05:03,970 --> 00:05:07,948
+Three forms. --onto rebases
+a range onto a new base.
+
+70
+00:05:08,288 --> 00:05:13,472
+--advance=<branch> is a cherry-pick of the
+range onto that branch, and the original
+
+71
+00:05:13,512 --> 00:05:18,696
+author is kept. Here is the demo's repository
+before it: main, and fix/timeout with
+
+72
+00:05:18,736 --> 00:05:19,452
+two commits.
+
+73
+00:05:19,792 --> 00:05:24,646
+After the advance, main carries copies of
+the two commits, and the originals stay on
+
+74
+00:05:24,686 --> 00:05:25,345
+fix/timeout.
+
+75
+00:05:25,685 --> 00:05:30,877
+And since Git 2.54 the same
+machinery reverts, with --revert.
+
+76
+00:05:30,917 --> 00:05:35,508
+--linearize was added in Git
+2.56 and is not run here.
+
+77
+00:05:35,848 --> 00:05:42,031
+--ref-action=print creates the commits and
+prints the ref update, which a server can
+
+78
+00:05:42,071 --> 00:05:48,107
+inspect or feed to git update-ref --stdin.
+Without it, the default since Git 2.53,
+
+79
+00:05:48,147 --> 00:05:50,552
+the ref moves in one transaction.
+
+80
+00:05:50,892 --> 00:05:54,766
+The price of having no working tree:
+it cannot stop for a conflict.
+
+81
+00:05:54,806 --> 00:05:59,440
+A replay that would conflict exits with
+status 1, prints nothing, and leaves the
+
+82
+00:05:59,480 --> 00:06:00,608
+branch where it was.
+
+83
+00:06:00,948 --> 00:06:06,516
+And a second price in a bare repository:
+a bare repository keeps no reflog, the
+
+84
+00:06:06,556 --> 00:06:11,840
+local record of where a ref has been,
+unless core.logAllRefUpdates says so.
+
+85
+00:06:11,880 --> 00:06:14,396
+So a replay there has no local undo.
+
+86
+00:06:14,736 --> 00:06:19,216
+Its value for you is mostly indirect: it
+is the kind of operation behind a "rebase
+
+87
+00:06:19,256 --> 00:06:20,208
+and merge" button.
+
+88
+00:06:20,548 --> 00:06:25,704
+git last-modified and git repo. Two
+experimental commands from Git 2.52 answer
+
+89
+00:06:25,744 --> 00:06:29,367
+questions that used to need
+a loop or a peek into .git.
+
+90
+00:06:29,707 --> 00:06:34,556
+git last-modified prints, for each path,
+the commit that last changed it: the "last
+
+91
+00:06:34,596 --> 00:06:38,266
+commit" column of a file browser.
+With -r it descends to files.
+
+92
+00:06:38,606 --> 00:06:44,492
+git repo info returns named facts about
+a repository in a stable key=value form,
+
+93
+00:06:44,532 --> 00:06:49,380
+which is what a script should use
+in place of reading .git/config.
+
+94
+00:06:49,420 --> 00:06:55,601
+Git 2.56 adds path.* keys, not run here.
+git repo structure counts refs and objects.
+
+95
+00:06:55,941 --> 00:07:00,491
+The rule for all four. Don't adopt
+experimental commands in shared automation.
+
+96
+00:07:00,531 --> 00:07:05,256
+Output and options may change between
+releases. Use them at the keyboard, and pin
+
+97
+00:07:05,296 --> 00:07:07,963
+the Git version where a
+script depends on one.
+
+98
+00:07:09,803 --> 00:07:14,521
+A picture helps. Think of two ways to
+correct a typo on page one of a bound
+
+99
+00:07:14,561 --> 00:07:15,219
+manuscript.
+
+100
+00:07:15,559 --> 00:07:18,787
+Interactive rebase takes the
+binding apart on your desk.
+
+101
+00:07:18,827 --> 00:07:23,573
+Page by page it rebuilds the book in front
+of you, and while it works your desk is
+
+102
+00:07:23,613 --> 00:07:28,418
+covered: the working tree is checked out
+at each step, HEAD is detached, hooks run,
+
+103
+00:07:28,458 --> 00:07:31,744
+and if a page doesn't fit
+you're asked to fix it by hand.
+
+104
+00:07:32,084 --> 00:07:37,353
+git history works in the archive. It writes
+a corrected page one and fresh copies of
+
+105
+00:07:37,393 --> 00:07:42,471
+every later page, in the object database,
+and then moves the shelf labels, all of
+
+106
+00:07:42,511 --> 00:07:45,378
+them, in one step. Your
+desk is never touched.
+
+107
+00:07:45,718 --> 00:07:50,254
+That's why it's fast, why it works in a
+bare repository, why no hook is called, and
+
+108
+00:07:50,294 --> 00:07:54,885
+why it can't ask you to resolve a conflict:
+there is no desk to put the conflict on.
+
+109
+00:07:55,225 --> 00:08:00,497
+Quick quiz. You reword a commit with git
+history. Which shelf labels move: A, only
+
+110
+00:08:00,537 --> 00:08:05,615
+the branch you're on, B, every local
+branch that contains the commit, or C, the
+
+111
+00:08:05,655 --> 00:08:08,142
+server's branches as well? Your answer?
+
+112
+00:08:12,982 --> 00:08:17,537
+B. Every local branch that contains the
+commit. The server's branches don't move,
+
+113
+00:08:17,577 --> 00:08:20,430
+which is why branches that
+were pushed now diverge.
+
+114
+00:08:20,770 --> 00:08:25,823
+Where the picture breaks: an archivist would
+ask before moving a label that somebody
+
+115
+00:08:25,863 --> 00:08:30,794
+else's catalogue points at. git history
+moves every local branch that contains the
+
+116
+00:08:30,834 --> 00:08:34,856
+commit and asks nothing. The reflog
+of each branch has the old tip.
+
+117
+00:08:34,896 --> 00:08:36,311
+There is no single undo.
+
+118
+00:08:38,151 --> 00:08:42,853
+Build the left column from what you know
+from video 55, then the right column line
+
+119
+00:08:42,893 --> 00:08:47,537
+by line against it. The bottom drawing is
+the difference to remember: on the left
+
+120
+00:08:47,577 --> 00:08:52,337
+topic keeps pointing at the old commits
+unless you ask, and on the right it's moved
+
+121
+00:08:52,377 --> 00:08:52,800
+for you.
+
+122
+00:08:54,639 --> 00:08:56,537
+What the command offers on this version.
+
+123
+00:08:56,877 --> 00:09:01,285
+Three subcommands on Git
+2.55: fixup, reword, split.
+
+124
+00:09:01,325 --> 00:09:08,469
+No drop: that is the 2.56 addition. Each
+takes --dry-run, and --update-refs with two
+
+125
+00:09:08,509 --> 00:09:10,693
+values, branches and head.
+
+126
+00:09:11,033 --> 00:09:16,769
+Try it now, in any repository of your own.
+Thirty seconds, and it only prints help:
+
+127
+00:09:16,809 --> 00:09:22,268
+git history -h. It needs Git 2.54 or
+newer, and an older Git reports an unknown
+
+128
+00:09:22,308 --> 00:09:26,722
+command. Predict first: how many
+subcommands will your Git list?
+
+129
+00:09:31,562 --> 00:09:36,923
+Three means your Git matches the lab. A
+fourth, drop, means you have 2.56 or newer.
+
+130
+00:09:36,963 --> 00:09:41,413
+And if Git doesn't know the command
+at all, yours is older than 2.54.
+
+131
+00:09:41,453 --> 00:09:45,773
+Whichever you saw, you've read your
+own Git instead of a blog post.
+
+132
+00:09:46,113 --> 00:09:51,754
+Reword. The repository has a typo in its
+oldest commit and three branches above it.
+
+133
+00:09:51,794 --> 00:09:57,367
+🟡 CAUTION: git history reword creates new
+commits and moves every descendant local
+
+134
+00:09:57,407 --> 00:10:01,406
+branch. Preview: --dry-run.
+Recovery: each branch's reflog.
+
+135
+00:10:01,446 --> 00:10:07,019
+Predict: after rewording the oldest commit,
+how many commit IDs in this graph stay
+
+136
+00:10:07,059 --> 00:10:08,798
+the same? Say it out loud.
+
+137
+00:10:13,638 --> 00:10:19,139
+None. The editor opened with the old message,
+and the message was replaced: "metirc"
+
+138
+00:10:19,179 --> 00:10:24,349
+became "metric". Every commit ID changed,
+including 67d2d0a on the side branch,
+
+139
+00:10:24,389 --> 00:10:25,734
+which is now 131e7a7.
+
+140
+00:10:26,074 --> 00:10:32,576
+As a picture. Before: five commits, with
+main, release/0.1 and topic/judge on them.
+
+141
+00:10:32,916 --> 00:10:37,022
+After: five new commits, and all
+three labels moved onto them.
+
+142
+00:10:37,062 --> 00:10:42,506
+The old five are dashed. No branch reaches
+them any more, and each branch's reflog
+
+143
+00:10:42,546 --> 00:10:43,977
+still has its old tip.
+
+144
+00:10:44,317 --> 00:10:50,125
+main, release/0.1 and topic/judge all point
+into the new history, each with its own
+
+145
+00:10:50,165 --> 00:10:55,481
+reflog entry. And git status says we
+are on main, as if nothing happened: no
+
+146
+00:10:55,521 --> 00:10:56,890
+checkout took place.
+
+147
+00:10:57,230 --> 00:10:57,917
+Dry run.
+
+148
+00:10:58,257 --> 00:11:03,362
+A dry run writes the new objects and prints
+the ref updates instead of making them,
+
+149
+00:11:03,402 --> 00:11:07,888
+in the input format of git update-ref
+--stdin: three branches would move.
+
+150
+00:11:07,928 --> 00:11:13,033
+The log afterwards is unchanged. This is
+the list to read before every real run: is
+
+151
+00:11:13,073 --> 00:11:15,017
+any of these branches published?
+
+152
+00:11:15,357 --> 00:11:20,493
+Fixup. A staged change is folded into an
+older commit, and its descendants are
+
+153
+00:11:20,533 --> 00:11:24,873
+replayed. This is the autosquash
+workflow of video 56 in one step.
+
+154
+00:11:25,213 --> 00:11:28,317
+The status is empty: the
+staged change was consumed.
+
+155
+00:11:28,357 --> 00:11:31,643
+The commit two back now
+contains the test file as well.
+
+156
+00:11:31,983 --> 00:11:37,101
+Split. split asks, hunk by hunk, what to
+move into a new commit that becomes the
+
+157
+00:11:37,141 --> 00:11:42,517
+parent of the original. The demo answers
+yes to the first hunk and no to the second,
+
+158
+00:11:42,557 --> 00:11:44,193
+and supplies two messages.
+
+159
+00:11:52,533 --> 00:11:56,937
+One commit became two: "Add F1 metric" with
+the function, then "Test the F1 metric"
+
+160
+00:11:56,977 --> 00:12:00,256
+with the test, and the two later
+commits were replayed on top.
+
+161
+00:12:00,596 --> 00:12:05,164
+No hooks. A commit-msg hook that
+refuses every message is installed.
+
+162
+00:12:05,204 --> 00:12:08,416
+Predict: will it stop a
+reword? Say it out loud.
+
+163
+00:12:13,256 --> 00:12:18,259
+An ordinary git commit is refused by the
+hook. git history reword goes through, and
+
+164
+00:12:18,299 --> 00:12:22,816
+the new message is in the log. If your
+team's message convention lives in a
+
+165
+00:12:22,856 --> 00:12:25,490
+commit-msg hook, this
+command walks past it.
+
+166
+00:12:25,830 --> 00:12:27,992
+The limits, each with its real message.
+
+167
+00:12:28,332 --> 00:12:33,622
+A fixup that would conflict: "fixup would
+produce conflicts; aborting", exit status
+
+168
+00:12:33,662 --> 00:12:37,475
+255, and the staged change is
+still staged. Nothing changed.
+
+169
+00:12:37,515 --> 00:12:42,741
+A history with a merge above the target:
+"replaying merge commits is not supported
+
+170
+00:12:42,781 --> 00:12:46,016
+yet!". Both are refusals,
+not half-finished states.
+
+171
+00:12:46,056 --> 00:12:48,585
+That is the good side of having no desk.
+
+172
+00:12:48,925 --> 00:12:49,952
+A bare repository.
+
+173
+00:12:50,292 --> 00:12:55,215
+No working tree. fix/timeout has two commits
+and branches off an old commit of main.
+
+174
+00:12:55,555 --> 00:13:01,872
+Print the update. 🟢 for this form: with
+--ref-action=print only new objects are
+
+175
+00:13:01,912 --> 00:13:02,516
+written.
+
+176
+00:13:02,856 --> 00:13:07,314
+One line in update-ref format: the
+ref, the new value, the old value.
+
+177
+00:13:07,354 --> 00:13:12,659
+main itself has not moved. A server can
+inspect that line, check rules against it,
+
+178
+00:13:12,699 --> 00:13:13,832
+and then apply it.
+
+179
+00:13:14,172 --> 00:13:19,448
+Advance. 🟡 CAUTION: git replay --advance
+creates commits and moves the ref in one
+
+180
+00:13:19,488 --> 00:13:24,501
+transaction. Preview: the print form you
+saw. Recovery: the reflog, where one
+
+181
+00:13:24,541 --> 00:13:28,044
+exists. There is none by
+default in a bare repository.
+
+182
+00:13:28,384 --> 00:13:34,140
+main now carries copies of the two commits,
+dc10709 and 863b8b5, and the originals
+
+183
+00:13:34,180 --> 00:13:39,724
+are still on fix/timeout. It's a cherry-pick
+of a range, done where no checkout
+
+184
+00:13:39,764 --> 00:13:45,449
+exists. The printed update named 1653f1a,
+not 863b8b5: the two runs made the same
+
+185
+00:13:45,489 --> 00:13:49,548
+commits at different committer
+times, so their IDs differ.
+
+186
+00:13:49,888 --> 00:13:51,672
+Revert, and the missing reflog.
+
+187
+00:13:52,012 --> 00:13:57,433
+The revert commit has the usual message.
+And the last command printed nothing: this
+
+188
+00:13:57,473 --> 00:14:01,710
+bare repository keeps no reflog,
+so the replay has no local undo.
+
+189
+00:14:02,050 --> 00:14:06,283
+The conflict case. Replay
+labs/run ch09/replay-conflict.
+
+190
+00:14:06,323 --> 00:14:10,786
+Predict what a replay prints
+when the range would conflict.
+
+191
+00:14:10,826 --> 00:14:12,007
+Say it out loud.
+
+192
+00:14:16,847 --> 00:14:20,512
+Exit status 1, no output, and
+the branch is where it was.
+
+193
+00:14:20,552 --> 00:14:23,892
+No message, no state directory,
+nothing to continue.
+
+194
+00:14:23,932 --> 00:14:29,027
+In a script, the exit status is the only
+signal. For a conflict you rebase in a
+
+195
+00:14:29,067 --> 00:14:29,871
+working tree.
+
+196
+00:14:30,211 --> 00:14:31,326
+git last-modified.
+
+197
+00:14:31,666 --> 00:14:33,914
+One line per entry of the top-level tree.
+
+198
+00:14:34,254 --> 00:14:39,619
+For the directory src the answer is the
+merge commit, 5bcf6ca, because the two sides
+
+199
+00:14:39,659 --> 00:14:44,445
+changed different files in it and only
+the merge produced the present tree.
+
+200
+00:14:44,485 --> 00:14:48,885
+With -r it descends to files, and
+each file names an ordinary commit.
+
+201
+00:14:49,225 --> 00:14:55,210
+The same answer for one path, the way it
+was asked before Git 2.52: git log -1 with
+
+202
+00:14:55,250 --> 00:14:58,622
+a path. And a revision
+range limits the search.
+
+203
+00:14:58,962 --> 00:15:01,205
+git repo info and git repo structure.
+
+204
+00:15:01,545 --> 00:15:06,564
+Four keys on this version: whether the
+repository is bare, whether it is shallow,
+
+205
+00:15:06,604 --> 00:15:11,684
+the object format and the ref format. This
+is what a script should ask in place of
+
+206
+00:15:11,724 --> 00:15:16,618
+reading .git/config, and it's what you
+would have used in the release script of
+
+207
+00:15:16,658 --> 00:15:17,243
+video 199.
+
+208
+00:15:17,583 --> 00:15:22,760
+Counts of refs and objects by kind, and
+their inflated sizes, as lines a script can
+
+209
+00:15:22,800 --> 00:15:23,137
+parse.
+
+210
+00:15:24,977 --> 00:15:26,625
+Five mistakes to watch for.
+
+211
+00:15:26,965 --> 00:15:30,264
+Running git history on a commit
+that was already pushed.
+
+212
+00:15:30,304 --> 00:15:35,213
+Root cause: it moves every local branch
+that contains the commit, so each published
+
+213
+00:15:35,253 --> 00:15:37,360
+branch now diverges from the server.
+
+214
+00:15:37,700 --> 00:15:42,838
+Expecting hooks to check a reworded message.
+Root cause: the command runs no hooks,
+
+215
+00:15:42,878 --> 00:15:46,206
+so a convention enforced by
+commit-msg is not applied.
+
+216
+00:15:46,546 --> 00:15:51,927
+Reading exit status 1 from git replay as
+a crash. Root cause: with no working tree
+
+217
+00:15:51,967 --> 00:15:57,282
+it cannot stop for a conflict, so it reports
+one by exiting with 1 and no output.
+
+218
+00:15:57,622 --> 00:16:00,863
+Putting an experimental command
+into shared automation.
+
+219
+00:16:00,903 --> 00:16:05,755
+Root cause: output and options may change
+between releases, and the manual says so
+
+220
+00:16:05,795 --> 00:16:06,829
+in its first line.
+
+221
+00:16:07,169 --> 00:16:11,193
+Assuming a replay in a bare
+repository can be undone locally.
+
+222
+00:16:11,233 --> 00:16:16,056
+Root cause: a bare repository keeps
+no reflog unless it is configured to.
+
+223
+00:16:17,896 --> 00:16:22,992
+Now, out of the lab. A team lead is asked
+the hook's question: do we change our
+
+224
+00:16:23,032 --> 00:16:25,658
+guidelines? She tests before she answers.
+
+225
+00:16:25,998 --> 00:16:31,405
+In a sandbox she takes a typical local
+stack: three small branches for one feature,
+
+226
+00:16:31,445 --> 00:16:36,589
+none of them pushed. A typo in the first
+commit's message is fixed with one git
+
+227
+00:16:36,629 --> 00:16:41,118
+history reword, after a dry run that
+lists three branches, all local.
+
+228
+00:16:41,158 --> 00:16:45,777
+All three move together. She notes
+that this used to need a rebase with
+
+229
+00:16:45,817 --> 00:16:46,696
+--update-refs.
+
+230
+00:16:47,036 --> 00:16:51,732
+Then she tries what the team's guidelines
+protect. The message convention is
+
+231
+00:16:51,772 --> 00:16:55,160
+enforced by a commit-msg hook:
+the reword goes past it.
+
+232
+00:16:55,200 --> 00:17:00,332
+A second stack has a merge in it: refused.
+A branch that is already pushed: the dry
+
+233
+00:17:00,372 --> 00:17:02,451
+run lists it, and she stops there.
+
+234
+00:17:02,791 --> 00:17:07,685
+Her answer to the team is three sentences,
+and it's the answer to the opening.
+
+235
+00:17:07,725 --> 00:17:12,873
+The guidelines don't change: interactive
+rebase stays the documented tool, because
+
+236
+00:17:12,913 --> 00:17:17,934
+it runs hooks and handles merges and
+conflicts. git history is allowed for local
+
+237
+00:17:17,974 --> 00:17:21,350
+cleanup before the first
+push, always after --dry-run.
+
+238
+00:17:21,390 --> 00:17:24,830
+And nothing experimental goes
+into the release scripts.
+
+239
+00:17:24,870 --> 00:17:30,144
+Where a script wants git repo info, the
+script pins the Git version and says so in a
+
+240
+00:17:30,184 --> 00:17:30,650
+comment.
+
+241
+00:17:32,490 --> 00:17:39,855
+Your turn. Do Lab 42.2, "git history
+reword", in lab-manual/m42-frontier.md.
+
+242
+00:17:40,195 --> 00:17:43,950
+Before the dry run, predict which
+branches it will list and why.
+
+243
+00:17:43,990 --> 00:17:48,634
+Before the real reword, predict what git
+status -sb will print afterwards for a
+
+244
+00:17:48,674 --> 00:17:53,200
+branch that has an upstream. In the lab's
+failure scenario a pushed commit is
+
+245
+00:17:53,240 --> 00:17:58,181
+reworded: before you repair it, write down
+where the old tip of each affected branch
+
+246
+00:17:58,221 --> 00:18:01,561
+can be found and how many
+separate repairs you will need.
+
+247
+00:18:01,901 --> 00:18:06,840
+The challenge: in a sandbox, rebuild Lab
+9.1 with git history where it applies, and
+
+248
+00:18:06,880 --> 00:18:09,839
+note which steps still need
+an interactive rebase.
+
+249
+00:18:11,679 --> 00:18:13,732
+Read the question, then answer out loud.
+
+250
+00:18:18,572 --> 00:18:23,190
+The question hands you five headings. Use
+them as your structure and give each one
+
+251
+00:18:23,230 --> 00:18:27,848
+sentence for each command. A strong answer
+explains the differences from one cause
+
+252
+00:18:27,888 --> 00:18:32,223
+instead of listing five facts: what it
+means that one of the two never checks
+
+253
+00:18:32,263 --> 00:18:32,961
+anything out.
+
+254
+00:18:33,301 --> 00:18:36,255
+It states the version and the
+status of the newer command.
+
+255
+00:18:36,295 --> 00:18:40,436
+And it ends, as the rule says, on a limit
+and a control: when you would refuse to
+
+256
+00:18:40,476 --> 00:18:44,669
+use the newer command, and what you would
+run first to find out whether you are in
+
+257
+00:18:44,709 --> 00:18:45,185
+that case.
+
+258
+00:18:47,025 --> 00:18:47,952
+Let's land this.
+
+259
+00:18:48,292 --> 00:18:53,215
+git history rewords, fixes up or splits
+one commit without a working tree, replays
+
+260
+00:18:53,255 --> 00:18:57,573
+every descendant, and moves every
+local branch that contains the commit.
+
+261
+00:18:57,913 --> 00:19:04,679
+It runs no hooks and refuses merges and
+conflicts; it is experimental, with reword
+
+262
+00:19:04,719 --> 00:19:11,402
+and split since Git 2.54, fixup since 2.55,
+and drop added in 2.56, not run here.
+
+263
+00:19:11,742 --> 00:19:17,236
+git replay rebases, cherry-picks or reverts
+without a working tree, for servers;
+
+264
+00:19:17,276 --> 00:19:22,839
+--ref-action=print prints the ref update
+instead of making it; a conflict is exit
+
+265
+00:19:22,879 --> 00:19:24,499
+status 1 with no output.
+
+266
+00:19:24,839 --> 00:19:29,556
+git last-modified names the commit that
+last changed each path; git repo info and
+
+267
+00:19:29,596 --> 00:19:33,667
+git repo structure report facts and
+counts in a form scripts can read.
+
+268
+00:19:34,007 --> 00:19:39,213
+Use all four at the keyboard, read --dry-run
+or the printed update first, and keep
+
+269
+00:19:39,253 --> 00:19:42,220
+experimental commands out
+of shared automation.
+
+270
+00:19:44,060 --> 00:19:49,415
+Read sections 14D.6 to 14D.8 and section
+9.20. Then open the manual page of git
+
+271
+00:19:49,455 --> 00:19:54,399
+history in your own installation and
+check its first line and its list of
+
+272
+00:19:54,439 --> 00:19:59,998
+subcommands against this video. If they
+differ, your Git is newer than the course,
+
+273
+00:20:00,038 --> 00:20:01,637
+and the manual is right.
+
+274
+00:20:01,977 --> 00:20:06,751
+Today you measured four experimental commands
+against a tool you already know, and
+
+275
+00:20:06,791 --> 00:20:11,683
+you can say where each is safe to use. Next
+time, the last video of the course: Rust
+
+276
+00:20:11,723 --> 00:20:16,438
+in Git, stacked workflows, release notes,
+and the patch-based workflow of the Git
+
+277
+00:20:16,478 --> 00:20:20,020
+project. Until then, look at the
+state first and type second.
+
+278
+00:20:20,060 --> 00:20:21,429
+See you in the next one.

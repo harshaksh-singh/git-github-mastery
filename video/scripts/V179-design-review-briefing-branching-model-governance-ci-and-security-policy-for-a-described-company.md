@@ -84,8 +84,6 @@ B, the second on that list. A hook isn't cloned, so the person it controls can s
 
 **[ANIMATION]** cards: id=five cards=A_developer:finds_the_model_too_heavy|A_release_manager:an_urgent_fix_for_one_customer|A_security_reviewer|An_auditor|The_CTO:cost_and_evidence title=Objections_from_five_directions at_1=30 at_2=46 at_3=64 at_4=72 at_5=80
 
-**[ANIMATION]** end
-
 **The defence.** After you submit, the assessor raises objections, one at a time, from five directions. A developer who finds the model too heavy. A release manager with an urgent fix for one customer. A security reviewer. An auditor. And the CTO, asking about cost and about evidence.
 
 **[ANIMATION]** cards: id=answers cards=defend|amend|concede marks=1:ok,2:ok title=Three_answers_to_an_objection at_1=8 at_2=18 at_3=24 at_marks=40

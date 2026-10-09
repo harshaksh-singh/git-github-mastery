@@ -59,7 +59,11 @@ After this video you can:
 | 6. Communicate | Tell the team what to do with their clones; tell the CTO the four answers | none | none |
 | 7. Prevent | Turn the root cause into a control, and write the postmortem | a ruleset, a configuration default, a test, a checklist line | none |
 
-Two rules hold the loop together. Stages 2 and 3 use only commands that add refs, the names that point at commits, or read state. And stage 6 starts early: a first message goes out as soon as you know which branch people must leave alone, long before you know the cause.
+Two rules hold the loop together. Stages 2 and 3 use only commands that add refs, the names that point at commits, or read state.
+
+And stage 6 starts early: a first message goes out as soon as you know which branch people must leave alone, long before you know the cause.
+
+**[ANIMATION]** cards: id=cover question=Cover_the_table cards=write_the_seven_stages_in_order|draw_the_arrow_for_that_first_message numbered=on title=Try_it_now,_on_paper
 
 Try it now, on paper. Thirty seconds. Cover the table and write the seven stages in order. Then draw the arrow for that first message.
 
@@ -73,6 +77,10 @@ Stabilise, preserve, diagnose, recover, verify, communicate, prevent. And the ar
 
 **Where the evidence lives.** In an incident the evidence is spread over several repositories, and each kind lives in a specific place. Much of it is in reflogs, Git's local records of each ref's past values.
 
+A prediction. Every clone keeps reflogs. Does the server keep one for its branches? Say it out loud.
+
+**[PAUSE]**
+
 | Evidence | Where it lives | Read it with | Lifetime |
 |---|---|---|---|
 | Every value a local branch had | `.git/logs/refs/heads/<branch>` in that clone | `git reflog show <branch>` | 90 days; 30 for entries no longer reachable; gone when the branch is deleted |
@@ -82,9 +90,9 @@ Stabilise, preserve, diagnose, recover, verify, communicate, prevent. And the ar
 | Staged content that was never committed | a dangling blob in `.git/objects` | `git fsck --lost-found` | two weeks after it becomes unreachable, once maintenance runs |
 | Who pushed what, and force pushes | GitHub, not Git | the Activity view, `PushEvent` records, the audit log | see V183 |
 
-A prediction. Every clone keeps reflogs. Does the server keep one for its branches? Say it out loud.
+Three of the places are reflogs in each clone: of each local branch, of HEAD, and of each remote-tracking branch.
 
-**[PAUSE]**
+What the server holds now comes from `git ls-remote origin`, staged content survives as a dangling blob, and who pushed what is GitHub's record, not Git's.
 
 **[ANIMATION]** stores: id=evidence boxes=the_clones:each_keeps_reflogs|GitHub|*server.git:one_shared_state rows=2:A:your_clone:_reflog_of_origin/main|2:A:Asha's_clone:_reflog_of_her_branch|2:A:Ravi's_clone:_has_not_fetched_yet|1:C:refs/heads/main|1:C:no_reflog_of_its_own@bad|3:B:Activity_view,_audit_log title=Where_the_history_of_a_server-side_branch_lives at_1=2 at_2=52 at_3=62
 
@@ -162,7 +170,7 @@ That second point changes what the first minute looks like. In most Git incident
         +--------------------- first message to the team ------------------------+
 ```
 
-Point at "has not fetched yet". A clone that hasn't fetched is a witness: it still holds the server's old state. Point at "no reflog of its own". And trace the long arrow at the bottom: communication starts at stage 1.
+Look at "has not fetched yet". A clone that hasn't fetched is a witness: it still holds the server's old state. Look at "no reflog of its own". And follow the long arrow at the bottom: communication starts at stage 1.
 
 ## LIVE TERMINAL DEMO
 

@@ -86,7 +86,9 @@ And both rejections read `! [rejected]`. That line is written by the local Git b
 | Stashes and other worktrees that hold work | `git stash list`, `git worktree list` |
 | What Git executes and sends | `GIT_TRACE=1`, `GIT_TRACE2_EVENT`, `GIT_CURL_VERBOSE=1`, `ssh -v` |
 
-Organize it in your head by the kind of question: refs, graph, remote, objects, index, configuration, and what Git is doing. The `git config get` subcommand needs Git 2.46 or later.
+Organize it in your head by the kind of question: refs, graph, remote, objects, index, configuration, and what Git is doing.
+
+The `git config get` subcommand needs Git 2.46 or later.
 
 **[ANIMATION]** cards: id=kinds cards=refs|graph|remote|objects|index|configuration|what_Git_is_doing marks=3:ring title=The_toolbox,_by_kind_of_question pace=quick at_marks=30
 

@@ -224,7 +224,7 @@ Three hypotheses, separated by this one output. A pull rewrote the branch: no `p
 
 **[ANIMATION]** walk: id=t1 columns=reflog,what_happened,note rows=@{5}:branch_created:|@{4}:commit_95d110d:|@{3}:commit_a26c697:|@{2}:commit_0322a16:last_good_tip:_anchor_here|@{1}:RESET_--hard_to_origin/main:destructive_moment|@{0}:commit_4e4c0b7:|also_lost:a_staged_file:survives_as_a_dangling_blob|also_lost:an_unstaged_edit:survives_nowhere marks=4.3:ok,5.2:bad,5.3:bad,8.3:bad title=feature/escalation-rules,_from_its_reflog pace=quick
 
-Here's that reflog as a timeline, oldest at the top: the last good tip at `@{2}`, the destructive moment at `@{1}`.
+Here's that reflog as a timeline, oldest at the top: the last good tip at `@{2}`, the destructive moment at `@{1}`. Also lost there: a staged file, which survives as a dangling blob, and an unstaged edit, which survives nowhere.
 
 **[ANIMATION]** end
 

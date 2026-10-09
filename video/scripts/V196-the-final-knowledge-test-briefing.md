@@ -53,7 +53,9 @@ After this video you can:
 | Oral | 41 | 4 | Spoken to an examiner, or recorded. Two to three minutes per answer, no notes, no terminal | 4 |
 | **Total** | **250** | **804** | | **about 21.5 hours** |
 
-There are eight types of item. For each, the table gives the count, the points and how it is answered.
+There are eight types of item.
+
+For each, the table gives the count, the points and how it is answered.
 
 **[PAUSE]**
 

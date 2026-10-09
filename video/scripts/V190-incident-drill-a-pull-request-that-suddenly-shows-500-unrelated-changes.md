@@ -367,7 +367,7 @@ PASS: the recovery of incident 06-pr-500-changes is complete.
 
 Four commits, all Ravi's. Two files. The check passes, including two lines about what wasn't touched: `develop` and `main` on the server.
 
-**The consequence of leaving it, or of reverting the merge.** Replay `labs/run incidents/lab-37-3-pr-500-changes` and show the snippet `consequence`. In the lab's failure scenario the merge was reverted instead of removed. Later the pull request is merged into `main`, and then `develop` is released into `main`. Predict what the release merge prints. Say it out loud.
+**The consequence of leaving it, or of reverting the merge.** In the lab's failure scenario the merge was reverted instead of removed. Later the pull request is merged into `main`, and then `develop` is released into `main`. Predict what the release merge prints. Say it out loud.
 
 **[PAUSE]**
 

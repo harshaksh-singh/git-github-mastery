@@ -71,6 +71,8 @@ The same document makes two promises. The last version before 3.0 will be a long
 | 2.99 in April 2027 (LWN) or spring 2027 (GitLab), as the long-term-support release | the same two | secondary |
 | 2.99 and 3.0 ship together and differ only in the breaking-changes switch | GitLab; LWN similar | secondary |
 
+The first row is official, the second is primary, read through a mirror, and the last three are secondary.
+
 **[ON SCREEN]** Unverified.
 
 Every date in the last three rows of the table. Treat them as a plan reported from conference talks, and re-check BreakingChanges and the release announcement before you put a date into a migration plan.
@@ -91,7 +93,7 @@ Read the table as a plan, row by row. New repositories would use SHA-256 as thei
 
 **The removals.** Grafts, replaced by `git replace`. `git pack-redundant`. The directories `.git/branches/` and `.git/remotes/` as sources of remotes. `git name-rev --stdin`, replaced by `--annotate-stdin`. `git whatchanged`. And the values `core.commentString=auto` and `core.preferSymlinkRefs=true`. One section of the document records a decision not to remove something: `git checkout` stays next to `git switch` and `git restore`.
 
-**[ANIMATION]** cards: id=quiz question=Suppose_Git_3.0_is_released_and_you_upgrade._The_repositories_you_already_have? cards=A,_they're_converted_to_the_new_formats|B,_nothing_converts_them marks=2:ok at_1=62 at_2=78
+**[ANIMATION]** cards: id=quiz question=Suppose_Git_3.0_is_released_and_you_upgrade._The_repositories_you_already_have? cards=A,_they're_converted_to_the_new_formats|B,_nothing_converts_them marks=2:ok at_1=30 at_2=78
 
 **[ANIMATION]** step: 2
 

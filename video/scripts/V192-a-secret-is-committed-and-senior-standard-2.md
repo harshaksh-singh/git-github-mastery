@@ -157,7 +157,7 @@ And the model for the message to the team: write it for the colleague who will r
                                                                                                            credentials
 ```
 
-Point at the first column: no Git command. Point at the last line of the second column: also at the provider. The two questions a CTO cares about most, "does it still work" and "was it used", are both answered outside Git.
+Look at the first column: no Git command. Look at the last line of the second column: also at the provider. The two questions a CTO cares about most, "does it still work" and "was it used", are both answered outside Git.
 
 ## LIVE TERMINAL DEMO
 

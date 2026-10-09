@@ -135,7 +135,15 @@ Quick quiz before the table. Two of the five operations detach HEAD, so that a n
 | Revert | "You are currently reverting commit ..." | `REVERT_HEAD`; `sequencer/` for several commits | on the branch | `git revert --continue` | `git revert --abort` | `git revert --quit` |
 | Bisect | "You are currently bisecting, started from branch ..." | `BISECT_LOG`, `BISECT_START`, `BISECT_TERMS`, `refs/bisect/*` | detached | `git bisect good` or `bad` | `git bisect reset` | `git bisect reset HEAD` |
 
-B. Point at the HEAD column when the table is complete: two operations detach HEAD, rebase and bisect. Those are the two in which a commit made "on the branch" isn't on the branch.
+B. Merge: `MERGE_HEAD`, and HEAD stays on the branch.
+
+Rebase: the `rebase-merge` or `rebase-apply` directory, and HEAD is detached.
+
+Cherry-pick: `CHERRY_PICK_HEAD`, on the branch.
+
+Revert: `REVERT_HEAD`, on the branch.
+
+Bisect: `BISECT_LOG` and `BISECT_START`, and HEAD is detached. So look at the HEAD column: two operations detach HEAD, rebase and bisect. Those are the two in which a commit made "on the branch" isn't on the branch.
 
 ## LIVE TERMINAL DEMO
 

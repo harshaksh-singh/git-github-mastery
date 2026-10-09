@@ -102,7 +102,9 @@ None of the four layers changes the working tree, the index, HEAD or any existin
 | **Rule Insights** | Every ref update evaluated by a ruleset: passed, failed or bypassed, and what would have happened in Evaluate mode | Rulesets only, not classic branch protection. An exempt actor skips enforcement without the signals a bypass generates. The insights dashboard is for Team and Enterprise Cloud plans | Repository administrators |
 | **Audit log** | Organization: events of the last 180 days, for owners, exportable. Enterprise: also Git events such as `git.push`, retained for seven days and available only via the REST API, audit log streaming, or JSON/CSV exports | Organization and enterprise accounts only. A personal repository has no audit log of this kind | Organization owners; enterprise owners |
 
-So the timeline of a server-side branch doesn't come from Git at all. It comes from these five sources. None of the commands was executed here, and user-interface labels change.
+So the timeline of a server-side branch doesn't come from Git at all. It comes from these five sources.
+
+None of the commands was executed here, and user-interface labels change.
 
 **[ON SCREEN]** The commands that read these sources, shown without output.
 

@@ -135,6 +135,8 @@ How to use a row: the causes are your ready-made hypotheses, already more than t
 | The wrong layer is blamed | "GitHub lost my commits" while `git ls-remote` shows the server never had them | The label "Git, GitHub or Actions" is a required line of every explanation |
 | The evidence is destroyed by the investigation | The reflog was expired, a branch was deleted "to tidy up", `git gc` was run | Preserve before phase 3; never run `git gc` or `git prune` during an incident |
 
+Four ways: a fix typed before the state is known, stale remote-tracking refs, the wrong layer blamed, and evidence destroyed by the investigation.
+
 ## MENTAL MODEL
 
 **[ANIMATION]** step: rungs.1

@@ -75,7 +75,15 @@ So where does a repository live? The whole repository, meaning the history and e
 
 **[ON SCREEN]** The goals table of section 1.4.
 
-Speed: almost every operation reads local files. Simple design: four object types named by a hash of their content, plus names that point at them. A hash is a short fingerprint computed from content. Strong support for non-linear development, with thousands of parallel branches: a branch is one small name that points at a commit, so creating one costs almost nothing. Fully distributed: every clone has the history, and fetch and push exchange objects and update names. Able to handle large projects like the Linux kernel efficiently: compressed pack files, and later, partial clone and sparse checkout.
+Speed: almost every operation reads local files.
+
+Simple design: four object types named by a hash of their content, plus names that point at them. A hash is a short fingerprint computed from content.
+
+Strong support for non-linear development, with thousands of parallel branches: a branch is one small name that points at a commit, so creating one costs almost nothing.
+
+Fully distributed: every clone has the history, and fetch and push exchange objects and update names.
+
+Able to handle large projects like the Linux kernel efficiently: compressed pack files, and later, partial clone and sparse checkout.
 
 Git's manual describes it as "a fast, scalable, distributed revision control system with an unusually rich command set that provides both high-level operations and full access to internals". The high-level commands, such as `git add`, `git commit` and `git merge`, are called porcelain. The low-level ones, such as `git hash-object` and `git update-ref`, are called plumbing. This course uses plumbing to prove what porcelain did.
 
@@ -158,6 +166,10 @@ For Git and GitHub: Git is a file format with its editor, and GitHub is a docume
 On the left, one server holds the only history. Asha and Ravi each hold one version, and every commit is an arrow to the server: a network operation. On the right, the server is a bare repository with the history, and Asha and Ravi each hold the history plus one checked-out version. The arrows are now push and fetch. Commit doesn't appear as an arrow at all, because a commit is local. That missing arrow is the difference.
 
 **[DIAGRAM]** Second diagram: two empty columns headed "Git" and "GitHub", filled from the table of section 1.5 as the rows were read in the concept segment. Leave it on screen for ten seconds at the end.
+
+Now check your two columns against the whole table. Commits, branches and tags arrive with a clone. The "Verified" badge and a pull request don't.
+
+Issues, forks, rulesets and releases live on GitHub. A workflow file is a tracked file, so it arrives. Its runs, logs and secrets don't.
 
 ## LIVE TERMINAL DEMO
 

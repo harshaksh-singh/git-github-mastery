@@ -134,6 +134,8 @@ One sentence joins the two: log selects commits, diff selects two trees. If you 
 
 ## DIAGRAM
 
+**[ANIMATION]** step: plain.state-1
+
 **[DIAGRAM]** One graph, used for both halves. Draw it once. For each line below it, shade the commits it selects, or circle the two trees it compares.
 
 ```text
@@ -151,7 +153,7 @@ One sentence joins the two: log selects commits, diff selects two trees. If you 
   git diff feat/report...main   compares the trees of ca7e2b7 and e376e5b   (merge base and the other tip)
 ```
 
-One graph, for both halves. The three log lines each select a set of commits. The three diff lines each compare two trees. Pause here if you like, and check each line against the graph.
+One graph, for both halves: the log ranges select sets of commits on it, and the diff forms compare two of its trees. Keep it in mind for the demo.
 
 ## LIVE TERMINAL DEMO
 

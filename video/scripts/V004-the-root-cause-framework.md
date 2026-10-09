@@ -76,7 +76,7 @@ Every problem in this course is handled in the same eleven steps.
 
 **Prevent.** Change a habit, a setting or a rule so that the problem cannot recur silently.
 
-Two rules make the framework safe.
+**Two rules make the framework safe.**
 
 The first rule: everything up to and including "identify root cause" is read-only. Seven steps, and not one of them changes the repository. The reason is the sentence from the hook: most damage in Git incidents is done by a command typed before the state was understood. If you haven't changed anything, you can't have made it worse, and the evidence you collected is still the evidence.
 
@@ -100,14 +100,14 @@ The model breaks in one honest place, and the next video takes it up: "read-only
 
 ## DIAGRAM
 
-Here's the whole method on one page.
-
 **[DIAGRAM]** The framework as the textbook prints it.
 
 ```text
 SYMPTOM -> OBSERVE -> COLLECT EVIDENCE -> UNDERSTAND STATE -> FORM HYPOTHESES -> TEST HYPOTHESES
         -> IDENTIFY ROOT CAUSE -> SELECT LOWEST-RISK FIX -> EXECUTE -> VERIFY -> PREVENT
 ```
+
+Here's the whole method on one page.
 
 **[DIAGRAM]** The same eleven steps as a vertical flow. Draw the steps top to bottom, then draw the horizontal line last.
 
@@ -135,6 +135,8 @@ SYMPTOM -> OBSERVE -> COLLECT EVIDENCE -> UNDERSTAND STATE -> FORM HYPOTHESES ->
    PREVENT
 ```
 
+The same eleven steps, top to bottom. One line is drawn under "identify root cause": read-only above this line.
+
 **[DIAGRAM]** The root-cause box of section 1.10, one line at a time.
 
 ```text
@@ -146,6 +148,8 @@ Why Git does this : the design reason
 Correct fix       : the lowest-risk change that repairs the state
 Prevention        : what stops a silent recurrence
 ```
+
+And the box, one line at a time: observed behavior, Git state, mechanism, root cause, why Git does this, correct fix, prevention.
 
 ## LIVE TERMINAL DEMO
 
@@ -208,9 +212,9 @@ Compare those two lines. The mechanism would hold in any repository. The root ca
 
 **[PAUSE]**
 
-Notice what did the work. We didn't search for the error message. We read the output that Git printed, and most of the box was in it: the state in the heading, and the fix in the hint. The textbook's wording for this failure is short: exit status 1 and no commit. The change is in the working tree, and the index was never updated.
+**Notice what did the work.** We didn't search for the error message. We read the output that Git printed, and most of the box was in it: the state in the heading, and the fix in the hint. The textbook's wording for this failure is short: exit status 1 and no commit. The change is in the working tree, and the index was never updated.
 
-One more observation about the layer. Which layer acted: Git, GitHub, or GitHub Actions? Say it out loud.
+**One more observation about the layer.** Which layer acted: Git, GitHub, or GitHub Actions? Say it out loud.
 
 **[PAUSE]**
 

@@ -487,6 +487,8 @@ M  config/settings.yaml
 
 `settings.yaml` is staged, and `retriever.py` is modified and not staged. The path form committed `retriever.py` alone, and left the staged `settings.yaml` for later.
 
+**[ANIMATION]** cards: id=surprise question=What_does_git_commit_src/retriever.py_record? cards=Staged:a_clean_version_of_retriever.py|Working_tree:the_same,_plus_one_debug_line title=Now_the_surprise at_1=15 at_2=45
+
 Now the surprise. A clean version of `retriever.py` is staged, and the working tree holds one more line, a debug line. Predict what `git commit src/retriever.py` records. Say it out loud. I'll wait.
 
 **[PAUSE]**

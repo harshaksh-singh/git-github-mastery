@@ -228,8 +228,6 @@ Nothing. `git diff HEAD` is empty, because the files on disk equal HEAD. The oth
 labs/run ch05/add-patch
 ```
 
-The file from the hook, with its three edits. A tuning change, `TOP_K`. A bug fix, the guard for a zero vector. And a debug print.
-
 <!-- snippet: ch05/add-patch/01-the-diff -->
 ```text
 $ git diff --stat
@@ -264,6 +262,10 @@ index 177cb37..e548d1b 100644
      return [(s, doc_id) for s, doc_id in scored[:TOP_K] if s >= MIN_SCORE]
 ```
 <!-- /snippet -->
+
+The file from the hook, with its three edits. A tuning change, `TOP_K`.
+
+A bug fix, the guard for a zero vector. And a debug print.
 
 <!-- snippet: ch05/add-patch/02-help -->
 ```text
@@ -310,7 +312,9 @@ P - print the current hunk using the pager
 ```
 <!-- /snippet -->
 
-Answering `?` prints what each letter does, and `q` leaves without staging anything. Now the real pass. The fix must become a commit of its own. Try it now, on paper, thirty seconds: write the letters you would answer, hunk by hunk. Pause me, and write your answer.
+Answering `?` prints what each letter does, and `q` leaves without staging anything.
+
+Now the real pass. The fix must become a commit of its own. Try it now, on paper, thirty seconds: write the letters you would answer, hunk by hunk. Pause me, and write your answer.
 
 **[PAUSE]**
 

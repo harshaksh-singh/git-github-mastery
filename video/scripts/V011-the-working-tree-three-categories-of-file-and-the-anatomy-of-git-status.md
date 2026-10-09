@@ -140,6 +140,8 @@ The first question is always about the index. Only on the "no" branch is an igno
              column X                    column Y                 ??
 ```
 
+And `git status` in one drawing. Comparison 1 is "Changes to be committed", column X. Comparison 2 is "Changes not staged", column Y. The scan prints "Untracked files", two question marks.
+
 ## LIVE TERMINAL DEMO
 
 **[TERMINAL]** Caption bar: `labs/ch04/worktree-basics.sh`.
@@ -432,7 +434,9 @@ $ git status --porcelain=v2 --branch
 ```
 <!-- /snippet -->
 
-The formats for scripts. Read one version 2 line, the one for `src/app.py`: the three modes are HEAD, index and working tree. The two object IDs are HEAD and index. They're equal, so nothing is staged for this path. There's no third ID, because status compares the working-tree file with the index entry and doesn't need to name its content.
+The formats for scripts.
+
+Read one version 2 line, the one for `src/app.py`: the three modes are HEAD, index and working tree. The two object IDs are HEAD and index. They're equal, so nothing is staged for this path. There's no third ID, because status compares the working-tree file with the index entry and doesn't need to name its content.
 
 <!-- snippet: ch04/status-anatomy/05-untracked-modes -->
 ```text

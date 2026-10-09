@@ -282,6 +282,8 @@ Prevention        : --force-with-lease together with --force-if-includes (or pus
                     that someone else pushes to without telling them.
 ```
 
+The first root-cause box. The root cause: a remote-tracking ref records what my clone has fetched, not what I have seen or integrated. Any fetch renews the lease.
+
 **Step 6: where is the commit now?**
 
 <!-- snippet: ch12/force-push/06-what-is-left -->

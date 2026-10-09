@@ -94,6 +94,8 @@ Where does this model stop being enough? It tells you where content is, and it s
  +-------------------+     +-------------------+     +-------------------+
 ```
 
+Here are the three boxes, empty. You edit a file on the left. `git add` carries it into the index, the next commit. `git commit` records it on the right, as objects and refs.
+
 **[DIAGRAM]** After the demo, the diagram of section 1.9: the state after the second commit, with the abbreviated IDs from the transcript.
 
 ```text
@@ -323,7 +325,9 @@ f7c044e Add README and evaluation config
 ```
 <!-- /snippet -->
 
-After the edit, `git status` lists the file under "Changes not staged for commit": the working tree differs from the index, and `git diff` shows that difference, the one added line `top_k: 5`. `git add` copies the new content into the index, and `git commit` records the index. The log now has two commits, `2da8d74` on top of `f7c044e`.
+After the edit, `git status` lists the file under "Changes not staged for commit": the working tree differs from the index.
+
+`git diff` shows that difference, the one added line `top_k: 5`. `git add` copies the new content into the index, and `git commit` records the index. The log now has two commits, `2da8d74` on top of `f7c044e`.
 
 **[ANIMATION]** trees: setup, edit, add, commit file=configs/eval.yaml names=Working_tree,Index,Repository ref=main commits=f7c044e,2da8d74 title=One_file,_three_places say_commit=commit_records_the_index_as_a_new_snapshot
 
@@ -359,7 +363,7 @@ As a picture: two commits. The label `main` points at the newer one, and HEAD na
 
 **[TERMINAL]** Caption bar: `labs/ch01/lab-00-2-empty-git-dir.sh`.
 
-One more replay, to read an empty `.git` in full. This is the first part of Lab 0.2.
+**One more replay, to read an empty `.git` in full.** This is the first part of Lab 0.2.
 
 ```bash
 labs/run ch01/lab-00-2-empty-git-dir
@@ -437,7 +441,9 @@ $ head -n 8 .git/hooks/pre-commit.sample
 ```
 <!-- /snippet -->
 
-Read them out loud. `HEAD`: one line, the name of a branch. `config`: the repository's own settings. `description`: a line of text. `info/exclude`: comments only. And a sample hook, which says in its own comment how it would be enabled. I stop the replay here. The rest of the lab removes these files one group at a time, to find out which of them Git can't live without. That experiment is yours.
+Read them out loud. `HEAD`: one line, the name of a branch. `config`: the repository's own settings. `description`: a line of text.
+
+`info/exclude`: comments only. And a sample hook, which says in its own comment how it would be enabled. I stop the replay here. The rest of the lab removes these files one group at a time, to find out which of them Git can't live without. That experiment is yours.
 
 ## COMMON MISTAKES
 

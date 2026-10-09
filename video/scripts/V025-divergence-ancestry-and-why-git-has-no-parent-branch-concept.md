@@ -56,7 +56,7 @@ Precisely. A common ancestor is a commit reachable from both tips. The manual sa
 
 **[ON SCREEN]** The notation table of section 7.8.
 
-In `git log` and `git rev-list`, `A..B` is the commits reachable from B and not from A, and `A...B` is the commits reachable from exactly one side. In `git diff`, `A..B` compares the two tips directly, the same as `git diff A B`. And `A...B` compares from the merge base of A and B to B: what B changed.
+Read the table one column at a time. In `git log` and `git rev-list`, `A..B` is the commits reachable from B and not from A, and `A...B` is the commits reachable from exactly one side. In `git diff`, `A..B` compares the two tips directly, the same as `git diff A B`. And `A...B` compares from the merge base of A and B to B: what B changed.
 
 **[ANIMATION]** graph: 6eab4a9-69d8252-7a1ccc7-936bfbd-37431c0 feature/rouge-stemming; 6eab4a9-69d8252 main; 69d8252-7a1ccc7-936bfbd feature/rouge; HEAD=feature/rouge-stemming
 
@@ -74,7 +74,7 @@ This is why `git rebase` and `git merge` take the target as an argument: Git can
 
 **[ON SCREEN]** Lower third: **GitHub**. A pull request has a base branch, chosen when it is opened, and stored by GitHub, not by Git. It is the one place where "created from" is recorded. And GitHub computes a pull request's changes from a merge base too.
 
-One note on the platform side. A pull request has a base branch, chosen when it's opened, and it's stored by GitHub, not by Git.
+One note on the platform side. A pull request has a base branch, chosen when it's opened, and it's stored by GitHub, not by Git. It's the one place where "created from" is recorded.
 
 **[ANIMATION]** remotes: with Asha steps=setup,teammate-push,fetch
 

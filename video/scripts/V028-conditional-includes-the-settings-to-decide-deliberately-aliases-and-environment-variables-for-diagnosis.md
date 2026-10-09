@@ -61,21 +61,45 @@ Five, asking the wrong question: a scope option such as `--global` switches incl
 
 **[ON SCREEN]** Rows of the table of section 14B.5, one at a time, with the "Downside" column highlighted.
 
-`pull.rebase`: how `git pull` integrates. With nothing set, a diverged pull is fatal. Downside of `true`: it gives unpublished commits new IDs and flattens local merges. `pull.ff=only`: pull refuses anything but a fast-forward. In configuration it wins over `pull.rebase`, so a diverged pull needs a flag.
+`user.name` and `user.email`: required, one per context.
 
-`push.autoSetupRemote`, which the textbook dates to Git 2.37: the first push of a branch sets its upstream. Downside: a mistyped branch name is published at once. `push.default`: leave the default, `simple`.
+`init.defaultBranch`: the name of the first branch. Recommended.
+
+`pull.rebase`: how `git pull` integrates. With nothing set, a diverged pull is fatal. Downside of `true`: it gives unpublished commits new IDs and flattens local merges.
+
+`pull.ff=only`: pull refuses anything but a fast-forward. In configuration it wins over `pull.rebase`, so a diverged pull needs a flag.
+
+`push.default`: leave the default, `simple`.
+
+`push.autoSetupRemote`, which the textbook dates to Git 2.37: the first push of a branch sets its upstream. Downside: a mistyped branch name is published at once.
 
 `fetch.prune`: fetch deletes remote-tracking branches whose branch is gone. Downside: that ref may have been your last name for those commits.
 
 `merge.conflictStyle`, with `zdiff3` since Git 2.35: adds the common ancestor to a conflict. Downside: longer conflict regions, and a third marker.
 
-`rebase.autoSquash`: downside, a title that starts with `fixup!` by accident is moved. `rebase.autoStash`: the final apply can conflict. `rebase.updateRefs`, Git 2.38: it moves branches you did not name.
+`rebase.autoSquash`: downside, a title that starts with `fixup!` by accident is moved.
 
-`diff.algorithm`: `myers` is the default, and `histogram` reads better when code moves. Downside: your diff differs from a colleague's. The setting changes what you see, never what is stored.
+`rebase.autoStash`: the final apply can conflict.
+
+`rebase.updateRefs`, Git 2.38: it moves branches you did not name.
 
 `rerere.enabled`: records conflict resolutions and replays them. Downside: a wrong resolution is replayed too.
 
+`diff.algorithm`: `myers` is the default, and `histogram` reads better when code moves. Downside: your diff differs from a colleague's. The setting changes what you see, never what is stored.
+
+`diff.colorMoved`: colors moved lines, in the terminal only.
+
+`core.editor`: recommended.
+
+`core.autocrlf`: optional, and unset on macOS.
+
+`core.excludesFile`: your personal ignore file.
+
+`commit.gpgSign` signs every commit, and fails every commit when the key is unavailable.
+
 And one more with a sharp edge: `help.autocorrect`. `immediate` runs a guess. Since Git 2.49 the value `1` means `immediate`.
+
+**[ANIMATION]** end
 
 The textbook's rule for teams: split the few settings a team must agree on, such as the default branch name, line-ending attributes, and whether signatures are required, from everything else, which stays personal. And put a comment on each line.
 

@@ -502,9 +502,13 @@ Q182: "You reverted a merge with `-m 1` last week. Today the fixed branch was me
 
 **[PAUSE]**
 
+Answer out loud first.
+
+**[PAUSE]**
+
 **[ANIMATION]** replay: rm
 
-Answer out loud first. This is a four-part question. A strong answer takes the parts in order, and keeps one idea running through all of them: content against ancestry. It states where the merge base is and why, and derives the missing half from that. It gives both procedures, with the cost of each. For `-m 2` it reasons from what "relative to that parent" means and doesn't guess. And for the squash it says what is absent from the graph. Draw the graph while you speak.
+This is a four-part question. A strong answer takes the parts in order, and keeps one idea running through all of them: content against ancestry. It states where the merge base is and why, and derives the missing half from that. It gives both procedures, with the cost of each. For `-m 2` it reasons from what "relative to that parent" means and doesn't guess. And for the squash it says what is absent from the graph. Draw the graph while you speak.
 
 ## RECAP
 

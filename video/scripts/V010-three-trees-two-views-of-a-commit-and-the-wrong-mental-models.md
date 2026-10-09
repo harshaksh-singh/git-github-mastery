@@ -128,6 +128,8 @@ Three boxes, one file, three versions: one line, two lines, three lines. Under t
  change of cf6a5b3 = change of e460212 = "retries: 1 becomes 3"; their snapshots differ
 ```
 
+The two views, with the hook's commits. `cf6a5b3` and `e460212` have the same change, "retries: 1 becomes 3", and different snapshots: four workers on `main`, two on `release/1.0`.
+
 **[DIAGRAM]** The diagram of section 2.12. Draw your clone, then the Git layer of GitHub, then the wire, then the two lower boxes.
 
 ```text
@@ -147,6 +149,8 @@ Three boxes, one file, three versions: one line, two lines, three lines. Under t
                                                       |   workflow runs, logs, artifacts, secrets     |
                                                       +-----------------------------------------------+
 ```
+
+And the map. Only objects and refs cross the wire. The two lower boxes, the platform's database and GitHub Actions, exist only in GitHub's systems: a clone copies none of it.
 
 **[ON SCREEN]** Lower third: **GitHub**. The two lower boxes exist only in GitHub's systems. A pull request, for example, is a database record plus read-only refs under `refs/pull/` that GitHub maintains on the server, as described in GitHub's documentation. A clone copies none of it, and deleting your clone loses none of it.
 

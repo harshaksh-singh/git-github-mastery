@@ -84,6 +84,8 @@ And the base: for a merge, the merge base of the two tips. For a rebase step and
 
 If you forget a cell in the exam room, don't guess. Derive it from those two sentences.
 
+**[ANIMATION]** end
+
 Quick quiz, three options. In a stopped rebase, "theirs" is: option one, the upstream. Option two, your own commit. Option three, the merge base. Say it out loud.
 
 **[PAUSE]**

@@ -142,6 +142,10 @@ Prevention        : None needed. Recognize the pattern and resolve it in seconds
                     for -X ours, which would drop their line.
 ```
 
+The root-cause box: adjacency. One unchanged line between the edits keeps them apart.
+
+**[ANIMATION]** step: merge
+
 **[DIAGRAM]** The root-cause box of section 8.6, after the whitespace demo.
 
 ```text
@@ -158,6 +162,8 @@ Correct fix       : Run the formatter again on the merge result and commit.
 Prevention        : Land formatting-only changes when no other branch is open on those files,
                     or have every branch run the same formatter before merging.
 ```
+
+Each case is one three-way merge: base, ours and theirs.
 
 ## LIVE TERMINAL DEMO
 
@@ -316,6 +322,8 @@ The conflict is gone, and so is the reformatting. The merged file has your two-s
 
 **[DIAGRAM]** Show the root-cause box of section 8.6.
 
+The root cause: the option discards whitespace changes wherever they meet a line our side kept. Run the formatter again, and commit.
+
 **[TERMINAL]** Caption bar: `labs/ch08/why-conflicts.sh`.
 
 ```bash
@@ -430,6 +438,8 @@ timeout_s: 30
 No conflict. Line 3 is unchanged on both sides, and that is enough.
 
 **[DIAGRAM]** Show the root-cause box of section 8.7.
+
+The fix: take the changed line from each side, not -X ours.
 
 ## COMMON MISTAKES
 

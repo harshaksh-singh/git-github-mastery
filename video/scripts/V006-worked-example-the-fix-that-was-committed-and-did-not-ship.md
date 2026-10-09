@@ -110,6 +110,8 @@ The chain breaks as a model at its last link. "Pushed" is true as far as your cl
 
 On the left, your clone: two commits on `main`, one on `feature/cache`. Under the graph, the two lines that matter: the index has 60 in `runner.py`, the working tree has 120. On the right, the server has the same two commits on `main`, and CI builds `f29df3b`, where the constant is 60. The push arrow carried commits. It didn't carry the working tree, because a push never does.
 
+**[ANIMATION]** step: state-1
+
 **[DIAGRAM]** The root-cause box of section 1.12, one line at a time, after the test.
 
 ```text
@@ -126,6 +128,8 @@ Correct fix       : Stage eval/runner.py, commit, push. One new commit; nothing 
 Prevention        : Read git status and git diff --cached before each commit.
                     Trust the test that runs on the commit, which is what CI does.
 ```
+
+The root-cause box comes after the test. Until then, hold this picture: `main` and `origin/main` on the same commit.
 
 ## LIVE TERMINAL DEMO
 
@@ -148,13 +152,13 @@ MAX_TIMEOUT_S = 120
 
 `git log --all -- <path>` lists the commits on any branch that changed the path. Only `25fbbb0` does. So H3, "committed on another branch", is rejected. `git show HEAD:eval/runner.py` prints the file as the last commit recorded it: 60. The plain `grep` reads the working tree: 120. So H1, "never saved", is rejected, because the working tree shows 120. H4, "not pushed", was rejected in the last video: `HEAD` and `origin/main` have the same ID. H2 is confirmed: saved, never staged, in no commit.
 
-Try it now, on paper. Thirty seconds: write the root cause in one sentence. Then compare your answer with the box.
+Try it now, on paper. Thirty seconds: write the root cause in one sentence. Then compare your answer with mine.
 
 **[PAUSE]**
 
 **[DIAGRAM]** Show the root-cause box now.
 
-Root cause: the second file was never added to the index, so it's in no commit. And the layer is Git. GitHub and Actions did their job: the pipeline tested the commit it was given.
+**Root cause.** The second file was never added to the index, so it's in no commit. And the layer is Git. GitHub and Actions did their job: the pipeline tested the commit it was given.
 
 **[TERMINAL]** Snippet `12-fix`.
 
@@ -219,11 +223,11 @@ Here's the history now. `230ef10` is on top, and the names `main`, `origin/main`
 
 **Prevent.** Before every commit, read both lists in `git status`, and read `git diff --cached` as the text of what you're about to record. `git commit -a` would have included the second file, because it stages every modified tracked file first. For the same reason it also includes changes you didn't mean to commit, so it's not a substitute for looking.
 
-So, the CTO's three questions. What was in the commit? One half of the fix. Where is the whole fix now? In `230ef10`, on your clone and on the server. And how do we know? The commands that showed the problem now show it gone.
+**So, the CTO's three questions.** What was in the commit? One half of the fix. Where is the whole fix now? In `230ef10`, on your clone and on the server. And how do we know? The commands that showed the problem now show it gone.
 
 **[TERMINAL]** Caption bar: `labs/ch01/pitfalls.sh`.
 
-Now the first-day pitfalls. You saw one of them, "nothing staged", in video 4. Here are the others. Read each message word by word.
+**Now the first-day pitfalls.** You saw one of them, "nothing staged", in video 4. Here are the others. Read each message word by word.
 
 ```bash
 labs/run ch01/pitfalls

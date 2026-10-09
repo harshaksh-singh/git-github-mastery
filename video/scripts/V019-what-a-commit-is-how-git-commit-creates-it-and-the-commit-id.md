@@ -96,6 +96,8 @@ Six, refs: the ref that HEAD names is set to the new ID, and the reflogs of HEAD
 
 **[ON SCREEN]** The state table of section 6.3: working tree unchanged; index entries unchanged, file rewritten; HEAD unchanged, resolves to the new commit; current branch ref set to the new commit; new tree and commit objects, one line in each reflog, `COMMIT_EDITMSG`; remote and GitHub unchanged. Second row: in detached HEAD, HEAD itself is set to the new commit ID, and no branch moves.
 
+The state table: the working tree is unchanged, the current branch ref is set to the new commit, and the remote and GitHub are unchanged. In detached HEAD, HEAD itself is set to the new commit ID, and no branch moves.
+
 **[ANIMATION]** step: state-1
 
 Nothing in a commit says which branch it is on. It goes wherever HEAD pointed when you ran the command.

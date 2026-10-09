@@ -748,9 +748,13 @@ Q171: "HEAD, the index and the working tree hold three different versions of one
 
 **[PAUSE]**
 
+Answer out loud, and draw the table as you speak.
+
+**[PAUSE]**
+
 **[ANIMATION]** replay: steps
 
-Answer out loud, and draw the table as you speak. A strong answer derives each row from the three steps of a reset, so that the table is the consequence of a rule and not a list. It gets the status letters right, including the row where the letters stay the same but mean something else. A follow-up will ask what became of the versions that no place holds any more. Be ready to say, for each one, whether an object exists.
+A strong answer derives each row from the three steps of a reset, so that the table is the consequence of a rule and not a list. It gets the status letters right, including the row where the letters stay the same but mean something else. A follow-up will ask what became of the versions that no place holds any more. Be ready to say, for each one, whether an object exists.
 
 ## RECAP
 

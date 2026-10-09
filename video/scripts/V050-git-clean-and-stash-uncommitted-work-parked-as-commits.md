@@ -661,9 +661,13 @@ Q177: "What is inside a stash entry and where is it stored? What happens when `g
 
 **[PAUSE]**
 
+Answer out loud first.
+
+**[PAUSE]**
+
 **[ANIMATION]** step: draw.records
 
-Answer out loud first. A strong answer describes an entry as objects and a ref, with the parents by role, and says where older entries are kept. For the conflict it gives the state of the working tree, the index and the stash list, and names both ways forward. The three reasons should be consequences of the storage you described in the first part, not a separate list of opinions. If the reasons follow from the mechanism, the answer holds together.
+A strong answer describes an entry as objects and a ref, with the parents by role, and says where older entries are kept. For the conflict it gives the state of the working tree, the index and the stash list, and names both ways forward. The three reasons should be consequences of the storage you described in the first part, not a separate list of opinions. If the reasons follow from the mechanism, the answer holds together.
 
 ## RECAP
 

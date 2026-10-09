@@ -148,6 +148,8 @@ Now with real commits. This is the merge from the last video. Base `23db174`, ou
 
 Two lines, and a cross between them: each branch has merged the other. Follow the parents back from the two tips. `5d28836` is reachable from both. So is `2725147`. Neither is an ancestor of the other. Two best common ancestors: two merge bases.
 
+**[ANIMATION]** step: grow
+
 **[DIAGRAM]** The root-cause box of section 8.5, one line at a time, after the demo.
 
 ```text
@@ -284,7 +286,11 @@ index c5b3327..cef358f 100644
 ```
 <!-- /snippet -->
 
-The seventh. What ours changed since the base, what theirs changed since the base, and the merged file with both changes. How Git decides whether two such changes can both be applied is the next video.
+The seventh. What ours changed since the base.
+
+What theirs changed since the base.
+
+And the merged file, with both changes. How Git decides whether two such changes can both be applied is the next video.
 
 **[TERMINAL]** Caption bar: `labs/ch08/merge-base.sh`, snippet `03-crisscross`.
 
@@ -404,6 +410,8 @@ How to preview: `git status` and `git diff --cached --stat`. How to recover: sta
 Read the nested block: the inner markers are nine characters long, the outer ones seven. The inner block is the two earlier decisions. The outer sides are the two current values.
 
 **[DIAGRAM]** Show the root-cause box.
+
+The root cause: a criss-cross. Each branch merged the other, and the two merges resolved the same conflict in opposite ways. The prevention: between long-lived branches, merge in one direction only.
 
 ## COMMON MISTAKES
 

@@ -537,6 +537,8 @@ None that must read that file. `fatal: bad config line`, with the line number an
 
 **[ON SCREEN]** The root-cause box of section 14B.3, one line at a time: every Git command in one repository fails; objects, refs and index are intact; every command reads the whole configuration first, and a parse error is fatal; the root cause is a hand edit; Git refuses because running with half a configuration could mean the wrong identity, the wrong remote or a skipped safety setting; the fix is to open the named file at the named line with a text editor, not with Git; the prevention is to change settings with `git config set`, and to run `git config list` after a hand edit.
 
+The root cause is a hand edit. The fix: open the named file at the named line with a text editor, not with Git. The prevention: change settings with `git config set`, and run `git config list` after a hand edit.
+
 ## COMMON MISTAKES
 
 Five mistakes to watch for.

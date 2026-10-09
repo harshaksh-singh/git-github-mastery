@@ -111,6 +111,8 @@ Where does the picture break? Amendments are numbered, and commits are not paire
 
 ## DIAGRAM
 
+**[ANIMATION]** step: series.state-1
+
 **[DIAGRAM]** New diagram. Two columns: the old range on the left, the new range on the right. Draw a pairing line for each commit and put one marker on each line.
 
 ```text
@@ -126,7 +128,7 @@ Where does the picture break? Amendments are numbered, and commits are not paire
    >  no partner on the left: the commit is new
 ```
 
-All six IDs differ, as they must after a rebase. Only the middle line says that something changed.
+All six IDs differ, as they must after a rebase.
 
 ## LIVE TERMINAL DEMO
 

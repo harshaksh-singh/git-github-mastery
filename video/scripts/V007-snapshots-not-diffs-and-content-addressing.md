@@ -72,7 +72,11 @@ Here's the key: what is hashed decides what an ID identifies.
 
 **[ON SCREEN]** The three-row table of section 2.4.
 
-For a blob, the bytes of the file are hashed. Not its name, not its mode, not any time. So a blob ID identifies one exact file content, wherever it occurs. For a tree: for each entry, the mode, the name and the object ID. So a tree ID identifies one exact directory state, including everything below it. For a commit: the tree ID, the parent IDs, the author, the committer, both times, and the message. So a commit ID identifies one project state, the whole history behind it, and who recorded it when.
+For a blob, the bytes of the file are hashed. Not its name, not its mode, not any time. So a blob ID identifies one exact file content, wherever it occurs.
+
+For a tree: for each entry, the mode, the name and the object ID. So a tree ID identifies one exact directory state, including everything below it.
+
+For a commit: the tree ID, the parent IDs, the author, the committer, both times, and the message. So a commit ID identifies one project state, the whole history behind it, and who recorded it when.
 
 Four properties follow. Deduplication: equal content is stored once, whatever its path, commit or branch. Immutability: an object can't be edited, because other content is another object with another ID. So "changing a commit" always means creating a new one. Integrity: Git can recompute the hash of whatever it reads, so corruption and tampering are detectable. And cheap comparison: two files, directories or project states are equal when their IDs are equal, and merge and diff skip everything whose IDs match.
 

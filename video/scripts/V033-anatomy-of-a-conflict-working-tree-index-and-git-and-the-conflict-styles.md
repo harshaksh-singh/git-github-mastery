@@ -74,7 +74,7 @@ Quick quiz. Asha checks out your branch and merges `main` into it. During her me
 
 **Reading the stages.** The syntax `:<stage>:<path>` names the three blobs, so any command that reads objects can read them. `git show :1:path` is the base. `:2:` is ours. `:3:` is theirs. Each is a complete file, with no markers. Reading them does not touch the working tree.
 
-**[ANIMATION]** graph: 6ae3c51-5397d5f main ORIG_HEAD; 6ae3c51-640bfe1-45a7a67 feature/creative-judge MERGE_HEAD; HEAD=main
+**[ANIMATION]** graph: 6ae3c51-5397d5f main ORIG_HEAD; 6ae3c51-640bfe1-45a7a67 feature/creative-judge MERGE_HEAD; HEAD=main at_state_1=8
 
 **The files in `.git`.** `MERGE_HEAD` is the commit being merged. It's what will make the next commit a merge commit. HEAD has not moved, and `ORIG_HEAD` equals it. `MERGE_MSG` is the prepared message, with the conflicted paths as a comment. `MERGE_MODE` is empty unless you passed `--no-ff`. `AUTO_MERGE` is a tree: the snapshot of what Git wrote to the working tree, markers included.
 

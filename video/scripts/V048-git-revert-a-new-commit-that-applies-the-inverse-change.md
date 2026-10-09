@@ -382,6 +382,8 @@ hint: Disable this message with "git config set advice.mergeConflict false"
 ```
 <!-- /snippet -->
 
+When the second revert of a range conflicts, the first is already committed.
+
 <!-- snippet: ch11/revert-sequence/02-sequencer-state -->
 ```text
 $ git log --oneline -2
@@ -414,7 +416,7 @@ f6c769e Tune timeout to 8s
 ```
 <!-- /snippet -->
 
-When the second revert of a range conflicts, the first is already committed: the log shows `407f639`, a revert, on top. `git status` says "You are currently reverting commit a49e359". `.git/sequencer/` has four files: `todo` holds the steps still to do, and `head` holds the commit where the sequence started, `f6c769e`.
+The log shows `407f639`, a revert, on top. `git status` says "You are currently reverting commit a49e359". `.git/sequencer/` has four files: `todo` holds the steps still to do, and `head` holds the commit where the sequence started, `f6c769e`.
 
 **[ON SCREEN]** The table of exits.
 
@@ -542,9 +544,13 @@ Q180: "Describe `git revert` as a three-way merge: what are base, ours and their
 
 **[PAUSE]**
 
+Answer out loud first.
+
+**[PAUSE]**
+
 **[ANIMATION]** step: conflict.merge-base
 
-Answer out loud first. A strong answer names the three inputs without hesitation, and says why that choice of base produces the inverse change. For the second half it constructs a concrete case with three values of one line, places each value in base, ours and theirs, and reads the conflict off the three-way rule. If you can also say what the conflict markers will be labelled, and which index stage holds which version, you have shown that the model is operational and not recited.
+A strong answer names the three inputs without hesitation, and says why that choice of base produces the inverse change. For the second half it constructs a concrete case with three values of one line, places each value in base, ours and theirs, and reads the conflict off the three-way rule. If you can also say what the conflict markers will be labelled, and which index stage holds which version, you have shown that the model is operational and not recited.
 
 ## RECAP
 

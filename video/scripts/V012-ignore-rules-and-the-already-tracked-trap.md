@@ -132,6 +132,8 @@ Prevention        : Write .gitignore before the first "git add ."; read git stat
                     "git ls-files -ci --exclude-standard" prints anything.
 ```
 
+The root-cause box, line by line. The file was tracked first and ignored second, and tracking wins. The fix: `git rm --cached`, commit, keep the pattern, and treat the secret as leaked and rotate it. Prevention: write `.gitignore` before the first `git add .`.
+
 ## LIVE TERMINAL DEMO
 
 **[TERMINAL]** Caption bar: `labs/ch04/gitignore-patterns.sh`.

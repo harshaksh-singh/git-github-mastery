@@ -167,6 +167,8 @@ Two namespaces, `origin/*` and `upstream/*`, each with its own `HEAD`, all namin
 
 Git has no notion of a fork. The Fork button creates a GitHub object: a server-side copy that stays connected to its parent and shares Git data with it in a repository network. To Git it is one more repository with a URL. According to the documentation, `gh repo fork --clone` names your fork `origin` and the parent `upstream`, the convention used here.
 
+**[ANIMATION]** end
+
 **Part 2: the triangle.**
 
 ```bash

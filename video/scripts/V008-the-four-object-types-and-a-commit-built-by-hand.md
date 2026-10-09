@@ -114,6 +114,8 @@ For the five moves: `git add` is "file the page and enter it in the draft table 
 
 All eight objects, and the two names that lead to them. The branch `main` points at the commit. The commit points at one tree. The tree has three entries: a blob and two more trees, each with a blob. And from the top left, the ref `v0.1.0` points at the tag object, which points at the same commit.
 
+**[ANIMATION]** walk: columns=step,plumbing,what_appears,porcelain rows=1:git_hash-object_-w:one_blob:git_add|2:git_update-index_--add_--cacheinfo:.git/index,_one_entry:git_add|3:git_write-tree:one_tree_per_directory:git_commit|4:git_commit-tree_<tree>_-m_<message>:one_commit,_no_ref:git_commit|5:git_update-ref_refs/heads/<branch>_<id>:the_branch_ref:git_commit title=A_commit_in_five_moves
+
 **[DIAGRAM]** A five-rung ladder for the hand-built commit, with the porcelain beside each rung. One rung lights up per demo step.
 
 ```text
@@ -125,6 +127,10 @@ All eight objects, and the two names that lead to them. The branch `main` points
   4    git commit-tree <tree> -m <message>        one commit, no ref          git commit
   5    git update-ref refs/heads/<branch> <id>    the branch ref              git commit
 ```
+
+The five moves as a ladder: the plumbing command, what appears, and the porcelain that does it for you.
+
+**[ANIMATION]** end
 
 ## LIVE TERMINAL DEMO
 
@@ -354,6 +360,12 @@ nothing to commit, working tree clean
 The file is on disk, and the working tree is clean.
 
 **[ON SCREEN]** The state table of section 2.6: five rows, with "unchanged" everywhere except one cell per row.
+
+The state table of the five moves. `git hash-object -w`: one new blob. `git update-index`: one index entry. `git write-tree`: one tree per directory.
+
+`git commit-tree`: one commit object, no ref, no reflog line.
+
+`git update-ref`: the branch ref. Everything else is unchanged.
 
 ## COMMON MISTAKES
 

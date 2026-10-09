@@ -325,7 +325,7 @@ eval/runner.py
 
 **[ON SCREEN]** The completed three-column table.
 
-Eleven lines, and nothing in the repository has changed. Now, and only now, are you allowed a theory. You probably have a sharper one than the bet you made at the start. Write it down, and write at least two others beside it. The next video tests them.
+**Eleven lines, and nothing in the repository has changed.** Now, and only now, are you allowed a theory. You probably have a sharper one than the bet you made at the start. Write it down, and write at least two others beside it. The next video tests them.
 
 ## COMMON MISTAKES
 

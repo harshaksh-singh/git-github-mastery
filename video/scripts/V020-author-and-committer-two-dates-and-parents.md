@@ -48,7 +48,7 @@ Where do the values come from? For both identities, Git reads the environment fi
 
 `git commit --author=... --date=...`: author as given. Committer you, now.
 
-`git cherry-pick`, `git rebase`, `git commit --amend`: author copied from the original commit. Committer you, now. Those are the three operations to remember. Cherry-pick copies a commit, rebase replays a branch, and amend replaces the last commit. Each gets its own video.
+Three share one row: `git cherry-pick`, `git rebase`, `git commit --amend`. Author copied from the original commit. Committer you, now. Those are the three operations to remember. Cherry-pick copies a commit, rebase replays a branch, and amend replaces the last commit. Each gets its own video.
 
 `git commit --amend --reset-author`: you, now, for both.
 
@@ -164,6 +164,8 @@ CommitDate: Mon Sep 7 10:08:00 2026 +0530
     Add BLEU metric skeleton
 ```
 <!-- /snippet -->
+
+First, Asha's own commit: she is author and committer, at five past ten.
 
 The new commit, `0cf479c`, keeps Asha as author with her time, and records you as committer, three minutes later.
 
@@ -485,6 +487,8 @@ $ git log --oneline -- README.md
 d4c9fab Add exact-match metric
 ```
 <!-- /snippet -->
+
+Last, four forms of `git log` to read on your own: `--oneline -3`, `-1 --stat`, a format with `--no-merges`, and a path after two dashes.
 
 ## COMMON MISTAKES
 
